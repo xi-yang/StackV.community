@@ -55,6 +55,7 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.TagSet;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_action;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_flow;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_match;
@@ -227,17 +228,12 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
                         MCE_MultiPointVlanBridge.class.getName(), connId, terminal1, terminal2));
             }
             MCETools.Path mpvbPath = MCETools.getLeastCostPath(feasibleKSP12); //(Could also be pick 2nd and 3rd for disturbing search)
-        try {
-            log.log(Level.INFO, "\n>>>MPVB--mpvbPath model=\n" + ModelUtil.marshalModel(mpvbPath.getOntModel().getBaseModel()));
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
-        }
             // For 3rd through Tth terminals, connect them to one of openflow nodes in the path
             for (Resource terminalX : terminals) {
                 MCETools.Path bridgePath = connectTerminalToPath(transformedModel, mpvbPath, terminalX, jsonConnReq);
                 if (bridgePath == null) {
-                throw new EJBException(String.format("%s::process doMultiPathFinding cannot find bridging path in connection '%s' for terminal '%s'", 
-                        MCE_MultiPointVlanBridge.class.getName(), connId, terminalX));
+                    throw new EJBException(String.format("%s::process doMultiPathFinding cannot find bridging path in connection '%s' for terminal '%s'",
+                            MCE_MultiPointVlanBridge.class.getName(), connId, terminalX));
                 }
                 mpvbPath.addAll(bridgePath);
                 mpvbPath.getOntModel().add(bridgePath.getOntModel().getBaseModel());
@@ -250,176 +246,105 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
     }
 
     private MCETools.Path connectTerminalToPath(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX, JSONObject jsonConnReq) {
-        List<Resource> openflowPorts = listOpenflowPortsOnPath(transformedModel, mpvbPath);
-        if (openflowPorts.isEmpty()) {
-            throw new EJBException(String.format("%s::process connectTerminalToPath cannot getOpenflowNodeOnPath", 
-                            MCE_MultiPointVlanBridge.class.getName()));
-        }
-        for (Resource openflowPort : openflowPorts) {
-            //@TODO: check if terminalX is already on same node with openflowPort
-            Property[] filterProperties = {Nml.connectsTo};
-            Filter<Statement> connFilters = new OntTools.PredicatesFilter(filterProperties);
-            List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, openflowPort, terminalX, MCETools.KSP_K_DEFAULT, connFilters);
-            if (KSP == null || KSP.size() == 0) {
-                continue;
+        Resource bridgeOpenflowService = checkTerminalOnPath(transformedModel, mpvbPath, terminalX);
+        if (bridgeOpenflowService != null) {
+            Resource bridgePort = terminalX;
+            JSONObject jsonTe = (JSONObject) jsonConnReq.get(terminalX.getURI());
+            String bridgeVlanTag = null;
+            if (jsonTe != null && jsonTe.containsKey("vlan_tag")) {
+                TagSet vlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
+                bridgeVlanTag = Integer.toOctalString(vlanRange.getRandom());
             }
-            // loop through KSP, and shorten, verify and generate path model
-            // Verify TE constraints (switching label and ?adaptation?), 
-            Iterator<MCETools.Path> itP = KSP.iterator();
-            while (itP.hasNext()) {
-                MCETools.Path bridgePath = itP.next();
-                // cut overalapping and loopback segments of the bridgePath and identify bridge OF service and Port 
-                Resource bridgeOpenflowService = shortenBridgePath(transformedModel, mpvbPath, bridgePath);
-                Resource bridgePort = bridgePath.get(0).getSubject();
-                Resource bridgePortNext = bridgePath.get(0).getObject().asResource();
-                // initial vlanRange in of bridgePort could be full range but will eventually constrained by terminalX
-                if (MCETools.verifyL2Path(transformedModel, bridgePath)) {
-                    // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-                    OntModel bridgePathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonConnReq);
-        try {
-            log.log(Level.INFO, "\n>>>MPVB--bridgePathModel=\n" + ModelUtil.marshalModel(bridgePathModel.getBaseModel()));
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
-        }                    if (bridgePathModel != null) {
-                        // create VLAN bridging flows with bridgeOpenflowService and bridgePort and add to l2PathModel
-                        OntModel mpvbModel = mpvbPath.getOntModel();
-                        Map<Resource, Map> mpvpFlowMap = new HashMap();
-                        Resource resFlowTable = null;
-                        // find existing ports and flows from mpvbModel
-                        String sparql_flowin = "SELECT ?table ?flow ?port_in ?vlan_in WHERE {"
-                                + String.format("<%s> mrs:providesFlow ?flow. ", bridgeOpenflowService)
-                                + "?table mrs:hasFlow ?flow. "
-                                + "?flow mrs:flowMatch ?match_port. "
-                                + "?match_port mrs:type \"in_port\". "
-                                + "?match_port mrs:value ?port_in. "
-                                + "?flow mrs:flowMatch ?match_vlan. "
-                                + "?match_vlan mrs:type \"dl_vlan\". "
-                                + "?match_vlan mrs:value ?vlan_in. "
-                                + "}";
-                        ResultSet rs = ModelUtil.sparqlQuery(mpvbModel, sparql_flowin);
-                        while (rs.hasNext()) {
-                            QuerySolution qs = rs.next();
-                            if (resFlowTable == null) {
-                                resFlowTable = qs.getResource("table");
+            MCETools.Path bridgePath = new MCETools.Path();
+            OntModel bridgePathModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+            Statement bridgeHop = bridgePathModel.createStatement(bridgeOpenflowService, Nml.connectsTo, terminalX);
+            bridgePathModel.add(bridgeHop);
+            bridgePath.add(bridgeHop);
+            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag);
+            if (bridgePathModel == null) {
+                throw new EJBException(String.format("%s::process connectTerminalToPath terminal '%s' is in path but cannot be bridged.",
+                        MCE_MultiPointVlanBridge.class.getName()));
+            }
+            bridgePath.setOntModel(bridgePathModel);
+            return bridgePath;
+        } else {
+            List<Resource> openflowPorts = listOpenflowPortsOnPath(transformedModel, mpvbPath);
+            if (openflowPorts.isEmpty()) {
+                throw new EJBException(String.format("%s::process connectTerminalToPath cannot getOpenflowNodeOnPath",
+                        MCE_MultiPointVlanBridge.class.getName()));
+            }
+            for (Resource openflowPort : openflowPorts) {
+                Property[] filterProperties = {Nml.connectsTo};
+                Filter<Statement> connFilters = new OntTools.PredicatesFilter(filterProperties);
+                List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, openflowPort, terminalX, MCETools.KSP_K_DEFAULT, connFilters);
+                if (KSP == null || KSP.size() == 0) {
+                    continue;
+                }
+                // loop through KSP, and shorten, verify and generate path model
+                // Verify TE constraints (switching label and ?adaptation?), 
+                Iterator<MCETools.Path> itP = KSP.iterator();
+                while (itP.hasNext()) {
+                    MCETools.Path bridgePath = itP.next();
+                    // cut overalapping and loopback segments of the bridgePath and identify bridge OF service and Port 
+                    bridgeOpenflowService = shortenBridgePath(transformedModel, mpvbPath, bridgePath);
+                    Resource bridgePort = bridgePath.get(0).getSubject();
+                    Resource bridgePortNext = bridgePath.get(0).getObject().asResource();
+                    // initial vlanRange in of bridgePort could be full range but will eventually constrained by terminalX
+                    if (MCETools.verifyL2Path(transformedModel, bridgePath)) {
+                        // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
+                        OntModel bridgePathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonConnReq);
+                        if (bridgePathModel != null) {
+                            // bridgePath is always in port->port->ofSvc->port form. The first is bridge port 
+                            // but VLAN flows created by createL2PathVlanSubnets start from second port.
+                            String vlanPortName = MCETools.getNameForPort(transformedModel, bridgePortNext);
+                            // find bridge port name and vlan
+                            String sparql_bridge = "SELECT ?vlan_in WHERE {"
+                                    + "?flow mrs:flowMatch ?match_port. "
+                                    + "?match_port mrs:type \"in_port\". "
+                                    + String.format("?match_port mrs:value \"%s\". ", vlanPortName)
+                                    + "?flow mrs:flowMatch ?match_vlan. "
+                                    + "?match_vlan mrs:type \"dl_vlan\". "
+                                    + "?match_vlan mrs:value ?vlan_in. "
+                                    + "}";
+                            ResultSet rs = ModelUtil.sparqlQuery(bridgePathModel, sparql_bridge);
+                            if (!rs.hasNext()) {
+                                continue;
                             }
-                            Resource resFlow = qs.getResource("flow");
-                            String strPort = qs.get("port_in").toString();
-                            String strVlan = qs.get("vlan_in").toString();
-                            Map flowParamMap = new HashMap();
-                            mpvpFlowMap.put(resFlow, flowParamMap);
-                            flowParamMap.put("port_in", strPort);
-                            flowParamMap.put("vlan_in", strVlan);
-                        }
-                        String sparql_flowout = "SELECT ?table ?flow ?port_out ?vlan_out WHERE {"
-                                + String.format("<%s> mrs:providesFlow ?flow. ", bridgeOpenflowService)
-                                + "?table mrs:hasFlow ?flow. "
-                                + "?flow mrs:flowAction ?action_port. "
-                                + "?action_port mrs:type \"output\". "
-                                + "?action_port mrs:value ?port_out. "
-                                + "?flow mrs:flowAction ?action_vlan. "
-                                + "?action_vlan mrs:type \"mod_vlan_vid\". "
-                                + "?action_vlan mrs:value ?vlan_out. "
-                                + "}";
-                        rs = ModelUtil.sparqlQuery(mpvbModel, sparql_flowout);
-                        while (rs.hasNext()) {
-                            QuerySolution qs = rs.next();
-                            if (resFlowTable == null) {
-                                resFlowTable = qs.getResource("table");
+                            String bridgeVlanTag = rs.next().get("vlan_in").toString();
+                            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag);
+                            if (bridgePathModel == null) {
+                                continue;
                             }
-                            Resource resFlow = qs.getResource("flow");
-                            String strPort = qs.get("port_out").toString();
-                            String strVlan = qs.get("vlan_out").toString();
-                            Map flowParamMap = null;
-                            if (mpvpFlowMap.containsKey(resFlow)) {
-                                flowParamMap = (Map)mpvpFlowMap.get(resFlow);
-                            } else {
-                                flowParamMap = new HashMap();
-                                mpvpFlowMap.put(resFlow, flowParamMap);
-                            }
-                            if (flowParamMap.containsKey("port_out")) {
-                                strPort = (String) flowParamMap.get("port_out") + "," + strPort;
-                            }
-                            flowParamMap.put("port_out", strPort);
-                            if (flowParamMap.containsKey("vlan_out")) {
-                                strVlan = (String) flowParamMap.get("vlan_out") + "," + strVlan;
-                            }
-                            flowParamMap.put("vlan_out", strVlan);
+                            // return the first feasible bridge path @TODO: picking with optimization criteria
+                            bridgePath.setOntModel(bridgePathModel);
+                            return bridgePath;
                         }
-                        if (mpvpFlowMap.size() < 2) {
-                            continue;
-                        }
-                        // bridgePath is always in port->port->ofSvc->port form. The first is bridge port 
-                        // but VLAN flows created by createL2PathVlanSubnets start from second port.
-                        String bridgePortName = MCETools.getNameForPort(transformedModel, bridgePort);
-                        String vlanPortName = MCETools.getNameForPort(transformedModel, bridgePortNext);
-                        // find bridge port name and vlan
-                        String sparql_bridge = "SELECT ?vlan_in WHERE {"
-                                + "?flow mrs:flowMatch ?match_port. "
-                                + "?match_port mrs:type \"in_port\". "
-                                + String.format("?match_port mrs:value \"%s\". ", vlanPortName)
-                                + "?flow mrs:flowMatch ?match_vlan. "
-                                + "?match_vlan mrs:type \"dl_vlan\". "
-                                + "?match_vlan mrs:value ?vlan_in. "
-                                + "}";
-                        rs = ModelUtil.sparqlQuery(bridgePathModel, sparql_bridge);
-                        if (!rs.hasNext()) {
-                            continue;
-                        }
-                        String bridgeVlanTag = rs.next().get("vlan_in").toString();
-                        // add new flow for match bridgePortName and bridgeVlanTag
-                        String bridgeFlowId = bridgePort.getURI() + ":flow=input_vlan" + bridgeVlanTag;
-                        Resource resBridgeFlow = RdfOwl.createResource(bridgePathModel, URI_flow(resFlowTable.getURI(), bridgeFlowId), Mrs.Flow);
-                        bridgePathModel.add(bridgePathModel.createStatement(resFlowTable, Mrs.hasFlow, resBridgeFlow));
-                        bridgePathModel.add(bridgePathModel.createStatement(bridgeOpenflowService, Mrs.providesFlow, resBridgeFlow));
-                        Resource resBridgeFlowMatch1 = RdfOwl.createResource(bridgePathModel, URI_match(resBridgeFlow.getURI(), "in_port"), Mrs.FlowRule);
-                        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowMatch, resBridgeFlowMatch1));
-                        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch1, Mrs.type, "in_port"));
-                        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch1, Mrs.value, bridgePortName));
-                        Resource resBridgeFlowMatch2 = RdfOwl.createResource(bridgePathModel, URI_match(resBridgeFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
-                        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowMatch, resBridgeFlowMatch2));
-                        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch2, Mrs.type, "dl_vlan"));
-                        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch2, Mrs.value, bridgeVlanTag));
-                        Character bridgePortActionOrder = 'A'; // order of actions in bridgeFlow will be A-B-C-D-D
-                        Resource resBridgeFlowAction = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
-                        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resBridgeFlowAction));
-                        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowAction, Mrs.type, "strip_vlan"));
-                        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowAction, Mrs.value, "strip_vlan"));
-                        for (Resource mpvbFlow : mpvpFlowMap.keySet()) {
-                            Map flowParams = mpvpFlowMap.get(mpvbFlow);
-                            String flowInPort = (String) flowParams.get("port_in");
-                            String flowInVlan = (String) flowParams.get("vlan_in");
-                            String[] flowOutPorts = ((String) flowParams.get("port_out")).split(",");
-                            String[] flowOutVlans = ((String) flowParams.get("vlan_out")).split(",");
-                            // order of actions in existing mpvbFlow: A-B-C-(D-E-...)->this = 'A' + flowOutPorts.length*2+1 
-                            Character flowActionOrder = (char) ('A' + flowOutPorts.length * 2 + 1);
-                            // add to mpvbFlow: actions A: set vlan id to bridgeVlanTag B: output to bridgePortName
-                            Resource resFlowActionA = RdfOwl.createResource(bridgePathModel, URI_action(mpvbFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
-                            bridgePathModel.add(bridgePathModel.createStatement(mpvbFlow, Mrs.flowAction, resFlowActionA));
-                            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.type, "mod_vlan_vid"));
-                            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.value, bridgeVlanTag));
-                            Resource resFlowActionB = RdfOwl.createResource(bridgePathModel, URI_action(mpvbFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
-                            bridgePathModel.add(bridgePathModel.createStatement(mpvbFlow, Mrs.flowAction, resFlowActionB));
-                            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.type, "output"));
-                            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.value, bridgePortName));
-                            // add to bridgeFlow: actions A: to set vlan id to flowInVlan B: output to flowInPort
-                            resFlowActionA = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
-                            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resFlowActionA));
-                            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.type, "mod_vlan_vid"));
-                            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.value, flowInVlan));
-                            resFlowActionB = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
-                            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resFlowActionB));
-                            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.type, "output"));
-                            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.value, flowInPort));
-                        }
-                        bridgePath.setOntModel(bridgePathModel);
-                        return bridgePath; //@TODO: Use optimization criteria instead of taking the first feasible?
                     }
                 }
+            }
+            return null;
+        }
+    }
+
+    private Resource checkTerminalOnPath(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX) {
+        Iterator<Statement> itStmt = mpvbPath.iterator();
+        itStmt.next();
+        while (itStmt.hasNext()) {
+            Statement stmt = itStmt.next();
+            Resource resOriginal = stmt.getSubject();
+            String sparql = "SELECT ?svc WHERE {"
+                    + "?svc a mrs:OpenflowService. "
+                    + String.format("?svc nml:hasBidirectionalPort <%s>. "
+                            + "FILTER (?svc=<%s>)", terminalX, resOriginal)
+                    + "}";
+            ResultSet rs = ModelUtil.sparqlQuery(transformedModel, sparql);
+            if (rs.hasNext()) {
+                return rs.next().getResource("svc");
             }
         }
         return null;
     }
-
+    
     Resource shortenBridgePath(OntModel transformedModel, MCETools.Path connPath, MCETools.Path bridgePath) {
         Resource bridgePort = bridgePath.get(0).getSubject();
         Resource bridgeSvc = bridgePath.get(0).getObject().asResource();
@@ -456,6 +381,124 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
             }
         }
         return bridgeSvc;
+    }
+
+    private OntModel createBridgePathFlows(OntModel transformedModel, MCETools.Path mpvbPath, OntModel bridgePathModel,
+            Resource bridgeOpenflowService, Resource bridgePort, String bridgeVlanTag) {
+        // create VLAN bridging flows with bridgeOpenflowService and bridgePort and add to l2PathModel
+        OntModel mpvbModel = mpvbPath.getOntModel();
+        Map<Resource, Map> mpvpFlowMap = new HashMap();
+        Resource resFlowTable = null;
+        // find existing ports and flows from mpvbModel
+        String sparql_flowin = "SELECT ?table ?flow ?port_in ?vlan_in WHERE {"
+                + String.format("<%s> mrs:providesFlow ?flow. ", bridgeOpenflowService)
+                + "?table mrs:hasFlow ?flow. "
+                + "?flow mrs:flowMatch ?match_port. "
+                + "?match_port mrs:type \"in_port\". "
+                + "?match_port mrs:value ?port_in. "
+                + "?flow mrs:flowMatch ?match_vlan. "
+                + "?match_vlan mrs:type \"dl_vlan\". "
+                + "?match_vlan mrs:value ?vlan_in. "
+                + "}";
+        ResultSet rs = ModelUtil.sparqlQuery(mpvbModel, sparql_flowin);
+        while (rs.hasNext()) {
+            QuerySolution qs = rs.next();
+            if (resFlowTable == null) {
+                resFlowTable = qs.getResource("table");
+            }
+            Resource resFlow = qs.getResource("flow");
+            String strPort = qs.get("port_in").toString();
+            String strVlan = qs.get("vlan_in").toString();
+            Map flowParamMap = new HashMap();
+            mpvpFlowMap.put(resFlow, flowParamMap);
+            flowParamMap.put("port_in", strPort);
+            flowParamMap.put("vlan_in", strVlan);
+        }
+        String sparql_flowout = "SELECT ?table ?flow ?port_out ?vlan_out WHERE {"
+                + String.format("<%s> mrs:providesFlow ?flow. ", bridgeOpenflowService)
+                + "?table mrs:hasFlow ?flow. "
+                + "?flow mrs:flowAction ?action_port. "
+                + "?action_port mrs:type \"output\". "
+                + "?action_port mrs:value ?port_out. "
+                + "?flow mrs:flowAction ?action_vlan. "
+                + "?action_vlan mrs:type \"mod_vlan_vid\". "
+                + "?action_vlan mrs:value ?vlan_out. "
+                + "}";
+        rs = ModelUtil.sparqlQuery(mpvbModel, sparql_flowout);
+        while (rs.hasNext()) {
+            QuerySolution qs = rs.next();
+            if (resFlowTable == null) {
+                resFlowTable = qs.getResource("table");
+            }
+            Resource resFlow = qs.getResource("flow");
+            String strPort = qs.get("port_out").toString();
+            String strVlan = qs.get("vlan_out").toString();
+            Map flowParamMap = null;
+            if (mpvpFlowMap.containsKey(resFlow)) {
+                flowParamMap = (Map) mpvpFlowMap.get(resFlow);
+            } else {
+                flowParamMap = new HashMap();
+                mpvpFlowMap.put(resFlow, flowParamMap);
+            }
+            if (flowParamMap.containsKey("port_out")) {
+                strPort = (String) flowParamMap.get("port_out") + "," + strPort;
+            }
+            flowParamMap.put("port_out", strPort);
+            if (flowParamMap.containsKey("vlan_out")) {
+                strVlan = (String) flowParamMap.get("vlan_out") + "," + strVlan;
+            }
+            flowParamMap.put("vlan_out", strVlan);
+        }
+        if (mpvpFlowMap.size() < 2) {
+            return null;
+        }
+        // add new flow for match bridgePortName and bridgeVlanTag
+        String bridgeFlowId = bridgePort.getURI() + ":flow=input_vlan" + bridgeVlanTag;
+        String bridgePortName = MCETools.getNameForPort(transformedModel, bridgePort);
+        Resource resBridgeFlow = RdfOwl.createResource(bridgePathModel, URI_flow(resFlowTable.getURI(), bridgeFlowId), Mrs.Flow);
+        bridgePathModel.add(bridgePathModel.createStatement(resFlowTable, Mrs.hasFlow, resBridgeFlow));
+        bridgePathModel.add(bridgePathModel.createStatement(bridgeOpenflowService, Mrs.providesFlow, resBridgeFlow));
+        Resource resBridgeFlowMatch1 = RdfOwl.createResource(bridgePathModel, URI_match(resBridgeFlow.getURI(), "in_port"), Mrs.FlowRule);
+        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowMatch, resBridgeFlowMatch1));
+        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch1, Mrs.type, "in_port"));
+        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch1, Mrs.value, bridgePortName));
+        Resource resBridgeFlowMatch2 = RdfOwl.createResource(bridgePathModel, URI_match(resBridgeFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
+        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowMatch, resBridgeFlowMatch2));
+        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch2, Mrs.type, "dl_vlan"));
+        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch2, Mrs.value, bridgeVlanTag));
+        Character bridgePortActionOrder = 'A'; // order of actions in bridgeFlow will be A-B-C-D-D
+        Resource resBridgeFlowAction = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
+        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resBridgeFlowAction));
+        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowAction, Mrs.type, "strip_vlan"));
+        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowAction, Mrs.value, "strip_vlan"));
+        for (Resource mpvbFlow : mpvpFlowMap.keySet()) {
+            Map flowParams = mpvpFlowMap.get(mpvbFlow);
+            String flowInPort = (String) flowParams.get("port_in");
+            String flowInVlan = (String) flowParams.get("vlan_in");
+            String[] flowOutPorts = ((String) flowParams.get("port_out")).split(",");
+            String[] flowOutVlans = ((String) flowParams.get("vlan_out")).split(",");
+            // order of actions in existing mpvbFlow: A-B-C-(D-E-...)->this = 'A' + flowOutPorts.length*2+1 
+            Character flowActionOrder = (char) ('A' + flowOutPorts.length * 2 + 1);
+            // add to mpvbFlow: actions A: set vlan id to bridgeVlanTag B: output to bridgePortName
+            Resource resFlowActionA = RdfOwl.createResource(bridgePathModel, URI_action(mpvbFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+            bridgePathModel.add(bridgePathModel.createStatement(mpvbFlow, Mrs.flowAction, resFlowActionA));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.type, "mod_vlan_vid"));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.value, bridgeVlanTag));
+            Resource resFlowActionB = RdfOwl.createResource(bridgePathModel, URI_action(mpvbFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+            bridgePathModel.add(bridgePathModel.createStatement(mpvbFlow, Mrs.flowAction, resFlowActionB));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.type, "output"));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.value, bridgePortName));
+            // add to bridgeFlow: actions A: to set vlan id to flowInVlan B: output to flowInPort
+            resFlowActionA = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
+            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resFlowActionA));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.type, "mod_vlan_vid"));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.value, flowInVlan));
+            resFlowActionB = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
+            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resFlowActionB));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.type, "output"));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.value, flowInPort));
+        }
+        return bridgePathModel;
     }
 
     private Resource getOpenflowNodeOnPath(OntModel transformedModel, MCETools.Path connPath) {

@@ -1109,7 +1109,7 @@ public class MCETools {
         return null;
     }
 
-    private static boolean isSameNodePorts(Model model, Resource port1, Resource port2) {
+    public static boolean isSameNodePorts(Model model, Resource port1, Resource port2) {
         String sparql = String.format("SELECT ?node WHERE {{"
                 + "?node nml:hasBidirectionalPort <%s>. "
                 + "?node nml:hasBidirectionalPort <%s>. "
