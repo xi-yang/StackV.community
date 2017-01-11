@@ -40,8 +40,9 @@
                             <th>Instance Alias</th>
                             <th>Service Type</th>
                             <th>Instance UUID</th>
-                            <th><div style="float: left;">Instance Status</div>
-                                <button class="button-header btn btn-sm" id="refresh-button" onclick="reloadCatalog()">Manually Refresh Now</button>
+                            <th>
+                              <%-- TODO: text alignment with rest of header --%>
+                                <span>Instance Status</span>
                                 <div id="refresh-panel" class="form-inline">
                                     <label for="refresh-timer">Auto-Refresh Interval</label>
                                     <select id="refresh-timer" onchange="timerChange(this)" class="form-control">
@@ -51,6 +52,7 @@
                                         <option value="30">30 sec.</option>
                                         <option value="60" selected>60 sec.</option>
                                     </select>
+                                    <button class="button-header btn btn-sm" id="refresh-button" onclick="reloadCatalog()">Manually Refresh Now</button>
                                 </div>
                             </th>
                         </tr>

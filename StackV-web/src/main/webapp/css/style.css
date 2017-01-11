@@ -47,6 +47,7 @@ html {
 a {
     color: white;
     text-decoration:none;
+    cursor: pointer;
 }
 
 a.hover {
@@ -355,6 +356,9 @@ body {
 }
 .catalog-tabs li.active a {
     background: white;
+}
+.catalog-tabs li.active a:hover {
+    cursor: pointer;
 }
 
 #nav {
@@ -684,7 +688,7 @@ body {
     margin-right: 10px;
     margin-left: 10px;
 }
-
+/*Select menu and inline label*/
 label[for="refresh-timer"] {
   margin-right: 5px;
 }
@@ -692,6 +696,7 @@ select#refresh-timer {
     color: #333;
     height: inherit;
     font-weight: 400;
+    margin-right: 5px;
 }
 
 #main-pane.loading {
