@@ -245,18 +245,19 @@ function myTest() {
         }
     });
 }
-function addDriver () {
+
+function addDriver() {
     var userId = keycloak.subject;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
     var settings="";
     var description = document.getElementById("description").value;
     
     for(var temp of document.getElementsByTagName("input")){
-        if(temp.value != description)
+        if(temp.value !== description)
             settings += temp.value + " ";
     }
     
-    var data = [userId, description, settings];
+    var sentData = [userId, description, settings];
     
     $.ajax({
         url: apiUrl,
@@ -264,10 +265,47 @@ function addDriver () {
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
-        data: data,
+        dataType: "json",
+        data: { sentData : sentData },
+        success: function() {
+            updateDrivers();
+        }
+    });
+}
+function updateDrivers() {
+    var userId = keycloak.subject;
+    var table = document.getElementById("installed-body");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/get';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result){
-            //window.location.reload(true);
-            //also update table wth new info
+            $('#installed-body').empty();
+            for (var i = 0; i > result.length; i += 3){
+                if (result[i] === userId){
+                    var row = document.createElement("tr");
+                    var username = document.createElement("td");
+                    var description = document.createElement("td");
+                    var cell3 = document.createElement("td");
+                    
+                    username.innerHTML = result[i];
+                    description.innerHTML = result[i+1];
+                    cell3.innerHTML = "<button style='width: 50px;' onclick='activateDetails();'>Details</button>";
+                    cell3.innerHTML += "<div class='divider'/>";
+                    cell3.innerHTML += "<button style ='width: 50px;'>Delete</button>";
+                    cell3.style.width = "160px";
+                    
+                    row.appendChild(username);
+                    row.appendChild(description);
+                    row.appendChild(cell3);
+                    table.appendChild(row);
+                }
+            }
+        },
+        error: function (){
         }
     });
 }

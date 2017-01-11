@@ -188,43 +188,46 @@ public class WebResource {
             return null;
         }
     }
+    
+    //called in driver.js
     @PUT
     @Path("/driver/test")
-    public void mysqlUpdateTest () {
-         try {
+    public void mysqlUpdateTest() throws SQLException {
 
             Properties prop = new Properties();
             prop.put("user", front_db_user);
             prop.put("password", front_db_pass);
-            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    prop);
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
 
-            PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (`test`, `test`, `test`)");
+            PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES ('teest', 'teest', 'teest')");
             prep.executeUpdate();
-        } catch (SQLException e) {
-        }
+    }
+    
+    @GET
+    @Path("/driver/{user}/get")
+    public void/*ArrayList<String>*/ getDriver(@PathParam("user") String username) {
+        ArrayList<String> list;
+        
+        
     }
     
     @PUT
     @Path("driver/{user}/add")
-    public void addDriver (@PathParam("user") String username, ArrayList<String> dataInput){
-        try {
-            String user=dataInput.get(0);
-            String desc=dataInput.get(1);
-            String data=dataInput.get(2);
+    public void addDriver(@PathParam("user") String username, String[] dataInput) throws SQLException {
+            String user=dataInput[0];
+            String desc=dataInput[1];
+            String data=dataInput[2];
             
             Properties prop = new Properties();
             prop.put("user", front_db_user);
             prop.put("password", front_db_pass);
             Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
             
-            PreparedStatement prep = conn.prepareStatement("INSERT INTO `frontend`.`driver_wizard` VALUES (?, ?, ?)");
+            PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?)");
             prep.setString(1, user);
             prep.setString(2, desc);
             prep.setString(3, data);
             prep.executeUpdate();
-        } catch (SQLException e) {
-        }
     }
     
     
