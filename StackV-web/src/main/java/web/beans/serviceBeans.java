@@ -906,13 +906,7 @@ public class serviceBeans {
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
 
-        //System.out.println(svcDelta);
-        // Cache serviceDelta.
-        int[] results = cacheServiceDelta(refUuid, deltaUUID, svcDelta);
-        int instanceID = results[0];
-        int historyID = results[1];
-
-        orchestrateInstance(refUuid, svcDelta, instanceID, historyID, refresh);
+        orchestrateInstance(refUuid, svcDelta, refUuid, refresh);
         return 0;
     }
 
@@ -934,10 +928,10 @@ public class serviceBeans {
             }
         }
 
-        String deltaUUID = UUID.randomUUID().toString();
+        String deltaUuid = UUID.randomUUID().toString();
         String awsExportTo = "";
         String awsDxStitching = "";
-        String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
+        String svcDelta = "<serviceDelta>\n<uuid>" + deltaUuid
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
                 + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
@@ -1492,12 +1486,7 @@ public class serviceBeans {
         }
         //System.out.println(svcDelta);
 
-        // Cache serviceDelta.
-        int[] results = cacheServiceDelta(refUuid, deltaUUID, svcDelta);
-        int instanceID = results[0];
-        int historyID = results[1];
-
-        orchestrateInstance(refUuid, svcDelta, instanceID, historyID, refresh);
+        orchestrateInstance(refUuid, svcDelta, deltaUuid, refresh);
         return 0;
     }
 
@@ -1735,7 +1724,7 @@ public class serviceBeans {
         }
     }
 
-    private int[] cacheServiceDelta(String refUuid, String deltaUUID, String svcDelta) {
+    private int[] cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
         // Cache serviceDelta.
         int instanceID = -1;
         int historyID = -1;
@@ -1852,12 +1841,16 @@ public class serviceBeans {
         }
     }
 
-    private void orchestrateInstance(String refUuid, String svcDelta, int instanceID, int historyID, String refresh) {
+    private void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, String refresh) {
         String result;
         try {
             String token = refreshToken(refresh);
             result = initInstance(refUuid, svcDelta, token);
 
+            // Cache serviceDelta.
+            int[] results = cacheServiceDelta(refUuid, svcDelta, deltaUUID);
+            int instanceID = results[0];
+            int historyID = results[1];
             cacheSystemDelta(instanceID, historyID, result);
 
             token = refreshToken(refresh);
@@ -1870,7 +1863,7 @@ public class serviceBeans {
         } catch (EJBException | IOException | InterruptedException e) {
             System.out.println("ERROR: " + e.getMessage() + " - " + e.getStackTrace());
             //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, e);
-        } 
+        }
     }
 
     private String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
@@ -1940,15 +1933,15 @@ public class serviceBeans {
             //String encode = "cmVzdGFwaTpjMTZkMjRjMS0yNjJmLTQ3ZTgtYmY1NC1hZGE5YmQ4ZjdhY2E=";
             // StackV
             String encode = "U3RhY2tWOjQ4OTdlOGMzLWI4MzctNDIxMS1hOGYyLWFmM2Q2ZTM2M2RmMg==";
-            
+
             conn.setRequestProperty("Authorization", "Basic " + encode);
             conn.setReadTimeout(10000);
             conn.setConnectTimeout(15000);
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
-                        
-            System.out.println("Init Refresh: " + refresh);
+
+            System.out.println("Init Refresh");
             String data = "grant_type=refresh_token&refresh_token=" + refresh;
 
             OutputStream os = conn.getOutputStream();
@@ -1973,9 +1966,9 @@ public class serviceBeans {
             JSONParser parser = new JSONParser();
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
-            
+
             System.out.println("Token Refreshed!");
-            
+
             return "bearer " + (String) result.get("access_token");
         } catch (ParseException | IOException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
