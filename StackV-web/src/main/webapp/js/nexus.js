@@ -1098,7 +1098,7 @@ function setRefresh(time) {
         }
     }, (time * 1000));
     countdownTimer = setInterval(function () {
-       refreshCountdown(time);
+        refreshCountdown(time);
     }, 1000);
 }
 
@@ -1109,9 +1109,17 @@ function refreshCountdown() {
 
 function reloadCatalog(time) {
     enableLoading();
+<<<<<<< HEAD
     keycloak.updateToken(30).error(function () {
+=======
+    keycloak.updateToken(90).error(function () {
+>>>>>>> 6bfb3dde5b47b0f85fbf2aba2c9d59217ee4aa47
         console.log("Error updating token!");
-    }).success(function () {
+    }).success(function (refreshed) {
+        if (refreshed) {
+            sessionStorage.setItem("token", keycloak.token);
+            console.log("Token Refreshed by nexus!");
+        }
         var manual = false;
         if (typeof time === "undefined") {
             time = countdown;
@@ -1145,9 +1153,17 @@ function reloadCatalog(time) {
 
 function reloadDetails(time) {
     enableLoading();
+<<<<<<< HEAD
     keycloak.updateToken(30).error(function () {
+=======
+    keycloak.updateToken(90).error(function () {
+>>>>>>> 6bfb3dde5b47b0f85fbf2aba2c9d59217ee4aa47
         console.log("Error updating token!");
-    }).success(function () {
+    }).success(function (refreshed) {
+        if (refreshed) {
+            sessionStorage.setItem("token", keycloak.token);
+            console.log("Token Refreshed by nexus!");
+        }
         var uuid = getURLParameter("uuid");
         var manual = false;
         if (typeof time === "undefined") {
@@ -1613,7 +1629,7 @@ function subloadDelta() {
                 cell = document.createElement("td");
                 row.appendChild(cell);
                 cell = document.createElement("td");
-                cell.id = ''
+                cell.id = '';
                 cell.innerHTML = delta[3];
                 row.appendChild(cell);
                 tbody.appendChild(row);
@@ -1856,7 +1872,6 @@ function buildDeltaTable(type) {
         } else {
             panel.appendChild(table);
         }
-
 }
 
 function loadVisualization() {

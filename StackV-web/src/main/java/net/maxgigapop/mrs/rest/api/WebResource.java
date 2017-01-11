@@ -844,9 +844,21 @@ public class WebResource {
             System.out.println("Past Creation");
 
             // Verify creation.
-            verify(refUuid, auth, refresh);
-            if (serviceType.equals("omm")) {
-                setSuperState(refUuid, 3);
+            prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_history H WHERE H.service_instance_id = ?");
+            prep.setInt(1, instanceID);
+            rs1 = prep.executeQuery();
+            rs1.next();
+            int count = rs1.getInt(1);
+
+            System.out.println(count);
+
+            if (count > 1) {
+                verify(refUuid, auth, refresh);
+                if (serviceType.equals("omm")) {
+                    setSuperState(refUuid, 3);
+                }
+            } else {
+                System.out.println("Verification skipped");
             }
 
             System.out.println("Past Verification");
@@ -938,25 +950,31 @@ public class WebResource {
     @GET
     @Path("/delta/{siUUID}")
     @Produces("application/json")
-    public ArrayList<String> getDeltas(@PathParam("siUUID") String serviceUUID) {
-        try {
-            ArrayList<String> retList = new ArrayList<>();
+    public String getDeltaBacked(@PathParam("siUUID") String serviceUUID) {
+        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        try {            
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
-            PreparedStatement prep = front_conn.prepareStatement("SELECT delta FROM service_instance I, service_delta D WHERE I.referenceUUID = ? AND D.service_instance_id = I.service_instance_id");
+            
+            PreparedStatement prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
             prep.setString(1, serviceUUID);
             ResultSet rs1 = prep.executeQuery();
-            while (rs1.next()) {
-                retList.add(rs1.getString("delta"));
+            rs1.next();
+            
+            if (rs1.getInt(1) > 0) {
+                URL url = new URL(String.format("%s/service/delta/%s", host, serviceUUID));
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
+
+                return result;
             }
-
-            return retList;
-
-        } catch (SQLException e) {
+            else {
+                return "{verified_addition: \"{ }\",verified_reduction: \"{ }\",unverified_addition: \"{ }\",unverified_reduction: \"{ }\"}";
+            }
+        } catch (IOException | SQLException e) {
             Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, e);
             return null;
@@ -1582,11 +1600,20 @@ public class WebResource {
                 front_connectionProps);
         PreparedStatement prep;
 
+        String deltaUuid = "NULL";
+        prep = front_conn.prepareStatement("SELECT D.referenceUUID FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
+        prep.setString(1, refUuid);
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            deltaUuid = rs1.getString("referenceUUID");
+        }
+
+        System.out.println("Verifying Delta " + deltaUuid);
         for (int i = 1; i <= 5; i++) {
             auth = servBean.refreshToken(refresh);
-            
+
             boolean redVerified = true, addVerified = true;
-            URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
+            URL url = new URL(String.format("%s/service/verify/%s", host, deltaUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String result = servBean.executeHttpMethod(url, conn, "GET", null, auth);
 

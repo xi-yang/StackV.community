@@ -217,32 +217,8 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             Resource nodeA = terminals.get(0);
             Resource nodeZ = terminals.get(1);
             // KSP-MP path computation on the connected graph model (point2point for now - will do MP in future)
-            Property[] filterProperties = {Nml.connectsTo};
-            Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
-            List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
-            if (KSP == null || KSP.isEmpty()) {
-                throw new EJBException(String.format("%s::process doMultiPathFinding cannot find feasible path for connection '%s'", MCE_MPVlanConnection.class.getName(), connId));
-            }
-            // Verify TE constraints (switching label and ?adaptation?), 
-            Iterator<MCETools.Path> itP = KSP.iterator();
-            while (itP.hasNext()) {
-                MCETools.Path candidatePath = itP.next();
-                // verify path
-                //@TODO: TE constraint 
-                if (!MCETools.verifyL2Path(transformedModel, candidatePath)) {
-                    itP.remove();
-                } else {
-                    // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-                    //@TODO: TE constraint
-                    OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, jsonConnReq);
-                    if (l2PathModel == null) {
-                        itP.remove();
-                    } else {
-                        candidatePath.setOntModel(l2PathModel);
-                    }
-                }
-            }
-            if (KSP.size() == 0) {
+            List<MCETools.Path> KSP = MCETools.computeFeasibleL2KSP(transformedModel, nodeA, nodeZ, jsonConnReq);
+            if (KSP == null || KSP.size() == 0) {
                 throw new EJBException(String.format("%s::process doMultiPathFinding cannot find feasible path for connection '%s'", MCE_MPVlanConnection.class.getName(), connId));
             }
             // pick the shortest path from remaining/feasible paths in KSP
@@ -273,7 +249,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             RDFNode dataType = querySolution.get("type");
             RDFNode dataValue = querySolution.get("value");
             // add to export data with references to (terminal (src/dst) vlan labels from l2Path
-            List<QuerySolution> terminalVlanSolutions = getTerminalVlanLabels(l2Path);
+            List<QuerySolution> terminalVlanSolutions = MCETools.getTerminalVlanLabels(l2Path);
             // require two terminal vlan ports and labels.
             if (solutions.isEmpty()) {
                 throw new EJBException("exportPolicyData failed to find '2' terminal Vlan tags for " + l2Path);
@@ -319,20 +295,5 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             }
             spaModel.add(resData, Spa.value, exportValue);
         }
-    }
-
-    private List<QuerySolution> getTerminalVlanLabels(MCETools.Path l2path) {
-        OntModel model = l2path.getOntModel();
-        String sparql = String.format("SELECT ?bp ?vlan ?tag WHERE {"
-                + " ?bp a nml:BidirectionalPort. "
-                + " ?bp nml:hasLabel ?vlan."
-                + " ?vlan nml:value ?tag."
-                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>}");
-        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-        return solutions;
     }
 }
