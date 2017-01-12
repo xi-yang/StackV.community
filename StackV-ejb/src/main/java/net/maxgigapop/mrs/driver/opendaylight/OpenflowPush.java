@@ -29,6 +29,8 @@ import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.simple.JSONArray;
@@ -37,6 +39,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class OpenflowPush {
+
     private static final Logger logger = Logger.getLogger(ModelUtil.class.getName());
 
     public String propagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
@@ -66,90 +69,93 @@ public class OpenflowPush {
         while (r1.hasNext()) {
             QuerySolution qs1 = r1.next();
             Resource flow = qs1.get("flow").asResource();
-            String query2 = "SELECT ?table ?matchtype ?matchvalue ?actiontype ?actionvalue WHERE {"
-                    + String.format("?table mrs:hasFlow <%s>. ", flow.getURI())
-                    + String.format("<%s> mrs:flowMatch ?match. ?match mrs:type ?matchtype. ?match mrs:value ?matchvalue. ", flow.getURI())
-                    + String.format("OPTIONAL { <%s> mrs:flowAction ?action. ?action mrs:type ?actiontype. "
-                            + "OPTIONAL {?action mrs:value ?actionvalue.} }", flow.getURI())
-                    + "}";
-            ResultSet r2 = ModelUtil.executeQuery(query2, null, model);
-            if (!r2.hasNext()) {
-                continue;
-            }
+            Resource resTable = null;
             JSONObject jFlow = new JSONObject();
             jFlow.put("id", flow.getURI());
             JSONArray jFlowMatches = new JSONArray();
             jFlow.put("match", jFlowMatches);
             JSONArray jFlowActions = new JSONArray();
             jFlow.put("action", jFlowActions);
-            String strMatch = "";
-            String strAction = "";
+            String query2 = "SELECT ?table ?matchtype ?matchvalue ?actiontype ?actionvalue WHERE {"
+                    + String.format("?table mrs:hasFlow <%s>. ", flow.getURI())
+                    + String.format("<%s> mrs:flowMatch ?match. ?match mrs:type ?matchtype. ?match mrs:value ?matchvalue. ", flow.getURI())
+                    + "}";
+            ResultSet r2 = ModelUtil.executeQuery(query2, null, model);
             while (r2.hasNext()) {
                 QuerySolution qs2 = r2.next();
                 String matchType = qs2.get("matchtype").toString();
                 String matchValue = qs2.get("matchvalue").toString();
-                if (!strMatch.isEmpty()) {
-                    strMatch += ",";
-                }
-                strMatch += (matchType+"="+matchValue);
+                String strMatch = (matchType + "=" + matchValue);
                 jFlowMatches.add(strMatch);
-                if (qs2.contains("actiontype")) {
-                    String actionType = qs2.get("actiontype").toString();
-                    if (!strAction.isEmpty()) {
-                        strAction += ",";
-                    }
-                    strAction += actionType;
-                    if (qs2.contains("actionvalue")) {
-                        String actionValue = qs2.get("actionvalue").toString();
-                        strAction += ("="+actionValue);
-                    }
-                    jFlowActions.add(strAction);
+                if (resTable == null) {
+                    resTable = qs2.getResource("table");
                 }
-                Resource resTable = qs2.getResource("table");
-                String query3 = "SELECT ?node_name ?table_name  WHERE {"
+            }
+            query2 = "SELECT ?table ?matchtype ?matchvalue ?action ?actiontype ?actionvalue WHERE {"
+                    + String.format("?table mrs:hasFlow <%s>. ", flow.getURI())
+                    + String.format("<%s> mrs:flowAction ?action. ?action mrs:type ?actiontype. ?action mrs:value ?actionvalue. ", flow.getURI())
+                    + "}";
+            r2 = ModelUtil.executeQuery(query2, null, model);
+            SortedMap<String, String> sortedActions = new TreeMap();
+            while (r2.hasNext()) {
+                QuerySolution qs2 = r2.next();
+                String actionType = qs2.get("actiontype").toString();
+                String actionValue = qs2.get("actionvalue").toString();
+                String actionUri = qs2.get("action").toString();
+                String strAction = (actionType + "=" + actionValue);
+                sortedActions.put(actionUri, strAction);
+                if (resTable == null) {
+                    resTable = qs2.getResource("table");
+                }
+            }
+            if (resTable == null) {
+                continue;
+            }
+            jFlowActions.addAll(sortedActions.values());
+            String query3 = "SELECT ?node_name ?table_name  WHERE {"
                     + String.format("?node nml:hasService ?openflow_svc. ?openflow_svc mrs:providesFlowTable <%s>. ", resTable.getURI())
                     + String.format("?node nml:name ?node_name. <%s> nml:name ?table_name. ", resTable.getURI())
                     + "}";
-                ResultSet r3 = ModelUtil.executeQuery(query3, null, modelRef);
-                if (r3.hasNext()) {
-                    QuerySolution qs3 = r3.next();
-                    String nodeName = qs3.get("node_name").toString();
-                    jFlow.put("node", nodeName);
-                    String tableName = qs3.get("table_name").toString();
-                    jFlow.put("table", tableName);
-                }
+            ResultSet r3 = ModelUtil.executeQuery(query3, null, modelRef);
+            if (r3.hasNext()) {
+                QuerySolution qs3 = r3.next();
+                String nodeName = qs3.get("node_name").toString();
+                jFlow.put("node", nodeName);
+                String tableName = qs3.get("table_name").toString();
+                jFlow.put("table", tableName);
             }
+
             jFlows.add(jFlow);
         }
         return jFlows;
     }
-    
+
     public void commit(String user, String password, String requests, String baseUrl) {
         JSONParser jsonParser = new JSONParser();
         JSONObject jRequests = null;
         try {
             jRequests = (JSONObject) jsonParser.parse(requests);
         } catch (ParseException ex) {
-            throw new EJBException("OpenflowPush.commit failed to parse requests"+requests, ex);
+            throw new EJBException("OpenflowPush.commit failed to parse requests" + requests, ex);
         }
         RestconfConnector restconf = new RestconfConnector();
-        JSONArray jDelete = (JSONArray)jRequests.get("delete");
-        for (Object o1: jDelete) {
-            JSONObject jFlow = (JSONObject)o1;
+        JSONArray jDelete = (JSONArray) jRequests.get("delete");
+        for (Object o1 : jDelete) {
+            JSONObject jFlow = (JSONObject) o1;
             if (!jFlow.containsKey("node") || !jFlow.containsKey("table") || !jFlow.containsKey("id")) {
-                logger.warning("OpenflowPush.commit cannot delete invalid flow ="+jFlow.toJSONString());
+                logger.warning("OpenflowPush.commit cannot delete invalid flow =" + jFlow.toJSONString());
                 continue;
             }
             restconf.pushDeleteFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString());
         }
-        JSONArray jCreate = (JSONArray)jRequests.get("create");
-        for (Object o1: jCreate) {
-            JSONObject jFlow = (JSONObject)o1;
+        JSONArray jCreate = (JSONArray) jRequests.get("create");
+        for (Object o1 : jCreate) {
+            JSONObject jFlow = (JSONObject) o1;
             if (!jFlow.containsKey("node") || !jFlow.containsKey("table") || !jFlow.containsKey("id")) {
-                logger.warning("OpenflowPush.commit cannot create invalid flow="+jFlow.toJSONString());
+                logger.warning("OpenflowPush.commit cannot create invalid flow=" + jFlow.toJSONString());
                 continue;
             }
-            restconf.pushModFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString(), (List)jFlow.get("match"), (List)jFlow.get("action"));
+            restconf.pushModFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString(), (List) jFlow.get("match"), (List) jFlow.get("action"));
         }
     }
 

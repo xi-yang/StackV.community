@@ -48,7 +48,7 @@ $(function () {
     keycloak.onAuthSuccess = function () {
         // catalog
         if (window.location.pathname === "/StackV-web/ops/catalog.jsp") {
-            setTimeout(loadCatalog, 750);
+            setTimeout(loadCatalog, 500);
             setRefresh(60);
         }
         // templateDetails
@@ -58,7 +58,7 @@ $(function () {
         }
     };
     keycloak.onTokenExpire = function () {
-        keycloak.updateToken(20).success(function () {
+        keycloak.updateToken(63).success(function () {
             console.log("Token automatically updated!");
         }).error(function () {
             console.log("Automatic token update failed!");
@@ -622,55 +622,13 @@ function checkInstance(uuid) {
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
             var statusElement = document.getElementById("instance-status");
             statusElement.innerHTML = result;
         }
     });
-}
-
-function propagateInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/propagate';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            window.location.reload(true);
-        }
-    });
-}
-
-function commitInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/commit';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            window.location.reload(true);
-        }
-    });
-}
-
-function revertInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/revert';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            window.location.reload(true);
-        }
-    });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
 }
 
 function cancelInstance(uuid) {
@@ -760,6 +718,7 @@ function modifyInstance(uuid) {
     });
     //window.location.replace('/StackV-web/ops/catalog.jsp');
 }
+
 function forceModifyInstance(uuid) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/force_modify';
     $.ajax({
@@ -782,6 +741,7 @@ function verifyInstance(uuid) {
         type: 'PUT',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
             window.location.reload(true);
@@ -1129,7 +1089,7 @@ function setRefresh(time) {
         }
     }, (time * 1000));
     countdownTimer = setInterval(function () {
-       refreshCountdown(time);
+        refreshCountdown(time);
     }, 1000);
 }
 
@@ -1140,9 +1100,13 @@ function refreshCountdown() {
 
 function reloadCatalog(time) {
     enableLoading();
-    keycloak.updateToken(30).error(function () {
+    keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
-    }).success(function () {
+    }).success(function (refreshed) {
+        if (refreshed) {
+            sessionStorage.setItem("token", keycloak.token);
+            console.log("Token Refreshed by nexus!");
+        }
         var manual = false;
         if (typeof time === "undefined") {
             time = countdown;
@@ -1176,9 +1140,13 @@ function reloadCatalog(time) {
 
 function reloadDetails(time) {
     enableLoading();
-    keycloak.updateToken(30).error(function () {
+    keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
-    }).success(function () {
+    }).success(function (refreshed) {
+        if (refreshed) {
+            sessionStorage.setItem("token", keycloak.token);
+            console.log("Token Refreshed by nexus!");
+        }
         var uuid = getURLParameter("uuid");
         var manual = false;
         if (typeof time === "undefined") {
@@ -1220,7 +1188,7 @@ function loadCatalog() {
     setTimeout(function () {
         $("#instance-panel").removeClass("closed");
         $("#catalog-panel").removeClass("closed");
-    }, 250);
+    }, 500);
 }
 
 function loadInstances() {
@@ -1242,7 +1210,7 @@ function loadInstances() {
                 var row = document.createElement("tr");
                 row.className = "clickable-row";
                 row.setAttribute("data-href", instance[1]);
-                
+
                 var cell1_1 = document.createElement("td");
                 cell1_1.innerHTML = instance[3];
                 var cell1_2 = document.createElement("td");
@@ -1349,6 +1317,7 @@ function loadWizard() {
                     dataType: "json",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
 
@@ -1565,6 +1534,7 @@ function subloadInstance() {
                     type: 'PUT',
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function () {
                         if (command === "delete" || command === "force_delete") {
@@ -1642,7 +1612,7 @@ function subloadDelta() {
                 cell = document.createElement("td");
                 row.appendChild(cell);
                 cell = document.createElement("td");
-                cell.id = ''
+                cell.id = '';
                 cell.innerHTML = delta[3];
                 row.appendChild(cell);
                 tbody.appendChild(row);
@@ -1828,64 +1798,64 @@ function subloadACL() {
 }
 
 function buildDeltaTable(type) {
-        var panel = document.getElementById("details-panel");
+    var panel = document.getElementById("details-panel");
 
-        var table = document.createElement("table");
-        table.className = "management-table hide " + type.toLowerCase() +  "-delta-table";
+    var table = document.createElement("table");
+    table.className = "management-table hide " + type.toLowerCase() + "-delta-table";
 
-        var thead = document.createElement("thead");
-        thead.className = "delta-table-header";
-        var row = document.createElement("tr");
-        var head = document.createElement("th");
-        head.innerHTML = type + " Delta";
-        row.appendChild(head);
-        
-        head = document.createElement("th");
-        head.innerHTML = "Verified";
-        row.appendChild(head);
-        
-        head = document.createElement("th");
-        head.innerHTML = "Unverified";
-        row.appendChild(head);
-  
-        row.appendChild(head);
+    var thead = document.createElement("thead");
+    thead.className = "delta-table-header";
+    var row = document.createElement("tr");
+    var head = document.createElement("th");
+    head.innerHTML = type + " Delta";
+    row.appendChild(head);
 
-        thead.appendChild(row);
-        table.appendChild(thead);
+    head = document.createElement("th");
+    head.innerHTML = "Verified";
+    row.appendChild(head);
 
-        var tbody = document.createElement("tbody");
-        tbody.className = "delta-table-body";
-        //tbody.id = "acl-body";
+    head = document.createElement("th");
+    head.innerHTML = "Unverified";
+    row.appendChild(head);
 
-        row = document.createElement("tr");
-        var prefix = type.substring(0, 4).toLowerCase();
-        var add = document.createElement("td");
-        row.appendChild(add);
+    row.appendChild(head);
 
-        add = document.createElement("td");
-        add.id = prefix + "-add";   
-        row.appendChild(add);
-        
-        var red = document.createElement("td");
-        red.id = prefix + "-red";
-        row.appendChild(red); 
+    thead.appendChild(row);
+    table.appendChild(thead);
 
-        tbody.appendChild(row);
-        row = document.createElement("tr");
-        var cell = document.createElement("td");
-        cell.colSpan = "3";
-        cell.innerHTML = '<button  class="details-model-toggle" onclick="toggleTextModel(\'.'+ type.toLowerCase() +'-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
-        row.appendChild(cell);
-        tbody.appendChild(row);
+    var tbody = document.createElement("tbody");
+    tbody.className = "delta-table-body";
+    //tbody.id = "acl-body";
 
-        table.appendChild(tbody);
-        var verification = document.getElementsByClassName("verification-table");
-        if (verification) {
-            panel.insertBefore(table, verification[0]);
-        } else {
-            panel.appendChild(table);      
-        }
-        
+    row = document.createElement("tr");
+    var prefix = type.substring(0, 4).toLowerCase();
+    var add = document.createElement("td");
+    row.appendChild(add);
+
+    add = document.createElement("td");
+    add.id = prefix + "-add";
+    row.appendChild(add);
+
+    var red = document.createElement("td");
+    red.id = prefix + "-red";
+    row.appendChild(red);
+
+    tbody.appendChild(row);
+    row = document.createElement("tr");
+    var cell = document.createElement("td");
+    cell.colSpan = "3";
+    cell.innerHTML = '<button  class="details-model-toggle" onclick="toggleTextModel(\'.' + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
+    row.appendChild(cell);
+    tbody.appendChild(row);
+
+    table.appendChild(tbody);
+    var verification = document.getElementsByClassName("verification-table");
+    if (verification) {
+        panel.insertBefore(table, verification[0]);
+    } else {
+        panel.appendChild(table);
+    }
+
 }
 
 function loadVisualization() {
@@ -1907,9 +1877,9 @@ function loadVisualization() {
         $("#delta-Service").addClass("hide");
         buildDeltaTable("Service");
         buildDeltaTable("System");
-        
+
         $(".service-delta-table").removeClass("hide");
-        
+
         $("#serv-add").append($("#serva_viz_div"));
         $("#serv-add").find("#serva_viz_div").removeClass("hidden");
 
@@ -2184,6 +2154,7 @@ function loadStatus(refUuid) {
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
             ele.innerHTML = result;
