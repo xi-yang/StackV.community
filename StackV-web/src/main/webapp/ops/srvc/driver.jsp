@@ -15,10 +15,10 @@
         <script src="/StackV-web/js/bootstrap.js"></script>
         <script src="/StackV-web/js/nexus.js"></script>
 
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
+        <%-- <link rel="stylesheet" href="/StackV-web/css/animate.min.css"> --%>
+        <%-- <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css"> --%>
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
+        <%-- <link rel="stylesheet" href="/StackV-web/css/bootstrap.css"> --%>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
         <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
@@ -32,7 +32,7 @@
         <div id="nav">
         </div>
         <!-- SIDE BAR -->
-        <%-- <div id="sidebar">            
+        <%-- <div id="sidebar">
         </div> --%>
         <!-- MAIN PANEL -->
         <div id="main-pane">

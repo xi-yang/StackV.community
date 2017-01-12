@@ -1,0 +1,21 @@
+ul.catalog-tabs li {
+  width: 50%;
+}
+ul.catalog-tabs li a {
+  color: #c7c7c7;
+  background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/StackV-web/img/background.png');
+}
+ul.catalog-tabs li a:hover {
+  color: #FFF;
+}
+ul.catalog-tabs li.active a {
+  background: white;
+}
+ul.catalog-tabs li.active a:hover {
+  cursor: pointer;
+}
+button#button-service-cancel {
+  color: #B60000;
+  margin-left: 75%;
+  position: relative;
+}

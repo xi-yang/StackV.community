@@ -40,10 +40,10 @@
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/StackV-web/css/graphTest.css">
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
+        <%-- <link rel="stylesheet" href="/StackV-web/css/animate.min.css"> --%>
+        <%-- <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css"> --%>
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
+        <%-- <link rel="stylesheet" href="/StackV-web/css/bootstrap.css"> --%>
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
@@ -766,7 +766,7 @@
         <div id="nav">
         </div>
         <!-- SIDE BAR -->
-        <%-- <div id="sidebar">            
+        <%-- <div id="sidebar">
         </div> --%>
 
         <div id="filterPanel">
