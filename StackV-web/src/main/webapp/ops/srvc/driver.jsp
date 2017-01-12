@@ -43,7 +43,7 @@
             <div style="margin: 0 auto;" class="closed driver-panel no-side-tab" id="driver-panel-top">
                 <ul class="nav nav-tabs catalog-tabs">
                     <li class="active"><a data-toggle="tab" href="#driver-tab">Template Drivers</a></li>
-                    <li><a data-toggle="tab" href="#saved-tab">Saved Drivers</a></li>
+                    <li onclick="updateDrivers();"><a data-toggle="tab" href="#saved-tab">Saved Drivers</a></li>
                 </ul>
 
                 <div class="tab-content" id="catalog-tab-content">
@@ -61,7 +61,7 @@
                               <tr>
                                     <td>Stub</td>
                                     <td>This is a placement description</td>
-                                    <td style="width: 170px;">
+                                    <td style="width: 180px;">
                                         <button style='width: 50px;' onclick='clearPanel(); activateSide();  changeNameDet();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
                                         <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install' id='install-button'>Install</button>
@@ -70,7 +70,7 @@
                                 <tr>
                                     <td>AWS</td>
                                     <td>This is a placement description</td>
-                                    <td style="width: 170px;">
+                                    <td style="width: 180px;">
                                         <button style='width: 50px;' onclick='clearPanel(); activateSide(); changeNameDet();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
                                         <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install' id='install-button'>Install</button>
@@ -79,7 +79,7 @@
                                 <tr>
                                     <td>Generic</td>
                                     <td>This is a placement description</td>
-                                    <td style="width: 170px;">
+                                    <td style="width: 180px;">
                                         <button style='width: 50px;' onclick='clearPanel(); activateSide(); changeNameDet();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
                                         <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack(); changeNameInst();' class='install' id='install-button'>Install</button>
@@ -88,7 +88,7 @@
                                 <tr>
                                     <td>Openstack</td>
                                     <td>This is a placement description</td>
-                                    <td  style="width: 170px;">
+                                    <td  style="width: 180px;">
                                         <button style='width: 50px;' onclick='clearPanel(); activateSide(); changeNameDet();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
                                         <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install' id='install-button'>Install</button>
@@ -97,7 +97,7 @@
                                 <tr>
                                     <td>Stack</td>
                                     <td>This is a placement description</td>
-                                    <td  style="width: 170px;">
+                                    <td  style="width: 180px;">
                                         <button style='width: 50px;' onclick='clearPanel(); activateSide();' class='details' id='details-button'>Details</button>
                                         <div class='divider'></div>
                                         <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install' id='install-button'>Install</button>
@@ -180,12 +180,13 @@
                 <div class="tab-content" id="catalog-tab-content">                                    
                     <div id="install-content" class="tab-pane fadeIn">
                         <div id='install-type'></div>
-                        <button onclick="clearPanel(); closeSide();">Close</button>
-                        <button onclick="addDriver(); clearText();">Save Driver</button>
+                        <div id='install-options'>
+                            <button onclick="clearPanel(); closeSide();">Close</button>
+                        </div>
                     </div>
-                    
+                        
                 </div>
-                
+                    
                 <!-- LOADING PANEL -->
                 <div id="loading-panel"></div>
             </div>

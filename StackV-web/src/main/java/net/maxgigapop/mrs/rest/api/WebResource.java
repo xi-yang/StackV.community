@@ -189,6 +189,46 @@ public class WebResource {
         }
     }
     
+    @DELETE
+    @Path(value = "/driver/{username}/delete/{drivername}")
+    public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "drivername") String drivername) throws SQLException {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+            
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.driver_wizard WHERE username = ? AND drivername = ?");
+            prep.setString(1, username);
+            prep.setString(2, drivername);
+            prep.executeUpdate();
+            
+        return "Deleted";
+    }
+    
+    @GET
+    @Path("/driver/{user}/getdetails/{drivername}")
+    @Produces("text/plain")
+    public String getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "drivername") String drivername) throws SQLException {
+        String retVal= "ERROR DATA NOT FOUND";
+        
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                prop);
+        
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND drivername = ?");
+        prep.setString(1, username);
+        prep.setString(2, drivername);
+        ResultSet ret = prep.executeQuery();
+        
+        if (ret.next())
+            retVal = ret.getString("data");
+        
+        return retVal;
+    }
+    
     @GET
     @Path("/driver/{user}/get")
     @Produces("application/json")
