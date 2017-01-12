@@ -285,9 +285,12 @@ define([
                             .on("dblclick", onNodeDblClick.bind(undefined, n))
                             .on("mousemove", onNodeMouseMove.bind(undefined, n))
                             .on("mouseleave", onNodeMouseLeave.bind(undefined, n));                    
-                    if (outputApi.contextMenu) {
-                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
-                    } 
+//                    if (outputApi.contextMenu) {
+//                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
+//                    } 
+                    n.svgNode[0][0].setAttribute ("class", "model_object");
+                    n.svgNode[0][0].setAttribute("id", n.getName());
+                    
                     if (n.detailsReference) {
                         n.svgNode.style("opacity", .4);
                     }
@@ -306,9 +309,13 @@ define([
                     .on("dblclick", onPolicyDblClick.bind(undefined, p))
                     .on("mousemove", onPolicyMouseMove.bind(undefined, p))
                     .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));        
-            if (outputApi.contextMenu) {
-                p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));    
-            } 
+//            if (outputApi.contextMenu) {
+//                p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));    
+//            } 
+                    p.svgNode[0][0].setAttribute("class", "model_object");
+                    p.svgNode[0][0].setAttribute("id", p.getName());
+
+
             if (p.detailsReference) {
                 p.svgNode.style("opacity", .4);
             }
@@ -345,9 +352,13 @@ define([
                     .on("dblclick", onNodeDblClick.bind(undefined, n))
                     .on("mousemove", onNodeMouseMove.bind(undefined, n))
                     .on("mouseleave", onNodeMouseLeave.bind(undefined, n));
-                if (outputApi.contextMenu) {
-                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
-                }
+//                if (outputApi.contextMenu) {
+//                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
+//                }
+                    n.svgNode[0][0].setAttribute ("class", "model_object");
+                    n.svgNode[0][0].setAttribute("id", n.getName());
+
+
                 n.svgNode.call(makeDragBehaviour(n));
                 
                 n.svgNodeAnchor = svgContainer.select("#anchor" + "_" + outputApi.svgContainerName).append("rect")
@@ -358,9 +369,12 @@ define([
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, n));  
-                if (outputApi.contextMenu) {
-                    n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
-                }
+//                if (outputApi.contextMenu) {
+//                    n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
+//                }
+                    n.svgNode[0][0].setAttribute ("class", "model_object");
+                    n.svgNode[0][0].setAttribute("id", n.getName());
+
                 if (n.detailsReference) {
                     n.svgNode.style("opacity", .4);
                 }
@@ -397,9 +411,12 @@ define([
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, service));
 
-                if (outputApi.contextMenu) {
-                    service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
-                }    
+//                if (outputApi.contextMenu) {
+//                    service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
+//                }    
+                    n.svgNode[0][0].setAttribute ("class", "model_object");
+                    n.svgNode[0][0].setAttribute("id", n.getName());
+
                 if (service.detailsReference) {
                     service.svgNode.style("opacity", .4);
                 }
