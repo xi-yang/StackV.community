@@ -45,7 +45,7 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  *
  * @author max
  */
-@Path("driver")
+@Path("app/driver")
 public class DriverResource {
 
     @Context

@@ -52,7 +52,7 @@ public class SecurityInterceptor implements PreProcessInterceptor {
                     "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL", 
                     "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "getLabels", 
                     "executeProfile", "deleteProfile", "addDriver","getDriver", "deleteDriverProfile",
-                    "getDriverDetails");
+                    "getDriverDetails","pullAll", "pull", "unplug", "plug");
             String methodName = method.getMethod().getName();
             if (supplierNames.contains(methodName)) {
                 return null;

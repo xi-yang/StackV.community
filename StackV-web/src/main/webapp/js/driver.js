@@ -140,7 +140,7 @@ function installAWS(){
     third.innerHTML="Amazon Access ID:";
     third.style.color = "white";
     fourth.type="text";
-    fifth.innerHTML="Amazon Sexret Key:";
+    fifth.innerHTML="Amazon Secret Key:";
     fifth.style.color = "white";
     sixth.type="text";
     divContent.appendChild(first);
@@ -271,7 +271,8 @@ function changeNameInst() {
 function changeNameDet() {
     var detailsButton = document.createElement("button");
     document.getElementById('side-name').innerHTML="Details";
-    detailsButton.innerHTML = "Edit";
+    detailsButton.innerHTML = "get dets";
+    detailsButton.onclick = function() { getAllDetails(); };
     document.getElementById('install-options').appendChild(detailsButton);
 }
 
@@ -344,7 +345,8 @@ function updateDrivers() {
                 var spacer = document.createElement("div");
                 
                 detButton.innerHTML = "Details";
-                detButton.onclick = function() {clearPanel(); activateSide(); activateDetails(); changeNameDet(); getDetails(this.id);};
+                detButton.onclick = function() {clearPanel(); activateSide(); 
+                    activateDetails(); changeNameDet(); getDetailsProfile(this.id);};
                 detButton.style.width = "50px";
                 detButton.id = result[i];
                 
@@ -371,7 +373,7 @@ function updateDrivers() {
     });
 }
 
-function getDetails(clickID) {
+function getDetailsProfile(clickID) {
     var userId = keycloak.subject;
     var panel = document.getElementById("install-type");
     var drivername = clickID;
@@ -389,19 +391,56 @@ function getDetails(clickID) {
             data.style.color = "white";
             data.innerHTML = result;
             panel.appendChild(data);
-        },
-        error: function (result1, result2, result3){
+        }
+    });
+}
 
+function getAllDetails(){
+    var panel = document.getElementById("install-type");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result){
+            //fill installed table
+            //for this make details/ delete ID equal to topology uri
+            $('#install-type').empty();
             var data = document.createElement("p");
             
             data.style.color = "white";
-            data.innerHTML = result1 + " " + result2 + " " + result3;
-            var datas = document.createElement("p");
-            
-            datas.style.color = "white";
-            datas.innerHTML = "failed";
+            data.innerHTML = result;
             panel.appendChild(data);
-            panel.appendChild(datas);
+        }
+    });
+}
+function removeDriver(clickID) {
+    var topUri = clickID;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + topUri;
+    $.ajax({
+        url: apiUrl,
+        type: 'DELETE',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (){
+            getAllDetails();
+        }
+    });
+}
+function getDetails(clickID) {
+    var topUri = clickID;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + topUri;
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result){
+            //update side panel with info
         }
     });
 }
