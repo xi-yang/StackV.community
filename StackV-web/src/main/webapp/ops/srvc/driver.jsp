@@ -43,7 +43,7 @@
             <div style="margin: 0 auto;" class="closed driver-panel no-side-tab" id="driver-panel-top">
                 <ul class="nav nav-tabs catalog-tabs">
                     <li class="active"><a data-toggle="tab" href="#driver-tab">Template Drivers</a></li>
-                    <li onclick="updateDrivers();"><a data-toggle="tab" href="#saved-tab">Saved Drivers</a></li>
+                    <li onclick="updateDrivers('saved-table');"><a data-toggle="tab" href="#saved-tab">Saved Drivers</a></li>
                 </ul>
 
                 <div class="tab-content" id="catalog-tab-content">

@@ -96,6 +96,7 @@ function installStub(){
     first.innerHTML="Topology URI:";
     first.style.color = "white";
     second.type="text";
+    second.id="TOPURI";
     third.innerHTML="TTL:";
     third.style.color = "white";
     fourth.type="test";
@@ -137,6 +138,7 @@ function installAWS(){
     first.innerHTML="Topology URI:";
     first.style.color = "white";
     second.type="text";
+    second.id="TOPURI";
     third.innerHTML="Amazon Access ID:";
     third.style.color = "white";
     fourth.type="text";
@@ -190,6 +192,7 @@ function installOpenstack(){
     }
     
     content[0].innerHTML="Topology URI:";
+    content[1].id = "TOPURI";
     content[2].innerHTML="Openstack Username:";
     content[4].innerHTML="Openstack Password";
     content[6].innerHTML= "NAT Server:";
@@ -232,6 +235,7 @@ function installStack(){
     first.innerHTML="Topology URI:";
     first.style.color = "white";
     second.type="text";
+    second.id="TOPURI";
     third.innerHTML="Subsystem Base URL:";
     third.style.color = "white";
     fourth.type="text";
@@ -282,6 +286,7 @@ function addDriver() {
     var settings="";
     var description = document.getElementById("description").value;
     var driver = document.getElementById("drivername").value;
+    var URI = document.getElementById("TOPURI").value;
     
     for(var temp of document.getElementsByTagName("input")){
         if(temp.value !== description && temp.value !== driver)
@@ -292,7 +297,8 @@ function addDriver() {
         username: userId,
         drivername: driver,
         driverDescription: description, 
-        data: settings
+        data: settings,
+        topuri: URI
     });
     
     $.ajax({
@@ -310,8 +316,8 @@ function addDriver() {
 }
 function removeDriverProfile(clickID) {
     var userId = keycloak.subject;
-    var drivername = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/delete/' + drivername;
+    var topuri = clickID;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/delete/' + topuri;
     $.ajax({
         url: apiUrl,
         type: 'DELETE',
@@ -335,7 +341,7 @@ function updateDrivers() {
         },
         success: function (result){
             $('#saved-table').empty();
-            for (var i = 0; i < result.length; i += 3){
+            for (var i = 0; i < result.length; i += 4){
                 var row = document.createElement("tr");
                 var drivername = document.createElement("td");
                 var description = document.createElement("td");
@@ -348,12 +354,12 @@ function updateDrivers() {
                 detButton.onclick = function() {clearPanel(); activateSide(); 
                     activateDetails(); changeNameDet(); getDetailsProfile(this.id);};
                 detButton.style.width = "50px";
-                detButton.id = result[i];
+                detButton.id = result[i+3];
                 
                 delButton.innerHTML = "Delete";
                 delButton.onclick = function() {removeDriverProfile(this.id);};
                 delButton.style.width = "50px";
-                delButton.id = result[i];
+                delButton.id = result[i+3];
                 
                 spacer.style.width = "25px";
                 
@@ -376,8 +382,8 @@ function updateDrivers() {
 function getDetailsProfile(clickID) {
     var userId = keycloak.subject;
     var panel = document.getElementById("install-type");
-    var drivername = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/getdetails/' + drivername;
+    var topuri = clickID;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/getdetails/' + topuri;
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -396,8 +402,8 @@ function getDetailsProfile(clickID) {
 }
 
 function getAllDetails(){
-    var panel = document.getElementById("install-type");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/';
+    var table = document.getElementById("installed-body");
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver/';
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -406,19 +412,47 @@ function getAllDetails(){
         },
         success: function (result){
             //fill installed table
-            //for this make details/ delete ID equal to topology uri
-            $('#install-type').empty();
-            var data = document.createElement("p");
-            
-            data.style.color = "white";
-            data.innerHTML = result;
-            panel.appendChild(data);
+            $('#installed-body').empty();
+            for (var i = 0; i < result.length; i += 4){
+                var row = document.createElement("tr");
+                var drivername = document.createElement("td");
+                var description = document.createElement("td");
+                var cell3 = document.createElement("td");
+                var detButton = document.createElement("button");
+                var delButton = document.createElement("button");
+                var spacer = document.createElement("div");
+                
+                detButton.innerHTML = "Details";
+                detButton.onclick = function() {clearPanel(); activateSide(); 
+                    activateDetails(); changeNameDet(); getDetails(this.id);};
+                detButton.style.width = "50px";
+                detButton.id = result[i+3];
+                
+                delButton.innerHTML = "Delete";
+                delButton.onclick = function() {removeDriver(this.id);};
+                delButton.style.width = "50px";
+                delButton.id = result[i+3];
+                
+                spacer.style.width = "25px";
+                
+                drivername.innerHTML = result[i];
+                description.innerHTML = result[i+1];
+                cell3.appendChild(detButton);
+                cell3.appendChild(spacer);
+                cell3.appendChild(delButton);
+                cell3.style.width = "170px";
+                
+                row.appendChild(drivername);
+                row.appendChild(description);
+                row.appendChild(cell3);
+                table.appendChild(row);
+            }
         }
     });
 }
 function removeDriver(clickID) {
     var topUri = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + topUri;
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
     $.ajax({
         url: apiUrl,
         type: 'DELETE',
@@ -432,7 +466,8 @@ function removeDriver(clickID) {
 }
 function getDetails(clickID) {
     var topUri = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + topUri;
+    var panel = document.getElementById("install-type");
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -441,6 +476,11 @@ function getDetails(clickID) {
         },
         success: function (result){
             //update side panel with info
+            var data = document.createElement("p");
+            
+            data.style.color = "white";
+            data.innerHTML = result;
+            panel.appendChild(data);
         }
     });
 }

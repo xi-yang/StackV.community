@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2016 University of Maryland
- * Created by: Xi Yang 2014
+ * Created by: Xi Yang 2014 Jared Welsh 2016
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -23,8 +23,15 @@
 
 package net.maxgigapop.mrs.rest.api;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
@@ -45,8 +52,11 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  *
  * @author max
  */
-@Path("app/driver")
+@Path("driver")
 public class DriverResource {
+    
+    private final String front_db_user = "front_view";
+    private final String front_db_pass = "frontuser";
 
     @Context
     private UriInfo context;
@@ -58,16 +68,34 @@ public class DriverResource {
     }
 
     @GET
-    @Produces({"application/xml", "application/json"})
-    public String pullAll() {
+    @Produces({"application/json"})
+    public ArrayList<String> pullAll() throws SQLException {
         Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
-        String allInstance = "";
-        for (String instance : instanceSet) {
-            allInstance += instance + "\n";
-        }
-        return allInstance;
-    }
+        ArrayList<String> retList = new ArrayList<>();
+        
 
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                prop);
+        
+        for (String instance : instanceSet) {
+            
+            PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE TopUri = ?");
+            prep.setString(1, instance);
+            ResultSet ret = prep.executeQuery();
+            
+            while (ret.next()) {
+                retList.add(ret.getString("drivername"));
+                retList.add(ret.getString("description"));
+                retList.add(ret.getString("data"));
+                retList.add(ret.getString("TopUri"));
+            }
+        }
+        return retList;
+    }
+    
     @GET
     @Produces({"application/xml", "application/json"})
     @Path("/{topoUri}")
