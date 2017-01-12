@@ -1153,16 +1153,21 @@ public class WebResource {
                 return 4;
             }
 
+            int i = 1;
             while (true) {
-                auth = servBean.refreshToken(refresh);
+                if (i == 10) {
+                    auth = servBean.refreshToken(refresh);
+                }
                 instanceState = status(refUuid, auth);
-                if (instanceState.equals("READY")) {
+                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
                     servBean.verify(refUuid, refresh);
 
                     return 0;
-                } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
+                } else if (!(instanceState.equals("COMMITTED"))) {
                     return 5;
                 }
+                
+                i++;
                 Thread.sleep(5000);
             }
 
@@ -1187,11 +1192,11 @@ public class WebResource {
             for (int i = 0; i < 20; i++) {
                 auth = servBean.refreshToken(refresh);
                 String instanceState = status(refUuid, auth);
-                if (instanceState.equals("READY")) {
+                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
                     servBean.verify(refUuid, refresh);
 
                     return 0;
-                } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
+                } else if (!(instanceState.equals("COMMITTED"))) {
                     return 5;
                 }
                 Thread.sleep(5000);

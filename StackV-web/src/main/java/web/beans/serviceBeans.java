@@ -1726,7 +1726,7 @@ public class serviceBeans {
         }
     }
 
-    private int[] cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
+    public int[] cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
         // Cache serviceDelta.
         int instanceID = -1;
         int historyID = -1;
@@ -1848,7 +1848,7 @@ public class serviceBeans {
         try {
             String token = refreshToken(refresh);
             result = initInstance(refUuid, svcDelta, token);
-            
+
             // Cache serviceDelta.
             int[] results = cacheServiceDelta(refUuid, svcDelta, deltaUUID);
             int instanceID = results[0];
@@ -1915,7 +1915,7 @@ public class serviceBeans {
                  throw new EJBException("Ready Check Failed!");
                  }*/
         }
-        
+
         verify(refUuid, refresh);
     }
 
@@ -1929,21 +1929,17 @@ public class serviceBeans {
                 front_connectionProps);
         PreparedStatement prep;
 
-        String deltaUuid = "NULL";
-        prep = front_conn.prepareStatement("SELECT D.referenceUUID FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND D.type = \"service\" AND I.referenceUUID = ?");
-        prep.setString(1, refUuid);
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            deltaUuid = rs1.getString("referenceUUID");
-        }
+        System.out.println("Verifying Delta for service" + refUuid);
 
-        System.out.println("Verifying Delta " + refUuid);
-        System.out.println("Verifying Delta " + deltaUuid);
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = NULL, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");        
+        prep.setInt(1, instanceID);
+        prep.executeUpdate();
+
         for (int i = 1; i <= 5; i++) {
             String auth = refreshToken(refresh);
 
             boolean redVerified = true, addVerified = true;
-            URL url = new URL(String.format("%s/service/verify/%s", host, deltaUuid));
+            URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String result = executeHttpMethod(url, conn, "GET", null, auth);
 
@@ -2016,7 +2012,7 @@ public class serviceBeans {
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
-            
+
             System.out.println("Init Refresh: " + refresh.substring(0, Math.min(refresh.length(), 10)) + "...");
             //System.out.println("Init Refresh: " + refresh);
             String data = "grant_type=refresh_token&refresh_token=" + refresh;
@@ -2042,7 +2038,7 @@ public class serviceBeans {
 
             JSONParser parser = new JSONParser();
             Object obj = parser.parse(responseStr.toString());
-            JSONObject result = (JSONObject) obj;            
+            JSONObject result = (JSONObject) obj;
 
             return "bearer " + (String) result.get("access_token");
         } catch (ParseException | IOException ex) {
