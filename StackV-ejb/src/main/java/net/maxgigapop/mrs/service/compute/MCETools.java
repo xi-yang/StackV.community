@@ -147,7 +147,7 @@ public class MCETools {
         return new MCETools.Path(path);
     }
 
-    final public static int KSP_K_DEFAULT = 50;
+    final public static int KSP_K_DEFAULT = 10;
 
     public static List<Path> computeKShortestPaths(Model model, Resource nodeA, Resource nodeZ, int K, Filter<Statement> filters) {
         final HashSet<Statement> maskedLinks = new HashSet<>();
