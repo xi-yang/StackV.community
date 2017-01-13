@@ -57,7 +57,14 @@ div#instance-panel::-webkit-scrollbar {
   width: 0px;  /* remove scrollbar space */
   background: transparent;  /* optional: just make scrollbar invisible */
 }
-
+/*Animations for both instance panel and catalog panel*/
+div#instance-panel, div#catalog-panel {
+  -webkit-transition: all .75s ease-in;
+  -moz-transition: all .75s ease-in;
+  -o-transition: all .75s ease-in;
+  -ms-transition: all .75s ease-in;
+  transition: all .5s ease;
+}
 div#catalog-panel {
   padding: 10px 10px 0 10px;
   bottom: 0;

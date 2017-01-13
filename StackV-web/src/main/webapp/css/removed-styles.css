@@ -326,3 +326,84 @@
   text-align: center;
   padding: 12px 15px;
 }
+
+.details-model-toggle {
+  float:right;
+}
+
+/* SIDEBAR */
+
+#sidebar {
+  height: 100%;
+  text-align: left;
+  position: absolute;
+  width: 225px;
+  text-decoration: none;
+  z-index: 4;
+  left: -225px;
+}
+
+.sidebar-open {
+  transform: translate(225px, 0px);
+  box-shadow: 10px 3px 10px 2px rgba(0, 0, 0, 0.3);
+}
+
+#sidebar-toggle {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50px;
+  z-index: 5;
+}
+
+#sidebar-toggle img {
+  position: absolute;
+
+  transition: opacity .5s ease-in-out;
+}
+
+#sidebar-toggle img.img-off {
+  opacity: 0;
+
+  transition: opacity .5s ease-in-out;
+}
+
+#sidebar-contents {
+  background: linear-gradient(rgba(38, 38, 38, 0.4), rgba(0,0,0,.5)), url('/StackV-web/img/background.png');
+  top: 40px;
+  margin-left: 0px;
+  position: fixed;
+  height: calc(100% - 37px);
+  width: inherit;
+  border-right: 2px solid rgba(0, 0, 0, .1);
+
+  -webkit-transition: all 400ms ease-in-out;
+  transition: all 400ms ease-in-out;
+}
+
+#sidebar-list {
+  margin-top: 82px;
+}
+
+
+/************
+## Toggler - Credit PureDrawer ##
+************/
+
+
+/* Edits ---------------------- */
+
+.toggle-open {
+  top: 0px;
+}
+
+.toggle-open::before {
+  -ms-transform: translateX(-50%) rotate(45deg);
+  transform: translateX(-50%) rotate(45deg);
+  -webkit-transform: translateX(-50%) rotate(45deg);
+}
+.toggle-open::after {
+  -ms-transform: translateX(-50%) translateY(-10px) rotate(-45deg);
+  transform: translateX(-50%) translateY(-10px) rotate(-45deg);
+  -webkit-transform: translateX(-50%) translateY(-10px) rotate(-45deg);
+  top: 10px;
+}
