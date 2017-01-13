@@ -74,6 +74,7 @@ function closeSide(){
     
 }
 function installStub(){
+    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
@@ -85,14 +86,19 @@ function installStub(){
     var desc = document.createElement("input");
     
     
+    type.innerHTML = "Stub Driver";
+    type.style.color = "white";
+    type.id = "drivertype";
+    divContent.appendChild(type);
+    
     drivername.innerHTML="Driver Name:";
     drivername.style.color = "white";
     driver.type="text";
     driver.id="drivername";
     divContent.appendChild(drivername);
     divContent.appendChild(driver);
-
-
+    
+    
     first.innerHTML="Topology URI:";
     first.style.color = "white";
     second.type="text";
@@ -104,8 +110,8 @@ function installStub(){
     divContent.appendChild(second);
     divContent.appendChild(third);
     divContent.appendChild(fourth);
-
-
+    
+    
     descname.innerHTML="Description:";
     descname.style.color = "white";
     desc.type="text";
@@ -114,6 +120,7 @@ function installStub(){
     divContent.appendChild(desc);
 }
 function installAWS(){
+    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
@@ -126,6 +133,10 @@ function installAWS(){
     var descname = document.createElement("p");
     var desc = document.createElement("input");
     
+    type.innerHTML = "AWS Driver";
+    type.style.color = "white";
+    type.id = "drivertype";
+    divContent.appendChild(type);
     
     drivername.innerHTML="Driver Name:";
     drivername.style.color = "white";
@@ -133,8 +144,8 @@ function installAWS(){
     driver.id="drivername";
     divContent.appendChild(drivername);
     divContent.appendChild(driver);
-
-
+    
+    
     first.innerHTML="Topology URI:";
     first.style.color = "white";
     second.type="text";
@@ -151,8 +162,8 @@ function installAWS(){
     divContent.appendChild(fourth);
     divContent.appendChild(fifth);
     divContent.appendChild(sixth);
-
-
+    
+    
     descname.innerHTML="Description:";
     descname.style.color = "white";
     desc.type="text";
@@ -162,12 +173,18 @@ function installAWS(){
     
 }
 function installOpenstack(){
+    var type = document.createElement("p");
     var divContent = document.getElementById("install-type");
     var drivername = document.createElement("p");
     var driver = document.createElement("input");
     var descname = document.createElement("p");
     var desc = document.createElement("input");
     var content = [];
+    
+    type.innerHTML = "Stub Driver";
+    type.style.color = "white";
+    type.id = "drivertype";
+    divContent.appendChild(type);
     
     drivername.innerHTML="Driver Name:";
     drivername.style.color = "white";
@@ -176,7 +193,7 @@ function installOpenstack(){
     divContent.appendChild(drivername);
     divContent.appendChild(driver);
     
-
+    
     for (var i = 0; i < 12; i+=2){
         var textbox = document.createElement("p");
         var input = document.createElement("input");
@@ -204,7 +221,7 @@ function installOpenstack(){
         divContent.appendChild(content[i]);
     }
     
-
+    
     descname.innerHTML="Description:";
     descname.style.color = "white";
     desc.type="text";
@@ -213,6 +230,7 @@ function installOpenstack(){
     divContent.appendChild(desc);
 }
 function installStack(){
+    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
@@ -223,6 +241,10 @@ function installStack(){
     var descname = document.createElement("p");
     var desc = document.createElement("input");
     
+    type.innerHTML = "Stack Driver";
+    type.style.color = "white";
+    type.id = "drivertype";
+    divContent.appendChild(type);
     
     drivername.innerHTML="Driver Name:";
     drivername.style.color = "white";
@@ -261,8 +283,8 @@ function clearPanel(){
     document.getElementById('install-options').appendChild(closeButton);
 }
 function clearText(){
-      for(var temp of document.getElementsByTagName("input")){
-          temp.value = "";
+    for(var temp of document.getElementsByTagName("input")){
+        temp.value = "";
     }
 }
 function changeNameInst() {
@@ -271,6 +293,10 @@ function changeNameInst() {
     saveButton.innerHTML = "Save Driver";
     saveButton.onclick = function() {addDriver(); clearText();};
     document.getElementById('install-options').appendChild(saveButton);
+    var instButton = document.createElement("button");
+    instButton.innerHTML = "Install Driver";
+    instButton.onclick = function() {clearText();};
+    document.getElementById('install-options').appendChild(instButton);
 }
 function changeNameDet() {
     var detailsButton = document.createElement("button");
@@ -287,6 +313,7 @@ function addDriver() {
     var description = document.getElementById("description").value;
     var driver = document.getElementById("drivername").value;
     var URI = document.getElementById("TOPURI").value;
+    var type = document.getElementById("drivertype").value;
     
     for(var temp of document.getElementsByTagName("input")){
         if(temp.value !== description && temp.value !== driver)
@@ -298,7 +325,8 @@ function addDriver() {
         drivername: driver,
         driverDescription: description, 
         data: settings,
-        topuri: URI
+        topuri: URI,
+        drivertype: type
     });
     
     $.ajax({
@@ -483,4 +511,7 @@ function getDetails(clickID) {
             panel.appendChild(data);
         }
     });
+}
+function plugDriver(){
+    
 }

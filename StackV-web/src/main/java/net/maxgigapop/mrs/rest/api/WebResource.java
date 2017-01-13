@@ -223,8 +223,10 @@ public class WebResource {
         prep.setString(2, topuri);
         ResultSet ret = prep.executeQuery();
         
-        if (ret.next())
+        if (ret.next()){
             retVal = ret.getString("data");
+            retVal += ret.getString("drivertype");
+        }
         
         return retVal;
     }
@@ -233,7 +235,7 @@ public class WebResource {
     @Path("/driver/{user}/get")
     @Produces("application/json")
     public ArrayList<String> getDriver(@PathParam("user") String username) throws SQLException {
-        ArrayList<String> list= new ArrayList<String>();
+        ArrayList<String> list= new ArrayList<>();
         
         Properties prop = new Properties();
         prop.put("user", front_db_user);
@@ -273,19 +275,20 @@ public class WebResource {
         String desc = (String) inputJSON.get("driverDescription");
         String data = (String) inputJSON.get("data");
         String uri = (String) inputJSON.get("topuri");
-        
+        String drivertype = (String) inputJSON.get("drivertype");
         
         Properties prop = new Properties();
         prop.put("user", front_db_user);
         prop.put("password", front_db_pass);
         Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
         
-        PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?)");
+        PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
         prep.setString(1, user);
         prep.setString(2, driver);
         prep.setString(3, desc);
         prep.setString(4, data);
         prep.setString(5, uri);
+        prep.setString(6, drivertype);
         prep.executeUpdate();
     }
     
