@@ -86,7 +86,7 @@ function installStub(){
     var desc = document.createElement("input");
     
     
-    type.innerHTML = "Stub Driver";
+    type.innerHTML = "StubSystemDriver";
     type.style.color = "white";
     type.id = "drivertype";
     divContent.appendChild(type);
@@ -133,7 +133,7 @@ function installAWS(){
     var descname = document.createElement("p");
     var desc = document.createElement("input");
     
-    type.innerHTML = "AWS Driver";
+    type.innerHTML = "AwsDriver";
     type.style.color = "white";
     type.id = "drivertype";
     divContent.appendChild(type);
@@ -181,7 +181,7 @@ function installOpenstack(){
     var desc = document.createElement("input");
     var content = [];
     
-    type.innerHTML = "Stub Driver";
+    type.innerHTML = "OpenStackDriver";
     type.style.color = "white";
     type.id = "drivertype";
     divContent.appendChild(type);
@@ -241,7 +241,7 @@ function installStack(){
     var descname = document.createElement("p");
     var desc = document.createElement("input");
     
-    type.innerHTML = "Stack Driver";
+    type.innerHTML = "StackSystemDriver";
     type.style.color = "white";
     type.id = "drivertype";
     divContent.appendChild(type);
@@ -291,11 +291,11 @@ function changeNameInst() {
     var saveButton = document.createElement("button");
     document.getElementById('side-name').innerHTML="Install";
     saveButton.innerHTML = "Save Driver";
-    saveButton.onclick = function() {addDriver(); clearText();};
+    saveButton.onclick = function() {addDriver();};
     document.getElementById('install-options').appendChild(saveButton);
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
-    instButton.onclick = function() {clearText();};
+    instButton.onclick = function() {plugDriver();};
     document.getElementById('install-options').appendChild(instButton);
 }
 function changeNameDet() {
@@ -309,16 +309,17 @@ function changeNameDet() {
 function addDriver() {
     var userId = keycloak.subject;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
-    var settings="";
+    var jsonData=[];
     var description = document.getElementById("description").value;
     var driver = document.getElementById("drivername").value;
     var URI = document.getElementById("TOPURI").value;
-    var type = document.getElementById("drivertype").value;
+    var type = document.getElementById("drivertype").innerHTML;
     
     for(var temp of document.getElementsByTagName("input")){
         if(temp.value !== description && temp.value !== driver)
-            settings += temp.value + " ";
+            jsonData.push({data : temp.value});
     }
+    var settings = JSON.stringify({jsonData});
     
     var sentData = JSON.stringify({
         username: userId,

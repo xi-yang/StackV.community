@@ -257,6 +257,48 @@ public class WebResource {
         return list;
     }
     
+    @GET
+    @Path("/driver/{user}/install/{topuri}")
+    @Produces("application/json")
+    public int installDriver(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException {
+        String xmldata="<driverInstance><properties>";
+        
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                prop);
+        
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
+        prep.setString(1, username);
+        prep.setString(2, topuri);
+        ResultSet ret = prep.executeQuery();
+        
+        ret.next();
+        
+        xmldata += "<entry><key>topologyUri</key><value>" + ret.getString("TopUri") + "</value></entry>";
+        xmldata += "<entry><key>driverEjbPath</key><value>java:module/" + ret.getString("drivertype") + "</value></entry>";
+        
+        switch(ret.getString("drivertype")){
+            case "StubSystemDriver":
+                break;
+            case "AwsDriver":
+                break;
+            case "OpenStackDriver":
+                break;
+            case "StackSystemDriver":
+                break;
+            default:
+                break;
+        }
+        
+        PreparedStatement sendxml = front_conn.prepareStatement("UPDATE Users SET xmlData = ? WHERE username = ? AND TopUri = ?;");
+        sendxml.setString(1, xmldata);
+        sendxml.setString(2, username);
+        sendxml.setString(3, topuri);
+        return 1;
+    }
+    
     @PUT
     @Path("driver/{user}/add")
     @Consumes(value = {"application/json"})
@@ -282,13 +324,14 @@ public class WebResource {
         prop.put("password", front_db_pass);
         Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
         
-        PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
+        PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?, ?)");
         prep.setString(1, user);
         prep.setString(2, driver);
         prep.setString(3, desc);
         prep.setString(4, data);
         prep.setString(5, uri);
         prep.setString(6, drivertype);
+        prep.setString(7, "NOT INSTALLED");
         prep.executeUpdate();
     }
     
