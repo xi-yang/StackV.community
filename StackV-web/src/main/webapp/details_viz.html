@@ -440,7 +440,8 @@
         //viz_table.find("th:nth-child(" + index + ")").css( "color", "#ccc");
     }
     function showManifest() {
-        window.open('/StackV-web/ops/details/manifestPortal.jsp?uuid=' + location.search.split("?uuid=")[1], 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+        var uuid =  sessionStorage.getItem("uuid");
+        window.open('/StackV-web/ops/details/manifestPortal.jsp?uuid=' + uuid, 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
     }
     function createTextToggle(prefix, textModel) {
         var button = $("#" + prefix + "_viz_toggle_model");
