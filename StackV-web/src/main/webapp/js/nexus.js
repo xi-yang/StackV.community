@@ -1116,6 +1116,8 @@ function reloadCatalog(time) {
             sessionStorage.setItem("token", keycloak.token);
             console.log("Token Refreshed by nexus!");
         }
+
+        var timerSetting = $("#refresh-timer").val();
         var manual = false;
         if (typeof time === "undefined") {
             time = countdown;
@@ -1127,17 +1129,18 @@ function reloadCatalog(time) {
         $('#instance-panel').load(document.URL + ' #status-table', function () {
             loadInstances();
 
-            $(".clickable-row").click(function () {
-                sessionStorage.setItem("uuid", $(this).data("href"));
-                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
-            });
-
+            $("#refresh-timer").val(timerSetting);
             if (manual === false) {
                 countdown = time;
                 document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
             } else {
                 document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
             }
+
+            $(".clickable-row").click(function () {
+                sessionStorage.setItem("uuid", $(this).data("href"));
+                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
+            });
 
             setTimeout(function () {
                 disableLoading();
@@ -1156,6 +1159,8 @@ function reloadDetails(time) {
             sessionStorage.setItem("token", keycloak.token);
             console.log("Token Refreshed by nexus!");
         }
+
+        var timerSetting = $("#refresh-timer").val();
         var uuid = getURLParameter("uuid");
         var manual = false;
         if (typeof time === "undefined") {
@@ -1165,19 +1170,20 @@ function reloadDetails(time) {
             manual = true;
         }
 
-        $('#details-panel').load(document.URL + ' #details-panel', function () {
+        $('#details-panel').load(document.URL + ' #details-table', function () {
             loadDetails();
 
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-
+            $("#refresh-timer").val(timerSetting);
             if (manual === false) {
                 countdown = time;
                 //document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
             } else {
                 document.getElementById('refresh-button').innerHTML = 'Manually RefreshNow ';
             }
+
+            $(".delta-table-header").click(function () {
+                $("#body-" + this.id).toggleClass("hide");
+            });
 
             setTimeout(function () {
                 disableLoading();
@@ -1398,13 +1404,11 @@ function loadDetails() {
 
     // Moderation
     setTimeout(function () {
-        setTimeout(deltaModerate(), 100);
-        setTimeout(instructionModerate(), 200);
-        setTimeout(buttonModerate(), 300);
-        loadACL(uuid);
         loadStatus(uuid);
+        loadACL(uuid);
+
         loadVisualization();
-    }, 750);
+    }, 400);
 }
 
 function subloadInstance() {
@@ -2166,6 +2170,10 @@ function loadStatus(refUuid) {
         },
         success: function (result) {
             ele.innerHTML = result;
+
+            deltaModerate();
+            instructionModerate();
+            buttonModerate();
         }
     });
 }
