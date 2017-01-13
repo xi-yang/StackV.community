@@ -260,7 +260,7 @@ public class WebResource {
     @GET
     @Path("/driver/{user}/install/{topuri}")
     @Produces("application/json")
-    public int installDriver(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException {
+    public int installDriver(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
         String xmldata="<driverInstance><properties>";
         
         Properties prop = new Properties();
@@ -278,6 +278,10 @@ public class WebResource {
         
         xmldata += "<entry><key>topologyUri</key><value>" + ret.getString("TopUri") + "</value></entry>";
         xmldata += "<entry><key>driverEjbPath</key><value>java:module/" + ret.getString("drivertype") + "</value></entry>";
+                
+        Object obj = parser.parse(ret.getString("data"));
+        JSONObject JSONdata = (JSONObject) obj;
+        
         
         switch(ret.getString("drivertype")){
             case "StubSystemDriver":
