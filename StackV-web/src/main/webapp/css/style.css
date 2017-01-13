@@ -97,38 +97,9 @@ max-height: 100%;
 /*form styles*/
 
 
-.fade-hide {
-  display: none;
 
-  opacity: 0;
-  transition: opacity 1s ease;
-}
 
-.subfs-table {
-  width: 100%;
-  margin-bottom: 10px;
-}
 
-.subfs-table th {
-  padding-left: 20px;
-}
-
-.subfs-table td {
-  padding-top: 5px;
-}
-
-.subfs-table .subfs-headrow {
-  border-top: 1px solid #969696;
-  border-bottom: 1px solid #969696;
-
-  transition: background-color 0.5s ease;
-  transition: color 0.5s ease;
-}
-
-.subfs-headrow.closed {
-  color: #ffffff;
-  background-color: #50657c;
-}
 
 /*inputs*/
 

@@ -43,6 +43,14 @@ body {
     color: #364454;
 }
 
+/*Looks like just a class to fade item out*/
+.fade-hide {
+  display: none;
+
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
 /*Form elements styling*/
 select {
   color: #000;
