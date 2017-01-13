@@ -1,4 +1,10 @@
-/*.login {
+/*
+ * Filename: removed-styles.css
+ * Created by: Andrew Gu 2017
+ * Purpose: A collection of styles that I removed because I couldn't find them used anywhere - kept around
+ * just in case. This file should not be imported anywhere.
+*/
+.login {
     padding: 5px;
 }
 .login-form {
@@ -14,8 +20,8 @@
     -webkit-border-radius: 3px;
     -moz-border-radius: 3px;
     border-radius: 3px;
-}*/
-/*.form .switch {
+}
+.form .switch {
     cursor: pointer;
     position: absolute;
     top: 0;
@@ -226,7 +232,7 @@
 }
 .form input#button-login:hover, .form input#button-register:hover {
     background: #637E9C;
-}*/
+}
 
 
 #0-mode-select {
@@ -289,4 +295,34 @@
 .button-panel button {
     float: right;
     margin-left: 1%;
+}
+
+.v2-table {
+  background: white;
+  border: 0 none;
+  border-radius: 3px;
+  box-shadow: 0 0 20px 2px rgba(0, 0, 0, 0.4);
+  color: #2C3E50;
+}
+.v2-table tr::selection {
+  background: #333;
+  color: #fff;
+  text-shadow: 0 0 transparent;
+}
+.v2-table td {
+  border-top: 1px solid #e8edff;
+  padding: 10px 15px;
+}
+.v2-table td:not(:first-child) {
+  border-left: 1px solid #2C3E50;
+}
+.v2-table td:last-child {
+  border-left: none;
+}
+
+.v2-table th {
+  font-size: 14px;
+  font-weight: normal;
+  text-align: center;
+  padding: 12px 15px;
 }

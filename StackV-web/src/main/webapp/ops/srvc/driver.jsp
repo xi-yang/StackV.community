@@ -20,7 +20,7 @@
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <%-- <link rel="stylesheet" href="/StackV-web/css/bootstrap.css"> --%>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
+        <%-- <link rel="stylesheet" href="/StackV-web/css/driver.css"> --%>
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"

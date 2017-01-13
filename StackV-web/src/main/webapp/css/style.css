@@ -55,114 +55,21 @@ black-screen: 3
 
 
 
-.button-header {
-  background-color: #50657c;
-  float: right;
-  border: 0
-}
-
-.view-flag {
-  display: inline-block;
-  margin-right: 10px;
-}
-
-#sparquery {
-  font-weight: bold;
-}
-
-#model-select {
-  width: 300px;
-}
-
-.service-instance-panel {
-  float: right;
-}
-
-.header-input {
-  color: black;
-}
-
-.delta-table-body {
-  vertical-align: top;
-}
-
-#refresh-panel {
-  display: inline;
-  vertical-align: text-top;
-  color: #ffffff;
-  float: right;
-  margin-right: 10px;
-  margin-left: 10px;
-}
-/*Select menu and inline label*/
-label[for="refresh-timer"] {
-  margin-right: 5px;
-}
-select#refresh-timer {
-  color: #333;
-  height: inherit;
-  font-weight: 400;
-  margin-right: 5px;
-}
 
 
-#details-panel {
-  padding: 10px 10px;
-  height: 40%;
-  width: calc(100% - 80px);
-  position: absolute;
-}
-#instance-panel {
-  left: 40px;
-  padding: 5px 5px;
-  height: calc(90% - 42px);
-  width: calc(100% - 80px);
-  position: absolute;
-  overflow-y: scroll;
-}
-#instance-panel.closed {
-  overflow: hidden;
-  left: 100%;
-  padding: 0px;
-}
-#instance-panel::-webkit-scrollbar {
-  width: 0px;  /* remove scrollbar space */
-  background: transparent;  /* optional: just make scrollbar invisible */
-}
-#catalog-panel {
-  padding: 10px 10px 0 10px;
-  bottom: 0;
-  left: 10%;
-  height: 50%;
-  width: 80%;
-  position: fixed;
-}
-#catalog-panel.closed {
-  overflow: hidden;
-  height: 42px;
-}
-#instance-panel ::-webkit-scrollbar {
-  width: 0px;  /* remove scrollbar space */
-  background: transparent;  /* optional: just make scrollbar invisible */
-}
 
-#status-table {
-  margin: 20px auto;
-  width: 80%;
-  max-height: 100%;
-}
-#status-table th {
-  padding-top: 12px;
-  padding-bottom: 12px;
-}
-#catalog-tab-content {
-  padding-top: 20px;
-  background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/StackV-web/img/background.png');
-  width: 100%;
-  height: calc(100% - 32px);
-  border-right: 1px solid white;
-  border-left: 1px solid white;
-}
+
+
+
+
+
+
+
+
+
+
+
+
 /*.tab-table {
 float: left;
 width: calc(100% - 40px);
@@ -170,35 +77,7 @@ margin: 20px;
 max-height: 100%;
 }*/
 
-.v2-table {
-  background: white;
-  border: 0 none;
-  border-radius: 3px;
-  box-shadow: 0 0 20px 2px rgba(0, 0, 0, 0.4);
-  color: #2C3E50;
-}
-.v2-table tr::selection {
-  background: #333;
-  color: #fff;
-  text-shadow: 0 0 transparent;
-}
-.v2-table td {
-  border-top: 1px solid #e8edff;
-  padding: 10px 15px;
-}
-.v2-table td:not(:first-child) {
-  border-left: 1px solid #2C3E50;
-}
-.v2-table td:last-child {
-  border-left: none;
-}
 
-.v2-table th {
-  font-size: 14px;
-  font-weight: normal;
-  text-align: center;
-  padding: 12px 15px;
-}
 
 .instruction-row {
   vertical-align: top;

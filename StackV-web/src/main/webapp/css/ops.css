@@ -115,3 +115,47 @@ button.button-service-apply {
   color: #B60000;
   position: relative;
 }
+
+div.view-flag {
+  display: inline-block;
+  margin-right: 10px;
+}
+input#sparquery {
+  font-weight: bold;
+}
+select#model-select {
+  width: 300px;
+}
+input.header-input {
+  color: black;
+}
+tbody.delta-table-body {
+  vertical-align: top;
+}
+
+/*Select menu and inline label*/
+label[for="refresh-timer"] {
+  margin-right: 5px;
+}
+select#refresh-timer {
+  color: #333;
+  height: inherit;
+  font-weight: 400;
+  margin-right: 5px;
+}
+div#details-panel {
+  padding: 10px 10px;
+  height: 40%;
+  width: calc(100% - 80px);
+  position: absolute;
+}
+
+/*For the details table*/
+tr.instruction-row {
+  vertical-align: top;
+  height: 80px;
+  font-size: 1.2em;
+}
+tr.button-row {
+  height: 51px;
+}

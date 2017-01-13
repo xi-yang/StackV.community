@@ -4,6 +4,7 @@
  * Purpose: Contains styling that pertain to the app as a whole.
 */
 
+/*Miscellaenous global styles*/
 ::-webkit-scrollbar {
     display:none;
 }
@@ -42,6 +43,12 @@ body {
     color: #364454;
 }
 
+/*Form elements styling*/
+select {
+  color: #000;
+}
+
+/*Black Screen styles*/
 div#black-screen {
     position: absolute;
     height: 100%;
@@ -53,7 +60,6 @@ div#black-screen {
 
     transition: opacity 1s ease;
 }
-
 div#black-screen.off {
     opacity: 0;
     pointer-events: none;

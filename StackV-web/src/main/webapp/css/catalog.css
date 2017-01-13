@@ -14,8 +14,78 @@ ul.catalog-tabs li.active a {
 ul.catalog-tabs li.active a:hover {
   cursor: pointer;
 }
+
 button#button-service-cancel {
   color: #B60000;
   margin-left: 75%;
   position: relative;
+}
+
+button.button-header {
+  background-color: #50657c;
+  float: right;
+  border: 0
+}
+
+/*Not quite sure if this belongs in this page... but we'll stick it here for now*/
+div.service-instance-panel {
+  float: right;
+}
+div#refresh-panel {
+  display: inline;
+  vertical-align: text-top;
+  color: #ffffff;
+  float: right;
+  margin-right: 10px;
+  margin-left: 10px;
+}
+
+div#instance-panel {
+  left: 40px;
+  padding: 5px 5px;
+  height: calc(90% - 42px);
+  width: calc(100% - 80px);
+  position: absolute;
+  overflow-y: scroll;
+}
+div#instance-panel.closed {
+  overflow: hidden;
+  left: 100%;
+  padding: 0px;
+}
+div#instance-panel::-webkit-scrollbar {
+  width: 0px;  /* remove scrollbar space */
+  background: transparent;  /* optional: just make scrollbar invisible */
+}
+
+div#catalog-panel {
+  padding: 10px 10px 0 10px;
+  bottom: 0;
+  left: 10%;
+  height: 50%;
+  width: 80%;
+  position: fixed;
+}
+div#catalog-panel.closed {
+  overflow: hidden;
+  height: 42px;
+}
+
+table#status-table {
+  margin: 20px auto;
+  width: 80%;
+  max-height: 100%;
+}
+table#status-table th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+div#catalog-tab-content {
+  padding-top: 20px;
+  background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/StackV-web/img/background.png');
+  width: 100%;
+  height: calc(100% - 32px);
+  border-right: 1px solid white;
+  border-left: 1px solid white;
 }
