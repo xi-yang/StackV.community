@@ -65,12 +65,10 @@ define(["local/stackv/utils"], function (utils) {
              colorBoxes = document.getElementsByClassName(settings.color_box_class);
              dialog = $( "#" + settings.root_container ).dialog({
               autoOpen: false,
-              height: 400,
-              width: 350,
               buttons: {
                 "OK": createLabel,
                 Cancel: function() {
-                  dialog.dialog( "close" );
+                  $( "#" + settings.root_container ).dialog( "close" );
                 }
               },
               close: function() {
@@ -125,7 +123,6 @@ define(["local/stackv/utils"], function (utils) {
                         label: label,
                         color: currentColor.toLowerCase()
                     });
-                    bsShowFadingMessage("#" + settings.root_container, "Tag added.", "top", 1000);                       
                     closeDialog();
                 },
                 error: function(jqXHR, textStatus, errorThrown ) {
@@ -143,7 +140,7 @@ define(["local/stackv/utils"], function (utils) {
 
         function closeDialog() {
             $('#' + settings.input_label).removeAttr('value');
-            dialog.close();
+            $("#" + settings.root_container ).dialog( "close" );
         };
         
         function subscribeToMediatior() {
@@ -154,7 +151,7 @@ define(["local/stackv/utils"], function (utils) {
                 */
                PubSub.subscribe('TagDialog_open', function(data) {
                    identifier = data.identifier;
-                   dialog.open();
+                   $("#" + settings.root_container).dialog( "open" );
                });     
                
                PubSub.subscribe('TagDialog_close', function() {

@@ -240,6 +240,8 @@ define(["local/stackv/utils"], function (utils) {
                  */
                 PubSub.subscribe('TagPanel_createTag', function(data) {
                     createTag(data.label, data.identifier, data.color);
+                    bsShowFadingMessage("#" + settings.root_container, "Tag added.", "top", 1000);                       
+
                 });     
 
                 PubSub.subscribe('TagPanel_deleteTag', function(data) {

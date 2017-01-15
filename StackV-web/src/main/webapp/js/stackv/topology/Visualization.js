@@ -97,16 +97,17 @@ define(["local/stackv/topology/model",
                                         name: 'Add Tag',
                                         img: 'images/create.png',
                                         title: 'add tag',
-                                        fun: function () {
+                                        fun: function (data,event) {
                                             PubSub.publish("TagDialog_open", {identifier: data.trigger.id});
                                         }
                                     }];
-                                    contextMenu.init({}, menu);
 
                                     ModelConstructor = m;
                                     model = new ModelConstructor();
                                     outputApi = new outputApi_(render.API, contextMenu, viz_settings.name);
-                                    model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
+                                    model.init(1, drawGraph.bind(undefined, outputApi, model, 
+                                        initComponents.bind(undefined, contextMenu, menu)
+                                    ), null);    
                                    
                                     // modules loaded should be dynamic 
                                     tagPanel =  TagPanel();
@@ -332,8 +333,14 @@ define(["local/stackv/topology/model",
                             console.log(err);
                         }                
                     }
+                    function initComponents(cm, menu) {
+                      //  for (var i = 0; i < components.length; i++) {
+                       //     components[i.init()
+                       // }
+                       cm.init({}, menu);
 
-                    function drawGraph(outputApi, model) {
+                    }
+                    function drawGraph(outputApi, model, callback) {
                         var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
                         var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                         //TODO, figure out why we need to call this twice
@@ -345,6 +352,9 @@ define(["local/stackv/topology/model",
                             render.doRender(outputApi, model);
                         }
                         //  animStart(30);
+                         if (callback !== undefined) {
+                             callback();
+                         }
                     }
 
                     function reload() {

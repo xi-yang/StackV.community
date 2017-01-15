@@ -281,6 +281,8 @@ define([
                     }
                     n.svgNode = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("image")
                             .attr("xlink:href", n.getIconPath())
+                            .attr("class", "model_object")
+                            .attr("id", n.getName())
                             .on("click", onNodeClick.bind(undefined, n))
                             .on("dblclick", onNodeDblClick.bind(undefined, n))
                             .on("mousemove", onNodeMouseMove.bind(undefined, n))
@@ -288,8 +290,6 @@ define([
 //                    if (outputApi.contextMenu) {
 //                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
 //                    } 
-                    n.svgNode[0][0].setAttribute ("class", "model_object");
-                    n.svgNode[0][0].setAttribute("id", n.getName());
                     
                     if (n.detailsReference) {
                         n.svgNode.style("opacity", .4);
@@ -305,6 +305,9 @@ define([
         function drawPolicy(p) {
             p.svgNode = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("image")
                     .attr("xlink:href", p.getIconPath())
+                    .attr("class", "model_object")
+                    .attr("id", p.getName())
+
                     .on("click", onPolicyClick.bind(undefined, p))
                     .on("dblclick", onPolicyDblClick.bind(undefined, p))
                     .on("mousemove", onPolicyMouseMove.bind(undefined, p))
@@ -312,8 +315,6 @@ define([
 //            if (outputApi.contextMenu) {
 //                p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));    
 //            } 
-                    p.svgNode[0][0].setAttribute("class", "model_object");
-                    p.svgNode[0][0].setAttribute("id", p.getName());
 
 
             if (p.detailsReference) {
@@ -348,6 +349,8 @@ define([
                     .style("stroke-linejoin", "round")
                     .style("opacity", settings.HULL_OPACITY)
                     .attr("d", topologyPathToString(path))
+                    .attr("class", "model_object")
+                    .attr("id", n.getName())
                     .on("click", onNodeClick.bind(undefined, n))
                     .on("dblclick", onNodeDblClick.bind(undefined, n))
                     .on("mousemove", onNodeMouseMove.bind(undefined, n))
@@ -355,8 +358,6 @@ define([
 //                if (outputApi.contextMenu) {
 //                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
 //                }
-                    n.svgNode[0][0].setAttribute ("class", "model_object");
-                    n.svgNode[0][0].setAttribute("id", n.getName());
 
 
                 n.svgNode.call(makeDragBehaviour(n));
@@ -365,6 +366,9 @@ define([
                         .style("fill", "white")
                         .style("stroke", "black")
                         .style("stroke-width", settings.TOPOLOGY_ANCHOR_STROKE)
+                        .attr("class", "model_object")
+                        .attr("id", n.getName())
+
                         .on("click", onNodeClick.bind(undefined, n))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
@@ -372,8 +376,6 @@ define([
 //                if (outputApi.contextMenu) {
 //                    n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
 //                }
-                    n.svgNode[0][0].setAttribute ("class", "model_object");
-                    n.svgNode[0][0].setAttribute("id", n.getName());
 
                 if (n.detailsReference) {
                     n.svgNode.style("opacity", .4);
@@ -406,6 +408,8 @@ define([
                         //contrast, the mousMove event is for the popup, and
                         //we may want to display different info when we
                         //hover over a service
+                        .attr("class", "model_object")
+                        .attr("id", n.getName())
                         .on("click", onServiceClick.bind(undefined, service))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
@@ -414,8 +418,6 @@ define([
 //                if (outputApi.contextMenu) {
 //                    service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
 //                }    
-                    n.svgNode[0][0].setAttribute ("class", "model_object");
-                    n.svgNode[0][0].setAttribute("id", n.getName());
 
                 if (service.detailsReference) {
                     service.svgNode.style("opacity", .4);
