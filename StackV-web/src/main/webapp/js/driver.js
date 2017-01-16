@@ -101,11 +101,16 @@ function installStub(){
     
     first.innerHTML="Topology URI:";
     first.style.color = "white";
+    
     second.type="text";
     second.id="TOPURI";
+    
     third.innerHTML="TTL:";
     third.style.color = "white";
+    
     fourth.type="test";
+    fourth.id="TTL";
+    
     divContent.appendChild(first);
     divContent.appendChild(second);
     divContent.appendChild(third);
@@ -148,14 +153,22 @@ function installAWS(){
     
     first.innerHTML="Topology URI:";
     first.style.color = "white";
+    
     second.type="text";
     second.id="TOPURI";
+    
     third.innerHTML="Amazon Access ID:";
     third.style.color = "white";
+    
     fourth.type="text";
+    fourth.id = "Amazon-Access_ID";
+    
     fifth.innerHTML="Amazon Secret Key:";
     fifth.style.color = "white";
+    
     sixth.type="text";
+    sixth.id = "Amazon-Secret-Key";
+    
     divContent.appendChild(first);
     divContent.appendChild(second);
     divContent.appendChild(third);
@@ -211,10 +224,15 @@ function installOpenstack(){
     content[0].innerHTML="Topology URI:";
     content[1].id = "TOPURI";
     content[2].innerHTML="Openstack Username:";
+    content[3].id = "Openstack-Username";
     content[4].innerHTML="Openstack Password";
+    content[5].id = "Openstack-Password";
     content[6].innerHTML= "NAT Server:";
+    content[7].id = "NAT-Server";
     content[8].innerHTML= "URL";
+    content[9].id = "URL";
     content[10].innerHTML= "Tenant:";
+    content[11].id = "tenant";
     
     
     for (var i = 0; i < 12; i++){
@@ -256,11 +274,16 @@ function installStack(){
     
     first.innerHTML="Topology URI:";
     first.style.color = "white";
+    
     second.type="text";
     second.id="TOPURI";
+    
     third.innerHTML="Subsystem Base URL:";
     third.style.color = "white";
+    
     fourth.type="text";
+    fourth.id = "Subsystem-Base-URL";
+    
     divContent.appendChild(first);
     divContent.appendChild(second);
     divContent.appendChild(third);
@@ -269,8 +292,10 @@ function installStack(){
     
     descname.innerHTML="Description:";
     descname.style.color = "white";
+    
     desc.type="text";
     desc.id="description";
+    
     divContent.appendChild(descname);
     divContent.appendChild(desc);
 }    
@@ -316,8 +341,11 @@ function addDriver() {
     var type = document.getElementById("drivertype").innerHTML;
     
     for(var temp of document.getElementsByTagName("input")){
-        if(temp.value !== description && temp.value !== driver)
-            jsonData.push({data : temp.value});
+        if(temp !== document.getElementById("description") && 
+                temp.value !== document.getElementById("drivername")){
+            tempid= temp.id;
+            jsonData.push({tempid : temp.value});
+                }
     }
     var settings = JSON.stringify({jsonData});
     
