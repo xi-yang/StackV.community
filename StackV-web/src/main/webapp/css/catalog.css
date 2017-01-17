@@ -3,6 +3,7 @@ ul.catalog-tabs li {
 }
 ul.catalog-tabs li a {
   color: #c7c7c7;
+  border: 1px solid #FFF;
   background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/StackV-web/img/background.png');
 }
 ul.catalog-tabs li a:hover {

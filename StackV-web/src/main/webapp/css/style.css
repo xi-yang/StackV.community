@@ -36,15 +36,12 @@ black-screen: 3
 
 */
 
-/*Universal style files*/
+/*External libraries*/
 @import "animate.min.css";
 @import "font-awesome.min.css";
-@import "bootstrap.css";
+@import "bootstrap.min.css";
 
-
-
-
-
+/*Custom styles*/
 @import "global.css";
 @import "navigation.css";
 @import "visualization.css";
