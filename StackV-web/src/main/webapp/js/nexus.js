@@ -1,23 +1,23 @@
-/* 
+/*
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 
@@ -58,7 +58,7 @@ $(function () {
         }
     };
     keycloak.onTokenExpire = function () {
-        keycloak.updateToken(63).success(function () {
+        keycloak.updateToken(20).success(function () {
             console.log("Token automatically updated!");
         }).error(function () {
             console.log("Automatic token update failed!");
@@ -68,6 +68,15 @@ $(function () {
 
 
     $("#nav").load("/StackV-web/navbar.html", function () {
+        // set the active link - get everything after StackV-web
+        var url = $(location).attr('href').split(/\/StackV-web\//)[1];
+        if (/driver.jsp/.test(url))
+          $("li#driver-tab").addClass("active");
+        else if (/catalog.jsp/.test(url))
+          $("li#catalog-tab").addClass("active");
+        else if (/graphTest.jsp/.test(url))
+          $("li#visualization-tab").addClass("active");
+
         $("#logout-button").click(function (evt) {
             keycloak.logout();
 
@@ -79,18 +88,7 @@ $(function () {
             evt.preventDefault();
         });
     });
-    $("#sidebar").load("/StackV-web/sidebar.html", function () {
-        $("#sidebar-toggle").click(function (evt) {
-            $("#sidebar-toggle-1").toggleClass("img-off");
-            $("#sidebar-toggle-2").toggleClass("img-off");
-
-            $("#sidebar-contents").toggleClass("sidebar-open");
-            $("#main-pane").toggleClass("sidebar-open");
-
-            evt.preventDefault();
-        });
-    });
-
+    
     $("#button-service-cancel").click(function (evt) {
         $("#service-specific").empty();
         $("#button-service-cancel").toggleClass("hide");
@@ -895,7 +893,7 @@ function applyNetTemplate(code) {
 
 //            form.elements['subnet2-name'].value = '';
 //            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-//            
+//
             break;
 
         case 5:
@@ -1262,7 +1260,7 @@ function loadWizard() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button><button class='button-profile-delete' id='" + profile[2] + "'>Delete</button>";
+                cell1_3.innerHTML = "<button class='button-profile-select btn btn-default' id='" + profile[2] + "'>Select</button><button class='button-profile-delete btn btn' id='" + profile[2] + "'>Delete</button>";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
@@ -1364,7 +1362,7 @@ function loadEditor() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-service-select' id='" + profile[2] + "'>Select</button";
+                cell1_3.innerHTML = "<button class='button-service-select btn btn-default' id='" + profile[2] + "'>Select</button";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
@@ -1433,9 +1431,9 @@ function subloadInstance() {
             head.innerHTML = instance[1] + " Service Details";
             row.appendChild(head);
             head = document.createElement("th");
-            head.innerHTML = '<div id="refresh-panel">'
-                    + 'Auto-Refresh Interval'
-                    + '<select id="refresh-timer" onchange="timerChange(this)">'
+            head.innerHTML = '<div id="refresh-panel" class="form-inline">'
+                    + '<label for="refresh-timer">Auto-Refresh Interval</label>'
+                    + '<select id="refresh-timer" onchange="timerChange(this)" class="form-control">'
                     + '<option value="off">Off</option>'
                     + '<option value="5">5 sec.</option>'
                     + '<option value="10">10 sec.</option>'
@@ -1443,7 +1441,7 @@ function subloadInstance() {
                     + '<option value="60" selected>60 sec.</option>'
                     + '</select>'
                     + '</div>'
-                    + '<button class="button-header" id="refresh-button" onclick="reloadDetails()">Refresh in    seconds</button>';
+                    + '<button class="button-header btn btn-sm" id="refresh-button" onclick="reloadDetails()">Refresh in    seconds</button>';
             row.appendChild(head);
             thead.appendChild(row);
             table.appendChild(thead);
@@ -1508,16 +1506,16 @@ function subloadInstance() {
             row.className = "button-row";
             cell = document.createElement("td");
             cell.innerHTML = '<div class="service-instance-panel">'
-                    + '<button class="hide instance-command" id="reinstate">Reinstate</button>'
-                    + '<button class="hide instance-command" id="force_reinstate">Force Reinstate</button>'
-                    + '<button class="hide instance-command" id="cancel">Cancel</button>'
-                    + '<button class="hide instance-command" id="force_cancel">Force Cancel</button>'
-                    + '<button class="hide instance-command" id="force_retry">Force Retry</button>'
-                    + '<button class="hide instance-command" id="modify">Modify</button>'
-                    + '<button class="hide instance-command" id="force_modify">Force Modify</button>'
-                    + '<button class="hide instance-command" id="reverify">Re-Verify</button>'
-                    + '<button class="hide instance-command" id="delete">Delete</button>'
-                    + '<button class="hide instance-command" id="force_delete">Force Delete</button>'
+                    + '<button class="btn btn-default hide instance-command" id="reinstate">Reinstate</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_reinstate">Force Reinstate</button>'
+                    + '<button class="btn btn-default hide instance-command" id="cancel">Cancel</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_cancel">Force Cancel</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_retry">Force Retry</button>'
+                    + '<button class="btn btn-default hide instance-command" id="modify">Modify</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_modify">Force Modify</button>'
+                    + '<button class="btn btn-default hide instance-command" id="reverify">Re-Verify</button>'
+                    + '<button class="btn btn-default hide instance-command" id="delete">Delete</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_delete">Force Delete</button>'
                     + '</div>';
             cell.colSpan = "2";
             row.appendChild(cell);
@@ -1624,7 +1622,7 @@ function subloadDelta() {
                 row = document.createElement("tr");
                 cell = document.createElement("td");
                 cell.colSpan = "2";
-                cell.innerHTML = '<button  class="details-model-toggle" onclick="toggleTextModel(\'.'
+                cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'
                         + delta[0] + '-delta-table\', \'#delta-' + delta[0] + '\');">Toggle Text Model</button>';
                 row.appendChild(cell);
                 tbody.appendChild(row);
@@ -1732,7 +1730,7 @@ function subloadVerification() {
             row = document.createElement("tr");
             cell = document.createElement("td");
             cell.colSpan = "3";
-            cell.innerHTML = '<button class="details-model-toggle" onclick="toggleTextModel(\'.verification-table', '#delta-System\');">Toggle Text Model</button>';
+            cell.innerHTML = '<button class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.verification-table', '#delta-System\');">Toggle Text Model</button>';
             row.appendChild(cell);
             tbody.appendChild(row);
 
@@ -1802,64 +1800,63 @@ function subloadACL() {
 }
 
 function buildDeltaTable(type) {
-    var panel = document.getElementById("details-panel");
+        var panel = document.getElementById("details-panel");
 
-    var table = document.createElement("table");
-    table.className = "management-table hide " + type.toLowerCase() + "-delta-table";
+        var table = document.createElement("table");
+        table.className = "management-table hide " + type.toLowerCase() +  "-delta-table";
 
-    var thead = document.createElement("thead");
-    thead.className = "delta-table-header";
-    var row = document.createElement("tr");
-    var head = document.createElement("th");
-    head.innerHTML = type + " Delta";
-    row.appendChild(head);
+        var thead = document.createElement("thead");
+        thead.className = "delta-table-header";
+        var row = document.createElement("tr");
+        var head = document.createElement("th");
+        head.innerHTML = type + " Delta";
+        row.appendChild(head);
 
-    head = document.createElement("th");
-    head.innerHTML = "Verified";
-    row.appendChild(head);
+        head = document.createElement("th");
+        head.innerHTML = "Verified";
+        row.appendChild(head);
 
-    head = document.createElement("th");
-    head.innerHTML = "Unverified";
-    row.appendChild(head);
+        head = document.createElement("th");
+        head.innerHTML = "Unverified";
+        row.appendChild(head);
 
-    row.appendChild(head);
+        row.appendChild(head);
 
-    thead.appendChild(row);
-    table.appendChild(thead);
+        thead.appendChild(row);
+        table.appendChild(thead);
 
-    var tbody = document.createElement("tbody");
-    tbody.className = "delta-table-body";
-    //tbody.id = "acl-body";
+        var tbody = document.createElement("tbody");
+        tbody.className = "delta-table-body";
+        //tbody.id = "acl-body";
 
-    row = document.createElement("tr");
-    var prefix = type.substring(0, 4).toLowerCase();
-    var add = document.createElement("td");
-    row.appendChild(add);
+        row = document.createElement("tr");
+        var prefix = type.substring(0, 4).toLowerCase();
+        var add = document.createElement("td");
+        row.appendChild(add);
 
-    add = document.createElement("td");
-    add.id = prefix + "-add";
-    row.appendChild(add);
+        add = document.createElement("td");
+        add.id = prefix + "-add";
+        row.appendChild(add);
 
-    var red = document.createElement("td");
-    red.id = prefix + "-red";
-    row.appendChild(red);
+        var red = document.createElement("td");
+        red.id = prefix + "-red";
+        row.appendChild(red);
 
-    tbody.appendChild(row);
-    row = document.createElement("tr");
-    var cell = document.createElement("td");
-    cell.colSpan = "3";
-    cell.innerHTML = '<button  class="details-model-toggle" onclick="toggleTextModel(\'.' + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
-    row.appendChild(cell);
-    tbody.appendChild(row);
+        tbody.appendChild(row);
+        row = document.createElement("tr");
+        var cell = document.createElement("td");
+        cell.colSpan = "3";
+        cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'+ type.toLowerCase() +'-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
+        row.appendChild(cell);
+        tbody.appendChild(row);
 
-    table.appendChild(tbody);
-    var verification = document.getElementsByClassName("verification-table");
-    if (verification) {
-        panel.insertBefore(table, verification[0]);
-    } else {
-        panel.appendChild(table);
-    }
-
+        table.appendChild(tbody);
+        var verification = document.getElementsByClassName("verification-table");
+        if (verification) {
+            panel.insertBefore(table, verification[0]);
+        } else {
+            panel.appendChild(table);
+        }
 }
 
 function loadVisualization() {
@@ -1890,7 +1887,7 @@ function loadVisualization() {
         $("#serv-red").append($("#servr_viz_div"));
         $("#serv-red").find("#servr_viz_div").removeClass("hidden");
 
-        // Loading System Delta visualization 
+        // Loading System Delta visualization
         var subState = document.getElementById("instance-substate").innerHTML;
         var verificationTime = document.getElementById("verification-time").innerHTML;
         if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {
@@ -1928,8 +1925,8 @@ function toggleTextModel(viz_table, text_table) {
         alert("Text model not found");
     } else {
         $(viz_table.toLowerCase()).toggleClass("hide");
-        // delta-Service, service verification etc must always display before 
-        // everything else. 
+        // delta-Service, service verification etc must always display before
+        // everything else.
         if (text_table.toLowerCase().indexOf("service") > 0) {
             $(text_table).insertAfter("#details-table")
         }
@@ -2016,7 +2013,7 @@ function buttonModerate() {
     var verificationState = document.getElementById("instance-verification").innerHTML;
 
     if (superState === 'Create') {
-        // State 0 - Stuck 
+        // State 0 - Stuck
         if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_cancel").toggleClass("hide");
@@ -2053,7 +2050,7 @@ function buttonModerate() {
             $("#reverify").toggleClass("hide");
         }
     } else if (superState === 'Cancel') {
-        // State 0 - Stuck 
+        // State 0 - Stuck
         if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
@@ -2093,7 +2090,7 @@ function buttonModerate() {
             $("#reverify").toggleClass("hide");
         }
     } else if (superState === 'Reinstate') {
-        // State 0 - Stuck 
+        // State 0 - Stuck
         if (verificationState === "" || verificationState === "null" || subState === "INIT") {
             $("#force_delete").toggleClass("hide");
             $("#force_retry").toggleClass("hide");

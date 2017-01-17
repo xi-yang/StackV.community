@@ -1,0 +1,409 @@
+/*
+ * Filename: removed-styles.css
+ * Created by: Andrew Gu 2017
+ * Purpose: A collection of styles that I removed because I couldn't find them used anywhere - kept around
+ * just in case. This file should not be imported anywhere.
+*/
+.login {
+    padding: 5px;
+}
+.login-form {
+    position: absolute;
+    box-shadow: 0 0 25px 4px rgba(0, 0, 0, 0.5);
+    background: #ffffff;
+    top: 20%;
+    left: calc(50% - 145px);
+    width: 290px;
+    height: 240px;
+    padding: 40px;
+    border-top: 5px solid #364454;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+.form .switch {
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #364454;
+    width: 30px;
+    height: 30px;
+    margin: -5px 0 0;
+    -webkit-border-radius: 0 3px 0 3px;
+    -moz-border-radius: 0 3px 0 3px;
+    border-radius: 0 3px 0 3px;
+    color: #ffffff;
+    font-size: 12px;
+    line-height: 30px;
+    text-align: center;
+}
+.form .switch .tooltip {
+    position: absolute;
+    top: 5px;
+    right: -65px;
+    display: block;
+    background: rgba(0, 0, 0, 0.6);
+    width: auto;
+    padding: 5px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    text-align: left;
+    text-transform: uppercase;
+}
+.form .switch .tooltip:before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: -5px;
+    display: block;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-right: 5px solid rgba(0, 0, 0, 0.6);
+}
+.form .select-text {
+    font-family: "Roboto";
+    font-size: 14px;
+}
+.form .register {
+    display: none;
+}
+.form h2 {
+    margin: 0 0 10px;
+    line-height: 1;
+    color: #364454;
+    font-size: 18px;
+    font-weight: 400;
+}
+.form .alert {
+    position: relative;
+    background: #f3f3f3;
+    color: #666666;
+    font-size: 12px;
+    margin-bottom: 20px;
+    padding: 15px;
+    text-align: left;
+}
+.form .alert .fa-times-circle {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    display: block;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    margin-top: -8px;
+    float: right;
+}
+.form input {
+    outline: none;
+    display: block;
+    width: 100%;
+    margin: 0 0 20px;
+    padding: 10px 15px;
+    border: 1px solid #d9d9d9;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    color: #ccc;
+    font-family: "Roboto";
+    -webkti-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    font-size: 14px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-transition: all 0.3s linear 0s;
+    -moz-transition: all 0.3s linear 0s;
+    -ms-transition: all 0.3s linear 0s;
+    -o-transition: all 0.3s linear 0s;
+    transition: all 0.3s linear 0s;
+}
+.form input:focus {
+    color: #333333;
+    border: 1px solid #364454;
+}
+.form button {
+    cursor: pointer;
+    background: #364454;
+    width: 100%;
+    padding: 10px 15px;
+    margin-bottom: 25px;
+    border: 0;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    color: #ffffff;
+    font-family: "Roboto";
+    font-size: 14px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-transition: all 0.3s linear 0s;
+    -moz-transition: all 0.3s linear 0s;
+    -ms-transition: all 0.3s linear 0s;
+    -o-transition: all 0.3s linear 0s;
+    transition: all 0.3s linear 0s;
+}
+.form button:hover {
+    background: #637E9C;
+}
+.form footer {
+    background: #f2f2f2;
+    width: 100%;
+    padding: 15px 20px;
+    margin: 0 0 -40px -40px;
+    -webkit-border-radius: 0 0 3px 3px;
+    -moz-border-radius: 0 0 3px 3px;
+    border-radius: 0 0 3px 3px;
+    color: #666666;
+    font-size: 12px;
+    text-align: center;
+}
+.form footer a {
+    color: #333333;
+    text-decoration: none;
+}
+.info {
+    width: 300px;
+    margin: 25px auto;
+    text-align: center;
+}
+.info h1 {
+    margin: 0;
+    padding: 0;
+    font-size: 24px;
+    font-weight: 400;
+    color: #333333;
+}
+.info span {
+    color: #666666;
+    font-size: 12px;
+}
+.info span a {
+    color: #000000;
+    text-decoration: none;
+}
+.info span .fa {
+    color: #E60000;
+}
+.info span .spoilers {
+    color: #999999;
+    margin-top: 5px;
+    font-size: 10px;
+}
+.centered {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.center {
+    margin-left: 50%;
+}
+.form input#button-login, .form input.button-register {
+    cursor: pointer;
+    background: #364454;
+    width: 100%;
+    padding: 10px 15px;
+    margin-bottom: 25px;
+    border: 0;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    color: #ffffff;
+    font-family: "Roboto";
+    font-size: 14px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-transition: all 0.3s linear 0s;
+    -moz-transition: all 0.3s linear 0s;
+    -ms-transition: all 0.3s linear 0s;
+    -o-transition: all 0.3s linear 0s;
+    transition: all 0.3s linear 0s;
+}
+.form input#button-login:hover, .form input#button-register:hover {
+    background: #637E9C;
+}
+
+
+#0-mode-select {
+    z-index: 4;
+}
+
+.arrow-icon {
+    padding-right: 16px;
+}
+
+/*Not quite sure what these styles  used for*/
+.panel a {
+    color:#777;
+}
+
+.panel-scroll {
+    max-height: 90%;
+    overflow: hidden;
+    overflow-y: auto;
+}
+
+.panel a:hover {
+    text-decoration:none;
+    color:#222;
+}
+
+.panel .table td {
+    border-color: #eee;
+
+}
+
+#verification-pane {
+    position: absolute;
+    height: 80%;
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+}
+
+#verification-pane td {
+    float: left;
+    padding: 6px 6px;
+}
+
+#button-remove-users {
+    float: right;
+    font-size: 12px;
+    margin: 0px 71px;
+}
+
+#button-add-groups {
+    font-size: 12px;
+    margin-left: 7%;
+    margin-bottom: 0;
+    text-align: left;
+
+}
+
+
+.button-panel button {
+    float: right;
+    margin-left: 1%;
+}
+
+.v2-table {
+  background: white;
+  border: 0 none;
+  border-radius: 3px;
+  box-shadow: 0 0 20px 2px rgba(0, 0, 0, 0.4);
+  color: #2C3E50;
+}
+.v2-table tr::selection {
+  background: #333;
+  color: #fff;
+  text-shadow: 0 0 transparent;
+}
+.v2-table td {
+  border-top: 1px solid #e8edff;
+  padding: 10px 15px;
+}
+.v2-table td:not(:first-child) {
+  border-left: 1px solid #2C3E50;
+}
+.v2-table td:last-child {
+  border-left: none;
+}
+
+.v2-table th {
+  font-size: 14px;
+  font-weight: normal;
+  text-align: center;
+  padding: 12px 15px;
+}
+
+.details-model-toggle {
+  float:right;
+}
+
+/* SIDEBAR */
+
+#sidebar {
+  height: 100%;
+  text-align: left;
+  position: absolute;
+  width: 225px;
+  text-decoration: none;
+  z-index: 4;
+  left: -225px;
+}
+
+.sidebar-open {
+  transform: translate(225px, 0px);
+  box-shadow: 10px 3px 10px 2px rgba(0, 0, 0, 0.3);
+}
+
+#sidebar-toggle {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50px;
+  z-index: 5;
+}
+
+#sidebar-toggle img {
+  position: absolute;
+
+  transition: opacity .5s ease-in-out;
+}
+
+#sidebar-toggle img.img-off {
+  opacity: 0;
+
+  transition: opacity .5s ease-in-out;
+}
+
+#sidebar-contents {
+  background: linear-gradient(rgba(38, 38, 38, 0.4), rgba(0,0,0,.5)), url('/StackV-web/img/background.png');
+  top: 40px;
+  margin-left: 0px;
+  position: fixed;
+  height: calc(100% - 37px);
+  width: inherit;
+  border-right: 2px solid rgba(0, 0, 0, .1);
+
+  -webkit-transition: all 400ms ease-in-out;
+  transition: all 400ms ease-in-out;
+}
+
+#sidebar-list {
+  margin-top: 82px;
+}
+
+
+/************
+## Toggler - Credit PureDrawer ##
+************/
+
+
+/* Edits ---------------------- */
+
+.toggle-open {
+  top: 0px;
+}
+
+.toggle-open::before {
+  -ms-transform: translateX(-50%) rotate(45deg);
+  transform: translateX(-50%) rotate(45deg);
+  -webkit-transform: translateX(-50%) rotate(45deg);
+}
+.toggle-open::after {
+  -ms-transform: translateX(-50%) translateY(-10px) rotate(-45deg);
+  transform: translateX(-50%) translateY(-10px) rotate(-45deg);
+  -webkit-transform: translateX(-50%) translateY(-10px) rotate(-45deg);
+  top: 10px;
+}
