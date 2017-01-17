@@ -1442,9 +1442,9 @@ function subloadInstance() {
             head.innerHTML = instance[1] + " Service Details";
             row.appendChild(head);
             head = document.createElement("th");
-            head.innerHTML = '<div id="refresh-panel">'
-                    + 'Auto-Refresh Interval'
-                    + '<select id="refresh-timer" onchange="timerChange(this)">'
+            head.innerHTML = '<div id="refresh-panel" class="form-inline">'
+                    + '<label for="refresh-timer">Auto-Refresh Interval</label>'
+                    + '<select id="refresh-timer" onchange="timerChange(this)" class="form-control">'
                     + '<option value="off">Off</option>'
                     + '<option value="5">5 sec.</option>'
                     + '<option value="10">10 sec.</option>'
@@ -1452,7 +1452,7 @@ function subloadInstance() {
                     + '<option value="60" selected>60 sec.</option>'
                     + '</select>'
                     + '</div>'
-                    + '<button class="button-header" id="refresh-button" onclick="reloadDetails()">Refresh in    seconds</button>';
+                    + '<button class="button-header btn btn-sm" id="refresh-button" onclick="reloadDetails()">Refresh in    seconds</button>';
             row.appendChild(head);
             thead.appendChild(row);
             table.appendChild(thead);
@@ -1517,16 +1517,16 @@ function subloadInstance() {
             row.className = "button-row";
             cell = document.createElement("td");
             cell.innerHTML = '<div class="service-instance-panel">'
-                    + '<button class="hide instance-command" id="reinstate">Reinstate</button>'
-                    + '<button class="hide instance-command" id="force_reinstate">Force Reinstate</button>'
-                    + '<button class="hide instance-command" id="cancel">Cancel</button>'
-                    + '<button class="hide instance-command" id="force_cancel">Force Cancel</button>'
-                    + '<button class="hide instance-command" id="force_retry">Force Retry</button>'
-                    + '<button class="hide instance-command" id="modify">Modify</button>'
-                    + '<button class="hide instance-command" id="force_modify">Force Modify</button>'
-                    + '<button class="hide instance-command" id="reverify">Re-Verify</button>'
-                    + '<button class="hide instance-command" id="delete">Delete</button>'
-                    + '<button class="hide instance-command" id="force_delete">Force Delete</button>'
+                    + '<button class="btn btn-default hide instance-command" id="reinstate">Reinstate</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_reinstate">Force Reinstate</button>'
+                    + '<button class="btn btn-default hide instance-command" id="cancel">Cancel</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_cancel">Force Cancel</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_retry">Force Retry</button>'
+                    + '<button class="btn btn-default hide instance-command" id="modify">Modify</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_modify">Force Modify</button>'
+                    + '<button class="btn btn-default hide instance-command" id="reverify">Re-Verify</button>'
+                    + '<button class="btn btn-default hide instance-command" id="delete">Delete</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_delete">Force Delete</button>'
                     + '</div>';
             cell.colSpan = "2";
             row.appendChild(cell);
@@ -1633,7 +1633,7 @@ function subloadDelta() {
                 row = document.createElement("tr");
                 cell = document.createElement("td");
                 cell.colSpan = "2";
-                cell.innerHTML = '<button  class="details-model-toggle" onclick="toggleTextModel(\'.'
+                cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'
                         + delta[0] + '-delta-table\', \'#delta-' + delta[0] + '\');">Toggle Text Model</button>';
                 row.appendChild(cell);
                 tbody.appendChild(row);
@@ -1741,7 +1741,7 @@ function subloadVerification() {
             row = document.createElement("tr");
             cell = document.createElement("td");
             cell.colSpan = "3";
-            cell.innerHTML = '<button class="details-model-toggle" onclick="toggleTextModel(\'.verification-table', '#delta-System\');">Toggle Text Model</button>';
+            cell.innerHTML = '<button class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.verification-table', '#delta-System\');">Toggle Text Model</button>';
             row.appendChild(cell);
             tbody.appendChild(row);
 
@@ -1857,7 +1857,7 @@ function buildDeltaTable(type) {
         row = document.createElement("tr");
         var cell = document.createElement("td");
         cell.colSpan = "3";
-        cell.innerHTML = '<button  class="details-model-toggle" onclick="toggleTextModel(\'.'+ type.toLowerCase() +'-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
+        cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'+ type.toLowerCase() +'-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
         row.appendChild(cell);
         tbody.appendChild(row);
 
