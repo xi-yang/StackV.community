@@ -88,18 +88,7 @@ $(function () {
             evt.preventDefault();
         });
     });
-    // $("#sidebar").load("/StackV-web/sidebar.html", function () {
-    //     $("#sidebar-toggle").click(function (evt) {
-    //         $("#sidebar-toggle-1").toggleClass("img-off");
-    //         $("#sidebar-toggle-2").toggleClass("img-off");
-    //
-    //         $("#sidebar-contents").toggleClass("sidebar-open");
-    //         $("#main-pane").toggleClass("sidebar-open");
-    //
-    //         evt.preventDefault();
-    //     });
-    // });
-
+    
     $("#button-service-cancel").click(function (evt) {
         $("#service-specific").empty();
         $("#button-service-cancel").toggleClass("hide");

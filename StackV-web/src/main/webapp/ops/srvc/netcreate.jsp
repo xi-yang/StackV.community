@@ -21,8 +21,6 @@
     <body>
         <!-- NAV BAR -->
         <div id="nav"></div>
-        <!-- SIDE BAR -->
-        <div id="sidebar"></div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
         <div id="main-pane">

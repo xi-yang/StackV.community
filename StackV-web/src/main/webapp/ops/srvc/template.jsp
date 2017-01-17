@@ -11,7 +11,7 @@
         <meta charset="UTF-8">
         <title>Template Service</title>
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/style.css">        
+        <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
@@ -21,8 +21,6 @@
     <body>
         <!-- NAV BAR -->
         <div id="nav"></div>
-        <!-- SIDE BAR -->
-        <div id="sidebar"></div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
         <div id="main-pane">

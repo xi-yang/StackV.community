@@ -22,9 +22,6 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        <!-- SIDE BAR -->
-        <%-- <div id="sidebar">
-        </div> --%>
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <c:choose>

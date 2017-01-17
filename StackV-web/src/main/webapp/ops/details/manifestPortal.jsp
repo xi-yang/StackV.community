@@ -2,22 +2,22 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Antonio Heard 2016
 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in 
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  !-->
 
@@ -27,22 +27,18 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+<jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html >
+    <head>
         <meta charset="UTF-8">
         <title>Manifest Portal</title>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
         <script src="/StackV-web/js/nexus.js"></script>
 
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
         <style>
             .manifest-list{
                 /*list-style:none;*/
@@ -72,12 +68,12 @@
                  </table>
                                 <script>
                                     /* ALERT CHECK IF MAP IS ARRAY
-                                     * 
-                                     * 
-                                     * 
-                                     * 
-                                     * 
-                                     * ALERT CHECK IF MAP IS ARRAY 
+                                     *
+                                     *
+                                     *
+                                     *
+                                     *
+                                     * ALERT CHECK IF MAP IS ARRAY
                                      */
                         function parseMap(map, container, container_type, base) {
                             for (var key in map) {
@@ -101,7 +97,7 @@
                                         for (var i in map[key]) {
                                             if ((typeof map[key[i]]) === "string" ) {
                                                 string += "<li><b> " + i + "</b>: " + map[key][i] + "</li>";
-                                                container.append(string);   
+                                                container.append(string);
                                                 string = "";
                                             } else if (map[key][i].constructor === Array)   {
                                                 parseMap(map[key][i], n3,"list", base);
@@ -125,14 +121,14 @@
                                     if ((map[key].constructor === Array || isMap) && !isString) {
                                         var n3 = $("<ul class=\"manifest-list\"></ul>");
                                         if (map[key].constructor === Array)  {
-                                           // if ($.trim(key).length !== 1) { // hack will replace 
+                                           // if ($.trim(key).length !== 1) { // hack will replace
                                                 var item = $("<li><b>"+key+"</b></li>");
                                                 n3.append(item);
                                                 //item.append(n3);
                                            // }
                                             container.append(n3);
                                         } else {
-                                            if ($.trim(key).length !== 1) { // hack will replace 
+                                            if ($.trim(key).length !== 1) { // hack will replace
                                                 var item = $("<li><b>"+key+"</b></li>");
                                                 //container.append(item);
                                                 //item.append(n3);
@@ -150,7 +146,7 @@
                                         for (var i in map[key]) {
                                             if ((typeof map[key][i]) === "string" ) {// && ($.trim(map[key[i]]) !== '')) {
                                                 string += "<li><b> " + i + "</b>: " + map[key][i] + "</li>";
-                                                n3.append(string);    
+                                                n3.append(string);
                                                 string = "";
                                             } else {
                                                // if ()
@@ -158,7 +154,7 @@
                                                 //if (!isNaN($.trim(key))) {
                                                     var bullet = $("<li></li>");
                                                     n3.append(bullet);
-                                                
+
                                                     var newList = $("<ul class=\"manifest-list\"></ul>");
                                                     bullet.append(newList);
                                                 //bullet.append(newList);
@@ -169,40 +165,40 @@
                                                 //}
                                                 // to set back just use N3
                                             }
-                                        }                                        
+                                        }
                                     } else {
                                         if ($.trim(map[key]) !== '') {
-                                            
+
                                             var n3 = $("<ul class=\"manifest-list\"></ul>");
-                                           
+
                                             string = $("<li><b> " + key + "</b>: " + map[key] + "</li>");
                                             n3.append(string);
                                             container.append(n3);
-                                            //container.append(string);                                        
+                                            //container.append(string);
                                         }
-                                    }                                 
-                                }                        
+                                    }
+                                }
                             }
                         }
-                        
+
                         var UUID = location.search.split("?uuid=")[1];
                         var serviceName = $("#manifest_table_body").attr("data-service-name");
-                        
+
                         switch (serviceName){
                             case "Dynamic Network Connection":
                                 loadManifest("dnc-manifest-template.xml");
                                 break;
                             case "Virtual Cloud Network":
                                 $.get( {
-                                    url: "/StackV-web/restapi/service/property/" + UUID + "/host/", 
+                                    url: "/StackV-web/restapi/service/property/" + UUID + "/host/",
                                     success: function( data ) {
                                         if (data === "ops") {
                                             loadManifest("vcn-ops-manifest-template.xml");
                                         } else if (data === "aws") {
                                             loadManifest("vcn-aws-manifest-template.xml");
-                                        } 
-                                    }, 
-                                    dataType: "text" 
+                                        }
+                                    },
+                                    dataType: "text"
                                   });
                                 break;
                             case "Advanced Hybrid Cloud":
@@ -212,7 +208,7 @@
                         loadManifest();
                         function loadManifest(templateURL) {
                             $.get( {
-                                url: "/StackV-web/data/xml/manifest-templates/" + templateURL, 
+                                url: "/StackV-web/data/xml/manifest-templates/" + templateURL,
                                // url: "/StackV-web/data/xml/manifest-templates/"    + "manifest-ahc1.json",
                                 success: function( data ) {
 //                                     var manifest = JSON.parse(data.jsonTemplate);
@@ -235,7 +231,7 @@
                                             xhr.setRequestHeader("Authorization", "bearer " + token);
                                         },
 
-                                        headers: { 
+                                        headers: {
                                             'Accept': 'application/json',
                                             'Content-Type': 'application/xml'
                                         },
@@ -255,12 +251,12 @@
 
                                         dataType: "json"
                                     });
-                                }, 
-                                dataType: "text" 
+                                },
+                                dataType: "text"
                               });
-                                                          //    dataType: "json" 
-                    }     
-                          
+                                                          //    dataType: "json"
+                    }
+
                </script>
 
         </div>
