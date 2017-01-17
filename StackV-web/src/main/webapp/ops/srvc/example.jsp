@@ -11,7 +11,7 @@
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >
+<html>
     <head>
         <meta charset="UTF-8">
         <title>Example></title>

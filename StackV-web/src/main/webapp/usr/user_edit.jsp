@@ -12,7 +12,7 @@
     <c:redirect url="user_edit.jsp?user_id=${user.id}" />
 </c:if>
 <!DOCTYPE html>
-<html >
+<html>
     <head>
         <meta charset="UTF-8">
         <title>User Details</title>

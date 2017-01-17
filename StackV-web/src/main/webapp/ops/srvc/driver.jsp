@@ -6,7 +6,7 @@
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
-<html >
+<html>
     <head>
         <meta charset="UTF-8">
         <title>Driver Service</title>
