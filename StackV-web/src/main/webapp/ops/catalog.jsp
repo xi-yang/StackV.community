@@ -10,11 +10,7 @@
     <head>
         <meta charset="UTF-8">
         <title>Service Catalog</title>
-        <script src="/StackV-web/js/keycloak.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
-        
+
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
@@ -111,5 +107,9 @@
             <!-- TAG PANEL -->
             <div id="tag-panel"></div>
         </div>
+        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
     </body>
 </html>

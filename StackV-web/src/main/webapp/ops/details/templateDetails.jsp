@@ -1,15 +1,40 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>  
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html >
+    <head>
         <meta charset="UTF-8">
         <title>Service Details</title>
-        <script src="/StackV-web/js/keycloak.js"></script> 
+
+
+        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel="stylesheet" href="/StackV-web/css/style.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
+
+    </head>
+
+    <body>
+        <!-- NAV BAR -->
+        <div id="nav">
+        </div>
+        <!-- SIDE BAR -->
+        <div id="sidebar">
+        </div>
+        <!-- MAIN PANEL -->
+        <div id="main-pane">
+            <div id="details-panel">
+            </div>
+            <div id="loading-panel"></div>
+        </div>
+        <div id="details-viz" ></div>
+
+        <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
         <script src="/StackV-web/js/nexus.js"></script>
@@ -48,33 +73,5 @@
             });
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
-
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
-        <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">                
-
-    </head>
-
-    <body>        
-        <!-- NAV BAR -->
-        <div id="nav">
-        </div>
-        <!-- SIDE BAR -->
-        <div id="sidebar">
-        </div>
-        <!-- MAIN PANEL -->
-        <div id="main-pane">         
-            <div id="details-panel">
-            </div>  
-            <div id="loading-panel"></div>
-        </div>
-        <div id="details-viz" ></div>
     </body>
 </html>

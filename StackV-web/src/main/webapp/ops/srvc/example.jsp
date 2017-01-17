@@ -4,24 +4,19 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+<jsp:setProperty name="serv" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html >
+    <head>
         <meta charset="UTF-8">
         <title>Example></title>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
 
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
 
@@ -30,23 +25,23 @@
         <div id="nav">
         </div>
         <!-- SIDE BAR -->
-        <div id="sidebar">            
+        <div id="sidebar">
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <c:choose>
                 <c:when test="${param.ret != 'sub'}">
-                    <div id="service-specific">                
+                    <div id="service-specific">
                         <form action="/StackV-web/ops/srvc/example.jsp" method="post">
                             <input type="hidden" name="ret" value="sub" />
-                            <table class="management-table" id="service-form">                    
+                            <table class="management-table" id="service-form">
                                 <thead>
                                     <tr>
                                         <th>Form Header</th>
-                                        <th style="text-align: right"></th>                            
+                                        <th style="text-align: right"></th>
                                     </tr>
                                 </thead>
-                                <tbody>                    
+                                <tbody>
                                     <tr>
                                         <td>How many times do you want to print the user's name?</td>
                                         <td><input type="number" name="count" required/></td>
@@ -78,11 +73,13 @@
                     </div>
                 </c:otherwise>
             </c:choose>
-        </div>  
+        </div>
         <!-- TAG PANEL -->
-        <div id="tag-panel"> 
-        </div>        
+        <div id="tag-panel">
+        </div>
         <!-- JS -->
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
         <script>
             $(function () {
                 $("#sidebar").load("/StackV-web/sidebar.html", function () {
@@ -105,6 +102,6 @@
                 });
                 $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
             });
-        </script>        
+        </script>
     </body>
 </html>

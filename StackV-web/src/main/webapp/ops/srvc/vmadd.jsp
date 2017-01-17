@@ -4,27 +4,19 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+<jsp:setProperty name="serv" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html >
+    <head>
         <meta charset="UTF-8">
         <title>Virtual Machine Service</title>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
-
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
@@ -36,11 +28,11 @@
         <div id="nav">
         </div>
         <!-- SIDE BAR -->
-        <div id="sidebar">            
+        <div id="sidebar">
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
-            <c:choose>                
+            <c:choose>
                 <c:when test="${empty param.ret}">
                     <div id="service-specific">
                         <div id="service-top">
@@ -54,12 +46,12 @@
                                         <tr>
                                             <th>Select Topology</th>
                                             <th>
-                                                <select form="vm-form" name="topologyUri" onchange="topoSelect(this)">                                                                                                  
+                                                <select form="vm-form" name="topologyUri" onchange="topoSelect(this)">
                                                     <option></option>
                                                     <c:forEach var="driver" items="${driverlist.rows}">
                                                         <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                                     </c:forEach>
-                                                </select>                                                
+                                                </select>
                                             </th>
                                         </tr>
                                     </thead>
@@ -71,7 +63,7 @@
                                   <form id="service-template-form" action="/StackV-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <input type="hidden" name="driverType" value="${param.vm_type}" />
-                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;"> 
+                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;">
                                         <thead>
                                             <tr>
                                                 <th>Templates</th>
@@ -82,12 +74,12 @@
                                             <tr>
                                                 <td>AWS</td>
                                                 <td><input type="submit" name="template1" value="Select" /></td>
-                                            </tr>                                            
+                                            </tr>
                                         </tbody>
-                                    </table>    
-                                </form>                               
-                                
-                                <form id="vm-form" action="/StackV-web/ServiceServlet" method="post">      
+                                    </table>
+                                </form>
+
+                                <form id="vm-form" action="/StackV-web/ServiceServlet" method="post">
                                     <input type="hidden" name="userID" value="${user.getId()}"/>
                                     <input type="hidden" name="driverType" value="${param.vm_type}" />
                                     <!-- AWS FORM -->
@@ -96,14 +88,14 @@
                                             <thead>
                                                 <tr>
                                                     <th>AWS Details</th>
-                                                    <th style="text-align: right"></th>                            
+                                                    <th style="text-align: right"></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <c:if test="${not empty param.topo}">
                                                     <tr>
 
-                                                        <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I 
+                                                        <sql:query dataSource="${rains_conn}" sql="SELECT value FROM driver_instance_property P, driver_instance I
                                                                    WHERE property = 'region' AND I.id = P.driverInstanceId AND I.topologyUri = ?" var="regionlist">
                                                             <sql:param value="${param.topo}" />
                                                         </sql:query>
@@ -115,7 +107,7 @@
                                                             </c:forEach>
                                                         </td>
 
-                                                    </tr> 
+                                                    </tr>
                                                 </c:if>
                                                 <tr>
                                                     <td>VPC ID</td>
@@ -125,7 +117,7 @@
                                                             <option value="${param.topo}:vpc-45143020">vpc-45143020</option>
                                                         </select>
                                                     </td>
-                                                </tr>  
+                                                </tr>
                                                 <tr>
                                                     <td>OS Type</td>
                                                     <td>
@@ -172,7 +164,7 @@
                                                                     <th>Type</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody>                                                                
+                                                            <tbody>
                                                                 <tr>
                                                                     <td>Root</td>
                                                                     <td>
@@ -190,7 +182,7 @@
                                                                             <option value="standard">Standard</option>
                                                                             <option value="io1">io1</option>
                                                                             <option value="gp2">gp2</option>
-                                                                        </select>                                                        
+                                                                        </select>
                                                                     </td>
                                                                 </tr>
                                                             </tbody>
@@ -202,11 +194,11 @@
                                                     <td></td>
                                                     <td>
                                                         <input class="button-register" name="install" type="submit" value="Install" />
-                                                        <input class="button-register" type="button" 
+                                                        <input class="button-register" type="button"
                                                                value="Add Volume" onClick="addVolume()">
-                                                        <input type="hidden" name="graphTopo" value="${param.graphTopo}"/>                                                        
+                                                        <input type="hidden" name="graphTopo" value="${param.graphTopo}"/>
                                                     </td>
-                                                </tr> 
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </c:if>
@@ -216,11 +208,11 @@
                                             <thead>
                                                 <tr>
                                                     <th>OpenStack Details</th>
-                                                    <th style="text-align: right"></th>                            
+                                                    <th style="text-align: right"></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>                                                        
+                                                <tr>
                                                     <td>Host</td>
                                                     <td>
                                                         <select name="host" required>
@@ -228,7 +220,7 @@
                                                             <option value="Test">Test</option>
                                                         </select>
                                                     </td>
-                                                </tr> 
+                                                </tr>
                                                 <tr>
                                                     <td>VPC ID</td>
                                                     <td>
@@ -237,7 +229,7 @@
                                                             <option value="${param.topo}:vpc-45143020">vpc-45143020</option>
                                                         </select>
                                                     </td>
-                                                </tr>  
+                                                </tr>
                                                 <tr>
                                                     <td>OS Type</td>
                                                     <td>
@@ -271,18 +263,18 @@
                                                             <option value="${param.topo}:subnet-a8a632f1, 10.0.1.0">subnet-a8a632f1, 10.0.1.0</option>
                                                         </select>
                                                     </td>
-                                                </tr>                                               
+                                                </tr>
 
                                                 <tr>
                                                     <td></td>
                                                     <td>
-                                                        <input class="button-register" name="install" type="submit" value="vm" />                                                        
+                                                        <input class="button-register" name="install" type="submit" value="vm" />
                                                         <input type="hidden" name="graphTopo" value="none"/>
                                                     </td>
-                                                </tr> 
+                                                </tr>
                                             </tbody>
                                         </table>
-                                    </c:if>                                    
+                                    </c:if>
                                 </form>
                             </div>
                         </div>
@@ -296,30 +288,33 @@
                                 </c:when>
                                 <c:when test="${param.ret == '1'}">
                                     Error Requesting System Instance UUID.
-                                </c:when>    
+                                </c:when>
                                 <c:when test="${param.ret == '2'}">
                                     Plugin Failure.
-                                </c:when>    
+                                </c:when>
                                 <c:when test="${param.ret == '3'}">
                                     Connection Error.
-                                </c:when>    
+                                </c:when>
                                 <c:when test="${param.ret == '4'}">
                                     Error Parsing Parameters.
-                                </c:when>                                        
-                            </c:choose>                        
+                                </c:when>
+                            </c:choose>
 
-                            <br><a href="/StackV-web/ops/srvc/vmadd.jsp?self=true">Install Another VM.</a>                                
+                            <br><a href="/StackV-web/ops/srvc/vmadd.jsp?self=true">Install Another VM.</a>
                             <br><a href="/StackV-web/ops/catalog.jsp">Return to Services.</a>
                             <br><a href="/StackV-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
                         </div>
                     </c:otherwise>
                 </c:choose>
-            </div>       
+            </div>
         </div>
         <!-- TAG PANEL -->
-        <div id="tag-panel"> 
-        </div>        
+        <div id="tag-panel">
+        </div>
         <!-- JS -->
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
         <script>
             $(function () {
                 $("#sidebar").load("/StackV-web/sidebar.html", function () {
@@ -342,6 +337,6 @@
                 });
                 $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
             });
-        </script>        
+        </script>
     </body>
 </html>

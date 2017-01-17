@@ -10,17 +10,8 @@
     <head>
         <meta charset="UTF-8">
         <title>Driver Service</title>
-        <script src="/StackV-web/js/keycloak.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
-
-        <%-- <link rel="stylesheet" href="/StackV-web/css/animate.min.css"> --%>
-        <%-- <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css"> --%>
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <%-- <link rel="stylesheet" href="/StackV-web/css/bootstrap.css"> --%>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <%-- <link rel="stylesheet" href="/StackV-web/css/driver.css"> --%>
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
@@ -287,7 +278,12 @@
         <!-- TAG PANEL -->
         <div id="tag-panel">
         </div>
+
         <!-- JS -->
+        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
         <script>
             $(function () {
                 $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);

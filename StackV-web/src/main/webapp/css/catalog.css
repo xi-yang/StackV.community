@@ -87,6 +87,9 @@ table#status-table th {
   padding-top: 12px;
   padding-bottom: 12px;
 }
+table#status-table tr {
+  cursor: pointer;
+}
 
 div#catalog-tab-content {
   padding-top: 20px;
