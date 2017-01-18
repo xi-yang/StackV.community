@@ -8,10 +8,11 @@ define(["local/stackv/topology/model",
     "local/stackv/topology/ContextMenu",
     "local/stackv/topology/TagDialog",
     "local/stackv/topology/OMMPanel",
-    "local/stackv/topology/TagPanel"],
+    "local/stackv/topology/TagPanel", 
+    "local/stackv/topology/ServicePanel"],
         function (m, layout, render, d3, utils, 
                   DropDownTree, ContextMenu, TagDialog, OMMPanel,
-                  TagPanel) {
+                  TagPanel, ServicePanel) {
             // iterms to load should be passed in 
             function Visualization() {
                     var settings = {
@@ -80,7 +81,16 @@ define(["local/stackv/topology/model",
                                 console.log(data);
                                 if (data === "true") {
                                     //alert(textStatus);
-                                    $('#servicePanel-contents').removeClass("hide");
+                                    
+                                    /**
+                                     *  Remove HIDE FROM SERVICE PANEL 
+                                     *  
+                                     *  
+                                     *  
+                                     *  
+                                     *  
+                                     */
+                                    
                                     map_ = utils.map_;
                                     bsShowFadingMessage = utils.bsShowFadingMessage;
                                     tagDialog = new TagDialog(userId);
@@ -112,7 +122,8 @@ define(["local/stackv/topology/model",
                                     // modules loaded should be dynamic 
                                     tagPanel =  TagPanel();
                                     tagPanel.init();
-
+                                    var servicePanel = ServicePanel();
+                                    servicePanel.init();
 
                                     window.onbeforeunload = function(){ 
                                         persistVisualization();
@@ -131,7 +142,6 @@ define(["local/stackv/topology/model",
                             }
                         });
 
-                        buildServicePanel(userId, token);
 
                         $("#loadingPanel").addClass("hide");
                         $("#hoverdiv_" + viz_settings.name).removeClass("hide");
@@ -149,8 +159,22 @@ define(["local/stackv/topology/model",
                                 .attr("font-size", "80px")
                                 .text(error);
 
-                        $('#servicePanel-contents').removeClass("hide");
-                        $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');
+                                                           /**
+                                     *  Remove HIDE FROM SERVICE PANEL 
+                                     *  
+                                     *  
+                                     *  
+                                     *  
+                                     *  
+                                     */
+                        /*
+                         * 
+                         * 
+                         * 
+                         *  service panel set error text 
+                         */
+                         //$('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');
+
                     }
 
                     function allNodesMatch(nodePositions, nodes){
@@ -476,10 +500,6 @@ define(["local/stackv/topology/model",
                             evt.preventDefault();
                         });
 
-                        $("#servicePanel-tab").click(function (evt) {
-                            $("#servicePanel").toggleClass("closed");
-                            evt.preventDefault();
-                        });
                     }
 
                     //animStart and animStop are primarily intended as debug functions
@@ -689,116 +709,7 @@ define(["local/stackv/topology/model",
                         });
                     }
                     
-                    function buildServicePanel(userId, token) {
-                        var tbody = document.getElementById("servicePanel-body");
-                        var baseUrl = window.location.origin;
-
-                        var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
-                        $.ajax({
-                            url: apiUrl,
-                            type: 'GET',
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader("Authorization", "bearer " + token);
-                            },
-                            success: function (result) {
-                                for (var i = 0; i < result.length; i++) {
-                                    var instance = result[i];
-
-                                    var row = document.createElement("tr");
-                                    row.setAttribute("id", instance[1]);
-                                    row.setAttribute("class", "service-instance-item");
-
-                                    var cell1_1 = document.createElement("td");
-                                    cell1_1.innerHTML = instance[3];
-                                    var cell1_2 = document.createElement("td");
-                                    cell1_2.innerHTML = instance[0];
-                                    var cell1_4 = document.createElement("td");
-                                    cell1_4.innerHTML = instance[2];
-                                    row.appendChild(cell1_1);
-                                    row.appendChild(cell1_2);
-                                    row.appendChild(cell1_4);
-                                    tbody.appendChild(row);
-                                }
-                                initServiceInstanceItems();
-                            },
-
-                            error: function (jqXHR, textStatus, errorThrown) {
-                                console.log("No service instances.");
-
-                            }
-                        });
-                    }
-                    
-                    
-                    function initServiceInstanceItems() {
-                        $(".service-instance-item").each(function () {
-                            var that = this;
-                            var DELAY = 700, clicks = 0, timer = null;
-
-                            $(that).click(function () {
-                                clicks++;  //count clicks
-
-                                if (clicks === 1) {
-                                    timer = setTimeout(function () {
-                                        clickServiceInstanceItem(that);
-                                        clicks = 0;
-                                    }, DELAY);
-                                } else {
-                                    clearTimeout(timer);    //prevent single-click action
-                                    if ($(that).hasClass("service-instance-highlighted")) {
-                                        $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
-                                        render.API.setHighlights([], "serviceHighlighting");
-                                        render.API.highlightElements("serviceHighlighting");                        
-                                        clicks = 0;             //after action performed, reset counter
-                                    } else {
-                                        timer = setTimeout(function () {
-                                            clickServiceInstanceItem(that);
-                                            clicks = 0;
-                                        }, DELAY);
-                                    }
-                                }
-                            }).dblclick(function (e) {
-                                e.preventDefault();
-                            });
-                        });
-                    }
-
-                    function clickServiceInstanceItem(item) {
-                        var UUID = $(item).attr('id');
-
-                        $.ajax({
-                            crossDomain: true,
-                            type: "GET",
-                            url: "/StackV-web/restapi/app/service/availibleitems/" + UUID,
-                            beforeSend: function (xhr) {
-                               xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                            },
-                            dataType: "json",
-
-                            success: function (data, textStatus, jqXHR) {
-                                if (data === null) {
-                                    bsShowFadingMessage("#servicePanel", "Data not found", "top", 1000);
-                                } else {
-                                    $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
-                                    $(item).addClass('service-instance-highlighted');
-                                    //alert(data);
-                                    // Union of verified addition and unverified reduction
-                                    var unionObj = data;
-                                    var result = model.makeSubModel([unionObj]);
-                                    var modelArr = model.getModelMapValues(result);
-
-                                    render.API.setHighlights(modelArr, "serviceHighlighting");
-                                    render.API.highlightElements("serviceHighlighting");
-
-                                }
-                            },
-
-                            error: function (jqXHR, textStatus, errorThrown) {
-                                //alert("Error getting status.");
-                                alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
-                            }
-                        });
-                    }
+                                        
                     function initDialogs() {
                         $(document).ready(function () {
                            $("#omm-panel").load("/StackV-web/ommPanel.html");

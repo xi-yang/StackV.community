@@ -243,7 +243,8 @@ define([], function () {
         var auth = {
             username : sessionStorage.getItem("username"),
             token : sessionStorage.getItem("token"),
-            loggedIn : sessionStorage.getItem("loggedIn")
+            loggedIn : sessionStorage.getItem("loggedIn"),
+            subject: sessionStorage.getItem("subject")
         };
         return auth;
     }
