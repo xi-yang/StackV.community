@@ -2,13 +2,13 @@
 <%@page errorPage = "/StackV-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
         <title>Overview</title>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
@@ -21,23 +21,20 @@
         <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
 
-    <body>        
+    <body>
         <!-- NAV BAR -->
         <div id="nav">
-        </div>
-        <!-- SIDE BAR -->
-        <div id="sidebar">            
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <br><br>
             Welcome ${user.firstName} ${user.lastName}.<br>
-            
-            
+
+
             <c:redirect url="/ops/catalog.jsp" />
-            
-            
-        </div>        
+
+
+        </div>
         <!-- JS -->
         <script>
             $(function () {
@@ -61,6 +58,6 @@
                 });
                 $("#nav").load("/StackV-web/navbar.html");
             });
-        </script>        
+        </script>
     </body>
 </html>

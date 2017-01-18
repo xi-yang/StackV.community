@@ -147,7 +147,7 @@ public class MCETools {
         return new MCETools.Path(path);
     }
 
-    final public static int KSP_K_DEFAULT = 50;
+    final public static int KSP_K_DEFAULT = 10;
 
     public static List<Path> computeKShortestPaths(Model model, Resource nodeA, Resource nodeZ, int K, Filter<Statement> filters) {
         final HashSet<Statement> maskedLinks = new HashSet<>();
@@ -975,18 +975,26 @@ public class MCETools {
         // try use same suggested VLAN from next hop OpenFlow port or from last (reverse order) 'VLAN' port
         HashMap lastParamMap = null;
         if (nextHop != null && portParamMap.containsKey(nextHop)) {
-            lastParamMap = (HashMap) portParamMap.get(prevHop);
+            lastParamMap = (HashMap) portParamMap.get(nextHop);
         }
         if (lastParamMap == null || !lastParamMap.containsKey("suggestedVlan")) {
             lastParamMap = (HashMap) portParamMap.get(lastPort);
         }
+        Integer flowNameVlan = null; // hold the tag for consistent flow naming
         Integer suggestedVlan = null;
         if (lastParamMap != null && lastParamMap.containsKey("suggestedVlan")) {
             suggestedVlan = (Integer) lastParamMap.get("suggestedVlan");
+            if (!vlanRange.hasTag(suggestedVlan)) { // suggestedVlan invalid //@TODO: exception if (nextHop == lastPort)
+                flowNameVlan = suggestedVlan;
+                suggestedVlan = null;
+            }
         }
         // init vlan or do tanslation to any tag
         if (suggestedVlan == null) {
             suggestedVlan = vlanRange.getRandom();
+        }
+        if (flowNameVlan == null) {
+            flowNameVlan = suggestedVlan;
         }
         paramMap.put("suggestedVlan", suggestedVlan);
         
@@ -1002,7 +1010,7 @@ public class MCETools {
         // add 'VLAN' flows for this port 
         if (prevHop != null && prevHop.equals(resFlowSvc)) {
             //$$ add new flow with match currentHop as in_port & match suggestedVlan + action = strip VLAN
-            String inFlowId = currentHop.getURI() + ":flow=input_vlan"+suggestedVlan;
+            String inFlowId = currentHop.getURI() + ":flow=input_vlan"+flowNameVlan;
             Resource resInFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), inFlowId), Mrs.Flow);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowTable, Mrs.hasFlow, resInFlow));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowSvc, Mrs.providesFlow, resInFlow));
@@ -1023,7 +1031,7 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
             
             //$$ add new flow with action output to currentHop + swap suggestedVlan VLAN 
-            String outFlowId = currentHop.getURI() + ":flow=output_vlan"+suggestedVlan;
+            String outFlowId = currentHop.getURI() + ":flow=output_vlan"+flowNameVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowTable, Mrs.hasFlow, resOutFlow));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowSvc, Mrs.providesFlow, resOutFlow));
@@ -1041,7 +1049,7 @@ public class MCETools {
         if (nextHop != null && nextHop.equals(resFlowSvc) && lastPort != null) {
             // swap input and output flow IDs from lastPort
             //@TODO: check input and output flows exist before swap
-            String inFlowId = lastPort.getURI() + ":flow=output_vlan" + suggestedVlan;
+            String inFlowId = lastPort.getURI() + ":flow=output_vlan" + flowNameVlan;
             Resource resInFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), inFlowId), Mrs.Flow);
             //$$ add match: currentHop as in_port & suggestedVlan
             //$$ add action: strip VLAN
@@ -1060,7 +1068,7 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
 
-            String outFlowId = lastPort.getURI() + ":flow=input_vlan" + suggestedVlan;
+            String outFlowId = lastPort.getURI() + ":flow=input_vlan" + flowNameVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
 
             //$$ add actions: output to currentHop + swap suggestedVlan 

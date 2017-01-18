@@ -1,4 +1,4 @@
-<%-- 
+<%--
     Document   : fl2p
     Created on : Mar 3, 2016, 10:39:58 AM
     Author     : ranjitha
@@ -10,27 +10,19 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+<jsp:setProperty name="serv" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
         <title>Flow Based Layer2 Service</title>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
-
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
@@ -41,17 +33,14 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        <!-- SIDE BAR -->
-        <div id="sidebar">            
-        </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
-            <c:choose>                  
+            <c:choose>
                 <c:when test="${empty param.ret}">  <!-- Display this section when no return value supplied -->
-                    <div id="service-specific">                        
+                    <div id="service-specific">
                         <div id="service-top">
                             <div id="service-title">
-                                Flow Based Layer 2 Protection 
+                                Flow Based Layer 2 Protection
                             </div>
                             <div id="service-menu">
                                 <c:if test="${not empty param.self}">
@@ -64,7 +53,7 @@
                         </div>
                         <div id="service-bottom">
                             <div id="service-fields">
-                                <table class="management-table" id="service-form" style="margin-bottom: 0px;"> 
+                                <table class="management-table" id="service-form" style="margin-bottom: 0px;">
                                     <thead>
                                         <tr>
                                             <th>Templates</th>
@@ -122,7 +111,7 @@
                                 </form>
                             </div>
                         </div>
-                    </div> 
+                    </div>
                 </c:when>
 
                 <c:otherwise>                       <!-- Display this section when return value supplied -->
@@ -133,16 +122,16 @@
                             </c:when>
                             <c:when test="${param.ret == '1'}">
                                 Error 1.
-                            </c:when>    
+                            </c:when>
                             <c:when test="${param.ret == '2'}">
                                 Error 2.
-                            </c:when>    
+                            </c:when>
                             <c:when test="${param.ret == '3'}">
                                 Error 3.
-                            </c:when>                                      
-                        </c:choose>                        
+                            </c:when>
+                        </c:choose>
 
-                        <br><a href="/StackV-web/ops/srvc/template.jsp?self=true">Repeat.</a>                                
+                        <br><a href="/StackV-web/ops/srvc/template.jsp?self=true">Repeat.</a>
                         <br><a href="/StackV-web/ops/catalog.jsp">Return to Services.</a>
                         <br><a href="/StackV-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
                     </div>
@@ -150,9 +139,12 @@
             </c:choose>
         </div>
         <!-- TAG PANEL -->
-        <div id="tag-panel"> 
-        </div>          
+        <div id="tag-panel">
+        </div>
         <!-- JS -->
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
         <script>
             $(function () {
                 $("#sidebar").load("/StackV-web/sidebar.html", function () {
@@ -175,7 +167,6 @@
                 });
                 $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
             });
-        </script>        
+        </script>
     </body>
 </html>
-

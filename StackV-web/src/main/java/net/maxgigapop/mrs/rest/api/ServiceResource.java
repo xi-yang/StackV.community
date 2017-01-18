@@ -350,7 +350,7 @@ public class ServiceResource {
     public ApiDeltaVerification verify(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
         ApiDeltaVerification apiDeltaVerification = new ApiDeltaVerification();
         java.util.Date now = new java.util.Date();
-        apiDeltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        apiDeltaVerification.setCreationTime(now.toString());
         apiDeltaVerification.setReferenceUUID(svcDeltaUUID);
         ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
         serviceCallHandler.verifyDelta(svcDeltaUUID, deltaVerification, false);

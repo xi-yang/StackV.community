@@ -4,27 +4,19 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+<jsp:setProperty name="serv" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
         <title>View Creation Service</title>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
-
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
@@ -35,12 +27,9 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        <!-- SIDE BAR -->
-        <div id="sidebar">            
-        </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
-            <c:choose>                
+            <c:choose>
                 <c:when test="${empty param.ret}">
                     <div id="service-specific">
                         <div id="service-top">
@@ -54,7 +43,7 @@
                                             <th>Mode</th>
                                             <th>
                                                 <select name="mode" onchange="viewmodeSelect(this)">
-                                                    <option value="manage">Manage</option>                                                
+                                                    <option value="manage">Manage</option>
                                                     <c:choose>
                                                         <c:when test="${param.mode == 'create'}">
                                                             <option value="create" selected>Create</option>
@@ -63,7 +52,7 @@
                                                             <option value="create">Create</option>
                                                         </c:otherwise>
                                                     </c:choose>
-                                                </select>                                                
+                                                </select>
                                             </th>
                                         </tr>
                                     </thead>
@@ -78,7 +67,7 @@
                                         <table class="management-table" id="manage-table">
                                             <thead><tr><th></th><th></th></tr></thead>
                                             <tbody>
-                                                <tr>                                                    
+                                                <tr>
                                                     <td>Select Filter</td>
                                                     <td>
                                                         <c:if test="${not empty user.modelNames}">
@@ -106,7 +95,7 @@
                                     </c:if>
                                     <!-- Creation Form -->
                                     <c:if test="${param.mode == 'create'}">
-                                        <!-- View Creation Table -->                                        
+                                        <!-- View Creation Table -->
 
                                         <table class="management-table" id="query-table">
                                             <thead>
@@ -148,7 +137,7 @@
                                                     <td></td>
                                                     <td>
                                                         <input class="button-register" name="create" type="submit" value="Submit" />
-                                                        <input class="button-register" type="button" value="Add Query" onClick="addQuery()">                                                        
+                                                        <input class="button-register" type="button" value="Add Query" onClick="addQuery()">
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -159,7 +148,7 @@
                                             <thead>
                                                 <tr>
                                                     <th>Query Wizard</th>
-                                                    <th><input type="hidden" id="queryNumber" value=""/></th>                                                    
+                                                    <th><input type="hidden" id="queryNumber" value=""/></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -193,7 +182,7 @@
                                                 </tr>
                                             </tbody>
                                         </table>
-                                        
+
                                         -->
                                     </c:if>
                                 </form>
@@ -216,20 +205,23 @@
                                 <c:when test="${param.ret == '3'}">
                                     Connection Error
                                 </c:when>
-                            </c:choose>                        
+                            </c:choose>
 
-                            <br><a href="/StackV-web/ops/srvc/viewcreate.jsp?self=true">Return to Views.</a>                                
+                            <br><a href="/StackV-web/ops/srvc/viewcreate.jsp?self=true">Return to Views.</a>
                             <br><a href="/StackV-web/ops/catalog.jsp">Return to Services.</a>
                             <br><a href="/StackV-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
                         </div>
                     </c:otherwise>
                 </c:choose>
-            </div>       
+            </div>
         </div>
         <!-- TAG PANEL -->
-        <div id="tag-panel"> 
-        </div>                      
+        <div id="tag-panel">
+        </div>
         <!-- JS -->
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
         <script>
             $(function () {
                 $("#sidebar").load("/StackV-web/sidebar.html", function () {
@@ -250,8 +242,8 @@
                         element.classList.remove("hide");
                     }
                 });
-                $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);                                        
+                $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
             });
-        </script>        
+        </script>
     </body>
 </html>
