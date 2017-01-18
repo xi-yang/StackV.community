@@ -130,10 +130,10 @@
                     <table class="subfs-table" id="profile-table">
                         <thead>
                             <tr>
-                                <td><label id="profile-save-label">Save as Profile <input type="checkbox" id="profile-save-check" name="profile-save" /></label></td>
+                                <td><label class="profile-save-label" id="profile-save-label-aws">Save as Profile <input type="checkbox" class="profile-save-check" id="profile-save-check-aws" name="profile-save" /></label></td>
                             </tr>
                         </thead>
-                        <tbody class="fade-hide" id="profile-save-body">
+                        <tbody class="fade-hide" class="profile-save-body" id="profile-save-body-aws">
                             <tr>
                                 <td><input type="text" name="profile-name" placeholder="Profile Name" /></td>
                                 <td><input type="text" name="profile-description" placeholder="Profile Description" /></td>
@@ -258,10 +258,10 @@
                     <table class="subfs-table" id="profile-table">
                         <thead>
                             <tr>
-                                <td><label id="profile-save-label">Save as Profile <input type="checkbox" id="profile-save-check" name="profile-save" /></label></td>
+                                <td><label class="profile-save-label" id="profile-save-label-ops">Save as Profile <input type="checkbox" class="profile-save-check" id="profile-save-check-ops" name="profile-save" /></label></td>
                             </tr>
                         </thead>
-                        <tbody class="fade-hide" id="profile-save-body">
+                        <tbody class="fade-hide" id="profile-save-body-ops" class="profile-save-body">
                             <tr>
                                 <td><input type="text" name="profile-name" placeholder="Profile Name" /></td>
                                 <td><input type="text" name="profile-description" placeholder="Profile Description" /></td>
