@@ -149,6 +149,46 @@ define([
     var lastMouse;
     var switchPopup = {};
     var topLevelTopologies = [];
+    
+    
+    
+    
+    
+    function subscribeToMediatior() {
+        if (window.PubSub !== undefined) {
+            PubSub.subscribe('Renderer_DoRender', function(data) {
+            });
+
+            PubSub.subscribe('Renderer_SetHighlight', function(data) {
+            });
+            
+            PubSub.subscribe('Renderer_Highlight', function(data) {
+            });
+            
+            /*
+             * Interface: 
+             *     [elements]
+             *     "highlight_name"
+             */
+            
+            PubSub.subscribe('Renderer_AddHighlight', function(data) {
+                setHighlights(data.elements, data.highlight_name);
+                highlightElements(data.highlight_name);                        
+            });
+           
+            /*
+             * Interface: 
+             *     "hightlight_name"
+             */
+            PubSub.subscribe('Renderer_RemoveHighlight', function(data) {
+                setHighlights([], data.highlight_name);
+                highlightElements(data.highlight_name);                        
+            });
+        }
+    }
+    
+    subscribeToMediatior();
+    
     /**@param {outputApi} outputApi
      * @param {Model} model
      * @param (fullSize) boolean
