@@ -88,7 +88,7 @@ $(function () {
             evt.preventDefault();
         });
     });
-    
+
     $("#button-service-cancel").click(function (evt) {
         $("#service-specific").empty();
         $("#button-service-cancel").toggleClass("hide");
@@ -1268,7 +1268,9 @@ function loadWizard() {
             }
 
             $(".button-profile-select").click(function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
+                var resultID = this.id,
+                    apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
+
                 $.ajax({
                     url: apiUrl,
                     type: 'GET',
@@ -1280,6 +1282,9 @@ function loadWizard() {
                         $("#info-panel").addClass("active");
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(JSON.stringify(result));
+                        $(".button-profile-save").attr('id', resultID);
+                        $(".button-profile-save-as").attr('id', resultID);
+                        $(".button-profile-submit").attr('id', resultID);
                         prettyPrintInfo();
                     },
                     error: function (textStatus, errorThrown) {
@@ -1327,6 +1332,65 @@ function loadWizard() {
 
                     },
                     error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                reloadCatalog();
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+
+            $(".button-profile-save-as").on("click", function(evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: {
+                        name: $("#new-profile-name").val(),
+                        description: $("#new-profile-description").val()
+                        data: $("#info-panel-text-area").val()
+                    }
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        console.log(result);
+                    },
+                    error: function(textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                reloadCatalog();
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+
+            $(".button-profile-save").on("click", function(evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
+
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: $("#info-panel-text-area").val(),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function(xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function(result) {
+                      console.log(result);
+                    },
+                    error: function(textStatus, errorThrown) {
                         console.log(textStatus);
                         console.log(errorThrown);
                     }

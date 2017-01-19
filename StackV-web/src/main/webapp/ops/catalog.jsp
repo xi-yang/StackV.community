@@ -95,8 +95,10 @@
                 <div id="info-panel-text">
                     <textarea id="info-panel-text-area" style="height: 400px;width: 80%;"></textarea>
                 </div>
-                <div id="info-panel-button">
-                    <button class="button-profile-submit">Submit</button>
+                <div id="info-panel-button" class="row">
+                    <button type="button" name="button" class="button-profile-save btn btn-default">Save</button>
+                    <button class="button-profile-save-as btn btn-default">Save As</button>
+                    <button class="button-profile-submit btn btn-default">Submit</button>
                 </div>
             </div>
             <!-- LOADING PANEL -->
