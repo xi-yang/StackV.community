@@ -1278,8 +1278,8 @@ function loadWizard() {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
                     success: function (result) {
-                        $("#black-screen").removeClass("off");
-                        $("#info-panel").addClass("active");
+                        // $("#black-screen").removeClass("off");
+                        $("#profile-modal").modal("show");
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(JSON.stringify(result));
                         $(".button-profile-save").attr('id', resultID);
@@ -1343,16 +1343,30 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-save-as").on("click", function(evt) {
+            // Hide the regular buttons and reveal the save as box
+            $("button.button-profile-save-as").on("click", function(evt) {
+                $("div.info-panel-regular-buttons").css("display", "none");
+                $("div.info-panel-save-as-description").css("display", "block");
+            });
+
+            // Reveal the regular buttons and hide the save as boxes
+            $("button.button-profile-save-as-cancel").on("click", function(evt) {
+                $("div.info-panel-save-as-description").css("display", "none");
+                $("div.info-panel-regular-buttons").css("display", "block");
+            });
+
+
+            // After the user has put a new name and description for the new profile
+            $(".button-profile-save-as-confirm").on("click", function(evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
                 $.ajax({
                     url: apiUrl,
                     type: 'PUT',
                     data: {
                         name: $("#new-profile-name").val(),
-                        description: $("#new-profile-description").val()
+                        description: $("#new-profile-description").val(),
                         data: $("#info-panel-text-area").val()
-                    }
+                    },
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     beforeSend: function(xhr) {
@@ -1388,6 +1402,7 @@ function loadWizard() {
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function(result) {
+                      $("#profile-modal").modal("hide");
                       console.log(result);
                     },
                     error: function(textStatus, errorThrown) {

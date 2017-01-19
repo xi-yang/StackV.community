@@ -90,21 +90,50 @@
             <br>
             <button type="button" class="hide" id="button-service-cancel">Cancel</button>
             <div id="service-specific"></div>
-            <div id="info-panel">
-                <h3 class="fs-subtitle" id="info-panel-title"></h3>
-                <div id="info-panel-text">
-                    <textarea id="info-panel-text-area" style="height: 400px;width: 80%;"></textarea>
-                </div>
-                <div id="info-panel-button" class="row">
-                    <button type="button" name="button" class="button-profile-save btn btn-default">Save</button>
-                    <button class="button-profile-save-as btn btn-default">Save As</button>
-                    <button class="button-profile-submit btn btn-default">Submit</button>
-                </div>
-            </div>
+
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
             <!-- TAG PANEL -->
             <div id="tag-panel"></div>
+        </div>
+        <div id="profile-modal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="info-panel-title"></h3>
+                    </div>
+                    <div class="modal-body">
+                        <div id="info-panel-text">
+                            <textarea id="info-panel-text-area"></textarea>
+                        </div>
+                    </div>
+                    <div id="info-panel-button" class="modal-footer">
+                        <div class="info-panel-save-as-description">
+                            <form class="form-inline">
+                              <div class="form-group">
+                                <label for="new-profile-name">
+                                <input type="text" class="form-control" id="new-profile-name" placeholder="Hybrid Cloud">
+                              </div>
+                              <div class="form-group">
+                                <label for="new-profile-description">
+                                <input type="text" class="form-control" id="new-profile-description" placeholder="Description">
+                              </div>
+                            </form>
+                        </div>
+                        <div class="info-panel-footer">
+                          <div class="info-panel-regular-buttons">
+                            <button type="button" name="button" class="button-profile-save btn btn-default">Save</button>
+                            <button class="button-profile-save-as btn btn-default">Save As</button>
+                            <button class="button-profile-submit btn btn-default">Submit</button>
+                          </div>
+                          <div class="info-panel-save-as-description">
+                            <button class="button-profile-save-as-confirm btn btn-default">Confirm</button>
+                            <button class="button-profile-save-as-cancel btn btn-default">Cancel</button>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
