@@ -258,42 +258,41 @@ public class WebResource {
         
         return list;
     }
-    
     @PUT
-    @Path("/driver/{user}/install/{topuri}")
+    @Path("install/driver")
+    @Consumes("application/json")
     @Produces("text/plain")
-    public String installDriver(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
-        String xmldata="<driverInstance><properties>\n";
+    public String installDriver(final String dataInput) throws SQLException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-        JSONObject curr;
         
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                prop);
-        
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
-        ResultSet ret = prep.executeQuery();
-        
-        ret.next();
-        
-        xmldata += "\t<entry><key>topologyUri</key><value>" + ret.getString("TopUri") + "</value></entry>\n";
-        xmldata += "\t<entry><key>driverEjbPath</key><value>java:module/" + ret.getString("drivertype") + "</value></entry>\n";
-        
-        Object obj = parser.parse(ret.getString("data"));
+        Object obj = parser.parse(dataInput);
         JSONObject JSONtemp = (JSONObject) obj;
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
         
-//        for (curr : JSONdata){
-//            xmldata += "\t<entry><key>" + topologyUri + "</key><value>" + ret.getString("TopUri") + "</value></entry>\n";
-//            xmldata += "\t<entry><key>" + driverEjbPath + "</key><value>" + ret.getString("drivertype") + "</value></entry>\n";
-//        }
+        String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("drivertype"));
         
-        switch(ret.getString("drivertype")){
+        try {
+            URL url = new URL(String.format("%s/driver", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
+            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
+            {
+                return "PLUGIN FAILED Driver Resource";
+            }
+        } catch (Exception e) {
+            return "PLUGIN FAILED exception";
+        }
+        
+        return "PLUGIN SUCCEEDED";
+    }
+    
+    private String JSONtoxml(JSONObject JSONdata, String drivertype){
+        String xmldata="<driverInstance><properties>\n";
+        xmldata += "\t<entry><key>topologyUri</key><value>" + JSONdata.get("TOPURI") + "</value></entry>\n";
+        xmldata += "\t<entry><key>driverEjbPath</key><value>java:module/" + drivertype + "</value></entry>\n";
+        
+        switch(drivertype){
             case "StubSystemDriver":
                 String TTL = (String) JSONdata.get("stubModelTtl");
                 TTL = TTL.replaceAll(">", "&gt");
@@ -328,12 +327,33 @@ public class WebResource {
                 break;
         }
         xmldata += "</properties></driverInstance>";
+        return xmldata;
+    }
+    
+    @PUT
+    @Path("/driver/{user}/install/{topuri}")
+    @Produces("text/plain")
+    public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
+        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         
-        PreparedStatement sendxml = front_conn.prepareStatement("UPDATE driver_wizard SET xmlData = ? WHERE username = ? AND TopUri = ?;");
-        sendxml.setString(1, xmldata);
-        sendxml.setString(2, username);
-        sendxml.setString(3, topuri);
-        sendxml.executeUpdate();
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                prop);
+        
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
+        prep.setString(1, username);
+        prep.setString(2, topuri);
+        ResultSet ret = prep.executeQuery();
+        
+        ret.next();
+        Object obj = parser.parse(ret.getString("data"));
+        JSONObject JSONtemp = (JSONObject) obj;
+        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
+        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
+        
+        String xmldata = JSONtoxml(JSONdata, ret.getString("drivertype"));
         
         try {
             URL url = new URL(String.format("%s/driver", host));
@@ -375,14 +395,13 @@ public class WebResource {
         prop.put("password", front_db_pass);
         Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
         
-        PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?, ?)");
+        PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
         prep.setString(1, user);
         prep.setString(2, driver);
         prep.setString(3, desc);
         prep.setString(4, data);
         prep.setString(5, uri);
         prep.setString(6, drivertype);
-        prep.setString(7, "NOT INSTALLED");
         prep.executeUpdate();
     }
     

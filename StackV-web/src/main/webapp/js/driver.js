@@ -342,7 +342,7 @@ function changeNameInst() {
     document.getElementById('install-options').appendChild(saveButton);
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
-    instButton.onclick = function() {plugDriver("");};
+    instButton.onclick = function() {installDriver();};
     document.getElementById('install-options').appendChild(instButton);
 }
 function changeNameDet() {
@@ -519,7 +519,7 @@ function getAllDetails(){
                 detButton.onclick = function() {clearPanel(); activateSide(); 
                     activateDetails(); changeNameDet(); getDetails(this.id);};
                 detButton.style.width = "50px";
-                detButton.id = result[i+2];
+                detButton.id = result[i];
                 
                 delButton.innerHTML = "Delete";
                 delButton.onclick = function() {removeDriver(this.id);};
@@ -558,9 +558,9 @@ function removeDriver(clickID) {
     });
 }
 function getDetails(clickID) {
-    var topUri = clickID;
+    var driverId = clickID;
     var panel = document.getElementById("install-type");
-    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + driverId;
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -568,21 +568,17 @@ function getDetails(clickID) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result){
-            //update side panel with info
-            var data = document.createElement("p");
-            
-            data.style.color = "white";
-            data.innerHTML = result;
-            panel.appendChild(data);
+            for (var i = 0; i < result.length; i+=2) {
+                    var temp = document.createElement("p");
+                    temp.style.color = "white";
+                    temp.innerHTML = result[i] + ": " + result[i+1];
+                    panel.appendChild(temp);
+            }
         }
     });
 }
 function plugDriver(topuri){
-    if (topuri === "")
-        var URI = document.getElementById("TOPURI").value;
-    else
-        var URI = topuri;
-    
+    var URI = topuri;
     var userId = keycloak.subject;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/install/' + URI;
     var panel = document.getElementById("install-type");
@@ -602,6 +598,48 @@ function plugDriver(topuri){
             data.innerHTML = result;
             panel.appendChild(data);
         }
-    });
+    });   
+}
+
+function installDriver(){
+    var panel = document.getElementById("install-type");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/install/driver';
+    var jsonData=[];
+    var tempData = {};
+    var type = document.getElementById("drivertype").innerHTML;
     
+    for(var temp of document.getElementsByTagName("input")){
+        if(temp !== document.getElementById("description") && 
+                temp !== document.getElementById("drivername")){
+            tempData[temp.id] = temp.value;
+        }
+    }
+    
+    for(var temp of document.getElementsByTagName("textarea")){
+        tempData[temp.id] = temp.value;
+    }
+    
+    tempData["drivertype"] = type;
+    jsonData.push(tempData);
+    
+    var settings = JSON.stringify({jsonData});
+    
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        contentType: 'application/json',
+        data: settings,
+        success: function(result) {
+            getAllDetails();
+            $('#install-type').empty();
+            var data = document.createElement("p");
+            
+            data.style.color = "white";
+            data.innerHTML = result;
+            panel.appendChild(data);
+        }
+    });
 }

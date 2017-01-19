@@ -94,13 +94,27 @@ public class DriverResource {
     }
     
     @GET
-    @Produces({"application/xml", "application/json"})
-    @Path("/{topoUri}")
-    public ApiDriverInstance pull(@PathParam("topoUri") String topoUri) {
-        DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
-        ApiDriverInstance adi = new ApiDriverInstance();
-        adi.setProperties(driverInstance.getProperties());
-        return adi;
+    @Produces({"application/json"})
+    @Path("/{driverId}")
+    public ArrayList<String> pull(@PathParam("driverId") String driverId) throws SQLException {
+        ArrayList<String> retList = new ArrayList<>();
+        
+        
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                prop);
+        
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ?");
+        prep.setString(1, driverId);
+        ResultSet ret = prep.executeQuery();
+        
+        while (ret.next()) {
+            retList.add(ret.getString("property"));
+            retList.add(ret.getString("value"));
+        }
+        return retList;
     }
 
     @DELETE
