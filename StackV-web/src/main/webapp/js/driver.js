@@ -161,7 +161,7 @@ function installAWS(){
     third.style.color = "white";
     
     fourth.type="text";
-    fourth.id = "Amazon-Access_ID";
+    fourth.id = "Amazon-Access-ID";
     
     fifth.innerHTML="Amazon Secret Key:";
     fifth.style.color = "white";
@@ -332,9 +332,11 @@ function changeNameDet() {
 }
 
 function addDriver() {
+    var i = 0;
     var userId = keycloak.subject;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
     var jsonData=[];
+    var tempData = {};
     var description = document.getElementById("description").value;
     var driver = document.getElementById("drivername").value;
     var URI = document.getElementById("TOPURI").value;
@@ -342,11 +344,15 @@ function addDriver() {
     
     for(var temp of document.getElementsByTagName("input")){
         if(temp !== document.getElementById("description") && 
-                temp.value !== document.getElementById("drivername")){
-            tempid= temp.id;
-            jsonData.push({tempid : temp.value});
-                }
+                temp !== document.getElementById("drivername")){
+            //document.getElementsByTagName("input").item(i).id
+            tempData[temp.id] = temp.value;
+        }
+        i++;
     }
+    
+    jsonData.push(tempData);
+    
     var settings = JSON.stringify({jsonData});
     
     var sentData = JSON.stringify({
@@ -542,5 +548,25 @@ function getDetails(clickID) {
     });
 }
 function plugDriver(){
+    var URI = document.getElementById("TOPURI").value;
+    var userId = keycloak.subject;
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + userId + '/install/' + URI;
+    var panel = document.getElementById("install-type");
+    
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result){
+            $('#install-type').empty();
+            var data = document.createElement("p");
+            
+            data.style.color = "white";
+            data.innerHTML = result;
+            panel.appendChild(data);
+        }
+    });
     
 }
