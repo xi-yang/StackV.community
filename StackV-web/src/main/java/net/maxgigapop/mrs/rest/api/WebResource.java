@@ -25,6 +25,7 @@
 package net.maxgigapop.mrs.rest.api;
 
 import java.io.IOException;
+import java.lang.String;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -208,9 +209,8 @@ public class WebResource {
     
     @GET
     @Path("/driver/{user}/getdetails/{topuri}")
-    @Produces("text/plain")
-    public String getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException {
-        String retVal= "ERROR DATA NOT FOUND";
+    @Produces("application/json")
+    public JSONObject getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
         
         Properties prop = new Properties();
         prop.put("user", front_db_user);
@@ -223,12 +223,14 @@ public class WebResource {
         prep.setString(2, topuri);
         ResultSet ret = prep.executeQuery();
         
-        if (ret.next()){
-            retVal = ret.getString("data");
-            retVal += ret.getString("drivertype");
-        }
+        ret.next();
         
-        return retVal;
+        Object obj = parser.parse(ret.getString("data"));
+        JSONObject JSONtemp = (JSONObject) obj;
+        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
+        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
+        
+        return JSONdata;
     }
     
     @GET
@@ -259,9 +261,11 @@ public class WebResource {
     
     @PUT
     @Path("/driver/{user}/install/{topuri}")
-    @Produces("application/xml")
+    @Produces("text/plain")
     public String installDriver(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
-        String xmldata="<driverInstance><properties>/n";
+        String xmldata="<driverInstance><properties>\n";
+        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        JSONObject curr;
         
         Properties prop = new Properties();
         prop.put("user", front_db_user);
@@ -276,40 +280,48 @@ public class WebResource {
         
         ret.next();
         
-        xmldata += "<entry><key>topologyUri</key><value>" + ret.getString("TopUri") + "</value></entry>/n";
-        xmldata += "<entry><key>driverEjbPath</key><value>java:module/" + ret.getString("drivertype") + "</value></entry>/n";
-                
-        Object obj = parser.parse(ret.getString("data"));
-        JSONObject JSONdata = (JSONObject) obj;
+        xmldata += "\t<entry><key>topologyUri</key><value>" + ret.getString("TopUri") + "</value></entry>\n";
+        xmldata += "\t<entry><key>driverEjbPath</key><value>java:module/" + ret.getString("drivertype") + "</value></entry>\n";
         
+        Object obj = parser.parse(ret.getString("data"));
+        JSONObject JSONtemp = (JSONObject) obj;
+        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
+        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
+        
+//        for (curr : JSONdata){
+//            xmldata += "\t<entry><key>" + topologyUri + "</key><value>" + ret.getString("TopUri") + "</value></entry>\n";
+//            xmldata += "\t<entry><key>" + driverEjbPath + "</key><value>" + ret.getString("drivertype") + "</value></entry>\n";
+//        }
         
         switch(ret.getString("drivertype")){
             case "StubSystemDriver":
-                //replace all ttl
-                 xmldata += "<entry><key>stubModelTtl</key><value>" + JSONdata.get("TTL") + "</value></entry>/n";
+                String TTL = (String) JSONdata.get("stubModelTtl");
+                TTL = TTL.replaceAll(">", "&gt");
+                TTL = TTL.replaceAll("<", "&lt");
+                xmldata += "\t<entry><key>stubModelTtl</key><value>" + TTL + "</value></entry>\n";
                 break;
                 
             case "AwsDriver":
-                xmldata += "<entry><key>aws_access_key_id</key><value>" + JSONdata.get("Amazon-Access-ID") + "</value></entry>/n";
-                xmldata += "<entry><key>aws_secret_access_key</key><value>" + JSONdata.get("Amazon-Secret-Key") + "</value></entry>/n";
+                xmldata += "\t<entry><key>aws_access_key_id</key><value>" + JSONdata.get("aws_access_key_id") + "</value></entry>\n";
+                xmldata += "\t<entry><key>aws_secret_access_key</key><value>" + JSONdata.get("aws_secret_access_key") + "</value></entry>\n";
                 break;
                 
             case "OpenStackDriver":
-                xmldata += "<entry><key>url</key><value>" + JSONdata.get("URL") + "</value></entry>/n";
-                xmldata += "<entry><key>NATServer</key><value>" + JSONdata.get("NAT_server") + "</value></entry>/n";
-                xmldata += "<entry><key>username</key><value>" + JSONdata.get("Openstack-Username") + "</value></entry>/n";
-                xmldata += "<entry><key>password</key><value>" + JSONdata.get("Openstack-Password") + "</value></entry>/n";
-                xmldata += "<entry><key>tenant</key><value>" + JSONdata.get("tenant") + "</value></entry>/n";
-                xmldata += "<entry><key>adminUsername</key><value>admin</value></entry>/n";
-                xmldata += "<entry><key>adminPassword</key><value>g1gaspd1002</value></entry>/n";
-                xmldata += "<entry><key>adminTenant</key><value>admin</value></entry>/n";
-                xmldata += "<entry><key>defaultImage</key><value>49d6ee90-9d7d-4afb-a90e-2716bb721f78</value></entry>/n";
-                xmldata += "<entry><key>defaultFlavor</key><value>2</value></entry>/n";
-                xmldata += "<entry><key>modelExt</key><value>" + JSONdata.get("Amazon-Access-ID") + "</value></entry>/n";
+                xmldata += "\t<entry><key>url</key><value>" + JSONdata.get("URL") + "</value></entry>\n";
+                xmldata += "\t<entry><key>NATServer</key><value>" + JSONdata.get("NAT_server") + "</value></entry>\n";
+                xmldata += "\t<entry><key>username</key><value>" + JSONdata.get("Openstack-Username") + "</value></entry>\n";
+                xmldata += "\t<entry><key>password</key><value>" + JSONdata.get("Openstack-Password") + "</value></entry>\n";
+                xmldata += "\t<entry><key>tenant</key><value>" + JSONdata.get("tenant") + "</value></entry>\n";
+                xmldata += "\t<entry><key>adminUsername</key><value>" + JSONdata.get("adminUsername") + "</value></entry>\n";
+                xmldata += "\t<entry><key>adminPassword</key><value>" + JSONdata.get("adminPassword") + "</value></entry>\n";
+                xmldata += "\t<entry><key>adminTenant</key><value>" + JSONdata.get("adminTenant") + "</value></entry>\n";
+                xmldata += "\t<entry><key>defaultImage</key><value>" + JSONdata.get("defaultImage") + "</value></entry>\n";
+                xmldata += "\t<entry><key>defaultFlavor</key><value>" + JSONdata.get("defaultFlavor") + "</value></entry>\n";
+                xmldata += "\t<entry><key>modelExt</key><value>" + JSONdata.get("modelExt") + "</value></entry>\n";
                 break;
                 
             case "StackSystemDriver":
-                xmldata += "<entry><key>subsystemBaseUrl</key><value>" + JSONdata.get("Subsystem-Base-URL") + "</value></entry>/n";
+                xmldata += "\t<entry><key>subsystemBaseUrl</key><value>" + JSONdata.get("subsystemBaseUrl") + "</value></entry>\n";
                 break;
                 
             default:
@@ -317,12 +329,25 @@ public class WebResource {
         }
         xmldata += "</properties></driverInstance>";
         
-        PreparedStatement sendxml = front_conn.prepareStatement("UPDATE Users SET xmlData = ? WHERE username = ? AND TopUri = ?;");
+        PreparedStatement sendxml = front_conn.prepareStatement("UPDATE driver_wizard SET xmlData = ? WHERE username = ? AND TopUri = ?;");
         sendxml.setString(1, xmldata);
         sendxml.setString(2, username);
         sendxml.setString(3, topuri);
         sendxml.executeUpdate();
-        return xmldata;
+        
+        try {
+            URL url = new URL(String.format("%s/driver", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
+            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
+            {
+                return "PLUGIN FAILED Driver Resource";
+            }
+        } catch (Exception e) {
+            return "PLUGIN FAILED exception";
+        }
+        
+        return "PLUGIN SUCCEEDED";
     }
     
     @PUT

@@ -53,8 +53,8 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @Path("driver")
 public class DriverResource {
     
-    private final String front_db_user = "front_view";
-    private final String front_db_pass = "frontuser";
+    private final String front_db_user = "root";
+    private final String front_db_pass = "root";
 
     @Context
     private UriInfo context;
@@ -75,20 +75,19 @@ public class DriverResource {
         Properties prop = new Properties();
         prop.put("user", front_db_user);
         prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
                 prop);
         
         for (String instance : instanceSet) {
             
-            PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE TopUri = ?");
+            PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance WHERE topologyUri = ?");
             prep.setString(1, instance);
             ResultSet ret = prep.executeQuery();
             
             while (ret.next()) {
-                retList.add(ret.getString("drivername"));
-                retList.add(ret.getString("description"));
-                retList.add(ret.getString("data"));
-                retList.add(ret.getString("TopUri"));
+                retList.add(ret.getString("id"));
+                retList.add(ret.getString("driverEjbPath"));
+                retList.add(ret.getString("topologyUri"));
             }
         }
         return retList;

@@ -139,7 +139,7 @@
             
             <div class="active driver-panel no-side-tab" id="driver-panel-bot">
                 <ul class="nav nav-tabs catalog-tabs">
-                    <li style="width:100%;" ><a data-toggle="tab" href="#installed-tag">Installed Drivers</a></li>
+                    <li style="width:100%;" onclick="getAllDetails();"><a data-toggle="tab" href="#installed-tag">Installed Drivers</a></li>
                 </ul>
                 
                 <div class="tab-content" id="catalog-tab-content">
@@ -147,13 +147,13 @@
                         <table  class="management-table">
                             <thead>
                                 <tr>
-                                    <th>Driver Name</th>
-                                    <th>Description</th>
+                                    <th>Driver ID</th>
+                                    <th>Driver Type</th>
                                     <th></th>
                                 </tr>
                             </thead>
                             <tbody id="installed-body">
-                            <script>driverBotTable();</script>
+                            <script></script>
                             </tbody>
                         </table>
                     </div>
