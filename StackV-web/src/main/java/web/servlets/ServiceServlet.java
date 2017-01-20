@@ -1,24 +1,24 @@
-/*
+/* 
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Alberto Jimenez 2015
  * Modified by: Tao-Hung Yang 2016
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and/or hardware specification (the “Work”) to deal in the
- * Work without restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Work, and to permit persons to whom the Work is furnished to do so,
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
  * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
+ * 
+ * The above copyright notice and this permission notice shall be included in 
  * all copies or substantial portions of the Work.
- *
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
+ * 
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
 package web.servlets;
@@ -151,7 +151,7 @@ public class ServiceServlet extends HttpServlet {
     public String createDriverInstance(HttpServletRequest request, HashMap<String, String> paraMap) {
 
         // Handles templates, in this order:
-        // OpenStack, Stack Driver, Stub Driver, Generic Driver, AWS Driver
+        // OpenStack, Stack Driver, Stub Driver, Generic Driver, AWS Driver 
         if (paraMap.containsKey("template1")) {
             paraMap.put("driverID", "openStackDriver");
             paraMap.put("url", "http://max-vlsr2.dragon.maxgigapop.net:35357/v2.0");
@@ -216,7 +216,7 @@ public class ServiceServlet extends HttpServlet {
          } else if (paraMap.containsKey("uninstall")) {
          retCode = servBean.driverUninstall(paraMap.get("topologyUri"));
          }*/
-        // Async setup
+        // Async setup        
         request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
         AsyncContext asyncCtx = request.startAsync();
         asyncCtx.addListener(new AppAsyncListener());
@@ -622,10 +622,10 @@ public class ServiceServlet extends HttpServlet {
              JSONObject gatewayJSON = new JSONObject();
              gatewayJSON.put("name", "aws_dx1");
              gatewayJSON.put("type", "aws_direct_connect");
-
+                
              JSONArray gateToArr = new JSONArray();
              JSONObject gateToJSON = new JSONObject();
-
+                
              String connString = paraMap.get(typeStr + "conn-dest");
              if (paraMap.containsKey(typeStr + "conn-vlan")) {
              connString += "?vlan=" + paraMap.get(typeStr + "conn-vlan");
@@ -634,7 +634,7 @@ public class ServiceServlet extends HttpServlet {
              }
              gateToJSON.put("value", connString);
              gateToJSON.put("type", "stitch_port");
-
+                
              gateToArr.add(gateToJSON);
              gatewayJSON.put("to", gateToArr);
              gatewayArr.add(gatewayJSON);
@@ -718,7 +718,7 @@ public class ServiceServlet extends HttpServlet {
                         }
                     }
 
-                    // Apply route propagation
+                    // Apply route propagation                    
                     if (true) {
                         JSONObject routeJSON = new JSONObject();
 
@@ -977,19 +977,6 @@ public class ServiceServlet extends HttpServlet {
             prep.setInt(6, 0);
             prep.executeUpdate();
         }
-//
-//        if (paraMap.containsKey("profile-update")) {
-//          Properties front_connectionProps = new Properties();
-//          front_connectionProps.put("user", front_db_user);
-//          front_connectionProps.put("password", front_db_pass);
-//          Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
-//
-//          PreparedStatement prep = front_conn.prepareStatement("UPDATE service_wizard SET wizard_json = ? WHERE service_wizard_id = ? ");
-//          prep.setString(1, inputJSON.toString());
-//          prep.setInt(2, paraMap.get("wizardID"));
-//          prep.executeUpdate();
-//        }
-
         if (paraMap.containsKey("submit")) {
             request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
             AsyncContext asyncCtx = request.startAsync();
@@ -1002,7 +989,7 @@ public class ServiceServlet extends HttpServlet {
 
         return ("/StackV-web/ops/catalog.jsp");
     }
-
+    
     /*
     public String createFlow(HttpServletRequest request, HashMap<String, String> paraMap) throws SQLException {
         for (Object Key : paraMap.keySet().toArray()) {
@@ -1039,7 +1026,7 @@ public class ServiceServlet extends HttpServlet {
                 System.out.println(entry.getKey() + entry.getValue());
             }
 
-            // Async setup
+            // Async setup 
             request.setAttribute("org.apache.catalina.ASYNC_SUPPORTED", true);
             AsyncContext asyncCtx = request.startAsync();
             asyncCtx.addListener(new AppAsyncListener());
@@ -1147,13 +1134,13 @@ class APIRunner implements Runnable {
 /*
 
  TEMPLATE SERVICE METHOD - REPLACE ___ PREFIXED NAMES
- private String [___servicename](HttpServletRequest request, HashMap<String, String> paraMap) {
+ private String [___servicename](HttpServletRequest request, HashMap<String, String> paraMap) {        
  for (Object key : paraMap.keySet().toArray()) {
  if (paraMap.get((String) key).isEmpty()) {
  paraMap.remove((String) key);
  }
  }
-
+        
  // ParaMap processing
 
 
