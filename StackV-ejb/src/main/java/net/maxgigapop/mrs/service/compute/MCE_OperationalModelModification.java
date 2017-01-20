@@ -88,47 +88,33 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
         }
         
         String inputString = jsonInput.toString();
-        
-//        JSONObject inputJSON = new JSONObject();
-//        try {
-//            Object obj = parser.parse(inputString);
-//            inputJSON = (JSONObject) obj;
-//
-//            System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
-//        } catch (ParseException ex) {
-//            Logger.getLogger(MCE_OperationalModelModification.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-        
-        ServiceDelta outputDelta = annotatedDelta.clone();
-        JSONArray toRemove = null;
+                
+        JSONArray resourcesToRemove = null;
         try {
-            toRemove = (JSONArray)parser.parse(inputString);
-        } catch (ParseException ex) {
+            resourcesToRemove = (JSONArray)parser.parse(inputString);
+            if (resourcesToRemove == null)throw new Exception();
+        } catch ( Exception ex) {
             Logger.getLogger(MCE_OperationalModelModification.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        } 
+        
         Model subModel = ModelFactory.createDefaultModel();
         OntModel model = systemModel.getOntModel();
-   //"#rdfDFS(Model refModel, RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes, List<String> propExcludeEssentials) #
-        for (int i = 0; i < toRemove.size(); i++) {
-            String resourceURI = (String) toRemove.get(i);
-            Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
-            List<String> includeMatches = new ArrayList<String>();
-            List<String> excludeMatches = new ArrayList<String>();
-            List<String> excludeEssentials = new ArrayList<String>();
-            Set<RDFNode> visited = new HashSet<RDFNode>();
-          // need better way to do this 
-            //ModelUtil.rdfDFS(systemModel.getOntModel(), node, visited, subModel, includeMatches, excludeMatches, excludeMatches);  
-            // perhaps go down as wel
-            //MCETools.removeResolvedAnnotation(outputDelta.getModelReduction().getOntModel(), node);
-        }
+        List<Resource> resources = new ArrayList<>();
+        List<String> includeMatches = new ArrayList<String>();
+        List<String> excludeMatches = new ArrayList<String>();
+        List<String> excludeExtentials = new ArrayList<String>();
         
-      //  MCETools.removeResolvedAnnotation(outputDelta.getModelReduction().getOntModel(), policy1.asResource());
-//        Model newMA = outputDelta.getModelAddition().getOntModel().difference(subModel);
-//        Model newMR = subModel;
-//        outputDelta.getModelAddition().getOntModel().add(newMA);
-        //outputDelta.getModelReduction().getOntModel().add(subModel);
-        return new AsyncResult(outputDelta);
-    }
-   
+        for (int i = 0; i < resourcesToRemove.size(); i++) {
+            String resourceURI = (String) resourcesToRemove.get(i);
+            Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
+            resources.add(node);
+        }
+        ServiceDelta outputDelta = new ServiceDelta();
 
+        Model removalModel =  ModelUtil.getModelSubTree(systemModel.getOntModel(), resources, includeMatches, excludeMatches, excludeExtentials);        
+        
+        outputDelta.getModelReduction().getOntModel().add(removalModel);
+        return new AsyncResult(outputDelta);
+    }   
 }
+ 
