@@ -107,13 +107,14 @@ div#catalog-tab-content {
   border-left: 1px solid white;
 }
 
+/*Don't show these buttons on open - only trigger when click on save as*/
+div.info-panel-save-as-description {
+  display: none;
+}
 div#profile-modal div.info-panel-save-as-description input {
   font-weight: 400;
 }
 div#profile-modal textarea#info-panel-text-area {
   width: 100%;
   min-height: 600px;
-}
-div.info-panel-save-as-description {
-  display: none;
 }
