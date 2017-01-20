@@ -1252,6 +1252,8 @@ function loadWizard() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
+            // unbind all click functions!
+            $("button").off("click");
             for (i = 0; i < result.length; i++) {
                 var profile = result[i];
 
@@ -1268,7 +1270,7 @@ function loadWizard() {
                 tbody.appendChild(row);
             }
 
-            $(".button-profile-select").click(function (evt) {
+            $(".button-profile-select").on("click", function (evt) {
                 var resultID = this.id,
                     apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
 
@@ -1279,7 +1281,7 @@ function loadWizard() {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
                     success: function (result) {
-                        // $("#black-screen").removeClass("off");
+                        $("#black-screen").removeClass("off");
                         $("#profile-modal").modal("show");
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(JSON.stringify(result));
@@ -1297,7 +1299,7 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-delete").click(function (evt) {
+            $(".button-profile-delete").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
                 $.ajax({
                     url: apiUrl,
@@ -1317,7 +1319,7 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-submit").click(function (evt) {
+            $(".button-profile-submit").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
                 $.ajax({
                     url: apiUrl,
@@ -1330,15 +1332,15 @@ function loadWizard() {
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
-
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
                         console.log(errorThrown);
                     }
                 });
-
+                // reload top table and hide modal
                 reloadCatalog();
+                $("div#profile-modal").modal("hide");
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
                 evt.preventDefault();
@@ -1359,7 +1361,6 @@ function loadWizard() {
 
             // After the user has put a new name and description for the new profile
             $(".button-profile-save-as-confirm").on("click", function(evt) {
-                console.log('clicked once!');
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
                 var data = {
                   name: $("#new-profile-name").val(),
@@ -1379,18 +1380,14 @@ function loadWizard() {
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
-
-
                       // revert to regular buttons and close modal
                       $("input#new-profile-name").val("");
                       $("input#new-profile-description").val("");
                       $("div.info-panel-save-as-description").css("display", "none");
                       $("div.info-panel-regular-buttons").css("display", "block");
                       $("div#profile-modal").modal("hide");
-
                       // reload table
                       loadWizard();
-
                     },
                     error: function(textStatus, errorThrown) {
                         console.log(textStatus);
@@ -1418,8 +1415,9 @@ function loadWizard() {
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function(result) {
+                      // reload the bottom panel
+                      loadWizard();
                       $("#profile-modal").modal("hide");
-                      console.log(result);
                     },
                     error: function(textStatus, errorThrown) {
                         console.log(textStatus);
@@ -1427,8 +1425,6 @@ function loadWizard() {
                     }
                 });
 
-                // reload the bottom panel
-                loadWizard();
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
                 evt.preventDefault();
