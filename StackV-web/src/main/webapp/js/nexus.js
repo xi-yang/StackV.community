@@ -1241,7 +1241,8 @@ function loadInstances() {
 function loadWizard() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("wizard-body");
-    $("#wizard-body").empty();
+    // wipe table
+    $("tbody#wizard-body").find("tr").remove();
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/wizard';
     $.ajax({
@@ -1305,7 +1306,7 @@ function loadWizard() {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
                     success: function (result) {
-                        wizardLoad();
+                        loadWizard();
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
@@ -1358,15 +1359,19 @@ function loadWizard() {
 
             // After the user has put a new name and description for the new profile
             $(".button-profile-save-as-confirm").on("click", function(evt) {
+                console.log('clicked once!');
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                var data = {
+                  name: $("#new-profile-name").val(),
+                  userID: keycloak.subject,
+                  description: $("#new-profile-description").val(),
+                  data: $("#info-panel-text-area").val()
+                };
+
                 $.ajax({
                     url: apiUrl,
                     type: 'PUT',
-                    data: {
-                        name: $("#new-profile-name").val(),
-                        description: $("#new-profile-description").val(),
-                        data: $("#info-panel-text-area").val()
-                    },
+                    data: JSON.stringify(data),  //stringify to get escaped JSON in backend
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
                     beforeSend: function(xhr) {
@@ -1374,7 +1379,18 @@ function loadWizard() {
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
-                        console.log(result);
+
+
+                      // revert to regular buttons and close modal
+                      $("input#new-profile-name").val("");
+                      $("input#new-profile-description").val("");
+                      $("div.info-panel-save-as-description").css("display", "none");
+                      $("div.info-panel-regular-buttons").css("display", "block");
+                      $("div#profile-modal").modal("hide");
+
+                      // reload table
+                      loadWizard();
+
                     },
                     error: function(textStatus, errorThrown) {
                         console.log(textStatus);
@@ -1382,7 +1398,7 @@ function loadWizard() {
                     }
                 });
 
-                reloadCatalog();
+                // reload the bottom panel
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
                 evt.preventDefault();
@@ -1411,7 +1427,8 @@ function loadWizard() {
                     }
                 });
 
-                reloadCatalog();
+                // reload the bottom panel
+                loadWizard();
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
                 evt.preventDefault();

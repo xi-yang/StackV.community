@@ -524,37 +524,46 @@ public class WebResource {
     // Create a new profile based on an existing one
     @PUT
     @Path("/profile/new")
-    public void newProfile(final String inputString) {
+    public String newProfile(final String inputString) {
         try {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
-
+            System.out.println(inputString);
             Object obj = parser.parse(inputString);
             JSONObject inputJSON = (JSONObject) obj;
             String name = (String) inputJSON.get("name");
             String description = (String) inputJSON.get("description");
             String inputData = (String) inputJSON.get("data");
+            System.out.println(name);
+            System.out.println(description);
+            System.out.println(inputData);
 
             Object obj2 = parser.parse(inputData);
             JSONObject dataJSON = (JSONObject) obj2;
-            String username = (String) dataJSON.get("username");
+            String username = authUsername((String) dataJSON.get("userID"));
             String type = (String) dataJSON.get("type");
 
             int serviceID = servBean.getServiceID(type);
 
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (service_id, username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
+            System.out.println(serviceID);
             prep.setString(2, username);
+            System.out.println(username);
             prep.setString(3, name);
+            System.out.println(name);
             prep.setString(4, inputData);
+            System.out.println(inputData);
             prep.setString(5, description);
+            System.out.println(description);
             prep.setInt(6, 0);
-            prep.executeQuery();
-
+            prep.executeUpdate();
+            return null;
         } catch (SQLException | ParseException e) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return e.toString();
         }
     }
 
