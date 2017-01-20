@@ -65,6 +65,7 @@ import java.util.Iterator;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
+import java.util.HashSet;
 import java.util.Set;
 import javax.net.ssl.HttpsURLConnection;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -292,39 +293,11 @@ public class WebResource {
         xmldata += "\t<entry><key>topologyUri</key><value>" + JSONdata.get("TOPURI") + "</value></entry>\n";
         xmldata += "\t<entry><key>driverEjbPath</key><value>java:module/" + drivertype + "</value></entry>\n";
         
-        switch(drivertype){
-            case "StubSystemDriver":
-                String TTL = (String) JSONdata.get("stubModelTtl");
-                TTL = TTL.replaceAll(">", "&gt");
-                TTL = TTL.replaceAll("<", "&lt");
-                xmldata += "\t<entry><key>stubModelTtl</key><value>" + TTL + "</value></entry>\n";
-                break;
-                
-            case "AwsDriver":
-                xmldata += "\t<entry><key>aws_access_key_id</key><value>" + JSONdata.get("aws_access_key_id") + "</value></entry>\n";
-                xmldata += "\t<entry><key>aws_secret_access_key</key><value>" + JSONdata.get("aws_secret_access_key") + "</value></entry>\n";
-                break;
-                
-            case "OpenStackDriver":
-                xmldata += "\t<entry><key>url</key><value>" + JSONdata.get("URL") + "</value></entry>\n";
-                xmldata += "\t<entry><key>NATServer</key><value>" + JSONdata.get("NAT_server") + "</value></entry>\n";
-                xmldata += "\t<entry><key>username</key><value>" + JSONdata.get("Openstack-Username") + "</value></entry>\n";
-                xmldata += "\t<entry><key>password</key><value>" + JSONdata.get("Openstack-Password") + "</value></entry>\n";
-                xmldata += "\t<entry><key>tenant</key><value>" + JSONdata.get("tenant") + "</value></entry>\n";
-                xmldata += "\t<entry><key>adminUsername</key><value>" + JSONdata.get("adminUsername") + "</value></entry>\n";
-                xmldata += "\t<entry><key>adminPassword</key><value>" + JSONdata.get("adminPassword") + "</value></entry>\n";
-                xmldata += "\t<entry><key>adminTenant</key><value>" + JSONdata.get("adminTenant") + "</value></entry>\n";
-                xmldata += "\t<entry><key>defaultImage</key><value>" + JSONdata.get("defaultImage") + "</value></entry>\n";
-                xmldata += "\t<entry><key>defaultFlavor</key><value>" + JSONdata.get("defaultFlavor") + "</value></entry>\n";
-                xmldata += "\t<entry><key>modelExt</key><value>" + JSONdata.get("modelExt") + "</value></entry>\n";
-                break;
-                
-            case "StackSystemDriver":
-                xmldata += "\t<entry><key>subsystemBaseUrl</key><value>" + JSONdata.get("subsystemBaseUrl") + "</value></entry>\n";
-                break;
-                
-            default:
-                break;
+        
+        Set<String> key = new HashSet<>(JSONdata.keySet());
+        for(String i : key){
+            if (!(i.equals("TOPURI")) && !(i.equals("drivertype")))
+                xmldata += "\t<entry><key>" + i + "</key><value>" + JSONdata.get(i) + "</value></entry>\n";
         }
         xmldata += "</properties></driverInstance>";
         return xmldata;

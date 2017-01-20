@@ -361,13 +361,15 @@ function addDriver() {
     
     for(var temp of document.getElementsByTagName("input")){
         if(temp !== document.getElementById("description") && 
-                temp !== document.getElementById("drivername")){
+                temp !== document.getElementById("drivername")
+                && temp.value !== ''){
             tempData[temp.id] = temp.value;
         }
     }
     
     for(var temp of document.getElementsByTagName("textarea")){
-        tempData[temp.id] = temp.value;
+        if (temp.value !== '')
+            tempData[temp.id] = temp.value;
     }
     
     jsonData.push(tempData);
@@ -610,13 +612,15 @@ function installDriver(){
     
     for(var temp of document.getElementsByTagName("input")){
         if(temp !== document.getElementById("description") && 
-                temp !== document.getElementById("drivername")){
+                temp !== document.getElementById("drivername")
+                && temp.value !== ''){
             tempData[temp.id] = temp.value;
         }
     }
     
     for(var temp of document.getElementsByTagName("textarea")){
-        tempData[temp.id] = temp.value;
+        if (temp.value !== '')
+            tempData[temp.id] = temp.value;
     }
     
     tempData["drivertype"] = type;
