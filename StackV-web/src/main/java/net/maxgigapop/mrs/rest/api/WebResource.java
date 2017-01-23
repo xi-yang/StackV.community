@@ -1,25 +1,25 @@
-/* 
+/*
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Alberto Jimenez 2015
  * Modified by: Tao-Hung Yang 2016
  * Modified by: Xi Yang 2016
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 package net.maxgigapop.mrs.rest.api;
@@ -365,6 +365,8 @@ public class WebResource {
         }
     }
 
+
+
     @GET
     @Path("/panel/{userId}/editor")
     @Produces("application/json")
@@ -494,6 +496,65 @@ public class WebResource {
             Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, e);
             return null;
+        }
+    }
+
+    // Edit an existing profile
+    @PUT
+    @Path("/profile/{wizardId}/edit")
+    public void editProfile(@PathParam("wizardId") int wizardId, final String inputString) {
+        try {
+            // Connect to the DB
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
+
+            // TODO: Sanitize the input!
+            PreparedStatement prep = front_conn.prepareStatement("UPDATE service_wizard SET wizard_json = ? WHERE service_wizard_id = ? ");
+            prep.setString(1, inputString);
+            prep.setInt(2, wizardId);
+            prep.executeUpdate();
+
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+        }
+    }
+
+    // Create a new profile based on an existing one
+    @PUT
+    @Path("/profile/new")
+    public String newProfile(final String inputString) {
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
+            Object obj = parser.parse(inputString);
+            JSONObject inputJSON = (JSONObject) obj;
+            String name = (String) inputJSON.get("name");
+            String description = (String) inputJSON.get("description");
+            String inputData = (String) inputJSON.get("data");
+
+            Object obj2 = parser.parse(inputData);
+            JSONObject dataJSON = (JSONObject) obj2;
+            String username = authUsername((String) dataJSON.get("userID"));
+            String type = (String) dataJSON.get("type");
+
+            int serviceID = servBean.getServiceID(type);
+
+            PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (service_id, username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?, ?)");
+            prep.setInt(1, serviceID);
+            prep.setString(2, username);
+            prep.setString(3, name);
+            prep.setString(4, inputData);
+            prep.setString(5, description);
+            prep.setInt(6, 0);
+            prep.executeUpdate();
+            return null;
+        } catch (SQLException | ParseException e) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            return e.toString();
         }
     }
 
@@ -937,7 +998,7 @@ public class WebResource {
             } catch (SQLException ex2) {
                 Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex2);
             }
-            return "<<<OPERATION ERROR - " + action + ": " + ex.getMessage() + "\r\n";            
+            return "<<<OPERATION ERROR - " + action + ": " + ex.getMessage() + "\r\n";
         }
     }
 
