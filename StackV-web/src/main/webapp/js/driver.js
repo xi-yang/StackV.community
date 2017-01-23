@@ -293,7 +293,7 @@ function changeNameDet() {
     document.getElementById('side-name').innerHTML="Details";
 }
 function addDriver() {
-    var userId = keycloak.subject;
+    var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
     var jsonData=[];
     var tempData = {};
@@ -346,7 +346,7 @@ function addDriver() {
 }
 //meds to change
 function removeDriverProfile(clickID) {
-    var userId = keycloak.subject;
+    var userId = keycloak.tokenParsed.preferred_username;
     var topuri = clickID;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/delete/' + topuri;
     $.ajax({
@@ -362,7 +362,7 @@ function removeDriverProfile(clickID) {
 }
 //needs to change
 function updateDrivers() {
-    var userId = keycloak.subject;
+    var userId = keycloak.tokenParsed.preferred_username;
     var table = document.getElementById("saved-table");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/get';
     $.ajax({
@@ -412,7 +412,7 @@ function updateDrivers() {
 }
 
 function getDetailsProfile(clickID) {
-    var userId = keycloak.subject;
+    var userId = keycloak.tokenParsed.preferred_username;
     var panel = document.getElementById("install-type");
     var botpanel = document.getElementById('install-options');
     var topuri = clickID;
@@ -527,7 +527,7 @@ function getDetails(clickID) {
 }
 function plugDriver(topuri){
     var URI = topuri;
-    var userId = keycloak.subject;
+    var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/install/' + URI;
     var panel = document.getElementById("install-type");
     
