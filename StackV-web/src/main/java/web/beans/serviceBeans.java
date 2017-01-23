@@ -1863,6 +1863,21 @@ public class serviceBeans {
 
             verifyInstance(refUuid, result, refresh);
         } catch (EJBException | IOException | InterruptedException | SQLException e) {
+            try {
+                Connection front_conn;
+                Properties front_connectionProps = new Properties();
+                front_connectionProps.put("user", front_db_user);
+                front_connectionProps.put("password", front_db_pass);
+                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                        front_connectionProps);
+                PreparedStatement prep;
+                prep = front_conn.prepareStatement("UPDATE service_verification V INNER JOIN service_instance I SET V.verification_state = '-1' WHERE V.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
+                prep.setString(1, refUuid);
+                prep.executeUpdate();
+            } catch (SQLException ex) {
+                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
             System.out.println("ERROR: " + e.getMessage() + " - " + e.getStackTrace());
             //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, e);
         }
@@ -1931,7 +1946,7 @@ public class serviceBeans {
 
         System.out.println("Verifying Delta for service" + refUuid);
 
-        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = NULL, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");        
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
 

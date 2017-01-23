@@ -921,7 +921,7 @@ public class WebResource {
 
     private String doOperate(@PathParam("siUUID") String refUuid, @PathParam("action") String action, String auth, String refresh) {
         long startTime = System.currentTimeMillis();
-        System.out.println("Async API Operate Start::Name="
+        System.out.println("Async API Operate (" + action + ") Start::Name="
                 + Thread.currentThread().getName() + "::ID="
                 + Thread.currentThread().getId());
         long endTime;
@@ -956,7 +956,7 @@ public class WebResource {
                     deleteInstance(refUuid, auth);
 
                     endTime = System.currentTimeMillis();
-                    System.out.println("Async API Operate End::Name="
+                    System.out.println("Async API Operate (" + action + ") End::Name="
                             + Thread.currentThread().getName() + "::ID="
                             + Thread.currentThread().getId() + "::Time Taken="
                             + (endTime - startTime) + " ms.");
@@ -966,7 +966,7 @@ public class WebResource {
                     servBean.verify(refUuid, refresh);
 
                     endTime = System.currentTimeMillis();
-                    System.out.println("Async API Operate End::Name="
+                    System.out.println("Async API Operate (" + action + ") End::Name="
                             + Thread.currentThread().getName() + "::ID="
                             + Thread.currentThread().getId() + "::Time Taken="
                             + (endTime - startTime) + " ms.");
@@ -977,14 +977,28 @@ public class WebResource {
             }
 
             endTime = System.currentTimeMillis();
-            System.out.println("Async API Operate End::Name="
+            System.out.println("Async API Operate (" + action + ") End::Name="
                     + Thread.currentThread().getName() + "::ID="
                     + Thread.currentThread().getId() + "::Time Taken="
                     + (endTime - startTime) + " ms.");
 
             return superStatus(refUuid) + " - " + status(refUuid, auth) + "\r\n";
-        } catch (IOException | SQLException | InterruptedException ex) {
-            return "<<<OPERATION ERROR: " + ex.getMessage() + "\r\n";
+        } catch (IOException | SQLException | InterruptedException | EJBException ex) {
+            try {
+                Connection front_conn;
+                Properties front_connectionProps = new Properties();
+                front_connectionProps.put("user", front_db_user);
+                front_connectionProps.put("password", front_db_pass);
+                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                        front_connectionProps);
+                PreparedStatement prep;
+                prep = front_conn.prepareStatement("UPDATE service_verification V INNER JOIN service_instance I SET V.verification_state = '-1' WHERE V.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
+                prep.setString(1, refUuid);
+                prep.executeUpdate();
+            } catch (SQLException ex2) {
+                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex2);
+            }
+            return "<<<OPERATION ERROR - " + action + ": " + ex.getMessage() + "\r\n";
         }
     }
 
@@ -1011,8 +1025,7 @@ public class WebResource {
                 String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
 
                 return result;
-            }
-            else {
+            } else {
                 return "{verified_addition: \"{ }\",verified_reduction: \"{ }\",unverified_addition: \"{ }\",unverified_reduction: \"{ }\"}";
             }
         } catch (IOException | SQLException e) {
@@ -1155,27 +1168,23 @@ public class WebResource {
      * @param refUuid instance UUID
      * @return error code |
      */
-    private int deleteInstance(String refUuid, String auth) throws SQLException {
-        try {
-            String result = delete(refUuid, auth);
-            if (result.equalsIgnoreCase("Successfully terminated")) {
-                Connection front_conn;
-                Properties front_connectionProps = new Properties();
-                front_connectionProps.put("user", front_db_user);
-                front_connectionProps.put("password", front_db_pass);
-                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                        front_connectionProps);
+    private int deleteInstance(String refUuid, String auth) throws SQLException, IOException {
+        String result = delete(refUuid, auth);
+        if (result.equalsIgnoreCase("Successfully terminated")) {
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
 
-                PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
-                prep.setString(1, refUuid);
-                prep.executeUpdate();
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
+            prep.setString(1, refUuid);
+            prep.executeUpdate();
 
-                return 0;
-            } else {
-                return 1;
-            }
-        } catch (IOException ex) {
-            return -1;
+            return 0;
+        } else {
+            return 1;
         }
     }
 
@@ -1188,116 +1197,96 @@ public class WebResource {
      * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
      * error (Failed result check).
      */
-    private int cancelInstance(String refUuid, String auth, String refresh) throws SQLException {
+    private int cancelInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
-        try {
+        String instanceState = status(refUuid, auth);
+        if (!instanceState.equalsIgnoreCase("READY")) {
+            return 1;
+        }
+
+        auth = servBean.refreshToken(refresh);
+        result = revert(refUuid, auth);
+        if (!result) {
+            return 2;
+        }
+
+        auth = servBean.refreshToken(refresh);
+        result = propagate(refUuid, auth);
+        if (!result) {
+            return 3;
+        }
+
+        auth = servBean.refreshToken(refresh);
+        result = commit(refUuid, auth);
+        if (!result) {
+            return 4;
+        }
+
+        int i = 1;
+        while (true) {
+            if (i == 10) {
+                auth = servBean.refreshToken(refresh);
+            }
+            instanceState = status(refUuid, auth);
+            if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
+                servBean.verify(refUuid, refresh);
+
+                return 0;
+            } else if (!(instanceState.equals("COMMITTED"))) {
+                return 5;
+            }
+
+            i++;
+            Thread.sleep(5000);
+        }
+    }
+
+    private int forceCancelInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
+        boolean result;
+        forceRevert(refUuid, auth);
+
+        auth = servBean.refreshToken(refresh);
+        forcePropagate(refUuid, auth);
+
+        auth = servBean.refreshToken(refresh);
+        forceCommit(refUuid, auth);
+
+        for (int i = 0; i < 20; i++) {
+            auth = servBean.refreshToken(refresh);
             String instanceState = status(refUuid, auth);
-            if (!instanceState.equalsIgnoreCase("READY")) {
-                return 1;
+            if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
+                servBean.verify(refUuid, refresh);
+
+                return 0;
+            } else if (!(instanceState.equals("COMMITTED"))) {
+                return 5;
             }
-
-            auth = servBean.refreshToken(refresh);
-            result = revert(refUuid, auth);
-            if (!result) {
-                return 2;
-            }
-
-            auth = servBean.refreshToken(refresh);
-            result = propagate(refUuid, auth);
-            if (!result) {
-                return 3;
-            }
-
-            auth = servBean.refreshToken(refresh);
-            result = commit(refUuid, auth);
-            if (!result) {
-                return 4;
-            }
-
-            int i = 1;
-            while (true) {
-                if (i == 10) {
-                    auth = servBean.refreshToken(refresh);
-                }
-                instanceState = status(refUuid, auth);
-                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
-                    servBean.verify(refUuid, refresh);
-
-                    return 0;
-                } else if (!(instanceState.equals("COMMITTED"))) {
-                    return 5;
-                }
-
-                i++;
-                Thread.sleep(5000);
-            }
-
-        } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, ex);
-            return -1;
+            Thread.sleep(5000);
         }
+        return -1;
+
     }
 
-    private int forceCancelInstance(String refUuid, String auth, String refresh) throws SQLException {
+    private int forceRetryInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
-        try {
-            forceRevert(refUuid, auth);
+        forcePropagate(refUuid, auth);
 
+        auth = servBean.refreshToken(refresh);
+        forceCommit(refUuid, auth);
+
+        for (int i = 0; i < 20; i++) {
             auth = servBean.refreshToken(refresh);
-            forcePropagate(refUuid, auth);
+            String instanceState = status(refUuid, auth);
+            if (instanceState.equals("READY")) {
+                servBean.verify(refUuid, refresh);
 
-            auth = servBean.refreshToken(refresh);
-            forceCommit(refUuid, auth);
-
-            for (int i = 0; i < 20; i++) {
-                auth = servBean.refreshToken(refresh);
-                String instanceState = status(refUuid, auth);
-                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
-                    servBean.verify(refUuid, refresh);
-
-                    return 0;
-                } else if (!(instanceState.equals("COMMITTED"))) {
-                    return 5;
-                }
-                Thread.sleep(5000);
+                return 0;
+            } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
+                return 5;
             }
-            return -1;
-
-        } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, ex);
-            return -1;
+            Thread.sleep(5000);
         }
-    }
-
-    private int forceRetryInstance(String refUuid, String auth, String refresh) throws SQLException {
-        boolean result;
-        try {
-            forcePropagate(refUuid, auth);
-
-            auth = servBean.refreshToken(refresh);
-            forceCommit(refUuid, auth);
-
-            for (int i = 0; i < 20; i++) {
-                auth = servBean.refreshToken(refresh);
-                String instanceState = status(refUuid, auth);
-                if (instanceState.equals("READY")) {
-                    servBean.verify(refUuid, refresh);
-
-                    return 0;
-                } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
-                    return 5;
-                }
-                Thread.sleep(5000);
-            }
-            return -1;
-
-        } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, ex);
-            return -1;
-        }
+        return -1;
     }
 
     // Parsing Methods ---------------------------------------------------------

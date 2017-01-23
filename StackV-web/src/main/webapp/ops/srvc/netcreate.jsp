@@ -135,8 +135,8 @@
                         </thead>
                         <tbody class="fade-hide" class="profile-save-body" id="profile-save-body-aws">
                             <tr>
-                                <td><input type="text" name="profile-name" placeholder="Profile Name" /></td>
-                                <td><input type="text" name="profile-description" placeholder="Profile Description" /></td>
+                                <td><input type="text" name="profile-name" id="profile-name-aws" placeholder="Profile Name" /></td>
+                                <td><input type="text" name="profile-description" id="profile-description-aws" placeholder="Profile Description" /></td>
                             </tr>
                         </tbody>
                     </table>
@@ -263,8 +263,8 @@
                         </thead>
                         <tbody class="fade-hide" id="profile-save-body-ops" class="profile-save-body">
                             <tr>
-                                <td><input type="text" name="profile-name" placeholder="Profile Name" /></td>
-                                <td><input type="text" name="profile-description" placeholder="Profile Description" /></td>
+                                <td><input type="text" name="profile-name" id="profile-name-ops" placeholder="Profile Name" /></td>
+                                <td><input type="text" name="profile-description" id="profile-description-ops" placeholder="Profile Description" /></td>
                             </tr>
                         </tbody>
                     </table>

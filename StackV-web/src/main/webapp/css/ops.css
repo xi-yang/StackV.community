@@ -224,7 +224,6 @@ div#mode-panel input {
   border-radius: 3px;
   width: 90%;
   box-sizing: border-box;
-  font-family: montserrat;
   color: #2C3E50;
 }
 div#mode-panel .action-button {
@@ -291,7 +290,6 @@ form.stageform input, form.stageform textarea {
   border-radius: 3px;
   width: 90%;
   box-sizing: border-box;
-  font-family: montserrat;
   color: #2C3E50;
 }
 
