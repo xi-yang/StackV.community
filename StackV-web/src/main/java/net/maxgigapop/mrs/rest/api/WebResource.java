@@ -860,7 +860,7 @@ public class WebResource {
 
     private String doOperate(@PathParam("siUUID") String refUuid, @PathParam("action") String action, String auth, String refresh) {
         long startTime = System.currentTimeMillis();
-        System.out.println("Async API Operate Start::Name="
+        System.out.println("Async API Operate (" + action + ") Start::Name="
                 + Thread.currentThread().getName() + "::ID="
                 + Thread.currentThread().getId());
         long endTime;
@@ -895,7 +895,7 @@ public class WebResource {
                     deleteInstance(refUuid, auth);
 
                     endTime = System.currentTimeMillis();
-                    System.out.println("Async API Operate End::Name="
+                    System.out.println("Async API Operate (" + action + ") End::Name="
                             + Thread.currentThread().getName() + "::ID="
                             + Thread.currentThread().getId() + "::Time Taken="
                             + (endTime - startTime) + " ms.");
@@ -905,7 +905,7 @@ public class WebResource {
                     servBean.verify(refUuid, refresh);
 
                     endTime = System.currentTimeMillis();
-                    System.out.println("Async API Operate End::Name="
+                    System.out.println("Async API Operate (" + action + ") End::Name="
                             + Thread.currentThread().getName() + "::ID="
                             + Thread.currentThread().getId() + "::Time Taken="
                             + (endTime - startTime) + " ms.");
@@ -916,7 +916,7 @@ public class WebResource {
             }
 
             endTime = System.currentTimeMillis();
-            System.out.println("Async API Operate End::Name="
+            System.out.println("Async API Operate (" + action + ") End::Name="
                     + Thread.currentThread().getName() + "::ID="
                     + Thread.currentThread().getId() + "::Time Taken="
                     + (endTime - startTime) + " ms.");
