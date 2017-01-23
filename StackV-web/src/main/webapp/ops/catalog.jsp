@@ -112,7 +112,7 @@
                             <form class="form-inline">
                               <div class="form-group">
                                 <label for="new-profile-name">
-                                <input type="text" class="form-control" id="new-profile-name" placeholder="Hybrid Cloud">
+                                <input type="text" class="form-control" id="new-profile-name" placeholder="Name">
                               </div>
                               <div class="form-group">
                                 <label for="new-profile-description">
