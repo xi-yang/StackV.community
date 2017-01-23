@@ -33,10 +33,12 @@
         </div>
         <!-- MAIN PANEL -->
         <div id="black-screen" class="off"></div>
-        <div id="main-pane">                                                 
-            
-            
-            
+        <div id="main-pane">                                         
+                            
+            <div id="info-panel" class="">
+                <div id="info-fields" style ="float: top;"></div>
+                <div id="info-option" style ="float: bottom;"></div>
+            </div>
             
             
             
@@ -56,7 +58,7 @@
                                     <th>Description</th>
                                     <th></th>
                                 </tr>
-                            </thead>
+                            </thead>content
                             <tbody>
                               <tr>
                                     <td>Stub</td>
@@ -180,6 +182,7 @@
                 <div class="tab-content" id="catalog-tab-content">                                    
                     <div id="install-content" class="tab-pane fadeIn">
                         <div id='install-type'></div>
+                        <div id='install-type-right'></div>
                         <div id='install-options'>
                             <button onclick="clearPanel(); closeSide();">Close</button>
                         </div>
@@ -190,5 +193,6 @@
                 <!-- LOADING PANEL -->
                 <div id="loading-panel"></div>
             </div>
+        </div>
     </body>
 </html>

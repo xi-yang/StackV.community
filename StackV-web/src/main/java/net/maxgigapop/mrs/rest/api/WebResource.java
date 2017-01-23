@@ -279,10 +279,10 @@ public class WebResource {
             String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
             if (!result.equalsIgnoreCase("plug successfully")) //plugin error
             {
-                return "PLUGIN FAILED Driver Resource";
+                return "PLUGIN FAILED: Driver Resource did not return successfull";
             }
         } catch (Exception e) {
-            return "PLUGIN FAILED exception";
+            return "PLUGIN FAILED: Exception" + e;
         }
         
         return "PLUGIN SUCCEEDED";
@@ -334,10 +334,10 @@ public class WebResource {
             String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
             if (!result.equalsIgnoreCase("plug successfully")) //plugin error
             {
-                return "PLUGIN FAILED Driver Resource";
+                return "PLUGIN FAILED: Driver Resource Failed";
             }
         } catch (Exception e) {
-            return "PLUGIN FAILED exception";
+            return "PLUGIN FAILED: Exception" + e;
         }
         
         return "PLUGIN SUCCEEDED";
