@@ -1181,6 +1181,10 @@ public class WebResource {
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
             prep.setString(1, refUuid);
             prep.executeUpdate();
+            
+            prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE `acl`.`object` = ?");
+            prep.setString(1, refUuid);
+            prep.executeUpdate();
 
             return 0;
         } else {
