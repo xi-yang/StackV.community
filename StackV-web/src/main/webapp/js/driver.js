@@ -336,6 +336,7 @@ function addDriver() {
         type: 'PUT',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         contentType: 'application/json',
         data: sentData,
@@ -354,6 +355,7 @@ function removeDriverProfile(clickID) {
         type: 'DELETE',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (){
             updateDrivers();
@@ -370,6 +372,7 @@ function updateDrivers() {
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result){
             $('#saved-table').empty();
@@ -398,7 +401,7 @@ function updateDrivers() {
                 drivername.innerHTML = result[i];
                 description.innerHTML = result[i+1];
                 cell3.appendChild(detButton);
-                cell3.appendChild(spacer);            $('#installed-type').empty();
+                cell3.appendChild(spacer);
                 cell3.appendChild(delButton);
                 cell3.style.width = "170px";
                 
@@ -434,6 +437,7 @@ function getDetailsProfile(clickID) {
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result){
             $('#installed-type').empty();
@@ -467,7 +471,7 @@ function getAllDetails(){
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh" + keycloak.refreshToken);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result){
             //fill installed table
@@ -517,6 +521,7 @@ function removeDriver(clickID) {
         type: 'DELETE',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (){
             getAllDetails();
@@ -545,6 +550,7 @@ function getDetails(clickID) {
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result){
             
@@ -574,6 +580,7 @@ function plugDriver(topuri){
         type: 'PUT',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result){
             getAllDetails();
@@ -617,6 +624,7 @@ function installDriver(){
         type: 'PUT',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         contentType: 'application/json',
         data: settings,
