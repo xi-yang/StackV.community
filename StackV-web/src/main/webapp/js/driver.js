@@ -135,7 +135,7 @@ function installOpenstack(){
     
     divContent.style = "float: left;";
     divContentRight.style = "float: right;";
-    document.getElementById("install-options").style = "position: absolute; bottom: 0px;";
+    document.getElementById("install-options").style = "position: absolute; bottom: 300px; right: 285px";
     
     type.innerHTML = "OpenStackDriver";
     type.style.color = "white";
@@ -417,6 +417,18 @@ function getDetailsProfile(clickID) {
     var botpanel = document.getElementById('install-options');
     var topuri = clickID;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/getdetails/' + topuri;
+    var table = document.createElement("table");
+    var thead = document.createElement("thead");
+    var head_row = document.createElement("tr");
+    var headkey = document.createElement("th");
+    var headval = document.createElement("th");
+    $(table).addClass('management-table');
+    headkey.innerHTML = "Key";
+    headval.innerHTML = "Value";
+    head_row.appendChild(headkey);
+    head_row.appendChild(headval);
+    thead.appendChild(head_row);
+    table.appendChild(thead);
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -427,10 +439,14 @@ function getDetailsProfile(clickID) {
             $('#installed-type').empty();
             for (var key in result) {
                 if (result.hasOwnProperty(key)) {
-                    var temp = document.createElement("p");
-                    temp.style.color = "white";
-                    temp.innerHTML = key + ": " + result[key];
-                    panel.appendChild(temp);
+                    var row = document.createElement("tr");
+                    var tempkey = document.createElement("td");
+                    var tempval = document.createElement("td");
+                    tempkey.innerHTML = key;
+                    tempval.innerHTML = result[key];
+                    row.appendChild(tempkey);
+                    row.appendChild(tempval);
+                    table.appendChild(row);
                 }
             }
             
@@ -440,6 +456,7 @@ function getDetailsProfile(clickID) {
             botpanel.appendChild(instDetailsButton);
         }
     });
+    panel.appendChild(table);
 }
 
 function getAllDetails(){
@@ -450,6 +467,7 @@ function getAllDetails(){
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh" + keycloak.refreshToken);
         },
         success: function (result){
             //fill installed table
@@ -509,6 +527,19 @@ function getDetails(clickID) {
     var driverId = clickID;
     var panel = document.getElementById("install-type");
     var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + driverId;
+    var table = document.createElement("table");
+    var thead = document.createElement("thead");
+    var head_row = document.createElement("tr");
+    var headkey = document.createElement("th");
+    var headval = document.createElement("th");
+    $(table).addClass('management-table');
+    headkey.innerHTML = "Key";
+    headval.innerHTML = "Value";
+    head_row.appendChild(headkey);
+    head_row.appendChild(headval);
+    thead.appendChild(head_row);
+    table.appendChild(thead);
+    
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -516,14 +547,21 @@ function getDetails(clickID) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result){
+            
             for (var i = 0; i < result.length; i+=2) {
-                    var temp = document.createElement("p");
-                    temp.style.color = "white";
-                    temp.innerHTML = result[i] + ": " + result[i+1];
-                    panel.appendChild(temp);
+                var row = document.createElement("tr");
+                var tempkey = document.createElement("td");
+                var tempval = document.createElement("td");
+                tempkey.innerHTML = result[i];
+                tempval.innerHTML = result[i+1];
+                row.appendChild(tempkey);
+                row.appendChild(tempval);
+                table.appendChild(row);
+                
             }
         }
     });
+    panel.appendChild(table);
 }
 function plugDriver(topuri){
     var URI = topuri;

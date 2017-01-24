@@ -58,7 +58,7 @@
                                     <th>Description</th>
                                     <th></th>
                                 </tr>
-                            </thead>content
+                            </thead>
                             <tbody>
                               <tr>
                                     <td>Stub</td>
