@@ -22,11 +22,15 @@
  */
 
 "use strict";
-define(["local/stackv/utils"], function (utils) {
+define(["local/stackv/utils", 
+        "local/stackv/topology/Module"], function (utils, Module) {
     var loadSettings = utils.loadSettings;
+    var arrayIncludes = utils.arrayIncludes;
+    var initMediator = utils.initMediator;
 
     function ContextMenu(Setings, menu) {
-
+        var initToken;
+        
         var defaults = {
             menu_trigger: ".model_object"
         };
@@ -38,14 +42,19 @@ define(["local/stackv/utils"], function (utils) {
         /**
          * Initialise our application's code.
          */
-        function init(Settings, Menu) {
+        function init(Name, Settings, Menu) {
             settings = loadSettings(Settings, defaults);    
             subscribeToMediatior();
             menu = Menu;
             
             $(settings.menu_trigger).contextMenu(menu, {
                     triggerOn:'contextmenu'
-            }); 
+            });
+            
+            contextMenu.name = Name;
+            contextMenu.initNotify(Name);
+            console.log("Context menu initalized");
+            
         }
         
         function subscribeToMediatior() {
@@ -53,7 +62,7 @@ define(["local/stackv/utils"], function (utils) {
              * interface:
              *  option_name
              */
-          PubSub.subscribe('ContextMenu_enable_option', function(data) {
+          contextMenu._Mediator.subscribe('ContextMenu_enable_option', function(msg, data) {
               var updateObj = [{
                 name: data.option_name,
                 disable: false
@@ -61,7 +70,7 @@ define(["local/stackv/utils"], function (utils) {
               $(settings.menu_trigger).contextMenu('update', updateObj, {});
           });     
 
-          PubSub.subscribe('ContextMenu_disable_option', function(data) {
+          contextMenu._Mediator.subscribe('ContextMenu_disable_option', function(msg, data) {
               var updateObj = [{
                 name: data.option_name,
                 disable: true
@@ -70,9 +79,20 @@ define(["local/stackv/utils"], function (utils) {
           });
         }   
         
-        return {
+        
+   
+        var contextMenu =  {
+            initMediator: function() {
+                if (contextMenu.initArgs !== null) {
+                    initToken = contextMenu._Mediator.subscribe(contextMenu.initArgs[0] + ".init", function(message, data) {
+                        init.apply(null, contextMenu.initArgs);
+                    });
+                }
+            },             
             init: init
         };
+        contextMenu.__proto__ = Module();
+        return contextMenu;
     }
     return ContextMenu;    
 });

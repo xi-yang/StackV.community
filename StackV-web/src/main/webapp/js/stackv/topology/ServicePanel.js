@@ -1,5 +1,6 @@
 "use strict";
-define(["local/stackv/utils"], function (utils) {
+define(["local/stackv/utils",
+    "local/stackv/topology/Module"], function (utils, Module) {
     // Utility functions
     var bsShowFadingMessage = utils.bsShowFadingMessage;
     var loadCSS = utils.loadCSS;
@@ -9,7 +10,8 @@ define(["local/stackv/utils"], function (utils) {
     
     // should have option for seperate css file as well 
     function ServicePanel() {
-         /* Settings: 
+        var initToken;
+        /* Settings: 
           *   Users can provide optional settings. 
           *   
           *   Among other things, this object contains identifiers and classes 
@@ -61,13 +63,16 @@ define(["local/stackv/utils"], function (utils) {
          var auth = {}; // keycloack authentication info
          var userName;
          
-         function init(Settings) {
-             settings = loadSettings(Settings, defaults);       
+         function init(Name, Settings) {
+            settings = loadSettings(Settings, defaults);       
              // Idea, specific "build" function that is used as callback 
              // after rendering of template. Perhaps have all of these modules
              // inherit from a Component module that has all of these 
-             renderTemplate(settings, buildPanel.bind(undefined));
-             subscribeToMediatior();
+            renderTemplate(settings, buildPanel.bind(undefined));
+            subscribeToMediatior();
+            servicePanel.name = Name;
+            servicePanel.initNotify(Name);
+
          };
          
                           
@@ -188,21 +193,10 @@ define(["local/stackv/utils"], function (utils) {
                         // Union of verified addition and unverified reduction
                         var unionObj = data;
                         
-                        //var result = model.makeSubModel([unionObj]);
-                        //var modelArr = model.getModelMapValues(result);
-                        var result = PubSub.publish("Model_BuildGenericModel", {
-                            map: unionObj
-                        });
-                        var modelArr =  PubSub.publish("Model_Explode", {
-                            model: result
-                        }); 
-
-                       // render.API.setHighlights(modelArr, "serviceHighlighting");
-                       // render.API.highlightElements("serviceHighlighting");
-                        PubSub.subscribe('Renderer_AddHighlight', {
-                            elements: modelArr,
-                            highlight_name: "serviceHighlighting"
-                        });
+                        var result = servicePanel._Model.makeSubModel([unionObj]);
+                        var modelArr = servicePanel._Model.getModelMapValues(result);
+                        servicePanel._Render.API.setHighlights(modelArr, "serviceHighlighting");
+                        servicePanel._Render.API.highlightElements("serviceHighlighting");
                     }
                 },
 
@@ -214,29 +208,37 @@ define(["local/stackv/utils"], function (utils) {
         }
          
         function subscribeToMediatior() {
-            if (window.PubSub !== undefined) {
                /*
                 * initerface
                 *             
                 */
-               PubSub.subscribe('ServicePanel_Show', function(data) {
+               servicePanel._Mediator.subscribe('ServicePanel_Show', function(msg, data) {
                    $('#' + settings.table_container).removeClass("hide");
                });
                
-               PubSub.subscribe('ServicePanel_Hide', function(data) {
+               servicePanel._Mediator.subscribe('ServicePanel_Hide', function(msg, data) {
                    $('#' + settings.table_container).addClass("hide");
                });
 
-               PubSub.subscribe('ServicePanel_SetErrorText', function(data) {
+               servicePanel._Mediator.subscribe('ServicePanel_SetErrorText', function(msg, data) {
                    $('#' + settings.table_container).html(data.text).addClass(settings.error_text_class);
                });
-
-
-            }
         }
          
-         return {
-             init: init         };
+         var servicePanel =  {
+            initMediator: function() {
+                if (servicePanel.initArgs !== null) {
+                    initToken = servicePanel._Mediator.subscribe(servicePanel.initArgs[0] + ".init", function(message, data) {
+                        init.apply(null, servicePanel.initArgs);
+                    });
+                }
+            },                          
+            init: init         
+        };
+        // We make the Module the prototpe of the public interface because 
+        // it consists mostly of public fields and methods 
+        servicePanel.__proto__ = Module();
+        return servicePanel;
        };
        return ServicePanel;
      });

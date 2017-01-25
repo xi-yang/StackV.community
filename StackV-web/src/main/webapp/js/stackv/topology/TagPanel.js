@@ -1,14 +1,17 @@
 "use strict";
-define(["local/stackv/utils"], function (utils) {
+define(["local/stackv/utils", 
+        "local/stackv/topology/Module"], function (utils, Module) {
     // Utility functions
     var bsShowFadingMessage = utils.bsShowFadingMessage;
     var loadCSS = utils.loadCSS;
     var renderTemplate = utils.renderTemplate;
     var getAuthentication = utils.getAuthentication;
     var loadSettings = utils.loadSettings;
-    
+        
     // should have option for seperate css file as well 
-    function TagPanel() {
+    function TagPanel() {        
+        var initToken;
+        
          /* Settings: 
           *   Users can provide optional settings. 
           *   
@@ -63,13 +66,16 @@ define(["local/stackv/utils"], function (utils) {
          var tagObjects;
          var userName;
          
-         function init(Settings) {
+         function init(Name, Settings) {
              settings = loadSettings(Settings, defaults);       
              // Idea, specific "build" function that is used as callback 
              // after rendering of template. Perhaps have all of these modules
              // inherit from a Component module that has all of these 
              renderTemplate(settings, buildPanel.bind(undefined));
              subscribeToMediatior();
+             tagPanel.name = Name;
+             tagPanel.initNotify(Name);
+             console.log("tag panel initalized");
          };
          
                           
@@ -148,11 +154,16 @@ define(["local/stackv/utils"], function (utils) {
                  });                
              });   
              
-             // Tag panel opener 
-             $("#" + settings.opener).click(function (evt) {
+             $(document).on('click', "#" + settings.opener, function (evt) {
                   openPanel();
                   evt.preventDefault();
              });
+             
+             // Tag panel opener 
+//             $("#" + settings.opener).click(function (evt) {
+//                  openPanel();
+//                  evt.preventDefault();
+//             });
          };  
           
         function updateTagList() {
@@ -210,7 +221,8 @@ define(["local/stackv/utils"], function (utils) {
 
          function deleteTag(identifier, htmlElement, list) {
             var auth = getAuthentication();
-
+            var token = auth.token;
+            
             $.ajax({
                 crossDomain: true,
                 type: "DELETE",
@@ -231,30 +243,40 @@ define(["local/stackv/utils"], function (utils) {
          };
          
          function subscribeToMediatior() {
-             if (window.PubSub !== undefined) {
                 /*
                  * initerface: 
                  *    identifier
                  *    label
                  *    color         
                  */
-                PubSub.subscribe('TagPanel_createTag', function(data) {
+                tagPanel._Mediator.subscribe('TagPanel_createTag', function(msg, data) {
                     createTag(data.label, data.identifier, data.color);
                     bsShowFadingMessage("#" + settings.root_container, "Tag added.", "top", 1000);                       
 
                 });     
 
-                PubSub.subscribe('TagPanel_deleteTag', function(data) {
+                tagPanel._Mediator.subscribe('TagPanel_deleteTag', function(msg, data) {
 
                 });
-             }
-         }
-         
-         return {
-             init: init,
-             createTag: createTag,
-             deleteTag: deleteTag
+        }
+
+        
+        var tagPanel = {            
+            init: init,
+            initMediator: function() {
+                if (tagPanel.initArgs !== null) {
+                    initToken = tagPanel._Mediator.subscribe(tagPanel.initArgs[0] + ".init", function(message, data) {
+                        init.apply(null, tagPanel.initArgs);
+                    });
+                }
+            }, 
+            createTag: createTag,
+            deleteTag: deleteTag
          };
+         
+         tagPanel.__proto__ = Module();
+         return tagPanel; 
+         
        };
        return TagPanel;
      });
