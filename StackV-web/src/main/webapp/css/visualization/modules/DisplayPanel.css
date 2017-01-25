@@ -1,0 +1,97 @@
+/* 
+    Created on : Jan 23, 2017, 1:47:07 AM
+    Author     : aheard
+*/
+#displayPanel{
+    float:right;
+    background-color: #d0d0d0;    
+    height: calc(100% - 37px);
+    top: 37px;
+    width: 25%;
+    position: fixed;
+    right: -25%;
+    /*overflow: scroll; */
+    z-index: 3;
+    
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;    
+}
+
+#displayPanel.display-open {
+    right: 0px;
+    
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;
+}
+
+#displayPanel-contents {
+    width: 100%;
+    height: 100%;
+}
+
+
+#displayPanel-tab {    
+    position: absolute;
+    right: 0px;
+    height: 100%;
+    width: 10px;
+    background-color: #555;
+    z-index: 5;
+    
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;
+}
+
+#displayPanel-tab.display-open {    
+    right: 25%;
+    
+    -webkit-transition: right 0.5s ease-in-out;
+    transition: right 0.5s ease-in-out;
+}
+
+#displayPanel-actions {    
+    bottom: 20px;
+    position: absolute;   
+}
+
+.urnLink {
+    color:blue;
+    cursor:pointer;
+   overflow: auto; 
+   word-wrap: break-word;
+}
+.clicked {
+    color:red;
+    text-decoration: underline;
+}
+.urnLink:hover { }
+.urnLink:visited {color:purple }
+
+.panelElementProperty{font-weight:bold;}
+.dropDownArrow {cursor:pointer;}
+#displayName {
+    text-align: center;
+    visibility: visible;
+    padding: 7px;
+    width: content-box;
+    font-size: 150%;
+    overflow-wrap: break-word;
+    
+    /*for Firefox*/
+    white-space: pre-wrap;
+    word-break: break-all;
+    
+}
+.treeMenu{
+    margin-left:15px;
+    text-align: left;
+}
+#treeMenu {
+    min-height:150px;
+    max-height:90%;
+    overflow-y:scroll;
+         overflow: -moz-scrollbars-vertical;
+    clear:both;
+    /* webkit scrollbar stuff */
+}
+
