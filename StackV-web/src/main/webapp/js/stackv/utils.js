@@ -248,7 +248,41 @@ define([], function () {
         };
         return auth;
     }
+    function arrayIncludes(array1, array2) {
+            var intesection = array1.filter(function(value) { 
+                                return array2.indexOf(value) > -1;
+                              });
+            var includes = (intesection.length === array2.length) && array2.every(function(element, index) {
+                  return element === intesection[index]; 
+            });
+            return includes;
+    }
     
+    
+    function initNotify(Name) {
+      _Mediator.publish("initalized", {name: Name});
+      console.log("in initNotify: " + Name);
+      _Mediator.unsubscribe(InitToken);
+    }  
+        
+        
+    function initMediator(Mediator) {
+            _Mediator = Mediator;           
+            subscribeForInit();
+    }
+        
+    function subscribeForInit() {
+        InitToken = _Mediator.subscribe("initUpdate", function(msg, data) {
+                var reqsSatisfied = arrayIncludes(data.init, InitReqs);
+                if (reqsSatisfied) {
+                    init.apply(null, InitArgs);
+                } else {
+                    console.log("data.init: " + data.init);
+                    console.log("reqs not satisfied");
+                }
+        });            
+    }
+ 
     /** PUBLIC INTERFACE **/
     return {
         map_: map_,
@@ -267,7 +301,11 @@ define([], function () {
         loadCSS: loadCSS, 
         renderTemplate: renderTemplate, 
         loadSettings: loadSettings,
-        getAuthentication: getAuthentication
+        getAuthentication: getAuthentication, 
+        arrayIncludes: arrayIncludes, 
+        initNotify: initNotify, 
+        initMediator: initMediator, 
+        subscribeForInit: subscribeForInit
     };
     /** END PUBLIC INTERFACE **/
 
