@@ -36,10 +36,11 @@ define(["local/stackv/utils"], function (utils) {
             
         };
 
-        module.setVizProperties = function(Model, Render, OutputApi) {
+        module.setVizProperties = function(Model, Render, OutputApi, Layout) {
             module._Model = Model;
             module._Render = Render;
             module._OutputApi = OutputApi; 
+            module._Layout = Layout;
         };
         
         module.setInitProperties = function(args, reqs) {

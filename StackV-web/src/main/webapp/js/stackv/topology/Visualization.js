@@ -22,7 +22,6 @@ define(["local/stackv/topology/model",
                 var _OutputApi;
                 var _Logger = {};
 
-                var persistant_data;
 
                 var _States = {
                     UNINIT: "unInit", 
@@ -129,7 +128,7 @@ define(["local/stackv/topology/model",
             function initModuleInstance(instance, initalized, need_properties, initReqs, initArgs) {
                 moduleInstances.push(instance);
                 if (need_properties) {
-                        instance.setVizProperties(_Model, _Render, _OutputApi);
+                        instance.setVizProperties(_Model, _Render, _OutputApi, _Layout);
                 }
                 if (!initalized) {
                         instance.setInitProperties(initArgs, initReqs);
@@ -173,8 +172,13 @@ define(["local/stackv/topology/model",
                 var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-
-                if (!loadPersistedVisualization(outputApi, model, width, height)) {       
+                
+                if (moduleAvailable("VizPersistence"))  {
+                    _Mediator.publish("VizPersistence_load", {
+                        width: width,
+                        height: height
+                    });
+                } else {       
                     _Layout.doLayout(model, null, width, height);
                     _Layout.doLayout(model, null, width, height);
                     _Render.doRender(outputApi, model, undefined, undefined, undefined, _Mediator);
@@ -410,186 +414,6 @@ define(["local/stackv/topology/model",
 
                     }
 
-                    function allNodesMatch(nodePositions, nodes){
-                        // may want to include intersect here 
-                        for (var node in nodePositions) {
-                            if (nodePositions[node].name !== nodes[node].getName())
-                                return false;
-                        }
-                        return true;
-                    }
-                    // if they dont all match, we want to find the one that doesn't. 
-
-                   function removeOldFromPersist(nodePositions, nodeNames){   
-                        var pos = nodePositions;
-                        for (var i = 0; i < pos.length; i++) {
-                            if (!nodeNames.includes(pos[i].name)) {
-                                pos.splice(i, 1);
-                                i = 0;
-                            }
-                        }
-                        return pos;
-                    }     
-
-                    function getNewNodes(nodePositions, nodeNames) {
-                        var totalNodes = [];
-                        var newNodes = [];
-
-                        for (var i = 0; i < nodePositions.length; i++) {
-                            totalNodes.push(nodePositions[i].name);
-                        }    
-
-                        for (var i = 0; i < nodeNames.length; i++) {
-                            if (!totalNodes.includes(nodeNames[i])) {
-                                newNodes.push(nodeNames[i]);
-                            }
-                        }
-
-                        return newNodes;
-                    }
-
-                    function AddNewToPersist(nodePositions, nodeNames, width, height, nodeSize) {
-                        var newNodes = getNewNodes(nodePositions, nodeNames);
-                        var newTopLevelTopologies = [];
-
-                        for (var i = 0; i < newNodes.length; i++) {
-                            var node = _Model.nodeMap[newNodes[i]];
-                            if (node.isTopology && node._parent === null) {
-                                newTopLevelTopologies.push(newNodes[i]);
-                                newNodes.splice(i, 1);
-                            }
-                        }
-
-                        // position new topologies 
-                        var top_offset = 0;
-                        for (var i = 0; i< newTopLevelTopologies.length; i++) {
-                            var pos = {};
-                            pos.name = newTopLevelTopologies[i];
-                            var totalTopoSize = 0;
-                            pos.x = width/2 + top_offset;
-                            pos.y = height/2 + top_offset;
-                            pos.dx = 0;
-                            pos.dy = 0;
-
-                            var node = _Model.nodeMap[newTopLevelTopologies[i]];
-                            var children = node.children;
-                            var maxSize = children.length * nodeSize;
-                            for (var j = 0; j < children.length; j++) {
-                                var randX = (Math.random() * (maxSize/2)) + pos.x;
-                                var randY = (Math.random() * (maxSize/2)) + pos.y;   
-                                var childPos = {};
-                                childPos.x = randX;
-                                childPos.y = randY;
-                                childPos.dx = 0;
-                                childPos.dy = 0;
-                                childPos.name = children[j].getName();
-                                var index = newNodes.indexOf(childPos.name);
-                                newNodes.splice(index, 1);
-                                _Model.nodeMap[childPos.name].setPos(childPos);
-                            }
-                            var plusOrMinus = Math.random() < 0.5 ? -1 : 1;
-                            top_offset = pos.x + (plusOrMinus * (maxSize / 2));
-
-                            pos.size = maxSize / 4;
-                            _Model.nodeMap[pos.name].setPos(pos);
-                        }
-
-                        for (var i = 0; i< newNodes.length; i++) {
-                            var node = _Model.nodeMap[newNodes[i]];
-                            var maxSize = (node._parent.children.length * nodeSize) /3;
-                            var randX = (Math.random() * maxSize) + node._parent.x;
-                            var randY = (Math.random() * maxSize) + node._parent.y; 
-
-                            var pos = {};
-                            pos.x = randX;
-                            pos.y = randY;
-                            pos.dx = 0;
-                            pos.dy = 0;
-                            pos.size = nodeSize;
-                            pos.name = newNodes[i];                           
-                            nodePositions.push(pos);
-                            _Model.nodeMap[pos.name].setPos(pos);
-                        }
-
-                        //return nodePositions;                        
-                    }
-
-
-                    function loadPersistedVisualization(outputApi, model, width, height) {
-                        if (persistant_data !== undefined && persistant_data !== "undefined") {
-                            var viz_data = JSON.parse(persistant_data);
-                            if (viz_data !== null) {                    
-                                var nodePositions = JSON.parse(viz_data['nodes']);
-
-                                var nodes = model.listNodes();
-                                var sameNodes = !(nodePositions.length !== nodes.length || !allNodesMatch(nodePositions, nodes));
-                                width = width / parseFloat(viz_data.zoom);
-                                height = height / parseFloat(viz_data.zoom);
-                                if (sameNodes)  {
-                                    for (var i = 0; i < nodePositions.length; i++) {
-                                       var name = nodePositions[i].name;
-                                       model.nodeMap[name].setPos(nodePositions[i]);
-                                    }
-                                    _Layout.doPersistLayout(model, null, width, height);
-                                    _Layout.doPersistLayout(model, null, width, height);
-                                    outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
-                                    _Render.doRender(outputApi, model, undefined, undefined, undefined, _Mediator);
-                                    outputApi.setZoom(parseFloat(viz_data.zoom));
-
-                                } else {
-                                    var nodeNames = model.listNodeNames();
-
-                                    nodePositions = removeOldFromPersist(nodePositions, nodeNames);
-                                    AddNewToPersist(nodePositions, nodeNames, width, height, 21);
-
-                                    for (var i = 0; i < nodePositions.length; i++) {
-                                       var name = nodePositions[i].name;
-                                       model.nodeMap[name].setPos(nodePositions[i]);
-                                    }
-                                    _Layout.doPersistLayout(model, null, width, height);
-                                    _Layout.doPersistLayout(model, null, width, height);
-                                    outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
-                                    _Render.doRender(outputApi, model, undefined, undefined, undefined, _Mediator);
-                                    outputApi.setZoom(parseFloat(viz_data.zoom));
-
-                                    //return false;
-                                }
-                            } else {
-                                return false;
-                            }
-                        } else {
-                            return false;
-                        }
-                        return true;
-                    }
-
-                    function persistVisualization() {
-                        var nodePositions = [];
-                        var nodes = _Model.listNodes();
-
-                        // doing this for security purposes, dont want to persist model 
-                        // data on client, just positions 
-                        for (var i = 0; i < nodes.length; i++) {
-                            var nodePos = nodes[i].getRenderedObj();
-                            nodePos.name = nodes[i].getName();
-                            nodePositions[i] = nodePos;
-                        }
-                        var toPersist = JSON.stringify(nodePositions);
-                        var offsets = _OutputApi.getOffset();
-
-                        var viz_data = {
-                            "nodes" : toPersist,
-                            "zoom"  : _OutputApi.getZoom(),
-                            "offsetX" : offsets[0],
-                            "offsetY" : offsets[1]
-                        };
-
-                        try {
-                            localStorage.setItem("viz-data", JSON.stringify(viz_data));
-                        } catch (err) {
-                            console.log(err);
-                        }                
-                    }
                      function reload() {
                         $("#loadingPanel").removeClass("hide");
                         $("#hoverdiv_" + viz_settings.name).addClass("hide");
@@ -731,7 +555,14 @@ define(["local/stackv/topology/model",
 
                        });   
                     }
-          
+                    
+                    function moduleAvailable(moduleName) {
+                        for(var i = 0; i < modules.length; i++) {
+                            if (moduleName === modules[i].name)
+                                    return true;
+                        }
+                        return false; 
+                    }
             return {
                 init : init, 
                 registerModule : registerModule, 
