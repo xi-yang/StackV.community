@@ -76,12 +76,15 @@ $(function () {
         $("#black-screen").addClass("off");
         $(this).removeClass("active");
     });
-    
-    $("#profile-save-label").click(function () {
-        if ($("#profile-save-check").is(':checked')) {
-            $("#profile-save-body").removeClass("fade-hide");
+
+    $(".profile-save-label").click(function () {
+        // determine what service it's for - use [1] b/c first entry is empty string
+        var id = $(this).attr('id').match(/profile-save-label-(\w+)/)[1];
+
+        if ($("#profile-save-check-"+id).is(':checked')) {
+            $("#profile-save-body-"+id).removeClass("fade-hide");
         } else {
-            $("#profile-save-body").addClass("fade-hide");
+            $("#profile-save-body-"+id).addClass("fade-hide");
         }
     });
 
@@ -386,7 +389,7 @@ function applyTemplate(mode) {
             form.elements['vm1-route1-to'].value = '192.168.1.0/24';
             form.elements['vm1-route1-next'].value = '192.168.1.1';
 
-            // Gateways    
+            // Gateways
             var gatewayCounter = document.getElementById('opsStage5-gateway');
             gatewayCounter.value = 2;
             setGateways(gatewayCounter);

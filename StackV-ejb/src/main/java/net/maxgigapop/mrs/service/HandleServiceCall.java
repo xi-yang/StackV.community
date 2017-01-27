@@ -91,7 +91,9 @@ public class HandleServiceCall {
 
     public void terminateInstance(String refUUID) {
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(refUUID);
-        serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
+        if (serviceInstance != null) {
+            serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
+        }
         if (serviceInstance == null) {
             throw new EJBException(String.format("terminateInstance cannot find the ServiceInstance with referenceUUID=%s", refUUID));
         }
@@ -562,7 +564,9 @@ public class HandleServiceCall {
             }
             // get cached systemInstance
             systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
-
+            if (systemInstance == null || systemInstance.getCommitStatus() == null) {
+                throw new EJBException(HandleServiceCall.class.getName() + ".checkStatus (by " + serviceInstance + ") encounters null " + (systemInstance == null ? " systemInstance.": " asyncStatus cache." ) );
+            }
             Future<String> asyncStatus = systemInstance.getCommitStatus();
             serviceDelta.setStatus("FAILED");
             if (asyncStatus.isDone()) {

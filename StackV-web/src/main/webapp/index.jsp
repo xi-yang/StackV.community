@@ -4,7 +4,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <c:redirect url="/ops/catalog.jsp" />
 <!DOCTYPE html>
-<html >
+<html>
     <head>
         <meta charset="UTF-8">
         <title>Login</title>

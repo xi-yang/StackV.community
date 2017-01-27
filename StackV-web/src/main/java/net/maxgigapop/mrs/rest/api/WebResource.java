@@ -219,7 +219,7 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend` .`label` WHERE username = ? AND identifier = ?");
             prep.setString(1, username);
             prep.setString(2, identifier);
@@ -843,26 +843,6 @@ public class WebResource {
 
             System.out.println("Past Creation");
 
-            // Verify creation.
-            prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_history H WHERE H.service_instance_id = ?");
-            prep.setInt(1, instanceID);
-            rs1 = prep.executeQuery();
-            rs1.next();
-            int count = rs1.getInt(1);
-
-            System.out.println(count);
-
-            if (count > 1) {
-                verify(refUuid, auth, refresh);
-                if (serviceType.equals("omm")) {
-                    setSuperState(refUuid, 3);
-                }
-            } else {
-                System.out.println("Verification skipped");
-            }
-
-            System.out.println("Past Verification");
-
             long endTime = System.currentTimeMillis();
             System.out.println("Service API End::Name="
                     + Thread.currentThread().getName() + "::ID="
@@ -872,7 +852,7 @@ public class WebResource {
             // Return instance UUID
             return refUuid;
 
-        } catch (EJBException | SQLException | IOException | InterruptedException e) {
+        } catch (EJBException | SQLException | IOException e) {
             System.out.println("<<<CREATION ERROR: " + e.getMessage());
             return "<<<CREATION ERROR: " + e.getMessage();
         }
@@ -922,7 +902,7 @@ public class WebResource {
                     return "Deletion Complete.\r\n";
 
                 case "verify":
-                    verify(refUuid, auth, refresh);
+                    servBean.verify(refUuid, refresh);
 
                     endTime = System.currentTimeMillis();
                     System.out.println("Async API Operate End::Name="
@@ -1173,16 +1153,21 @@ public class WebResource {
                 return 4;
             }
 
+            int i = 1;
             while (true) {
-                auth = servBean.refreshToken(refresh);
+                if (i == 10) {
+                    auth = servBean.refreshToken(refresh);
+                }
                 instanceState = status(refUuid, auth);
-                if (instanceState.equals("READY")) {
-                    verify(refUuid, auth, refresh);
+                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
+                    servBean.verify(refUuid, refresh);
 
                     return 0;
-                } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
+                } else if (!(instanceState.equals("COMMITTED"))) {
                     return 5;
                 }
+                
+                i++;
                 Thread.sleep(5000);
             }
 
@@ -1207,11 +1192,11 @@ public class WebResource {
             for (int i = 0; i < 20; i++) {
                 auth = servBean.refreshToken(refresh);
                 String instanceState = status(refUuid, auth);
-                if (instanceState.equals("READY")) {
-                    verify(refUuid, auth, refresh);
+                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
+                    servBean.verify(refUuid, refresh);
 
                     return 0;
-                } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
+                } else if (!(instanceState.equals("COMMITTED"))) {
                     return 5;
                 }
                 Thread.sleep(5000);
@@ -1237,7 +1222,7 @@ public class WebResource {
                 auth = servBean.refreshToken(refresh);
                 String instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY")) {
-                    verify(refUuid, auth, refresh);
+                    servBean.verify(refUuid, refresh);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
@@ -1588,89 +1573,6 @@ public class WebResource {
         prep.executeUpdate();
 
         return true;
-    }
-
-    private boolean verify(String refUuid, String auth, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
-        int instanceID = servBean.getInstanceID(refUuid);
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-        PreparedStatement prep;
-
-        String deltaUuid = "NULL";
-        prep = front_conn.prepareStatement("SELECT D.referenceUUID FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
-        prep.setString(1, refUuid);
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            deltaUuid = rs1.getString("referenceUUID");
-        }
-
-        System.out.println("Verifying Delta " + deltaUuid);
-        for (int i = 1; i <= 5; i++) {
-            auth = servBean.refreshToken(refresh);
-
-            boolean redVerified = true, addVerified = true;
-            URL url = new URL(String.format("%s/service/verify/%s", host, deltaUuid));
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            String result = servBean.executeHttpMethod(url, conn, "GET", null, auth);
-
-            // Pull data from JSON.
-            JSONObject verifyJSON = new JSONObject();
-            try {
-                Object obj = parser.parse(result);
-                verifyJSON = (JSONObject) obj;
-
-            } catch (ParseException ex) {
-                Logger.getLogger(WebResource.class
-                        .getName()).log(Level.SEVERE, null, ex);
-                throw new IOException("Parse Error within Verification: " + ex.getMessage());
-            }
-
-            // Update verification results cache.
-            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? WHERE `service_instance_id`=?");
-            prep.setString(1, (String) verifyJSON.get("referenceUUID"));
-            prep.setString(2, (String) verifyJSON.get("creationTime"));
-            prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
-            prep.setString(4, (String) verifyJSON.get("verifiedModelAddition"));
-            prep.setString(5, (String) verifyJSON.get("unverifiedModelReduction"));
-            prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
-            prep.setString(7, (String) verifyJSON.get("reductionVerified"));
-            prep.setString(8, (String) verifyJSON.get("additionVerified"));
-            prep.setInt(9, i);
-            prep.setInt(10, instanceID);
-            prep.executeUpdate();
-
-            if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
-                redVerified = false;
-            }
-            if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
-                addVerified = false;
-            }
-
-            //System.out.println("Verify Result: " + result + "\r\n");
-            if (redVerified && addVerified) {
-                prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1' WHERE `service_verification`.`service_instance_id` = ?");
-                prep.setInt(1, instanceID);
-                prep.executeUpdate();
-
-                return true;
-            }
-
-            prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '0' WHERE `service_verification`.`service_instance_id` = ?");
-            prep.setInt(1, instanceID);
-            prep.executeUpdate();
-
-            Thread.sleep(60000);
-        }
-
-        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");
-        prep.setInt(1, instanceID);
-        prep.executeUpdate();
-
-        return false;
     }
 
     private String superStatus(String refUuid) throws SQLException {

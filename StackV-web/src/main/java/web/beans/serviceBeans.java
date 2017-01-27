@@ -67,6 +67,8 @@ public class serviceBeans {
     private final String kc_user = "admin";
     private final String kc_pass = "MAX123!";
 
+    JSONParser parser = new JSONParser();
+
     String login_db_user = "login_view";
     String login_db_pass = "loginuser";
     String front_db_user = "front_view";
@@ -1724,7 +1726,7 @@ public class serviceBeans {
         }
     }
 
-    private int[] cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
+    public int[] cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
         // Cache serviceDelta.
         int instanceID = -1;
         int historyID = -1;
@@ -1859,8 +1861,8 @@ public class serviceBeans {
             token = refreshToken(refresh);
             result = commitInstance(refUuid, svcDelta, token);
 
-            checkReadyInstance(refUuid, result, token);
-        } catch (EJBException | IOException | InterruptedException e) {
+            verifyInstance(refUuid, result, refresh);
+        } catch (EJBException | IOException | InterruptedException | SQLException e) {
             System.out.println("ERROR: " + e.getMessage() + " - " + e.getStackTrace());
             //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, e);
         }
@@ -1896,13 +1898,13 @@ public class serviceBeans {
         return result;
     }
 
-    private void checkReadyInstance(String refUuid, String result, String refresh) throws MalformedURLException, IOException, InterruptedException {
+    private void verifyInstance(String refUuid, String result, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
         String token = refreshToken(refresh);
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
         int i = 1;
-        while (!result.equals("READY")) {
+        while (!result.equals("READY") && !result.equals("FAILED")) {
             if (i == 10) {
-                token = refreshToken(token);
+                token = refreshToken(refresh);
                 i = 1;
             }
             sleep(5000);//wait for 5 seconds and check again later
@@ -1913,19 +1915,89 @@ public class serviceBeans {
                  throw new EJBException("Ready Check Failed!");
                  }*/
         }
+
+        verify(refUuid, refresh);
+    }
+
+    public boolean verify(String refUuid, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
+        int instanceID = getInstanceID(refUuid);
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+        PreparedStatement prep;
+
+        System.out.println("Verifying Delta for service" + refUuid);
+
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = NULL, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");        
+        prep.setInt(1, instanceID);
+        prep.executeUpdate();
+
+        for (int i = 1; i <= 5; i++) {
+            String auth = refreshToken(refresh);
+
+            boolean redVerified = true, addVerified = true;
+            URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            String result = executeHttpMethod(url, conn, "GET", null, auth);
+
+            // Pull data from JSON.
+            JSONObject verifyJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(result);
+                verifyJSON = (JSONObject) obj;
+            } catch (ParseException ex) {
+                throw new IOException("Parse Error within Verification: " + ex.getMessage());
+            }
+
+            // Update verification results cache.
+            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? WHERE `service_instance_id`=?");
+            prep.setString(1, (String) verifyJSON.get("referenceUUID"));
+            prep.setString(2, (String) verifyJSON.get("creationTime"));
+            prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
+            prep.setString(4, (String) verifyJSON.get("verifiedModelAddition"));
+            prep.setString(5, (String) verifyJSON.get("unverifiedModelReduction"));
+            prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
+            prep.setString(7, (String) verifyJSON.get("reductionVerified"));
+            prep.setString(8, (String) verifyJSON.get("additionVerified"));
+            prep.setInt(9, i);
+            prep.setInt(10, instanceID);
+            prep.executeUpdate();
+
+            if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
+                redVerified = false;
+            }
+            if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
+                addVerified = false;
+            }
+
+            //System.out.println("Verify Result: " + result + "\r\n");
+            if (redVerified && addVerified) {
+                prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1' WHERE `service_verification`.`service_instance_id` = ?");
+                prep.setInt(1, instanceID);
+                prep.executeUpdate();
+
+                return true;
+            }
+
+            prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '0' WHERE `service_verification`.`service_instance_id` = ?");
+            prep.setInt(1, instanceID);
+            prep.executeUpdate();
+
+            Thread.sleep(60000);
+        }
+
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");
+        prep.setInt(1, instanceID);
+        prep.executeUpdate();
+
+        return false;
     }
 
     public String refreshToken(String refresh) {
         try {
-            /*
-            KC_RESPONSE=$( \
-            curl -k -v -X POST \
-            -u "$KC_CLIENT:$KC_CLIENT_SECRET" \
-            -d "grant_type=refresh_token" \
-            -d "refresh_token=$KC_REFRESH_TOKEN" \
-            "https://$KC_SERVER/$KC_CONTEXT/realms/$KC_REALM/protocol/openid-connect/token")
-             */
-
             URL url = new URL("https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
 
@@ -1941,7 +2013,8 @@ public class serviceBeans {
             conn.setDoInput(true);
             conn.setDoOutput(true);
 
-            System.out.println("Init Refresh");
+            System.out.println("Init Refresh: " + refresh.substring(0, Math.min(refresh.length(), 10)) + "...");
+            //System.out.println("Init Refresh: " + refresh);
             String data = "grant_type=refresh_token&refresh_token=" + refresh;
 
             OutputStream os = conn.getOutputStream();
@@ -1966,8 +2039,6 @@ public class serviceBeans {
             JSONParser parser = new JSONParser();
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
-
-            System.out.println("Token Refreshed!");
 
             return "bearer " + (String) result.get("access_token");
         } catch (ParseException | IOException ex) {
