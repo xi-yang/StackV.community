@@ -34,8 +34,11 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
+import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.bean.ServiceInstance;
+import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
@@ -58,6 +61,7 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
     JSONParser parser = new JSONParser();
 
     @Override
+    @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
@@ -109,11 +113,16 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
             Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
             resources.add(node);
         }
+        
         ServiceDelta outputDelta = new ServiceDelta();
-
         Model removalModel =  ModelUtil.getModelSubTree(systemModel.getOntModel(), resources, includeMatches, excludeMatches, excludeExtentials);        
         
-        outputDelta.getModelReduction().getOntModel().add(removalModel);
+        DeltaModel dmReduction = new DeltaModel();
+        dmReduction.setDelta(outputDelta);
+        dmReduction.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
+        dmReduction.getOntModel().add(removalModel);
+        outputDelta.setModelReduction(dmReduction);
+        
         return new AsyncResult(outputDelta);
     }   
 }
