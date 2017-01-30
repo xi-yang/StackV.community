@@ -2,42 +2,29 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Antonio Heard 2016
 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the ?Work?) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in 
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  !-->
 
-
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/StackV-web/errorPage.jsp" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
-<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
-<c:if test="${user.loggedIn == false}">
-    <c:redirect url="/index.jsp" />
-</c:if>
 <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
-<link rel="stylesheet" href="/StackV-web/css/contextMenu.css">           
+<link rel="stylesheet" href="/StackV-web/css/contextMenu.css">
 <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
-<link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">                
+<link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
 
 <style>
     .hover_div {
@@ -73,7 +60,7 @@
     }
 
     #tagDialogCloserBar{
-      padding-left:80%;    
+      padding-left:80%;
     }
     #tagDialogContent {
       margin:auto;
@@ -98,7 +85,7 @@
     .urnLink {
         color:blue;
         cursor:pointer;
-        overflow: auto; 
+        overflow: auto;
         word-wrap: break-word;
     }
     .clicked {
@@ -141,7 +128,7 @@
         word-break: break-all;
     }
 
-    .displayPanel-actions {    
+    .displayPanel-actions {
         /*    bottom: 20px;
             position: absolute;   */
         padding-bottom: 2%;
@@ -158,19 +145,19 @@
     }
 
     .displayPanelCloserBar{
-        padding-left:95%;    
+        padding-left:95%;
         border-bottom: black 1px solid;
     }
-    .displayPanel-contents{ 
+    .displayPanel-contents{
         padding-right: 3%;
     }
     .details-viz-button{
         float:right;
     }
     #definition_svg {
-        height: 0; 
-        position: absolute; 
-        width: 0;                
+        height: 0;
+        position: absolute;
+        width: 0;
     }
     .jSonDialog{
         text-align:left;
@@ -191,8 +178,8 @@
     var d3;
     var utils;
     var DropDownTree;
-    var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
-    var modelMap = {}; // stores models in <visualization div, model> format 
+    var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc
+    var modelMap = {}; // stores models in <visualization div, model> format
     var outputApiMap = {};
     var outputApi;
 
@@ -208,7 +195,7 @@
                 width: "auto",
 //                         height: 400,
 //                         width: "80%",
-//                         maxWidth: 500,  jquery ui bug, this doens't work 
+//                         maxWidth: 500,  jquery ui bug, this doens't work
                 create: function (event, ui) {
                     //$( "#dialog_policyData" ).css("maxWidth",  "800px" );
                 },
@@ -240,7 +227,7 @@
 
                         success: function (data, textStatus, jqXHR) {
                             if (data === "true") {
-                                //alert(textStatus);
+//                                //alert(textStatus);
                                 layout = l;
                                 render = r;
                                 d3 = d3_;
@@ -249,7 +236,7 @@
                                 bsShowFadingMessage = utils.bsShowFadingMessage;
                                 positionDisplayPanel = utils.positionDisplayPanel;
 
-                                // possibly pass in map here later for all possible dialogs 
+                                // possibly pass in map here later for all possible dialogs
                                 ContextMenu = c;
                                 DropDownTree = tree;
 
@@ -268,7 +255,7 @@
 
                                 contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
                                 contextMenu.init();
-
+//
                                 console.log("after model.");
                             } else {
                                 displayError("Backend not Ready", d3, "va_viz", -80);
@@ -376,11 +363,11 @@
                 "</svg>";
 
         if (prefix === "va") {
-            viz += "<button class=\"details-viz-button\" id=\"manifest_button\" onclick=\"showManifest()\">Display Manifest</button>";
+            viz += "<button class=\"details-viz-button btn btn-default\" id=\"manifest_button\" onclick=\"showManifest()\">Display Manifest</button>";
         }
 
-        viz += "<button class=\"details-viz-button\" id=\"" + prefix + "_viz_recenter_button\">Recenter</button>" +
-                "<button  class=\"details-viz-button\" id=\"" + prefix + "_viz_toggle_model\">View Text Model</button>" +
+        viz += "<button class=\"details-viz-button btn btn-default\" id=\"" + prefix + "_viz_recenter_button\">Recenter</button>" +
+                "<button  class=\"details-viz-button btn btn-default\" id=\"" + prefix + "_viz_toggle_model\">View Text Model</button>" +
                 "</div>";
 
         $("#" + div_id).append(viz);
@@ -452,7 +439,8 @@
         //viz_table.find("th:nth-child(" + index + ")").css( "color", "#ccc");
     }
     function showManifest() {
-        window.open('/StackV-web/ops/details/manifestPortal.jsp?uuid=' + location.search.split("?uuid=")[1], 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+        var uuid =  sessionStorage.getItem("uuid");
+        window.open('/StackV-web/ops/details/manifestPortal.jsp?uuid=' + uuid, 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
     }
     function createTextToggle(prefix, textModel) {
         var button = $("#" + prefix + "_viz_toggle_model");
@@ -486,18 +474,16 @@
     }
 
     function renderModels() {
-        var UUID = location.search.split("?uuid=")[1];
+        var UUID = sessionStorage.getItem("uuid");
         var token = sessionStorage.getItem("token");
         $.ajax({
             crossDomain: true,
             type: "GET",
-            url: "/StackV-web/restapi/service/delta/" + UUID,
+            url: "/StackV-web/restapi/app/delta/" + UUID,
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + token);
             },
-
             dataType: "json",
-
             success: function (data, textStatus, jqXHR) {
                 if (data.serviceModelAddition && data.serviceModelAddition !== "{ }") {
                     var servAObj = JSON.parse(data.serviceModelAddition);
@@ -714,19 +700,19 @@
         this.zoom = function (amount, mouseX, mouseY) {
             /*
              * There seems to be some error (rounding?) when we zoom far out
-             * 
+             *
              * In addition to zooming, we also translate the image so that the point under the cursor appears stationary.
              * To understand this conversion, there are two coordinate systems to consdier:
              *      the svg coordinate system (in which all svg objects are stationary throughout the translation), and
              *      the mouse coordinate system, that corresponds to what we see
-             *      
+             *
              *       The conversion (along a single axis) between these two systems is given by:
              *       X_mouse=zoomFactor*(X_svg + offsetX)
              *       To find the new offset, after increasing zoomFactor by zoomDelta, we solve:
              *         zoomFactor*(X_svg + offsetX)=(zoomFactor+zoomDelta)*(X_svg + (offsetX+doX))
              *        for doX.
              *        the new offset is now offsetX+doX
-             *        
+             *
              */
             var zoomFactorNew = zoomFactor * (1 + amount);
             var zoomDelta = zoomFactorNew - zoomFactor;
@@ -856,7 +842,7 @@
             isPanning = true;
         });
         svg.addEventListener("mousemove", function (e) {
-            // && (e.which ==== 1) stops d3 bug of dragging to enable on context menu 
+            // && (e.which ==== 1) stops d3 bug of dragging to enable on context menu
             if (isPanning && panningEnabled && (e.which === 1)) {
                 moved = true;
                 that.scroll(e.movementX, e.movementY);
@@ -871,7 +857,7 @@
 
         $(".displayPanel").draggable({handle: ".displayPanelBar"});
     }
-</script>        
+</script>
 <!-- MAIN PANEL -->
 <div id="pane">
 </div>
@@ -918,7 +904,7 @@
 
             <div id="displayPanel-contents">
                 <div id="displayName"></div>
-                <div id="treeMenu"></div>                
+                <div id="treeMenu"></div>
             </div>
             <div id="displayPanel-actions-container">
                 <div id="displayPanel-actions">
@@ -930,117 +916,117 @@
 
 <!-- DEFINITION SVG -->
 <svg id="definition_svg" visibility = "hidden" >
-<defs> 
-<filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%"> 
-    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx--> 
-    <feMorphology operator="dilate" radius="1"/> 
-    <feColorMatrix result="a" type="matrix" 
-                   values="0 0 0 0 .7 
-                   0 0 0 0 1 
-                   0 0 0 0 0 
-                   0 0 0 1 0" /> 
-    <feComposite operator="out" in="a" in2="SourceGraphic"/> 
-</filter> 
-<filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" > 
-    <feFlood flood-color="#66ff66" result="base" /> 
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/> 
-    <feColorMatrix result="mask" in="bigger" type="matrix" 
-                   values="0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 1 0" /> 
-    <feComposite result="drop" in="base" in2="mask" operator="in" /> 
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" /> 
-</filter> 
-<filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" > 
-    <feFlood flood-color="#B3F131" result="base" /> 
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/> 
-    <feColorMatrix result="mask" in="bigger" type="matrix" 
-                   values="0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 1 0" /> 
-    <feComposite result="drop" in="base" in2="mask" operator="in" /> 
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" /> 
-</filter> 
-<filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" > 
-    <feFlood flood-color="#23ABA6" result="base" /> 
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/> 
-    <feColorMatrix result="mask" in="bigger" type="matrix" 
-                   values="0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 1 0" /> 
-    <feComposite result="drop" in="base" in2="mask" operator="in" /> 
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" /> 
-</filter> 
-<filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" > 
-    <feFlood flood-color="#FD3338" result="base" /> 
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/> 
-    <feColorMatrix result="mask" in="bigger" type="matrix" 
-                   values="0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 1 0" /> 
-    <feComposite result="drop" in="base" in2="mask" operator="in" /> 
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" /> 
-</filter>     
-<filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%"> 
-    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx--> 
-    <feMorphology operator="dilate" radius="1"/> 
-    <feColorMatrix result="a" type="matrix" 
-                   values="0 0 0 0 0 
-                   0 0 0 0 .8 
-                   0 0 0 0 .3 
-                   0 0 0 1 0" /> 
-    <feComposite operator="out" in="a" in2="SourceGraphic"/> 
-</filter> 
-<filter id="spaImportFromOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" > 
-    <feFlood flood-color="#FD3338" result="base" /> 
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/> 
-    <feColorMatrix result="mask" in="bigger" type="matrix" 
-                   values="0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 1 0" /> 
-    <feComposite result="drop" in="base" in2="mask" operator="in" /> 
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" /> 
-</filter>             
-<filter id="spaExportToOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" > 
-    <feFlood flood-color="#23ABA6" result="base" /> 
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/> 
-    <feColorMatrix result="mask" in="bigger" type="matrix" 
-                   values="0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 1 0" /> 
-    <feComposite result="drop" in="base" in2="mask" operator="in" /> 
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" /> 
-</filter>    
-<filter id="spaDependOnOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" > 
-    <feFlood flood-color="#B3F131" result="base" /> 
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/> 
-    <feColorMatrix result="mask" in="bigger" type="matrix" 
-                   values="0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 0 0 
-                   0 0 0 1 0" /> 
-    <feComposite result="drop" in="base" in2="mask" operator="in" /> 
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" /> 
-</filter>      
-<filter id="outlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%"> 
-    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx--> 
-    <feMorphology operator="dilate" radius="1"/> 
-    <feColorMatrix result="a" type="matrix" 
-                   values="0 0 0 0 .7 
-                   0 0 0 0 1 
-                   0 0 0 0 0 
-                   0 0 0 1 0" /> 
-    <feComposite operator="out" in="a" in2="SourceGraphic"/> 
-</filter> 
+<defs>
+<filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+    <feMorphology operator="dilate" radius="1"/>
+    <feColorMatrix result="a" type="matrix"
+                   values="0 0 0 0 .7
+                   0 0 0 0 1
+                   0 0 0 0 0
+                   0 0 0 1 0" />
+    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+</filter>
+<filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+    <feFlood flood-color="#66ff66" result="base" />
+    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+    <feColorMatrix result="mask" in="bigger" type="matrix"
+                   values="0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 1 0" />
+    <feComposite result="drop" in="base" in2="mask" operator="in" />
+    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+    <feFlood flood-color="#B3F131" result="base" />
+    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+    <feColorMatrix result="mask" in="bigger" type="matrix"
+                   values="0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 1 0" />
+    <feComposite result="drop" in="base" in2="mask" operator="in" />
+    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+    <feFlood flood-color="#23ABA6" result="base" />
+    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+    <feColorMatrix result="mask" in="bigger" type="matrix"
+                   values="0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 1 0" />
+    <feComposite result="drop" in="base" in2="mask" operator="in" />
+    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+    <feFlood flood-color="#FD3338" result="base" />
+    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+    <feColorMatrix result="mask" in="bigger" type="matrix"
+                   values="0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 1 0" />
+    <feComposite result="drop" in="base" in2="mask" operator="in" />
+    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+    <feMorphology operator="dilate" radius="1"/>
+    <feColorMatrix result="a" type="matrix"
+                   values="0 0 0 0 0
+                   0 0 0 0 .8
+                   0 0 0 0 .3
+                   0 0 0 1 0" />
+    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+</filter>
+<filter id="spaImportFromOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" >
+    <feFlood flood-color="#FD3338" result="base" />
+    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+    <feColorMatrix result="mask" in="bigger" type="matrix"
+                   values="0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 1 0" />
+    <feComposite result="drop" in="base" in2="mask" operator="in" />
+    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaExportToOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" >
+    <feFlood flood-color="#23ABA6" result="base" />
+    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+    <feColorMatrix result="mask" in="bigger" type="matrix"
+                   values="0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 1 0" />
+    <feComposite result="drop" in="base" in2="mask" operator="in" />
+    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="spaDependOnOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" >
+    <feFlood flood-color="#B3F131" result="base" />
+    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+    <feColorMatrix result="mask" in="bigger" type="matrix"
+                   values="0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 0 0
+                   0 0 0 1 0" />
+    <feComposite result="drop" in="base" in2="mask" operator="in" />
+    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+<filter id="outlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+    <feMorphology operator="dilate" radius="1"/>
+    <feColorMatrix result="a" type="matrix"
+                   values="0 0 0 0 .7
+                   0 0 0 0 1
+                   0 0 0 0 0
+                   0 0 0 1 0" />
+    <feComposite operator="out" in="a" in2="SourceGraphic"/>
+</filter>
 
-<filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%"> 
-    <feColorMatrix type="saturate" values=".2"/> 
-</filter> 
+<filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+    <feColorMatrix type="saturate" values=".2"/>
+</filter>
 </defs>
 </svg>

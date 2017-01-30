@@ -6,9 +6,10 @@
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
+
         <title>Driver Management</title>
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
@@ -19,35 +20,14 @@
         <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
         <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
     
     <body>        
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        <!-- SIDE BAR -->   
-        <div id="sidebar">            
-        </div>
-        <!-- MAIN PANEL -->
-        <div id="black-screen" class="off"></div>
-        <div id="main-pane">                                         
-                            
-            <div id="info-panel" class="">
-                <div id="info-fields" style ="float: top;"></div>
-                <div id="info-option" style ="float: bottom;"></div>
-            </div>
-            
-            
-            
-            <div style="margin: 0 auto;" class="closed driver-panel no-side-tab" id="driver-panel-top">
-                <ul class="nav nav-tabs catalog-tabs">
-                    <li class="active"><a data-toggle="tab" href="#driver-tab">Template Drivers</a></li>
-                    <li onclick="updateDrivers('saved-table');"><a data-toggle="tab" href="#saved-tab">Saved Drivers</a></li>
-                </ul>
-
+      <div>
                 <div class="tab-content" id="catalog-tab-content">
                     
                     <div style="width: 100%; height: 85%; overflow: auto;" id="driver-tab" class="tab-pane fadeIn active">
@@ -186,6 +166,7 @@
                         <div id='install-options'>
                             <button onclick="clearPanel(); closeSide();">Close</button>
                         </div>
+
                     </div>
                         
                 </div>
@@ -193,6 +174,10 @@
                 <!-- LOADING PANEL -->
                 <div id="loading-panel"></div>
             </div>
-        </div>
-    </body>
-</html>
+
+        <!-- JS -->
+        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
+ 

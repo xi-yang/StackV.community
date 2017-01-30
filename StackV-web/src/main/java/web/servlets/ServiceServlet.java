@@ -237,6 +237,7 @@ public class ServiceServlet extends HttpServlet {
         }
 
         String token = paraMap.get("authToken");
+        String refresh = paraMap.get("refreshToken");
         String username = paraMap.get("username");
 
         JSONObject inputJSON = new JSONObject();
@@ -576,7 +577,7 @@ public class ServiceServlet extends HttpServlet {
             asyncCtx.setTimeout(300000);
 
             ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-            executor.execute(new APIRunner(inputJSON, token));
+            executor.execute(new APIRunner(inputJSON, token, refresh));
         }
 
         return ("/StackV-web/ops/catalog.jsp");
@@ -590,6 +591,7 @@ public class ServiceServlet extends HttpServlet {
         }
 
         String token = paraMap.get("authToken");
+        String refresh = paraMap.get("refreshToken");
         String username = paraMap.get("username");
 
         JSONObject inputJSON = new JSONObject();
@@ -982,7 +984,7 @@ public class ServiceServlet extends HttpServlet {
             asyncCtx.setTimeout(300000);
 
             ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-            executor.execute(new APIRunner(inputJSON, token));
+            executor.execute(new APIRunner(inputJSON, token, refresh));
         }
 
         return ("/StackV-web/ops/catalog.jsp");
@@ -1097,6 +1099,7 @@ class APIRunner implements Runnable {
 
     JSONObject inputJSON;
     String authToken;
+    String refreshToken;
     serviceBeans servBean = new serviceBeans();
     String host = "http://localhost:8080/StackV-web/restapi";
 
@@ -1104,9 +1107,10 @@ class APIRunner implements Runnable {
         inputJSON = input;
     }
 
-    public APIRunner(JSONObject input, String token) {
+    public APIRunner(JSONObject input, String token, String refresh) {
         inputJSON = input;
         authToken = token;
+        refreshToken = refresh;
     }
 
     @Override
@@ -1118,6 +1122,7 @@ class APIRunner implements Runnable {
             if (authToken != null && !authToken.isEmpty()) {
                 String authHeader = "bearer " + authToken;
                 create.setRequestProperty("Authorization", authHeader);
+                create.setRequestProperty("Refresh", refreshToken);
             }
 
             String result = servBean.executeHttpMethod(url, create, "POST", inputJSON.toJSONString(), null);

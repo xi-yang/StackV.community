@@ -1,0 +1,100 @@
+/*
+ * Filename: global.css
+ * Created by: Andrew Gu 2017
+ * Purpose: Contains styling that pertain to the app as a whole.
+*/
+
+/*Miscellaenous global styles*/
+::-webkit-scrollbar {
+    display:none;
+}
+
+html {
+    height: 100%;
+}
+
+a {
+    color: white;
+    text-decoration:none;
+}
+
+a.hover {
+    color: #B20000;
+}
+
+.opaque {
+    opacity: 0;
+}
+
+body {
+    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/StackV-web/img/background.png');
+    background-attachment: fixed;
+    font-family: 'Roboto', sans-serif;
+    text-align: center;
+    margin: 0px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+}
+
+.error {
+    font-family: "Roboto";
+    font-size: 14px;
+    color: #364454;
+}
+
+/*Looks like just a class to fade item out*/
+.fade-hide {
+  display: none;
+
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+/*Form elements styling*/
+select {
+  color: #000;
+}
+
+/*Black Screen styles*/
+div#black-screen {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    padding: 40px;
+    padding-top: 77px;
+    z-index: 3;
+    background-color: rgba(0,0,0,0.4);
+
+    transition: opacity 1s ease;
+}
+div#black-screen.off {
+    opacity: 0;
+    pointer-events: none;
+
+    transition: opacity 1s ease;
+}
+
+/*Main Pane Styles */
+div#main-pane {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    padding: 40px;
+    padding-top: 77px;
+    overflow-x: hidden;
+
+    -webkit-transition: all 400ms ease-in-out;
+    transition: all 400ms ease-in-out;
+}
+div#main-pane.sidebar-open {
+    opacity: .25;
+    margin-left: 0px;
+}
+
+div#main-pane.loading {
+    opacity: .4;
+}
+div#main-pane.loading #loading-panel {
+    opacity: 1;
+}

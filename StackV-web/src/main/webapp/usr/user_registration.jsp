@@ -4,13 +4,13 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
         <title>User Registration</title>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
@@ -49,17 +49,17 @@
                        url="jdbc:mysql://localhost:3306/frontend"
                        user="front_view"  password="frontuser"/>
 
-    <body>        
+    <body>
         <!-- NAV BAR -->
         <div id="nav">
         </div>
         <!-- SIDE BAR -->
-        <div id="sidebar">            
+        <div id="sidebar">
         </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">                        
+        <div id="main-pane">
             <div id="tables">
-                <c:choose>                    
+                <c:choose>
                     <c:when test="${param.ret == 'succ'}">
                         <div class="form-result">
                             Registration Successful<br>
@@ -81,13 +81,13 @@
                         <div id="user-overview">
                             <sql:query dataSource="${front_conn}" sql="SELECT usergroup_id, title FROM usergroup" var="ugrouplist" />
                             <form action="register.jsp" method="POST" name="register-user">
-                                <table class="management-table" id="registration-table">                    
+                                <table class="management-table" id="registration-table">
                                     <thead>
                                         <tr>
                                             <th>Registration</th>
                                         </tr>
                                     </thead>
-                                    <tbody>                    
+                                    <tbody>
                                         <tr><td><input placeholder='Username' type='text' name="username" size="40" maxlength="20" required /></td></tr>
                                         <tr><td><input placeholder='Password' name="password" id="password1" type='password' size="40" maxlength="20" required /></td></tr>
                                         <tr><td><input placeholder='Confirm Password' type='password' id="password2" size="40" maxlength="20" required /></td></tr>
@@ -98,7 +98,7 @@
                                                         <option value="<c:out value="${ugroup.usergroup_id}" />"><c:out value="${ugroup.title}" /></option>
                                                     </c:forEach>
                                                 </select></td></tr>
-                                        <tr><td><input placeholder='Email Address' name='email' type='email' size="40" /></td></tr>                   
+                                        <tr><td><input placeholder='Email Address' name='email' type='email' size="40" /></td></tr>
                                         <tr><td><input class="button-register" name="registration" type="submit" value="Register" /></td></tr>
                                     </tbody>
                                 </table>
@@ -107,6 +107,6 @@
                     </c:otherwise>
                 </c:choose>
             </div>
-        </div>              
+        </div>
     </body>
 </html>

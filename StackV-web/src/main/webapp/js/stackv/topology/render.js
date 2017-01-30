@@ -952,7 +952,7 @@ define([
                 n.svgNode.style("filter", n.isGhost ? "url(#ghost)" : "none");
                 return;
             }
-            if (d3.event.shiftKey) {
+            if (d3.event && d3.event.shiftKey) {
                 if (highlightedNodesMap["trashcan"] === undefined) {
                     highlightedNodesMap["trashcan"] = [];
                 }
@@ -1019,7 +1019,7 @@ define([
                 n.svgNode.style("filter", n.isGhost ? "url(#ghost)" : "none");
                 return;
             }
-            if (d3.event.shiftKey) {
+            if (d3.event && d3.event.shiftKey) {
                 if (highlightedNodesMap["trashcan"] === undefined) {
                     highlightedNodesMap["trashcan"] = [];
                 }
@@ -1480,7 +1480,7 @@ define([
         API["setHighlights"] = setHighlights;
         API["removeHighlights"] = removeHighlights;
         API["multipleHighlighted"] = function () {
-            return highlightedNodesMap["trashcan"].length > 0;
+            return highlightedNodesMap["trashcan"] !== undefined && highlightedNodesMap["trashcan"].length > 0;
         };
         API["getTrashcan"] = function () {
             return highlightedNodesMap["trashcan"];
