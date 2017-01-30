@@ -118,7 +118,7 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
         Model removalModel =  ModelUtil.getModelSubTree(systemModel.getOntModel(), resources, includeMatches, excludeMatches, excludeExtentials);        
         
         DeltaModel dmReduction = new DeltaModel();
-        dmReduction.setDelta(outputDelta);
+       // dmReduction.setDelta(outputDelta);
         dmReduction.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
         dmReduction.getOntModel().add(removalModel);
         outputDelta.setModelReduction(dmReduction);
