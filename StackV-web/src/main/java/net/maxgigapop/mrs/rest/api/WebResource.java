@@ -899,6 +899,9 @@ public class WebResource {
                 case "omm":
                     servBean.createOperationModelModification(paraMap, auth);
                     break;
+                case "dnc":
+                    servBean.createDNC(dataJSON, auth, refresh);
+                    break;
                 default:
             }
 

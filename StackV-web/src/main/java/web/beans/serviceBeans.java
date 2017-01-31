@@ -288,116 +288,12 @@ public class serviceBeans {
         }
 
     }
-
-    public int createConnection(Map<String, String> paraMap) {
-
-        String refUuid = paraMap.get("instanceUUID");
-        List<String> linkUri = new ArrayList<>();
-
-        JSONObject connectJSON = new JSONObject();
-        for (int i = 1; i <= 10; i++) {
-            if (paraMap.containsKey("src-conn" + i)) {
-                JSONObject exteriorJSON = new JSONObject();
-
-                // Construct interior connection JSON Object
-                JSONObject interiorJSON = new JSONObject();
-                interiorJSON.put("vlan_tag", paraMap.get("src-vlan" + i));
-                exteriorJSON.put(paraMap.get("src-conn" + i), interiorJSON);
-
-                interiorJSON = new JSONObject();
-                interiorJSON.put("vlan_tag", paraMap.get("des-vlan" + i));
-                exteriorJSON.put(paraMap.get("des-conn" + i), interiorJSON);
-
-                // Insert into carrier object
-                connectJSON.put(paraMap.get("linkUri" + i), exteriorJSON);
-            }
-        }
-
-        String deltaUUID = UUID.randomUUID().toString();
-
-        String delta = "<serviceDelta>\n<uuid>" + deltaUUID
-                + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
-                + "\n\n<modelAddition>\n"
-                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
-                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
-                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
-                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
-                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
-                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
-                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
-
-        for (String linkName : linkUri) {
-            delta += "&lt;" + linkName + "&gt;\n"
-                    + "      a            mrs:SwitchingSubnet ;\n"
-                    + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
-        }
-
-        delta += "&lt;urn:ogf:network:openstack.com:openstack-cloud:vlan&gt;\n"
-                + "a mrs:SwitchingSubnet; spa:type spa:Abstraction;\n"
-                + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt; .\n\n";
-
-        delta += "&lt;x-policy-annotation:action:create-path&gt;\n"
-                + "    a            spa:PolicyAction ;\n"
-                + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
-                + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
-                + "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"
-                + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
-                + "    a            spa:PolicyData;\n"
-                + "    spa:type     \"JSON\";\n"
-                + "    spa:value    \"\"\"" + connectJSON.toString().replace("\\", "")
-                + "    \"\"\".\n\n&lt;x-policy-annotation:data:conn-criteriaexport&gt;\n"
-                + "    a            spa:PolicyData;\n"
-                + "    spa:type     \"JSON\" .\n\n"
-                + "</modelAddition>\n\n"
-                + "</serviceDelta>";
-
-        String result;
-
-        // Cache serviceDelta.
-        int[] results = cacheServiceDelta(refUuid, deltaUUID, delta);
-        int instanceID = results[0];
-        int historyID = results[1];
-
-        try {
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
-            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", delta);
-            if (!result.contains("referenceVersion")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-
-            // Cache System Delta
-            cacheSystemDelta(instanceID, historyID, result);
-
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null);
-            if (!result.equals("PROPAGATED")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null);
-            if (!result.equals("COMMITTED")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while (!result.equals("READY")) {
-                sleep(5000);//wait for 5 seconds and check again later
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null);
-                if (!result.equals("COMMITTED")) {
-                    return 3;//Fail to create network
-                }
-            }
-
-            return 0;
-        } catch (Exception e) {
-            return 1;//connection error
-        }
-
+    */
+    public int createDNC(JSONObject JSONinput, String auth, String refresh) {
+        
+        return 1;
     }
-     */
+
     public int createNetwork(Map<String, String> paraMap, String auth, String refresh) {
         String topoUri = null;
         String driverType = null;
