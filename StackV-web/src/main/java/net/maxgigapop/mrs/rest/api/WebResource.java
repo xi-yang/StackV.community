@@ -67,6 +67,7 @@ import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HttpsURLConnection;
 import net.maxgigapop.mrs.common.ModelUtil;
 import org.jboss.resteasy.spi.HttpRequest;
@@ -101,50 +102,234 @@ public class WebResource {
     public WebResource() {
     }
 
+    // ACL   
     @POST
-    @Path("/token")
-    public String getToken(final String inputString) throws MalformedURLException, IOException {
-        String body = inputString + "&grant_type=password&client_id=curl&client_secret=07d58fc2-1ab4-46c4-a546-77cc7091867c";
-        String serverRoot = System.getProperty("kc_url");
-        System.setProperty("javax.net.ssl.trustStore", "keystore.jks");
-        System.setProperty("javax.net.ssl.trustStoreType", "jks");
-
-        URL url = new URL("https://" + serverRoot + ":8543/auth/realms/StackV/protocol/openid-connect/token");
-        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-type", "application/x-www-form-urlencoded");
-        if (body != null && !body.isEmpty()) {
-            conn.setDoOutput(true);
-            try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
-                wr.writeBytes(body);
-                wr.flush();
-            }
-        }
-
-        StringBuilder responseStr;
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            String inputLine;
-            responseStr = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                responseStr.append(inputLine);
-            }
-        }
-        JSONObject responseJSON = new JSONObject();
+    @Path(value = "/acl/{refUUID}")
+    @Consumes(value = {"application/json", "application/xml"})
+    @RolesAllowed("ACL")
+    public void addACLEntry(@PathParam("refUUID") String refUUID, final String subject) {
         try {
-            Object obj = parser.parse(responseStr.toString());
-            responseJSON = (JSONObject) obj;
+            // Authorize service.
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
+                    .getName());
+            final AccessToken accessToken = securityContext.getToken();
 
-        } catch (ParseException ex) {
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
+                    + "VALUES (?, '0', ?)");
+            prep.setString(1, subject);
+            prep.setString(2, refUUID);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
 
-        return (String) responseJSON.get("access_token");
+    @DELETE
+    @Path(value = "/acl/{refUUID}")
+    @Consumes(value = {"application/json", "application/xml"})
+    @RolesAllowed("ACL")
+    public void removeACLEntry(@PathParam("refUUID") String refUUID, final String subject) {
+        try {
+            // Authorize service.
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
+                    .getName());
+            final AccessToken accessToken = securityContext.getToken();
+
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE subject = ? AND object = ?");
+            prep.setString(1, subject);
+            prep.setString(2, refUUID);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @GET
+    @Path("/acl/{refUuid}")
+    @Produces("application/json")
+    @RolesAllowed("ACL")
+    public ArrayList<ArrayList<String>> getACLwithInfo(@PathParam("refUuid") String refUUID) {
+        try {
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            ArrayList<String> sqlList = new ArrayList<>();
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT A.subject FROM acl A WHERE A.object = ?");
+            prep.setString(1, refUUID);
+            ResultSet rs1 = prep.executeQuery();
+
+            while (rs1.next()) {
+                sqlList.add(rs1.getString("subject"));
+            }
+
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray userArr = (JSONArray) obj;
+            for (Object user : userArr) {
+                JSONObject userJSON = (JSONObject) user;
+                String username = (String) userJSON.get("username");
+
+                if (sqlList.contains(username)) {
+                    ArrayList<String> userList = new ArrayList<>();
+                    userList.add(username);
+
+                    if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
+                        userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
+                    } else {
+                        userList.add("");
+                    }
+
+                    userList.add((String) userJSON.get("email"));
+                    retList.add(userList);
+                }
+            }
+
+            return retList;
+        } catch (SQLException | IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    // Keycloak
+    @GET
+    @Path("/keycloak/users")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<ArrayList<String>> getUserInfo() {
+        try {
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray userArr = (JSONArray) obj;
+            for (Object user : userArr) {
+                JSONObject userJSON = (JSONObject) user;
+                String username = (String) userJSON.get("username");
+
+                ArrayList<String> userList = new ArrayList<>();
+                userList.add(username);
+
+                if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
+                    userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
+                } else {
+                    userList.add("");
+                }
+
+                userList.add((String) userJSON.get("email"));
+                userList.add(Long.toString((Long) userJSON.get("createdTimestamp")));
+                retList.add(userList);
+            }
+
+            return retList;
+        } catch (IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+    
+    @GET
+    @Path("/keycloak/roles")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<String> getRoles() {
+        try {
+            ArrayList<String> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/clients/5c0fab65-4577-4747-ad42-59e34061390b/roles");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray roleArr = (JSONArray) obj;
+            for (Object role : roleArr) {
+                JSONObject roleJSON = (JSONObject) role;
+                retList.add((String) roleJSON.get("name"));                
+            }
+
+            return retList;
+        } catch (IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    // Labels
+    @GET
     @Path("/label/{user}")
     @Produces("application/json")
+    @RolesAllowed("Labels")
     public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
         try {
@@ -367,6 +552,7 @@ public class WebResource {
     @PUT
     @Path(value = "/label")
     @Consumes(value = {"application/json", "application/xml"})
+    @RolesAllowed("Labels")
     public String label(final String inputString) {
         JSONObject inputJSON = new JSONObject();
         try {
@@ -403,6 +589,7 @@ public class WebResource {
 
     @DELETE
     @Path(value = "/label/{username}/delete/{identifier}")
+    @RolesAllowed("Labels")
     public String deleteLabel(@PathParam(value = "username") String username, @PathParam(value = "identifier") String identifier) {
         try {
             Properties front_connectionProps = new Properties();
@@ -423,6 +610,7 @@ public class WebResource {
 
     @DELETE
     @Path(value = "/label/{username}/clearall")
+    @RolesAllowed("Labels")
     public String clearLabels(@PathParam(value = "username") String username) {
         try {
             Properties front_connectionProps = new Properties();
@@ -440,9 +628,11 @@ public class WebResource {
         return "Labels Cleared";
     }
 
+    // Panels
     @GET
     @Path("/panel/{userId}/instances")
     @Produces("application/json")
+    @RolesAllowed("Panels")
     public ArrayList<ArrayList<String>> loadInstances(@PathParam("userId") String userId) throws SQLException {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
         ArrayList<String> banList = new ArrayList<>();
@@ -510,6 +700,7 @@ public class WebResource {
     @GET
     @Path("/panel/{userId}/wizard")
     @Produces("application/json")
+    @RolesAllowed("Panels")
     public ArrayList<ArrayList<String>> loadWizard(@PathParam("userId") String userId) {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
@@ -556,11 +747,10 @@ public class WebResource {
         }
     }
 
-
-
     @GET
     @Path("/panel/{userId}/editor")
     @Produces("application/json")
+    @RolesAllowed("Panels")
     public ArrayList<ArrayList<String>> loadEditor(@PathParam("userId") String userId) {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
@@ -604,10 +794,9 @@ public class WebResource {
     @GET
     @Path("/panel/{refUuid}/acl")
     @Produces("application/json")
+    @RolesAllowed("Panels")
     public ArrayList<String> loadObjectACL(@PathParam("refUuid") String refUuid) {
         try {
-            System.out.println("REF: " + refUuid);
-
             ArrayList<String> retList = new ArrayList<>();
             Connection front_conn;
             Properties front_connectionProps = new Properties();
@@ -617,7 +806,7 @@ public class WebResource {
                     front_connectionProps);
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT A.subject FROM acl A WHERE A.object = ?");
-            prep.setString(1, "");
+            prep.setString(1, refUuid);
             ResultSet rs1 = prep.executeQuery();
 
             while (rs1.next()) {
@@ -634,6 +823,7 @@ public class WebResource {
     @GET
     @Path("/panel/acl")
     @Produces("application/json")
+    @RolesAllowed("Panels")
     public ArrayList<String> loadSubjectACL() {
         try {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
@@ -664,8 +854,132 @@ public class WebResource {
     }
 
     @GET
+    @Path("/details/{uuid}/instance")
+    @Produces("application/json")
+    @RolesAllowed("Panels")
+    public ArrayList<String> loadInstanceDetails(@PathParam("uuid") String uuid) throws SQLException {
+        ArrayList<String> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep;
+        prep = front_conn.prepareStatement("SELECT S.name, I.creation_time, I.alias_name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V "
+                + "WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id");
+        prep.setString(1, uuid);
+
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            retList.add(rs1.getString("verification_state"));
+            retList.add(rs1.getString("name"));
+            retList.add(rs1.getString("alias_name"));
+            retList.add(rs1.getString("creation_time"));
+            retList.add(rs1.getString("super_state"));
+        }
+
+        return retList;
+    }
+
+    @GET
+    @Path("/details/{uuid}/delta")
+    @Produces("application/json")
+    @RolesAllowed("Panels")
+    public ArrayList<ArrayList<String>> loadInstanceDelta(@PathParam("uuid") String uuid) throws SQLException {
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep;
+        prep = front_conn.prepareStatement("SELECT D.service_delta_id, D.delta, D.type, S.super_state FROM service_delta D, service_instance I, service_state S, service_history H "
+                + "WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND D.service_history_id = H.service_history_id AND D.service_instance_id = H.service_instance_id AND H.service_state_id = S.service_state_id");
+        prep.setString(1, uuid);
+
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            ArrayList<String> deltaList = new ArrayList<>();
+            deltaList.add(rs1.getString("type"));
+            deltaList.add(rs1.getString("service_delta_id"));
+            deltaList.add(rs1.getString("super_state"));
+            deltaList.add(rs1.getString("delta"));
+            retList.add(deltaList);
+        }
+
+        return retList;
+    }
+
+    @GET
+    @Path("/details/{uuid}/verification")
+    @Produces("application/json")
+    @RolesAllowed("Panels")
+    public ArrayList<String> loadInstanceVerification(@PathParam("uuid") String uuid) throws SQLException {
+        ArrayList<String> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep;
+        prep = front_conn.prepareStatement("SELECT V.service_instance_id, V.verification_run, V.creation_time, V.addition, V.reduction, V.verified_reduction, V.verified_addition, V.unverified_reduction, V.unverified_addition "
+                + "FROM service_verification V, service_instance I WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+        prep.setString(1, uuid);
+
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+            retList.add(rs1.getString("verification_run"));
+            retList.add(rs1.getString("creation_time"));
+            retList.add(rs1.getString("addition"));
+            retList.add(rs1.getString("reduction"));
+            retList.add(rs1.getString("service_instance_id"));
+        }
+
+        return retList;
+    }
+
+    @GET
+    @Path("/details/{uuid}/acl")
+    @Produces("application/json")
+    @RolesAllowed("Panels")
+    public ArrayList<String> loadInstanceACL(@PathParam("uuid") String uuid) throws SQLException {
+        ArrayList<String> retList = new ArrayList<>();
+
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep;
+        prep = front_conn.prepareStatement("SELECT * FROM `acl`");
+
+        ResultSet rs1 = prep.executeQuery();
+        while (rs1.next()) {
+        }
+
+        return retList;
+    }
+
+    // Profiles
+    @GET
     @Path("/profile/{wizardId}")
     @Produces("application/json")
+    @RolesAllowed("Profiles")
     public String getProfile(@PathParam("wizardId") int wizardId) {
         try {
             Properties front_connectionProps = new Properties();
@@ -693,6 +1007,7 @@ public class WebResource {
     // Edit an existing profile
     @PUT
     @Path("/profile/{wizardId}/edit")
+    @RolesAllowed("Profiles")
     public void editProfile(@PathParam("wizardId") int wizardId, final String inputString) {
         try {
             // Connect to the DB
@@ -715,6 +1030,7 @@ public class WebResource {
     // Create a new profile based on an existing one
     @PUT
     @Path("/profile/new")
+    @RolesAllowed("Profiles")
     public String newProfile(final String inputString) {
         try {
             Properties front_connectionProps = new Properties();
@@ -751,6 +1067,7 @@ public class WebResource {
 
     @DELETE
     @Path("/profile/{wizardId}")
+    @RolesAllowed("Profiles")
     public void deleteProfile(@PathParam("wizardId") int wizardId) {
         try {
             Properties front_connectionProps = new Properties();
@@ -769,126 +1086,10 @@ public class WebResource {
         }
     }
 
-    @GET
-    @Path("/details/{uuid}/instance")
-    @Produces("application/json")
-    public ArrayList<String> loadInstanceDetails(@PathParam("uuid") String uuid) throws SQLException {
-        ArrayList<String> retList = new ArrayList<>();
-
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep;
-        prep = front_conn.prepareStatement("SELECT S.name, I.creation_time, I.alias_name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V "
-                + "WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id");
-        prep.setString(1, uuid);
-
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            retList.add(rs1.getString("verification_state"));
-            retList.add(rs1.getString("name"));
-            retList.add(rs1.getString("alias_name"));
-            retList.add(rs1.getString("creation_time"));
-            retList.add(rs1.getString("super_state"));
-        }
-
-        return retList;
-    }
-
-    @GET
-    @Path("/details/{uuid}/delta")
-    @Produces("application/json")
-    public ArrayList<ArrayList<String>> loadInstanceDelta(@PathParam("uuid") String uuid) throws SQLException {
-        ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep;
-        prep = front_conn.prepareStatement("SELECT D.service_delta_id, D.delta, D.type, S.super_state FROM service_delta D, service_instance I, service_state S, service_history H "
-                + "WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND D.service_history_id = H.service_history_id AND D.service_instance_id = H.service_instance_id AND H.service_state_id = S.service_state_id");
-        prep.setString(1, uuid);
-
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            ArrayList<String> deltaList = new ArrayList<>();
-            deltaList.add(rs1.getString("type"));
-            deltaList.add(rs1.getString("service_delta_id"));
-            deltaList.add(rs1.getString("super_state"));
-            deltaList.add(rs1.getString("delta"));
-            retList.add(deltaList);
-        }
-
-        return retList;
-    }
-
-    @GET
-    @Path("/details/{uuid}/verification")
-    @Produces("application/json")
-    public ArrayList<String> loadInstanceVerification(@PathParam("uuid") String uuid) throws SQLException {
-        ArrayList<String> retList = new ArrayList<>();
-
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep;
-        prep = front_conn.prepareStatement("SELECT V.service_instance_id, V.verification_run, V.creation_time, V.addition, V.reduction, V.verified_reduction, V.verified_addition, V.unverified_reduction, V.unverified_addition "
-                + "FROM service_verification V, service_instance I WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
-        prep.setString(1, uuid);
-
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-            retList.add(rs1.getString("verification_run"));
-            retList.add(rs1.getString("creation_time"));
-            retList.add(rs1.getString("addition"));
-            retList.add(rs1.getString("reduction"));
-            retList.add(rs1.getString("service_instance_id"));
-        }
-
-        return retList;
-    }
-
-    @GET
-    @Path("/details/{uuid}/acl")
-    @Produces("application/json")
-    public ArrayList<String> loadInstanceACL(@PathParam("uuid") String uuid) throws SQLException {
-        ArrayList<String> retList = new ArrayList<>();
-
-        Connection front_conn;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep;
-        prep = front_conn.prepareStatement("SELECT * FROM `acl`");
-
-        ResultSet rs1 = prep.executeQuery();
-        while (rs1.next()) {
-        }
-
-        return retList;
-    }
-
+    // Services
     @GET
     @Path("/service/{siUUID}/status")
+    @RolesAllowed("Services")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
@@ -906,6 +1107,7 @@ public class WebResource {
 
     @GET
     @Path("/service/{siUUID}/substatus")
+    @RolesAllowed("Services")
     public String subStatus(@PathParam("siUUID") String svcInstanceUUID) {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
@@ -925,6 +1127,7 @@ public class WebResource {
     @POST
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
+    @RolesAllowed("Services")
     public void createService(@Suspended
             final AsyncResponse asyncResponse, final String inputString) {
         try {
@@ -960,11 +1163,11 @@ public class WebResource {
             Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, ex);
         }
-
     }
 
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
+    @RolesAllowed("Services")
     public void operate(@Suspended
             final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
             final String refUuid, @PathParam(value = "action")
@@ -1372,7 +1575,7 @@ public class WebResource {
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
             prep.setString(1, refUuid);
             prep.executeUpdate();
-            
+
             prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE `acl`.`object` = ?");
             prep.setString(1, refUuid);
             prep.executeUpdate();

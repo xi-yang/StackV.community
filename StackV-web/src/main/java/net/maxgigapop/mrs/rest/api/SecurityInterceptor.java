@@ -22,9 +22,12 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
@@ -53,17 +56,16 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) {
         UriInfo uri = requestContext.getUriInfo();
-        String methodName = resourceInfo.getResourceMethod().getName();
+
         if ((uri.getPath()).startsWith("/app/")) {
+            Method method = resourceInfo.getResourceMethod();
             // Ban list
-            List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances",
-                    "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL", 
-                    "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "getLabels", 
-                    "executeProfile", "deleteProfile", "addDriver","getDriver", "deleteDriverProfile",
-                    "getDriverDetails", "installDriver", "installDriverProfile");
-            String methodName = method.getMethod().getName();
-            if (supplierNames.contains(methodName)) {
-                System.out.println("Authenticated: " + methodName);
+            List<String> freeRoles = Arrays.asList("ACL", "Keycloak", "Labels", "Panels", "Profiles");
+
+            RolesAllowed rolesAnnotation = method.getAnnotation(RolesAllowed.class);
+            String role = Arrays.asList(rolesAnnotation.value()).get(0);
+            if (freeRoles.contains(role)) {
+                System.out.println("Authenticated: " + method.getName());
                 return;
             }
 
@@ -75,10 +77,10 @@ public class SecurityInterceptor implements ContainerRequestFilter {
                 System.out.println("NOT ACTIVE");
             }
 
-            if (!roleSet.contains(methodName)) {
+            if (!roleSet.contains(role)) {
                 requestContext.abortWith(Response
                         .status(Response.Status.UNAUTHORIZED)
-                        .entity("User is not allowed to access the resource:" + methodName)
+                        .entity("User is not allowed to access the resource:" + method.getName())
                         .build());
             }
         }

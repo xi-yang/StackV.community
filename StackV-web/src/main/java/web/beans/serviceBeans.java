@@ -50,14 +50,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.net.ssl.HttpsURLConnection;
-import javax.ws.rs.core.HttpHeaders;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.token.TokenManager;
-import org.keycloak.representations.idm.RealmRepresentation;
 
 public class serviceBeans {
 

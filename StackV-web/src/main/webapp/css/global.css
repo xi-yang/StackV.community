@@ -6,7 +6,7 @@
 
 /*Miscellaenous global styles*/
 ::-webkit-scrollbar {
-    display:none;
+    /*display:none;*/
 }
 
 html {
@@ -78,9 +78,10 @@ div#black-screen.off {
 /*Main Pane Styles */
 div#main-pane {
     position: absolute;
+    top: 0;
     height: 100%;
     width: 100%;
-    padding: 40px;
+    padding: 30px;
     padding-top: 77px;
     overflow-x: hidden;
 

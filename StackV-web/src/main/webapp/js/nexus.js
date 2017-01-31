@@ -55,6 +55,8 @@ $(function () {
         else if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
             loadDetails();
             setRefresh(60);
+        } else if (window.location.pathname === "/StackV-web/ops/acl.jsp") {
+            loadACLPortal();
         }
     };
     keycloak.onTokenExpire = function () {
@@ -71,11 +73,11 @@ $(function () {
         // set the active link - get everything after StackV-web
         var url = $(location).attr('href').split(/\/StackV-web\//)[1];
         if (/driver.jsp/.test(url))
-          $("li#driver-tab").addClass("active");
+            $("li#driver-tab").addClass("active");
         else if (/catalog.jsp/.test(url))
-          $("li#catalog-tab").addClass("active");
+            $("li#catalog-tab").addClass("active");
         else if (/graphTest.jsp/.test(url))
-          $("li#visualization-tab").addClass("active");
+            $("li#visualization-tab").addClass("active");
 
         $("#logout-button").click(function (evt) {
             keycloak.logout();
@@ -1272,7 +1274,7 @@ function loadWizard() {
 
             $(".button-profile-select").on("click", function (evt) {
                 var resultID = this.id,
-                    apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
+                        apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
 
                 $.ajax({
                     url: apiUrl,
@@ -1347,49 +1349,49 @@ function loadWizard() {
             });
 
             // Hide the regular buttons and reveal the save as box
-            $("button.button-profile-save-as").on("click", function(evt) {
+            $("button.button-profile-save-as").on("click", function (evt) {
                 $("div.info-panel-regular-buttons").css("display", "none");
                 $("div.info-panel-save-as-description").css("display", "block");
             });
 
             // Reveal the regular buttons and hide the save as boxes
-            $("button.button-profile-save-as-cancel").on("click", function(evt) {
+            $("button.button-profile-save-as-cancel").on("click", function (evt) {
                 $("div.info-panel-save-as-description").css("display", "none");
                 $("div.info-panel-regular-buttons").css("display", "block");
             });
 
 
             // After the user has put a new name and description for the new profile
-            $(".button-profile-save-as-confirm").on("click", function(evt) {
+            $(".button-profile-save-as-confirm").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
                 var data = {
-                  name: $("#new-profile-name").val(),
-                  userID: keycloak.subject,
-                  description: $("#new-profile-description").val(),
-                  data: $("#info-panel-text-area").val()
+                    name: $("#new-profile-name").val(),
+                    userID: keycloak.subject,
+                    description: $("#new-profile-description").val(),
+                    data: $("#info-panel-text-area").val()
                 };
 
                 $.ajax({
                     url: apiUrl,
                     type: 'PUT',
-                    data: JSON.stringify(data),  //stringify to get escaped JSON in backend
+                    data: JSON.stringify(data), //stringify to get escaped JSON in backend
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
-                    beforeSend: function(xhr) {
+                    beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
-                      // revert to regular buttons and close modal
-                      $("input#new-profile-name").val("");
-                      $("input#new-profile-description").val("");
-                      $("div.info-panel-save-as-description").css("display", "none");
-                      $("div.info-panel-regular-buttons").css("display", "block");
-                      $("div#profile-modal").modal("hide");
-                      // reload table
-                      loadWizard();
+                        // revert to regular buttons and close modal
+                        $("input#new-profile-name").val("");
+                        $("input#new-profile-description").val("");
+                        $("div.info-panel-save-as-description").css("display", "none");
+                        $("div.info-panel-regular-buttons").css("display", "block");
+                        $("div#profile-modal").modal("hide");
+                        // reload table
+                        loadWizard();
                     },
-                    error: function(textStatus, errorThrown) {
+                    error: function (textStatus, errorThrown) {
                         console.log(textStatus);
                         console.log(errorThrown);
                     }
@@ -1401,7 +1403,7 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-save").on("click", function(evt) {
+            $(".button-profile-save").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
 
                 $.ajax({
@@ -1410,16 +1412,16 @@ function loadWizard() {
                     data: $("#info-panel-text-area").val(),
                     contentType: "application/json; charset=utf-8",
                     dataType: "json",
-                    beforeSend: function(xhr) {
+                    beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
-                    success: function(result) {
-                      // reload the bottom panel
-                      loadWizard();
-                      $("#profile-modal").modal("hide");
+                    success: function (result) {
+                        // reload the bottom panel
+                        loadWizard();
+                        $("#profile-modal").modal("hide");
                     },
-                    error: function(textStatus, errorThrown) {
+                    error: function (textStatus, errorThrown) {
                         console.log(textStatus);
                         console.log(errorThrown);
                     }
@@ -1892,63 +1894,63 @@ function subloadACL() {
 }
 
 function buildDeltaTable(type) {
-        var panel = document.getElementById("details-panel");
+    var panel = document.getElementById("details-panel");
 
-        var table = document.createElement("table");
-        table.className = "management-table hide " + type.toLowerCase() +  "-delta-table";
+    var table = document.createElement("table");
+    table.className = "management-table hide " + type.toLowerCase() + "-delta-table";
 
-        var thead = document.createElement("thead");
-        thead.className = "delta-table-header";
-        var row = document.createElement("tr");
-        var head = document.createElement("th");
-        head.innerHTML = type + " Delta";
-        row.appendChild(head);
+    var thead = document.createElement("thead");
+    thead.className = "delta-table-header";
+    var row = document.createElement("tr");
+    var head = document.createElement("th");
+    head.innerHTML = type + " Delta";
+    row.appendChild(head);
 
-        head = document.createElement("th");
-        head.innerHTML = "Verified";
-        row.appendChild(head);
+    head = document.createElement("th");
+    head.innerHTML = "Verified";
+    row.appendChild(head);
 
-        head = document.createElement("th");
-        head.innerHTML = "Unverified";
-        row.appendChild(head);
+    head = document.createElement("th");
+    head.innerHTML = "Unverified";
+    row.appendChild(head);
 
-        row.appendChild(head);
+    row.appendChild(head);
 
-        thead.appendChild(row);
-        table.appendChild(thead);
+    thead.appendChild(row);
+    table.appendChild(thead);
 
-        var tbody = document.createElement("tbody");
-        tbody.className = "delta-table-body";
-        //tbody.id = "acl-body";
+    var tbody = document.createElement("tbody");
+    tbody.className = "delta-table-body";
+    //tbody.id = "acl-body";
 
-        row = document.createElement("tr");
-        var prefix = type.substring(0, 4).toLowerCase();
-        var add = document.createElement("td");
-        row.appendChild(add);
+    row = document.createElement("tr");
+    var prefix = type.substring(0, 4).toLowerCase();
+    var add = document.createElement("td");
+    row.appendChild(add);
 
-        add = document.createElement("td");
-        add.id = prefix + "-add";
-        row.appendChild(add);
+    add = document.createElement("td");
+    add.id = prefix + "-add";
+    row.appendChild(add);
 
-        var red = document.createElement("td");
-        red.id = prefix + "-red";
-        row.appendChild(red);
+    var red = document.createElement("td");
+    red.id = prefix + "-red";
+    row.appendChild(red);
 
-        tbody.appendChild(row);
-        row = document.createElement("tr");
-        var cell = document.createElement("td");
-        cell.colSpan = "3";
-        cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'+ type.toLowerCase() +'-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
-        row.appendChild(cell);
-        tbody.appendChild(row);
+    tbody.appendChild(row);
+    row = document.createElement("tr");
+    var cell = document.createElement("td");
+    cell.colSpan = "3";
+    cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.' + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
+    row.appendChild(cell);
+    tbody.appendChild(row);
 
-        table.appendChild(tbody);
-        var verification = document.getElementsByClassName("verification-table");
-        if (verification) {
-            panel.insertBefore(table, verification[0]);
-        } else {
-            panel.appendChild(table);
-        }
+    table.appendChild(tbody);
+    var verification = document.getElementsByClassName("verification-table");
+    if (verification) {
+        panel.insertBefore(table, verification[0]);
+    } else {
+        panel.appendChild(table);
+    }
 }
 
 function loadVisualization() {
