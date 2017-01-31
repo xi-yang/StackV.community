@@ -56,11 +56,12 @@ public class SecurityInterceptor implements ContainerRequestFilter {
         String methodName = resourceInfo.getResourceMethod().getName();
         if ((uri.getPath()).startsWith("/app/")) {
             // Ban list
-            List<String> supplierNames = Arrays.asList("loadWizard","loadEditor", "loadInstances",
-                    "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL",
-                    "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "editProfile",  "executeProfile", "newProfile", "deleteProfile",
-                    "getLabels", "label", "deleteLabel", "clearLabels", "getDeltaBacked",
-                    "getVerificationResults", "getVerificationResultsUnion", "testAuth");
+            List<String> supplierNames = Arrays.asList("loadWizard", "loadEditor", "loadInstances",
+                    "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL", 
+                    "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "getLabels", 
+                    "executeProfile", "deleteProfile", "addDriver","getDriver", "deleteDriverProfile",
+                    "getDriverDetails", "installDriver", "installDriverProfile");
+            String methodName = method.getMethod().getName();
             if (supplierNames.contains(methodName)) {
                 System.out.println("Authenticated: " + methodName);
                 return;

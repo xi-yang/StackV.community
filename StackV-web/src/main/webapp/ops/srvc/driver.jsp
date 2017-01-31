@@ -2,289 +2,182 @@
 <%@page errorPage = "/StackV-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>  
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
 <jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>Driver Service</title>
+
+        <title>Driver Management</title>
+        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/driver.js"></script>
+        
+        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
-
-    <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:3306/rainsdb"
-                       user="root"  password="root"/>
-
-    <body>
+    
+    <body>        
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        <!-- MAIN PANEL -->
-        <div id="main-pane">
-            <c:choose>
-                <c:when test="${empty param.ret}">
-                    <div id="service-specific">
-                        <div id="service-top">
-                            <div id="service-menu">
-                                <c:if test="${not empty param.self}">
-                                    <button type="button" id="button-service-return">Cancel</button>
-                                </c:if>
-                                <table class="management-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Driver Type</th>
-                                            <th>
-                                                <select form="driver-form" name="form_install" onchange="installSelect(this)">
-                                                    <option value="uninstall">Uninstall</option>
-                                                    <c:choose>
-                                                        <c:when test="${param.form_install == 'install'}">
-                                                            <option value="install" selected>Install</option>
-                                                        </c:when>
-                                                        <c:otherwise>
-                                                            <option value="install">Install</option>
-                                                        </c:otherwise>
-                                                    </c:choose>
-                                                </select>
-                                                <c:if test="${param.form_install == 'install'}">
-                                                    <select form="driver-form" name="driver_id" onchange="driverSelect(this)">
-                                                        <option value="none"></option>
-                                                        <option value="stubdriver">Stub</option>
-                                                        <option value="awsdriver">AWS</option>
-                                                        <option value="versaNSDriver">Generic</option>
-                                                        <option value="openStackDriver">OpenStack</option>
-                                                        <option value="StackDriver">Stack</option>
-                                                    </select>
-                                                </c:if>
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
-                        </div>
-                        <div id="service-bottom">
-                            <div id="service-fields">
-                               <form id="service-template-form" action="/StackV-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="username" value="${sessionStorage.username}"/>
-                                    <input type="hidden" name="driverID" value="${param.driver_id}"/>
-                                    <table class="management-table" id="net-template-form" style="margin-bottom: 0px;">
-                                        <thead>
-                                            <tr>
-                                                <th>Templates</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>OpenStack Driver</td>
-                                                <td><input type="submit" name="template1" value="Select" /></td>
-                                            </tr>
-                                            <tr>
-                                                <td>Stack Driver</td>
-                                                <td><input type="submit" name="template2" value="Select" /></td>
-                                            </tr>
-                                             <tr>
-                                                <td>Stub Driver</td>
-                                                <td><input type="submit" name="template3" value="Select" /></td>
-                                            </tr>
-                                              <tr>
-                                                <td>Generic Driver</td>
-                                                <td><input type="submit" name="template4" value="Select" /></td>
-                                            </tr>
-
-                                        </tbody>
-                                    </table>
-                                </form>
-
-                                <form id="driver-form" action="/StackV-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="username" value="${sessionStorage.username}"/>
-                                    <input type="hidden" name="driverID" value="${param.driver_id}"/>
-                                    <table class="management-table" id="service-form">
-                                        <thead>
-                                            <tr>
-                                                <th>Driver Details</th>
-                                                <th style="text-align: right"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <!-- Install Form -->
-                                            <c:if test="${param.form_install == 'install'}">
-                                                <c:if test="${param.driver_id == 'stubdriver'}">
-                                                    <tr>
-                                                        <td>Topology URI</td>
-                                                        <td><input type="text" name="topologyUri" size="30" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>TTL</td>
-                                                        <td>
-                                                            <textarea rows="6" cols="50" name="ttlmodel">
-
-                                                            </textarea>
-                                                        </td>
-                                                    </tr>
-                                                </c:if>
-                                                <c:if test="${param.driver_id == 'awsdriver'}">
-                                                    <tr>
-                                                        <td>Topology URI</td>
-                                                        <td><input type="text" name="topologyUri" size="30" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Amazon Access ID</td>
-                                                        <td><input type="text" name="aws_access_key_id" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Amazon Secret Key</td>
-                                                        <td><input type="text" name="aws_secret_access_key" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Region</td>
-                                                        <td>
-                                                            <select name="region" required>
-                                                                <option></option>
-                                                                <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
-                                                                <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
-                                                                <option value="ap-southeast-2">Asia Pacific (Sydney)</option>
-                                                                <option value="eu-central-1">Europe (Frankfurt)</option>
-                                                                <option value="eu-west-1">Europe (Ireland)</option>
-                                                                <option value="sa-east-1">South America (Sao Paulo)</option>
-                                                                <option value="us-east-1">US East (N. Virginia)</option>
-                                                                <option value="us-west-1">US West (N. California)</option>
-                                                                <option value="us-west-2">US West (Oregon)</option>
-                                                            </select>
-                                                        </td>
-                                                    </tr>
-                                                </c:if>
-                                                <c:if test="${param.driver_id == 'versaNSDriver'}">
-                                                    <tr>
-                                                        <td>Topology URI</td>
-                                                        <td><input type="text" name="topologyUri" size="30" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Subsystem Base URL</td>
-                                                        <td><input type="text" name="subsystemBaseUrl" required></td>
-                                                    </tr>
-                                                </c:if>
-                                                <c:if test="${param.driver_id == 'StackDriver'}">
-                                                    <tr>
-                                                        <td>Topology URI</td>
-                                                        <td><input type="text" name="topologyUri" size="30" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Subsystem Base URL</td>
-                                                        <td><input type="text" name="subsystemBaseUrl" required></td>
-                                                    </tr>
-                                                </c:if>
-                                                <c:if test="${param.driver_id == 'openStackDriver'}">
-                                                    <tr>
-                                                        <td>Topology URI</td>
-                                                        <td><input type="text" name="topologyUri" size="30" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>OpenStack Username</td>
-                                                        <td><input type="text" name="username" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>OpenStack Password</td>
-                                                        <td><input type="password" name="password" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>NAT Server</td>
-                                                        <td><input type="checkbox" name="NATServer" value="yes"></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>URL</td>
-                                                        <td><input type="text" name="url" required></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Tenant</td>
-                                                        <td><input type="text" name="tenant" required></td>
-                                                    </tr>
-                                                </c:if>
-
-                                                <c:if test="${not empty param.driver_id}">
-                                                    <tr>
-                                                        <td></td>
-                                                        <td>
-                                                            <input class="button-register" name="install" type="submit" value="Install" />
-                                                            <input class="button-register" type="button"
-                                                                   value="Add Additional Properties" onClick="addPropField()">
-                                                        </td>
-                                                    </tr>
-                                                </c:if>
-                                            </c:if>
-                                            <!-- Uninstall Form -->
-                                            <c:if test="${param.form_install != 'install'}">
-                                                <tr>
-                                                    <sql:query dataSource="${rains_conn}" sql="SELECT driverEjbPath, topologyUri FROM driver_instance" var="driverlist" />
-                                                    <td>Select Driver</td>
-                                                    <td>
-                                                        <c:if test="${not empty driverlist}">
-                                                            <select name="topologyUri" size="10">
-                                                                <c:forEach var="driver" items="${driverlist.rows}">
-                                                                    <option value="${driver.topologyUri}">${driver.driverEjbPath} - ${driver.topologyUri}</option>
-                                                                </c:forEach>
-                                                            </select>
-                                                        </c:if>
-                                                        <c:if test="${empty driverlist}">
-                                                            No Drivers Present
-                                                        </c:if>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td></td>
-                                                    <td>
-                                                        <input class="button-register" name="uninstall" type="submit" value="Uninstall" />
-                                                    </td>
-                                                </tr>
-                                            </c:if>
-                                        </tbody>
-                                    </table>
-                                </form>
-                            </div>
-                        </div>
-                    </c:when>
-
-                    <c:otherwise>
-                        <div class="form-result" id="service-result">
-                            <c:choose>
-                                <c:when test="${param.ret == '0'}">
-                                    Success
-                                </c:when>
-                                <c:when test="${param.ret == '1'}">
-                                    Invalid Driver ID
-                                </c:when>
-                                <c:when test="${param.ret == '2'}">
-                                    Error (Un)Installing Driver
-                                </c:when>
-                                <c:when test="${param.ret == '3'}">
-                                    Connection Error
-                                </c:when>
-                            </c:choose>
-
-                            <br><a href="/StackV-web/ops/srvc/driver.jsp?self=true">(Un)Install Another Driver.</a>
-                            <br><a href="/StackV-web/ops/catalog.jsp">Return to Services.</a>
-                            <br><a href="/StackV-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
-
-                        </div>
-                    </c:otherwise>
-                </c:choose>
+      <div>
+                <div class="tab-content" id="catalog-tab-content">
+                    
+                    <div style="width: 100%; height: 85%; overflow: auto;" id="driver-tab" class="tab-pane fadeIn active">
+                        <table class="management-table">
+                            <thead>
+                                <tr>
+                                    <th>Driver Name</th>
+                                    <th>Description</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                    <td>Stub</td>
+                                    <td>This is a placement description</td>
+                                    <td style="width: 180px;">
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide();  changeNameDet();' class='details' id='details-button'>Details</button>
+                                        <div class='divider'></div>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install' id='install-button'>Install</button>
+                                    </td>
+                              </tr>
+                                <tr>
+                                    <td>AWS</td>
+                                    <td>This is a placement description</td>
+                                    <td style="width: 180px;">
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide(); changeNameDet();' class='details' id='details-button'>Details</button>
+                                        <div class='divider'></div>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Generic</td>
+                                    <td>This is a placement description</td>
+                                    <td style="width: 180px;">
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide(); changeNameDet();' class='details' id='details-button'>Details</button>
+                                        <div class='divider'></div>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack(); changeNameInst();' class='install' id='install-button'>Install</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Openstack</td>
+                                    <td>This is a placement description</td>
+                                    <td  style="width: 180px;">
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide(); changeNameDet();' class='details' id='details-button'>Details</button>
+                                        <div class='divider'></div>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Stack</td>
+                                    <td>This is a placement description</td>
+                                    <td  style="width: 180px;">
+                                        <button style='width: 50px;' onclick='clearPanel(); activateSide();' class='details' id='details-button'>Details</button>
+                                        <div class='divider'></div>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                        
+                    <div style="width: 100%; height: 85%; overflow: auto;" id="saved-tab" class="tab-pane fadeIn">
+                        <table class="management-table">
+                            <thead>
+                                <tr>
+                                    <th>Driver Name</th>
+                                    <th>Description</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="saved-table">
+                           
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
-        <!-- TAG PANEL -->
-        <div id="tag-panel">
-        </div>
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            <div class="active driver-panel no-side-tab" id="driver-panel-bot">
+                <ul class="nav nav-tabs catalog-tabs">
+                    <li style="width:100%;" onclick="getAllDetails();"><a data-toggle="tab" href="#installed-tag">Installed Drivers</a></li>
+                </ul>
+                
+                <div class="tab-content" id="catalog-tab-content">
+                    <div style="display: inline-block; width: 100%; height: 85%; overflow: auto;" id="template-tab" class="tab-pane fadeIn active">
+                        <table  class="management-table">
+                            <thead>
+                                <tr>
+                                    <th>Driver ID</th>
+                                    <th>Driver Type</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="installed-body">
+                            <script></script>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            <div class="inactive" id="driver-panel-right">
+                <ul class="nav nav-tabs catalog-tabs">
+                    <li style="width: 100%;" id="side-tab"><a id="side-name">Details</a></li>
+                </ul>
+                
+                <div class="tab-content" id="catalog-tab-content">                                    
+                    <div id="install-content" class="tab-pane fadeIn">
+                        <div id='install-type'></div>
+                        <div id='install-type-right'></div>
+                        <div id='install-options'>
+                            <button onclick="clearPanel(); closeSide();">Close</button>
+                        </div>
+
+                    </div>
+                        
+                </div>
+                    
+                <!-- LOADING PANEL -->
+                <div id="loading-panel"></div>
+            </div>
 
         <!-- JS -->
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
         <script src="/StackV-web/js/nexus.js"></script>
-        <script>
-            $(function () {
-                $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
-            });
-        </script>
-    </body>
-</html>
+ 
