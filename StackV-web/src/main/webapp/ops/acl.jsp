@@ -26,15 +26,28 @@
             <div class="left-tab"></div>
             <div class="right-tab"></div>
             <div class="acl-panel" id="acl-role-panel">
-                <table class="management-table" id="acl-role-table">
-                    <thead>
-                        <tr>
-                            <th>Role Name<button type="button" id="acl-role-exit" class="close" aria-hidden="true">&times;</button></th>
-                        </tr>
-                    </thead>
-                    <tbody id="role-body">
-                    </tbody>
-                </table>
+                <div class="acl-role-user-div">
+                    <table class="management-table" id="acl-user-table">
+                        <thead>
+                            <tr>
+                                <th>Username<button type="button" id="acl-role-exit" class="close" aria-hidden="true">&times;</button></th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="acl-role-role-div">
+                    <table class="management-table" id="acl-role-table">
+                        <thead>
+                            <tr>
+                                <th>Roles<button type="button" id="acl-user-exit" class="close" aria-hidden="true">&times;</button></th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-body">
+                        </tbody>
+                    </table>
+                </div>
 
 
             </div>

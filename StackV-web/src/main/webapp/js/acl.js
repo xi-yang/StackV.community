@@ -25,8 +25,8 @@
 var animating = false;
 
 // ACL Load
-function loadACLPortal() {
-    subloadRoleACLRoles();
+function loadACLPortal() {    
+    subloadRoleACLUsers();
     
     subloadInstanceACLInstances();
     subloadInstanceACLUsers();
@@ -54,6 +54,12 @@ function loadACLPortal() {
 
         evt.preventDefault();
     });
+    $("#acl-user-exit").click(function (evt) {
+        $("#acl-user-div").addClass("closed");
+        $(".acl-selected-row").removeClass("acl-selected-row");
+
+        evt.preventDefault();
+    });
     
     // Instances
     $("#acl-instance-close").click(function (evt) {
@@ -73,11 +79,11 @@ function loadACLPortal() {
 }
 
 // Roles
-function subloadRoleACLRoles() {
+function subloadRoleACLUsers() {
     var userId = keycloak.subject;
-    var tbody = document.getElementById("role-body");
+    var tbody = document.getElementById("user-body");
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles';
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users';
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
@@ -87,14 +93,14 @@ function subloadRoleACLRoles() {
             },
             success: function (result) {
                 for (i = 0; i < result.length; i++) {
-                    var role = result[i];
+                    var user = result[i];
 
                     var row = document.createElement("tr");
                     row.className = "acl-row";
-                    row.setAttribute("data-role", role);
+                    row.setAttribute("data-username", user[0]);
 
                     var cell1_1 = document.createElement("td");
-                    cell1_1.innerHTML = role;
+                    cell1_1.innerHTML = user[0];
                    
                     row.appendChild(cell1_1);
                     tbody.appendChild(row);
@@ -105,11 +111,11 @@ function subloadRoleACLRoles() {
                         $(".acl-selected-row").removeClass("acl-selected-row");
                         $(this).addClass("acl-selected-row");
 
-                        subloadACLTable($(this).data("role"));
+                        subloadRoleACLRoles($(this).data("username"));
                     }
                 });
 
-                $("#acl-instance-panel").removeClass("closed");
+                $("#acl-user-div").removeClass("closed");
             }
         });
     }).error(function () {

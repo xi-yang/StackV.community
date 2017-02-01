@@ -1,8 +1,10 @@
 div.acl-panel {
     position: absolute;
-    max-height: calc(90% - 42px);
-    max-width: calc(100% - 80px);
-
+    top: 62px;
+    height: calc(100% - 42px);
+    width: 90%;
+    overflow: hidden;
+    padding: 5px 5px;
     -webkit-transition: all .75s ease-in;
     -moz-transition: all .75s ease-in;
     -o-transition: all .75s ease-in;
@@ -47,36 +49,46 @@ div.right-tab{
     background:#f7f7f7;     
 }
 
-/* Instance Panel */
-#acl-role-table {
-    max-height: 50%;
-}
-
+/* Role Panel */
 div#acl-role-panel {
-    overflow: hidden;
-    right: 100%;
-    padding: 5px 5px;
-    max-height: 30%
+    right: 100%;   
 }
 div#acl-role-panel.active {
-    right: 20px;
+    right: 5%;
     overflow-y: scroll;
 }
 
+.acl-role-user-div {
+    overflow: scroll;
+    max-height: 50%;
+    padding-right: 5px;
+    width: 40%;
+    float:left;
+}
+
+.acl-role-role-div {
+    overflow: scroll;
+    max-height: 50%;
+    padding-right: 5px;
+    width: 40%;
+    position: absolute;
+    right: 0;
+}
+.acl-role-role-div.closed {
+    right: 100%;
+}
 
 /* Instance Panel */
-#acl-instance-table {
-    max-height: 50%;
-}
-
 div#acl-instance-panel {
-    overflow: hidden;
     left: 100%;
-    padding: 5px 5px;
 }
 div#acl-instance-panel.active {
-    left: 20px;    
+    left: 5%;    
     overflow-y: scroll;
+}
+
+#acl-instance-table {
+    max-height: 50%;
 }
 
 #acl-instance-acl {
