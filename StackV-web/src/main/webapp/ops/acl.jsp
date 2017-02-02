@@ -37,6 +37,17 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="acl-role-group-div">
+                    <table class="management-table" id="acl-group-table">
+                        <thead>
+                            <tr>
+                                <th>Groups<button type="button" id="acl-user-exit" class="close" aria-hidden="true">&times;</button></th>
+                            </tr>
+                        </thead>
+                        <tbody id="groups-body">
+                        </tbody>
+                    </table>
+                </div>
                 <div class="acl-role-role-div">
                     <table class="management-table" id="acl-role-table">
                         <thead>

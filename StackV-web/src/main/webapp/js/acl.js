@@ -123,6 +123,68 @@ function subloadRoleACLUsers() {
     });
 }
 
+function subloadRoleACLGroups(username) {
+    var tbody = document.getElementById("group-body");
+
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/groups/' + username;
+    keycloak.updateToken(30).success(function () {
+        $.ajax({
+            url: apiUrl,
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            success: function (result) {
+                for (i = 0; i < result.length; i++) {
+                    var group = result[i];
+
+                    var row = document.createElement("tr");
+                    row.className = "acl-row";
+
+                    var cell1_1 = document.createElement("td");
+                    cell1_1.innerHTML = group;
+                   
+                    row.appendChild(cell1_1);
+                    tbody.appendChild(row);
+                }
+            }
+        });
+    }).error(function () {
+        console.log("Fatal Error: Token update failed!");
+    });
+}
+
+function subloadRoleACLRoles(username) {
+    var tbody = document.getElementById("role-body");
+
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles/' + username;
+    keycloak.updateToken(30).success(function () {
+        $.ajax({
+            url: apiUrl,
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            success: function (result) {
+                for (i = 0; i < result.length; i++) {
+                    var role = result[i];
+
+                    var row = document.createElement("tr");
+                    row.className = "acl-row";
+
+                    var cell1_1 = document.createElement("td");
+                    cell1_1.innerHTML = role;
+                   
+                    row.appendChild(cell1_1);
+                    tbody.appendChild(row);
+                }
+            }
+        });
+    }).error(function () {
+        console.log("Fatal Error: Token update failed!");
+    });
+}
+
 
 // Instances
 function subloadInstanceACLInstances() {

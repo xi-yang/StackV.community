@@ -63,10 +63,21 @@ div#acl-role-panel.active {
     max-height: 50%;
     padding-right: 5px;
     width: 40%;
-    float:left;
 }
 
 .acl-role-role-div {
+    overflow: scroll;
+    max-height: 50%;
+    padding-right: 5px;
+    width: 50%;
+    position: absolute;
+    top: 40%;
+}
+.acl-role-role-div.closed {
+    right: 100%;
+}
+
+.acl-role-group-div {
     overflow: scroll;
     max-height: 50%;
     padding-right: 5px;
@@ -74,7 +85,7 @@ div#acl-role-panel.active {
     position: absolute;
     right: 0;
 }
-.acl-role-role-div.closed {
+.acl-role-group-div.closed {
     right: 100%;
 }
 
