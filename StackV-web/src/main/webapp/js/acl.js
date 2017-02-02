@@ -97,7 +97,7 @@ function subloadRoleACLUsers() {
 
                     var row = document.createElement("tr");
                     row.className = "acl-row";
-                    row.setAttribute("data-username", user[0]);
+                    row.setAttribute("data-subject", user[4]);
 
                     var cell1_1 = document.createElement("td");
                     cell1_1.innerHTML = user[0];
@@ -111,7 +111,7 @@ function subloadRoleACLUsers() {
                         $(".acl-selected-row").removeClass("acl-selected-row");
                         $(this).addClass("acl-selected-row");
 
-                        subloadRoleACLRoles($(this).data("username"));
+                        subloadRoleACLRoles($(this).data("subject"));
                     }
                 });
 
@@ -123,10 +123,10 @@ function subloadRoleACLUsers() {
     });
 }
 
-function subloadRoleACLGroups(username) {
+function subloadRoleACLGroups(subject) {
     var tbody = document.getElementById("group-body");
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/groups/' + username;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/groups/' + subject;
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
@@ -154,10 +154,10 @@ function subloadRoleACLGroups(username) {
     });
 }
 
-function subloadRoleACLRoles(username) {
+function subloadRoleACLRoles(subject) {
     var tbody = document.getElementById("role-body");
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles/' + username;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles/' + subject;
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
