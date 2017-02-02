@@ -529,9 +529,11 @@ public class WebResource {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
+            
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
             Object obj = parser.parse(inputString);
             JSONObject inputJSON = (JSONObject) obj;
+            
             String name = (String) inputJSON.get("name");
             String description = (String) inputJSON.get("description");
             String inputData = (String) inputJSON.get("data");

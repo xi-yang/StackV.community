@@ -20,9 +20,23 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
+#spacer{
+    height: 20px;
+}
+#service-name{
+    width: 200px;
+}
+#table-div{
+    width: inherit;
+}
+#input-table{
+    width: inherit;
+    height: inherit;
+    display: block;
+}
 form.dncform {
   bottom: 0%;
-  width: 600px;
+  width: 800px;
   margin: 50px auto;
   text-align: center;
   position: relative;

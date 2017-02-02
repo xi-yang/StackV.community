@@ -21,49 +21,49 @@
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
-            <form style="width: 800px;" class="dncform">
+            <form class="dncform">
                 <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
                     <div>
-                        <table>
-                            <tbody>
-                                <tr id="link_1">
-                                    <td>
-                                        <p>Link 1</p>
-                                    </td>
-                                    <td>
+                        Dynamic Network Connection:
+                        <input type="text" placeholder="Service Name" id="service-name">
+                    </div>
+                    <div id="spacer"></div>
+                    <div id="spacer"></div>
+                    <div id="table-div">
+                        <table id="input-table">
+                            <tbody id="link-body">
+                                <tr>
+                                    <td>Link 1</td>
+                                    <td style="width: 600px; text-align: center;">
                                         <div>
-                                            <input type="text" name="linkUri1" size="60" placeholder="Link-URI">
-                                        </div>
-                                        <div>
-                                            <input type="text" name="link1-src" size="60" placeholder="Source">
-                                            <input type="text" name="link1-src-vlan" placeholder="Vlan-tag">
-                                        </div>
-                                        <div>
-                                            <input type="text" name="link1-des" size="60" placeholder="Destination">
-                                            <input type="text" name="link1-des-vlan" placeholder="Vlan-tag">
+                                            <input type="text" name="linkUri1" placeholder="Link-URI">
+                                            <input type="text" name="linksrc1" placeholder="Source">
+                                            <input type="text" name="linksrc-vlan1" placeholder="Vlan-tag">
+                                            <input type="text" name="linkdes1" placeholder="Destination">
+                                            <input type="text" name="linkdes-vlan1" placeholder="Vlan-tag">
                                         </div>
                                     </td>
                                 </tr>
+                                <tr id="spacer"></tr>
                             </tbody>
                         </table>
                         <div>
-                            <button type="button" class="action-button" onclick="">Submit</button>
-                            <button type="button" class="action-button" onclick="">Save</button>
-                            <button type="button" class="action-button" onclick="">Add Link</button>
+                            <button type="button" class="action-button" onclick="submit();">Submit</button>
+                            <button type="button" class="action-button" onclick="save();">Save</button>
+                            <button type="button" class="action-button" onclick="addLink();">Add Link</button>
                         </div>
-                            
                     </div>
-                        
+                    
                 </fieldset>
             </form>
         </div>
         <!-- TAG PANEL -->
         <div id="tag-panel">
         </div>
-        <script src ="/StackV-web/js/svc/dnc.js"></script>
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
         <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/svc/dnc.js"></script>
     </body>
 </html>
