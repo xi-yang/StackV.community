@@ -260,7 +260,7 @@ public class WebResource {
             JSONArray userArr = (JSONArray) obj;
             for (Object user : userArr) {
                 JSONObject userJSON = (JSONObject) user;
-                String subject = (String) userJSON.get("subject");
+                String subject = (String) userJSON.get("id");
                 String username = (String) userJSON.get("username");
 
                 ArrayList<String> userList = new ArrayList<>();
@@ -356,11 +356,13 @@ public class WebResource {
             Object obj = parser.parse(responseStr.toString());
             JSONObject roles = (JSONObject) obj;
             JSONObject roleJSON = (JSONObject) ((JSONObject) roles.get("clientMappings")).get("StackV");
-            JSONArray roleArr = (JSONArray) roleJSON.get("mappings");
+            if (roleJSON != null) {
+                JSONArray roleArr = (JSONArray) roleJSON.get("mappings");
 
-            for (Object obj2 : roleArr) {
-                JSONObject role = (JSONObject) obj2;
-                retList.add((String) role.get("name"));
+                for (Object obj2 : roleArr) {
+                    JSONObject role = (JSONObject) obj2;
+                    retList.add((String) role.get("name"));
+                }
             }
 
             return retList;
@@ -411,6 +413,48 @@ public class WebResource {
             return null;
         }
     }
+    
+    @GET
+    @Path("/keycloak/groups")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<String> getGroups() {
+        try {
+            ArrayList<String> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/groups");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray groupArr = (JSONArray) obj;
+            for (Object group : groupArr) {
+                JSONObject groupJSON = (JSONObject) group;
+                retList.add((String) groupJSON.get("name"));
+            }
+
+            return retList;
+        } catch (IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+    
 
     // Labels
     @GET

@@ -60,34 +60,35 @@ div#acl-role-panel.active {
 
 .acl-role-user-div {
     overflow: scroll;
-    max-height: 50%;
+    height: 90%;
     padding-right: 5px;
-    width: 40%;
+    width: 45%;
+    position: absolute;
 }
 
 .acl-role-role-div {
     overflow: scroll;
-    max-height: 50%;
+    height: 45%;
     padding-right: 5px;
-    width: 50%;
+    width: 45%;
     position: absolute;
-    top: 40%;
-}
-.acl-role-role-div.closed {
-    right: 100%;
+    right: 0;
 }
 
 .acl-role-group-div {
     overflow: scroll;
-    max-height: 50%;
+    height: 45%;
     padding-right: 5px;
-    width: 40%;
+    width: 45%;
     position: absolute;
+    top: 45%;
     right: 0;
 }
-.acl-role-group-div.closed {
+
+.acl-role-role-div.closed, .acl-role-group-div.closed {
     right: 100%;
 }
+
 
 /* Instance Panel */
 div#acl-instance-panel {

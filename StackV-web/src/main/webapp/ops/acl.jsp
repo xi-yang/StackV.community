@@ -26,6 +26,7 @@
             <div class="left-tab"></div>
             <div class="right-tab"></div>
             <div class="acl-panel" id="acl-role-panel">
+                <input type="hidden" id="acl-user">
                 <div class="acl-role-user-div">
                     <table class="management-table" id="acl-user-table">
                         <thead>
@@ -37,32 +38,47 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="acl-role-group-div">
-                    <table class="management-table" id="acl-group-table">
-                        <thead>
-                            <tr>
-                                <th>Groups<button type="button" id="acl-user-exit" class="close" aria-hidden="true">&times;</button></th>
-                            </tr>
-                        </thead>
-                        <tbody id="groups-body">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="acl-role-role-div">
+                <div class="acl-role-role-div closed">
                     <table class="management-table" id="acl-role-table">
                         <thead>
                             <tr>
-                                <th>Roles<button type="button" id="acl-user-exit" class="close" aria-hidden="true">&times;</button></th>
+                                <th>Roles<button type="button" class="acl-user-exit close" aria-hidden="true">&times;</button></th>
                             </tr>
                         </thead>
-                        <tbody id="roles-body">
+                        <tbody id="role-body">
                         </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>
+                                    <select id="acl-role-select"></select><button class="btn-default" id="acl-role-add">Add</button>
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="acl-role-group-div closed">
+                    <table class="management-table" id="acl-group-table">
+                        <thead>
+                            <tr>
+                                <th>Groups<button type="button" class="acl-user-exit close" aria-hidden="true">&times;</button></th>
+                            </tr>
+                        </thead>
+                        <tbody id="group-body">
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>
+                                    <select id="acl-group-select"></select><button class="btn-default" id="acl-group-add">Add</button>
+                                </th>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
 
 
             </div>
-            <div class="acl-panel active" id="acl-instance-panel">
+            <div class="acl-panel" id="acl-instance-panel">
+                <input type="hidden" id="acl-instance">
                 <table class="management-table" id="acl-instance-table">
                     <thead>
                         <tr>
@@ -74,8 +90,7 @@
                     <tbody id="instance-body">
                     </tbody>
                 </table>
-                <div class="closed" id="acl-instance-acl">                    
-                    <input type="hidden" id="acl-instance">
+                <div class="closed" id="acl-instance-acl">                                        
                     <div class="acl-div">
                         <table class="management-table">
                             <colgroup>
