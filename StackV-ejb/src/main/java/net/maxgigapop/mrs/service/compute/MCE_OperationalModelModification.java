@@ -116,14 +116,19 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
         for (int i = 0; i < resourcesToRemove.size(); i++) {
             String resourceURI = (String) resourcesToRemove.get(i);
             Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
-            model.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));            
+            if (node != null) {
+                subModel.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));      
+            } else {
+                throw new NullPointerException("MCE_OperationalModelModification:: Resource cannot be null.");
+            }
         }
-        
+        subModel.add(ModelUtil.getModelSubTree(systemModel.getOntModel(), resources, includeMatches, excludeMatches, excludeExtentials)); 
+       
         ServiceDelta outputDelta = new ServiceDelta();
         DeltaModel dmReduction = new DeltaModel();
 
         dmReduction.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
-        dmReduction.getOntModel().add(model);
+        dmReduction.getOntModel().add(subModel);
 
         outputDelta.setModelReduction(dmReduction);
         
