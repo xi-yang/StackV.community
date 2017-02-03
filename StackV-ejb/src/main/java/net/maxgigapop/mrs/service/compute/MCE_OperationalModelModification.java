@@ -44,6 +44,8 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.service.compile.CompilerBase;
+import net.maxgigapop.mrs.service.compile.CompilerFactory;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -103,24 +105,26 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
         
         Model subModel = ModelFactory.createDefaultModel();
         OntModel model = systemModel.getOntModel();
+        
         List<Resource> resources = new ArrayList<>();
         List<String> includeMatches = new ArrayList<String>();
         List<String> excludeMatches = new ArrayList<String>();
         List<String> excludeExtentials = new ArrayList<String>();
         
+        CompilerBase simpleCompiler = CompilerFactory.createCompiler("net.maxgigapop.mrs.service.compile.SimpleCompiler");
+  
         for (int i = 0; i < resourcesToRemove.size(); i++) {
             String resourceURI = (String) resourcesToRemove.get(i);
             Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
-            resources.add(node);
+            model.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));            
         }
         
         ServiceDelta outputDelta = new ServiceDelta();
-        Model removalModel =  ModelUtil.getModelSubTree(systemModel.getOntModel(), resources, includeMatches, excludeMatches, excludeExtentials);        
-        
         DeltaModel dmReduction = new DeltaModel();
-       // dmReduction.setDelta(outputDelta);
+
         dmReduction.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
-        dmReduction.getOntModel().add(removalModel);
+        dmReduction.getOntModel().add(model);
+
         outputDelta.setModelReduction(dmReduction);
         
         return new AsyncResult(outputDelta);
