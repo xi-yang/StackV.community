@@ -357,7 +357,7 @@ public class WebResource {
             JSONObject roles = (JSONObject) obj;
             JSONObject roleJSON = (JSONObject) ((JSONObject) roles.get("clientMappings")).get("StackV");
             JSONArray roleArr = (JSONArray) roleJSON.get("mappings");
-            
+
             for (Object obj2 : roleArr) {
                 JSONObject role = (JSONObject) obj2;
                 retList.add((String) role.get("name"));
@@ -1706,11 +1706,9 @@ public class WebResource {
             return 4;
         }
 
-        int i = 1;
         while (true) {
-            if (i == 10) {
-                auth = servBean.refreshToken(refresh);
-            }
+            auth = servBean.refreshToken(refresh);
+
             instanceState = status(refUuid, auth);
             if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
                 servBean.verify(refUuid, refresh);
@@ -1720,7 +1718,6 @@ public class WebResource {
                 return 5;
             }
 
-            i++;
             Thread.sleep(5000);
         }
     }
