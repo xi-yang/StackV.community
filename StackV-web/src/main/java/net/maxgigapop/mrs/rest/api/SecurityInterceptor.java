@@ -56,7 +56,8 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) {
         UriInfo uri = requestContext.getUriInfo();
-
+        System.out.println("API Request Received: " + uri.getPath());
+        
         if ((uri.getPath()).startsWith("/app/")) {
             Method method = resourceInfo.getResourceMethod();
             // Ban list
