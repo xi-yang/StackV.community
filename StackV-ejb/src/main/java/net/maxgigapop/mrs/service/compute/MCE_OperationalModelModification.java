@@ -117,7 +117,8 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
             String resourceURI = (String) resourcesToRemove.get(i);
             Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
             if (node != null) {
-                subModel.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));      
+                subModel.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));
+                resources.add(node);
             } else {
                 throw new NullPointerException("MCE_OperationalModelModification:: Resource cannot be null.");
             }
