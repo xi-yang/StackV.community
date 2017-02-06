@@ -93,7 +93,7 @@ function loadACLPortal() {
     
     $("#acl-group-add").click(function (evt) {
         var subject = $("#acl-user").val();
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/role';
+        var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/group';
         keycloak.updateToken(30).success(function () {
             $.ajax({
                 url: apiUrl,

@@ -515,6 +515,8 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public ArrayList<String> getUserRoles(@PathParam("user") String subject) {
         try {
+            System.out.println("In roles");
+
             ArrayList<String> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings");
@@ -535,9 +537,14 @@ public class WebResource {
                 }
             }
 
+            System.out.println("After input");
+
             Object obj = parser.parse(responseStr.toString());
             JSONObject roles = (JSONObject) obj;
             JSONObject roleJSON = (JSONObject) ((JSONObject) roles.get("clientMappings")).get("StackV");
+            
+            System.out.println("JSON " + roleJSON);
+                    
             if (roleJSON != null) {
                 JSONArray roleArr = (JSONArray) roleJSON.get("mappings");
 
@@ -546,6 +553,8 @@ public class WebResource {
                     retList.add((String) role.get("name"));
                 }
             }
+
+            System.out.println("Retlist made" + retList);
 
             return retList;
         } catch (IOException | ParseException e) {
@@ -1022,14 +1031,12 @@ public class WebResource {
             ResultSet rs1 = prep.executeQuery();
 
             while (rs1.next()) {
-                if (roleSet.contains(rs1.getString("filename"))) {
-                    ArrayList<String> wizardList = new ArrayList<>();
-                    wizardList.add(rs1.getString("name"));
-                    wizardList.add(rs1.getString("description"));
-                    wizardList.add(rs1.getString("filename"));
+                ArrayList<String> wizardList = new ArrayList<>();
+                wizardList.add(rs1.getString("name"));
+                wizardList.add(rs1.getString("description"));
+                wizardList.add(rs1.getString("filename"));
 
-                    retList.add(wizardList);
-                }
+                retList.add(wizardList);
             }
             return retList;
         } catch (SQLException e) {
@@ -1478,10 +1485,6 @@ public class WebResource {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
-            Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
-            if (!roleSet.contains(serviceType)) {
-                throw new IOException("Unauthorized to use " + serviceType + "!\n");
-            }
 
             String username = accessToken.getPreferredUsername();
             System.out.println("User:" + username);
@@ -1496,7 +1499,7 @@ public class WebResource {
                 }
             });
 
-        } catch (ParseException | IOException ex) {
+        } catch (ParseException ex) {
             Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, ex);
         }
