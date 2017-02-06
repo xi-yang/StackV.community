@@ -1615,7 +1615,7 @@ public class serviceBeans {
                 responseStr.append(inputLine);
             }
         }
-        logger.log(Level.INFO, "Response: {0}", responseStr.substring(0, Math.min(responseStr.length(), 10)) + "...");        
+        logger.log(Level.INFO, "Response: {0}", responseStr.substring(0, Math.min(responseStr.length(), 10)) + "...");
 
         return responseStr.toString();
     }
@@ -2011,7 +2011,7 @@ public class serviceBeans {
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
-        
+
         System.out.println("Verification Failure: " + refUuid);
         return false;
     }
@@ -2060,7 +2060,8 @@ public class serviceBeans {
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
 
-            
+            System.out.println("Refresh complete.");
+
             return "bearer " + (String) result.get("access_token");
         } catch (ParseException | IOException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);

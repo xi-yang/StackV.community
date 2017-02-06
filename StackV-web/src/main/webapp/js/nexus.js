@@ -78,6 +78,8 @@ $(function () {
             $("li#catalog-tab").addClass("active");
         else if (/graphTest.jsp/.test(url))
             $("li#visualization-tab").addClass("active");
+        else if (/acl.jsp/.test(url))
+            $("li#acl-tab").addClass("active");
 
         $("#logout-button").click(function (evt) {
             keycloak.logout();
@@ -1164,19 +1166,19 @@ function reloadDetails(time) {
         $('#details-panel').load(document.URL + ' #details-table', function () {
             loadDetails();
 
-            $("#refresh-timer").val(timerSetting);
-            if (manual === false) {
-                countdown = time;
-                //document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-            } else {
-                document.getElementById('refresh-button').innerHTML = 'Manually RefreshNow ';
-            }
-
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-
             setTimeout(function () {
+                $("#refresh-timer").val(timerSetting);
+                if (manual === false) {
+                    countdown = time;
+                    $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
+                } else {
+                    $("#refresh-button").html('Manually Refresh Now');
+                }
+
+                $(".delta-table-header").click(function () {
+                    $("#body-" + this.id).toggleClass("hide");
+                });
+
                 disableLoading();
             }, 750);
         });
