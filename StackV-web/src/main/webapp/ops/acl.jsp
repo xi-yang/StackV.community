@@ -27,7 +27,7 @@
             <div class="right-tab"></div>
             <div class="acl-panel" id="acl-role-panel">
                 <input type="hidden" id="acl-user">
-                <div class="acl-role-user-div">
+                <div id="acl-role-user-div">
                     <table class="management-table" id="acl-user-table">
                         <thead>
                             <tr>
@@ -38,7 +38,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="acl-role-role-div closed">
+                <div id="acl-role-role-div" class="closed">
                     <table class="management-table" id="acl-role-table">
                         <thead>
                             <tr>
@@ -56,7 +56,7 @@
                         </tfoot>
                     </table>
                 </div>
-                <div class="acl-role-group-div closed">
+                <div id="acl-role-group-div" class="closed">
                     <table class="management-table" id="acl-group-table">
                         <thead>
                             <tr>

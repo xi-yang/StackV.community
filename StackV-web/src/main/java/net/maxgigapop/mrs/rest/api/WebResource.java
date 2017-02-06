@@ -63,8 +63,10 @@ import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.util.Iterator;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.security.RolesAllowed;
@@ -102,7 +104,7 @@ public class WebResource {
     public WebResource() {
     }
 
-    // ACL   
+    // >ACL   
     @POST
     @Path(value = "/acl/{refUUID}")
     @Consumes(value = {"application/json", "application/xml"})
@@ -229,7 +231,187 @@ public class WebResource {
         }
     }
 
-    // Keycloak
+    // >Drivers
+    @DELETE
+    @Path(value = "/driver/{username}/delete/{topuri}")
+    @RolesAllowed("Drivers")
+    public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) throws SQLException {
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
+        prep.setString(1, username);
+        prep.setString(2, topuri);
+        prep.executeUpdate();
+
+        return "Deleted";
+    }
+
+    @GET
+    @Path("/driver/{user}/getdetails/{topuri}")
+    @Produces("application/json")
+    @RolesAllowed("Drivers")
+    public JSONObject getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
+
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                prop);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
+        prep.setString(1, username);
+        prep.setString(2, topuri);
+        ResultSet ret = prep.executeQuery();
+
+        ret.next();
+
+        Object obj = parser.parse(ret.getString("data"));
+        JSONObject JSONtemp = (JSONObject) obj;
+        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
+        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
+
+        return JSONdata;
+    }
+
+    @GET
+    @Path("/driver/{user}/get")
+    @Produces("application/json")
+    @RolesAllowed("Drivers")
+    public ArrayList<String> getDriver(@PathParam("user") String username) throws SQLException {
+        ArrayList<String> list = new ArrayList<>();
+
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                prop);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ?");
+        prep.setString(1, username);
+        ResultSet ret = prep.executeQuery();
+
+        while (ret.next()) {
+            list.add(ret.getString("drivername"));
+            list.add(ret.getString("description"));
+            list.add(ret.getString("data"));
+            list.add(ret.getString("TopUri"));
+        }
+
+        return list;
+    }
+
+    @PUT
+    @Path("install/driver")
+    @Consumes("application/json")
+    @Produces("text/plain")
+    @RolesAllowed("Drivers")
+    public String installDriver(final String dataInput) throws SQLException, ParseException {
+        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+
+        Object obj = parser.parse(dataInput);
+        JSONObject JSONtemp = (JSONObject) obj;
+        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
+        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
+
+        String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("drivertype"));
+
+        try {
+            URL url = new URL(String.format("%s/driver", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
+            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
+            {
+                return "PLUGIN FAILED: Driver Resource did not return successfull";
+            }
+        } catch (Exception e) {
+            return "PLUGIN FAILED: Exception" + e;
+        }
+
+        return "PLUGIN SUCCEEDED";
+    }
+
+    @PUT
+    @Path("/driver/{user}/install/{topuri}")
+    @Produces("text/plain")
+    @RolesAllowed("Drivers")
+    public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
+        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                prop);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
+        prep.setString(1, username);
+        prep.setString(2, topuri);
+        ResultSet ret = prep.executeQuery();
+
+        ret.next();
+        Object obj = parser.parse(ret.getString("data"));
+        JSONObject JSONtemp = (JSONObject) obj;
+        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
+        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
+
+        String xmldata = JSONtoxml(JSONdata, ret.getString("drivertype"));
+
+        try {
+            URL url = new URL(String.format("%s/driver", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
+            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
+            {
+                return "PLUGIN FAILED: Driver Resource Failed";
+            }
+        } catch (Exception e) {
+            return "PLUGIN FAILED: Exception" + e;
+        }
+
+        return "PLUGIN SUCCEEDED";
+    }
+
+    @PUT
+    @Path("driver/{user}/add")
+    @Consumes(value = {"application/json"})
+    @RolesAllowed("Drivers")
+    public void addDriver(@PathParam("user") String username, final String dataInput) throws SQLException {
+        JSONObject inputJSON = new JSONObject();
+        try {
+            Object obj = parser.parse(dataInput);
+            inputJSON = (JSONObject) obj;
+
+        } catch (ParseException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        String user = (String) inputJSON.get("username");
+        String driver = (String) inputJSON.get("drivername");
+        String desc = (String) inputJSON.get("driverDescription");
+        String data = (String) inputJSON.get("data");
+        String uri = (String) inputJSON.get("topuri");
+        String drivertype = (String) inputJSON.get("drivertype");
+
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
+
+        PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
+        prep.setString(1, user);
+        prep.setString(2, driver);
+        prep.setString(3, desc);
+        prep.setString(4, data);
+        prep.setString(5, uri);
+        prep.setString(6, drivertype);
+        prep.executeUpdate();
+    }
+
+    // >Keycloak
     @GET
     @Path("/keycloak/users")
     @Produces("application/json")
@@ -373,13 +555,71 @@ public class WebResource {
         }
     }
 
+    @POST
+    @Path("/keycloak/users/{user}/role")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<String> addUserRole(@PathParam("user") String subject, final String inputString) {
+        try {
+            Object obj = parser.parse(inputString);
+            final JSONArray inputJSON = (JSONArray) obj;
+            JSONObject dataJSON = (JSONObject) inputJSON.get(0);
+
+            ArrayList<String> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/clients/5c0fab65-4577-4747-ad42-59e34061390b");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+
+            System.out.println(dataJSON.toString());
+            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
+                out.write(dataJSON.toString());
+            }
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            obj = parser.parse(responseStr.toString());
+            JSONObject roles = (JSONObject) obj;
+            JSONObject roleJSON = (JSONObject) ((JSONObject) roles.get("clientMappings")).get("StackV");
+            if (roleJSON != null) {
+                JSONArray roleArr = (JSONArray) roleJSON.get("mappings");
+
+                for (Object obj2 : roleArr) {
+                    JSONObject role = (JSONObject) obj2;
+                    retList.add((String) role.get("name"));
+                }
+            }
+
+            return retList;
+        } catch (IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
     @GET
     @Path("/keycloak/roles")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<String> getRoles() {
+    public ArrayList<ArrayList<String>> getRoles() {
         try {
-            ArrayList<String> retList = new ArrayList<>();
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/clients/5c0fab65-4577-4747-ad42-59e34061390b/roles");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
@@ -402,8 +642,12 @@ public class WebResource {
             Object obj = parser.parse(responseStr.toString());
             JSONArray roleArr = (JSONArray) obj;
             for (Object role : roleArr) {
+                ArrayList<String> roleList = new ArrayList<>();
                 JSONObject roleJSON = (JSONObject) role;
-                retList.add((String) roleJSON.get("name"));
+                roleList.add((String) roleJSON.get("id"));
+                roleList.add((String) roleJSON.get("name"));
+
+                retList.add(roleList);
             }
 
             return retList;
@@ -413,14 +657,14 @@ public class WebResource {
             return null;
         }
     }
-    
+
     @GET
     @Path("/keycloak/groups")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<String> getGroups() {
+    public ArrayList<ArrayList<String>> getGroups() {
         try {
-            ArrayList<String> retList = new ArrayList<>();
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/groups");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
@@ -443,8 +687,12 @@ public class WebResource {
             Object obj = parser.parse(responseStr.toString());
             JSONArray groupArr = (JSONArray) obj;
             for (Object group : groupArr) {
+                ArrayList<String> groupList = new ArrayList<>();
                 JSONObject groupJSON = (JSONObject) group;
-                retList.add((String) groupJSON.get("name"));
+                groupList.add((String) groupJSON.get("id"));
+                groupList.add((String) groupJSON.get("name"));
+
+                retList.add(groupList);
             }
 
             return retList;
@@ -454,9 +702,8 @@ public class WebResource {
             return null;
         }
     }
-    
 
-    // Labels
+    // >Labels
     @GET
     @Path("/label/{user}")
     @Produces("application/json")
@@ -489,194 +736,6 @@ public class WebResource {
             Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
-    }
-
-    @DELETE
-    @Path(value = "/driver/{username}/delete/{topuri}")
-    public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) throws SQLException {
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
-        prep.executeUpdate();
-
-        return "Deleted";
-    }
-
-    @GET
-    @Path("/driver/{user}/getdetails/{topuri}")
-    @Produces("application/json")
-    public JSONObject getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
-
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                prop);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
-        ResultSet ret = prep.executeQuery();
-
-        ret.next();
-
-        Object obj = parser.parse(ret.getString("data"));
-        JSONObject JSONtemp = (JSONObject) obj;
-        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
-        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
-        return JSONdata;
-    }
-
-    @GET
-    @Path("/driver/{user}/get")
-    @Produces("application/json")
-    public ArrayList<String> getDriver(@PathParam("user") String username) throws SQLException {
-        ArrayList<String> list = new ArrayList<>();
-
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                prop);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ?");
-        prep.setString(1, username);
-        ResultSet ret = prep.executeQuery();
-
-        while (ret.next()) {
-            list.add(ret.getString("drivername"));
-            list.add(ret.getString("description"));
-            list.add(ret.getString("data"));
-            list.add(ret.getString("TopUri"));
-        }
-
-        return list;
-    }
-
-    @PUT
-    @Path("install/driver")
-    @Consumes("application/json")
-    @Produces("text/plain")
-    public String installDriver(final String dataInput) throws SQLException, ParseException {
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-
-        Object obj = parser.parse(dataInput);
-        JSONObject JSONtemp = (JSONObject) obj;
-        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
-        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
-        String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("drivertype"));
-
-        try {
-            URL url = new URL(String.format("%s/driver", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
-            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
-            {
-                return "PLUGIN FAILED: Driver Resource did not return successfull";
-            }
-        } catch (Exception e) {
-            return "PLUGIN FAILED: Exception" + e;
-        }
-
-        return "PLUGIN SUCCEEDED";
-    }
-
-    private String JSONtoxml(JSONObject JSONdata, String drivertype) {
-        String xmldata = "<driverInstance><properties>\n";
-        xmldata += "\t<entry><key>topologyUri</key><value>" + JSONdata.get("TOPURI") + "</value></entry>\n";
-        xmldata += "\t<entry><key>driverEjbPath</key><value>java:module/" + drivertype + "</value></entry>\n";
-
-        Set<String> key = new HashSet<>(JSONdata.keySet());
-        for (String i : key) {
-            if (!(i.equals("TOPURI")) && !(i.equals("drivertype"))) {
-                xmldata += "\t<entry><key>" + i + "</key><value>" + JSONdata.get(i) + "</value></entry>\n";
-            }
-        }
-        xmldata += "</properties></driverInstance>";
-        return xmldata;
-    }
-
-    @PUT
-    @Path("/driver/{user}/install/{topuri}")
-    @Produces("text/plain")
-    public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                prop);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
-        ResultSet ret = prep.executeQuery();
-
-        ret.next();
-        Object obj = parser.parse(ret.getString("data"));
-        JSONObject JSONtemp = (JSONObject) obj;
-        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
-        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
-        String xmldata = JSONtoxml(JSONdata, ret.getString("drivertype"));
-
-        try {
-            URL url = new URL(String.format("%s/driver", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
-            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
-            {
-                return "PLUGIN FAILED: Driver Resource Failed";
-            }
-        } catch (Exception e) {
-            return "PLUGIN FAILED: Exception" + e;
-        }
-
-        return "PLUGIN SUCCEEDED";
-    }
-
-    @PUT
-    @Path("driver/{user}/add")
-    @Consumes(value = {"application/json"})
-    public void addDriver(@PathParam("user") String username, final String dataInput) throws SQLException {
-        JSONObject inputJSON = new JSONObject();
-        try {
-            Object obj = parser.parse(dataInput);
-            inputJSON = (JSONObject) obj;
-
-        } catch (ParseException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        String user = (String) inputJSON.get("username");
-        String driver = (String) inputJSON.get("drivername");
-        String desc = (String) inputJSON.get("driverDescription");
-        String data = (String) inputJSON.get("data");
-        String uri = (String) inputJSON.get("topuri");
-        String drivertype = (String) inputJSON.get("drivertype");
-
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
-
-        PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
-        prep.setString(1, user);
-        prep.setString(2, driver);
-        prep.setString(3, desc);
-        prep.setString(4, data);
-        prep.setString(5, uri);
-        prep.setString(6, drivertype);
-        prep.executeUpdate();
     }
 
     @PUT
@@ -758,7 +817,66 @@ public class WebResource {
         return "Labels Cleared";
     }
 
-    // Panels
+    // >Manifests
+    @GET
+    @Path("/manifest/{svcUUID}")
+    @Produces("application/json")
+    @RolesAllowed("Manifests")
+    public String getManifest(@PathParam("svcUUID") String svcUUID) {
+        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        String serviceType = getServiceType(svcUUID);
+        if (serviceType.equals("Virtual Cloud Network")) {
+            try {
+                URL url = new URL(String.format("%s/service/property/%s/host", host, svcUUID));
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                String result = servBean.executeHttpMethod(url, conn, "GET", null, auth);
+                if (result.equals("ops")) {
+                    serviceType = "Virtual Cloud Network - OPS";
+                } else if (result.equals("aws")) {
+                    serviceType = "Virtual Cloud Network - AWS";
+                } else {
+                    throw new EJBException("cannot tell type of VCN service without 'host' property");
+                }
+            } catch (Exception ex) {
+                throw new EJBException("cannot tell type of VCN service without 'host' property", ex);
+            }
+        }
+        String manifest = "";
+        switch (serviceType) {
+            case "Dynamic Network Connection":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC, auth);
+                break;
+            case "Advanced Hybrid Cloud":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC, auth);
+                break;
+            case "Virtual Cloud Network - OPS":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS, auth);
+                break;
+            case "Virtual Cloud Network - AWS":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
+                break;
+            default:
+                throw new EJBException("cannot get manifest for service type=" + serviceType);
+        }
+        org.json.JSONObject obj = new org.json.JSONObject(manifest);
+        if (obj == null || !obj.has("jsonTemplate")) {
+            throw new EJBException("getManifest cannot get manifest for service uuid=" + svcUUID);
+        }
+        return obj.getString("jsonTemplate");
+    }
+
+    @GET
+    @Path("/manifest/{svcUUID}")
+    @Produces("application/xml")
+    @RolesAllowed("Manifests")
+    public String getManifestXml(@PathParam("svcUUID") String svcUUID) {
+        String manifestJStr = getManifest(svcUUID);
+        org.json.JSONObject obj = new org.json.JSONObject(manifestJStr);
+        String manifest = org.json.XML.toString(obj);
+        return manifest;
+    }
+
+    // >Panels
     @GET
     @Path("/panel/{userId}/instances")
     @Produces("application/json")
@@ -1105,7 +1223,96 @@ public class WebResource {
         return retList;
     }
 
-    // Profiles
+    @GET
+    @Path("/service/lastverify/{siUUID}")
+    @Produces("application/json")
+    @RolesAllowed("Panels")
+    public HashMap<String, String> getVerificationResults(@PathParam("siUUID") String serviceUUID) {
+        try {
+            HashMap<String, String> retMap = new HashMap<>();
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+            prep.setString(1, serviceUUID);
+            ResultSet rs1 = prep.executeQuery();
+            while (rs1.next()) {
+                retMap.put("delta_uuid", rs1.getString("delta_uuid"));
+                retMap.put("creation_time", rs1.getString("creation_time"));
+                retMap.put("verified_reduction", rs1.getString("verified_reduction"));
+                retMap.put("verified_addition", rs1.getString("verified_addition"));
+                retMap.put("unverified_reduction", rs1.getString("unverified_reduction"));
+                retMap.put("unverified_addition", rs1.getString("unverified_addition"));
+                retMap.put("reduction", rs1.getString("reduction"));
+                retMap.put("addition", rs1.getString("addition"));
+            }
+
+            return retMap;
+
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    @GET
+    @Path("/service/availibleitems/{siUUID}")
+    @Produces("application/json")
+    @RolesAllowed("Panels")
+    public String getVerificationResultsUnion(@PathParam("siUUID") String serviceUUID) throws Exception {
+        try {
+            HashMap<String, String> retMap = new HashMap<>();
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+            prep.setString(1, serviceUUID);
+            ResultSet rs1 = prep.executeQuery();
+            String verified_addition = "";
+            String unverified_reduction = "";
+            OntModel vAddition;
+            OntModel uReduction;
+
+            while (rs1.next()) {
+                verified_addition = rs1.getString("verified_addition");
+                unverified_reduction = rs1.getString("unverified_reduction");
+            }
+
+            if (verified_addition != null && unverified_reduction != null) {
+                vAddition = ModelUtil.unmarshalOntModelJson(verified_addition);
+                uReduction = ModelUtil.unmarshalOntModelJson(unverified_reduction);
+
+                ArrayList<OntModel> modelList = new ArrayList<>();
+                modelList.add(vAddition);
+                modelList.add(uReduction);
+                OntModel newModel = ModelUtil.createUnionOntModel(modelList);
+                return ModelUtil.marshalOntModelJson(newModel);
+            }
+
+            if (verified_addition != null) {
+                return verified_addition;
+            } else if (unverified_reduction != null) {
+                return unverified_reduction;
+            } else {
+                return null;
+
+            }
+
+        } catch (SQLException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    // >Profiles
     @GET
     @Path("/profile/{wizardId}")
     @Produces("application/json")
@@ -1216,7 +1423,7 @@ public class WebResource {
         }
     }
 
-    // Services
+    // >Services
     @GET
     @Path("/service/{siUUID}/status")
     @RolesAllowed("Services")
@@ -1529,6 +1736,7 @@ public class WebResource {
     @GET
     @Path("/delta/{siUUID}")
     @Produces("application/json")
+    @RolesAllowed("Panels")
     public String getDeltaBacked(@PathParam("siUUID") String serviceUUID) {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         try {
@@ -1553,93 +1761,6 @@ public class WebResource {
                 return "{verified_addition: \"{ }\",verified_reduction: \"{ }\",unverified_addition: \"{ }\",unverified_reduction: \"{ }\"}";
             }
         } catch (IOException | SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
-            return null;
-        }
-    }
-
-    @GET
-    @Path("/service/lastverify/{siUUID}")
-    @Produces("application/json")
-    public HashMap<String, String> getVerificationResults(@PathParam("siUUID") String serviceUUID) {
-        try {
-            HashMap<String, String> retMap = new HashMap<>();
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            PreparedStatement prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
-            prep.setString(1, serviceUUID);
-            ResultSet rs1 = prep.executeQuery();
-            while (rs1.next()) {
-                retMap.put("delta_uuid", rs1.getString("delta_uuid"));
-                retMap.put("creation_time", rs1.getString("creation_time"));
-                retMap.put("verified_reduction", rs1.getString("verified_reduction"));
-                retMap.put("verified_addition", rs1.getString("verified_addition"));
-                retMap.put("unverified_reduction", rs1.getString("unverified_reduction"));
-                retMap.put("unverified_addition", rs1.getString("unverified_addition"));
-                retMap.put("reduction", rs1.getString("reduction"));
-                retMap.put("addition", rs1.getString("addition"));
-            }
-
-            return retMap;
-
-        } catch (SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
-            return null;
-        }
-    }
-
-    @GET
-    @Path("/service/availibleitems/{siUUID}")
-    @Produces("application/json")
-    public String getVerificationResultsUnion(@PathParam("siUUID") String serviceUUID) throws Exception {
-        try {
-            HashMap<String, String> retMap = new HashMap<>();
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            PreparedStatement prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
-            prep.setString(1, serviceUUID);
-            ResultSet rs1 = prep.executeQuery();
-            String verified_addition = "";
-            String unverified_reduction = "";
-            OntModel vAddition;
-            OntModel uReduction;
-
-            while (rs1.next()) {
-                verified_addition = rs1.getString("verified_addition");
-                unverified_reduction = rs1.getString("unverified_reduction");
-            }
-
-            if (verified_addition != null && unverified_reduction != null) {
-                vAddition = ModelUtil.unmarshalOntModelJson(verified_addition);
-                uReduction = ModelUtil.unmarshalOntModelJson(unverified_reduction);
-
-                ArrayList<OntModel> modelList = new ArrayList<>();
-                modelList.add(vAddition);
-                modelList.add(uReduction);
-                OntModel newModel = ModelUtil.createUnionOntModel(modelList);
-                return ModelUtil.marshalOntModelJson(newModel);
-            }
-
-            if (verified_addition != null) {
-                return verified_addition;
-            } else if (unverified_reduction != null) {
-                return unverified_reduction;
-            } else {
-                return null;
-
-            }
-
-        } catch (SQLException e) {
             Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, e);
             return null;
@@ -2212,62 +2333,6 @@ public class WebResource {
         }
     }
 
-    @GET
-    @Path("/manifest/{svcUUID}")
-    @Produces("application/json")
-    public String getManifest(@PathParam("svcUUID") String svcUUID) {
-        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-        String serviceType = getServiceType(svcUUID);
-        if (serviceType.equals("Virtual Cloud Network")) {
-            try {
-                URL url = new URL(String.format("%s/service/property/%s/host", host, svcUUID));
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                String result = servBean.executeHttpMethod(url, conn, "GET", null, auth);
-                if (result.equals("ops")) {
-                    serviceType = "Virtual Cloud Network - OPS";
-                } else if (result.equals("aws")) {
-                    serviceType = "Virtual Cloud Network - AWS";
-                } else {
-                    throw new EJBException("cannot tell type of VCN service without 'host' property");
-                }
-            } catch (Exception ex) {
-                throw new EJBException("cannot tell type of VCN service without 'host' property", ex);
-            }
-        }
-        String manifest = "";
-        switch (serviceType) {
-            case "Dynamic Network Connection":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC, auth);
-                break;
-            case "Advanced Hybrid Cloud":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC, auth);
-                break;
-            case "Virtual Cloud Network - OPS":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS, auth);
-                break;
-            case "Virtual Cloud Network - AWS":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
-                break;
-            default:
-                throw new EJBException("cannot get manifest for service type=" + serviceType);
-        }
-        org.json.JSONObject obj = new org.json.JSONObject(manifest);
-        if (obj == null || !obj.has("jsonTemplate")) {
-            throw new EJBException("getManifest cannot get manifest for service uuid=" + svcUUID);
-        }
-        return obj.getString("jsonTemplate");
-    }
-
-    @GET
-    @Path("/manifest/{svcUUID}")
-    @Produces("application/xml")
-    public String getManifestXml(@PathParam("svcUUID") String svcUUID) {
-        String manifestJStr = getManifest(svcUUID);
-        org.json.JSONObject obj = new org.json.JSONObject(manifestJStr);
-        String manifest = org.json.XML.toString(obj);
-        return manifest;
-    }
-
     private String authUsername(String subject) {
         KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                 .getName());
@@ -2279,4 +2344,18 @@ public class WebResource {
         }
     }
 
+    private String JSONtoxml(JSONObject JSONdata, String drivertype) {
+        String xmldata = "<driverInstance><properties>\n";
+        xmldata += "\t<entry><key>topologyUri</key><value>" + JSONdata.get("TOPURI") + "</value></entry>\n";
+        xmldata += "\t<entry><key>driverEjbPath</key><value>java:module/" + drivertype + "</value></entry>\n";
+
+        Set<String> key = new HashSet<>(JSONdata.keySet());
+        for (String i : key) {
+            if (!(i.equals("TOPURI")) && !(i.equals("drivertype"))) {
+                xmldata += "\t<entry><key>" + i + "</key><value>" + JSONdata.get(i) + "</value></entry>\n";
+            }
+        }
+        xmldata += "</properties></driverInstance>";
+        return xmldata;
+    }
 }
