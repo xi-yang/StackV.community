@@ -57,19 +57,24 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     public void filter(ContainerRequestContext requestContext) {
         UriInfo uri = requestContext.getUriInfo();
         System.out.println("API Request Received: " + uri.getPath());
-        
+
         if ((uri.getPath()).startsWith("/app/")) {
             Method method = resourceInfo.getResourceMethod();
             // Ban list
-            List<String> freeRoles = Arrays.asList("ACL", "Keycloak", "Labels", "Panels", "Profiles");
+            List<String> freeRoles = Arrays.asList("ACL", "All");
 
             RolesAllowed rolesAnnotation = method.getAnnotation(RolesAllowed.class);
-            String role = Arrays.asList(rolesAnnotation.value()).get(0);
+            String role;
+            if (rolesAnnotation == null) {
+                role = "All";
+            } else {
+                role = Arrays.asList(rolesAnnotation.value()).get(0);
+            }
+            
             if (freeRoles.contains(role)) {
                 System.out.println("Authenticated: " + method.getName());
                 return;
             }
-
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) requestContext.getProperty(KeycloakSecurityContext.class.getName());
             Set<String> roleSet;
             AccessToken accessToken = securityContext.getToken();

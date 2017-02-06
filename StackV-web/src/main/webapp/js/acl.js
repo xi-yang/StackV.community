@@ -61,6 +61,7 @@ function loadACLPortal() {
         $("#acl-role-group-div").addClass("closed");
         $(".acl-selected-row").removeClass("acl-selected-row");
 
+        $("#acl-user").removeAttr('value');
         evt.preventDefault();
     });
 
@@ -71,7 +72,7 @@ function loadACLPortal() {
             $.ajax({
                 url: apiUrl,
                 type: 'POST',
-                data: "",
+                data: $("#acl-role-select").val(),
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
                 beforeSend: function (xhr) {
@@ -79,7 +80,33 @@ function loadACLPortal() {
                 },
                 success: function (result) {
                     for (i = 0; i < result.length; i++) {
-                        
+
+                    }
+                }
+            });
+        }).error(function () {
+            console.log("Fatal Error: Token update failed!");
+        });
+
+        evt.preventDefault();
+    });
+    
+    $("#acl-group-add").click(function (evt) {
+        var subject = $("#acl-user").val();
+        var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/role';
+        keycloak.updateToken(30).success(function () {
+            $.ajax({
+                url: apiUrl,
+                type: 'POST',
+                data: $("#acl-group-select").val(),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                },
+                success: function (result) {
+                    for (i = 0; i < result.length; i++) {
+
                     }
                 }
             });
@@ -93,9 +120,9 @@ function loadACLPortal() {
     // Instances
     $("#acl-instance-close").click(function (evt) {
         $("#acl-instance-acl").addClass("closed");
-        $("#acl-instance").removeAttr('value');
         $(".acl-selected-row").removeClass("acl-selected-row");
 
+        $("#acl-instance").removeAttr('value');
         evt.preventDefault();
     });
 
@@ -139,6 +166,7 @@ function subloadRoleACLUsers() {
                         $(".acl-selected-row").removeClass("acl-selected-row");
                         $(this).addClass("acl-selected-row");
 
+                        $("#acl-user").val($(this).data("subject"));
                         subloadUserRoleACLGroups($(this).data("subject"));
                         subloadUserRoleACLRoles($(this).data("subject"));
                     }
@@ -163,7 +191,7 @@ function subloadRoleACLGroups() {
                 for (i = 0; i < result.length; i++) {
                     var group = result[i];
 
-                    $("#acl-group-select").append(new Option(group, group));
+                    $("#acl-group-select").append(new Option(group[1], group[0]));
                 }
             }
         });
@@ -185,7 +213,7 @@ function subloadRoleACLRoles() {
                 for (i = 0; i < result.length; i++) {
                     var role = result[i];
 
-                    $("#acl-role-select").append(new Option(role, role));
+                    $("#acl-role-select").append(new Option(role[1], role[0]));
                 }
             }
         });
@@ -220,7 +248,7 @@ function subloadUserRoleACLGroups(subject) {
                     tbody.appendChild(row);
                 }
 
-                $(".acl-role-group-div").removeClass("closed");
+                $("#acl-role-group-div").removeClass("closed");
             }
         });
     }).error(function () {
@@ -254,7 +282,7 @@ function subloadUserRoleACLRoles(subject) {
                     tbody.appendChild(row);
                 }
 
-                $(".acl-role-role-div").removeClass("closed");
+                $("#acl-role-role-div").removeClass("closed");
             }
         });
     }).error(function () {
