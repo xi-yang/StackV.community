@@ -21,8 +21,7 @@
  * IN THE WORK.
  */
 
-baseUrl = window.location.origin;
-var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
+/* global XDomainRequest, baseUrl, keycloak */
 
 function activateDetails(){
     $('#driver-panel-right').addClass('active-detail');

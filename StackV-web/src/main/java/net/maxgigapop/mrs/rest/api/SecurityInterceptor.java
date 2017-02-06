@@ -56,9 +56,9 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) {
         UriInfo uri = requestContext.getUriInfo();
-        System.out.println("API Request Received: " + uri.getPath());
 
         if ((uri.getPath()).startsWith("/app/")) {
+            System.out.println("API Request Received: " + uri.getPath());
             Method method = resourceInfo.getResourceMethod();
             // Ban list
             List<String> freeRoles = Arrays.asList("ACL", "All");
@@ -70,9 +70,9 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             } else {
                 role = Arrays.asList(rolesAnnotation.value()).get(0);
             }
-            
+
             if (freeRoles.contains(role)) {
-                System.out.println("Authenticated: " + method.getName());
+                System.out.println("Allowed Freely: " + method.getName());
                 return;
             }
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) requestContext.getProperty(KeycloakSecurityContext.class.getName());
@@ -80,7 +80,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             AccessToken accessToken = securityContext.getToken();
             roleSet = accessToken.getResourceAccess("StackV").getRoles();
             if (!accessToken.isActive()) {
-                System.out.println("NOT ACTIVE");
+                System.out.println("Token Not Active! (" + method.getName() + ")");
             }
 
             if (!roleSet.contains(role)) {
@@ -88,7 +88,10 @@ public class SecurityInterceptor implements ContainerRequestFilter {
                         .status(Response.Status.UNAUTHORIZED)
                         .entity("User is not allowed to access the resource:" + method.getName())
                         .build());
+                System.out.println("Denied: " + method.getName());
             }
+
+            System.out.println("Authenticated: " + method.getName());
         }
     }
 }
