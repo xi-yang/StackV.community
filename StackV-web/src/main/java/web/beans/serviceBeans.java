@@ -621,6 +621,7 @@ public class serviceBeans {
                     }
                     svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
                             + "    a                         nml:Node ;\n"
+                            + "    nml:name         \"" + vmPara[0] + "\";\n"
                             + (vmPara[2].equals(" ") ? "" : "    mrs:type       \"" + vmPara[2] + "\";\n")
                             + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
@@ -657,6 +658,7 @@ public class serviceBeans {
                     //4:Interfaces: floating IP, SRIOV
                     svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
                             + "    a                         nml:Node ;\n"
+                            + "    nml:name         \"" + vmPara[0] + "\";\n"
                             + (vmPara[2].equals(" ") ? "" : "    mrs:type       \"" + vmPara[2] + "\";\n")
                             + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
@@ -1067,6 +1069,7 @@ public class serviceBeans {
                         String vmType = (String) vmJson.get("type");
                         svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
+                                + "    nml:name         \"" + vmName + "\";\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
                                 + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
@@ -1156,6 +1159,7 @@ public class serviceBeans {
 
                         svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
+                                + "    nml:name         \"" + vmName + "\";\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
                                 + (nodeHasVolume.isEmpty() ? "" : "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ";\n")
                                 + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"

@@ -309,6 +309,9 @@ public class OpenStackPush {
                         SecurityGroupAddCheck(s.getId(), secgroup);
                     }
                 }
+                if (o.containsKey("alt name")) {
+                    client.setMetadata(o.get("server name").toString(), "alt name", o.get("alt name").toString());
+                }
             } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
                 Server server = client.getServer(o.get("server name").toString());
                 osClient.compute().servers().delete(server.getId());
@@ -1509,8 +1512,9 @@ public class OpenStackPush {
         String query;
 
         //1 check for any operation involving a server
-        query = "SELECT ?server ?port WHERE {"
-                + "?server a nml:Node"
+        query = "SELECT ?server ?port ?name WHERE {"
+                + "?server a nml:Node. "
+                + "OPTIONAL { ?server nml:name ?name. }" 
                 + "}";
         ResultSet r = executeQuery(query, modelDelta, emptyModel);//here modified 
 
@@ -1520,7 +1524,10 @@ public class OpenStackPush {
             String servername = vm.asResource().toString();
             String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
             Server server = client.getServer(serverName);
-
+            String serverAltName = "";
+            if (q.contains("name")) {
+                serverAltName = q.get("name").toString();
+            }
             //1.1 check if the desired operation is a valid operation
             if (server == null ^ creation) //check if server needs to be created or deleted
             {
@@ -1538,7 +1545,8 @@ public class OpenStackPush {
                 }
                 QuerySolution q1 = r1.next();
                 RDFNode hypervisorService = q1.get("service");
-                String hyperVisorServiceName = hypervisorService.asResource().toString().replace(topologyUri, "");//need to change here
+                
+                
 
                 //1.3 check that service is a hypervisor service
                 query = "SELECT ?type WHERE { ?type a mrs:HypervisorService}";//modified here
@@ -1673,6 +1681,9 @@ public class OpenStackPush {
                 }
                 if (hostName != null && !hostName.isEmpty()) {
                     o.put("host name", hostName);
+                }
+                if (serverAltName != null && !serverAltName.isEmpty()) {
+                    o.put("alt name", serverAltName);
                 }
                 //1.10.1 put all the ports in the request
                 int index = 0;
