@@ -542,9 +542,9 @@ public class WebResource {
             Object obj = parser.parse(responseStr.toString());
             JSONObject roles = (JSONObject) obj;
             JSONObject roleJSON = (JSONObject) ((JSONObject) roles.get("clientMappings")).get("StackV");
-            
+
             System.out.println("JSON " + roleJSON);
-                    
+
             if (roleJSON != null) {
                 JSONArray roleArr = (JSONArray) roleJSON.get("mappings");
 
@@ -1716,6 +1716,7 @@ public class WebResource {
                     + Thread.currentThread().getId() + "::Time Taken="
                     + (endTime - startTime) + " ms.");
 
+            auth = servBean.refreshToken(refresh);
             return superStatus(refUuid) + " - " + status(refUuid, auth) + "\r\n";
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
             try {
@@ -1852,68 +1853,77 @@ public class WebResource {
     private int cancelInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
         String instanceState = status(refUuid, auth);
-        if (!instanceState.equalsIgnoreCase("READY")) {
-            return 1;
-        }
-
-        auth = servBean.refreshToken(refresh);
-        result = revert(refUuid, auth);
-        if (!result) {
-            return 2;
-        }
-
-        auth = servBean.refreshToken(refresh);
-        result = propagate(refUuid, auth);
-        if (!result) {
-            return 3;
-        }
-
-        auth = servBean.refreshToken(refresh);
-        result = commit(refUuid, auth);
-        if (!result) {
-            return 4;
-        }
-
-        while (true) {
-            auth = servBean.refreshToken(refresh);
-
-            instanceState = status(refUuid, auth);
-            if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
-                servBean.verify(refUuid, refresh);
-
-                return 0;
-            } else if (!(instanceState.equals("COMMITTED"))) {
-                return 5;
+        try {
+            if (!instanceState.equalsIgnoreCase("READY")) {
+                return 1;
             }
 
-            Thread.sleep(5000);
+            auth = servBean.refreshToken(refresh);
+            result = revert(refUuid, auth);
+            if (!result) {
+                return 2;
+            }
+
+            auth = servBean.refreshToken(refresh);
+            result = propagate(refUuid, auth);
+            if (!result) {
+                return 3;
+            }
+
+            auth = servBean.refreshToken(refresh);
+            result = commit(refUuid, auth);
+            if (!result) {
+                return 4;
+            }
+
+            while (true) {
+                auth = servBean.refreshToken(refresh);
+
+                instanceState = status(refUuid, auth);
+                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
+                    servBean.verify(refUuid, refresh);
+
+                    return 0;
+                } else if (!(instanceState.equals("COMMITTED"))) {
+                    return 5;
+                }
+
+                Thread.sleep(5000);
+            }
+        } catch (EJBException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
         }
     }
 
     private int forceCancelInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
-        forceRevert(refUuid, auth);
+        try {
+            forceRevert(refUuid, auth);
 
-        auth = servBean.refreshToken(refresh);
-        forcePropagate(refUuid, auth);
-
-        auth = servBean.refreshToken(refresh);
-        forceCommit(refUuid, auth);
-
-        for (int i = 0; i < 20; i++) {
             auth = servBean.refreshToken(refresh);
-            String instanceState = status(refUuid, auth);
-            if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
-                servBean.verify(refUuid, refresh);
+            forcePropagate(refUuid, auth);
 
-                return 0;
-            } else if (!(instanceState.equals("COMMITTED"))) {
-                return 5;
+            auth = servBean.refreshToken(refresh);
+            forceCommit(refUuid, auth);
+
+            for (int i = 0; i < 20; i++) {
+                auth = servBean.refreshToken(refresh);
+                String instanceState = status(refUuid, auth);
+                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
+                    servBean.verify(refUuid, refresh);
+
+                    return 0;
+                } else if (!(instanceState.equals("COMMITTED"))) {
+                    return 5;
+                }
+                Thread.sleep(5000);
             }
-            Thread.sleep(5000);
+            return -1;
+        } catch (EJBException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
         }
-        return -1;
-
     }
 
     private int forceRetryInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
