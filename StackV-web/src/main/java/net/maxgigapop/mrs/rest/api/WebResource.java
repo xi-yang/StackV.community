@@ -831,7 +831,6 @@ public class WebResource {
             HashMap<String, String> paraMap = new HashMap<>();
             switch (serviceType) {
                 case "dnc":
-                    paraMap = parseDNC(dataJSON, refUuid);
                     break;
                 case "netcreate":
                     paraMap = parseNet(dataJSON, refUuid);

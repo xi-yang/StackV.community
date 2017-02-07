@@ -26,6 +26,10 @@
                     <div>
                         Dynamic Network Connection:
                         <input type="text" placeholder="Service Name" id="service-name">
+                    </div>                    
+                    <div>
+                        Description:
+                        <input type="text" placeholder="Description" id="new-profile-description">
                     </div>
                     <div id="spacer"></div>
                     <div id="spacer"></div>
@@ -36,11 +40,11 @@
                                     <td>Link 1</td>
                                     <td style="width: 600px; text-align: center;">
                                         <div>
-                                            <input type="text" name="linkUri1" placeholder="Link-URI">
-                                            <input type="text" name="linksrc1" placeholder="Source">
-                                            <input type="text" name="linksrc-vlan1" placeholder="Vlan-tag">
-                                            <input type="text" name="linkdes1" placeholder="Destination">
-                                            <input type="text" name="linkdes-vlan1" placeholder="Vlan-tag">
+                                            <input type="text" id="linkUri1" placeholder="Link-URI">
+                                            <input type="text" id="linksrc1" placeholder="Source">
+                                            <input type="text" id="linksrc-vlan1" placeholder="Vlan-tag">
+                                            <input type="text" id="linkdes1" placeholder="Destination">
+                                            <input type="text" id="linkdes-vlan1" placeholder="Vlan-tag">
                                         </div>
                                     </td>
                                 </tr>

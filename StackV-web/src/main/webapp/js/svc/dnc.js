@@ -41,11 +41,11 @@ function addLink(){
         rightdiv.appendChild(input[i]);
     }
     
-    input[0].name = "linkUri" + linknum;
-    input[1].name = "linksrc" + linknum;
-    input[2].name = "linksrc-vlan" + linknum;
-    input[3].name = "linkdes" + linknum;
-    input[4].name = "linkdes-vlan" + linknum;
+    input[0].id = "linkUri" + linknum;
+    input[1].id = "linksrc" + linknum;
+    input[2].id = "linksrc-vlan" + linknum;
+    input[3].id = "linkdes" + linknum;
+    input[4].id = "linkdes-vlan" + linknum;
     
     input[0].placeholder="Link-URI";
     input[1].placeholder="Source";
@@ -67,18 +67,24 @@ function addLink(){
 
 function save(){
     var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
-    var data = {
-        name: $("#service-name").val(),
-        userID: keycloak.subject,
-        description: $("#new-profile-description").val(),
-        data: $("#info-panel-text-area").val()
+    var innerData = {
+        //userID might be keycloak.subject
+        userID: sessionStorage.getItem("username"),
+        type: "dnc",
+        alias: $('#service-name').val(),
+        data: generateJSON()
     };
-    
+    var sentData = {
+        //name might be wrong
+        name: $('#service-name').val(),
+        description: $("#new-profile-description").val(),
+        data: JSON.stringify(innerData)
+    };
     
     $.ajax({
         url: apiUrl,
         type: 'PUT',
-        data: JSON.stringify(data),  //stringify to get escaped JSON in backend
+        data: JSON.stringify(sentData),  //stringify to get escaped JSON in backend
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         beforeSend: function (xhr) {
@@ -88,6 +94,42 @@ function save(){
         success: function (result) {
         }
     });
+}
+
+function generateJSON(){
+    connections = [];
+    
+    for (var i = 1; i <= linknum; i++){
+        var terminals = [];
+        var src = "linksrc" + i;
+        var src_vlan = "linksrc-vlan" + i;
+        var des ="linkdes" + i;
+        var des_vlan ="linkdes-vlan" + i;
+        var source = {
+            uri: document.getElementById(src).value,
+            vlan_tag: document.getElementById(src_vlan).value
+        };
+        
+        var destination = {
+            uri: document.getElementById(des).value,
+            vlan_tag: document.getElementById(des_vlan).value
+        };
+        
+        terminals[0] = source;
+        terminals[1] = destination;
+        
+        var data = {
+            name: $('#service-name').val() + "-path-" + linknum,
+            terminals: terminals
+        };
+        
+        connections[i-1] = data;
+    }
+    
+    DNCdata = {
+        connections: connections
+    };
+    return JSON.stringify(DNCdata);
 }
 
 function submit(){
