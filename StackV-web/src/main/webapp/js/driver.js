@@ -23,6 +23,12 @@
 
 /* global XDomainRequest, baseUrl, keycloak */
 
+function tab_fix(){
+    $('#driver-tab').removeClass('active');
+    $('#saved-tab').removeClass('active');
+    $('#driver-tab').addClass('active');
+}
+
 function activateDetails(){
     $('#driver-panel-right').addClass('active-detail');
     $('#detail-content').addClass('active');
