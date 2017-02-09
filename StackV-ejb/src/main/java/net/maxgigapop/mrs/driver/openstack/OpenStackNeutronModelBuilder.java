@@ -442,6 +442,53 @@ public class OpenStackNeutronModelBuilder {
                             String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), cephRbdJson, cephRbdKey));
                 }
             }
+            // Globus Connect Service
+            if (metadata != null && metadata.containsKey("globus:info")) {
+                String globusJson = metadata.get("globus:info");
+                JSONParser parser = new JSONParser();
+                try {
+                    globusJson = globusJson.replaceAll("'", "\""); // single quotes into double quotes
+                    JSONObject jsonObj = (JSONObject) parser.parse(globusJson);
+                    if (!jsonObj.get("status").equals("up")) {
+                        continue;
+                    }
+                    String shortName = jsonObj.get("shortname").toString();
+                    String userName = jsonObj.get("user").toString();
+                    //## Do not expose password
+                    String defautDir = jsonObj.get("directory").toString();
+                    String dataInterface = jsonObj.get("interface").toString();
+                    String endpointUri = "";
+                    if (jsonObj.containsKey("uri")) {
+                        endpointUri = jsonObj.get("uri").toString();
+                    } else {
+                        endpointUri = VM.getURI() + ":globus+" + shortName;
+                    }
+                    Resource resGlobus = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
+                    model.add(model.createStatement(VM, Nml.hasService, resGlobus));
+                    model.add(model.createStatement(resGlobus, Nml.name, shortName));
+                    if (!userName.isEmpty()) {
+                        Resource resNA = RdfOwl.createResource(model, endpointUri+":username", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resNA, Mrs.type, "globus:username"));
+                        model.add(model.createStatement(resNA, Mrs.type, userName));
+                        model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
+                    }
+                    if (!defautDir.isEmpty()) {
+                        Resource resNA = RdfOwl.createResource(model, endpointUri+":directory", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resNA, Mrs.type, "globus:directory"));
+                        model.add(model.createStatement(resNA, Mrs.type, defautDir));
+                        model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
+                    }
+                    if (!dataInterface.isEmpty()) {
+                        Resource resNA = RdfOwl.createResource(model, endpointUri+":interface", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resNA, Mrs.type, "globus:interface"));
+                        model.add(model.createStatement(resNA, Mrs.type, dataInterface));
+                        model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
+                    }
+                } catch (ParseException e) {
+                    Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
+                            String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), globusJson, "globus:info"));
+                }
+            }
         }
 
         for (NetFloatingIP f : openstackget.getFloatingIp()) {

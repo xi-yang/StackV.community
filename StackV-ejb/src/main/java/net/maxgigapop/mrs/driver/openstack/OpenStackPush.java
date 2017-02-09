@@ -138,6 +138,7 @@ public class OpenStackPush {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
         requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
         requests.addAll(sriovRequests(modelRef, modelReduct, false));
@@ -164,6 +165,7 @@ public class OpenStackPush {
         requests.addAll(sriovRequests(modelRef, modelAdd, true));
         requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
+        requests.addAll(globusConnectRequests(modelRef, modelAdd, true));
 
         return requests;
     }
@@ -933,6 +935,17 @@ public class OpenStackPush {
                 if (status.equals("delete")) {
                     CephRbdDeletionCheck(servername, deviceId);
                 }
+            } else if (o.get("request").toString().equals("GlobusConnectRequest")) {
+                String servername = (String) o.get("server name");
+                String globusUser = (String) o.get("username");
+                String globusPass = (String) o.get("password");
+                String shortName = (String) o.get("shortname");
+                String defaultDir = (String) o.get("directory");
+                String dataInterface = (String) o.get("interface");
+                String endpointUri = (String) o.get("uri");
+                String status =  (String) o.get("status");
+                client.setMetadata(servername, "globus:info", String.format("{'user':'%s','password':'%s','shortname':'%s','directory':'%s','interface':'%s','status':'%s','uri':'%s'}", 
+                        globusUser, globusPass, shortName, defaultDir, dataInterface, status, endpointUri));
             } 
         }
     }
@@ -2474,6 +2487,67 @@ public class OpenStackPush {
         return requests;
     }
 
+    private List<JSONObject> globusConnectRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query = "SELECT ?vm ?ep ?shortname ?username ?password ?directory ?interface  WHERE {"
+                + "?vm nml:hasService ?ep. "
+                + "?ep a mrs:EndPoint. "
+                + "?ep nml:name ?shortname. "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naUsername. "
+                + "     ?naUsername mrs:type \"globus:username\"."
+                + "     ?naUsername mrs:value ?username. "
+                + "     ?ep mrs:hasNetworkAddress ?naPassword. "
+                + "     ?naPassword mrs:type \"globus:password\"."
+                + "     ?naPassword mrs:value ?password. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naDirecotry. "
+                + "     ?naDirecotry mrs:type \"globus:directory\". "
+                + "     ?naDirecotry mrs:value ?directory. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naInterface. "
+                + "     ?naInterface mrs:type \"globus:interface\". "
+                + "     ?naInterface mrs:value ?interface. } "
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject o = new JSONObject();
+            requests.add(o);
+            o.put("request", "GlobusConnectRequest");
+            if (creation == true) {
+                o.put("status", "create");
+            } else {
+                o.put("status", "delete");
+            }
+            String vmUri = q.getResource("vm").getURI();
+            String serverName = ResourceTool.getResourceName(vmUri, OpenstackPrefix.vm);
+            o.put("server name", serverName);
+            String shortName = q.get("shortname").toString();
+            o.put("shortname", shortName);
+            String userName = "";
+            if (q.contains("username")) {
+                userName = q.get("username").toString();
+            }
+            o.put("username", userName);
+            String userPass = "";
+            if (q.contains("password")) {
+                userPass = q.get("password").toString();
+            }
+            o.put("password", userPass);
+            String defaultDir = "";
+            if (q.contains("directory")) {
+                defaultDir = q.get("directory").toString();
+            }
+            o.put("directory", defaultDir);
+            String dataInterface = "";
+            if (q.contains("interface")) {
+                dataInterface = q.get("interface").toString();
+            }
+            o.put("interface", dataInterface);
+            String endpointUri = q.getResource("ep").getURI();
+            o.put("uri", endpointUri);
+        }
+        return requests;
+    }
+    
     /**
      * ****************************************************************
      * function that executes a query using a model addition/subtraction and a
