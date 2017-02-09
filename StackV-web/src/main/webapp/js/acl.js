@@ -93,7 +93,7 @@ function loadACLPortal() {
 
         evt.preventDefault();
     });
-    
+
     $("#acl-role-add").click(function (evt) {
         var subject = $("#acl-user").val();
         var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/roles';
@@ -227,6 +227,7 @@ function subloadRoleACLUserGroups() {
     var subject = $("#acl-user").val();
     var tbody = document.getElementById("group-body");
     tbody.innerHTML = "";
+    $("#acl-group-select option.hide").removeClass("hide");
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/groups';
     keycloak.updateToken(30).success(function () {
@@ -248,6 +249,9 @@ function subloadRoleACLUserGroups() {
 
                     row.appendChild(cell1_1);
                     tbody.appendChild(row);
+                    
+                    $("#acl-group-select option[value=" + group[0] + "]").addClass("hide");
+                    $("#acl-group-select").val(null);
                 }
 
                 $(".button-group-delete").click(function (evt) {
@@ -290,6 +294,7 @@ function subloadRoleACLUserRoles() {
     var subject = $("#acl-user").val();
     var tbody = document.getElementById("role-body");
     tbody.innerHTML = "";
+    $("#acl-role-select option.hide").removeClass("hide");
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/roles';
     keycloak.updateToken(30).success(function () {
@@ -307,10 +312,17 @@ function subloadRoleACLUserRoles() {
                     row.className = "acl-row";
 
                     var cell1_1 = document.createElement("td");
-                    cell1_1.innerHTML = role[1] + '<button data-roleid="' + role[0] + '" data-rolename="' + role[1] + '" class="button-role-delete btn btn-default pull-right">Remove</button>';
+                    if (role[2] === "assigned") {
+                        cell1_1.innerHTML = role[1] + '<button data-roleid="' + role[0] + '" data-rolename="' + role[1] + '" class="button-role-delete btn btn-default pull-right">Remove</button>';
+                    } else {
+                        cell1_1.innerHTML = role[1] + ' (delegated from ' + role[2] + ')';
+                    }
 
                     row.appendChild(cell1_1);
                     tbody.appendChild(row);
+                    
+                    $("#acl-role-select option[value=" + role[0] + "]").addClass("hide");
+                    $("#acl-role-select").val(null);
                 }
 
                 $(".button-role-delete").click(function (evt) {
