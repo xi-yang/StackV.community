@@ -34,17 +34,21 @@ function loadACLPortal() {
     subloadInstanceACLUsers();
 
     $(".left-tab").click(function (evt) {
-        if (!$("#acl-role-panel").hasClass("active")) {
-            $(".active").removeClass("active");
-            $("#acl-role-panel").addClass("active");
+        if (!$("#acl-role-panel").hasClass("opened")) {
+            $(".opened").removeClass("opened");
+            $("#acl-role-panel").addClass("opened");
+            $(".left-tab").animate({left: "-45px"}, 500);
+            $(".right-tab").animate({right: "0px"}, 500);
         }
 
         evt.preventDefault();
     });
     $(".right-tab").click(function (evt) {
-        if (!$("#acl-instance-panel").hasClass("active")) {
-            $(".active").removeClass("active");
-            $("#acl-instance-panel").addClass("active");
+        if (!$("#acl-instance-panel").hasClass("opened")) {
+            $(".opened").removeClass("opened");
+            $("#acl-instance-panel").addClass("opened");
+            $(".right-tab").animate({right: "-45px"}, 500);
+            $(".left-tab").animate({left: "0px"}, 500);
         }
 
         evt.preventDefault();
@@ -52,7 +56,7 @@ function loadACLPortal() {
 
     // Roles
     $("#acl-role-exit").click(function (evt) {
-        $("#acl-role-panel").removeClass("active");
+        $("#acl-role-panel").removeClass("opened");
 
         evt.preventDefault();
     });
@@ -65,6 +69,31 @@ function loadACLPortal() {
         evt.preventDefault();
     });
 
+    $("#acl-group-add").click(function (evt) {
+        var subject = $("#acl-user").val();
+        var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/groups';
+        keycloak.updateToken(30).success(function () {
+            $.ajax({
+                url: apiUrl,
+                type: 'POST',
+                data: '{"id":"' + $("#acl-group-select").val() + '","name":"' + $('#acl-group-select').children("option:selected").text() + '"}',
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                },
+                success: function () {
+                    subloadRoleACLUserGroups();
+                    subloadRoleACLUserRoles();
+                }
+            });
+        }).error(function () {
+            console.log("Fatal Error: Token update failed!");
+        });
+
+        evt.preventDefault();
+    });
+    
     $("#acl-role-add").click(function (evt) {
         var subject = $("#acl-user").val();
         var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/roles';
@@ -89,29 +118,6 @@ function loadACLPortal() {
         evt.preventDefault();
     });
 
-    $("#acl-group-add").click(function (evt) {
-        var subject = $("#acl-user").val();
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/group';
-        keycloak.updateToken(30).success(function () {
-            $.ajax({
-                url: apiUrl,
-                type: 'POST',
-                data: $("#acl-group-select").val(),
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                },
-                success: function () {
-                }
-            });
-        }).error(function () {
-            console.log("Fatal Error: Token update failed!");
-        });
-
-        evt.preventDefault();
-    });
-
     // Instances
     $("#acl-instance-close").click(function (evt) {
         $("#acl-instance-acl").addClass("closed");
@@ -122,7 +128,7 @@ function loadACLPortal() {
     });
 
     $("#acl-instance-exit").click(function (evt) {
-        $("#acl-instance-panel").removeClass("active");
+        $("#acl-instance-panel").removeClass("opened");
 
         evt.preventDefault();
     });
@@ -238,11 +244,39 @@ function subloadRoleACLUserGroups() {
                     row.className = "acl-row";
 
                     var cell1_1 = document.createElement("td");
-                    cell1_1.innerHTML = group;
+                    cell1_1.innerHTML = group[1] + '<button data-roleid="' + group[0] + '" data-rolename="' + group[1] + '" class="button-group-delete btn btn-default pull-right">Remove</button>';
 
                     row.appendChild(cell1_1);
                     tbody.appendChild(row);
                 }
+
+                $(".button-group-delete").click(function (evt) {
+                    var subject = $("#acl-user").val();
+
+                    var roleID = $(this).data("roleid");
+                    var roleName = $(this).data("rolename");
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/groups';
+                    keycloak.updateToken(30).success(function () {
+                        $.ajax({
+                            url: apiUrl,
+                            type: 'DELETE',
+                            data: '{"id":"' + roleID + '","name":"' + roleName + '"}',
+                            contentType: "application/json; charset=utf-8",
+                            dataType: "json",
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            },
+                            success: function (result) {
+                                subloadRoleACLUserGroups();
+                                subloadRoleACLUserRoles();
+                            }
+                        });
+                    }).error(function () {
+                        console.log("Fatal Error: Token update failed!");
+                    });
+
+                    evt.preventDefault();
+                });
 
                 $("#acl-role-group-div").removeClass("closed");
             }
@@ -273,28 +307,30 @@ function subloadRoleACLUserRoles() {
                     row.className = "acl-row";
 
                     var cell1_1 = document.createElement("td");
-                    cell1_1.innerHTML = role[1] + '<button data-roleID="' + role[0] + '" data-roleName="' + role[1] + '" class="button-roleacl-delete btn btn-default pull-right">Add</button>';
+                    cell1_1.innerHTML = role[1] + '<button data-roleid="' + role[0] + '" data-rolename="' + role[1] + '" class="button-role-delete btn btn-default pull-right">Remove</button>';
 
                     row.appendChild(cell1_1);
                     tbody.appendChild(row);
                 }
 
-                $(".button-roleacl-delete").click(function (evt) {
-                    var refUUID = $("#acl-instance").val();
+                $(".button-role-delete").click(function (evt) {
+                    var subject = $("#acl-user").val();
 
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject;
+                    var roleID = $(this).data("roleid");
+                    var roleName = $(this).data("rolename");
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/roles';
                     keycloak.updateToken(30).success(function () {
                         $.ajax({
                             url: apiUrl,
                             type: 'DELETE',
-                            data: '{"id":"' + $(this).data("roleID") + '","name":"' + $(this).data("roleName") + '"}',
+                            data: '{"id":"' + roleID + '","name":"' + roleName + '"}',
                             contentType: "application/json; charset=utf-8",
                             dataType: "json",
                             beforeSend: function (xhr) {
                                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             },
                             success: function (result) {
-                                subloadACLTable(refUUID);
+                                subloadRoleACLUserRoles();
                             }
                         });
                     }).error(function () {

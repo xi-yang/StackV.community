@@ -77,7 +77,7 @@
 
 
             </div>
-            <div class="acl-panel" id="acl-instance-panel">
+            <div class="acl-panel opened" id="acl-instance-panel">
                 <input type="hidden" id="acl-instance">
                 <table class="management-table" id="acl-instance-table">
                     <thead>

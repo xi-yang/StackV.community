@@ -40,7 +40,7 @@ div.left-tab{
 }
 div.right-tab{
     position: absolute;
-    right: 0;
+    right: -45px;
     height:90px;
     width:45px;
     border-radius: 90px 0 0 90px;
@@ -49,11 +49,15 @@ div.right-tab{
     background:#f7f7f7;     
 }
 
+#acl-row {
+    font-size: 1.25em;   
+}
+
 /* Role Panel */
 div#acl-role-panel {
     right: 100%;   
 }
-div#acl-role-panel.active {
+div#acl-role-panel.opened {
     right: 5%;
     overflow-y: scroll;
 }
@@ -72,6 +76,7 @@ div#acl-role-panel.active {
     padding-right: 5px;
     width: 45%;
     position: absolute;
+    top: 45%;
     right: 0;
 }
 
@@ -81,7 +86,6 @@ div#acl-role-panel.active {
     padding-right: 5px;
     width: 45%;
     position: absolute;
-    top: 45%;
     right: 0;
 }
 
@@ -94,7 +98,7 @@ div#acl-role-panel.active {
 div#acl-instance-panel {
     left: 100%;
 }
-div#acl-instance-panel.active {
+div#acl-instance-panel.opened {
     left: 5%;    
     overflow-y: scroll;
 }

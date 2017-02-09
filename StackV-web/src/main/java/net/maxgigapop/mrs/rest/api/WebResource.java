@@ -471,47 +471,6 @@ public class WebResource {
     }
 
     @GET
-    @Path("/keycloak/users/{user}/groups")
-    @Produces("application/json")
-    @RolesAllowed("Keycloak")
-    public ArrayList<String> getUserGroups(@PathParam("user") String subject) {
-        try {
-            ArrayList<String> retList = new ArrayList<>();
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/groups");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray groupArr = (JSONArray) obj;
-            for (Object group : groupArr) {
-                JSONObject groupJSON = (JSONObject) group;
-                retList.add((String) groupJSON.get("name"));
-            }
-
-            return retList;
-        } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
-            return null;
-        }
-    }
-
-    @GET
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
@@ -544,7 +503,7 @@ public class WebResource {
                 JSONObject role = (JSONObject) obj2;
                 roleList.add((String) role.get("id"));
                 roleList.add((String) role.get("name"));
-                
+
                 retList.add(roleList);
             }
             return retList;
@@ -582,13 +541,13 @@ public class WebResource {
                 out.write(roleArr.toString());
             }
 
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());            
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException e) {
             Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, e);
         }
     }
-        
+
     @DELETE
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
@@ -596,7 +555,7 @@ public class WebResource {
     public void removeUserRole(@PathParam("user") String subject, final String inputString) {
         try {
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID + "");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -616,13 +575,125 @@ public class WebResource {
                 out.write(roleArr.toString());
             }
 
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());            
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException e) {
             Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, e);
         }
     }
-    
+
+    @GET
+    @Path("/keycloak/users/{user}/groups")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<ArrayList<String>> getUserGroups(@PathParam("user") String subject) {
+        try {
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray roleArr = (JSONArray) obj;
+            for (Object obj2 : roleArr) {
+                ArrayList<String> roleList = new ArrayList<>();
+                JSONObject role = (JSONObject) obj2;
+                roleList.add((String) role.get("id"));
+                roleList.add((String) role.get("name"));
+
+                retList.add(roleList);
+            }
+            return retList;
+        } catch (IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    @POST
+    @Path("/keycloak/users/{user}/groups")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public void addUserGroup(@PathParam("user") String subject, final String inputString) {
+        try {
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+
+            // Construct array
+            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
+                Object obj = parser.parse(inputString);
+                final JSONObject inputJSON = (JSONObject) obj;
+                JSONArray roleArr = new JSONArray();
+                roleArr.add(inputJSON);
+
+                out.write(roleArr.toString());
+            }
+
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+        } catch (IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+        }
+    }
+
+    @DELETE
+    @Path("/keycloak/users/{user}/groups")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public void removeUserGroup(@PathParam("user") String subject, final String inputString) {
+        try {
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("DELETE");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+
+            // Construct array
+            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
+                Object obj = parser.parse(inputString);
+                final JSONObject inputJSON = (JSONObject) obj;
+                JSONArray roleArr = new JSONArray();
+                roleArr.add(inputJSON);
+
+                out.write(roleArr.toString());
+            }
+
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+        } catch (IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+        }
+    }
+
     @GET
     @Path("/keycloak/roles")
     @Produces("application/json")
