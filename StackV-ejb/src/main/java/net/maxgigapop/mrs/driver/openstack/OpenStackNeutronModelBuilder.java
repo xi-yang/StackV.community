@@ -458,8 +458,8 @@ public class OpenStackNeutronModelBuilder {
                     String defautDir = jsonObj.get("directory").toString();
                     String dataInterface = jsonObj.get("interface").toString();
                     String endpointUri = "";
-                    if (jsonObj.containsKey("uri")) {
-                        endpointUri = jsonObj.get("uri").toString();
+                    if (metadata.containsKey("globus:info:uri")) {
+                        endpointUri = metadata.get("globus:info:uri");
                     } else {
                         endpointUri = VM.getURI() + ":globus+" + shortName;
                     }

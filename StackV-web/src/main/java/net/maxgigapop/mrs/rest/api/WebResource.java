@@ -2038,6 +2038,14 @@ public class WebResource {
                         vmString += "& ";
                     }
 
+                    // Globus
+                    if (vmJSON.containsKey("globus_connect")) {
+                        JSONObject globusJSON = (JSONObject) vmJSON.get("globus_connect");
+                        vmString += "&" + globusJSON.toString();
+                    } else {
+                        vmString += "& ";
+                    }
+
                     // VM Routes
                     if (vmJSON.containsKey("routes")) {
                         JSONArray routeArr = (JSONArray) vmJSON.get("routes");

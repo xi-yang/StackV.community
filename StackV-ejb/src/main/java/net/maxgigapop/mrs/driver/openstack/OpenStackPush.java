@@ -944,8 +944,9 @@ public class OpenStackPush {
                 String dataInterface = (String) o.get("interface");
                 String endpointUri = (String) o.get("uri");
                 String status =  (String) o.get("status");
-                client.setMetadata(servername, "globus:info", String.format("{'user':'%s','password':'%s','shortname':'%s','directory':'%s','interface':'%s','status':'%s','uri':'%s'}", 
-                        globusUser, globusPass, shortName, defaultDir, dataInterface, status, endpointUri));
+                client.setMetadata(servername, "globus:info", String.format("{'user':'%s','password':'%s','shortname':'%s','directory':'%s','interface':'%s','status':'%s'}", 
+                        globusUser, globusPass, shortName, defaultDir, dataInterface, status));
+                client.setMetadata(servername, "globus:info:uri", endpointUri);
             } 
         }
     }

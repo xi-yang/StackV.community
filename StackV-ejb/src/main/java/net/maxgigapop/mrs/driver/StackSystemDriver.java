@@ -57,6 +57,7 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import org.json.simple.JSONObject;
@@ -259,6 +260,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
                 Resource stackTopo = RdfOwl.createResource(ontModel, stackTopologyUri, Nml.Topology);
                 for (RDFNode subRootTopo : listTopo) {
                     ontModel.add(ontModel.createStatement(stackTopo, Nml.hasTopology, subRootTopo));
+                    ontModel.add(ontModel.createStatement(stackTopo, Mrs.type, "aggregate"));
                 }
                 dm = new DriverModel();
                 dm.setCommitted(true);
