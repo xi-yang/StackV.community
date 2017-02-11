@@ -115,6 +115,9 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
   
         for (int i = 0; i < resourcesToRemove.size(); i++) {
             String resourceURI = (String) resourcesToRemove.get(i);
+            if (isTopLevelTopology(systemModel.getOntModel(), resourceURI) || isTopLevelService(systemModel.getOntModel(), resourceURI)) {
+                throw new UnsupportedOperationException("MCE_OperationalModelModification::Cannot delete top level service or topology from model. ");
+            }
             Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
             if (node != null) {
                 subModel.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));
@@ -135,5 +138,29 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
         
         return new AsyncResult(outputDelta);
     }   
+        
+    public boolean isTopLevelTopology(OntModel systemModel, String URI) {
+        String sparql = "SELECT ?resource WHERE {"   
+               + "{?resource a nml:Topology.} UNION {?resource a nml:Node.}" 
+               + "MINUS { {?parent nml:hasNode ?resource.} UNION {?parent nml:hasTopology ?resource.}}" 
+               + String.format("FILTER ( ?resource = <%s>)", URI)                
+               + "}";
+        
+        ResultSet r = ModelUtil.sparqlQuery(systemModel, sparql);
+        return r.hasNext();
+    }
+    
+    public boolean isTopLevelService(OntModel systemModel, String URI) {
+        String sparql = "SELECT ?resource WHERE {" 
+           + " {" 
+           +"  	{{?parent nml:hasService ?resource} UNION {?parent nml:providesService ?resouce.}}" 
+           +" 	MINUS {{?other nml:hasNode ?parent.} UNION {?other nml:hasTopology ?parent.}}" 
+           +"  }" 
+           + String.format("FILTER ( ?resource = <%s>)", URI)                
+           + "}";
+        
+        ResultSet r = ModelUtil.sparqlQuery(systemModel, sparql);
+        return r.hasNext();   
+    }
 }
  
