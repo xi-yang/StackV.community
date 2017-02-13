@@ -21,7 +21,7 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, loggedIn */
+/* global XDomainRequest, baseUrl, loggedIn, TweenLite */
 // Service JavaScript Library
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
@@ -128,8 +128,10 @@ $(function () {
     $(".nav-tabs li").click(function () {
         if ($(this).parent().parent().hasClass("closed")) {
             $("#catalog-panel").removeClass("closed");
+            TweenLite.to(".myClass", 2, {top:"-100px"});
         } else if (this.className === 'active') {
             $("#catalog-panel").toggleClass("closed");
+            TweenLite.to(".myClass", 2, {top:"0px"});
         }
     });
 
@@ -1194,8 +1196,7 @@ function loadCatalog() {
     loadEditor();
 
     setTimeout(function () {
-        $("#instance-panel").removeClass("closed");
-        $("#catalog-panel").removeClass("closed");
+        $("#instance-panel").removeClass("closed");        
     }, 500);
 }
 

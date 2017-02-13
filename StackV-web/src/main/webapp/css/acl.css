@@ -1,7 +1,7 @@
 div.acl-panel {
     position: absolute;
-    top: 62px;
-    height: calc(100% - 62px);
+    top: 0px;
+    height: 90%;
     width: 90%;
     overflow: hidden;
     padding: 5px 5px;
@@ -56,28 +56,18 @@ div.right-tab{
 /* Role Panel */
 div#acl-role-panel {
     right: 100%;   
+    overflow: hidden;
 }
 div#acl-role-panel.opened {
     right: 5%;
-    overflow-y: scroll;
 }
 
 #acl-role-user-div {
     overflow: scroll;
-    height: 90%;
+    height: 100%;
     padding-right: 5px;
     width: 45%;
     position: absolute;
-}
-
-#acl-role-role-div {
-    overflow: scroll;
-    height: 45%;
-    padding-right: 5px;
-    width: 45%;
-    position: absolute;
-    top: 45%;
-    right: 0;
 }
 
 #acl-role-group-div {
@@ -89,6 +79,16 @@ div#acl-role-panel.opened {
     right: 0;
 }
 
+#acl-role-role-div {
+    overflow: scroll;
+    height: 45%;
+    padding-right: 5px;
+    width: 45%;
+    position: absolute;
+    top: 55%;
+    right: 0;
+}
+
 #acl-role-role-div.closed, #acl-role-group-div.closed {
     right: 100%;
 }
@@ -97,10 +97,10 @@ div#acl-role-panel.opened {
 /* Instance Panel */
 div#acl-instance-panel {
     left: 100%;
+    overflow: hidden;
 }
 div#acl-instance-panel.opened {
-    left: 5%;    
-    overflow-y: scroll;
+    left: 5%;        
 }
 
 #acl-instance-table {

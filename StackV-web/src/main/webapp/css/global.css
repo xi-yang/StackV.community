@@ -81,6 +81,7 @@ div#main-pane {
     width: 100%;
     padding: 30px;
     overflow-x: hidden;
+    top: 20px;
 
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
