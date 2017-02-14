@@ -19,7 +19,6 @@
                        user="root"  password="root"/>
 
     <body>
-        <!-- NAV BAR -->
         <div id="nav">
         </div>
         <!-- MAIN PANEL -->
