@@ -24,6 +24,9 @@
 /* global XDomainRequest, baseUrl, keycloak */
 var animating = false;
 
+var tweenInstancePanel = new TweenLite("#acl-instance-panel", 1, {paused:true, left:"5%"});
+var tweenInstanceACLPanel = new TweenLite("#acl-instance-panel", 1, {paused:true, bottom:"0"});
+
 // ACL Load
 function loadACLPortal() {
     subloadRoleACLUsers();
@@ -403,7 +406,7 @@ function subloadInstanceACLInstances() {
                     }
                 });
 
-                $("#acl-instance-panel").removeClass("closed");
+                tweenInstancePanel.resume();
             }
         });
     }).error(function () {
@@ -560,7 +563,7 @@ function reloadACL(refUUID) {
                 }
 
                 animating = false;
-                $("#acl-instance-acl").removeClass("closed");
+                
             }
         });
     }).error(function () {

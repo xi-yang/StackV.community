@@ -128,10 +128,11 @@ $(function () {
     $(".nav-tabs li").click(function () {
         if ($(this).parent().parent().hasClass("closed")) {
             $("#catalog-panel").removeClass("closed");
-            TweenLite.to(".myClass", 2, {top:"-100px"});
+                var panel = document.getElementById("instance-panel");
+            TweenLite.to(panel, .5, {top: "-200px"});
         } else if (this.className === 'active') {
             $("#catalog-panel").toggleClass("closed");
-            TweenLite.to(".myClass", 2, {top:"0px"});
+            TweenLite.to("#instance-panel", .5, {top: "30px"});
         }
     });
 
@@ -1196,7 +1197,7 @@ function loadCatalog() {
     loadEditor();
 
     setTimeout(function () {
-        $("#instance-panel").removeClass("closed");        
+        $("#instance-panel").removeClass("closed");
     }, 500);
 }
 

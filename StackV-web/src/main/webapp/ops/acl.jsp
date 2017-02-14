@@ -89,9 +89,9 @@
                     </thead>
                     <tbody id="instance-body">
                     </tbody>
-                </table>
-                <div class="closed" id="acl-instance-acl">                                        
-                    <div class="acl-div">
+                </table>                
+                <div id="acl-instance-acl">  
+                    <div id="acl-instance-acl-existing">
                         <table class="management-table">
                             <colgroup>
                                 <col span="1" style="width: 35%;"/>
@@ -111,7 +111,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="acl-div">
+                    <div id="acl-instance-acl-new">
                         <table class="management-table">
                             <colgroup>
                                 <col span="1" style="width: 35%;"/>
@@ -119,6 +119,14 @@
                                 <col span="1" style="width: 20%;"/>
                                 <col span="1" style="width: 10%;"/>
                             </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
                             <tbody id="users-body">                           
                             </tbody>
                         </table>
