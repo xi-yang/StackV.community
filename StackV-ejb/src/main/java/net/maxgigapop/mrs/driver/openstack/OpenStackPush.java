@@ -764,6 +764,7 @@ public class OpenStackPush {
                     }
                     JSONArray routes = new JSONArray();
                     int routeNum = 0;
+                    JSONObject defaultRoute = null;
                     while (o2.containsKey(String.format("routeto %d", routeNum)) && o2.containsKey(String.format("nexthop %d", routeNum))) {
                         JSONObject route = new JSONObject();
                         String routeTo = o2.get(String.format("routeto %d", routeNum)).toString();
@@ -771,7 +772,15 @@ public class OpenStackPush {
                         route.put("to", routeTo);
                         route.put("via", nextHop);
                         routes.add(route);
+                        if (routeTo.equals("default") || routeTo.equals("0.0.0.0/0")) {
+                            defaultRoute = route;
+                        }
                         routeNum++;
+                    }
+                    // make sure default route is handled last 
+                    if (defaultRoute != null) { 
+                        routes.remove(defaultRoute);
+                        routes.add(defaultRoute);
                     }
                     // add routes even is empty
                     metaObj.put("routes", routes);
