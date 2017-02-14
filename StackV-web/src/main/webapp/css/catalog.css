@@ -66,6 +66,12 @@ div#instance-panel, div#catalog-panel {
   -ms-transition: all .75s ease-in;
   transition: all .5s ease;
 }
+
+/*Make content within tab scrollable*/
+div.tab-content {
+  overflow-y: auto;
+}
+
 div#catalog-panel {
   padding: 10px 10px 0 10px;
   bottom: 0;
@@ -99,4 +105,16 @@ div#catalog-tab-content {
   height: calc(100% - 32px);
   border-right: 1px solid white;
   border-left: 1px solid white;
+}
+
+/*Don't show these buttons on open - only trigger when click on save as*/
+div.info-panel-save-as-description {
+  display: none;
+}
+div#profile-modal div.info-panel-save-as-description input {
+  font-weight: 400;
+}
+div#profile-modal textarea#info-panel-text-area {
+  width: 100%;
+  min-height: 600px;
 }

@@ -854,11 +854,13 @@ function validateVCN() {
 
     // Stage 7
     if ($("input[name='profile-save']").is(':checked')) {
-        if ($("input[name='profile-name']").val() === "") {
+        var id = type.split(" ")[1];
+
+        if ($("input#profile-name-"+id).val() === "") {
             invalidArr.push("Profiles require a name in order to be saved.\n");
 
             $("#progressbar li").eq(6).addClass("invalid");
-            $("input[name='profile-name']").addClass("invalid");
+            $("input#profile-name-"+id).addClass("invalid");
         }
     }
 

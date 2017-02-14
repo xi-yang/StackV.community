@@ -1,14 +1,20 @@
 -- phpMyAdmin SQL Dump
--- version 4.4.1.1
+-- version 4.6.1
 -- http://www.phpmyadmin.net
 --
--- Host: localhost:3306
--- Generation Time: Nov 30, 2016 at 04:03 PM
--- Server version: 5.5.42
--- PHP Version: 5.6.7
+-- Host: localhost
+-- Generation Time: Feb 03, 2017 at 04:00 PM
+-- Server version: 5.5.27
+-- PHP Version: 5.5.36
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
 
 --
 -- Database: `frontend`
@@ -29,8 +35,13 @@ CREATE TABLE `acl` (
   `subject` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `is_group` tinyint(1) NOT NULL DEFAULT '0',
   `object` varchar(45) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `acl`
+--
+
+TRUNCATE TABLE `acl`;
 --
 -- Dumping data for table `acl`
 --
@@ -52,6 +63,11 @@ CREATE TABLE `label` (
   `color` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `label`
+--
+
+TRUNCATE TABLE `label`;
 --
 -- Dumping data for table `label`
 --
@@ -77,8 +93,13 @@ CREATE TABLE `service` (
   `filename` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(140) COLLATE utf8_unicode_ci NOT NULL,
   `atomic` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service`
+--
+
+TRUNCATE TABLE `service`;
 --
 -- Dumping data for table `service`
 --
@@ -112,6 +133,11 @@ CREATE TABLE `service_delta` (
   `delta` longtext COLLATE utf8_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_delta`
+--
+
+TRUNCATE TABLE `service_delta`;
 -- --------------------------------------------------------
 
 --
@@ -123,8 +149,13 @@ CREATE TABLE `service_history` (
   `service_history_id` int(11) NOT NULL,
   `service_instance_id` int(11) NOT NULL,
   `service_state_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_history`
+--
+
+TRUNCATE TABLE `service_history`;
 --
 -- Dumping data for table `service_history`
 --
@@ -147,15 +178,13 @@ CREATE TABLE `service_instance` (
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `alias_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `service_state_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
--- Dumping data for table `service_instance`
+-- Truncate table before insert `service_instance`
 --
 
-INSERT INTO `service_instance` (`service_instance_id`, `service_id`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `service_state_id`) VALUES
-(1, 13, 'admin', '2016-11-11 09:40:46', '8a3b095c-bef6-4f5b-a2be-000413f852d3', 'hybrid-full-1a', 1);
-
+TRUNCATE TABLE `service_instance`;
 -- --------------------------------------------------------
 
 --
@@ -166,8 +195,13 @@ DROP TABLE IF EXISTS `service_state`;
 CREATE TABLE `service_state` (
   `service_state_id` int(11) NOT NULL COMMENT '	',
   `super_state` varchar(45) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_state`
+--
+
+TRUNCATE TABLE `service_state`;
 --
 -- Dumping data for table `service_state`
 --
@@ -201,6 +235,11 @@ CREATE TABLE `service_verification` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
+-- Truncate table before insert `service_verification`
+--
+
+TRUNCATE TABLE `service_verification`;
+--
 -- Dumping data for table `service_verification`
 --
 
@@ -222,8 +261,13 @@ CREATE TABLE `service_wizard` (
   `wizard_json` longtext COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `editable` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_wizard`
+--
+
+TRUNCATE TABLE `service_wizard`;
 --
 -- Dumping data for table `service_wizard`
 --
@@ -308,12 +352,12 @@ ALTER TABLE `service_wizard`
 -- AUTO_INCREMENT for table `acl`
 --
 ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 --
 -- AUTO_INCREMENT for table `service`
 --
 ALTER TABLE `service`
-  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=14;
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 --
 -- AUTO_INCREMENT for table `service_delta`
 --
@@ -323,22 +367,22 @@ ALTER TABLE `service_delta`
 -- AUTO_INCREMENT for table `service_history`
 --
 ALTER TABLE `service_history`
-  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
+  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 --
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 --
 -- AUTO_INCREMENT for table `service_state`
 --
 ALTER TABLE `service_state`
-  MODIFY `service_state_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '	',AUTO_INCREMENT=6;
+  MODIFY `service_state_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '	', AUTO_INCREMENT=6;
 --
 -- AUTO_INCREMENT for table `service_wizard`
 --
 ALTER TABLE `service_wizard`
-  MODIFY `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=11;
+  MODIFY `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 --
 -- Constraints for dumped tables
 --
@@ -349,29 +393,13 @@ ALTER TABLE `service_wizard`
 ALTER TABLE `service_delta`
   ADD CONSTRAINT `service_delta-service_history` FOREIGN KEY (`service_history_id`) REFERENCES `service_history` (`service_history_id`) ON DELETE CASCADE ON UPDATE NO ACTION,
   ADD CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+--
+-- Database: `login`
+--
+DROP DATABASE `login`;
+CREATE DATABASE IF NOT EXISTS `login` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+USE `login`;
 
---
--- Constraints for table `service_history`
---
-ALTER TABLE `service_history`
-  ADD CONSTRAINT `service_history-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION,
-  ADD CONSTRAINT `service_history-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
---
--- Constraints for table `service_instance`
---
-ALTER TABLE `service_instance`
-  ADD CONSTRAINT `service_instance-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  ADD CONSTRAINT `service_instance-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
---
--- Constraints for table `service_verification`
---
-ALTER TABLE `service_verification`
-  ADD CONSTRAINT `service_verification-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
---
--- Constraints for table `service_wizard`
---
-ALTER TABLE `service_wizard`
-  ADD CONSTRAINT `service_wizard-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

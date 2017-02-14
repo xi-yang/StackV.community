@@ -205,8 +205,8 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
             String creationTime = null;
             String version = null;
             String jsonModel = null;
+            VersionItem headVI = driverInstance.getHeadVersionItem();
             try {
-                VersionItem headVI = driverInstance.getHeadVersionItem();
                 if (headVI != null) {
                     URL url = new URL(subsystemBaseUrl + "/model/" + headVI.getReferenceUUID());
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -224,10 +224,23 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
                         throw new EJBException(String.format("%s pulled model from subsystem with null/empty version", driverInstance));
                     }
                     jsonModel = responseJSON.get("ttlModel").toString();
+                } 
+            } catch (IOException ex) {
+                if (ex.toString().contains("response code: 500")) {
+                    headVI = null;
                 } else {
+                    throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
+                }
+            } catch (org.json.simple.parser.ParseException ex) {
+                throw new EJBException(String.format("%s failed to parse pulled model in JSON format with exception (%s)", driverInstance, ex));
+            } catch (java.text.ParseException ex) {
+                throw new EJBException(String.format("%s failed to parse version datetime (%s)", driverInstance, creationTime));
+            }
+            try {
+                if (headVI == null) {
                     // pull model from REST API
                     URL url = new URL(subsystemBaseUrl + "/model");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     String responseStr = this.executeHttpMethod(url, conn, "GET", null);
                     JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(responseStr);
                     creationTime = responseJSON.get("creationTime").toString();
@@ -237,12 +250,8 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
                     }
                     jsonModel = responseJSON.get("ttlModel").toString();
                 }
-            } catch (IOException ex) {
-                throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
-            } catch (org.json.simple.parser.ParseException ex) {
-                throw new EJBException(String.format("%s failed to parse pulled model in JSON format with exception (%s)", driverInstance, ex));
-            } catch (java.text.ParseException ex) {
-                throw new EJBException(String.format("%s failed to parse version datetime (%s)", driverInstance, creationTime));
+            } catch (Exception ex) {
+                throw new EJBException(String.format("%s failed to pull model from '%s'", driverInstance, subsystemBaseUrl), ex);
             }
             VersionItem vi = null;
             DriverModel dm = null;

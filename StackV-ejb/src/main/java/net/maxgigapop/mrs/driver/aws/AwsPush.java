@@ -490,6 +490,9 @@ public class AwsPush {
                         ;
                     }
                 }
+                if (mainTable == null) {
+                    throw new EJBException(String.format("AwsPush failed for CreateVpcRequest (%s) - null main routing table ", parameters[3])); 
+                }
                 ec2Client.getRoutingTables().add(mainTable);
                 //create the tag for the vpc
                 ec2Client.tagResource(vpcId, parameters[2]);

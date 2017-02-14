@@ -50,14 +50,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.net.ssl.HttpsURLConnection;
-import javax.ws.rs.core.HttpHeaders;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.token.TokenManager;
-import org.keycloak.representations.idm.RealmRepresentation;
 
 public class serviceBeans {
 
@@ -1613,6 +1609,8 @@ public class serviceBeans {
                 responseStr.append(inputLine);
             }
         }
+        logger.log(Level.INFO, "Response: {0}", responseStr.substring(0, Math.min(responseStr.length(), 10)) + "...");
+
         return responseStr.toString();
     }
 
@@ -1861,6 +1859,21 @@ public class serviceBeans {
 
             verifyInstance(refUuid, result, refresh);
         } catch (EJBException | IOException | InterruptedException | SQLException e) {
+            try {
+                Connection front_conn;
+                Properties front_connectionProps = new Properties();
+                front_connectionProps.put("user", front_db_user);
+                front_connectionProps.put("password", front_db_pass);
+                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                        front_connectionProps);
+                PreparedStatement prep;
+                prep = front_conn.prepareStatement("UPDATE service_verification V INNER JOIN service_instance I SET V.verification_state = '-1' WHERE V.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
+                prep.setString(1, refUuid);
+                prep.executeUpdate();
+            } catch (SQLException ex) {
+                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
             System.out.println("ERROR: " + e.getMessage() + " - " + e.getStackTrace());
             //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, e);
         }
@@ -1927,13 +1940,14 @@ public class serviceBeans {
                 front_connectionProps);
         PreparedStatement prep;
 
-        System.out.println("Verifying Delta for service" + refUuid);
+        System.out.println("Verifying Delta for service: " + refUuid);
 
-        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = NULL, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");        
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
 
         for (int i = 1; i <= 5; i++) {
+            System.out.println("Verification Run " + i + "/5: " + refUuid);
             String auth = refreshToken(refresh);
 
             boolean redVerified = true, addVerified = true;
@@ -1977,6 +1991,7 @@ public class serviceBeans {
                 prep.setInt(1, instanceID);
                 prep.executeUpdate();
 
+                System.out.println("Verification Success: " + refUuid);
                 return true;
             }
 
@@ -1991,6 +2006,7 @@ public class serviceBeans {
         prep.setInt(1, instanceID);
         prep.executeUpdate();
 
+        System.out.println("Verification Failure: " + refUuid);
         return false;
     }
 
@@ -2011,7 +2027,7 @@ public class serviceBeans {
             conn.setDoInput(true);
             conn.setDoOutput(true);
 
-            System.out.println("Init Refresh: " + refresh.substring(0, Math.min(refresh.length(), 10)) + "...");
+            System.out.println("Init Refresh: " + "..." + refresh.substring(Math.max(refresh.length() - 10, 0)));
             //System.out.println("Init Refresh: " + refresh);
             String data = "grant_type=refresh_token&refresh_token=" + refresh;
 
@@ -2037,6 +2053,8 @@ public class serviceBeans {
             JSONParser parser = new JSONParser();
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
+
+            System.out.println("Refresh complete.");
 
             return "bearer " + (String) result.get("access_token");
         } catch (ParseException | IOException ex) {
