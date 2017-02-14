@@ -69,10 +69,12 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             throw new EJBException(String.format("VersionGroupPersistenceManager::refreshToHead canont find driverInstance in the system"));
         }
         vg = findByReferenceId(vg.getRefUuid());
+        List<VersionItem> listVI = new ArrayList();
+        listVI.addAll(vg.getVersionItems());
         vg.getVersionItems().clear();
         boolean needToUpdate = false;
         List<DriverInstance> listDI = new ArrayList<>();
-        for (VersionItem vi : vg.getVersionItems()) {
+        for (VersionItem vi : listVI) {
             DriverInstance di = vi.getDriverInstance();
             if (di != null) {
                 if (listDI.contains(di)) {
@@ -103,13 +105,16 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                         vg.addVersionItem(newVi);
                     }
                 }
+                needToUpdate = true;
             }
+        }
+        if (needToUpdate) {
+            vg.setUpdateTime(new java.util.Date());
         }
         if (!doUpdatePersist) {
             return vg;
         }
         if (needToUpdate) {
-            vg.setUpdateTime(new java.util.Date());
             VersionGroupPersistenceManager.save(vg);
         }
         return vg;
