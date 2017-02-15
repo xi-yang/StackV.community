@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.common.*;
 
 /**
@@ -173,6 +174,22 @@ public class ModelUtil {
         return true;
     }
 
+    static public Model getOddModel(Model model) {
+        Model odd = ModelFactory.createDefaultModel();
+        if (model == null) {
+            return odd;
+        }
+        StmtIterator stmts = model.listStatements();
+        while (stmts.hasNext()) {
+            Statement stmt = stmts.next();
+            // check subject will be enough
+            if (stmt.getSubject().isResource() && stmt.getPredicate().toString().contains("ogf")) {
+                odd.add(stmt);
+            }
+        }
+        return odd;
+    }
+    
     static public OntModel newMrsOntModel(String topoUri) {
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         String ttl = String.format("@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n"
@@ -284,7 +301,7 @@ public class ModelUtil {
         return ontModel;
     }
 
-    static public Map<String, OntModel> splitOntModelByTopology(OntModel model) {
+    static public Map<String, OntModel> splitOntModelByTopology(OntModel model, DeltaBase delta) {
         Map<String, OntModel> topoModelMap = new HashMap<String, OntModel>();
         List<RDFNode> listTopo = getTopologyList(model);
         if (listTopo == null) {
@@ -301,9 +318,34 @@ public class ModelUtil {
         //verify full decomposition (no nml: mrs: namespace objects left, otherwise thrown exception)
         if (!isEmptyModel(model.getBaseModel())) {
             StringWriter writer1 = new StringWriter();
-            model.getBaseModel().write(writer1, "TURTLE");
-            logger.info("Non empty model after splitOntModelByTopology: " + writer1.getBuffer().toString());
-            throw new EJBException("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects in " + model);
+            if (delta != null) {
+                // with delta present, ignore statements which is not in delta
+                // throw exception if having odd statement that is also in delta
+                if (delta.getModelAddition() != null && delta.getModelAddition().getOntModel() != null) {
+                    Model odd = getOddModel(model);
+                    if (!odd.isEmpty()) {
+                        odd = delta.getModelAddition().getOntModel().intersection(odd);
+                    }
+                    if (!odd.isEmpty()) {
+                        odd.write(writer1, "TURTLE");  
+                    }
+                }
+                if (delta.getModelReduction() != null && delta.getModelReduction().getOntModel() != null ){
+                    Model odd = getOddModel(model);
+                    if (!odd.isEmpty()) {
+                        odd = delta.getModelReduction().getOntModel().intersection(odd);
+                    }
+                    if (!odd.isEmpty()) {
+                        odd.write(writer1, "TURTLE");  
+                    }
+                }
+            } else {
+                model.getBaseModel().write(writer1, "TURTLE");                
+            }
+            if (!writer1.getBuffer().toString().isEmpty()) {
+                logger.info("Non empty model after splitOntModelByTopology: " + writer1.getBuffer().toString());
+                throw new EJBException("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects - " + (delta == null ? "" : delta));
+            }
         }
         return topoModelMap;
     }

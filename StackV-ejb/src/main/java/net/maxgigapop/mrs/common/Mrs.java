@@ -226,4 +226,5 @@ public class Mrs {
 
     public static final Resource Volume = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#Volume");
 
+    public static final Resource EndPoint = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#EndPoint");
 }
