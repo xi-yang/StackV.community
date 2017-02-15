@@ -1828,6 +1828,7 @@ public class WebResource {
                     return "Deletion Complete.\r\n";
 
                 case "verify":
+                case "reverify":
                     servBean.verify(refUuid, refresh);
 
                     endTime = System.currentTimeMillis();
@@ -1838,7 +1839,7 @@ public class WebResource {
                     return "Verification Complete.\r\n";
 
                 default:
-                    return "Error! Invalid Action.\r\n";
+                    System.out.println("Error! Invalid Action: " + action);
             }
 
             endTime = System.currentTimeMillis();
