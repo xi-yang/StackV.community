@@ -23,8 +23,6 @@
  */
 package net.maxgigapop.mrs.driver.openstack;
 
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.ec2.model.Instance;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.ResultSet;
@@ -32,7 +30,6 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,21 +38,16 @@ import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
-import static net.maxgigapop.mrs.common.Mrs.hasNetworkAddress;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
-import net.maxgigapop.mrs.service.compute.MCE_NfvBgpRouting;
-import org.apache.commons.net.util.SubnetUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.openstack4j.api.OSClient;
-import org.openstack4j.api.networking.RouterService;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ext.Hypervisor;
-import org.openstack4j.model.network.AllowedAddressPair;
 import org.openstack4j.model.network.HostRoute;
 import org.openstack4j.model.network.IP;
 import org.openstack4j.model.network.NetFloatingIP;
@@ -63,12 +55,8 @@ import org.openstack4j.model.network.Network;
 import org.openstack4j.model.network.Pool;
 import org.openstack4j.model.network.Port;
 import org.openstack4j.model.network.Router;
-import org.openstack4j.model.network.RouterInterface;
 import org.openstack4j.model.network.Subnet;
 import org.openstack4j.model.storage.block.Volume;
-import org.openstack4j.openstack.compute.domain.NovaFloatingIP;
-import org.openstack4j.openstack.networking.domain.AddRouterInterfaceAction;
-import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 
 /**
  *
@@ -159,13 +147,19 @@ public class OpenStackNeutronModelBuilder {
         model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
 
         for (Hypervisor hv : openstackget.getHypervisors()) {
-            //@TODO: hypervisor to host mapping by naming convention or configuration
             String hypervisorName = hv.getHypervisorHostname(); 
             String hostName = hypervisorName.split("\\.")[0]; 
             Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostName, Nml.Node);
             Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorName, Mrs.HypervisorService);
             model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
             model.add(model.createStatement(HOST, hasService, HYPERVISOR));
+            // hypervisor / host available resources 
+            model.add(model.createStatement(HOST, Mrs.num_core, Integer.toString(hv.getVirtualCPU())));
+            model.add(model.createStatement(HOST, Mrs.memory_mb, Integer.toString(hv.getLocalMemory())));
+            model.add(model.createStatement(HOST, Mrs.disk_gb, Integer.toString(hv.getLocalDisk())));
+            model.add(model.createStatement(HYPERVISOR, Mrs.num_core, Integer.toString(hv.getVirtualUsedCPU())));
+            model.add(model.createStatement(HYPERVISOR, Mrs.memory_mb, Integer.toString(hv.getLocalMemoryUsed())));
+            model.add(model.createStatement(HYPERVISOR, Mrs.disk_gb, Integer.toString(hv.getLocalDiskUsed())));
         }
         
         for (Port p : openstackget.getPorts()) {
@@ -213,7 +207,10 @@ public class OpenStackNeutronModelBuilder {
             model.add(model.createStatement(VM, type, "image+" + imageid));
             model.add(model.createStatement(VM, type, "flavor+" + flavorid));
             model.add(model.createStatement(VM, type, "keypair+" + keypair));
-
+            model.add(model.createStatement(VM, Mrs.num_core, Integer.toString(server.getFlavor().getVcpus())));
+            model.add(model.createStatement(VM, Mrs.memory_mb, Integer.toString(server.getFlavor().getRam())));
+            model.add(model.createStatement(VM, Mrs.disk_gb, Integer.toString(server.getFlavor().getDisk())));
+            
             for (Port port : openstackget.getServerPorts(server)) {
                 String PortName = openstackget.getResourceName(port);
                 Resource Port = RdfOwl.createResource(model, ResourceTool.getResourceUri(PortName, OpenstackPrefix.PORT, PortName), biPort);

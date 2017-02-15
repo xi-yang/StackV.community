@@ -725,6 +725,11 @@ public class OpenStackPush {
                 String floatip = o.get("floating ip").toString();
                 Server s = client.getServer(servername);
                 Port p = client.getPort(portname);
+                //@TODO: check if floating ip is already associated with other VM/port
+                NetFloatingIP fipObj = client.findFloatingIp(floatip);
+                if (fipObj == null || fipObj.getFixedIpAddress() != null) {
+                    throw new EJBException("floating IP does not exist or has been associated with other instance / port: " + floatip);                    
+                }
                 ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, ((IP)p.getFixedIps().toArray()[0]).getIpAddress(), floatip);
             } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
@@ -1505,6 +1510,25 @@ public class OpenStackPush {
             JSONObject o = new JSONObject();
 
             if (creation == true) {
+                // check if floating ip already exists in modelRef
+                String query2 = "SELECT ?node ?port WHERE {"
+                        + "?node nml:hasBidirectionalPort ?port ."
+                        + "?node a nml:Node. "
+                        + "?port mrs:hasNetworkAddress ?addr. "
+                        + "?addr mrs:type \"floating-ip\". "
+                        + String.format("?addr mrs:value \"%s\". ", floatingIp)
+                        + "}";
+                ResultSet r2 = executeQuery(query2, emptyModel, modelRef);
+                if (r2.hasNext()) {
+                    q = r2.next();
+                    server = q.get("node");
+                    port = q.get("port");
+                    servername = server.asResource().toString();
+                    serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
+                    portname = port.asResource().toString();
+                    portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
+                    throw new EJBException(String.format("floating IP '%s' is in use by server '%s' port '%s'", floatingIp, serverName, portName));
+                }
                 o.put("request", "AssociateFloatingIpRequest");
                 o.put("server name", serverName);
                 o.put("port name", portName);
