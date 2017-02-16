@@ -289,7 +289,54 @@ public class serviceBeans {
 
     }
     */
+    
+    public String cleanJSON(JSONObject JSONinput){
+        String retval = JSONinput.toString();
+        
+        return retval;
+    }
+    
     public int createDNC(JSONObject JSONinput, String auth, String refresh) {
+        
+        String JSONstring = cleanJSON(JSONinput);
+        
+        String deltaUUID = UUID.randomUUID().toString();
+
+        String delta = "<serviceDelta>\n<uuid>" + deltaUUID
+                + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
+                + "\n\n<modelAddition>\n"
+                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
+                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
+
+        for (String linkName : linkUri) {
+            delta += "&lt;" + linkName + "&gt;\n"
+                    + "      a            mrs:SwitchingSubnet ;\n"
+                    + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
+        }
+
+        delta += "&lt;urn:ogf:network:openstack.com:openstack-cloud:vlan&gt;\n"
+                + "a mrs:SwitchingSubnet; spa:type spa:Abstraction;\n"
+                + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt; .\n\n";
+
+        delta += "&lt;x-policy-annotation:action:create-path&gt;\n"
+                + "    a            spa:PolicyAction ;\n"
+                + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
+                + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
+                + "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"
+                + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
+                + "    a            spa:PolicyData;\n"
+                + "    spa:type     \"JSON\";\n"
+                + "    spa:value    \"\"\"" + JSONstring
+                + "    \"\"\".\n\n&lt;x-policy-annotation:data:conn-criteriaexport&gt;\n"
+                + "    a            spa:PolicyData;\n"
+                + "    spa:type     \"JSON\" .\n\n"
+                + "</modelAddition>\n\n"
+                + "</serviceDelta>";
         
         return 1;
     }

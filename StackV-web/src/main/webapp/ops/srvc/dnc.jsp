@@ -25,7 +25,7 @@
                 <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
                     <div>
                         Dynamic Network Connection:
-                        <input type="text" placeholder="Service Name" id="service-name">
+                        <input type="text" placeholder="Service Alias" id="service-name">
                     </div>                    
                     <div>
                         Description:
@@ -40,7 +40,7 @@
                                     <td>Link 1</td>
                                     <td style="width: 600px; text-align: center;">
                                         <div>
-                                            <input type="text" id="linkUri1" placeholder="Link-URI">
+                                            <input type="text" id="linkUri1" placeholder="Link-Name">
                                             <input type="text" id="linksrc1" placeholder="Source">
                                             <input type="text" id="linksrc-vlan1" placeholder="Vlan-tag">
                                             <input type="text" id="linkdes1" placeholder="Destination">

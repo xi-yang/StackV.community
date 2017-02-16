@@ -47,7 +47,7 @@ function addLink(){
     input[3].id = "linkdes" + linknum;
     input[4].id = "linkdes-vlan" + linknum;
     
-    input[0].placeholder="Link-URI";
+    input[0].placeholder="Link-Name";
     input[1].placeholder="Source";
     input[2].placeholder="Vlan-tag";
     input[3].placeholder="Destination";
@@ -68,14 +68,12 @@ function addLink(){
 function save(){
     var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
     var innerData = {
-        //userID might be keycloak.subject
         userID: sessionStorage.getItem("username"),
         type: "dnc",
         alias: $('#service-name').val(),
         data: generateJSON()
     };
     var sentData = {
-        //name might be wrong
         name: $('#service-name').val(),
         description: $("#new-profile-description").val(),
         data: JSON.stringify(innerData)
@@ -101,25 +99,26 @@ function generateJSON(){
     
     for (var i = 1; i <= linknum; i++){
         var terminals = [];
-        var src = "linksrc" + i;
-        var src_vlan = "linksrc-vlan" + i;
-        var des ="linkdes" + i;
-        var des_vlan ="linkdes-vlan" + i;
+        var src = document.getElementById("linksrc" + i).value;
+        var src_vlan = document.getElementById("linksrc-vlan" + i).value;
+        var des = document.getElementById("linkdes" + i).value;
+        var des_vlan = document.getElementById("linkdes-vlan" + i).value;
+        
         var source = {
-            uri: document.getElementById(src).value,
-            vlan_tag: document.getElementById(src_vlan).value
+            uri: src,
+            vlan_tag: src_vlan
         };
         
         var destination = {
-            uri: document.getElementById(des).value,
-            vlan_tag: document.getElementById(des_vlan).value
+            uri: des,
+            vlan_tag: des_vlan
         };
         
         terminals[0] = source;
         terminals[1] = destination;
         
         var data = {
-            name: $('#service-name').val() + "-path-" + linknum,
+            name: "link " + document.getElementById("linkUri" + i).value,
             terminals: terminals
         };
         

@@ -542,7 +542,7 @@ public class WebResource {
             JSONObject dataJSON = (JSONObject) obj2;
             String username = authUsername((String) dataJSON.get("userID"));
             String type = (String) dataJSON.get("type");
-
+            
             int serviceID = servBean.getServiceID(type);
 
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (service_id, username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?, ?)");
