@@ -413,7 +413,7 @@ public class WebResource {
         prep.executeUpdate();
     }
 
-    // >Keycloak
+    // Keycloak
     @GET
     @Path("/keycloak/users")
     @Produces("application/json")
