@@ -376,7 +376,8 @@ public class WebResource {
 
         return "PLUGIN SUCCEEDED";
     }
-
+    
+    //adding driver to driver table
     @PUT
     @Path("driver/{user}/add")
     @Consumes(value = {"application/json"})
