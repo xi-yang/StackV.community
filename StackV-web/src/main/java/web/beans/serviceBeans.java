@@ -290,15 +290,9 @@ public class serviceBeans {
     }
     */
     
-    public String cleanJSON(JSONObject JSONinput){
-        String retval = JSONinput.toString();
-        
-        return retval;
-    }
-    
     public int createDNC(JSONObject JSONinput, String auth, String refresh, String refUuid) {
         
-        String JSONstring = cleanJSON(JSONinput);
+        String JSONstring = JSONinput.toJSONString();
         List<String> linkUri = new ArrayList<>();
         String deltaUUID = UUID.randomUUID().toString();
 

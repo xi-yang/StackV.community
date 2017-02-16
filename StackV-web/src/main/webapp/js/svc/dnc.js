@@ -114,21 +114,21 @@ function generateJSON(){
             vlan_tag: des_vlan
         };
         
-        terminals[0] = JSON.stringify(source);
-        terminals[1] =JSON.stringify(destination);
+        terminals[0] = source;
+        terminals[1] = destination;
         
         var data = {
             name: "link " + document.getElementById("linkUri" + i).value,
-            terminals: JSON.stringify(terminals)
+            terminals: terminals
         };
         
-        connections[i-1] = JSON.stringify(data);
+        connections[i-1] = data;
     }
     
     DNCdata = {
-        connections: JSON.stringify(connections)
+        connections: connections
     };
-    return JSON.stringify(DNCdata);
+    return DNCdata;
 }
 
 function submit(){
