@@ -286,14 +286,28 @@ public class serviceBeans {
         } catch (Exception e) {
             return 1;//connection error
         }
-
+    
     }
     */
+    
+    public ArrayList<String> getLinks(JSONObject JSONinput){
+        ArrayList<String> retList = new ArrayList<>();
+        JSONArray tempArray = (JSONArray) JSONinput.get("connections");
+        
+        if (tempArray != null) {
+            for (int i=0; i < tempArray.size(); i++){
+                JSONObject tempJson = (JSONObject) tempArray.get(i);
+                retList.add((String) tempJson.get("name"));
+            }
+        }
+        
+        return retList;
+    }
     
     public int createDNC(JSONObject JSONinput, String auth, String refresh, String refUuid) {
         
         String JSONstring = JSONinput.toJSONString();
-        List<String> linkUri = new ArrayList<>();
+        ArrayList<String> linkUri = getLinks(JSONinput);
         String deltaUUID = UUID.randomUUID().toString();
 
         String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
