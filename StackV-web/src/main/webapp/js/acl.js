@@ -21,11 +21,15 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak */
+/* global XDomainRequest, baseUrl, keycloak, TweenLite */
 var animating = false;
 
-var tweenInstancePanel = new TweenLite("#acl-instance-panel", 1, {paused:true, left:"5%"});
-var tweenInstanceACLPanel = new TweenLite("#acl-instance-panel", 1, {paused:true, bottom:"0"});
+
+// Tweens
+var tweenRolePanel = new TweenLite("#acl-role-panel", .5, {paused: true, right: "5%"});
+var tweenInstancePanel = new TweenLite("#acl-instance-panel", .5, {paused: true, left: "5%"});
+var tweenInstanceACLPanel = new TweenLite("#acl-instance-acl", .5, {paused: true, bottom: "0"});
+
 
 // ACL Load
 function loadACLPortal() {
@@ -37,22 +41,19 @@ function loadACLPortal() {
     subloadInstanceACLUsers();
 
     $(".left-tab").click(function (evt) {
-        if (!$("#acl-role-panel").hasClass("opened")) {
-            $(".opened").removeClass("opened");
-            $("#acl-role-panel").addClass("opened");
-            $(".left-tab").animate({left: "-45px"}, 500);
-            $(".right-tab").animate({right: "0px"}, 500);
-        }
+        tweenInstancePanel.reverse();
+        tweenRolePanel.play();
+
+        $(".left-tab").animate({left: "-45px"}, 500);
+        $(".right-tab").animate({right: "0px"}, 500);
 
         evt.preventDefault();
     });
     $(".right-tab").click(function (evt) {
-        if (!$("#acl-instance-panel").hasClass("opened")) {
-            $(".opened").removeClass("opened");
-            $("#acl-instance-panel").addClass("opened");
-            $(".right-tab").animate({right: "-45px"}, 500);
-            $(".left-tab").animate({left: "0px"}, 500);
-        }
+        tweenInstancePanel.play();
+        tweenRolePanel.reverse();
+        $(".right-tab").animate({right: "-45px"}, 500);
+        $(".left-tab").animate({left: "0px"}, 500);
 
         evt.preventDefault();
     });
@@ -66,7 +67,7 @@ function loadACLPortal() {
     $(".acl-user-exit").click(function (evt) {
         $("#acl-role-role-div").addClass("closed");
         $("#acl-role-group-div").addClass("closed");
-        $(".acl-selected-row").removeClass("acl-selected-row");
+        $(".acl-role-selected-row").removeClass("acl-role-selected-row");
 
         $("#acl-user").removeAttr('value');
         evt.preventDefault();
@@ -123,15 +124,14 @@ function loadACLPortal() {
 
     // Instances
     $("#acl-instance-close").click(function (evt) {
-        $("#acl-instance-acl").addClass("closed");
-        $(".acl-selected-row").removeClass("acl-selected-row");
+        $(".acl-instance-selected-row").removeClass("acl-instance-selected-row");
 
-        $("#acl-instance").removeAttr('value');
+        tweenInstanceACLPanel.reverse();
         evt.preventDefault();
     });
 
     $("#acl-instance-exit").click(function (evt) {
-        $("#acl-instance-panel").removeClass("opened");
+
 
         evt.preventDefault();
     });
@@ -155,7 +155,7 @@ function subloadRoleACLUsers() {
                     var user = result[i];
 
                     var row = document.createElement("tr");
-                    row.className = "acl-row";
+                    row.className = "acl-role-row";
                     row.setAttribute("data-subject", user[4]);
 
                     var cell1_1 = document.createElement("td");
@@ -165,10 +165,10 @@ function subloadRoleACLUsers() {
                     tbody.appendChild(row);
                 }
 
-                $(".acl-row").click(function () {
+                $(".acl-role-row").click(function () {
                     if (animating === false) {
-                        $(".acl-selected-row").removeClass("acl-selected-row");
-                        $(this).addClass("acl-selected-row");
+                        $(".acl-role-selected-row").removeClass("acl-role-selected-row");
+                        $(this).addClass("acl-role-selected-row");
 
                         $("#acl-user").val($(this).data("subject"));
                         subloadRoleACLUserGroups();
@@ -245,14 +245,13 @@ function subloadRoleACLUserGroups() {
                     var group = result[i];
 
                     var row = document.createElement("tr");
-                    row.className = "acl-row";
 
                     var cell1_1 = document.createElement("td");
                     cell1_1.innerHTML = group[1] + '<button data-roleid="' + group[0] + '" data-rolename="' + group[1] + '" class="button-group-delete btn btn-default pull-right">Remove</button>';
 
                     row.appendChild(cell1_1);
                     tbody.appendChild(row);
-                    
+
                     $("#acl-group-select option[value=" + group[0] + "]").addClass("hide");
                     $("#acl-group-select").val(null);
                 }
@@ -312,7 +311,6 @@ function subloadRoleACLUserRoles() {
                     var role = result[i];
 
                     var row = document.createElement("tr");
-                    row.className = "acl-row";
 
                     var cell1_1 = document.createElement("td");
                     if (role[2] === "assigned") {
@@ -323,7 +321,7 @@ function subloadRoleACLUserRoles() {
 
                     row.appendChild(cell1_1);
                     tbody.appendChild(row);
-                    
+
                     $("#acl-role-select option[value=" + role[0] + "]").addClass("hide");
                     $("#acl-role-select").val(null);
                 }
@@ -382,7 +380,7 @@ function subloadInstanceACLInstances() {
                     var instance = result[i];
 
                     var row = document.createElement("tr");
-                    row.className = "acl-row";
+                    row.className = "acl-instance-row";
                     row.setAttribute("data-uuid", instance[1]);
 
                     var cell1_1 = document.createElement("td");
@@ -397,16 +395,16 @@ function subloadInstanceACLInstances() {
                     tbody.appendChild(row);
                 }
 
-                $(".acl-row").click(function () {
+                $(".acl-instance-row").click(function () {
                     if (animating === false) {
-                        $(".acl-selected-row").removeClass("acl-selected-row");
-                        $(this).addClass("acl-selected-row");
+                        $(".acl-instance-selected-row").removeClass("acl-instance-selected-row");
+                        $(this).addClass("acl-instance-selected-row");
 
                         subloadACLTable($(this).data("uuid"));
                     }
                 });
 
-                tweenInstancePanel.resume();
+                tweenInstancePanel.play();
             }
         });
     }).error(function () {
@@ -562,8 +560,7 @@ function reloadACL(refUUID) {
                     }
                 }
 
-                animating = false;
-                
+                tweenInstanceACLPanel.play();
             }
         });
     }).error(function () {

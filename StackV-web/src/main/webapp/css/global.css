@@ -80,8 +80,9 @@ div#main-pane {
     height: calc(100% - 72px);
     width: 100%;
     padding: 30px;
+    padding-top: 0;
     overflow-x: hidden;
-    top: 20px;
+    top: 52px;
 
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;

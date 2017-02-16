@@ -140,6 +140,7 @@
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+        
         <script src="/StackV-web/js/nexus.js"></script>
     </body>
 </html>
