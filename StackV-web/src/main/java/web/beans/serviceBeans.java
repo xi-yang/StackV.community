@@ -296,13 +296,13 @@ public class serviceBeans {
         return retval;
     }
     
-    public int createDNC(JSONObject JSONinput, String auth, String refresh) {
+    public int createDNC(JSONObject JSONinput, String auth, String refresh, String refUuid) {
         
         String JSONstring = cleanJSON(JSONinput);
-        
+        List<String> linkUri = new ArrayList<>();
         String deltaUUID = UUID.randomUUID().toString();
 
-        String delta = "<serviceDelta>\n<uuid>" + deltaUUID
+        String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
                 + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
@@ -314,16 +314,16 @@ public class serviceBeans {
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
 
         for (String linkName : linkUri) {
-            delta += "&lt;" + linkName + "&gt;\n"
+            svcDelta += "&lt;" + linkName + "&gt;\n"
                     + "      a            mrs:SwitchingSubnet ;\n"
                     + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
         }
 
-        delta += "&lt;urn:ogf:network:openstack.com:openstack-cloud:vlan&gt;\n"
+        svcDelta += "&lt;urn:ogf:network:openstack.com:openstack-cloud:vlan&gt;\n"
                 + "a mrs:SwitchingSubnet; spa:type spa:Abstraction;\n"
                 + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt; .\n\n";
 
-        delta += "&lt;x-policy-annotation:action:create-path&gt;\n"
+        svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
                 + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
@@ -338,7 +338,8 @@ public class serviceBeans {
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
         
-        return 1;
+        orchestrateInstance(refUuid, svcDelta, refUuid, refresh);
+        return 0;
     }
 
     public int createNetwork(Map<String, String> paraMap, String auth, String refresh) {
