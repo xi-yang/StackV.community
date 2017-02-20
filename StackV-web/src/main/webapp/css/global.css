@@ -77,7 +77,7 @@ div#black-screen.off {
 /*Main Pane Styles */
 div#main-pane {
     position: absolute;    
-    height: calc(100% - 72px);
+    height: calc(100% - 52px);
     width: 100%;
     padding: 30px;
     padding-top: 0;
