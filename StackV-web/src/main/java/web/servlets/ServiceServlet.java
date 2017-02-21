@@ -390,8 +390,11 @@ public class ServiceServlet extends HttpServlet {
                 JSONArray vmArr = new JSONArray();
                 for (int j = 1; j <= 10; j++) {
                     if (paraMap.containsKey("vm" + j + "-subnet") && (Integer.parseInt(paraMap.get("vm" + j + "-subnet")) == i)) {
+                        
+                        System.out.println("Entering VMs");
+                        
                         JSONObject vmJSON = new JSONObject();
-                        if (paraMap.get("submit").equalsIgnoreCase("aws")) {
+                        if (paraMap.get("netHost").equalsIgnoreCase("aws")) {
                             vmJSON.put("name", paraMap.get("vm" + j + "-name"));
 
                             // Parse Types.
@@ -428,7 +431,7 @@ public class ServiceServlet extends HttpServlet {
 
                                 interfaceArr.add(interfaceJSON);
                             }
-                        } else if (paraMap.get("submit").equalsIgnoreCase("ops")) {
+                        } else if (paraMap.get("netHost").equalsIgnoreCase("ops")) {
                             vmJSON.put("name", paraMap.get("vm" + j + "-name"));
                             vmJSON.put("host", paraMap.get("vm" + j + "-host"));
 
