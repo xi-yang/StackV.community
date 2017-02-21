@@ -1737,7 +1737,7 @@ public class WebResource {
             int instanceID = servBean.getInstanceID(refUuid);
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` "
-                    + "(`service_history_id`, `service_state_id`, `service_instance_id`) VALUES (1, 1, ?)");
+                    + "(`service_state_id`, `service_instance_id`) VALUES (1, ?)");
             prep.setInt(1, instanceID);
             prep.executeUpdate();
 
