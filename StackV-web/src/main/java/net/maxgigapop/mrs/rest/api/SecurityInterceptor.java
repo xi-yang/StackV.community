@@ -60,7 +60,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
                     "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL",
                     "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "editProfile",  "executeProfile", "newProfile", "deleteProfile",
                     "getLabels", "label", "deleteLabel", "clearLabels", "getDeltaBacked",
-                    "getVerificationResults", "getVerificationResultsUnion", "testAuth");
+                    "getVerificationResults", "getVerificationResultsUnion", "testAuth", "createService");
             if (supplierNames.contains(methodName)) {
                 System.out.println("Authenticated: " + methodName);
                 return;

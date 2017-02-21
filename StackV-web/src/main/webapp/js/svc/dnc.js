@@ -82,7 +82,7 @@ function save(){
     $.ajax({
         url: apiUrl,
         type: 'PUT',
-        data: JSON.stringify(sentData),  //stringify to get escaped JSON in backend
+        data: JSON.stringify(sentData),
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         beforeSend: function (xhr) {
@@ -131,6 +131,33 @@ function generateJSON(){
     return DNCdata;
 }
 
-function submit(){
+function submitToBackend(){
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
     
+    var sentData = {
+        username: sessionStorage.getItem("username"),
+        type: "dnc",
+        alias: $('#service-name').val(),
+        data: generateJSON()
+    };
+    
+    $.ajax({
+        url: apiUrl,
+        type: 'POST',
+        data: JSON.stringify(sentData),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            $('#test').empty();
+            document.getElementById("test").innerHTML = "SUCCESS";
+        },
+        error: function (){
+            $('#test').empty();
+            document.getElementById("test").innerHTML = "failure";
+        } 
+    });
 }

@@ -51,10 +51,11 @@
                                 <tr id="spacer"></tr>
                             </tbody>
                         </table>
-                        <div>
-                            <button type="button" class="action-button" onclick="submit();">Submit</button>
+                        <div id="test">
+                            <button type="button" class="action-button" onclick="submitToBackend();">Submit</button>
                             <button type="button" class="action-button" onclick="save();">Save</button>
                             <button type="button" class="action-button" onclick="addLink();">Add Link</button>
+                            <button type="button" onclick="submitToBackend();">Test</button>
                         </div>
                     </div>
                     
@@ -64,10 +65,10 @@
         <!-- TAG PANEL -->
         <div id="tag-panel">
         </div>
+        <script src="/StackV-web/js/svc/dnc.js"></script>
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
         <script src="/StackV-web/js/nexus.js"></script>
-        <script src="/StackV-web/js/svc/dnc.js"></script>
     </body>
 </html>

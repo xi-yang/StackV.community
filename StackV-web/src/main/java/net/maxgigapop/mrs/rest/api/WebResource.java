@@ -750,9 +750,9 @@ public class WebResource {
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
-            if (!roleSet.contains(serviceType)) {
+            /*if (!roleSet.contains(serviceType)) {
                 throw new IOException("Unauthorized to use " + serviceType + "!\n");
-            }
+            }*/
 
             String username = accessToken.getPreferredUsername();
             System.out.println("User:" + username);
@@ -767,7 +767,7 @@ public class WebResource {
                 }
             });
 
-        } catch (ParseException | IOException ex) {
+        } catch (ParseException ex) {
             Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, ex);
         }
