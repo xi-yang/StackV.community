@@ -22,9 +22,6 @@
  */
 
 /* global XDomainRequest, baseUrl, keycloak, TweenLite, Power2 */
-var animating = false;
-
-
 // Tweens
 var tweenRolePanel = new TweenLite("#acl-role-panel", .5, {ease: Power2.easeInOut, paused: true, right: "5%"});
 var tweenRoleGroupsPanel = new TweenLite("#acl-role-group-div", .5, {ease: Power2.easeInOut, paused: true, top: "5px"});

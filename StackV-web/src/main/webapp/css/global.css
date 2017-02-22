@@ -18,6 +18,10 @@ a {
     text-decoration:none;
 }
 
+#nav {
+    z-index: 99;
+}
+
 a.hover {
     color: #B20000;
 }
@@ -45,33 +49,27 @@ body {
 
 /*Looks like just a class to fade item out*/
 .fade-hide {
-  display: none;
+    display: none;
 
-  opacity: 0;
-  transition: opacity 1s ease;
+    opacity: 0;
+    transition: opacity 1s ease;
 }
 
 /*Form elements styling*/
 select {
-  color: #000;
+    color: #000;
 }
 
 /*Black Screen styles*/
 div#black-screen {
     position: absolute;
-    height: calc(100% - 72px);
+    height: calc(100% - 52px);
     width: 100%;
-    padding: 40px;
+    top: 52px;
     z-index: 3;
     background-color: rgba(0,0,0,0.4);
-
-    transition: opacity 1s ease;
-}
-div#black-screen.off {
-    opacity: 0;
     pointer-events: none;
-
-    transition: opacity 1s ease;
+    opacity: 0;
 }
 
 /*Main Pane Styles */
@@ -86,15 +84,4 @@ div#main-pane {
 
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
-}
-div#main-pane.sidebar-open {
-    opacity: .25;
-    margin-left: 0px;
-}
-
-div#main-pane.loading {
-    opacity: .4;
-}
-div#main-pane.loading #loading-panel {
-    opacity: 1;
 }

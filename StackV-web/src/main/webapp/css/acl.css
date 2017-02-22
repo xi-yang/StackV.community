@@ -19,6 +19,7 @@ tr.acl-instance-selected-row, tr.acl-role-selected-row {
 
 div.left-tab{
     position: absolute;
+    top: 20%;
     left: 0;
     height:90px;
     width:45px;
@@ -29,6 +30,7 @@ div.left-tab{
 }
 div.right-tab{
     position: absolute;
+    top: 20%;
     right: 0;
     height:90px;
     width:45px;

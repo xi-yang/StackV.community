@@ -106,7 +106,25 @@ public class WebResource {
     public WebResource() {
     }
 
-    // >ACL   
+    /**
+     * @apiDefine AuthHeader
+     * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
+     */
+    // >ACL 
+    /**
+     * @api {post} /app/acl/:refUUID Add ACL Entry
+     * @apiVersion 1.0.0
+     * @apiDescription Add subject pairing to object specified by UUID.
+     * @apiGroup ACL
+     * @apiUse AuthHeader
+     * @apiParam {String} subject subject ID
+     * @apiParam {String} refUUID object reference UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X POST -H "Content-Type: application/json" -d "test1"
+     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @POST
     @Path(value = "/acl/{refUUID}")
     @Consumes(value = {"application/json", "application/xml"})
@@ -135,6 +153,20 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {delete} /app/acl/:refUUID Delete ACL Entry
+     * @apiDescription Delete subject associated with object specified by UUID.
+     * @apiVersion 1.0.0
+     * @apiGroup ACL
+     * @apiUse AuthHeader
+     * @apiParam {String} subject subject ID
+     * @apiParam {String} refUUID object reference UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE -H "Content-Type: application/json" -d "test1"
+     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @DELETE
     @Path(value = "/acl/{refUUID}")
     @Consumes(value = {"application/json", "application/xml"})
@@ -162,6 +194,27 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {GET} /app/acl/:refUUID Get ACL Entries
+     * @apiVersion 1.0.0
+     * @apiDescription Get all entries associated with object specified by UUID.
+     * @apiGroup ACL
+     * @apiUse AuthHeader
+     * @apiParam {String} refUUID object reference UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl
+     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} users users JSON
+     * @apiSuccess {JSONArray} users.user user JSON
+     * @apiSuccess {String} users.user.username username
+     * @apiSuccess {String} users.user.name full name
+     * @apiSuccess {String} users.user.email email
+     * @apiSuccessExample {json} Example Response:
+     * [["admin","",null]]
+     */
     @GET
     @Path("/acl/{refUuid}")
     @Produces("application/json")
@@ -233,81 +286,28 @@ public class WebResource {
         }
     }
 
-    // >Drivers
-    @DELETE
-    @Path(value = "/driver/{username}/delete/{topuri}")
-    @RolesAllowed("Drivers")
-    public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) throws SQLException {
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
-        prep.executeUpdate();
-
-        return "Deleted";
-    }
-
-    @GET
-    @Path("/driver/{user}/getdetails/{topuri}")
-    @Produces("application/json")
-    @RolesAllowed("Drivers")
-    public JSONObject getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
-
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                prop);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
-        ResultSet ret = prep.executeQuery();
-
-        ret.next();
-
-        Object obj = parser.parse(ret.getString("data"));
-        JSONObject JSONtemp = (JSONObject) obj;
-        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
-        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
-        return JSONdata;
-    }
-
-    @GET
-    @Path("/driver/{user}/get")
-    @Produces("application/json")
-    @RolesAllowed("Drivers")
-    public ArrayList<String> getDriver(@PathParam("user") String username) throws SQLException {
-        ArrayList<String> list = new ArrayList<>();
-
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                prop);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ?");
-        prep.setString(1, username);
-        ResultSet ret = prep.executeQuery();
-
-        while (ret.next()) {
-            list.add(ret.getString("drivername"));
-            list.add(ret.getString("description"));
-            list.add(ret.getString("data"));
-            list.add(ret.getString("TopUri"));
-        }
-
-        return list;
-    }
-
+    // >Drivers   
+    /**
+     * @api {put} /app/driver/install Install Driver
+     * @apiVersion 1.0.0
+     * @apiDescription Install driver from JSON
+     * @apiGroup Driver
+     * @apiUse AuthHeader
+     * @apiParam {JSONObject} dataInput driver json
+     * @apiParamExample {JSONObject} Example JSON:
+     * {
+     * TODO - Add Example JSON
+     * }
+     *
+     * @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @PUT
-    @Path("install/driver")
+    @Path("/driver/install")
     @Consumes("application/json")
     @Produces("text/plain")
     @RolesAllowed("Drivers")
@@ -329,13 +329,29 @@ public class WebResource {
             {
                 return "PLUGIN FAILED: Driver Resource did not return successfull";
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             return "PLUGIN FAILED: Exception" + e;
         }
 
         return "PLUGIN SUCCEEDED";
     }
 
+    /**
+     * @api {put} /app/driver/:user/install/:topuri Install Driver Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Install driver from StackV profile
+     * @apiGroup Driver
+     * @apiUse AuthHeader
+     * @apiParam {String} user username
+     * @apiParam {String} topuri profile topology uri
+     *
+     * @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @PUT
     @Path("/driver/{user}/install/{topuri}")
     @Produces("text/plain")
@@ -370,13 +386,33 @@ public class WebResource {
             {
                 return "PLUGIN FAILED: Driver Resource Failed";
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             return "PLUGIN FAILED: Exception" + e;
         }
 
         return "PLUGIN SUCCEEDED";
     }
 
+    /**
+     * @api {put} /app/driver/:user/add Add Driver Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Add new StackV profile
+     * @apiGroup Driver
+     * @apiUse AuthHeader
+     * @apiParam {String} user username
+     * @apiParam {JSONObject} dataInput profile JSON
+     * @apiParamExample {JSONObject} Example JSON:
+     * {
+     * TODO - Add Example JSON
+     * }
+     *
+     * @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {JSONObject} Example Response:
+     * TODO - Add Example Response
+     */
     @PUT
     @Path("driver/{user}/add")
     @Consumes(value = {"application/json"})
@@ -413,12 +449,153 @@ public class WebResource {
         prep.executeUpdate();
     }
 
+    /**
+     * @api {delete} /app/driver/:username/delete/:topuri Delete Driver Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Delete saved driver profile.
+     * @apiGroup Driver
+     * @apiUse AuthHeader
+     * @apiParam {String} username user
+     * @apiParam {String} topuri profile topology uri
+     *
+     * @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
+    @DELETE
+    @Path(value = "/driver/{username}/delete/{topuri}")
+    @RolesAllowed("Drivers")
+    public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) throws SQLException {
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
+        prep.setString(1, username);
+        prep.setString(2, topuri);
+        prep.executeUpdate();
+
+        return "Deleted";
+    }
+
+    /**
+     * @api {get} /app/driver/:username/getdetails/:topuri Get Driver Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Get saved driver profile.
+     * @apiGroup Driver
+     * @apiUse AuthHeader
+     * @apiParam {String} user username
+     * @apiParam {String} topuri profile topology uri
+     *
+     * @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
+    @GET
+    @Path("/driver/{user}/getdetails/{topuri}")
+    @Produces("application/json")
+    @RolesAllowed("Drivers")
+    public JSONObject getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
+
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                prop);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
+        prep.setString(1, username);
+        prep.setString(2, topuri);
+        ResultSet ret = prep.executeQuery();
+
+        ret.next();
+
+        Object obj = parser.parse(ret.getString("data"));
+        JSONObject JSONtemp = (JSONObject) obj;
+        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
+        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
+
+        return JSONdata;
+    }
+
+    /**
+     * @api {get} /app/driver/:user/get Get Profile Information
+     * @apiVersion 1.0.0
+     * @apiDescription Get saved driver profile information.
+     * @apiGroup Driver
+     * @apiUse AuthHeader
+     * @apiParam {String} user username
+     * @apiParam {String} topuri profile topology uri
+     *
+     * @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
+    @GET
+    @Path("/driver/{user}/get")
+    @Produces("application/json")
+    @RolesAllowed("Drivers")
+    public ArrayList<String> getDriver(@PathParam("user") String username) throws SQLException {
+        ArrayList<String> list = new ArrayList<>();
+
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                prop);
+
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ?");
+        prep.setString(1, username);
+        ResultSet ret = prep.executeQuery();
+
+        while (ret.next()) {
+            list.add(ret.getString("drivername"));
+            list.add(ret.getString("description"));
+            list.add(ret.getString("data"));
+            list.add(ret.getString("TopUri"));
+        }
+
+        return list;
+    }
+
     // >Keycloak
+    /**
+     * @api {get} /app/keycloak/users Get Users
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of existing users.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} users users JSON
+     * @apiSuccess {JSONArray} users.user user JSON
+     * @apiSuccess {String} users.user.username username
+     * @apiSuccess {String} users.user.name full name
+     * @apiSuccess {String} users.user.email email
+     * @apiSuccess {String} users.user.time timestamp of user creation
+     * @apiSuccess {String} users.user.subject user ID
+     * @apiSuccessExample {json} Example Response:
+     * [["admin","",null,"1475506393070","1d183570-2798-4d69-80c3-490f926596ff"],["username","","email","1475506797561","1323ff3d-49f3-46ad-8313-53fd4c711ec6"]]
+     */
     @GET
     @Path("/keycloak/users")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getUserInfo() {
+    public ArrayList<ArrayList<String>> getUsers() {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -470,6 +647,151 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {get} /app/keycloak/groups Get Groups
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of existing groups.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/groups
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} groups groups JSON
+     * @apiSuccess {JSONArray} groups.group group JSON
+     * @apiSuccess {String} groups.group.id group ID
+     * @apiSuccess {String} groups.group.name group name
+     * @apiSuccessExample {json} Example Response:
+     * [["c8b87f1a-6f2f-4ae0-824d-1dda0ca7aaab","TeamA"],["968ee80f-92a0-42c4-8f19-fe502d41480a","offline_access"]]
+     */
+    @GET
+    @Path("/keycloak/groups")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<ArrayList<String>> getGroups() {
+        try {
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/roles");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray groupArr = (JSONArray) obj;
+            for (Object group : groupArr) {
+                ArrayList<String> groupList = new ArrayList<>();
+                JSONObject groupJSON = (JSONObject) group;
+                groupList.add((String) groupJSON.get("id"));
+                groupList.add((String) groupJSON.get("name"));
+
+                retList.add(groupList);
+            }
+
+            return retList;
+        } catch (IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    /**
+     * @api {get} /app/keycloak/roles Get Roles
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of existing roles.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/roles
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} roles roles JSON
+     * @apiSuccess {JSONArray} roles.role role JSON
+     * @apiSuccess {String} roles.role.id role ID
+     * @apiSuccess {String} roles.role.name role name
+     * @apiSuccessExample {json} Example Response:
+     * [["e619f97d-9811-4612-82f7-fa01fbbf0515","Drivers"],["a08da95a-9c90-4dca-96db-0903cc8f82fa","Labels"],["f12ad2d8-2f7b-4e12-9cfe-d264d13e96fc","Keycloak"]]
+     */
+    @GET
+    @Path("/keycloak/roles")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<ArrayList<String>> getRoles() {
+        try {
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/clients/" + keycloakStackVClientID + "/roles");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray roleArr = (JSONArray) obj;
+            for (Object role : roleArr) {
+                ArrayList<String> roleList = new ArrayList<>();
+                JSONObject roleJSON = (JSONObject) role;
+                roleList.add((String) roleJSON.get("id"));
+                roleList.add((String) roleJSON.get("name"));
+
+                retList.add(roleList);
+            }
+
+            return retList;
+        } catch (IOException | ParseException e) {
+            Logger.getLogger(WebResource.class
+                    .getName()).log(Level.SEVERE, null, e);
+            return null;
+        }
+    }
+
+    /**
+     * @api {get} /app/keycloak/users/:user/groups Get User Groups
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of groups specified user belongs to.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/groups
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} groups groups JSON
+     * @apiSuccess {JSONArray} groups.group group JSON
+     * @apiSuccess {String} groups.group.id group ID
+     * @apiSuccess {String} groups.group.name group name
+     * @apiSuccessExample {json} Example Response:
+     * [["c8b87f1a-6f2f-4ae0-824d-1dda0ca7aaab","TeamA"],["6f299a2f-185b-4784-a135-b861179af17d","admin"]]
+     */
     @GET
     @Path("/keycloak/users/{user}/groups")
     @Produces("application/json")
@@ -514,6 +836,22 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {post} /app/keycloak/users/:user/groups Add User to Group
+     * @apiVersion 1.0.0
+     * @apiDescription Assign group membership to a user
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     * @apiParam {JSONObject} inputString input JSON
+     * @apiParam {String} inputString.id group ID
+     * @apiParam {String} inputString.name group name
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X POST -d '{"id":"c8b87f1a-6f2f-4ae0-824d-1dda0ca7aaab","name":"TeamA"}'
+     * http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/groups
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @POST
     @Path("/keycloak/users/{user}/groups")
     @Produces("application/json")
@@ -548,6 +886,22 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {delete} /app/keycloak/users/:user/groups Remove User from Group
+     * @apiVersion 1.0.0
+     * @apiDescription Retract group membership from a user
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     * @apiParam {JSONObject} inputString input JSON
+     * @apiParam {String} inputString.id group ID
+     * @apiParam {String} inputString.name group name
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE -d '{"id":"c8b87f1a-6f2f-4ae0-824d-1dda0ca7aaab","name":"TeamA"}'
+     * http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/groups
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @DELETE
     @Path("/keycloak/users/{user}/groups")
     @Produces("application/json")
@@ -582,6 +936,26 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {get} /app/keycloak/users/:user/roles Get User Roles
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of roles the user has assigned.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/roles
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} roles roles JSON
+     * @apiSuccess {JSONArray} roles.role role JSON
+     * @apiSuccess {String} roles.role.id role ID
+     * @apiSuccess {String} roles.role.name role name
+     * @apiSuccess {String} roles.role.source role source, either "assigned" or the name of group who delegates the role.
+     * @apiSuccessExample {json} Example Response:
+     * [["056af27f-b754-4287-aebe-129f5de8ab47","Services","assigned"],["a08da95a-9c90-4dca-96db-0903cc8f82fa","Labels","admin"],["7d307d71-1b89-45f7-a0be-3b0f0d1b2045","Manifests","admin"]]
+     */
     @GET
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
@@ -685,6 +1059,22 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {post} /app/keycloak/users/:user/roles Add User Role
+     * @apiVersion 1.0.0
+     * @apiDescription Directly assign a role to specified user.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     * @apiParam {JSONObject} inputString input JSON
+     * @apiParam {String} inputString.id role ID
+     * @apiParam {String} inputString.name role name
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X POST -d '{"id":"056af27f-b754-4287-aebe-129f5de8ab47","name":"Services"}'
+     * http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/roles
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @POST
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
@@ -719,6 +1109,22 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {delete} /app/keycloak/users/:user/roles Delete User Role
+     * @apiVersion 1.0.0
+     * @apiDescription Remove a directly assigned role from the specified user.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     * @apiParam {JSONObject} inputString input JSON
+     * @apiParam {String} inputString.id role ID
+     * @apiParam {String} inputString.name role name
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE -d '{"id":"056af27f-b754-4287-aebe-129f5de8ab47","name":"Services"}'
+     * http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/roles
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @DELETE
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
@@ -753,97 +1159,22 @@ public class WebResource {
         }
     }
 
-    @GET
-    @Path("/keycloak/roles")
-    @Produces("application/json")
-    @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getRoles() {
-        try {
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/clients/" + keycloakStackVClientID + "/roles");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray roleArr = (JSONArray) obj;
-            for (Object role : roleArr) {
-                ArrayList<String> roleList = new ArrayList<>();
-                JSONObject roleJSON = (JSONObject) role;
-                roleList.add((String) roleJSON.get("id"));
-                roleList.add((String) roleJSON.get("name"));
-
-                retList.add(roleList);
-            }
-
-            return retList;
-        } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
-            return null;
-        }
-    }
-
-    @GET
-    @Path("/keycloak/groups")
-    @Produces("application/json")
-    @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getGroups() {
-        try {
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/roles");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray groupArr = (JSONArray) obj;
-            for (Object group : groupArr) {
-                ArrayList<String> groupList = new ArrayList<>();
-                JSONObject groupJSON = (JSONObject) group;
-                groupList.add((String) groupJSON.get("id"));
-                groupList.add((String) groupJSON.get("name"));
-
-                retList.add(groupList);
-            }
-
-            return retList;
-        } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
-            return null;
-        }
-    }
-
     // >Labels
+    /**
+     * @api {get} /app/label/:user
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of labels belonging to the specified user.
+     * @apiGroup Labels
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @GET
     @Path("/label/{user}")
     @Produces("application/json")
@@ -878,6 +1209,22 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {put} /app/label Add Label
+     * @apiVersion 1.0.0
+     * @apiDescription Add a new label.
+     * @apiGroup Labels
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     * @apiParam {JSONObject} inputString TODO - Add Parameter Structure
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @PUT
     @Path(value = "/label")
     @Consumes(value = {"application/json", "application/xml"})
@@ -916,6 +1263,22 @@ public class WebResource {
         return "Added";
     }
 
+    /**
+     * @api {delete} /app/label/:username/delete/:identifier Delete Label
+     * @apiVersion 1.0.0
+     * @apiDescription Delete identified label owned by specified user.
+     * @apiGroup Labels
+     * @apiUse AuthHeader
+     * @apiParam {String} username username
+     * @apiParam {String} identifier label ID
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @DELETE
     @Path(value = "/label/{username}/delete/{identifier}")
     @RolesAllowed("Labels")
@@ -937,6 +1300,21 @@ public class WebResource {
         return "Deleted";
     }
 
+    /**
+     * @api {delete} /app/label/:username/clearall Clear Labels
+     * @apiVersion 1.0.0
+     * @apiDescription Delete all labels owned by specified user.
+     * @apiGroup Labels
+     * @apiUse AuthHeader
+     * @apiParam {String} username username
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @DELETE
     @Path(value = "/label/{username}/clearall")
     @RolesAllowed("Labels")
@@ -958,6 +1336,21 @@ public class WebResource {
     }
 
     // >Manifests
+    /**
+     * @api {get} /app/manifest/:svcUUID Get Manifest
+     * @apiVersion 1.0.0
+     * @apiDescription Get manifest for specified service instance.
+     * @apiGroup Manifests
+     * @apiUse AuthHeader
+     * @apiParam {String} svcUUID instance UUID
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/json")
@@ -1451,11 +1844,27 @@ public class WebResource {
     }
 
     // >Profiles
+    /**
+     * @api {get} /app/profile/:wizardID Get Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Get specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/profile/11 
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"     
+     *
+     * @apiSuccess {JSONObject} wizard_json Profile JSON 
+     * @apiSuccessExample {json} Example Response:
+     * {"username": "admin","type": "netcreate","alias": "VCN.OPS.1VM_Ext.233","data": {"virtual_clouds": []}}
+     */
     @GET
-    @Path("/profile/{wizardId}")
+    @Path("/profile/{wizardID}")
     @Produces("application/json")
     @RolesAllowed("Profiles")
-    public String getProfile(@PathParam("wizardId") int wizardId) {
+    public String getProfile(@PathParam("wizardId") int wizardID) {
         try {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
@@ -1464,7 +1873,7 @@ public class WebResource {
                     front_connectionProps);
 
             PreparedStatement prep = front_conn.prepareStatement("SELECT wizard_json FROM service_wizard WHERE service_wizard_id = ?");
-            prep.setInt(1, wizardId);
+            prep.setInt(1, wizardID);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 return rs1.getString(1);
@@ -1479,7 +1888,20 @@ public class WebResource {
         }
     }
 
-    // Edit an existing profile
+    /**
+     * @api {put} /app/profile/:wizardID/edit Modify Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Modify the specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json" 
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit 
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @PUT
     @Path("/profile/{wizardId}/edit")
     @RolesAllowed("Profiles")
@@ -1502,7 +1924,19 @@ public class WebResource {
         }
     }
 
-    // Create a new profile based on an existing one
+    /**
+     * @api {put} /app/profile/new Add New Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Save a new wizard profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json" 
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit 
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"     
+     */
     @PUT
     @Path("/profile/new")
     @RolesAllowed("Profiles")
@@ -1540,6 +1974,18 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {delete} /app/profile/:wizardID Delete Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Delete specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/profile/11 
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @DELETE
     @Path("/profile/{wizardId}")
     @RolesAllowed("Profiles")
@@ -1562,6 +2008,22 @@ public class WebResource {
     }
 
     // >Services
+    /**
+     * @api {get} /app/service/:siUUID/status Check Status
+     * @apiVersion 1.0.0
+     * @apiDescription Retrieve full status of specified service instance.
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {String} siUUID instance UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/status 
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * 
+     * @apiSuccess {String} status Instance status composite, containing both superstate and substate
+     * @apiSuccessExample {String} Example Response:
+     * Cancel - FAILED
+     */
     @GET
     @Path("/service/{siUUID}/status")
     @RolesAllowed("Services")
@@ -1580,6 +2042,22 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {get} /app/service/:siUUID/substatus Check Substatus
+     * @apiVersion 1.0.0
+     * @apiDescription Retrieve substatus of specified service instance.
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {String} siUUID instance UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/substatus 
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * 
+     * @apiSuccess {String} status Instance substatus
+     * @apiSuccessExample {String} Example Response:
+     * FAILED
+     */
     @GET
     @Path("/service/{siUUID}/substatus")
     @RolesAllowed("Services")
@@ -1599,6 +2077,19 @@ public class WebResource {
         return null;
     }
 
+    /**
+     * @api {post} /app/service Create Service
+     * @apiVersion 1.0.0
+     * @apiDescription Create new service instance.
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {JSONObject} inputString service JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X POST -d @newservice.json -H "Content-Type: application/json" 
+     * http://localhost:8080/StackV-web/restapi/app/service 
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN" 
+     */
     @POST
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
@@ -1635,7 +2126,20 @@ public class WebResource {
                     .getName()).log(Level.SEVERE, null, ex);
         }
     }
-
+    
+    /**
+     * @api {put} /app/service/:siUUID/:action Operate Service
+     * @apiVersion 1.0.0
+     * @apiDescription Operate on the specified service instance.
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {String} siUUID instance UUID
+     * @apiParam {String} action operation to execute
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/cancel 
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN" 
+     */
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
     @RolesAllowed("Services")

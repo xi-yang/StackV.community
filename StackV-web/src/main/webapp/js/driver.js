@@ -601,7 +601,7 @@ function plugDriver(topuri){
 
 function installDriver(){
     var panel = document.getElementById("install-type");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/install/driver';
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/install';
     var jsonData=[];
     var tempData = {};
     var type = document.getElementById("drivertype").innerHTML;
