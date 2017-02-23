@@ -54,8 +54,7 @@
                         <div id="test">
                             <button type="button" class="action-button" onclick="submitToBackend();">Submit</button>
                             <button type="button" class="action-button" onclick="save();">Save</button>
-                            <button type="button" class="action-button" onclick="addLink();">Add Link</button>
-                            <button type="button" onclick="submitToBackend();">Test</button>
+                            <button type="button" class="action-button" onclick="addLinkDNC();">Add Link</button>
                         </div>
                     </div>
                     

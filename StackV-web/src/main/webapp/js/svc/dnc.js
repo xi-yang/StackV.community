@@ -25,9 +25,9 @@ baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
 var linknum = 1;
 
-function addLink(){
-    var panel = document.getElementById("link-body");
+function addLinkDNC(){
     linknum++;
+    var panel = document.getElementById("link-body");
     var row = document.createElement("tr");
     var spacer = document.createElement("tr");
     var left = document.createElement("td");
@@ -57,7 +57,7 @@ function addLink(){
     
     spacer.id = "spacer";
     right.style = "width: 600px; text-align: center;";
-
+    
     right.appendChild(rightdiv);
     row.appendChild(left);
     row.appendChild(right);
@@ -108,7 +108,6 @@ function generateJSON(){
             uri: src,
             vlan_tag: src_vlan
         };
-        
         var destination = {
             uri: des,
             vlan_tag: des_vlan
@@ -116,18 +115,16 @@ function generateJSON(){
         
         terminals[0] = source;
         terminals[1] = destination;
-        
         var data = {
             name: "link " + document.getElementById("linkUri" + i).value,
             terminals: terminals
         };
-        
         connections[i-1] = data;
     }
-    
     DNCdata = {
         connections: connections
     };
+    
     return DNCdata;
 }
 
