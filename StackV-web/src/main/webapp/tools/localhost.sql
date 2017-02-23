@@ -51,6 +51,17 @@ INSERT INTO `acl` (`acl_id`, `subject`, `is_group`, `object`) VALUES
 
 -- --------------------------------------------------------
 
+-- Table structure for table `driver_wizard`
+DROP TABLE IF EXISTS `driver_wizard`;
+CREATE TABLE `driver_wizard` (
+  `username` varchar(255),
+  `drivername` varchar(255),
+  `description` varchar(255),
+  `data` longtext,
+  `TopUri` varchar(255),
+  `drivertype` varchar(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
 --
 -- Table structure for table `label`
 --
