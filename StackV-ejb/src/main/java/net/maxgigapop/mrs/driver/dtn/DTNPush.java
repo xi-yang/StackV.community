@@ -37,12 +37,19 @@ public class DTNPush {
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String output;
     private String error;
+    private String localMap;
+    private final String user_account;
+    private final String access_key;
     
-    //todo: push dynamic infomation
-    public DTNPush(String user_account, String access_key, String address, String topologyUri) {
+    //todo: push dynamic infomation 
+    public DTNPush(String user_account, String access_key, String address, String topologyUri, String transMap) {
+
         //have all the information regarding the topology
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
+        this.user_account = user_account;
+        this.access_key = access_key;
+        this.localMap = transMap;
     }
 
     /**
@@ -80,29 +87,38 @@ public class DTNPush {
                 else
                     type = "-r";
                 ArrayList<String> cmdarray = new ArrayList<String>();
-                String taskid = parameters[3];
+                String id = parameters[3];
                 String source = parameters[4];
                 String destination = parameters[5];
+                String at = parameters[6];
+                String traffic = parameters[7];
                 String[] options = null;
                 if (method.compareTo("globus-cli")==0 ){
                     //start transfer using globus online
-                    //todo: get credential automatically
-                    //activate credential beforehand
-                    cmdarray.add("gsissh"); cmdarray.add("cli.globusonline.org"); cmdarray.add("transfer");
-                    cmdarray.add("--taskid="+taskid);
-                    if(parameters.length == 7) {
-                        options = parameters[6].split("\\s+");
-                        cmdarray.addAll(Arrays.asList(options));
+                    if(id.contains("-copy")){   //add transfer info to transferMap
+                        id = id.substring(0, id.indexOf("-copy"));
+                        this.localMap += source+";"+destination+";"+id+";"+"ACTIVE;"+at+";"+traffic+";\n";
+                        logger.info("Request 'CreateDataTransfer' successful committed.");
+                    } else {    //create transfer
+                        cmdarray.add("gsissh"); cmdarray.add("cli.globusonline.org"); cmdarray.add("transfer");
+                        cmdarray.add("--taskid="+id); 
+                        if(parameters.length == 9) {
+                            options = parameters[8].split("\\s+");
+                            cmdarray.addAll(Arrays.asList(options));
+                        }
+                        cmdarray.add("--"); cmdarray.add(source); cmdarray.add(destination);
+                        if(parameters[2].compareTo("file")!=0)
+                            cmdarray.add("-r");
+                        //cmdarray.add("&");
+                        String cmd[] = new String[cmdarray.size()];
+                        cmd = cmdarray.toArray(cmd);
+                        int exit = runcommand(cmd);
+                        if (exit==0) {
+                            logger.info("Request 'CreateDataTransfer' successful committed. " + this.output);
+                            //add transfer info to transferMap
+                            this.localMap += source+";"+destination+";"+id+";"+"ACTIVE;"+at+";"+traffic+";\n";
+                        }
                     }
-                    cmdarray.add("--"); cmdarray.add(source); cmdarray.add(destination);
-                    if(parameters[2].compareTo("file")!=0)
-                        cmdarray.add("-r");
-                    cmdarray.add("&");
-                    String cmd[] = new String[cmdarray.size()];
-                    cmd = cmdarray.toArray(cmd);
-                    int exit = runcommand(cmd);
-                    if (exit==0)
-                        logger.info("Request 'CreateDataTransfer' successful committed " + this.output);
                 }
                 else if (method.compareTo("globus-url-copy")==0 ){
                     //start transfer using globus-url-copy
@@ -112,10 +128,15 @@ public class DTNPush {
                     String dst_cred = temp[3];
                     String src_dn = getDN(src_cred);
                     String dst_dn = getDN(dst_cred);
+                    String dc = "auto";
+                    if(src_cred.contains("mira"))
+                        dc=src_cred;
+                    else
+                        dc=dst_cred;
                     cmdarray.add("globus-url-copy");
                     cmdarray.add("-sc"); cmdarray.add(src_cred);
                     cmdarray.add("-dc"); cmdarray.add(dst_cred);
-                    cmdarray.add("-data-cred"); cmdarray.add("auto");
+                    cmdarray.add("-data-cred"); cmdarray.add(dc);
                     cmdarray.add("-ss"); cmdarray.add(src_dn);
                     cmdarray.add("-ds"); cmdarray.add(dst_dn);
                     if(parameters.length == 8) {
@@ -198,7 +219,8 @@ public class DTNPush {
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode transfer = querySolution.get("transfer");
-            String transferTagValue = transfer.asResource().toString().replace(topologyUri, "");
+            String tmp = transfer.asResource().toString();
+            String transferTagValue = tmp.substring(tmp.lastIndexOf(':') + 1);
 
             //find out the source of transfer
             query = "SELECT ?source WHERE {<" + transfer.asResource() + "> mrs:source ?source}";
@@ -227,7 +249,27 @@ public class DTNPush {
                 RDFNode parameter = querySolution1.get("parameter");
                 parameters = parameter.asLiteral().getString();
             }
- 
+
+            //find out the active transfers
+            query = "SELECT ?at WHERE {<" + transfer.asResource() + "> mrs:active_transfers ?at}";
+            r1 = executeQuery(query, emptyModel, modelAdd);
+            String at = "";
+            if (r1.hasNext()) {
+                querySolution1 = r1.next();
+                RDFNode active_transfers = querySolution1.get("at");
+                at = active_transfers.asLiteral().getString();
+            }
+
+            //find out the background traffic
+            query = "SELECT ?traffic WHERE {<" + transfer.asResource() + "> mrs:average_traffic ?traffic}";
+            r1 = executeQuery(query, emptyModel, modelAdd);
+            String traffic = "";
+            if (r1.hasNext()) {
+                querySolution1 = r1.next();
+                RDFNode Traffic = querySolution1.get("traffic");
+                traffic = Traffic.asLiteral().getString();
+            }
+            
             //find out the credential paths of transfer
             query = "SELECT ?credential WHERE {<" + transfer.asResource() + "> mrs:credential ?credential}";
             r1 = executeQuery(query, emptyModel, modelAdd);
@@ -249,24 +291,21 @@ public class DTNPush {
             
             String s_addr = source.asLiteral().getString().split("/")[0];
             String d_addr = destination.asLiteral().getString().split("/")[0];            
-            if(s_addr.contains("#") || d_addr.contains("#")){
-                //generate taskid for data transfer
-                String[] cmd = {"gsissh", "cli.globusonline.org", "transfer", "--generate-id"};
-                int exit = runcommand(cmd);
-                if(exit==0){
-                    String[] tokens = this.output.split("\n");
-                    String taskid = tokens[0];
-                    requests += String.format("CreateDataTransfer;globus-cli;%s;%s;%s;%s;%s;\n", type.asLiteral().getString(),
-                            taskid, source.asLiteral().getString(), destination.asLiteral().getString(), parameters);
-                }   
-            }
-            else{
+            if(s_addr.contains("#") || d_addr.contains("#")) {
+                requests += String.format("CreateDataTransfer;globus-cli;%s;%s;%s;%s;%s;%s;%s;\n", type.asLiteral().getString(),
+                        transferTagValue, source.asLiteral().getString(), destination.asLiteral().getString(), at, traffic, parameters);   
+            } else {
                 //globus-url-copy transfer
                 requests += String.format("CreateDataTransfer;globus-url-copy;%s;%s;%s;%s;%s;%s;\n", type.asLiteral().getString(), 
                         transferTagValue, source.asLiteral().getString(), destination.asLiteral().getString(), credentials, parameters);
             }
         }
         return requests;
+    }
+
+
+    public String getTransferMap(){
+        return this.localMap;
     }
 
     /**
@@ -335,7 +374,7 @@ public class DTNPush {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException ex) {
-            Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, ex.getMessage());
         }
         return exitVal;
     }

@@ -165,7 +165,15 @@ public class Mrs {
     public static final Property type = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#type");
 
     public static final Property value = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#value");
-
+    
+    public static final Property active_transfers = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#active_transfers");
+    
+    public static final Property average_traffic = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#average_traffic");
+    
+    public static final Property destination = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#destination");
+    
+    public static final Property source = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#source");
+    
     public static final Resource Batch = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#Batch");
 
     public static final Resource BlockStorageService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService");
