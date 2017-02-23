@@ -2,10 +2,10 @@
 <%@page isErrorPage="true" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>    
+    <head>
         <meta charset="UTF-8">
         <title>Error</title>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
@@ -18,12 +18,12 @@
         <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
 
-    <body>        
+    <body>
         <!-- NAV BAR -->
         <div id="nav">
         </div>
         <!-- SIDE BAR -->
-        <div id="sidebar">            
+        <div id="sidebar">
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
@@ -46,14 +46,14 @@
                 <tr valign="top">
                     <td><b>Stack trace:</b></td>
                     <td>
-                        <c:forEach var="trace" 
+                        <c:forEach var="trace"
                                    items="${pageContext.exception.stackTrace}">
                             <p>${trace}</p>
                         </c:forEach>
                     </td>
                 </tr>
             </table>
-        </div>        
+        </div>
         <!-- JS -->
         <script>
             $(function () {
@@ -77,6 +77,6 @@
                 });
                 $("#nav").load("/StackV-web/navbar.html");
             });
-        </script>        
+        </script>
     </body>
 </html>

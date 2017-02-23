@@ -350,7 +350,7 @@ public class ServiceResource {
     public ApiDeltaVerification verify(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
         ApiDeltaVerification apiDeltaVerification = new ApiDeltaVerification();
         java.util.Date now = new java.util.Date();
-        apiDeltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        apiDeltaVerification.setCreationTime(now.toString());
         apiDeltaVerification.setReferenceUUID(svcDeltaUUID);
         ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
         serviceCallHandler.verifyDelta(svcDeltaUUID, deltaVerification, false);
@@ -382,21 +382,6 @@ public class ServiceResource {
         ApiDeltaRetrieval apiDeltaRetrieval = new ApiDeltaRetrieval();
         ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
         serviceCallHandler.retrieveDelta(svcUUID, deltaRetrieval, true);
-        apiDeltaRetrieval.setReferenceUUID(deltaRetrieval.getReferenceModelUUID());
-        apiDeltaRetrieval.setServiceModelAddition(deltaRetrieval.getModelAdditionSvc());
-        apiDeltaRetrieval.setServiceModelReduction(deltaRetrieval.getModelReductionSvc());
-        apiDeltaRetrieval.setSystemModelAddition(deltaRetrieval.getModelAdditionSys());
-        apiDeltaRetrieval.setSystemModelReduction(deltaRetrieval.getModelReductionSys());
-        return apiDeltaRetrieval;
-    }
-    
-    @GET
-    @Produces("application/xml")
-    @Path("/delta/{svcUUID}")
-    public ApiDeltaRetrieval retrieveDelta(@PathParam("svcUUID") String svcUUID) throws Exception {
-        ApiDeltaRetrieval apiDeltaRetrieval = new ApiDeltaRetrieval();
-        ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
-        serviceCallHandler.retrieveDelta(svcUUID, deltaRetrieval, false);
         apiDeltaRetrieval.setReferenceUUID(deltaRetrieval.getReferenceModelUUID());
         apiDeltaRetrieval.setServiceModelAddition(deltaRetrieval.getModelAdditionSvc());
         apiDeltaRetrieval.setServiceModelReduction(deltaRetrieval.getModelReductionSvc());

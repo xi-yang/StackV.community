@@ -1,28 +1,27 @@
-/* 
+/*
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 
 /* global XDomainRequest, baseUrl, loggedIn */
-
 // Service JavaScript Library
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
@@ -49,20 +48,15 @@ $(function () {
     keycloak.onAuthSuccess = function () {
         // catalog
         if (window.location.pathname === "/StackV-web/ops/catalog.jsp") {
-            setTimeout(catalogLoad, 750);
-            setRefreshTracker(60);
+            setTimeout(loadCatalog, 500);
+            setRefresh(60);
         }
         // templateDetails
         else if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
-            var uuid = getURLParameter("uuid");
-
-            deltaModerate();
-            instructionModerate();
-            buttonModerate();
-            loadACL(uuid);
-            loadStatus(uuid);
-            loadVisualization();
-            setRefreshInstance(60);
+            loadDetails();
+            setRefresh(60);
+        } else if (window.location.pathname === "/StackV-web/ops/acl.jsp") {
+            loadACLPortal();
         }
     };
     keycloak.onTokenExpire = function () {
@@ -72,10 +66,21 @@ $(function () {
             console.log("Automatic token update failed!");
         });
     };
-    
-    
+
+
 
     $("#nav").load("/StackV-web/navbar.html", function () {
+        // set the active link - get everything after StackV-web
+        var url = $(location).attr('href').split(/\/StackV-web\//)[1];
+        if (/driver.jsp/.test(url))
+            $("li#driver-tab").addClass("active");
+        else if (/catalog.jsp/.test(url))
+            $("li#catalog-tab").addClass("active");
+        else if (/graphTest.jsp/.test(url))
+            $("li#visualization-tab").addClass("active");
+        else if (/acl.jsp/.test(url))
+            $("li#acl-tab").addClass("active");
+
         $("#logout-button").click(function (evt) {
             keycloak.logout();
 
@@ -83,17 +88,6 @@ $(function () {
         });
         $("#account-button").click(function (evt) {
             keycloak.accountManagement();
-
-            evt.preventDefault();
-        });
-    });
-    $("#sidebar").load("/StackV-web/sidebar.html", function () {
-        $("#sidebar-toggle").click(function (evt) {
-            $("#sidebar-toggle-1").toggleClass("img-off");
-            $("#sidebar-toggle-2").toggleClass("img-off");
-
-            $("#sidebar-contents").toggleClass("sidebar-open");
-            $("#main-pane").toggleClass("sidebar-open");
 
             evt.preventDefault();
         });
@@ -122,11 +116,8 @@ $(function () {
     });
 
     $(".clickable-row").click(function () {
-        window.document.location = $(this).data("href");
-    });
-
-    $(".delta-table-header").click(function () {
-        $("#body-" + this.id).toggleClass("hide");
+        sessionStorage.setItem("uuid", $(this).data("href"));
+        window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
     });
 
     $("#black-screen").click(function () {
@@ -145,12 +136,6 @@ $(function () {
     clearCounters();
 });
 
-function detailsLoad() {
-    var uuid = getUrlParameter('uuid');
-    $ref = "/StackV-web/ops/details/dncDetails.jsp?uuid=" + uuid + " #instance-pane";
-
-    $("service-specific").load($ref);
-}
 function prettyPrintInfo() {
     var ugly = document.getElementById('info-panel-text-area').value;
     var obj = JSON.parse(ugly);
@@ -637,6 +622,10 @@ function checkInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
         success: function (result) {
             var statusElement = document.getElementById("instance-status");
             statusElement.innerHTML = result;
@@ -644,45 +633,14 @@ function checkInstance(uuid) {
     });
 }
 
-function propagateInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/propagate';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        success: function (result) {
-            window.location.reload(true);
-        }
-    });
-}
-
-function commitInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/commit';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        success: function (result) {
-            window.location.reload(true);
-        }
-    });
-}
-
-function revertInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/revert';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        success: function (result) {
-            window.location.reload(true);
-        }
-    });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
-}
-
 function cancelInstance(uuid) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/cancel';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -694,6 +652,9 @@ function forceCancelInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -706,6 +667,9 @@ function reinstateInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -717,6 +681,9 @@ function forceReinstateInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -729,6 +696,9 @@ function forceRetryInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -741,17 +711,24 @@ function modifyInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
     });
     //window.location.replace('/StackV-web/ops/catalog.jsp');
 }
+
 function forceModifyInstance(uuid) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/force_modify';
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -764,6 +741,10 @@ function verifyInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
         success: function (result) {
             window.location.reload(true);
         }
@@ -776,6 +757,9 @@ function deleteInstance(uuid) {
     $.ajax({
         url: apiUrl,
         type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (result) {
             console.log("DELETION SUCCESSFUL");
             window.location.replace('/StackV-web/ops/catalog.jsp');
@@ -789,188 +773,6 @@ function resetForm() {
     var form = document.getElementById('custom-form');
     form.reset();
 }
-
-function applyNetTemplate(code) {
-    var form = document.getElementById('custom-form');
-    form.reset();
-
-    switch (code) {
-        case 1:
-            form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.1.0.0/16';
-
-            if (subRouteCounter === 1) {
-                addSubnetRoute('subnet1-route');
-            }
-            if (subnetCounter === 1) {
-                addSubnet('aws');
-            }
-
-            form.elements['subnet1-name'].value = '';
-            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-            form.elements['subnet1-route1-next'].value = 'internet';
-
-            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-prop'].checked = true;
-
-            form.elements['subnet2-name'].value = '';
-            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-
-            break;
-
-        case 2:
-            form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.1.0.0/16';
-
-            if (subRouteCounter === 1) {
-                addSubnetRoute('subnet1-route');
-            }
-            if (subnetCounter === 1) {
-                addSubnet('aws');
-            }
-
-            form.elements['subnet1-name'].value = '';
-            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-            form.elements['subnet1-route1-next'].value = 'internet';
-            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-prop'].checked = true;
-            form.elements['subnet1-vm1'].value = 'vm1';
-
-
-            form.elements['subnet2-name'].value = '';
-            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-            form.elements['subnet2-vm2'].value = 'vm2';
-
-            form.elements['conn-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['conn-vlan'].value = 'any';
-
-            break;
-
-        case 3:
-            form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.1.0.0/16';
-
-            if (subRouteCounter === 1) {
-                addSubnetRoute('subnet1-route');
-            }
-            if (subnetCounter === 1) {
-                addSubnet('aws');
-            }
-
-            form.elements['subnet1-name'].value = '';
-            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-
-            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-            form.elements['subnet1-route1-next'].value = 'internet';
-            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-prop'].checked = true;
-
-            form.elements['subnet1-vm1'].value = 'test_with_vm_types_1';
-            form.elements['subnet1-vm1-image'].value = 'ami-08111162';
-            form.elements['subnet1-vm1-instance'].value = 't2.micro';
-
-            form.elements['subnet2-name'].value = '';
-            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-
-            form.elements['subnet2-vm2'].value = 'test_with_vm_types_2';
-            form.elements['subnet2-vm2-image'].value = 'ami-fce3c696';
-            form.elements['subnet2-vm2-instance'].value = 't2.small';
-            form.elements['subnet2-vm2-keypair'].value = 'xi-aws-max-dev-key';
-            form.elements['subnet2-vm2-security'].value = 'geni';
-
-            break;
-
-        case 4:
-            form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.1.0.0/16';
-
-//            if (subRouteCounter === 1) {
-//                addSubnetRoute('subnet1-route');
-//            }
-//            if (subnetCounter === 1) {
-//                addSubnet('ops');
-//            }
-
-            form.elements['subnet1-name'].value = '';
-            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-
-//            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-//            form.elements['subnet1-route1-next'].value = 'internet';
-//            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-//            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-default'].checked = true;
-
-            form.elements['subnet1-vm1'].value = 'vm_OPS';
-//            form.elements['subnet1-vm1-instance'].value = 'm1.medium';
-//            form.elements['subnet1-vm1-keypair'].value = 'icecube_key';
-//            form.elements['subnet1-vm1-security'].value = 'rains';
-            form.elements['subnet1-vm1-host'].value = 'msx1';
-
-//            form.elements['subnet2-name'].value = '';
-//            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-//            
-            break;
-
-        case 5:
-            form.elements['netType'].value = 'internal';
-            form.elements['netCidr'].value = '10.1.0.0/16';
-
-            if (VMRouteCounter === 1) {
-                addVMRoute('subnet1-vm1-route');
-            }
-
-            form.elements['subnet1-name'].value = '';
-            form.elements['subnet1-cidr'].value = '10.1.0.0/24';
-
-//            form.elements['subnet1-route1-to'].value = '206.196.0.0/16';
-//            form.elements['subnet1-route1-next'].value = 'internet';
-//            form.elements['subnet1-route2-to'].value = '72.24.24.0/24';
-//            form.elements['subnet1-route2-next'].value = 'vpn';
-            form.elements['subnet1-route-default'].checked = true;
-
-            form.elements['subnet1-vm1'].value = 'vm_OPS';
-            form.elements['subnet1-vm1-instance'].value = '4';
-            form.elements['subnet1-vm1-image'].value = '77817b73-baa2-424b-b890-e1a95af1fdf9';
-            form.elements['subnet1-vm1-keypair'].value = 'icecube_key';
-            form.elements['subnet1-vm1-security'].value = 'rains';
-            form.elements['subnet1-vm1-host'].value = 'msx1';
-            form.elements['subnet1-vm1-floating'].value = '206.196.180.148';
-            form.elements['subnet1-vm1-sriov1-dest'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
-            form.elements['subnet1-vm1-sriov1-mac'].value = 'aa:bb:cc:00:00:12';
-            form.elements['subnet1-vm1-sriov1-ip'].value = '10.10.0.1/30';
-            form.elements['subnet1-vm1-route1-to'].value = '192.168.0.0/24';
-            form.elements['subnet1-vm1-route1-next'].value = '10.10.0.2';
-            form.elements['subnet1-vm1-route2-to'].value = '206.196.179.0/24';
-            form.elements['subnet1-vm1-route2-next'].value = '10.10.0.2';
-
-//            form.elements['subnet2-name'].value = '';
-//            form.elements['subnet2-cidr'].value = '10.1.1.0/24';
-
-            break;
-    }
-}
-
-function applyFL2PTemplate(code) {
-    var form = document.getElementById('custom-form');
-    form.reset();
-
-    switch (code) {
-        case 1:
-            form.elements['topUri'].value = 'urn:ogf:network:domain=vo1.stackv.org:link=link1';
-            form.elements['eth-src'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000005:port-s5-eth1';
-            form.elements['eth-des'].value = 'urn:ogf:network:onos.maxgigapop.net:network1:of:0000000000000002:port-s2-eth1';
-
-            break;
-    }
-
-}
-
-
 
 function applyDNCTemplate(code) {
     var form = document.getElementById('custom-form');
@@ -1097,98 +899,18 @@ function timerChange(sel) {
     }
 }
 
-
-function setRefreshTracker(time) {
+function setRefresh(time) {
     countdown = time;
     refreshTimer = setInterval(function () {
-        reloadTracker(time);
+        if (window.location.pathname === "/StackV-web/ops/catalog.jsp") {
+            reloadCatalog(time);
+        } else if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
+            reloadDetails(time);
+        }
     }, (time * 1000));
     countdownTimer = setInterval(function () {
         refreshCountdown(time);
     }, 1000);
-}
-
-function reloadTracker(time) {
-    enableLoading();
-    keycloak.updateToken(30).error(function () {
-        console.log("Error updating token!");
-    });
-
-    var manual = false;
-    if (typeof time === "undefined") {
-        time = countdown;
-    }
-    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-        manual = true;
-    }
-
-    $('#instance-panel').load(document.URL + ' #status-table', function () {
-        loadInstances();
-
-        $(".clickable-row").click(function () {
-            window.document.location = $(this).data("href");
-        });
-
-        if (manual === false) {
-            countdown = time;
-            document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-        } else {
-            document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-        }
-
-        setTimeout(function () {
-            disableLoading();
-        }, 750);
-    });
-}
-
-function setRefreshInstance(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadInstance(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-
-function reloadInstance(time) {
-    keycloak.updateToken(30).error(function () {
-        console.log("Error updating token!");
-    });
-    enableLoading();
-    var uuid = getURLParameter("uuid");
-    var manual = false;
-    if (typeof time === "undefined") {
-        time = countdown;
-    }
-    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-        manual = true;
-    }
-
-    $('#details-panel').load(document.URL + ' #details-panel', function () {
-        deltaModerate();
-        instructionModerate();
-        buttonModerate();
-        loadACL(uuid);
-        loadStatus(uuid);
-        loadVisualization();
-
-        $(".delta-table-header").click(function () {
-            $("#body-" + this.id).toggleClass("hide");
-        });
-
-        if (manual === false) {
-            countdown = time;
-            document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-        } else {
-            document.getElementById('refresh-button').innerHTML = 'Manually RefreshNow ';
-        }
-
-        setTimeout(function () {
-            disableLoading();
-        }, 750);
-    });
 }
 
 function refreshCountdown() {
@@ -1196,10 +918,95 @@ function refreshCountdown() {
     countdown--;
 }
 
+function reloadCatalog(time) {
+    enableLoading();
+    keycloak.updateToken(90).error(function () {
+        console.log("Error updating token!");
+    }).success(function (refreshed) {
+        if (refreshed) {
+            sessionStorage.setItem("token", keycloak.token);
+            console.log("Token Refreshed by nexus!");
+        }
+
+        var timerSetting = $("#refresh-timer").val();
+        var manual = false;
+        if (typeof time === "undefined") {
+            time = countdown;
+        }
+        if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+            manual = true;
+        }
+
+        $('#instance-panel').load(document.URL + ' #status-table', function () {
+            loadInstances();
+
+            $("#refresh-timer").val(timerSetting);
+            if (manual === false) {
+                countdown = time;
+                document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+            } else {
+                document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+            }
+
+            $(".clickable-row").click(function () {
+                sessionStorage.setItem("uuid", $(this).data("href"));
+                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
+            });
+
+            setTimeout(function () {
+                disableLoading();
+            }, 750);
+        });
+
+    });
+}
+
+function reloadDetails(time) {
+    enableLoading();
+    keycloak.updateToken(90).error(function () {
+        console.log("Error updating token!");
+    }).success(function (refreshed) {
+        if (refreshed) {
+            sessionStorage.setItem("token", keycloak.token);
+            console.log("Token Refreshed by nexus!");
+        }
+
+        var timerSetting = $("#refresh-timer").val();
+        var uuid = getURLParameter("uuid");
+        var manual = false;
+        if (typeof time === "undefined") {
+            time = countdown;
+        }
+        if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+            manual = true;
+        }
+
+        $('#details-panel').load(document.URL + ' #details-table', function () {
+            loadDetails();
+
+            setTimeout(function () {
+                $("#refresh-timer").val(timerSetting);
+                if (manual === false) {
+                    countdown = time;
+                    $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
+                } else {
+                    $("#refresh-button").html('Manually Refresh Now');
+                }
+
+                $(".delta-table-header").click(function () {
+                    $("#body-" + this.id).toggleClass("hide");
+                });
+
+                disableLoading();
+            }, 750);
+        });
+    });
+}
+
 
 /* CATALOG */
 
-function catalogLoad() {
+function loadCatalog() {
     loadInstances();
     loadWizard();
     loadEditor();
@@ -1207,7 +1014,7 @@ function catalogLoad() {
     setTimeout(function () {
         $("#instance-panel").removeClass("closed");
         $("#catalog-panel").removeClass("closed");
-    }, 250);
+    }, 500);
 }
 
 function loadInstances() {
@@ -1228,7 +1035,7 @@ function loadInstances() {
 
                 var row = document.createElement("tr");
                 row.className = "clickable-row";
-                row.setAttribute("data-href", '/StackV-web/ops/details/templateDetails.jsp?uuid=' + instance[1]);
+                row.setAttribute("data-href", instance[1]);
 
                 var cell1_1 = document.createElement("td");
                 cell1_1.innerHTML = instance[3];
@@ -1246,7 +1053,8 @@ function loadInstances() {
             }
 
             $(".clickable-row").click(function () {
-                window.document.location = $(this).data("href");
+                sessionStorage.setItem("uuid", $(this).data("href"));
+                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
             });
         }
     });
@@ -1255,7 +1063,8 @@ function loadInstances() {
 function loadWizard() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("wizard-body");
-    $("#wizard-body").empty();
+    // wipe table
+    $("tbody#wizard-body").find("tr").remove();
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/wizard';
     $.ajax({
@@ -1265,6 +1074,8 @@ function loadWizard() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
+            // unbind all click functions!
+            $("button").off("click");
             for (i = 0; i < result.length; i++) {
                 var profile = result[i];
 
@@ -1274,15 +1085,17 @@ function loadWizard() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button><button class='button-profile-delete' id='" + profile[2] + "'>Delete</button>";
+                cell1_3.innerHTML = "<button class='button-profile-select btn btn-default' id='" + profile[2] + "'>Select</button><button class='button-profile-delete btn btn' id='" + profile[2] + "'>Delete</button>";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
 
-            $(".button-profile-select").click(function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
+            $(".button-profile-select").on("click", function (evt) {
+                var resultID = this.id,
+                        apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
+
                 $.ajax({
                     url: apiUrl,
                     type: 'GET',
@@ -1291,9 +1104,12 @@ function loadWizard() {
                     },
                     success: function (result) {
                         $("#black-screen").removeClass("off");
-                        $("#info-panel").addClass("active");
+                        $("#profile-modal").modal("show");
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(JSON.stringify(result));
+                        $(".button-profile-save").attr('id', resultID);
+                        $(".button-profile-save-as").attr('id', resultID);
+                        $(".button-profile-submit").attr('id', resultID);
                         prettyPrintInfo();
                     },
                     error: function (textStatus, errorThrown) {
@@ -1305,7 +1121,7 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-delete").click(function (evt) {
+            $(".button-profile-delete").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
                 $.ajax({
                     url: apiUrl,
@@ -1314,7 +1130,7 @@ function loadWizard() {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
                     success: function (result) {
-                        wizardLoad();
+                        loadWizard();
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
@@ -1325,7 +1141,7 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-submit").click(function (evt) {
+            $(".button-profile-submit").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
                 $.ajax({
                     url: apiUrl,
@@ -1335,15 +1151,102 @@ function loadWizard() {
                     dataType: "json",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
-
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
                         console.log(errorThrown);
                     }
                 });
+                // reload top table and hide modal
+                reloadCatalog();
+                $("div#profile-modal").modal("hide");
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+
+            // Hide the regular buttons and reveal the save as box
+            $("button.button-profile-save-as").on("click", function (evt) {
+                $("div.info-panel-regular-buttons").css("display", "none");
+                $("div.info-panel-save-as-description").css("display", "block");
+            });
+
+            // Reveal the regular buttons and hide the save as boxes
+            $("button.button-profile-save-as-cancel").on("click", function (evt) {
+                $("div.info-panel-save-as-description").css("display", "none");
+                $("div.info-panel-regular-buttons").css("display", "block");
+            });
+
+
+            // After the user has put a new name and description for the new profile
+            $(".button-profile-save-as-confirm").on("click", function (evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                var data = {
+                    name: $("#new-profile-name").val(),
+                    userID: keycloak.subject,
+                    description: $("#new-profile-description").val(),
+                    data: $("#info-panel-text-area").val()
+                };
+
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: JSON.stringify(data), //stringify to get escaped JSON in backend
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        // revert to regular buttons and close modal
+                        $("input#new-profile-name").val("");
+                        $("input#new-profile-description").val("");
+                        $("div.info-panel-save-as-description").css("display", "none");
+                        $("div.info-panel-regular-buttons").css("display", "block");
+                        $("div#profile-modal").modal("hide");
+                        // reload table
+                        loadWizard();
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                // reload the bottom panel
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+
+            $(".button-profile-save").on("click", function (evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
+
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: $("#info-panel-text-area").val(),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        // reload the bottom panel
+                        loadWizard();
+                        $("#profile-modal").modal("hide");
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
                 evt.preventDefault();
@@ -1373,7 +1276,7 @@ function loadEditor() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-service-select' id='" + profile[2] + "'>Select</button";
+                cell1_3.innerHTML = "<button class='button-service-select btn btn-default' id='" + profile[2] + "'>Select</button";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
@@ -1393,8 +1296,485 @@ function loadEditor() {
 
 /* DETAILS */
 
+function loadDetails() {
+    var uuid = sessionStorage.getItem("uuid");
+
+    // Subfunctions
+    subloadInstance();
+    subloadDelta();
+    subloadVerification();
+    subloadACL();
+
+    // Moderation
+    setTimeout(function () {
+        loadStatus(uuid);
+        loadACL(uuid);
+
+        loadVisualization();
+    }, 400);
+}
+
+function subloadInstance() {
+    var uuid = sessionStorage.getItem("uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (instance) {
+            /*  instance mapping:
+             *      0 - verification_state
+             *      1 - name
+             *      2 - alias_name
+             *      3 - creation_time
+             *      4 - super_state     */
+
+            $("#details-panel").append("<div id='instance-verification' class='hide'>" + instance[0] + "</div>");
+            var panel = document.getElementById("details-panel");
+
+            var table = document.createElement("table");
+
+            table.id = "details-table";
+            table.className = "management-table";
+
+            var thead = document.createElement("thead");
+            var row = document.createElement("tr");
+            var head = document.createElement("th");
+            head.innerHTML = instance[1] + " Service Details";
+            row.appendChild(head);
+            head = document.createElement("th");
+            head.innerHTML = '<div id="refresh-panel" class="form-inline">'
+                    + '<label for="refresh-timer">Auto-Refresh Interval</label>'
+                    + '<select id="refresh-timer" onchange="timerChange(this)" class="form-control">'
+                    + '<option value="off">Off</option>'
+                    + '<option value="5">5 sec.</option>'
+                    + '<option value="10">10 sec.</option>'
+                    + '<option value="30">30 sec.</option>'
+                    + '<option value="60" selected>60 sec.</option>'
+                    + '</select>'
+                    + '</div>'
+                    + '<button class="button-header btn btn-sm" id="refresh-button" onclick="reloadDetails()">Refresh in    seconds</button>';
+            row.appendChild(head);
+            thead.appendChild(row);
+            table.appendChild(thead);
+
+            var tbody = document.createElement("tbody");
+            var row = document.createElement("tr");
+            var cell = document.createElement("td");
+            cell.innerHTML = "Instance Alias";
+            row.appendChild(cell);
+            cell = document.createElement("td");
+            cell.innerHTML = instance[2];
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            row = document.createElement("tr");
+            cell = document.createElement("td");
+            cell.innerHTML = "Reference UUID";
+            row.appendChild(cell);
+            cell = document.createElement("td");
+            cell.innerHTML = uuid;
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            row = document.createElement("tr");
+            cell = document.createElement("td");
+            cell.innerHTML = "Creation Time";
+            row.appendChild(cell);
+            cell = document.createElement("td");
+            cell.id = "instance-creation-time";
+            cell.innerHTML = instance[3];
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            row = document.createElement("tr");
+            cell = document.createElement("td");
+            cell.innerHTML = "Instance State";
+            row.appendChild(cell);
+            cell = document.createElement("td");
+            cell.id = "instance-superstate";
+            cell.innerHTML = instance[4];
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            row = document.createElement("tr");
+            cell = document.createElement("td");
+            cell.innerHTML = "Operation Status";
+            row.appendChild(cell);
+            cell = document.createElement("td");
+            cell.id = "instance-substate";
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            row = document.createElement("tr");
+            row.className = "instruction-row";
+            cell = document.createElement("td");
+            cell.innerHTML = '<div id="instruction-block"></div>';
+            cell.colSpan = "2";
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            row = document.createElement("tr");
+            row.className = "button-row";
+            cell = document.createElement("td");
+            cell.innerHTML = '<div class="service-instance-panel">'
+                    + '<button class="btn btn-default hide instance-command" id="reinstate">Reinstate</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_reinstate">Force Reinstate</button>'
+                    + '<button class="btn btn-default hide instance-command" id="cancel">Cancel</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_cancel">Force Cancel</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_retry">Force Retry</button>'
+                    + '<button class="btn btn-default hide instance-command" id="modify">Modify</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_modify">Force Modify</button>'
+                    + '<button class="btn btn-default hide instance-command" id="reverify">Re-Verify</button>'
+                    + '<button class="btn btn-default hide instance-command" id="delete">Delete</button>'
+                    + '<button class="btn btn-default hide instance-command" id="force_delete">Force Delete</button>'
+                    + '</div>';
+            cell.colSpan = "2";
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            table.appendChild(tbody);
+            panel.insertBefore(table, panel.firstChild);
+
+            $(".delta-table-header").click(function () {
+                $("#body-" + this.id).toggleClass("hide");
+            });
+
+            $(".instance-command").click(function () {
+                var command = this.id;
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function () {
+                        if (command === "delete" || command === "force_delete") {
+                            enableLoading();
+                            setTimeout(function () {
+                                window.document.location = "/StackV-web/ops/catalog.jsp";
+                            }, 250);
+                        } else {
+                            reloadDetails();
+                        }
+                    }
+                });
+            });
+        }
+    });
+}
+
+function subloadDelta() {
+    var uuid = sessionStorage.getItem("uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/delta';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                /*  delta mapping:
+                 *      0 - type
+                 *      1 - service_delta_id
+                 *      2 - super_state
+                 *      3 - delta   */
+                var delta = result[i];
+
+                var table = document.createElement("table");
+                table.className = "management-table delta-table";
+                table.id = "delta-" + delta[0];
+
+                var thead = document.createElement("thead");
+                thead.className = "delta-table-header";
+                thead.id = "delta-" + delta[1];
+                var row = document.createElement("tr");
+                var head = document.createElement("th");
+                head.innerHTML = "Delta Details";
+                row.appendChild(head);
+                head = document.createElement("th");
+                row.appendChild(head);
+                thead.appendChild(row);
+                table.appendChild(thead);
+
+                var tbody = document.createElement("tbody");
+                tbody.className = "delta-table-body";
+                tbody.id = "body-delta-" + delta[1];
+
+                row = document.createElement("tr");
+                var cell = document.createElement("td");
+                cell.innerHTML = "Delta State";
+                row.appendChild(cell);
+                cell = document.createElement("td");
+                cell.innerHTML = delta[2];
+                row.appendChild(cell);
+                tbody.appendChild(row);
+
+                row = document.createElement("tr");
+                cell = document.createElement("td");
+                cell.innerHTML = "Delta Type";
+                row.appendChild(cell);
+                cell = document.createElement("td");
+                cell.innerHTML = delta[0];
+                row.appendChild(cell);
+                tbody.appendChild(row);
+
+                row = document.createElement("tr");
+                cell = document.createElement("td");
+                row.appendChild(cell);
+                cell = document.createElement("td");
+                cell.id = '';
+                cell.innerHTML = delta[3];
+                row.appendChild(cell);
+                tbody.appendChild(row);
+
+                row = document.createElement("tr");
+                cell = document.createElement("td");
+                cell.colSpan = "2";
+                cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'
+                        + delta[0] + '-delta-table\', \'#delta-' + delta[0] + '\');">Toggle Text Model</button>';
+                row.appendChild(cell);
+                tbody.appendChild(row);
+
+                table.appendChild(tbody);
+                document.getElementById("details-panel").appendChild(table);
+
+                $(".delta-table-header").click(function () {
+                    $("#body-" + this.id).toggleClass("hide");
+                });
+            }
+        }
+    });
+}
+
+function subloadVerification() {
+    var uuid = sessionStorage.getItem("uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/verification';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (verification) {
+            /*  verification mapping:
+             *      0 - verification_run
+             *      1 - creation_time
+             *      2 - addition
+             *      3 - reduction
+             *      4 - service_instance_id */
+            var panel = document.getElementById("details-panel");
+
+            var div = document.createElement("div");
+            div.className = "hide";
+            div.id = "verification-run";
+            div.innerHTML = verification[0];
+            panel.appendChild(div);
+            div = document.createElement("div");
+            div.className = "hide";
+            div.id = "verification-time";
+            div.innerHTML = verification[1];
+            panel.appendChild(div);
+            div = document.createElement("div");
+            div.className = "hide";
+            div.id = "verification-addition";
+            div.innerHTML = verification[2];
+            panel.appendChild(div);
+            div = document.createElement("div");
+            div.className = "hide";
+            div.id = "verification-reduction";
+            div.innerHTML = verification[3];
+            panel.appendChild(div);
+
+            var table = document.createElement("table");
+            table.className = "management-table hide verification-table";
+
+
+            var thead = document.createElement("thead");
+            thead.className = "delta-table-header";
+            thead.id = "delta-" + verification[4];
+            var row = document.createElement("tr");
+            var head = document.createElement("th");
+            row.appendChild(head);
+            head = document.createElement("th");
+            head.innerHTML = "Verified";
+            row.appendChild(head);
+            head = document.createElement("th");
+            head.innerHTML = "Unverified";
+            row.appendChild(head);
+
+            thead.appendChild(row);
+            table.appendChild(thead);
+
+            var tbody = document.createElement("tbody");
+            tbody.className = "delta-table-body";
+            tbody.id = "body-delta-" + verification[4];
+
+            row = document.createElement("tr");
+            row.id = "verification-addition-row";
+            var cell = document.createElement("td");
+            cell.innerHTML = "Addition";
+            row.appendChild(cell);
+            cell = document.createElement("td");
+            cell.id = "ver-add";
+            row.appendChild(cell);
+            cell = document.createElement("td");
+            cell.id = "unver-add";
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            row = document.createElement("tr");
+            row.id = "verification-reduction-row";
+            cell = document.createElement("td");
+            cell.innerHTML = "Reduction";
+            row.appendChild(cell);
+            cell = document.createElement("td");
+            cell.id = "ver-red";
+            row.appendChild(cell);
+            cell = document.createElement("td");
+            cell.id = "unver-red";
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            row = document.createElement("tr");
+            cell = document.createElement("td");
+            cell.colSpan = "3";
+            cell.innerHTML = '<button class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.verification-table', '#delta-System\');">Toggle Text Model</button>';
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            table.appendChild(tbody);
+            panel.appendChild(table);
+
+            $(".delta-table-header").click(function () {
+                $("#body-" + this.id).toggleClass("hide");
+            });
+        }
+    });
+}
+
+function subloadACL() {
+    var uuid = sessionStorage.getItem("uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/acl';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (verification) {
+            /*  acl mapping:
+             */
+            var panel = document.getElementById("details-panel");
+
+            var table = document.createElement("table");
+            table.className = "management-table hide acl-table";
+
+            var thead = document.createElement("thead");
+            thead.className = "delta-table-header";
+            var row = document.createElement("tr");
+            var head = document.createElement("th");
+            row.appendChild(head);
+            head = document.createElement("th");
+            head.innerHTML = "Access Control";
+            row.appendChild(head);
+
+            thead.appendChild(row);
+            table.appendChild(thead);
+
+            var tbody = document.createElement("tbody");
+            tbody.className = "delta-table-body";
+            tbody.id = "acl-body";
+
+            row = document.createElement("tr");
+            var cell = document.createElement("td");
+            cell.innerHTML = '<select id="acl-select" size="5" name="acl-select" multiple></select>';
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            row = document.createElement("tr");
+            cell = document.createElement("td");
+            cell.innerHTML = '<label>Give user access: <input type="text" name="acl-input" /></label>';
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            table.appendChild(tbody);
+            panel.appendChild(table);
+
+            $(".delta-table-header").click(function () {
+                $("#body-" + this.id).toggleClass("hide");
+            });
+        }
+    });
+}
+
+function buildDeltaTable(type) {
+    var panel = document.getElementById("details-panel");
+
+    var table = document.createElement("table");
+    table.className = "management-table hide " + type.toLowerCase() + "-delta-table";
+
+    var thead = document.createElement("thead");
+    thead.className = "delta-table-header";
+    var row = document.createElement("tr");
+    var head = document.createElement("th");
+    head.innerHTML = type + " Delta";
+    row.appendChild(head);
+
+    head = document.createElement("th");
+    head.innerHTML = "Verified";
+    row.appendChild(head);
+
+    head = document.createElement("th");
+    head.innerHTML = "Unverified";
+    row.appendChild(head);
+
+    row.appendChild(head);
+
+    thead.appendChild(row);
+    table.appendChild(thead);
+
+    var tbody = document.createElement("tbody");
+    tbody.className = "delta-table-body";
+    //tbody.id = "acl-body";
+
+    row = document.createElement("tr");
+    var prefix = type.substring(0, 4).toLowerCase();
+    var add = document.createElement("td");
+    row.appendChild(add);
+
+    add = document.createElement("td");
+    add.id = prefix + "-add";
+    row.appendChild(add);
+
+    var red = document.createElement("td");
+    red.id = prefix + "-red";
+    row.appendChild(red);
+
+    tbody.appendChild(row);
+    row = document.createElement("tr");
+    var cell = document.createElement("td");
+    cell.colSpan = "3";
+    cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.' + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
+    row.appendChild(cell);
+    tbody.appendChild(row);
+
+    table.appendChild(tbody);
+    var verification = document.getElementsByClassName("verification-table");
+    if (verification) {
+        panel.insertBefore(table, verification[0]);
+    } else {
+        panel.appendChild(table);
+    }
+}
+
 function loadVisualization() {
-    $("#details-viz").load("/StackV-web/details_viz.jsp", function () {
+    $("#details-viz").load("/StackV-web/details_viz.html", function () {
         // Loading Verification visualization
         $("#ver-add").append($("#va_viz_div"));
         $("#ver-add").find("#va_viz_div").removeClass("hidden");
@@ -1410,6 +1790,9 @@ function loadVisualization() {
 
         // Loading Service Delta visualization
         $("#delta-Service").addClass("hide");
+        buildDeltaTable("Service");
+        buildDeltaTable("System");
+
         $(".service-delta-table").removeClass("hide");
 
         $("#serv-add").append($("#serva_viz_div"));
@@ -1418,7 +1801,7 @@ function loadVisualization() {
         $("#serv-red").append($("#servr_viz_div"));
         $("#serv-red").find("#servr_viz_div").removeClass("hidden");
 
-        // Loading System Delta visualization 
+        // Loading System Delta visualization
         var subState = document.getElementById("instance-substate").innerHTML;
         var verificationTime = document.getElementById("verification-time").innerHTML;
         if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {
@@ -1433,11 +1816,11 @@ function loadVisualization() {
                 toggleTextModel('.system-delta-table', '#delta-System');
             };
 
-            $("#sys-red").append($("#sysr_viz_div"));
-            $("#sys-add").append($("#sysa_viz_div"));
+            $("#syst-red").append($("#sysr_viz_div"));
+            $("#syst-add").append($("#sysa_viz_div"));
 
-            $("#sys-red").find("#sysr_viz_div").removeClass("hidden");
-            $("#sys-add").find("#sysa_viz_div").removeClass("hidden");
+            $("#syst-red").find("#sysr_viz_div").removeClass("hidden");
+            $("#syst-add").find("#sysa_viz_div").removeClass("hidden");
         } else {
             // Toggle button should toggle between  verification visualization and delta-System table
             // if the verification succeeded
@@ -1456,76 +1839,86 @@ function toggleTextModel(viz_table, text_table) {
         alert("Text model not found");
     } else {
         $(viz_table.toLowerCase()).toggleClass("hide");
+        // delta-Service, service verification etc must always display before
+        // everything else.
+        if (text_table.toLowerCase().indexOf("service") > 0) {
+            $(text_table).insertAfter("#details-table")
+        }
         $(text_table).toggleClass("hide");
+
     }
 }
 
 // Moderation Functions
 
 function deltaModerate() {
-    var subState = document.getElementById("instance-substate").innerHTML;
-    var verificationTime = document.getElementById("verification-time").innerHTML;
-    var verificationAddition = document.getElementById("verification-addition").innerHTML;
-    var verificationReduction = document.getElementById("verification-reduction").innerHTML;
+    if (document.getElementById("verification-time") !== null) {
+        var subState = document.getElementById("instance-substate").innerHTML;
+        var verificationTime = document.getElementById("verification-time").innerHTML;
+        var verificationAddition = document.getElementById("verification-addition").innerHTML;
+        var verificationReduction = document.getElementById("verification-reduction").innerHTML;
 
-    var verAdd = document.getElementById("ver-add").innerHTML;
-    var unverAdd = document.getElementById("unver-add").innerHTML;
-    var verRed = document.getElementById("ver-red").innerHTML;
-    var unverRed = document.getElementById("unver-red").innerHTML;
+        var verAdd = document.getElementById("ver-add").innerHTML;
+        var unverAdd = document.getElementById("unver-add").innerHTML;
+        var verRed = document.getElementById("ver-red").innerHTML;
+        var unverRed = document.getElementById("unver-red").innerHTML;
 
-    if ((subState === 'READY' || subState !== 'FAILED') && verificationTime !== '') {
-        $("#delta-System").addClass("hide");
-        $(".verification-table").removeClass("hide");
+        if ((subState === 'READY' || subState !== 'FAILED') && verificationTime !== '') {
+            $("#delta-System").addClass("hide");
+            $(".verification-table").removeClass("hide");
 
-        if (verificationAddition === '' || (verAdd === '{ }' && unverAdd === '{ }')) {
-            $("#verification-addition-row").addClass("hide");
-        }
-        if (verificationReduction === '' || (verRed === '{ }' && unverRed === '{ }')) {
-            $("#verification-reduction-row").addClass("hide");
+            if (verificationAddition === '' || (verAdd === '{ }' && unverAdd === '{ }')) {
+                $("#verification-addition-row").addClass("hide");
+            }
+            if (verificationReduction === '' || (verRed === '{ }' && unverRed === '{ }')) {
+                $("#verification-reduction-row").addClass("hide");
+            }
         }
     }
 }
 
 function instructionModerate() {
-    var subState = document.getElementById("instance-substate").innerHTML;
-    var verificationState = document.getElementById("instance-verification").innerHTML;
-    var verificationRun = document.getElementById("verification-run").innerHTML;
-    var blockString = "";
+    if (document.getElementById("verification-run") !== null) {
+        var subState = document.getElementById("instance-substate").innerHTML;
+        var verificationState = document.getElementById("instance-verification").innerHTML;
+        var verificationRun = document.getElementById("verification-run").innerHTML;
+        var blockString = "";
 
-    // State -1 - Error during validation/reconstruction
-    if ((subState === 'READY' || subState === 'FAILED') && verificationState === "") {
-        blockString = "Service encountered an error during verification. Please contact your technical supervisor for further instructions.";
-    }
-    // State 0 - Before Verify
-    else if (subState !== 'READY' && subState !== 'FAILED') {
-        blockString = "Service is still processing. Please hold for further instructions.";
-    }
-    // State 1 - Ready & Verifying
-    else if (subState === 'READY' && verificationState === '0') {
-        blockString = "Service is verifying.";
-    }
-    // State 2 - Ready & Verified
-    else if (subState === 'READY' && verificationState === '1') {
-        blockString = "Service has been successfully verified.";
-    }
-    // State 3 - Ready & Unverified
-    else if (subState === 'READY' && verificationState === '-1') {
-        blockString = "Service was not able to be verified.";
-    }
-    // State 4 - Failed & Verifying
-    else if (subState === 'FAILED' && verificationState === '0') {
-        blockString = "Service is verifying. (Run " + verificationRun + "/5)";
-    }
-    // State 5 - Failed & Verified
-    else if (subState === 'FAILED' && verificationState === '1') {
-        blockString = "Service has been successfully verified.";
-    }
-    // State 6 - Failed & Unverified
-    else if (subState === 'FAILED' && verificationState === '-1') {
-        blockString = "Service was not able to be verified.";
-    }
+        // State -1 - Error during validation/reconstruction
+        if ((subState === 'READY' || subState === 'FAILED') && verificationState === "") {
+            blockString = "Service encountered an error during verification. Please contact your technical supervisor for further instructions.";
+        }
+        // State 0 - Before Verify
+        else if (subState !== 'READY' && subState !== 'FAILED') {
+            blockString = "Service is still processing. Please hold for further instructions.";
+        }
+        // State 1 - Ready & Verifying
+        else if (subState === 'READY' && verificationState === '0') {
+            blockString = "Service is verifying.";
+        }
+        // State 2 - Ready & Verified
+        else if (subState === 'READY' && verificationState === '1') {
+            blockString = "Service has been successfully verified.";
+        }
+        // State 3 - Ready & Unverified
+        else if (subState === 'READY' && verificationState === '-1') {
+            blockString = "Service was not able to be verified.";
+        }
+        // State 4 - Failed & Verifying
+        else if (subState === 'FAILED' && verificationState === '0') {
+            blockString = "Service is verifying. (Run " + verificationRun + "/5)";
+        }
+        // State 5 - Failed & Verified
+        else if (subState === 'FAILED' && verificationState === '1') {
+            blockString = "Service has been successfully verified.";
+        }
+        // State 6 - Failed & Unverified
+        else if (subState === 'FAILED' && verificationState === '-1') {
+            blockString = "Service was not able to be verified.";
+        }
 
-    document.getElementById("instruction-block").innerHTML = blockString;
+        document.getElementById("instruction-block").innerHTML = blockString;
+    }
 }
 
 function buttonModerate() {
@@ -1534,12 +1927,12 @@ function buttonModerate() {
     var verificationState = document.getElementById("instance-verification").innerHTML;
 
     if (superState === 'Create') {
-        // State 0 - Stuck 
-        if (verificationState === "") {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+        // State 0 - Stuck
+        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
+            $("#force_delete").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 1 - Ready & Verifying
         if (subState === 'READY' && verificationState === '0') {
@@ -1547,13 +1940,13 @@ function buttonModerate() {
         }
         // State 2 - Ready & Verified
         else if (subState === 'READY' && verificationState === '1') {
-            $("#instance-cancel").toggleClass("hide");
-            $("#instance-modify").toggleClass("hide");
+            $("#cancel").toggleClass("hide");
+            $("#modify").toggleClass("hide");
         }
         // State 3 - Ready & Unverified
         else if (subState === 'READY' && verificationState === '-1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 4 - Failed & Verifying
         else if (subState === 'FAILED' && verificationState === '0') {
@@ -1561,21 +1954,21 @@ function buttonModerate() {
         }
         // State 5 - Failed & Verified
         else if (subState === 'FAILED' && verificationState === '1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fmodify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_modify").toggleClass("hide");
         }
         // State 6 - Failed & Unverified
         else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
     } else if (superState === 'Cancel') {
-        // State 0 - Stuck 
-        if (verificationState === "") {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+        // State 0 - Stuck
+        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
+            $("#force_delete").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 1 - Ready & Verifying
         if (subState === 'READY' && verificationState === '0') {
@@ -1583,15 +1976,15 @@ function buttonModerate() {
         }
         // State 2 - Ready & Verified
         else if (subState === 'READY' && verificationState === '1') {
-            $("#instance-reinstate").toggleClass("hide");
-            $("#instance-modify").toggleClass("hide");
-            $("#instance-delete").toggleClass("hide");
+            $("#reinstate").toggleClass("hide");
+            $("#modify").toggleClass("hide");
+            $("#delete").toggleClass("hide");
         }
         // State 3 - Ready & Unverified
         else if (subState === 'READY' && verificationState === '-1') {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-freinstate").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_delete").toggleClass("hide");
+            $("#force_reinstate").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 4 - Failed & Verifying
         else if (subState === 'FAILED' && verificationState === '0') {
@@ -1599,23 +1992,23 @@ function buttonModerate() {
         }
         // State 5 - Failed & Verified
         else if (subState === 'FAILED' && verificationState === '1') {
-            $("#instance-freinstate").toggleClass("hide");
-            $("#instance-fmodify").toggleClass("hide");
-            $("#instance-delete").toggleClass("hide");
+            $("#force_reinstate").toggleClass("hide");
+            $("#force_modify").toggleClass("hide");
+            $("#delete").toggleClass("hide");
         }
         // State 6 - Failed & Unverified
         else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-freinstate").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_delete").toggleClass("hide");
+            $("#force_reinstate").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
     } else if (superState === 'Reinstate') {
-        // State 0 - Stuck 
-        if (verificationState === "") {
-            $("#instance-fdelete").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+        // State 0 - Stuck
+        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
+            $("#force_delete").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 1 - Ready & Verifying
         if (subState === 'READY' && verificationState === '0') {
@@ -1623,13 +2016,13 @@ function buttonModerate() {
         }
         // State 2 - Ready & Verified
         else if (subState === 'READY' && verificationState === '1') {
-            $("#instance-cancel").toggleClass("hide");
-            $("#instance-modify").toggleClass("hide");
+            $("#cancel").toggleClass("hide");
+            $("#modify").toggleClass("hide");
         }
         // State 3 - Ready & Unverified
         else if (subState === 'READY' && verificationState === '-1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
         // State 4 - Failed & Verifying
         else if (subState === 'FAILED' && verificationState === '0') {
@@ -1637,14 +2030,14 @@ function buttonModerate() {
         }
         // State 5 - Failed & Verified
         else if (subState === 'FAILED' && verificationState === '1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fmodify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_modify").toggleClass("hide");
         }
         // State 6 - Failed & Unverified
         else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#instance-fcancel").toggleClass("hide");
-            $("#instance-fretry").toggleClass("hide");
-            $("#instance-reverify").toggleClass("hide");
+            $("#force_cancel").toggleClass("hide");
+            $("#force_retry").toggleClass("hide");
+            $("#reverify").toggleClass("hide");
         }
     }
 }
@@ -1676,9 +2069,14 @@ function loadStatus(refUuid) {
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
             ele.innerHTML = result;
+
+            deltaModerate();
+            instructionModerate();
+            buttonModerate();
         }
     });
 }

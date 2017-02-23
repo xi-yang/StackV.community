@@ -138,6 +138,7 @@ public class OpenStackPush {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
         requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
         requests.addAll(sriovRequests(modelRef, modelReduct, false));
@@ -164,6 +165,7 @@ public class OpenStackPush {
         requests.addAll(sriovRequests(modelRef, modelAdd, true));
         requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
+        requests.addAll(globusConnectRequests(modelRef, modelAdd, true));
 
         return requests;
     }
@@ -308,6 +310,9 @@ public class OpenStackPush {
                     for (String secgroup : sgs) {
                         SecurityGroupAddCheck(s.getId(), secgroup);
                     }
+                }
+                if (o.containsKey("alt name")) {
+                    client.setMetadata(o.get("server name").toString(), "alt name", o.get("alt name").toString());
                 }
             } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
                 Server server = client.getServer(o.get("server name").toString());
@@ -720,6 +725,11 @@ public class OpenStackPush {
                 String floatip = o.get("floating ip").toString();
                 Server s = client.getServer(servername);
                 Port p = client.getPort(portname);
+                //@TODO: check if floating ip is already associated with other VM/port
+                NetFloatingIP fipObj = client.findFloatingIp(floatip);
+                if (fipObj == null || fipObj.getFixedIpAddress() != null) {
+                    throw new EJBException("floating IP does not exist or has been associated with other instance / port: " + floatip);                    
+                }
                 ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, ((IP)p.getFixedIps().toArray()[0]).getIpAddress(), floatip);
             } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
@@ -764,6 +774,7 @@ public class OpenStackPush {
                     }
                     JSONArray routes = new JSONArray();
                     int routeNum = 0;
+                    JSONObject defaultRoute = null;
                     while (o2.containsKey(String.format("routeto %d", routeNum)) && o2.containsKey(String.format("nexthop %d", routeNum))) {
                         JSONObject route = new JSONObject();
                         String routeTo = o2.get(String.format("routeto %d", routeNum)).toString();
@@ -771,7 +782,15 @@ public class OpenStackPush {
                         route.put("to", routeTo);
                         route.put("via", nextHop);
                         routes.add(route);
+                        if (routeTo.equals("default") || routeTo.equals("0.0.0.0/0")) {
+                            defaultRoute = route;
+                        }
                         routeNum++;
+                    }
+                    // make sure default route is handled last 
+                    if (defaultRoute != null) { 
+                        routes.remove(defaultRoute);
+                        routes.add(defaultRoute);
                     }
                     // add routes even is empty
                     metaObj.put("routes", routes);
@@ -930,6 +949,18 @@ public class OpenStackPush {
                 if (status.equals("delete")) {
                     CephRbdDeletionCheck(servername, deviceId);
                 }
+            } else if (o.get("request").toString().equals("GlobusConnectRequest")) {
+                String servername = (String) o.get("server name");
+                String globusUser = (String) o.get("username");
+                String globusPass = (String) o.get("password");
+                String shortName = (String) o.get("shortname");
+                String defaultDir = (String) o.get("directory");
+                String dataInterface = (String) o.get("interface");
+                String endpointUri = (String) o.get("uri");
+                String status =  (String) o.get("status");
+                client.setMetadata(servername, "globus:info", String.format("{'user':'%s','password':'%s','shortname':'%s','directory':'%s','interface':'%s','status':'%s'}", 
+                        globusUser, globusPass, shortName, defaultDir, dataInterface, status));
+                client.setMetadata(servername, "globus:info:uri", endpointUri);
             } 
         }
     }
@@ -1479,6 +1510,25 @@ public class OpenStackPush {
             JSONObject o = new JSONObject();
 
             if (creation == true) {
+                // check if floating ip already exists in modelRef
+                String query2 = "SELECT ?node ?port WHERE {"
+                        + "?node nml:hasBidirectionalPort ?port ."
+                        + "?node a nml:Node. "
+                        + "?port mrs:hasNetworkAddress ?addr. "
+                        + "?addr mrs:type \"floating-ip\". "
+                        + String.format("?addr mrs:value \"%s\". ", floatingIp)
+                        + "}";
+                ResultSet r2 = executeQuery(query2, emptyModel, modelRef);
+                if (r2.hasNext()) {
+                    q = r2.next();
+                    server = q.get("node");
+                    port = q.get("port");
+                    servername = server.asResource().toString();
+                    serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
+                    portname = port.asResource().toString();
+                    portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
+                    throw new EJBException(String.format("floating IP '%s' is in use by server '%s' port '%s'", floatingIp, serverName, portName));
+                }
                 o.put("request", "AssociateFloatingIpRequest");
                 o.put("server name", serverName);
                 o.put("port name", portName);
@@ -1509,8 +1559,9 @@ public class OpenStackPush {
         String query;
 
         //1 check for any operation involving a server
-        query = "SELECT ?server ?port WHERE {"
-                + "?server a nml:Node"
+        query = "SELECT ?server ?port ?name WHERE {"
+                + "?server a nml:Node. "
+                + "OPTIONAL { ?server nml:name ?name. }" 
                 + "}";
         ResultSet r = executeQuery(query, modelDelta, emptyModel);//here modified 
 
@@ -1520,7 +1571,10 @@ public class OpenStackPush {
             String servername = vm.asResource().toString();
             String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
             Server server = client.getServer(serverName);
-
+            String serverAltName = "";
+            if (q.contains("name")) {
+                serverAltName = q.get("name").toString();
+            }
             //1.1 check if the desired operation is a valid operation
             if (server == null ^ creation) //check if server needs to be created or deleted
             {
@@ -1538,7 +1592,8 @@ public class OpenStackPush {
                 }
                 QuerySolution q1 = r1.next();
                 RDFNode hypervisorService = q1.get("service");
-                String hyperVisorServiceName = hypervisorService.asResource().toString().replace(topologyUri, "");//need to change here
+                
+                
 
                 //1.3 check that service is a hypervisor service
                 query = "SELECT ?type WHERE { ?type a mrs:HypervisorService}";//modified here
@@ -1673,6 +1728,9 @@ public class OpenStackPush {
                 }
                 if (hostName != null && !hostName.isEmpty()) {
                     o.put("host name", hostName);
+                }
+                if (serverAltName != null && !serverAltName.isEmpty()) {
+                    o.put("alt name", serverAltName);
                 }
                 //1.10.1 put all the ports in the request
                 int index = 0;
@@ -2463,6 +2521,67 @@ public class OpenStackPush {
         return requests;
     }
 
+    private List<JSONObject> globusConnectRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query = "SELECT ?vm ?ep ?shortname ?username ?password ?directory ?interface  WHERE {"
+                + "?vm nml:hasService ?ep. "
+                + "?ep a mrs:EndPoint. "
+                + "?ep nml:name ?shortname. "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naUsername. "
+                + "     ?naUsername mrs:type \"globus:username\"."
+                + "     ?naUsername mrs:value ?username. "
+                + "     ?ep mrs:hasNetworkAddress ?naPassword. "
+                + "     ?naPassword mrs:type \"globus:password\"."
+                + "     ?naPassword mrs:value ?password. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naDirecotry. "
+                + "     ?naDirecotry mrs:type \"globus:directory\". "
+                + "     ?naDirecotry mrs:value ?directory. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naInterface. "
+                + "     ?naInterface mrs:type \"globus:interface\". "
+                + "     ?naInterface mrs:value ?interface. } "
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject o = new JSONObject();
+            requests.add(o);
+            o.put("request", "GlobusConnectRequest");
+            if (creation == true) {
+                o.put("status", "create");
+            } else {
+                o.put("status", "delete");
+            }
+            String vmUri = q.getResource("vm").getURI();
+            String serverName = ResourceTool.getResourceName(vmUri, OpenstackPrefix.vm);
+            o.put("server name", serverName);
+            String shortName = q.get("shortname").toString();
+            o.put("shortname", shortName);
+            String userName = "";
+            if (q.contains("username")) {
+                userName = q.get("username").toString();
+            }
+            o.put("username", userName);
+            String userPass = "";
+            if (q.contains("password")) {
+                userPass = q.get("password").toString();
+            }
+            o.put("password", userPass);
+            String defaultDir = "";
+            if (q.contains("directory")) {
+                defaultDir = q.get("directory").toString();
+            }
+            o.put("directory", defaultDir);
+            String dataInterface = "";
+            if (q.contains("interface")) {
+                dataInterface = q.get("interface").toString();
+            }
+            o.put("interface", dataInterface);
+            String endpointUri = q.getResource("ep").getURI();
+            o.put("uri", endpointUri);
+        }
+        return requests;
+    }
+    
     /**
      * ****************************************************************
      * function that executes a query using a model addition/subtraction and a

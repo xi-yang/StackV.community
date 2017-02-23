@@ -25,12 +25,16 @@
 package web.beans;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -45,6 +49,7 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import javax.net.ssl.HttpsURLConnection;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -53,6 +58,13 @@ import org.json.simple.parser.ParseException;
 public class serviceBeans {
 
     private static final Logger logger = Logger.getLogger(serviceBeans.class.getName());
+
+    private final String kc_url = "https://k152.maxgigapop.net:8543/auth";
+    private final String kc_user = "admin";
+    private final String kc_pass = "MAX123!";
+
+    JSONParser parser = new JSONParser();
+
     String login_db_user = "login_view";
     String login_db_pass = "loginuser";
     String front_db_user = "front_view";
@@ -75,7 +87,7 @@ public class serviceBeans {
      * 2 - plugin error.<br />
      * 3 - connection error.<br />
      */
-    public int driverInstall(Map<String, String> paraMap) {
+    public int driverInstall(Map<String, String> paraMap, String auth) {
         String driver = "<driverInstance><properties>";
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
             //if the key indicates what kind of driver it is, put the corresponding ejb path
@@ -121,13 +133,13 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = this.executeHttpMethod(url, connection, "POST", driver, null);
+            String result = this.executeHttpMethod(url, connection, "POST", driver, auth);
             if (!result.equalsIgnoreCase("plug successfully")) //plugin error
             {
                 return 2;
             }
         } catch (Exception e) {
-            return 3;//connection error
+            System.out.println(">>DRIVER INSTALL ERROR");
         }
 
         return 0;
@@ -142,17 +154,17 @@ public class serviceBeans {
      * 2 - unplug error.<br />
      * 3 - connection error.<br />
      */
-    public int driverUninstall(String topoUri) {
+    public int driverUninstall(String topoUri, String auth) {
         try {
             URL url = new URL(String.format("%s/driver/%s", host, topoUri));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = this.executeHttpMethod(url, connection, "DELETE", null, null);
+            String result = this.executeHttpMethod(url, connection, "DELETE", null, auth);
             if (!result.equalsIgnoreCase("unplug successfully")) //unplug error
             {
                 return 2;
             }
         } catch (Exception e) {
-            return 3;//connection error
+            System.out.println(">>DRIVER UNINSTALL ERROR");
         }
         return 0;
     }
@@ -381,9 +393,8 @@ public class serviceBeans {
         }
 
     }
-    */
-
-    public int createNetwork(Map<String, String> paraMap, String auth) {
+     */
+    public int createNetwork(Map<String, String> paraMap, String auth, String refresh) {
         String topoUri = null;
         String driverType = null;
         String netCidr = null;
@@ -582,14 +593,42 @@ public class serviceBeans {
                     //0:vm name.
                     //1:subnet #
                     //2:types: image, instance, key pair, security group
+                    //4:eth0
+                    String addressString = null;
+                    if (!vmPara[4].equals(" ")) {
+                        try {
+                            JSONArray interfaceArr = (JSONArray) jsonParser.parse(vmPara[4]);
+                            for (Object obj : interfaceArr) {
+                                JSONObject interfaceJSON = (JSONObject) obj;
+                                String typeString = (String) interfaceJSON.get("type");
+                                if (typeString.equalsIgnoreCase("Ethernet")) {
+                                    addressString = (String) interfaceJSON.get("address");
+                                    addressString = addressString.contains("ipv") ? addressString.substring(addressString.indexOf("ipv") + 5) : addressString;
+                                    addressString = addressString.contains("/") ? addressString.substring(0, addressString.indexOf("/")) : addressString;
+                                }
+                            }
+                            if (addressString != null) {
+                                addressString = ";\n    mrs:hasNetworkAddress   "
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;.\n\n"
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;\n"
+                                        + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
+                                        + "    mrs:value     \"" + addressString + "\" .\n\n";
+
+                            }
+                        } catch (Exception ex) {
+                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
                     svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
                             + "    a                         nml:Node ;\n"
+                            + "    nml:name         \"" + vmPara[0] + "\";\n"
                             + (vmPara[2].equals(" ") ? "" : "    mrs:type       \"" + vmPara[2] + "\";\n")
                             + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
                             + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
                             + "    a            nml:BidirectionalPort;\n"
-                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
+                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;"
+                            + ((addressString == null) ? " .\n\n" : addressString)
                             + "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
                             + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
@@ -609,6 +648,7 @@ public class serviceBeans {
                 JSONObject connCriteriaValue = new JSONObject();
                 String providesVolume = "";
                 String svcDeltaCeph = "";
+                String svcDeltaGlobus = "";
 
                 for (String vm : vmList) {
                     String[] vmPara = vm.split("&");
@@ -619,6 +659,7 @@ public class serviceBeans {
                     //4:Interfaces: floating IP, SRIOV
                     svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
                             + "    a                         nml:Node ;\n"
+                            + "    nml:name         \"" + vmPara[0] + "\";\n"
                             + (vmPara[2].equals(" ") ? "" : "    mrs:type       \"" + vmPara[2] + "\";\n")
                             + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
@@ -626,9 +667,9 @@ public class serviceBeans {
                             + "    a            nml:BidirectionalPort;\n"
                             + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;";
                     JSONArray vmRouteArr = null;
-                    if (!vmPara[6].equals(" ")) {
+                    if (!vmPara[7].equals(" ")) {
                         try {
-                            vmRouteArr = (JSONArray) jsonParser.parse(vmPara[6]);
+                            vmRouteArr = (JSONArray) jsonParser.parse(vmPara[7]);
                         } catch (Exception ex) {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -777,6 +818,7 @@ public class serviceBeans {
                     } else {
                         svcDelta += ".\n\n";
                     }
+                    // Ceph RBD
                     if (!vmPara[5].equals(" ")) {
                         String nodeHasVolume = "";
                         try {
@@ -798,6 +840,53 @@ public class serviceBeans {
                         if (!nodeHasVolume.isEmpty()) {
                             svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ".\n\n";
                         }
+                    }
+                    // Globus Connect
+                    if (!vmPara[6].equals(" ")) {
+                        String globusUri = "urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":service+globus";
+                        String netAdresses = "\n";
+                        try {
+                            JSONObject globusJSON = (JSONObject) jsonParser.parse(vmPara[6]);
+                            svcDeltaGlobus += "&lt;" + globusUri + "&gt;\n"
+                                    + "   a  mrs:EndPoint ;\n";
+                            if (globusJSON.containsKey("username")) {
+                                String naUri = globusUri+":username";
+                                svcDeltaGlobus += "mrs:hasNetworkAddress &lt;" + naUri + "&gt; ;\n";
+                                netAdresses += "&lt;" + naUri + "&gt;\n"
+                                        + "   a mrs:NetworkAddress ;\n"
+                                        + "   mrs:type \"globus:username\";\n"
+                                        + "   mrs:value \"" + (String) globusJSON.get("username") + "\" .\n";
+                            }
+                            if (globusJSON.containsKey("password")) {
+                                String naUri = globusUri+":password";
+                                svcDeltaGlobus += "mrs:hasNetworkAddress &lt;" + naUri + "&gt; ;\n";
+                                netAdresses += "&lt;" + naUri + "&gt;\n"
+                                        + "   a mrs:NetworkAddress ;\n"
+                                        + "   mrs:type \"globus:password\";\n"
+                                        + "   mrs:value \"" + (String) globusJSON.get("password") + "\" .\n";
+                            }
+                            if (globusJSON.containsKey("default_directory")) {
+                                String naUri = globusUri+":directory";
+                                svcDeltaGlobus += "mrs:hasNetworkAddress &lt;" + naUri + "&gt; ;\n";
+                                netAdresses += "&lt;" + naUri + "&gt;\n"
+                                        + "   a mrs:NetworkAddress ;\n"
+                                        + "   mrs:type \"globus:directory\";\n"
+                                        + "   mrs:value \"" + (String) globusJSON.get("default_directory") + "\" .\n";
+                            }
+                            if (globusJSON.containsKey("data_interface")) {
+                                String naUri = globusUri+":interface";
+                                svcDeltaGlobus += "mrs:hasNetworkAddress &lt;" + naUri + "&gt; ;\n";
+                                netAdresses += "&lt;" + naUri + "&gt;\n"
+                                        + "   a mrs:NetworkAddress ;\n"
+                                        + "   mrs:type \"globus:interface\";\n"
+                                        + "   mrs:value \"" + (String) globusJSON.get("data_interface") + "\" .\n";
+                            }
+                            svcDeltaGlobus += "   nml:name \"" + (String) globusJSON.get("short_name") + "\" .\n\n";
+                        } catch (Exception ex) {
+                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                        svcDeltaGlobus += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    nml:hasService       &lt;" + globusUri + "&gt;. \n";
+                        svcDeltaGlobus += netAdresses;
                     }
 
                     svcDelta += "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
@@ -843,6 +932,10 @@ public class serviceBeans {
                     svcDelta += svcDeltaCeph;
                 }
 
+                if (!svcDeltaGlobus.isEmpty()) {
+                    svcDelta += svcDeltaGlobus;
+                }
+
                 if (!dependOn.isEmpty()) {
                     svcDelta += "&lt;" + topoUri + ":vt&gt;\n"
                             + "   a  nml:Topology;\n"
@@ -866,55 +959,11 @@ public class serviceBeans {
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
 
-        //System.out.println(svcDelta);
-        // Cache serviceDelta.
-        int[] results = cacheServiceDelta(refUuid, deltaUUID, svcDelta);
-        int instanceID = results[0];
-        int historyID = results[1];
-
-//        String siUuid;
-        String result;
-        try {
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
-            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", svcDelta, auth);
-            if (!result.contains("referenceVersion")) {
-                throw new EJBException("Service Delta Failed!");
-            }
-
-            // Cache System Delta
-            cacheSystemDelta(instanceID, historyID, result);
-
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
-            if (!result.equals("PROPAGATED")) {
-                throw new EJBException("Propagate Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null, auth);
-            if (!result.equals("COMMITTED")) {
-                throw new EJBException("Commit Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while (!result.equals("READY")) {
-                sleep(5000);//wait for 5 seconds and check again later
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null, auth);
-                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-                 throw new EJBException("Ready Check Failed!");
-                 }*/
-            }
-
-            return 0;
-
-        } catch (IOException | InterruptedException e) {
-            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
-        }
+        orchestrateInstance(refUuid, svcDelta, refUuid, refresh);
+        return 0;
     }
 
-    public int createHybridCloud(Map<String, String> paraMap, String auth) {
+    public int createHybridCloud(Map<String, String> paraMap, String auth, String refresh) {
         String refUuid = null;
         JSONParser jsonParser = new JSONParser();
         JSONArray vcnArr = null;
@@ -932,10 +981,10 @@ public class serviceBeans {
             }
         }
 
-        String deltaUUID = UUID.randomUUID().toString();
+        String deltaUuid = UUID.randomUUID().toString();
         String awsExportTo = "";
         String awsDxStitching = "";
-        String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
+        String svcDelta = "<serviceDelta>\n<uuid>" + deltaUuid
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
                 + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
@@ -1073,13 +1122,40 @@ public class serviceBeans {
                         String vmType = (String) vmJson.get("type");
                         svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
+                                + "    nml:name         \"" + vmName + "\";\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
                                 + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt;\n"
                                 + "    a            nml:BidirectionalPort;\n"
-                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
-                                + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
+                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;";
+                        if (!vmJson.containsKey("interfaces")) {
+                            svcDelta += ".\n\n";
+                        } else {
+                            String addressString = null;
+                            JSONArray interArr = (JSONArray) vmJson.get("interfaces");
+                            for (Object interObj : interArr) {
+                                JSONObject interJson = (JSONObject) interObj;
+                                String typeString = (String) interJson.get("type");
+                                if (typeString.equalsIgnoreCase("Ethernet")) {
+                                    addressString = (String) interJson.get("address");
+                                    addressString = addressString.contains("ipv") ? addressString.substring(addressString.indexOf("ipv") + 5) : addressString;
+                                    addressString = addressString.contains("/") ? addressString.substring(0, addressString.indexOf("/")) : addressString;
+                                    break;
+                                }
+                            }
+                            if (addressString != null) {
+                                svcDelta += ";\n    mrs:hasNetworkAddress          "
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0:floatingip&gt; .\n\n"
+                                        + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0:floatingip&gt;\n"
+                                        + "    a            mrs:NetworkAddress;\n"
+                                        + "    mrs:type     \"floating-ip\";\n"
+                                        + "    mrs:value     \"" + addressString + "\".\n\n";
+                            } else {
+                                svcDelta += ".\n\n";
+                            }
+                        }
+                        svcDelta += "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
                                 + "    a            spa:PolicyAction ;\n"
                                 + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt; ;\n"
@@ -1136,6 +1212,7 @@ public class serviceBeans {
 
                         svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
+                                + "    nml:name         \"" + vmName + "\";\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
                                 + (nodeHasVolume.isEmpty() ? "" : "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ";\n")
                                 + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"
@@ -1228,7 +1305,7 @@ public class serviceBeans {
                                                             + "    spa:type     \"JSON\";\n"
                                                             + "    spa:format    \"\"\"{\n"
                                                             + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%,\n"
+                                                            + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
                                                             + "       \"mac_address\": \"" + mac + "\""
                                                             + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"");
 
@@ -1361,7 +1438,7 @@ public class serviceBeans {
                                                                     + "    spa:type     \"JSON\";\n"
                                                                     + "    spa:format    \"\"\"{\n"
                                                                     + "       \"stitch_from\": \"urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "\",\n"
-                                                                    + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%,\n"
+                                                                    + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn" + (String) gwJSON.get("name") + "%\n"
                                                                     + "       \"mac_address\": \"" + mac + "\""
                                                                     + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"")
                                                                     + ((routeArr == null || routeArr.isEmpty()) ? "" : ",\n       \"routes\": " + routeArr.toString().replace("\\", ""))
@@ -1464,61 +1541,18 @@ public class serviceBeans {
         }
         //System.out.println(svcDelta);
 
-        // Cache serviceDelta.
-        int[] results = cacheServiceDelta(refUuid, deltaUUID, svcDelta);
-        int instanceID = results[0];
-        int historyID = results[1];
-
-        String result;
-        try {
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
-            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", svcDelta, auth);
-            if (!result.contains("referenceVersion")) {
-                throw new EJBException("Service Delta Failed!");
-            }
-
-            // Cache System Delta
-            cacheSystemDelta(instanceID, historyID, result);
-
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
-            if (!result.equals("PROPAGATED")) {
-                throw new EJBException("Propagate Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null, auth);
-            if (!result.equals("COMMITTED")) {
-                throw new EJBException("Commit Failed!");
-            }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
-            while (!result.equals("READY")) {
-                sleep(5000);//wait for 5 seconds and check again later
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null, auth);
-                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-                 throw new EJBException("Ready Check Failed!");
-                 }*/
-            }
-
-            return 0;
-
-        } catch (IOException | InterruptedException e) {
-            throw new EJBException("Fatal Error -- " + e.getLocalizedMessage());
-        }
+        orchestrateInstance(refUuid, svcDelta, deltaUuid, refresh);
+        return 0;
     }
-    
+
     public int createOperationModelModification(Map<String, String> paraMap, String auth) {
         String refUuid = paraMap.get("instanceUUID");
-
 
         String deltaUUID = UUID.randomUUID().toString();
 
         String delta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
-                + "\n\n<modelAddition>\n"
+                + "\n\n<modelReduction>\n"
                 + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
                 + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
                 + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
@@ -1526,7 +1560,7 @@ public class serviceBeans {
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
-        
+
         delta += "&lt;x-policy-annotation:action:apply-modifications&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_OperationalModelModification\" ;\n"
@@ -1534,13 +1568,20 @@ public class serviceBeans {
                 + "&lt;x-policy-annotation:data:modification-map&gt;\n"
                 + "    a            spa:PolicyData;\n"
                 + "    spa:type     \"JSON\";\n"
-                + "    spa:value    \"\"\"" + paraMap.get("removeResource").replace("\\", "") + "\"\"\".\n\n"
-                + "</modelAddition>\n\n"
+                + "    spa:value    \"\"\"" + paraMap.get("removeResource").replace("\\", "") + "\"\"\".\n\n";
+
+        // need this for compilation 
+        delta += "&lt;urn:off:network:omm-abs&gt;\n"
+                + "   a  nml:Topology;\n"
+                + "   spa:type spa:Abstraction;\n"
+                + "   spa:dependOn  &lt;x-policy-annotation:action:apply-modifications&gt;.\n\n";
+
+        delta += "</modelReduction>\n\n"
                 + "</serviceDelta>";
 
         String result;
         System.out.println(delta);
-        
+
         // Cache serviceDelta.
         int[] results = cacheServiceDelta(refUuid, deltaUUID, delta);
         int instanceID = results[0];
@@ -1582,8 +1623,10 @@ public class serviceBeans {
             return 0;
         } catch (Exception e) {
             return 1;//connection error
-        }        
+        }
     }
+
+    // ------ Operations ------
 // --------------------------- UTILITY FUNCTIONS -------------------------------    
     /**
      * Executes HTTP Request.
@@ -1625,6 +1668,8 @@ public class serviceBeans {
                 responseStr.append(inputLine);
             }
         }
+        logger.log(Level.INFO, "Response: {0}", responseStr.substring(0, Math.min(responseStr.length(), 10)) + "...");
+
         return responseStr.toString();
     }
 
@@ -1736,7 +1781,7 @@ public class serviceBeans {
         }
     }
 
-    private int[] cacheServiceDelta(String refUuid, String deltaUUID, String svcDelta) {
+    public int[] cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
         // Cache serviceDelta.
         int instanceID = -1;
         int historyID = -1;
@@ -1853,4 +1898,227 @@ public class serviceBeans {
         }
     }
 
+    private void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, String refresh) {
+        String result;
+        try {
+            String token = refreshToken(refresh);
+            result = initInstance(refUuid, svcDelta, token);
+
+            // Cache serviceDelta.
+            int[] results = cacheServiceDelta(refUuid, svcDelta, deltaUUID);
+            int instanceID = results[0];
+            int historyID = results[1];
+            cacheSystemDelta(instanceID, historyID, result);
+
+            token = refreshToken(refresh);
+            propagateInstance(refUuid, svcDelta, token);
+
+            token = refreshToken(refresh);
+            result = commitInstance(refUuid, svcDelta, token);
+
+            verifyInstance(refUuid, result, refresh);
+        } catch (EJBException | IOException | InterruptedException | SQLException e) {
+            try {
+                Connection front_conn;
+                Properties front_connectionProps = new Properties();
+                front_connectionProps.put("user", front_db_user);
+                front_connectionProps.put("password", front_db_pass);
+                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                        front_connectionProps);
+                PreparedStatement prep;
+                prep = front_conn.prepareStatement("UPDATE service_verification V INNER JOIN service_instance I SET V.verification_state = '-1' WHERE V.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
+                prep.setString(1, refUuid);
+                prep.executeUpdate();
+            } catch (SQLException ex) {
+                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            System.out.println("ERROR: " + e.getMessage() + " - " + e.getStackTrace());
+            //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, e);
+        }
+    }
+
+    private String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s", host, refUuid));
+        HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+        String result = this.executeHttpMethod(url, compile, "POST", svcDelta, auth);
+        if (!result.contains("referenceVersion")) {
+            throw new EJBException("Service Delta Failed!");
+        }
+        return result;
+    }
+
+    private String propagateInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
+        if (!result.equals("PROPAGATED")) {
+            throw new EJBException("Propagate Failed!");
+        }
+        return result;
+    }
+
+    private String commitInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+        HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+        String result = this.executeHttpMethod(url, commit, "PUT", null, auth);
+        if (!result.equals("COMMITTED")) {
+            throw new EJBException("Commit Failed!");
+        }
+        return result;
+    }
+
+    private void verifyInstance(String refUuid, String result, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
+        String token = refreshToken(refresh);
+        URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
+        int i = 1;
+        while (!result.equals("READY") && !result.equals("FAILED")) {
+            if (i == 10) {
+                token = refreshToken(refresh);
+                i = 1;
+            }
+            sleep(5000);//wait for 5 seconds and check again later
+            i++;
+            HttpURLConnection status = (HttpURLConnection) url.openConnection();
+            result = this.executeHttpMethod(url, status, "GET", null, token);
+            /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
+                 throw new EJBException("Ready Check Failed!");
+                 }*/
+        }
+
+        verify(refUuid, refresh);
+    }
+
+    public boolean verify(String refUuid, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
+        int instanceID = getInstanceID(refUuid);
+        Connection front_conn;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+        PreparedStatement prep;
+
+        System.out.println("Verifying Delta for service: " + refUuid);
+
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
+        prep.setInt(1, instanceID);
+        prep.executeUpdate();
+
+        for (int i = 1; i <= 5; i++) {
+            System.out.println("Verification Run " + i + "/5: " + refUuid);
+            String auth = refreshToken(refresh);
+
+            boolean redVerified = true, addVerified = true;
+            URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            String result = executeHttpMethod(url, conn, "GET", null, auth);
+
+            // Pull data from JSON.
+            JSONObject verifyJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(result);
+                verifyJSON = (JSONObject) obj;
+            } catch (ParseException ex) {
+                throw new IOException("Parse Error within Verification: " + ex.getMessage());
+            }
+
+            // Update verification results cache.
+            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? WHERE `service_instance_id`=?");
+            prep.setString(1, (String) verifyJSON.get("referenceUUID"));
+            prep.setString(2, (String) verifyJSON.get("creationTime"));
+            prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
+            prep.setString(4, (String) verifyJSON.get("verifiedModelAddition"));
+            prep.setString(5, (String) verifyJSON.get("unverifiedModelReduction"));
+            prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
+            prep.setString(7, (String) verifyJSON.get("reductionVerified"));
+            prep.setString(8, (String) verifyJSON.get("additionVerified"));
+            prep.setInt(9, i);
+            prep.setInt(10, instanceID);
+            prep.executeUpdate();
+
+            if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
+                redVerified = false;
+            }
+            if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
+                addVerified = false;
+            }
+
+            //System.out.println("Verify Result: " + result + "\r\n");
+            if (redVerified && addVerified) {
+                prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1' WHERE `service_verification`.`service_instance_id` = ?");
+                prep.setInt(1, instanceID);
+                prep.executeUpdate();
+
+                System.out.println("Verification Success: " + refUuid);
+                return true;
+            }
+
+            prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '0' WHERE `service_verification`.`service_instance_id` = ?");
+            prep.setInt(1, instanceID);
+            prep.executeUpdate();
+
+            Thread.sleep(60000);
+        }
+
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");
+        prep.setInt(1, instanceID);
+        prep.executeUpdate();
+
+        System.out.println("Verification Failure: " + refUuid);
+        return false;
+    }
+
+    public String refreshToken(String refresh) {
+        try {
+            URL url = new URL("https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+
+            // restapi
+            //String encode = "cmVzdGFwaTpjMTZkMjRjMS0yNjJmLTQ3ZTgtYmY1NC1hZGE5YmQ4ZjdhY2E=";
+            // StackV
+            String encode = "U3RhY2tWOjQ4OTdlOGMzLWI4MzctNDIxMS1hOGYyLWFmM2Q2ZTM2M2RmMg==";
+
+            conn.setRequestProperty("Authorization", "Basic " + encode);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("POST");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+
+            System.out.println("Init Refresh: " + "..." + refresh.substring(Math.max(refresh.length() - 10, 0)));
+            //System.out.println("Init Refresh: " + refresh);
+            String data = "grant_type=refresh_token&refresh_token=" + refresh;
+
+            OutputStream os = conn.getOutputStream();
+            BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(os, "UTF-8"));
+            writer.write(data);
+            writer.flush();
+            writer.close();
+            os.close();
+
+            conn.connect();
+            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(responseStr.toString());
+            JSONObject result = (JSONObject) obj;
+
+            System.out.println("Refresh complete.");
+
+            return "bearer " + (String) result.get("access_token");
+        } catch (ParseException | IOException ex) {
+            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
 }

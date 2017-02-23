@@ -28,11 +28,13 @@ import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
 import net.maxgigapop.mrs.driver.aws.AwsPush;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.directconnect.AmazonDirectConnectAsyncClient;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
 import com.amazonaws.services.directconnect.model.ConfirmPrivateVirtualInterfaceRequest;
 import com.amazonaws.services.directconnect.model.ConfirmPrivateVirtualInterfaceResult;
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceRequest;
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceResult;
+import com.amazonaws.services.ec2.AmazonEC2AsyncClient;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.*;
 import com.hp.hpl.jena.ontology.OntModel;
@@ -50,6 +52,8 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
@@ -69,8 +73,8 @@ import net.maxgigapop.mrs.common.ResourceTool;
 //in the model to make the two methods work.
 public class AwsPush {
     private AwsPrefix awsPrefix = null;
-    private AmazonEC2Client ec2 = null;
-    private AmazonDirectConnectClient dc = null;
+    private AmazonEC2AsyncClient ec2 = null;
+    private AmazonDirectConnectAsyncClient dc = null;
     private AwsEC2Get ec2Client = null;
     private AwsDCGet dcClient = null;
     private String topologyUri = null;
@@ -373,8 +377,21 @@ public class AwsPush {
                 DeleteVirtualInterfaceRequest interfaceRequest = new DeleteVirtualInterfaceRequest();
                 interfaceRequest.withVirtualInterfaceId(virtualInterfaceId);
 
-                DeleteVirtualInterfaceResult interfaceResult = dc.deleteVirtualInterface(interfaceRequest);
-                dcClient.dxvifDeletionCheck(interfaceRequest.getVirtualInterfaceId());                
+                // delete virtual interface in an error-retry loop for up to 10 minutes
+                for (int i = 0; i < 10; i++) {
+                    try {
+                        Future<DeleteVirtualInterfaceResult> asyncResult = dc.deleteVirtualInterfaceAsync(interfaceRequest);
+                        dcClient.dxvifDeletionCheck(asyncResult);
+                        break;
+                    } catch (ExecutionException e) {
+                        try {
+                            Thread.sleep(60000L); // sleep 60 secs
+                        } catch (InterruptedException ex) {
+                            ; //@TODO if i == 9 (final) ==> error report
+                        }
+                        continue;
+                    }
+                }
             } else if (request.contains("DeleteVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -411,24 +428,22 @@ public class AwsPush {
                 gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
                         .withVpcId(v.getVpcId());
                 
-                // Somehow VGW may disappear from the API for a while after deleting dxvif. Trick is to detach a few more times.
-                boolean detachExecuted = false;
+                // Somehow VGW may disappear from the API for a while after deleting dxvif. 
+                // Retry in an error-retry loop for up to 5 minutes
+
                 for (int i = 0; i < 10; i++) {
                     try {
-                        ec2.detachVpnGateway(gwRequest);
-                        detachExecuted = true;
+                        Future<Void> asyncResult = ec2.detachVpnGatewayAsync(gwRequest);
+                        ec2Client.vpnGatewayDetachmentCheck(asyncResult);
                         break;
-                    } catch (AmazonServiceException | NullPointerException e) {
+                    } catch (ExecutionException e) {
                         try {
                             Thread.sleep(30000L); // sleep 30 secs
                         } catch (InterruptedException ex) {
-                            ;
+                            ; //@TODO if i == 9 (final) ==> error report
                         }
                         continue;
                     }
-                }
-                if (detachExecuted) {
-                    ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId(), v.getVpcId());
                 }
             } else if (request.contains("DisassociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -474,6 +489,9 @@ public class AwsPush {
                     } catch (InterruptedException ex) {
                         ;
                     }
+                }
+                if (mainTable == null) {
+                    throw new EJBException(String.format("AwsPush failed for CreateVpcRequest (%s) - null main routing table ", parameters[3])); 
                 }
                 ec2Client.getRoutingTables().add(mainTable);
                 //create the tag for the vpc

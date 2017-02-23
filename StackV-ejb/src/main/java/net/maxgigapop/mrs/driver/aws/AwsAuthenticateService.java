@@ -27,7 +27,9 @@ package net.maxgigapop.mrs.driver.aws;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
+import com.amazonaws.services.directconnect.AmazonDirectConnectAsyncClient;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
+import com.amazonaws.services.ec2.AmazonEC2AsyncClient;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.s3.AmazonS3Client;
 
@@ -59,6 +61,20 @@ public class AwsAuthenticateService {
     }
 
     /*
+     Authenticate EC2 client
+     */
+    public AmazonEC2AsyncClient AwsAuthenticateEC2ServiceAsync(Region region) {
+        AmazonEC2AsyncClient ec2Client = null;
+        try {
+            ec2Client = new AmazonEC2AsyncClient(credentials);
+            ec2Client.setRegion(region);
+        } catch (Exception e) {
+            throw new AmazonClientException(e.getMessage());
+        }
+        return ec2Client;
+    }
+
+    /*
      Authenticate S3 client
      */
     public AmazonS3Client AwsAuthenticateS3Service(Region region) {
@@ -79,6 +95,17 @@ public class AwsAuthenticateService {
         AmazonDirectConnectClient dcClient = null;
         try {
             dcClient = new AmazonDirectConnectClient(credentials);
+            dcClient.setRegion(region);
+        } catch (Exception e) {
+            throw new AmazonClientException(e.getMessage());
+        }
+        return dcClient;
+    }
+    
+    public AmazonDirectConnectAsyncClient AwsAuthenticateDCServiceAsync(Region region) {
+        AmazonDirectConnectAsyncClient dcClient = null;
+        try {
+            dcClient = new AmazonDirectConnectAsyncClient(credentials);
             dcClient.setRegion(region);
         } catch (Exception e) {
             throw new AmazonClientException(e.getMessage());

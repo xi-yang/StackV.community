@@ -1,14 +1,20 @@
 -- phpMyAdmin SQL Dump
--- version 4.4.1.1
+-- version 4.6.1
 -- http://www.phpmyadmin.net
 --
--- Host: localhost:3306
--- Generation Time: Oct 17, 2016 at 08:20 PM
--- Server version: 5.5.42
--- PHP Version: 5.6.7
+-- Host: localhost
+-- Generation Time: Feb 03, 2017 at 04:00 PM
+-- Server version: 5.5.27
+-- PHP Version: 5.5.36
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
 
 --
 -- Database: `frontend`
@@ -26,80 +32,35 @@ USE `frontend`;
 DROP TABLE IF EXISTS `acl`;
 CREATE TABLE `acl` (
   `acl_id` int(11) NOT NULL,
-  `service_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `subject` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `is_group` tinyint(1) NOT NULL DEFAULT '0',
+  `object` varchar(45) COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `acl`
+--
+
+TRUNCATE TABLE `acl`;
 --
 -- Dumping data for table `acl`
 --
 
-INSERT INTO `acl` (`acl_id`, `service_id`) VALUES
-(1, 1),
-(2, 2),
-(3, 3),
-(4, 4),
-(7, 7),
-(8, 8),
-(9, 9),
-(10, 10),
-(11, 11),
-(12, 12),
-(13, 13);
+INSERT INTO `acl` (`acl_id`, `subject`, `is_group`, `object`) VALUES
+(1, 'test1', 0, '8a3b095c-bef6-4f5b-a2be-000413f852d3');
 
 -- --------------------------------------------------------
 
---
--- Table structure for table `acl_entry_group`
---
-
-DROP TABLE IF EXISTS `acl_entry_group`;
-CREATE TABLE `acl_entry_group` (
-  `acl_id` int(11) NOT NULL,
-  `usergroup_id` int(11) NOT NULL
+-- Table structure for table `driver_wizard`
+DROP TABLE IF EXISTS `driver_wizard`;
+CREATE TABLE `driver_wizard` (
+  `username` varchar(255),
+  `drivername` varchar(255),
+  `description` varchar(255),
+  `data` longtext,
+  `TopUri` varchar(255),
+  `drivertype` varchar(255)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `acl_entry_group`
---
-
-INSERT INTO `acl_entry_group` (`acl_id`, `usergroup_id`) VALUES
-(1, 1),
-(2, 1),
-(3, 1),
-(4, 1),
-(7, 1),
-(10, 1),
-(11, 1),
-(12, 1),
-(13, 1),
-(2, 2),
-(3, 2),
-(11, 2);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `acl_entry_user`
---
-
-DROP TABLE IF EXISTS `acl_entry_user`;
-CREATE TABLE `acl_entry_user` (
-  `acl_id` int(11) NOT NULL,
-  `subject` varchar(45) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `acl_entry_user`
---
-
-INSERT INTO `acl_entry_user` (`acl_id`, `subject`) VALUES
-(1, '1'),
-(2, '1'),
-(4, '1'),
-(1, '14'),
-(9, '3');
-
--- --------------------------------------------------------
 
 --
 -- Table structure for table `label`
@@ -113,6 +74,11 @@ CREATE TABLE `label` (
   `color` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `label`
+--
+
+TRUNCATE TABLE `label`;
 --
 -- Dumping data for table `label`
 --
@@ -138,8 +104,13 @@ CREATE TABLE `service` (
   `filename` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(140) COLLATE utf8_unicode_ci NOT NULL,
   `atomic` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service`
+--
+
+TRUNCATE TABLE `service`;
 --
 -- Dumping data for table `service`
 --
@@ -153,7 +124,7 @@ INSERT INTO `service` (`service_id`, `name`, `filename`, `description`, `atomic`
 (8, 'Virtual Machine Management', 'vmadd', 'Management, Instantiation, and Setup of Virtual Machine Topologies.', 1),
 (9, 'View Filter Management', 'viewcreate', 'Management and Creation of graphical view filters.', 1),
 (10, 'Virtual Cloud Network', 'netcreate', 'Network Creation Pilot Testbed', 0),
-(11, 'Dynamic Network Connection', 'dnc', 'Creation of new network connections.', 0),
+(11, 'Dynamic Network Connection', 'dnc', 'Creation of new network connections.', 1),
 (12, 'Flow based Layer2 Protection', 'fl2p', 'Switching of protection and recovery path.', 1),
 (13, 'Advanced Hybrid Cloud', 'hybridcloud', 'Advanced Hybrid Cloud Service.', 0);
 
@@ -173,6 +144,11 @@ CREATE TABLE `service_delta` (
   `delta` longtext COLLATE utf8_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_delta`
+--
+
+TRUNCATE TABLE `service_delta`;
 -- --------------------------------------------------------
 
 --
@@ -184,7 +160,19 @@ CREATE TABLE `service_history` (
   `service_history_id` int(11) NOT NULL,
   `service_instance_id` int(11) NOT NULL,
   `service_state_id` int(11) NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Truncate table before insert `service_history`
+--
+
+TRUNCATE TABLE `service_history`;
+--
+-- Dumping data for table `service_history`
+--
+
+INSERT INTO `service_history` (`service_history_id`, `service_instance_id`, `service_state_id`) VALUES
+(1, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -201,8 +189,13 @@ CREATE TABLE `service_instance` (
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `alias_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `service_state_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_instance`
+--
+
+TRUNCATE TABLE `service_instance`;
 -- --------------------------------------------------------
 
 --
@@ -213,8 +206,13 @@ DROP TABLE IF EXISTS `service_state`;
 CREATE TABLE `service_state` (
   `service_state_id` int(11) NOT NULL COMMENT '	',
   `super_state` varchar(45) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_state`
+--
+
+TRUNCATE TABLE `service_state`;
 --
 -- Dumping data for table `service_state`
 --
@@ -247,6 +245,18 @@ CREATE TABLE `service_verification` (
   `addition` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_verification`
+--
+
+TRUNCATE TABLE `service_verification`;
+--
+-- Dumping data for table `service_verification`
+--
+
+INSERT INTO `service_verification` (`service_instance_id`, `verification_state`, `verification_run`, `delta_uuid`, `creation_time`, `verified_reduction`, `verified_addition`, `unverified_reduction`, `unverified_addition`, `reduction`, `addition`) VALUES
+(1, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -262,88 +272,21 @@ CREATE TABLE `service_wizard` (
   `wizard_json` longtext COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `editable` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--
+-- Truncate table before insert `service_wizard`
+--
+
+TRUNCATE TABLE `service_wizard`;
 --
 -- Dumping data for table `service_wizard`
 --
 
 INSERT INTO `service_wizard` (`service_wizard_id`, `service_id`, `username`, `name`, `wizard_json`, `description`, `editable`) VALUES
-(1, 13, NULL, 'Hybrid Cloud Test', '{\n    "username": "admin",\n    "type": "hybridcloud",\n    "alias": "hybrid-full-1a",\n    "data": {\n        "virtual_clouds": [\n            {\n                "type": "internal",\n                "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",\n                "name": "vtn1",\n                "cidr": "10.0.0.0/16",\n                "subnets": [\n                    {\n                        "name": "subnet1",\n                        "cidr": "10.0.0.0/24",\n                        "virtual_machines": [\n                            {\n                                "name": "ec2-vpc1-vm1",\n                                "type": "instance+m4.large,secgroup+geni,keypair+driver_key,image+ami-0d1bf860"\n                            }\n                        ],\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0"\n                                },\n                                "from": {\n                                    "value": "vpn"\n                                },\n                                "next_hop": {\n                                    "value": "vpn"\n                                }\n                            },\n                            {\n                                "to": {\n                                    "value": "206.196.0.0/16"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ]\n                    }\n                ],\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ]\n            },\n            {\n                "name": "vtn2",\n                "type": "internal",\n                "parent": "urn:ogf:network:openstack.com:openstack-cloud",\n                "cidr": "10.1.0.0/16",\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ],\n                "gateways": [\n                    {\n                        "name": "ceph-net",\n                        "from": [\n                            {\n                                "type": "port_profile",\n                                "value": "Ceph-Storage"\n                            }\n                        ],\n                        "type": "ucs_port_profile"\n                    },\n                    {\n                        "name": "intercloud-1",\n                        "to": [\n                            {\n                                "type": "peer_cloud",\n                                "value": "urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any"\n                            }\n                        ],\n                        "type": "inter_cloud_network"\n                    }\n                ],\n                "subnets": [\n                    {\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0",\n                                    "type": "ipv4-prefix"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ],\n                        "virtual_machines": [\n                            {\n                                "name": "ops-vtn1-vm1",\n                                "type": "instance+2,secgroup+rains,keypair+demo-key",\n                                "host": "rvtk-compute3",\n                                "interfaces": [\n                                    {\n                                        "address": "ipv4+10.10.252.164/24",\n                                        "name": "ops-vtn1:vm2:eth0",\n                                        "type": "Ethernet"\n                                    },\n                                    {\n                                        "address": "ipv4+10.10.0.1/24,mac+aa:bb:cc:ff:01:11",\n                                        "name": "ops-vtn1:vm2:eth1",\n                                        "type": "SRIOV",\n                                        "gateway": "intercloud-1"\n                                    },\n                                    {\n                                        "address": "ipv4+10.10.200.164/24,mac+aa:bb:cc:ff:01:12",\n                                        "name": "ops-vtn1:vm2:eth2",\n                                        "type": "SRIOV",\n                                        "gateway": "ceph-net"\n                                    }\n                                ],\n                                "ceph_rbd": [\n                                    {\n                                        "disk_gb": "1024",\n                                        "mount_point": "/mnt/ceph0_1tb"\n                                    },\n                                    {\n                                        "disk_gb": "1024",\n                                        "mount_point": "/mnt/ceph1_1tb"\n                                    }\n                                ],\n                                "quagga_bgp": {\n                                    "neighbors": [\n                                        {\n                                            "remote_asn": "7224",\n                                            "bgp_authkey": "stackv"\n                                        }\n                                    ],\n                                    "networks": [\n                                        "10.10.0.0/16"\n                                    ]\n                                }\n                            }\n                        ],\n                        "name": "subnet1",\n                        "cidr": "10.1.0.0/24"\n                    }\n                ]\n            }            \n        ]\n    }\n}\n', 'Test Profile for Hybrid Cloud', 0),
-(3, 13, 'admin', 'Demo Test', '{\n	"username": "admin",\n	"type": "hybridcloud",\n	"alias": "TechX2016.AHC.SDX.demo2",\n	"data": {\n		"virtual_clouds": [\n			{\n				"name": "vtn1",\n				"type": "internal",\n				"parent": "urn:ogf:network:openstack.com:openstack-cloud",\n				"cidr": "10.1.0.0/16",\n				"routes": [\n					{\n						"to": {\n							"value": "0.0.0.0/0",\n							"type": "ipv4-prefix"\n						},\n						"next_hop": {\n							"value": "internet"\n						}\n					}\n				],\n				"gateways": [\n					{\n						"name": "ceph-net",\n						"from": [\n							{\n								"type": "port_profile",\n								"value": "Ceph-Storage"\n							}\n						],\n						"type": "ucs_port_profile"\n					}, \n					{\n						"name": "external-net",\n						"from": [\n							{\n								"type": "port_profile",\n								"value": "External-Access"\n							}\n						],\n						"type": "ucs_port_profile"\n					}, \n					{\n						"name": "intercloud-1",\n						"to": [\n							{\n								"type": "peer_cloud",\n								"value": "urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any"\n							}\n						],\n						"type": "inter_cloud_network"\n					} \n				],\n				"subnets": [\n					{\n						"routes": [\n							{\n								"to": {\n									"value": "0.0.0.0/0",\n									"type": "ipv4-prefix"\n								},\n								"next_hop": {\n									"value": "internet"\n								}\n                                                        }\n						],\n						"virtual_machines": [\n							{\n								"name": "ops-vtn1-vm1",\n                                                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+3de656bd-21d5-4c46-89c0-cfdeb7d9c590",\n								"host": "rvtk-compute2",\n								"interfaces": [\n									{\n										"address": "ipv4+10.10.252.202/24",\n										"name": "ops-vtn1:vm1:eth0",\n										"type": "Ethernet"\n									},\n									{\n										"address": "ipv4+10.10.0.1/24,mac+aa:bb:cc:dd:10:01",\n										"name": "ops-vtn1:vm1:eth1",\n										"type": "SRIOV",\n										"gateway": "intercloud-1"\n									},\n									{\n										"address": "ipv4+10.10.200.202/24,mac+aa:bb:cc:dd:02:02",\n										"name": "ops-vtn1:vm1:eth2",\n										"type": "SRIOV",\n										"gateway": "ceph-net"\n									},\n									{\n										"address": "ipv4+206.196.179.157/28,mac+aa:bb:cc:dd:01:57",\n										"name": "ops-vtn1:vm1:eth3",\n										"type": "SRIOV",\n										"gateway": "external-net",\n										"routes": [\n                                                        				{\n                                    				                            "to":  {\n												"type": "ipv4-prefix",\n												"value": "206.196.0.0/16"\n											    },\n                         				                                    "next_hop": {\n												"value": "206.196.179.145"\n											    }\n                                                        				}\n										]\n									}\n								],\n								"quagga_bgp": {\n									"neighbors": [\n										{\n											"remote_asn": "7224",\n											"bgp_authkey": "stackv"\n										}\n									],\n									"networks": [\n										"10.10.0.0/16"\n									]\n								}\n							},\n							{\n								"name": "ops-vtn1-vm2",\n                                                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+3de656bd-21d5-4c46-89c0-cfdeb7d9c590",\n								"host": "rvtk-compute6",\n								"interfaces": [\n									{\n										"address": "ipv4+10.10.252.217/24",\n										"name": "ops-vtn1:vm2:eth0",\n										"type": "Ethernet"\n									},\n									{\n										"address": "ipv4+10.10.0.17/24,mac+aa:bb:cc:dd:10:17",\n										"name": "ops-vtn1:vm2:eth1",\n										"type": "SRIOV",\n										"gateway": "intercloud-1",\n										"routes": [\n                                                        				{\n                                    				                            "to":  {\n												"type": "ipv4-prefix",\n												"value": "10.0.0.0/16"\n											    },\n                         				                                    "next_hop": {\n												"value": "10.10.0.2"\n											    }\n                                                        				}\n										]\n									},\n									{\n										"address": "ipv4+10.10.200.217/24,mac+aa:bb:cc:dd:02:17",\n										"name": "ops-vtn1:vm2:eth2",\n										"type": "SRIOV",\n										"gateway": "ceph-net"\n									}\n								]\n							}, \n							{\n								"name": "ops-vtn1-vm3",\n                                                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+3de656bd-21d5-4c46-89c0-cfdeb7d9c590",\n								"host": "rvtk-compute7",\n								"interfaces": [\n									{\n										"address": "ipv4+10.10.252.219/24",\n										"name": "ops-vtn1:vm3:eth0",\n										"type": "Ethernet"\n									},\n									{\n										"address": "ipv4+10.10.0.19/24,mac+aa:bb:cc:dd:10:19",\n										"name": "ops-vtn1:vm3:eth1",\n										"type": "SRIOV",\n										"gateway": "intercloud-1",\n										"routes": [\n                                                        				{\n                                    				                            "to":  {\n												"type": "ipv4-prefix",\n												"value": "10.0.0.0/16"\n											    },\n                         				                                    "next_hop": {\n												"value": "10.10.0.2"\n											    }\n                                                        				}\n										]\n									},\n									{\n										"address": "ipv4+10.10.200.219/24,mac+aa:bb:cc:dd:02:19",\n										"name": "ops-vtn1:vm3:eth2",\n										"type": "SRIOV",\n										"gateway": "ceph-net"\n									}\n								]\n							}\n						],\n						"name": "subnet1",\n						"cidr": "10.1.0.0/24"\n					}\n				]\n			},\n			{\n				"type": "internal",\n				"parent": "urn:ogf:network:aws.amazon.com:aws-cloud",\n				"name": "vpc1",\n				"cidr": "10.0.0.0/16",\n				"subnets": [\n					{\n						"name": "subnet1",\n						"cidr": "10.0.0.0/24",\n						"virtual_machines": [\n							{\n								"name": "ec2-vpc1-vm1",\n                                                                "type": "instance+m4.xlarge,secgroup+geni,keypair+xi-aws-max-dev-key,image+ami-b66ae0a1"\n							},\n							{\n								"name": "ec2-vpc1-vm2",\n                                                                "type": "instance+m4.xlarge,secgroup+geni,keypair+xi-aws-max-dev-key,image+ami-b66ae0a1"\n							},\n							{\n								"name": "ec2-vpc1-vm3",\n                                                                "type": "instance+m4.xlarge,secgroup+geni,keypair+xi-aws-max-dev-key,image+ami-b66ae0a1"\n							}\n						],\n						"routes": [\n							{\n								"to": {\n									"value": "0.0.0.0/0"\n								},\n								"from": {\n									"value": "vpn"\n								},\n								"next_hop": {\n									"value": "vpn"\n								}\n							},\n							{\n								"to": {\n									"value": "0.0.0.0/0"\n								},\n								"next_hop": {\n									"value": "internet"\n								}\n							}\n						]\n					}\n				],\n				"routes": [\n					{\n						"to": {\n							"value": "0.0.0.0/0",\n							"type": "ipv4-prefix"\n						},\n						"next_hop": {\n							"value": "internet"\n						}\n					}\n				]\n			}\n		]\n	}\n}\n', 'Test for upcoming Demo', 0);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_belongs`
---
-
-DROP TABLE IF EXISTS `user_belongs`;
-CREATE TABLE `user_belongs` (
-  `user_id` int(11) NOT NULL,
-  `usergroup_id` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `user_belongs`
---
-
-INSERT INTO `user_belongs` (`user_id`, `usergroup_id`) VALUES
-(1, 1),
-(7, 1),
-(8, 1),
-(15, 1),
-(1, 2),
-(3, 2),
-(14, 2);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `user_info`
---
-
-DROP TABLE IF EXISTS `user_info`;
-CREATE TABLE `user_info` (
-  `user_id` int(11) NOT NULL,
-  `username` varchar(40) COLLATE utf8_unicode_ci NOT NULL,
-  `email` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `active_usergroup` int(11) DEFAULT '2',
-  `first_name` varchar(20) COLLATE utf8_unicode_ci NOT NULL,
-  `last_name` varchar(20) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `user_info`
---
-
-INSERT INTO `user_info` (`user_id`, `username`, `email`, `active_usergroup`, `first_name`, `last_name`) VALUES
-(1, 'admin', 'neroczan@gmail.com', 1, 'Alberto', 'Jimenez'),
-(3, 'test', 'test@test.com', 2, 'Daiko', 'Ten'),
-(7, 'test2', 'james@frolick.com', 1, 'James', 'Frolick'),
-(8, 'test5', 'jim@jenson.edu', 2, 'Jim', 'Jenson'),
-(14, 'test3', 'roger@moore.com', 2, 'Roger', 'Moore'),
-(15, 'test4', 'marc@aur.com', 1, 'Marcus', 'Aurelius');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `usergroup`
---
-
-DROP TABLE IF EXISTS `usergroup`;
-CREATE TABLE `usergroup` (
-  `usergroup_id` int(11) NOT NULL,
-  `title` varchar(25) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `usergroup`
---
-
-INSERT INTO `usergroup` (`usergroup_id`, `title`) VALUES
-(1, 'Administrators'),
-(2, 'Users');
+(1, 13, NULL, 'Hybrid Cloud Test', '{\n    "username": "admin",\n    "type": "hybridcloud",\n    "alias": "hybrid-full-1a",\n    "data": {\n        "virtual_clouds": [\n            {\n                "type": "internal",\n                "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",\n                "name": "vtn1",\n                "cidr": "10.0.0.0/16",\n                "subnets": [\n                    {\n                        "name": "subnet1",\n                        "cidr": "10.0.0.0/24",\n                        "virtual_machines": [\n                            {\n                                "name": "ec2-vpc1-vm1",\n                                "type": "instance+m4.large,secgroup+geni,keypair+driver_key,image+ami-0d1bf860"\n                            }\n                        ],\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0"\n                                },\n                                "from": {\n                                    "value": "vpn"\n                                },\n                                "next_hop": {\n                                    "value": "vpn"\n                                }\n                            },\n                            {\n                                "to": {\n                                    "value": "206.196.0.0/16"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ]\n                    }\n                ],\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ]\n            },\n            {\n                "name": "vtn2",\n                "type": "internal",\n                "parent": "urn:ogf:network:openstack.com:openstack-cloud",\n                "cidr": "10.1.0.0/16",\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ],\n                "gateways": [\n                    {\n                        "name": "ceph-net",\n                        "from": [\n                            {\n                                "type": "port_profile",\n                                "value": "Ceph-Storage"\n                            }\n                        ],\n                        "type": "ucs_port_profile"\n                    },\n                    {\n                        "name": "intercloud-1",\n                        "to": [\n                            {\n                                "type": "peer_cloud",\n                                "value": "urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any"\n                            }\n                        ],\n                        "type": "inter_cloud_network"\n                    }\n                ],\n                "subnets": [\n                    {\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0",\n                                    "type": "ipv4-prefix"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ],\n                        "virtual_machines": [\n                            {\n                                "name": "ops-vtn1-vm1",\n                                "type": "instance+2,secgroup+rains,keypair+demo-key",\n                                "host": "rvtk-compute3",\n                                "interfaces": [\n                                    {\n                                        "address": "ipv4+10.10.252.164/24",\n                                        "name": "ops-vtn1:vm2:eth0",\n                                        "type": "Ethernet"\n                                    },\n                                    {\n                                        "address": "ipv4+10.10.0.1/24,mac+aa:bb:cc:ff:01:11",\n                                        "name": "ops-vtn1:vm2:eth1",\n                                        "type": "SRIOV",\n                                        "gateway": "intercloud-1"\n                                    },\n                                    {\n                                        "address": "ipv4+10.10.200.164/24,mac+aa:bb:cc:ff:01:12",\n                                        "name": "ops-vtn1:vm2:eth2",\n                                        "type": "SRIOV",\n                                        "gateway": "ceph-net"\n                                    }\n                                ],\n                                "ceph_rbd": [\n                                    {\n                                        "disk_gb": "1024",\n                                        "mount_point": "/mnt/ceph0_1tb"\n                                    },\n                                    {\n                                        "disk_gb": "1024",\n                                        "mount_point": "/mnt/ceph1_1tb"\n                                    }\n                                ],\n                                "quagga_bgp": {\n                                    "neighbors": [\n                                        {\n                                            "remote_asn": "7224",\n                                            "bgp_authkey": "versastack"\n                                        }\n                                    ],\n                                    "networks": [\n                                        "10.10.0.0/16"\n                                    ]\n                                }\n                            }\n                        ],\n                        "name": "subnet1",\n                        "cidr": "10.1.0.0/24"\n                    }\n                ]\n            }            \n        ]\n    }\n}\n', 'Test Profile for Hybrid Cloud', 0),
+(3, 13, 'admin', 'Demo Test', '{\n	"username": "admin",\n	"type": "hybridcloud",\n	"alias": "TechX2016.AHC.SDX.demo2",\n	"data": {\n		"virtual_clouds": [\n			{\n				"name": "vtn1",\n				"type": "internal",\n				"parent": "urn:ogf:network:openstack.com:openstack-cloud",\n				"cidr": "10.1.0.0/16",\n				"routes": [\n					{\n						"to": {\n							"value": "0.0.0.0/0",\n							"type": "ipv4-prefix"\n						},\n						"next_hop": {\n							"value": "internet"\n						}\n					}\n				],\n				"gateways": [\n					{\n						"name": "ceph-net",\n						"from": [\n							{\n								"type": "port_profile",\n								"value": "Ceph-Storage"\n							}\n						],\n						"type": "ucs_port_profile"\n					}, \n					{\n						"name": "external-net",\n						"from": [\n							{\n								"type": "port_profile",\n								"value": "External-Access"\n							}\n						],\n						"type": "ucs_port_profile"\n					}, \n					{\n						"name": "intercloud-1",\n						"to": [\n							{\n								"type": "peer_cloud",\n								"value": "urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any"\n							}\n						],\n						"type": "inter_cloud_network"\n					} \n				],\n				"subnets": [\n					{\n						"routes": [\n							{\n								"to": {\n									"value": "0.0.0.0/0",\n									"type": "ipv4-prefix"\n								},\n								"next_hop": {\n									"value": "internet"\n								}\n                                                        }\n						],\n						"virtual_machines": [\n							{\n								"name": "ops-vtn1-vm1",\n                                                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+3de656bd-21d5-4c46-89c0-cfdeb7d9c590",\n								"host": "rvtk-compute2",\n								"interfaces": [\n									{\n										"address": "ipv4+10.10.252.202/24",\n										"name": "ops-vtn1:vm1:eth0",\n										"type": "Ethernet"\n									},\n									{\n										"address": "ipv4+10.10.0.1/24,mac+aa:bb:cc:dd:10:01",\n										"name": "ops-vtn1:vm1:eth1",\n										"type": "SRIOV",\n										"gateway": "intercloud-1"\n									},\n									{\n										"address": "ipv4+10.10.200.202/24,mac+aa:bb:cc:dd:02:02",\n										"name": "ops-vtn1:vm1:eth2",\n										"type": "SRIOV",\n										"gateway": "ceph-net"\n									},\n									{\n										"address": "ipv4+206.196.179.157/28,mac+aa:bb:cc:dd:01:57",\n										"name": "ops-vtn1:vm1:eth3",\n										"type": "SRIOV",\n										"gateway": "external-net",\n										"routes": [\n                                                        				{\n                                    				                            "to":  {\n												"type": "ipv4-prefix",\n												"value": "206.196.0.0/16"\n											    },\n                         				                                    "next_hop": {\n												"value": "206.196.179.145"\n											    }\n                                                        				}\n										]\n									}\n								],\n								"quagga_bgp": {\n									"neighbors": [\n										{\n											"remote_asn": "7224",\n											"bgp_authkey": "versastack"\n										}\n									],\n									"networks": [\n										"10.10.0.0/16"\n									]\n								}\n							},\n							{\n								"name": "ops-vtn1-vm2",\n                                                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+3de656bd-21d5-4c46-89c0-cfdeb7d9c590",\n								"host": "rvtk-compute6",\n								"interfaces": [\n									{\n										"address": "ipv4+10.10.252.217/24",\n										"name": "ops-vtn1:vm2:eth0",\n										"type": "Ethernet"\n									},\n									{\n										"address": "ipv4+10.10.0.17/24,mac+aa:bb:cc:dd:10:17",\n										"name": "ops-vtn1:vm2:eth1",\n										"type": "SRIOV",\n										"gateway": "intercloud-1",\n										"routes": [\n                                                        				{\n                                    				                            "to":  {\n												"type": "ipv4-prefix",\n												"value": "10.0.0.0/16"\n											    },\n                         				                                    "next_hop": {\n												"value": "10.10.0.2"\n											    }\n                                                        				}\n										]\n									},\n									{\n										"address": "ipv4+10.10.200.217/24,mac+aa:bb:cc:dd:02:17",\n										"name": "ops-vtn1:vm2:eth2",\n										"type": "SRIOV",\n										"gateway": "ceph-net"\n									}\n								]\n							}, \n							{\n								"name": "ops-vtn1-vm3",\n                                                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+3de656bd-21d5-4c46-89c0-cfdeb7d9c590",\n								"host": "rvtk-compute7",\n								"interfaces": [\n									{\n										"address": "ipv4+10.10.252.219/24",\n										"name": "ops-vtn1:vm3:eth0",\n										"type": "Ethernet"\n									},\n									{\n										"address": "ipv4+10.10.0.19/24,mac+aa:bb:cc:dd:10:19",\n										"name": "ops-vtn1:vm3:eth1",\n										"type": "SRIOV",\n										"gateway": "intercloud-1",\n										"routes": [\n                                                        				{\n                                    				                            "to":  {\n												"type": "ipv4-prefix",\n												"value": "10.0.0.0/16"\n											    },\n                         				                                    "next_hop": {\n												"value": "10.10.0.2"\n											    }\n                                                        				}\n										]\n									},\n									{\n										"address": "ipv4+10.10.200.219/24,mac+aa:bb:cc:dd:02:19",\n										"name": "ops-vtn1:vm3:eth2",\n										"type": "SRIOV",\n										"gateway": "ceph-net"\n									}\n								]\n							}\n						],\n						"name": "subnet1",\n						"cidr": "10.1.0.0/24"\n					}\n				]\n			},\n			{\n				"type": "internal",\n				"parent": "urn:ogf:network:aws.amazon.com:aws-cloud",\n				"name": "vpc1",\n				"cidr": "10.0.0.0/16",\n				"subnets": [\n					{\n						"name": "subnet1",\n						"cidr": "10.0.0.0/24",\n						"virtual_machines": [\n							{\n								"name": "ec2-vpc1-vm1",\n                                                                "type": "instance+m4.xlarge,secgroup+geni,keypair+xi-aws-max-dev-key,image+ami-b66ae0a1"\n							},\n							{\n								"name": "ec2-vpc1-vm2",\n                                                                "type": "instance+m4.xlarge,secgroup+geni,keypair+xi-aws-max-dev-key,image+ami-b66ae0a1"\n							},\n							{\n								"name": "ec2-vpc1-vm3",\n                                                                "type": "instance+m4.xlarge,secgroup+geni,keypair+xi-aws-max-dev-key,image+ami-b66ae0a1"\n							}\n						],\n						"routes": [\n							{\n								"to": {\n									"value": "0.0.0.0/0"\n								},\n								"from": {\n									"value": "vpn"\n								},\n								"next_hop": {\n									"value": "vpn"\n								}\n							},\n							{\n								"to": {\n									"value": "0.0.0.0/0"\n								},\n								"next_hop": {\n									"value": "internet"\n								}\n							}\n						]\n					}\n				],\n				"routes": [\n					{\n						"to": {\n							"value": "0.0.0.0/0",\n							"type": "ipv4-prefix"\n						},\n						"next_hop": {\n							"value": "internet"\n						}\n					}\n				]\n			}\n		]\n	}\n}\n', 'Test for upcoming Demo', 0),
+(10, 10, NULL, 'Test VCN', '{\r\n    "user": "admin",\r\n    "type": "netcreate",\r\n    "alias": "VCN.OPS.1VM_Ext.182.Demo1",\r\n    "data": {\r\n        "virtual_clouds": [\r\n            {\r\n                "name": "vtn1",\r\n                "type": "internal",\r\n                "parent": "urn:ogf:network:openstack.com:openstack-cloud",\r\n                "cidr": "10.0.0.0/16",\r\n                "routes": [\r\n                    {\r\n                        "to": {\r\n                            "value": "0.0.0.0/0",\r\n                            "type": "ipv4-prefix"\r\n                        },\r\n                        "next_hop": {\r\n                            "value": "internet"\r\n                        }\r\n                    }\r\n                ],\r\n                "gateways": [\r\n                    {\r\n                        "from": [\r\n                            {\r\n                                "value": "External-Access",\r\n                                "type": "port_profile"\r\n                            }\r\n                        ],\r\n                        "name": "ext-gw1",\r\n                        "type": "ucs_port_profile"\r\n                    }\r\n                ],\r\n                "subnets": [\r\n                    {\r\n                        "routes": [\r\n                            {\r\n                                "to": {\r\n                                    "value": "0.0.0.0/0",\r\n                                    "type": "ipv4-prefix"\r\n                                },\r\n                                "next_hop": {\r\n                                    "value": "internet"\r\n                                }\r\n                            }\r\n                        ],\r\n                        "virtual_machines": [\r\n                            {\r\n                                "name": "ops-vtn1-vm1",\r\n                                "type": "instance+5,secgroup+rains,keypair+demo-key",\r\n                                "host": "rvtk-compute4",\r\n                                "interfaces": [\r\n                                    {\r\n                                        "address": "ipv4+10.10.252.182/24",\r\n                                        "name": "ops-vtn1:vm1:eth0",\r\n                                        "type": "Ethernet"\r\n                                    },\r\n                                    {\r\n                                        "address": "ipv4+206.196.179.157/24,mac+aa:bb:cc:dd:01:57",\r\n                                        "name": "ops-vtn1:vm1:eth1",\r\n                                        "type": "SRIOV",\r\n                                        "gateway": "ext-gw1",\r\n                                        "routes": [\r\n                                            {\r\n                                                "to": {\r\n                                                    "value": "206.196.0.0/16",\r\n                                                    "type": "ipv4-prefix"\r\n                                                },\r\n                                                "next_hop": {\r\n                                                    "value": "206.196.179.145"\r\n                                                }\r\n                                            }\r\n                                        ]\r\n                                    }\r\n                                ]\r\n                            }\r\n                        ],\r\n                        "name": "subnet1",\r\n                        "cidr": "10.0.0.0/24"\r\n                    }\r\n                ]\r\n            }\r\n        ]\r\n    }\r\n}', 'VCN Test Profile', 0);
 
 --
 -- Indexes for dumped tables
@@ -353,23 +296,7 @@ INSERT INTO `usergroup` (`usergroup_id`, `title`) VALUES
 -- Indexes for table `acl`
 --
 ALTER TABLE `acl`
-  ADD PRIMARY KEY (`acl_id`,`service_id`),
-  ADD UNIQUE KEY `acl_id` (`acl_id`),
-  ADD KEY `acl-service_idx` (`service_id`);
-
---
--- Indexes for table `acl_entry_group`
---
-ALTER TABLE `acl_entry_group`
-  ADD PRIMARY KEY (`acl_id`,`usergroup_id`),
-  ADD KEY `acl_entry_group-usergroup_idx` (`usergroup_id`);
-
---
--- Indexes for table `acl_entry_user`
---
-ALTER TABLE `acl_entry_user`
-  ADD PRIMARY KEY (`acl_id`,`subject`),
-  ADD KEY `acl_entry_user-user_info_idx` (`subject`);
+  ADD PRIMARY KEY (`acl_id`);
 
 --
 -- Indexes for table `label`
@@ -429,28 +356,6 @@ ALTER TABLE `service_wizard`
   ADD KEY `service_id` (`service_id`);
 
 --
--- Indexes for table `user_belongs`
---
-ALTER TABLE `user_belongs`
-  ADD PRIMARY KEY (`user_id`,`usergroup_id`),
-  ADD KEY `user_belongs-usergroup_idx` (`usergroup_id`);
-
---
--- Indexes for table `user_info`
---
-ALTER TABLE `user_info`
-  ADD PRIMARY KEY (`user_id`),
-  ADD UNIQUE KEY `username` (`username`),
-  ADD KEY `user_info-usergroup_idx` (`active_usergroup`);
-
---
--- Indexes for table `usergroup`
---
-ALTER TABLE `usergroup`
-  ADD PRIMARY KEY (`usergroup_id`),
-  ADD UNIQUE KEY `group_id` (`usergroup_id`);
-
---
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -458,12 +363,12 @@ ALTER TABLE `usergroup`
 -- AUTO_INCREMENT for table `acl`
 --
 ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=14;
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 --
 -- AUTO_INCREMENT for table `service`
 --
 ALTER TABLE `service`
-  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=14;
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 --
 -- AUTO_INCREMENT for table `service_delta`
 --
@@ -473,54 +378,25 @@ ALTER TABLE `service_delta`
 -- AUTO_INCREMENT for table `service_history`
 --
 ALTER TABLE `service_history`
-  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=2;
+  MODIFY `service_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 --
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 --
 -- AUTO_INCREMENT for table `service_state`
 --
 ALTER TABLE `service_state`
-  MODIFY `service_state_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '	',AUTO_INCREMENT=6;
+  MODIFY `service_state_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '	', AUTO_INCREMENT=6;
 --
 -- AUTO_INCREMENT for table `service_wizard`
 --
 ALTER TABLE `service_wizard`
-  MODIFY `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
---
--- AUTO_INCREMENT for table `user_info`
---
-ALTER TABLE `user_info`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=16;
---
--- AUTO_INCREMENT for table `usergroup`
---
-ALTER TABLE `usergroup`
-  MODIFY `usergroup_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
+  MODIFY `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 --
 -- Constraints for dumped tables
 --
-
---
--- Constraints for table `acl`
---
-ALTER TABLE `acl`
-  ADD CONSTRAINT `acl-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
---
--- Constraints for table `acl_entry_group`
---
-ALTER TABLE `acl_entry_group`
-  ADD CONSTRAINT `acl_entry_group-acl` FOREIGN KEY (`acl_id`) REFERENCES `acl` (`acl_id`) ON DELETE CASCADE ON UPDATE NO ACTION,
-  ADD CONSTRAINT `acl_entry_group-usergroup` FOREIGN KEY (`usergroup_id`) REFERENCES `usergroup` (`usergroup_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
---
--- Constraints for table `acl_entry_user`
---
-ALTER TABLE `acl_entry_user`
-  ADD CONSTRAINT `acl_entry_user-acl` FOREIGN KEY (`acl_id`) REFERENCES `acl` (`acl_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
 
 --
 -- Constraints for table `service_delta`
@@ -528,45 +404,6 @@ ALTER TABLE `acl_entry_user`
 ALTER TABLE `service_delta`
   ADD CONSTRAINT `service_delta-service_history` FOREIGN KEY (`service_history_id`) REFERENCES `service_history` (`service_history_id`) ON DELETE CASCADE ON UPDATE NO ACTION,
   ADD CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
---
--- Constraints for table `service_history`
---
-ALTER TABLE `service_history`
-  ADD CONSTRAINT `service_history-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION,
-  ADD CONSTRAINT `service_history-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
---
--- Constraints for table `service_instance`
---
-ALTER TABLE `service_instance`
-  ADD CONSTRAINT `service_instance-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  ADD CONSTRAINT `service_instance-service_state` FOREIGN KEY (`service_state_id`) REFERENCES `service_state` (`service_state_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
---
--- Constraints for table `service_verification`
---
-ALTER TABLE `service_verification`
-  ADD CONSTRAINT `service_verification-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
---
--- Constraints for table `service_wizard`
---
-ALTER TABLE `service_wizard`
-  ADD CONSTRAINT `service_wizard-service` FOREIGN KEY (`service_id`) REFERENCES `service` (`service_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `user_belongs`
---
-ALTER TABLE `user_belongs`
-  ADD CONSTRAINT `user_belongs-usergroup` FOREIGN KEY (`usergroup_id`) REFERENCES `usergroup` (`usergroup_id`) ON DELETE CASCADE ON UPDATE NO ACTION,
-  ADD CONSTRAINT `user_belongs-user_info` FOREIGN KEY (`user_id`) REFERENCES `user_info` (`user_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
---
--- Constraints for table `user_info`
---
-ALTER TABLE `user_info`
-  ADD CONSTRAINT `user_info-usergroup` FOREIGN KEY (`active_usergroup`) REFERENCES `usergroup` (`usergroup_id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 --
 -- Database: `login`
 --
@@ -574,37 +411,6 @@ DROP DATABASE `login`;
 CREATE DATABASE IF NOT EXISTS `login` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `login`;
 
--- --------------------------------------------------------
-
---
--- Table structure for table `cred`
---
-
-DROP TABLE IF EXISTS `cred`;
-CREATE TABLE `cred` (
-  `username` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
-  `password_hash` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
-  `salt` varchar(64) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Dumping data for table `cred`
---
-
-INSERT INTO `cred` (`username`, `password_hash`, `salt`) VALUES
-('admin', '-974-682329-118-94902114-95-10079105-87-3333121-41-72-14-58-2791-16884139-66-57-2126', 'kXaRVWM1YHHtn9fM'),
-('test', '-12710239395522-5473-8885-336922-5353-35-34-104-4541462811961749523-18-27669-58', '89fi5qhjsua60lq6e42oon267jdlk4cmdn460dl2cmpnbsdt90ugp757k41af5ng'),
-('test2', '49-81118-81-92-6-5786-19923576-18-1227210071-18-59101-33-504370-10847-77-9-127-105-7-62', 'qdd85hqc3ev0e4ktgjlmf55m6mebsgjhuk3lg7n7tpcqgshpg50p4vnjmn13iil6'),
-('test3', '-23115-111-9783-10410828-65458325465119-1149489-11411749-15-42-125329-11994-122-94-58-25', '97hpe70nmh5dcp4nvnrc5lrk2qa3pp568f8n2vjgkc2b74265ga2eh5v9550pe4'),
-('test4', '-117-12655-85539997-740-97-9937-703961-112-64-2217368-16119-319423-30-36122-93-13-21', 'aii31mao4uo88travlv6umidd58e4iarvqmadeft50ou8m1ts92973ugupqtrf2v'),
-('test5', '-94-706-1254533-21-39-39-755623012-76-53-60960-699-4387-10-5089-19-27-38204127', 'nm9r2qm2rr1guqkhrkk8su3bck8as03oouig5c6gad8ep4b4frhpcq94sf4635jt');
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `cred`
---
-ALTER TABLE `cred`
-  ADD PRIMARY KEY (`username`);
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

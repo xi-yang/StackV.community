@@ -4,7 +4,7 @@
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <!DOCTYPE html>
-<html >
+<html>
     <head>
         <meta charset="UTF-8">
         <title>Login</title>
