@@ -28,6 +28,7 @@
             <form action="/StackV-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateVCN()">
                 <input type="hidden" name="username" value="${sessionStorage.username}"/>
                 <input type="hidden" name="netCreate" value="true"/>
+                <input type="hidden" name="netHost" value=""/>
                 <!-- Progress Bar -->
                 <ul class="vcn-progress" id="progressbar">
                     <li class="disabled active">Service Host</li>
@@ -143,7 +144,7 @@
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="submit" name="save" class="profile-save-button action-button" value="Save" />
-                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>
+                    <button type="submit" name="submit" class="action-button" value="aws">Submit</button>
                 </fieldset>
 
 
@@ -271,7 +272,7 @@
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="submit" name="save" class="profile-save-button action-button" value="Save" />
-                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>
+                    <button type="submit" name="submit" class="action-button" value="ops">Submit</button>
                 </fieldset>
             </form>
             <div id="info-panel">

@@ -392,7 +392,6 @@ public class WebResource {
 
         return "PLUGIN SUCCEEDED";
     }
-
     /**
      * @api {put} /app/driver/:user/add Add Driver Profile
      * @apiVersion 1.0.0
@@ -2240,7 +2239,7 @@ public class WebResource {
             int instanceID = servBean.getInstanceID(refUuid);
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` "
-                    + "(`service_history_id`, `service_state_id`, `service_instance_id`) VALUES (1, 1, ?)");
+                    + "(`service_state_id`, `service_instance_id`) VALUES (1, ?)");
             prep.setInt(1, instanceID);
             prep.executeUpdate();
 
@@ -2332,6 +2331,7 @@ public class WebResource {
                     return "Deletion Complete.\r\n";
 
                 case "verify":
+                case "reverify":
                     servBean.verify(refUuid, refresh);
 
                     endTime = System.currentTimeMillis();
@@ -2342,7 +2342,7 @@ public class WebResource {
                     return "Verification Complete.\r\n";
 
                 default:
-                    return "Error! Invalid Action.\r\n";
+                    System.out.println("Error! Invalid Action: " + action);
             }
 
             endTime = System.currentTimeMillis();
@@ -2669,6 +2669,14 @@ public class WebResource {
                         } else {
                             vmString += "& ";
                         }
+                    } else {
+                        vmString += "& ";
+                    }
+
+                    // Globus
+                    if (vmJSON.containsKey("globus_connect")) {
+                        JSONObject globusJSON = (JSONObject) vmJSON.get("globus_connect");
+                        vmString += "&" + globusJSON.toString();
                     } else {
                         vmString += "& ";
                     }
