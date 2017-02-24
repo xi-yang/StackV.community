@@ -21,10 +21,11 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, loggedIn, TweenLite */
+/* global XDomainRequest, baseUrl, loggedIn, TweenLite, Power2 */
 // Service JavaScript Library
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
+var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 
 // Page Load Function
 
@@ -116,8 +117,7 @@ $(function () {
     });
 
     $("#black-screen").click(function () {
-        $("#black-screen").addClass("off");
-        $("#info-panel").removeClass("active");
+        tweenBlackScreen.reverse();
     });
 
     clearCounters();

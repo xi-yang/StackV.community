@@ -21,29 +21,41 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite */
+/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen */
 // Tweens
 var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.easeInOut, paused: true, top: "30px"});
 var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
-var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, opacity: "1"});
-
 
 $(function () {
     setTimeout(catalogLoad, 750);
     setRefresh(60);
 
+    $("#black-screen").click(function () {
+        $("#info-panel").removeClass("active");
+        closeCatalog();
+    });
+
     $(".nav-tabs li").click(function () {
-        if ($(this).parent().parent().hasClass("closed")) {
-            tweenCatalogPanel.play();
-            tweenBlackScreen.play();
+        if ($("#catalog-panel").hasClass("closed")) {
+            openCatalog();
         } else if (this.className === 'active') {
-            tweenCatalogPanel.reverse();
-            tweenBlackScreen.reverse();
+            closeCatalog();
         }
     });
 
     //$("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
 });
+
+function openCatalog() {
+    tweenCatalogPanel.play();
+    tweenBlackScreen.play();
+    $("#catalog-panel").removeClass("closed");
+}
+function closeCatalog() {
+    tweenCatalogPanel.reverse();
+    tweenBlackScreen.reverse();
+    $("#catalog-panel").addClass("closed");
+}
 
 function catalogLoad() {
     loadInstances();
@@ -52,51 +64,51 @@ function catalogLoad() {
 }
 
 function loadInstances() {
-    tweenInstancePanel.reverse();
-    setTimeout(function () {
-        var userId = keycloak.subject;
-        var tbody = document.getElementById("status-body");
-        $("#status-body").empty();
 
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
-        $.ajax({
-            url: apiUrl,
-            type: 'GET',
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            },
-            success: function (result) {
-                for (i = 0; i < result.length; i++) {
-                    var instance = result[i];
+    var userId = keycloak.subject;
+    var tbody = document.getElementById("status-body");
 
-                    var row = document.createElement("tr");
-                    row.className = "clickable-row";
-                    row.setAttribute("data-href", instance[1]);
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            $("#status-body").empty();
 
-                    var cell1_1 = document.createElement("td");
-                    cell1_1.innerHTML = instance[3];
-                    var cell1_2 = document.createElement("td");
-                    cell1_2.innerHTML = instance[0];
-                    var cell1_3 = document.createElement("td");
-                    cell1_3.innerHTML = instance[1];
-                    var cell1_4 = document.createElement("td");
-                    cell1_4.innerHTML = instance[2];
-                    row.appendChild(cell1_1);
-                    row.appendChild(cell1_2);
-                    row.appendChild(cell1_3);
-                    row.appendChild(cell1_4);
-                    tbody.appendChild(row);
-                }
+            for (i = 0; i < result.length; i++) {
+                var instance = result[i];
 
-                $(".clickable-row").click(function () {
-                    sessionStorage.setItem("uuid", $(this).data("href"));
-                    window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
-                });
+                var row = document.createElement("tr");
+                row.className = "clickable-row";
+                row.setAttribute("data-href", instance[1]);
 
-                tweenInstancePanel.play();
+                var cell1_1 = document.createElement("td");
+                cell1_1.innerHTML = instance[3];
+                var cell1_2 = document.createElement("td");
+                cell1_2.innerHTML = instance[0];
+                var cell1_3 = document.createElement("td");
+                cell1_3.innerHTML = instance[1];
+                var cell1_4 = document.createElement("td");
+                cell1_4.innerHTML = instance[2];
+                row.appendChild(cell1_1);
+                row.appendChild(cell1_2);
+                row.appendChild(cell1_3);
+                row.appendChild(cell1_4);
+                tbody.appendChild(row);
             }
-        });
-    }, 500);
+
+            $(".clickable-row").click(function () {
+                sessionStorage.setItem("uuid", $(this).data("href"));
+                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
+            });
+
+            tweenInstancePanel.play();
+        }
+    });
+
 }
 
 function loadWizard() {
@@ -331,6 +343,7 @@ function loadEditor() {
     });
 }
 
+/* REFRESH */
 function timerChange(sel) {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
@@ -339,6 +352,11 @@ function timerChange(sel) {
     } else {
         document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
     }
+}
+
+function refreshCountdown() {
+    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+    countdown--;
 }
 
 function setRefresh(time) {
@@ -351,46 +369,38 @@ function setRefresh(time) {
     }, 1000);
 }
 
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
-}
-
 function reloadCatalog(time) {
     keycloak.updateToken(60).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        if (refreshed) {
-            sessionStorage.setItem("token", keycloak.token);
-            console.log("Token Refreshed by nexus!");
-        }
-
-        var timerSetting = $("#refresh-timer").val();
-        var manual = false;
-        if (typeof time === "undefined") {
-            time = countdown;
-        }
-        if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-            manual = true;
-        }
-
-        $('#instance-panel').load(document.URL + ' #status-table', function () {
-            loadInstances();
-
-            $("#refresh-timer").val(timerSetting);
-            if (manual === false) {
-                countdown = time;
-                document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-            } else {
-                document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+        tweenInstancePanel.reverse();
+        setTimeout(function () {
+            if (refreshed) {
+                sessionStorage.setItem("token", keycloak.token);
+                console.log("Token Refreshed by nexus!");
             }
 
-            $(".clickable-row").click(function () {
-                sessionStorage.setItem("uuid", $(this).data("href"));
-                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
-            });
-        });
+            var timerSetting = $("#refresh-timer").val();
+            var manual = false;
+            if (typeof time === "undefined") {
+                time = countdown;
+            }
+            if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+                manual = true;
+            }
 
+            $('#instance-panel').load(document.URL + ' #status-table', function () {
+                loadInstances();
+
+                $("#refresh-timer").val(timerSetting);
+                if (manual === false) {
+                    countdown = time;
+                    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+                } else {
+                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+                }
+            });
+        }, 500);
     });
 }
 

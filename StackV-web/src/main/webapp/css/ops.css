@@ -56,13 +56,13 @@ table.management-table#jobs-table {
 table.management-table thead {
   position:sticky;
   top:0;
-  z-index:10;
+  z-index:3;
   outline:1px solid black;
 }
 table.management-table tfoot {
   position:sticky;
   bottom:0;
-  z-index:10;
+  z-index:3;
   outline:1px solid black;
 }
 
@@ -162,9 +162,11 @@ select#refresh-timer {
 }
 div#details-panel {
     padding: 10px 10px;
-    height: 40%;
-    width: calc(100% - 80px);
+    height: 100%;
+    left: calc(5% + 40px);
+    width: calc(90% - 80px);
     position: absolute;
+    overflow: scroll;
 }
 
 /*For the details table*/
