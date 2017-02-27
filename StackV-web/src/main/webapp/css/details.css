@@ -1,0 +1,26 @@
+div#details-panel {
+    padding: 0 10px;
+    height: 100%;
+    left: calc(5% + 40px);
+    width: calc(90% - 80px);
+    position: absolute;
+    overflow: scroll;
+    top: -100%;
+}
+
+table.details-table {
+    margin-top: 20px;
+}
+
+table.service-delta-table, table.system-delta-table {
+    bottom: -100%;
+}
+
+tr.instruction-row {
+    vertical-align: top;
+    height: 80px;
+    font-size: 1.2em;
+}
+tr.button-row {
+    height: 51px;
+}

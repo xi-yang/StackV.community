@@ -32,7 +32,7 @@ div.form-result {
 }
 
 /*This table is also referenced in other folders!*/
-table.management-table {
+.management-table {
     background: #ffffff;
     border-collapse: collapse;
     box-shadow: 0 5px 12px 2px rgba(0, 0, 0, 0.4);
@@ -159,24 +159,6 @@ select#refresh-timer {
     height: inherit;
     font-weight: 400;
     margin-right: 5px;
-}
-div#details-panel {
-    padding: 10px 10px;
-    height: 100%;
-    left: calc(5% + 40px);
-    width: calc(90% - 80px);
-    position: absolute;
-    overflow: scroll;
-}
-
-/*For the details table*/
-tr.instruction-row {
-    vertical-align: top;
-    height: 80px;
-    font-size: 1.2em;
-}
-tr.button-row {
-    height: 51px;
 }
 
 /*This shouldn't be an ID - should be a class*/

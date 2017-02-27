@@ -27,6 +27,10 @@ baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
 var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 
+var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut, paused: true, top: 0});
+var tweenServiceDeltaTable = new TweenLite(".service-delta-table", .5, {ease: Power2.easeInOut, paused: true, bottom: 0});
+var tweenSystemDeltaTable = new TweenLite(".system-delta-table", .5, {ease: Power2.easeInOut, paused: true, bottom: 0});
+
 // Page Load Function
 
 $(function () {
@@ -923,7 +927,7 @@ function reloadDetails(time) {
             manual = true;
         }
 
-        $('#details-panel').load(document.URL + ' #details-table', function () {
+        $('#details-panel').load(document.URL + ' #instance-details-table', function () {
             loadDetails();
 
             setTimeout(function () {
@@ -988,7 +992,7 @@ function subloadInstance() {
 
             var table = document.createElement("table");
 
-            table.id = "details-table";
+            table.id = "instance-details-table";
             table.className = "management-table";
 
             var thead = document.createElement("thead");
@@ -1369,7 +1373,7 @@ function buildDeltaTable(type) {
     var panel = document.getElementById("details-panel");
 
     var table = document.createElement("table");
-    table.className = "management-table hide " + type.toLowerCase() + "-delta-table";
+    table.className = "management-table hide details-table " + type.toLowerCase() + "-delta-table";
 
     var thead = document.createElement("thead");
     thead.className = "delta-table-header";
@@ -1445,7 +1449,7 @@ function loadVisualization() {
         buildDeltaTable("Service");
         buildDeltaTable("System");
 
-        $(".service-delta-table").removeClass("hide");
+        tweenServiceDeltaTable.play();
 
         $("#serv-add").append($("#serva_viz_div"));
         $("#serv-add").find("#serva_viz_div").removeClass("hidden");
@@ -1460,7 +1464,7 @@ function loadVisualization() {
             $("#delta-System").addClass("hide");
             $("#delta-System").insertAfter(".system-delta-table");
 
-            $(".system-delta-table").removeClass("hide");
+            tweenSystemDeltaTable.play();
 
             // Toggle button should toggle  between system delta visualization and delta-System table
             // if the verification failed
@@ -1494,7 +1498,7 @@ function toggleTextModel(viz_table, text_table) {
         // delta-Service, service verification etc must always display before
         // everything else.
         if (text_table.toLowerCase().indexOf("service") > 0) {
-            $(text_table).insertAfter("#details-table")
+            $(text_table).insertAfter("#instance-details-table")
         }
         $(text_table).toggleClass("hide");
 
