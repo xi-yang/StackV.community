@@ -58,7 +58,7 @@
             <!-- TAG PANEL -->
             <div id="tag-panel"></div>
         </div>
-        <div id="catalog-panel">
+        <div id="catalog-panel" class="closed">
             <ul class="nav nav-tabs catalog-tabs">
                 <li><a data-toggle="tab" href="#wizard-tab">Profiles</a></li>
                 <li class="active"><a data-toggle="tab" href="#editor-tab">Intents</a></li>

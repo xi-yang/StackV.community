@@ -1,0 +1,27 @@
+div#details-panel {
+    padding: 0 10px;
+    height: calc(100% - 20px);
+    left: calc(5% + 40px);
+    width: calc(90% - 80px);
+    position: absolute;
+    overflow-y: scroll;
+    top: -100%;
+}
+
+.details-table, .verification-table {
+    margin-top: 20px;
+}
+
+#service-delta-table, #system-delta-table {
+    /*top: -100%;*/
+    position: relative;
+}
+
+tr.instruction-row {
+    vertical-align: top;
+    height: 80px;
+    font-size: 1.2em;
+}
+tr.button-row {
+    height: 51px;
+}

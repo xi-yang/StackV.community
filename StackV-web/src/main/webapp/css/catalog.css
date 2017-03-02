@@ -64,7 +64,7 @@ div#catalog-panel {
     padding: 10px 10px 0 10px;
     bottom: calc(-45% + 42px);
     left: 10%;
-    overflow: scroll;
+    /*overflow: scroll;*/
     height: 45%;
     width: 80%;
     position: fixed;
@@ -72,7 +72,7 @@ div#catalog-panel {
 }
 
 table#status-table {
-    margin: 20px auto;
+    margin: 0px auto auto auto;
     width: 80%;
     max-height: 100%;
 }

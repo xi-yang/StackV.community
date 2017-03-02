@@ -1871,7 +1871,7 @@ public class WebResource {
     @Path("/profile/{wizardID}")
     @Produces("application/json")
     @RolesAllowed("Profiles")
-    public String getProfile(@PathParam("wizardId") int wizardID) {
+    public String getProfile(@PathParam("wizardID") int wizardID) {
         try {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
@@ -1910,9 +1910,9 @@ public class WebResource {
      * -H "Authorization: bearer $KC_ACCESS_TOKEN"
      */
     @PUT
-    @Path("/profile/{wizardId}/edit")
+    @Path("/profile/{wizardID}/edit")
     @RolesAllowed("Profiles")
-    public void editProfile(@PathParam("wizardId") int wizardId, final String inputString) {
+    public void editProfile(@PathParam("wizardID") int wizardId, final String inputString) {
         try {
             // Connect to the DB
             Properties front_connectionProps = new Properties();

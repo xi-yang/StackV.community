@@ -106,7 +106,7 @@ function loadACLPortal() {
 
         evt.preventDefault();
     });
-    
+
     $(".acl-user-close").click(function (evt) {
         $(".acl-role-selected-row").removeClass("acl-role-selected-row");
 
@@ -122,7 +122,7 @@ function loadACLPortal() {
         tweenInstanceACLPanel.reverse();
         evt.preventDefault();
     });
-    
+
     $(".left-tab").trigger("click");
 }
 
@@ -154,15 +154,13 @@ function subloadRoleACLUsers() {
                 }
 
                 $(".acl-role-row").click(function () {
-                    if (animating === false) {
-                        $(".acl-role-selected-row").removeClass("acl-role-selected-row");
-                        $("#acl-user").val($(this).data("subject"));
+                    $(".acl-role-selected-row").removeClass("acl-role-selected-row");
+                    $("#acl-user").val($(this).data("subject"));
 
-                        subloadRoleACLUserGroups();
-                        subloadRoleACLUserRoles();
+                    subloadRoleACLUserGroups();
+                    subloadRoleACLUserRoles();
 
-                        $(this).addClass("acl-role-selected-row");
-                    }
+                    $(this).addClass("acl-role-selected-row");
                 });
             }
         });
