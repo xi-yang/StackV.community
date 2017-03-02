@@ -10,7 +10,6 @@
         <meta charset="UTF-8">
         <title>Service Details</title>
 
-
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
@@ -32,11 +31,14 @@
         <div id="details-viz" ></div>
 
         <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
-
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        
+        <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/details.js"></script>
 
         <script>
             //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
