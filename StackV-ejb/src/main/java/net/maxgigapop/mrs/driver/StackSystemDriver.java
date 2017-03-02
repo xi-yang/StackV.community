@@ -55,7 +55,9 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
@@ -317,7 +319,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
     }
 
     public String[] executeHttpMethod(String url, String method, String body, String authServer, String credential) throws IOException {
-        this.prepareTrustStore(null); // use global trust store for now
+        this.prepareTrustStore(null); // skip and use global trust store config
         String methods[] = method.split("/");
         method = methods[0];
         String type = (methods.length > 1 ? methods[1] : "json");
@@ -389,10 +391,34 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
         logger.fine(String.format("Response Code : %s", response[0]));
         return response;
     }
-    
+
     private void prepareTrustStore(String trustStore) {
-        if (trustStore == null || trustStore.isEmpty()) {
+        if (trustStore == null) {
             return;
+        }
+        if (trustStore.isEmpty()) {
+            TrustManager trustAllCerts[] = new TrustManager[]{
+                new X509TrustManager() {
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                        return null;
+                    }
+
+                    public void checkClientTrusted(
+                            java.security.cert.X509Certificate[] certs, String authType) {
+                    }
+
+                    public void checkServerTrusted(
+                            java.security.cert.X509Certificate[] certs, String authType) {
+                    }
+                }
+            };
+            try {
+                SSLContext sc = SSLContext.getInstance("TLSv1");
+                sc.init(null, trustAllCerts, new java.security.SecureRandom());
+                HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            } catch (Exception e) {
+                logger.severe("prepareSSL error:" + e);
+            }
         }
         try {
             final KeyStore keyStore = KeyStore.getInstance("JKS");
@@ -409,7 +435,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
             final SSLSocketFactory socketFactory = sc.getSocketFactory();
             HttpsURLConnection.setDefaultSSLSocketFactory(socketFactory);
         } catch (Exception e) {
-            logger.severe("prepareTrustStore error:"+e);
+            logger.severe("prepareTrustStore error:" + e);
         }
     }
 }
