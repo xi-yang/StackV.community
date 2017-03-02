@@ -13,6 +13,9 @@
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
+        
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/driver.js"></script>
         
