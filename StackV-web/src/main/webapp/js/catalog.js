@@ -400,7 +400,7 @@ function reloadCatalog(time) {
                     document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
                 }
             });
-        }, 500);
+        }, 750);
     });
 }
 

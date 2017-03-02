@@ -1,19 +1,20 @@
 div#details-panel {
     padding: 0 10px;
-    height: 100%;
+    height: calc(100% - 20px);
     left: calc(5% + 40px);
     width: calc(90% - 80px);
     position: absolute;
-    overflow: scroll;
+    overflow-y: scroll;
     top: -100%;
 }
 
-table.details-table {
+.details-table, .verification-table {
     margin-top: 20px;
 }
 
-table.service-delta-table, table.system-delta-table {
-    bottom: -100%;
+#service-delta-table, #system-delta-table {
+    /*top: -100%;*/
+    position: relative;
 }
 
 tr.instruction-row {

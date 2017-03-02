@@ -38,6 +38,7 @@
         <script src="/StackV-web/js/bootstrap.js"></script>
         
         <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/details.js"></script>
 
         <script>
             //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
