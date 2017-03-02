@@ -231,6 +231,10 @@ function installStack(){
     var second = document.createElement("input");
     var third = document.createElement("p");
     var fourth = document.createElement("input");
+    var fifth = document.createElement("p");
+    var sixth = document.createElement("input");
+    var seventh = document.createElement("p");
+    var eighth = document.createElement("input");
     var divContent = document.getElementById("install-type");
     
     type.innerHTML = "StackSystemDriver";
@@ -250,10 +254,27 @@ function installStack(){
     fourth.type="text";
     fourth.id = "subsystemBaseUrl";
     
+    fifth.innerHTML = "Authorization Server:";
+    fifth.style.color = "white";
+    
+    sixth.type="text";
+    sixth.id="authServer";
+    
+    seventh.innerHTML="Crendentials:";
+    seventh.style.color = "white";
+    
+    eighth.type="password";
+    eighth.id = "subsystemBaseUrl";
+    
+    
     divContent.appendChild(first);
     divContent.appendChild(second);
     divContent.appendChild(third);
     divContent.appendChild(fourth);
+    divContent.appendChild(fifth);
+    divContent.appendChild(sixth);
+    divContent.appendChild(seventh);
+    divContent.appendChild(eighth);
 }
 function installGeneric(){
     var type = document.createElement("p");
