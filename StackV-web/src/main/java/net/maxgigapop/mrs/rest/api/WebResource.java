@@ -313,6 +313,10 @@ public class WebResource {
     @RolesAllowed("Drivers")
     public String installDriver(final String dataInput) throws SQLException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        if (refresh != null) {
+            auth = servBean.refreshToken(refresh);
+        }
 
         Object obj = parser.parse(dataInput);
         JSONObject JSONtemp = (JSONObject) obj;
@@ -358,7 +362,11 @@ public class WebResource {
     @RolesAllowed("Drivers")
     public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        if (refresh != null) {
+            auth = servBean.refreshToken(refresh);
+        }
+        
         Properties prop = new Properties();
         prop.put("user", front_db_user);
         prop.put("password", front_db_pass);

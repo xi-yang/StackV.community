@@ -78,7 +78,7 @@
                                     <td>Generic</td>
                                     <td>This is a placement description</td>
                                     <td style="width: 180px;">
-                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack(); changeNameInst();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install' id='install-button'>Install</button>
                                     </td>
                                 </tr>
                                 <tr>

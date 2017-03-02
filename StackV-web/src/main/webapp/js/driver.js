@@ -96,8 +96,15 @@ function installAWS(){
     var fourth = document.createElement("input");
     var fifth = document.createElement("p");
     var sixth = document.createElement("input");
+    var seventh = document.createElement("p");
+    var eighth = document.createElement("SELECT");
+    var option1 = document.createElement("option");
+    var option2 = document.createElement("option");
+    var option3 = document.createElement("option");
+    var option4 = document.createElement("option");
+    var option5 = document.createElement("option");
     var divContent = document.getElementById("install-type");
-
+    
     type.innerHTML = "AwsDriver";
     type.style.color = "white";
     type.id = "drivertype";
@@ -122,12 +129,31 @@ function installAWS(){
     sixth.type="text";
     sixth.id = "aws_secret_access_key";
     
+    seventh.innerHTML= "Region";
+    seventh.style.color = "white";
+    
+    
+    option1.text = "option1";
+    option2.text = "option2";
+    option3.text = "option3";
+    option4.text = "option4";
+    option5.text = "option5";
+    
+    eighth.add(option1);
+    eighth.add(option2);
+    eighth.add(option3);
+    eighth.add(option4);
+    eighth.add(option5);
+    eighth.id = "region";
+    
     divContent.appendChild(first);
     divContent.appendChild(second);
     divContent.appendChild(third);
     divContent.appendChild(fourth);
     divContent.appendChild(fifth);
-    divContent.appendChild(sixth);    
+    divContent.appendChild(sixth);
+    divContent.appendChild(seventh);
+    divContent.appendChild(eighth);
 }
 function installOpenstack(){
     var type = document.createElement("p");
@@ -151,12 +177,7 @@ function installOpenstack(){
         var textbox = document.createElement("p");
         var input = document.createElement("input");
         textbox.style.color="white";
-        if((i + 1) !== 7){
-            input.type="text";
-        }
-        else {
-            input.type="checkbox";
-        }
+        input.type="text";
         content[i]=textbox;
         content[i+1]=input;
     }
@@ -188,7 +209,7 @@ function installOpenstack(){
     extName.innerHTML= "ModelExt:";
     extName.style.color = "white";
     ext.id = "modelExt";
-    ext.rows = "10";
+    ext.rows = "15";
     ext.cols = "30";
     
     
@@ -233,7 +254,37 @@ function installStack(){
     divContent.appendChild(second);
     divContent.appendChild(third);
     divContent.appendChild(fourth);
-}    
+}
+function installGeneric(){
+    var type = document.createElement("p");
+    var first = document.createElement("p");
+    var second = document.createElement("input");
+    var third = document.createElement("p");
+    var fourth = document.createElement("input");
+    var divContent = document.getElementById("install-type");
+    
+    type.innerHTML = "GenericRESTDriver";
+    type.style.color = "white";
+    type.id = "drivertype";
+    divContent.appendChild(type);
+    
+    first.innerHTML="Topology URI:";
+    first.style.color = "white";
+    
+    second.type="text";
+    second.id="TOPURI";
+    
+    third.innerHTML="Subsystem Base URL:";
+    third.style.color = "white";
+    
+    fourth.type="text";
+    fourth.id = "subsystemBaseUrl";
+    
+    divContent.appendChild(first);
+    divContent.appendChild(second);
+    divContent.appendChild(third);
+    divContent.appendChild(fourth);
+}
 function clearPanel(){
     $('#install-type').empty();
     $('#install-options').empty();
@@ -634,13 +685,12 @@ function installDriver(){
         contentType: 'application/json',
         data: settings,
         success: function(result) {
-            getAllDetails();
-            $('#install-type').empty();
             var data = document.createElement("p");
             
             data.style.color = "white";
             data.innerHTML = result;
             panel.appendChild(data);
+            getAllDetails();
         }
     });
 }
