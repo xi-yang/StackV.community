@@ -106,17 +106,18 @@ public class VersionItemPersistenceManager extends PersistenceManager {
     
     public static void cleanupAllBefore(Date before) {
         try {
-            Query q = createQuery(String.format("FROM %s vi WHERE vi.modelRef.creationTime < :before AND "
+            Query q = createQuery(String.format("SELECT vi.id FROM %s vi WHERE vi.modelRef.creationTime < :before AND "
                     + "NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionItem = vi)", 
                     VersionItem.class.getSimpleName(), DriverSystemDelta.class.getSimpleName()));
             q.setParameter("before", before, TemporalType.TIMESTAMP);
-            List<VersionItem> listVI = (List<VersionItem>) q.getResultList();
-            if (listVI == null) {
+            List listVID = q.getResultList();
+            if (listVID == null) {
                 return;
             }
-            Iterator<VersionItem> it = listVI.iterator();
+            Iterator<Long> it = listVID.iterator();
             while (it.hasNext()) {
-                VersionItem vi = it.next();
+                Long vid = it.next();
+                VersionItem vi = VersionItemPersistenceManager.findById(vid);
                 if (vi.getVersionGroups() == null || vi.getVersionGroups().isEmpty()) {
                     VersionItemPersistenceManager.delete(vi);
                 }
