@@ -103,27 +103,27 @@ public class VersionItemPersistenceManager extends PersistenceManager {
             throw new EJBException(String.format("VersionItemPersistenceManager::deleteByDriverInstance raised exception: %s", e.getMessage()));
         }
     }
-    
+
     public static void cleanupAllBefore(Date before) {
-        try {
-            Query q = createQuery(String.format("SELECT vi.id FROM %s vi WHERE vi.modelRef.creationTime < :before AND "
-                    + "NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionItem = vi)", 
-                    VersionItem.class.getSimpleName(), DriverSystemDelta.class.getSimpleName()));
-            q.setParameter("before", before, TemporalType.TIMESTAMP);
-            List listVID = q.getResultList();
-            if (listVID == null) {
-                return;
-            }
-            Iterator<Long> it = listVID.iterator();
-            while (it.hasNext()) {
-                Long vid = it.next();
-                VersionItem vi = VersionItemPersistenceManager.findById(vid);
-                if (vi.getVersionGroups() == null || vi.getVersionGroups().isEmpty()) {
+        Query q = createQuery(String.format("SELECT vi.id FROM %s vi WHERE vi.modelRef.creationTime < :before AND "
+                + "NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionItem = vi)",
+                VersionItem.class.getSimpleName(), DriverSystemDelta.class.getSimpleName()));
+        q.setParameter("before", before, TemporalType.TIMESTAMP);
+        List listVID = q.getResultList();
+        if (listVID == null) {
+            return;
+        }
+        Iterator<Long> it = listVID.iterator();
+        while (it.hasNext()) {
+            Long vid = it.next();
+            VersionItem vi = VersionItemPersistenceManager.findById(vid);
+            if (vi.getVersionGroups() == null || vi.getVersionGroups().isEmpty()) {
+                try {
                     VersionItemPersistenceManager.delete(vi);
+                } catch (Exception e) {
+                    ; // ignore exception and continue deleting rest items
                 }
             }
-        } catch (Exception e) {
-            throw new EJBException(String.format("VersionItemPersistenceManager::cleanupAllBefore raised exception: %s", e.getMessage()));
         }
     }
 }
