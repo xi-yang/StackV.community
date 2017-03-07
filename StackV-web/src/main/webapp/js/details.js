@@ -460,7 +460,7 @@ function subloadDelta() {
 
             // Next step
             subloadACL();
-            loadVisualization();
+           // loadVisualization();
         }
     });
 }
@@ -558,6 +558,7 @@ function loadStatus(refUuid) {
             deltaModerate();
             instructionModerate();
             buttonModerate();
+            loadVisualization();
         }
     });
 }
@@ -622,61 +623,226 @@ function buildDeltaTable(type) {
 
 function loadVisualization() {
     $("#details-viz").load("/StackV-web/details_viz.html", function () {
-        // Loading Verification visualization
-        $("#ver-add").append($("#va_viz_div"));
-        $("#ver-add").find("#va_viz_div").removeClass("hidden");
-
-        $("#unver-add").append($("#ua_viz_div"));
-        $("#unver-add").find("#ua_viz_div").removeClass("hidden");
-
-        $("#ver-red").append($("#vr_viz_div"));
-        $("#ver-red").find("#vr_viz_div").removeClass("hidden");
-
-        $("#unver-red").append($("#ur_viz_div"));
-        $("#unver-red").find("#ur_viz_div").removeClass("hidden");
-
-        // Loading Service Delta visualization
-        $("#delta-Service").addClass("hide");
-        buildDeltaTable("Service");
-        buildDeltaTable("System");
-
-        tweenServiceDeltaTable.play();
-
-        $("#serv-add").append($("#serva_viz_div"));
-        $("#serv-add").find("#serva_viz_div").removeClass("hidden");
-
-        $("#serv-red").append($("#servr_viz_div"));
-        $("#serv-red").find("#servr_viz_div").removeClass("hidden");
-
-        // Loading System Delta visualization
-        var subState = document.getElementById("instance-substate").innerHTML;
-        var verificationTime = document.getElementById("verification-time").innerHTML;
-        if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {
-            $("#delta-System").addClass("hide");
-            $("#delta-System").insertAfter("#system-delta-table");
-
-            tweenSystemDeltaTable.play();
-
-            // Toggle button should toggle  between system delta visualization and delta-System table
-            // if the verification failed
-            document.querySelector("#system-delta-table .details-model-toggle").onclick = function () {
-                toggleTextModel('#system-delta-table', '#delta-System');
-            };
-
-            $("#syst-red").append($("#sysr_viz_div"));
-            $("#syst-add").append($("#sysa_viz_div"));
-
-            $("#syst-red").find("#sysr_viz_div").removeClass("hidden");
-            $("#syst-add").find("#sysa_viz_div").removeClass("hidden");
-        } else {
-            // Toggle button should toggle between  verification visualization and delta-System table
-            // if the verification succeeded
-            $("#delta-System").insertAfter(".verification-table");
-            document.querySelector("#delta-System .details-model-toggle").onclick = function () {
-                toggleTextModel('.verification-table', '#delta-System');
-            };
+        var State =  document.getElementById("instance-substate").innerHTML;
+        var States = {
+          "INIT" : 0, 
+          "COMPILED" : 1, 
+          "FAILED" : 2, 
+          "VERIFIED" : 3
         }
+
+        var tabs = [
+          {
+            "name" : "Service", 
+            "state" : "INIT", 
+            "createContent" : loadFromJSP.bind(undefined, "Service")
+          }, 
+          {
+            "name" : "System", 
+            "state" : "COMPILED", 
+            "createContent" : loadFromJSP.bind(undefined, "System")
+          }, 
+          {
+            "name" : "Verification", 
+            "state" : "VERIFIED", 
+            "createContent" : loadFromJSP.bind(undefined, "Verification")
+          }, 
+        ];
+
+        createTabs();
+        function loadFromJSP(viz_type) {
+          var div = document.createElement("div");
+          div.classList.add("viz");
+          div.id = "sd_" + viz_type;
+          div.appendChild(buildViz(viz_type));
+          div.classList.add("tab-pane");
+          div.classList.add("fade");
+          div.classList.add("in");
+          return div;
+        }
+        
+        function buildHeaderLink(id, text) {
+            var link = document.createElement("a");;
+            link.href = "#";
+            link.classList.add("viz-hdr");
+            link.classList.add("unexpanded");
+            link.id = id;
+            link.text = text;
+            return link; 
+        }
+
+        function buildViz(viz_type) {
+            var table = document.createElement("table");
+            table.classList.add("management-table");
+            table.classList.add("viz-table");
+            var headerRow = document.createElement("tr");
+            var vizRow = document.createElement("tr");
+            var additionHeader =  document.createElement("th");
+            var reductionHeader =  document.createElement("th");
+            var additionCell = document.createElement("td");
+            additionCell.classList.add("viz-cell");
+            var reductionCell = document.createElement("td");
+            reductionCell.classList.add("viz-cell");
+
+            switch (viz_type) {
+
+                case "System":
+                  $("#delta-System").addClass("hide");
+                  table.id = "sd_System";
+
+                  var a = buildHeaderLink("sd_System_Addition_Link", "Addition");
+                  additionHeader.appendChild(a);
+                  additionCell.classList.add("viz-cell");
+                  additionCell.id = "sd_System_Addition_Viz";
+
+                  vizRow.appendChild(additionCell);
+
+                  a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
+                  reductionHeader.appendChild(a);
+                  reductionCell.classList.add("viz-cell");
+                  reductionCell.id = "sd_System_Reduction_Viz";
+
+                  vizRow.appendChild(reductionCell);
+                  
+                  if (!$("#sysr_viz_div").hasClass("emptyViz") || !$("#sysa_viz_div").hasClass("emptyViz")) {
+                    //  $(".system-delta-table").removeClass("hide");
+
+                      var sysr_viz_div = document.getElementById("sysr_viz_div");
+                      var sysa_viz_div = document.getElementById("sysa_viz_div");
+
+                      additionCell.appendChild(sysa_viz_div)
+
+                      reductionCell.appendChild(sysr_viz_div);
+
+                       sysa_viz_div.classList.remove("hidden");
+                       sysr_viz_div.classList.remove("hidden");
+                   }
+                  break;
+                case "Service":
+                  $("#delta-Service").addClass("hide");
+                  
+                    
+                  var a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
+                  additionHeader.appendChild(a);
+                  additionCell.classList.add("viz-cell");
+                  additionCell.id = "sd_Service_Addition_Viz";
+
+                  vizRow.appendChild(additionCell);
+
+                  a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
+                  reductionHeader.appendChild(a);
+                  reductionCell.classList.add("viz-cell");
+                  reductionCell.id = "sd_Service_Addition_Viz";
+
+                  vizRow.appendChild(reductionCell);
+              
+                  if (!$("#serva_viz_div").hasClass("emptyViz") || !$("#servr_viz_div").hasClass("emptyViz")) {
+                   // $(".service-delta-table").removeClass("hide");
+
+                    var servr_viz_div = document.getElementById("servr_viz_div");
+                    var serva_viz_div = document.getElementById("serva_viz_div");
+
+                    additionCell.appendChild(serva_viz_div)
+
+                    reductionCell.appendChild(servr_viz_div);
+                    servr_viz_div.classList.remove("hidden");
+                    serva_viz_div.classList.remove("hidden");
+
+                  }
+
+                    break;
+                 case "Verification":
+                    break;            
+            }
+            headerRow.appendChild(additionHeader);
+            headerRow.appendChild(reductionHeader);
+            table.appendChild(headerRow);
+            table.appendChild(vizRow);
+        
+            return table;
+        }
+
+
+
+        function createTabs() {
+          var tabBar = document.createElement("ul");
+          tabBar.classList.add("nav");
+          tabBar.classList.add("nav-tabs");
+
+          var tabContent = document.createElement("div");
+          tabContent.classList.add("tab-content");
+          tabContent.classList.add("viz-tab-content");
+
+          for (var i = 0; i < tabs.length; i++) {
+            var tab = tabs[i];
+            if (States[tab.state] <= States[State]) {
+              createTab(tab, tabBar);
+              tabContent.appendChild(tab.createContent());
+            }
+          }
+          tabBar.lastChild.classList.add("active");
+          tabContent.lastChild.classList.add("active");
+
+          var details_panel = document.getElementById("details-panel");
+          details_panel.appendChild(tabBar);
+          details_panel.appendChild(tabContent);
+
+          for (var i = 0; i < tabs.length; i++) {
+            if (States[tabs[i].state] <= States[State]) {
+             // setEvent(make_tab_id(tabs[i]));
+            }
+          }
+          setEvent();
+        }
+
+        function make_tab_id(tab) {
+          var id = tab.name.replace(/\s+/g, '');
+          return "sd_" + id; 
+        }
+        function createTab(tab, tabBar) {
+            var li = document.createElement("li");
+            var a = document.createElement("a");
+            a.href = "#" + make_tab_id(tab);
+            a.text = tab.name; 
+            a.setAttribute("data-toggle", "tab");
+            li.appendChild(a);
+            tabBar.appendChild(li);
+        }
+
+        function setEvent(container) {
+            $(".viz-hdr").on("click", function() {
+              var tab = $(this).closest(".tab-pane"); 
+              
+              var hdr = $(this).closest("th");
+              var cell = hdr.closest('table').find('td').eq(hdr.index());
+              var table = $(this).closest("table");
+              var viz = cell.children().eq(0);
+              console.log(viz);
+              
+              if ($(this).hasClass("unexpanded")) {
+                tab.find(".viz-cell").not(cell).addClass("hide");
+                tab.find(".viz-hdr").closest("th").not(hdr).addClass("hide");
+                tab.find(".viz-table").not(table).addClass("hide");
+
+
+                table.height("50%");
+                $(this).removeClass("unexpanded");
+                $(this).addClass("expanded");
+              } else {
+
+                tab.find(".viz-cell").not(cell).removeClass("hide");
+                tab.find(".viz-hdr").closest("th").not(hdr).removeClass("hide");
+                tab.find(".viz-table").removeClass("hide");
+
+                table.height("30%");
+
+                $(this).removeClass("expanded");
+                $(this).addClass("unexpanded");
+              }
+            });
+        }       
     });
+    
 }
 
 function toggleTextModel(viz_table, text_table) {

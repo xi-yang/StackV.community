@@ -25,3 +25,33 @@ tr.instruction-row {
 tr.button-row {
     height: 51px;
 }
+
+/* 
+    Visualization tab styling 
+*/
+.viz-hdr{
+  color:inherit;
+  text-decoration: none;
+ }
+
+#table-tab{
+    transition: all 1000ms;    
+}
+.viz-table {
+    width:100%;
+    height:30%;   
+    transition: all 1000ms;   
+}
+
+.viz-cell {
+  width : 50%;
+  height:100%;
+}
+
+.viz-tab-content {
+    height: 100%;
+}
+
+.expanded-viz-vid {
+    height:93%;
+}
