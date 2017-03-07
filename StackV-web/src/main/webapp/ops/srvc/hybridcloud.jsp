@@ -21,6 +21,9 @@
     <body>
         <!-- NAV BAR -->
         <div id="nav"></div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
         <div id="main-pane">
@@ -248,9 +251,9 @@
         <!-- jQuery easing plugin -->
         <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
         <script>
-            $(function () {
-                $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
-            });
+                        $(function () {
+                            $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
+                        });
         </script>
     </body>
 </html>

@@ -1,15 +1,10 @@
 div.acl-panel {
     position: absolute;
-    top: 62px;
-    height: calc(100% - 62px);
+    top: 20px;
+    height: calc(100% - 20px);
     width: 90%;
     overflow: hidden;
     padding: 5px 5px;
-    -webkit-transition: all .75s ease-in;
-    -moz-transition: all .75s ease-in;
-    -o-transition: all .75s ease-in;
-    -ms-transition: all .75s ease-in;
-    transition: all .5s ease;
 }
 
 .acl-div {
@@ -18,18 +13,13 @@ div.acl-panel {
     overflow: scroll;
 }
 
-tr.acl-selected-row {
-    font-weight: bold;
-
-    -webkit-transition: all .75s ease-in;
-    -moz-transition: all .75s ease-in;
-    -o-transition: all .75s ease-in;
-    -ms-transition: all .75s ease-in;
-    transition: all .5s ease;
+tr.acl-instance-selected-row, tr.acl-role-selected-row {
+    font-weight: bold;    
 }
 
 div.left-tab{
     position: absolute;
+    top: 20%;
     left: 0;
     height:90px;
     width:45px;
@@ -40,7 +30,8 @@ div.left-tab{
 }
 div.right-tab{
     position: absolute;
-    right: -45px;
+    top: 20%;
+    right: 0;
     height:90px;
     width:45px;
     border-radius: 90px 0 0 90px;
@@ -56,72 +47,50 @@ div.right-tab{
 /* Role Panel */
 div#acl-role-panel {
     right: 100%;   
-}
-div#acl-role-panel.opened {
-    right: 5%;
-    overflow-y: scroll;
+    overflow: hidden;
 }
 
 #acl-role-user-div {
     overflow: scroll;
-    height: 90%;
+    height: 95%;
     padding-right: 5px;
     width: 45%;
     position: absolute;
 }
 
-#acl-role-role-div {
-    overflow: scroll;
-    height: 45%;
-    padding-right: 5px;
-    width: 45%;
-    position: absolute;
-    top: 45%;
-    right: 0;
-}
-
-#acl-role-group-div {
+#acl-role-group-div, #acl-role-role-div {
     overflow: scroll;
     height: 45%;
     padding-right: 5px;
     width: 45%;
     position: absolute;
     right: 0;
+    bottom: -45%;
 }
-
-#acl-role-role-div.closed, #acl-role-group-div.closed {
-    right: 100%;
-}
-
 
 /* Instance Panel */
 div#acl-instance-panel {
     left: 100%;
-}
-div#acl-instance-panel.opened {
-    left: 5%;    
-    overflow-y: scroll;
+    overflow: hidden;
 }
 
 #acl-instance-table {
-    max-height: 50%;
+    max-height: 45%;
 }
 
 #acl-instance-acl {
-    max-height: 50%;
-    position: relative;
-
-    -webkit-transition: all .75s ease-in;
-    -moz-transition: all .75s ease-in;
-    -o-transition: all .75s ease-in;
-    -ms-transition: all .75s ease-in;
-    transition: all .5s ease;
-}
-#acl-instance-acl::-webkit-scrollbar {
-    display: block;
-}
-#acl-instance-acl.closed {
+    max-height: 45%;    
+    position: relative;   
+    overflow: scroll;
+    margin-top: 10px;
     bottom: -100%;
+}
+
+#acl-instance-acl-existing {
+
+}
+#acl-instance-acl-new {
+    margin-top: 10px;
 }
 
 #acl-select {

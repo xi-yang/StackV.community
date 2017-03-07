@@ -21,6 +21,9 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <div class="left-tab"></div>
@@ -31,7 +34,7 @@
                     <table class="management-table" id="acl-user-table">
                         <thead>
                             <tr>
-                                <th>Username<button type="button" id="acl-role-exit" class="close" aria-hidden="true">&times;</button></th>
+                                <th>Username</th>
                             </tr>
                         </thead>
                         <tbody id="user-body">
@@ -42,7 +45,7 @@
                     <table class="management-table" id="acl-group-table">
                         <thead>
                             <tr>
-                                <th>Groups<button type="button" class="acl-user-exit close" aria-hidden="true">&times;</button></th>
+                                <th>Groups<button type="button" class="acl-user-close close" aria-hidden="true">&times;</button></th>
                             </tr>
                         </thead>
                         <tbody id="group-body">
@@ -61,7 +64,7 @@
                     <table class="management-table" id="acl-role-table">
                         <thead>
                             <tr>
-                                <th>Roles<button type="button" class="acl-user-exit close" aria-hidden="true">&times;</button></th>
+                                <th>Roles<button type="button" class="acl-user-close close" aria-hidden="true">&times;</button></th>
                             </tr>
                         </thead>
                         <tbody id="role-body">
@@ -77,21 +80,21 @@
                     </table>
                 </div>
             </div>
-            <div class="acl-panel opened" id="acl-instance-panel">
+            <div class="acl-panel" id="acl-instance-panel">
                 <input type="hidden" id="acl-instance">
                 <table class="management-table" id="acl-instance-table">
                     <thead>
                         <tr>
                             <th>Instance Alias</th>
                             <th>Service Type</th>
-                            <th>Instance UUID<button type="button" id="acl-instance-exit" class="close" aria-hidden="true">&times;</button></th>
+                            <th>Instance UUID</th>
                         </tr>
                     </thead>
                     <tbody id="instance-body">
                     </tbody>
-                </table>
-                <div class="closed" id="acl-instance-acl">                                        
-                    <div class="acl-div">
+                </table>                
+                <div id="acl-instance-acl">  
+                    <div id="acl-instance-acl-existing">
                         <table class="management-table">
                             <colgroup>
                                 <col span="1" style="width: 35%;"/>
@@ -104,14 +107,14 @@
                                     <th>Username</th>
                                     <th>Full Name</th>
                                     <th>Email</th>
-                                    <th><button type="button" id="acl-instance-close" class="close" aria-hidden="true">&times;</button></th>
+                                    <th><button type="button" class="acl-instance-close close" aria-hidden="true">&times;</button></th>
                                 </tr>
                             </thead>
                             <tbody id="acl-body">                           
                             </tbody>
                         </table>
                     </div>
-                    <div class="acl-div">
+                    <div id="acl-instance-acl-new">
                         <table class="management-table">
                             <colgroup>
                                 <col span="1" style="width: 35%;"/>
@@ -119,6 +122,14 @@
                                 <col span="1" style="width: 20%;"/>
                                 <col span="1" style="width: 10%;"/>
                             </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
                             <tbody id="users-body">                           
                             </tbody>
                         </table>
@@ -128,11 +139,14 @@
             <div id="loading-panel"></div>
         </div>
 
-        <script src="/StackV-web/js/acl.js"></script>
         <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>        
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+
+        <script src="/StackV-web/js/nexus.js"></script>        
+        <script src="/StackV-web/js/acl.js"></script>
     </body>
 </html>

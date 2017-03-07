@@ -19,10 +19,13 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- MAIN PANEL -->
-        <div id="black-screen" class="off"></div>
+        <div id="black-screen"></div>
         <div id="main-pane">
-            <div class="closed" id="instance-panel">
+            <div id="instance-panel">
                 <table class="management-table" id="status-table">
                     <thead>
                         <tr>
@@ -30,7 +33,6 @@
                             <th>Service Type</th>
                             <th>Instance UUID</th>
                             <th>
-                              <%-- TODO: text alignment with rest of header --%>
                                 <span>Instance Status</span>
                                 <div id="refresh-panel" class="form-inline">
                                     <label for="refresh-timer">Auto-Refresh Interval</label>
@@ -49,44 +51,7 @@
                     <tbody id="status-body">
                     </tbody>
                 </table>
-            </div>
-
-            <div class="closed" id="catalog-panel">
-                <ul class="nav nav-tabs catalog-tabs">
-                    <li><a data-toggle="tab" href="#wizard-tab">Profiles</a></li>
-                    <li class="active"><a data-toggle="tab" href="#editor-tab">Intents</a></li>
-                </ul>
-
-                <div class="tab-content" id="catalog-tab-content">
-                    <div id="wizard-tab" class="tab-pane fadeIn">
-                        <table class="management-table tab-table">
-                            <thead>
-                                <tr>
-                                    <th>Profile Name</th>
-                                    <th>Description</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="wizard-body">
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div id="editor-tab" class="tab-pane fadeIn active">
-                        <table class="management-table tab-table">
-                            <thead>
-                                <tr>
-                                    <th>Service Name</th>
-                                    <th>Description</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="editor-body">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+            </div>            
             <br>
             <button type="button" class="hide" id="button-service-cancel">Cancel</button>
             <div id="service-specific"></div>
@@ -95,6 +60,42 @@
             <div id="loading-panel"></div>
             <!-- TAG PANEL -->
             <div id="tag-panel"></div>
+        </div>
+        <div id="catalog-panel" class="closed">
+            <ul class="nav nav-tabs catalog-tabs">
+                <li><a data-toggle="tab" href="#wizard-tab">Profiles</a></li>
+                <li class="active"><a data-toggle="tab" href="#editor-tab">Intents</a></li>
+            </ul>
+
+            <div class="tab-content" id="catalog-tab-content">
+                <div id="wizard-tab" class="tab-pane fadeIn">
+                    <table class="management-table tab-table">
+                        <thead>
+                            <tr>
+                                <th>Profile Name</th>
+                                <th>Description</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="wizard-body">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="editor-tab" class="tab-pane fadeIn active">
+                    <table class="management-table tab-table">
+                        <thead>
+                            <tr>
+                                <th>Service Name</th>
+                                <th>Description</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="editor-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         <div id="profile-modal" class="modal fade" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
@@ -110,34 +111,40 @@
                     <div id="info-panel-button" class="modal-footer">
                         <div class="info-panel-save-as-description">
                             <form class="form-inline">
-                              <div class="form-group">
-                                <label for="new-profile-name">
-                                <input type="text" class="form-control" id="new-profile-name" placeholder="Name">
-                              </div>
-                              <div class="form-group">
-                                <label for="new-profile-description">
-                                <input type="text" class="form-control" id="new-profile-description" placeholder="Description">
-                              </div>
+                                <div class="form-group">
+                                    <label for="new-profile-name"/>
+                                    <input type="text" class="form-control" id="new-profile-name" placeholder="Name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-profile-description"/>
+                                    <input type="text" class="form-control" id="new-profile-description" placeholder="Description">
+                                </div>
                             </form>
                         </div>
                         <div class="info-panel-footer">
-                          <div class="info-panel-regular-buttons">
-                            <button type="button" name="button" class="button-profile-save btn btn-default">Save</button>
-                            <button class="button-profile-save-as btn btn-default">Save As</button>
-                            <button class="button-profile-submit btn btn-default">Submit</button>
-                          </div>
-                          <div class="info-panel-save-as-description">
-                            <button class="button-profile-save-as-confirm btn btn-default">Confirm</button>
-                            <button class="button-profile-save-as-cancel btn btn-default">Cancel</button>
-                          </div>
+                            <div class="info-panel-regular-buttons">
+                                <button type="button" name="button" class="button-profile-save btn btn-default">Save</button>
+                                <button class="button-profile-save-as btn btn-default">Save As</button>
+                                <button class="button-profile-submit btn btn-default">Submit</button>
+                            </div>
+                            <div class="info-panel-save-as-description">
+                                <button class="button-profile-save-as-confirm btn btn-default">Confirm</button>
+                                <button class="button-profile-save-as-cancel btn btn-default">Cancel</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
         <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+
         <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/catalog.js"></script>
     </body>
 </html>
