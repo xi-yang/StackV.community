@@ -21,6 +21,9 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <div class="left-tab"></div>

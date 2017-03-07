@@ -6,7 +6,7 @@
 
 /*Miscellaenous global styles*/
 ::-webkit-scrollbar {
-    /*display:none;*/
+    display:none;
 }
 
 html {

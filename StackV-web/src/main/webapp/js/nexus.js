@@ -50,8 +50,12 @@ $(function () {
             loadDetails();
         } else if (window.location.pathname === "/StackV-web/ops/acl.jsp") {
             loadACLPortal();
-        } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp"){
+        } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
             getAllDetails();
+        }
+
+        if ($("#tag-panel").length) {
+            loadLabels();
         }
     };
     keycloak.onTokenExpire = function () {

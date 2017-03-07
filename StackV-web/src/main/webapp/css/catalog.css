@@ -50,10 +50,7 @@ div#instance-panel {
     overflow-y: scroll;
     top: calc(-90% + 42px);
 }
-div#instance-panel::-webkit-scrollbar {
-    width: 0px;  /* remove scrollbar space */
-    background: transparent;  /* optional: just make scrollbar invisible */
-}
+
 
 /*Make content within tab scrollable*/
 div.tab-content {
@@ -63,7 +60,7 @@ div.tab-content {
 div#catalog-panel {
     padding: 10px 10px 0 10px;
     bottom: calc(-45% + 42px);
-    left: 10%;
+    left: 0;
     /*overflow: scroll;*/
     height: 45%;
     width: 80%;
