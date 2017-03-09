@@ -459,7 +459,7 @@
         width -= width / 4;
         var height = viz_svg.height();
         
-        if (prefix.includes("serv")) {
+        if (prefix.includes("serv") || prefix.includes("sys")  ) {
            width = "inherit";
            height += height / 2; 
         }
