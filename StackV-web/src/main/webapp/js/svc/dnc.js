@@ -23,10 +23,12 @@
 
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
-var linknum = 1;
 
 function addLinkDNC(){
-    linknum++;
+    if (isNaN(linknum)){
+        var linknum = 1;
+    }
+    linknum = linknum + 1;
     var panel = document.getElementById("link-body");
     var row = document.createElement("tr");
     var spacer = document.createElement("tr");
@@ -97,7 +99,7 @@ function save(){
 function generateJSON(){
     connections = [];
     
-    for (var i = 1; i <= linknum; i++){
+    for (var i = 1; i <= 1; i++){
         var terminals = [];
         var src = document.getElementById("linksrc" + i).value;
         var src_vlan = document.getElementById("linksrc-vlan" + i).value;
