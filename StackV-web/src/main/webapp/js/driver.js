@@ -57,6 +57,19 @@ function closeSide(){
     $('#driver-panel-bot').addClass('no-side-tab');
     
 }
+function installRaw(){
+    var first = document.createElement("p");
+    var second = document.createElement("textarea");
+    var divContent = document.getElementById("install-type");
+
+    first.innerHTML= "Enter Raw XML:";
+    first.style.color = "white";
+    second.id = "modelExt";
+    second.rows = "15";
+    second.cols = "30";
+    divContent.appendChild(first);
+    divContent.appendChild(second);
+}
 function installStub(){
     var type = document.createElement("p");
     var first = document.createElement("p");

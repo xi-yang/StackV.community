@@ -97,6 +97,13 @@
                                     <td  style="width: 180px;">
                                         <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install' id='install-button'>Install</button>
                                     </td>
+                                </tr> 
+                                <tr>
+                                    <td>Raw</td>
+                                    <td>This is a placement description</td>
+                                    <td  style="width: 180px;">
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
