@@ -52,6 +52,7 @@
                             </tbody>
                         </table>
                         <div id="test">
+                            <p id="resss"></p>
                             <button type="button" class="action-button" onclick="submitToBackend();">Submit</button>
                             <button type="button" class="action-button" onclick="save();">Save</button>
                             <button type="button" class="action-button" onclick="addLinkDNC();">Add Link</button>
@@ -61,10 +62,13 @@
                 </fieldset>
             </form>
             <div>
-                <p id="ret_field" style="color: white;">
-                    
-                </p>
-                <button type="button" class="action-button" onclick="test();">Test</button>
+                <p style="color: white;">add:</p>
+                <textarea rows="20" cols="100" id="addfield"></textarea>
+                <p style="color: white;">Del:</p>
+                <input type="text" id="delfield">
+                <p id="ret_field" style="color: white;"></p>
+                <button type="button" class="action-button" onclick="test();">Add</button>
+                <button type="button" class="action-button" onclick="del();">Delete</button>
             </div>
         </div>
         <!-- TAG PANEL -->

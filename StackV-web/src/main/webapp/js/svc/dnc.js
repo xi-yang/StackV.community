@@ -20,15 +20,12 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-
+var linknum = 1;
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
 
 function addLinkDNC(){
-    if (isNaN(linknum)){
-        var linknum = 1;
-    }
-    linknum = linknum + 1;
+    this.linknum = this.linknum + 1;
     var panel = document.getElementById("link-body");
     var row = document.createElement("tr");
     var spacer = document.createElement("tr");
@@ -43,11 +40,11 @@ function addLinkDNC(){
         rightdiv.appendChild(input[i]);
     }
     
-    input[0].id = "linkUri" + linknum;
-    input[1].id = "linksrc" + linknum;
-    input[2].id = "linksrc-vlan" + linknum;
-    input[3].id = "linkdes" + linknum;
-    input[4].id = "linkdes-vlan" + linknum;
+    input[0].id = "linkUri" + this.linknum;
+    input[1].id = "linksrc" + this.linknum;
+    input[2].id = "linksrc-vlan" + this.linknum;
+    input[3].id = "linkdes" + this.linknum;
+    input[4].id = "linkdes-vlan" + this.linknum;
     
     input[0].placeholder="Link-Name";
     input[1].placeholder="Source";
@@ -55,7 +52,7 @@ function addLinkDNC(){
     input[3].placeholder="Destination";
     input[4].placeholder="Vlan-tag";
     
-    left.innerHTML = "Link " + linknum;
+    left.innerHTML = "Link " + this.linknum;
     
     spacer.id = "spacer";
     right.style = "width: 600px; text-align: center;";
@@ -99,7 +96,7 @@ function save(){
 function generateJSON(){
     connections = [];
     
-    for (var i = 1; i <= 1; i++){
+    for (var i = 1; i <= this.linknum; i++){
         var terminals = [];
         var src = document.getElementById("linksrc" + i).value;
         var src_vlan = document.getElementById("linksrc-vlan" + i).value;
@@ -118,7 +115,7 @@ function generateJSON(){
         terminals[0] = source;
         terminals[1] = destination;
         var data = {
-            name: "link " + document.getElementById("linkUri" + i).value,
+            name: "link-" + document.getElementById("linkUri" + i).value,
             terminals: terminals
         };
         connections[i-1] = data;
@@ -151,23 +148,17 @@ function submitToBackend(){
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            $('#test').empty();
-            document.getElementById("test").innerHTML = "SUCCESS";
+            document.getElementById("resss").innerHTML = "SUCCESS";
         },
         error: function (){
-            $('#test').empty();
-            document.getElementById("test").innerHTML = "failure";
+            document.getElementById("resss").innerHTML = "failure";
         } 
     });
 }
 
 function test(){
     var apiUrl = baseUrl + '/StackV-web/restapi/driver';
-    var sentData = "<driverInstance><properties>" 
-            + "<entry><key>topologyUri</key><value>urn:ogf:network:sdn.maxgigapop.net:network</value></entry>"
-            + "<entry><key>driverEjbPath</key><value>java:module/GenericRESTDriver</value></entry>"
-            + "<entry><key>subsystemBaseUrl</key><value></value>http://206.196.179.139:8080/VersaNS-0.0.1-SNAPSHOT</entry>"
-            + "</properties></driverInstance>";
+    var sentData = document.getElementById("addfield").value;
     
     $.ajax({
         url: apiUrl,
@@ -189,3 +180,23 @@ function test(){
 
 }
 
+function del(){
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + document.getElementById("delfield").value;
+
+    
+    $.ajax({
+        url: apiUrl,
+        type: 'DELETE',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            document.getElementById("ret_field").innerHTML = result;
+        },
+        error: function (){
+            document.getElementById("ret_field").innerHTML = "failure";
+        } 
+    });
+
+}
