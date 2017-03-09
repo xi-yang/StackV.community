@@ -624,40 +624,47 @@ function buildDeltaTable(type) {
 function loadVisualization() {
     $("#details-viz").load("/StackV-web/details_viz.html", function () {
         var State =  document.getElementById("instance-substate").innerHTML;
+        State = "READY";
         var States = {
           "INIT" : 0, 
           "COMPILED" : 1, 
           "FAILED" : 2, 
-          "VERIFIED" : 3
+          "READY" : 3
         }
 
         var tabs = [
           {
             "name" : "Service", 
             "state" : "INIT", 
-            "createContent" : loadFromJSP.bind(undefined, "Service")
+            "createContent" : createVizTab.bind(undefined, "Service")
           }, 
           {
             "name" : "System", 
             "state" : "COMPILED", 
-            "createContent" : loadFromJSP.bind(undefined, "System")
+            "createContent" : createVizTab.bind(undefined, "System")
           }, 
           {
             "name" : "Verification", 
-            "state" : "VERIFIED", 
-            "createContent" : loadFromJSP.bind(undefined, "Verification")
+            "state" : "READY", 
+            "createContent" : createVizTab.bind(undefined, "Verification")
           }, 
         ];
 
         createTabs();
-        function loadFromJSP(viz_type) {
+        function createVizTab(viz_type) {
           var div = document.createElement("div");
           div.classList.add("viz");
           div.id = "sd_" + viz_type;
-          div.appendChild(buildViz(viz_type));
+          if (viz_type !== "Verification") {
+              div.appendChild(buildViz(viz_type));
+          } else {
+            div.appendChild(buildViz("Verified"));
+            div.appendChild(buildViz("Unverified"));
+          } 
           div.classList.add("tab-pane");
           div.classList.add("fade");
           div.classList.add("in");
+          div.classList.add("viz-tab-content");
           return div;
         }
         
@@ -742,7 +749,7 @@ function loadVisualization() {
                     var servr_viz_div = document.getElementById("servr_viz_div");
                     var serva_viz_div = document.getElementById("serva_viz_div");
 
-                    additionCell.appendChild(serva_viz_div)
+                    additionCell.appendChild(serva_viz_div);
 
                     reductionCell.appendChild(servr_viz_div);
                     servr_viz_div.classList.remove("hidden");
@@ -751,7 +758,57 @@ function loadVisualization() {
                   }
 
                     break;
-                 case "Verification":
+                case "Verified":
+                  var a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
+                  additionHeader.appendChild(a);
+                  additionCell.classList.add("viz-cell");
+                  additionCell.id = "sd_Verified_Addition_Viz";
+
+                  vizRow.appendChild(additionCell);
+
+                  a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
+                  reductionHeader.appendChild(a);
+                  reductionCell.classList.add("viz-cell");
+                  reductionCell.id = "sd_Verified_Addition_Viz";
+
+                  vizRow.appendChild(reductionCell);
+                    
+                  if (!$("#va_viz_div").hasClass("emptyViz") || !$("#vr_viz_div").hasClass("emptyViz")) {
+                      var vr_viz_div = document.getElementById("vr_viz_div");
+                      var va_viz_div = document.getElementById("va_viz_div");
+
+                      additionCell.appendChild(va_viz_div);
+                      reductionCell.appendChild(vr_viz_div);
+                      vr_viz_div.classList.remove("hidden");
+                      va_viz_div.classList.remove("hidden");
+                  }
+              
+                    break;
+                case "Unverified":
+                  var a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
+                  additionHeader.appendChild(a);
+                  additionCell.classList.add("viz-cell");
+                  additionCell.id = "sd_Unverified_Addition_Viz";
+
+                  vizRow.appendChild(additionCell);
+
+                  a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
+                  reductionHeader.appendChild(a);
+                  reductionCell.classList.add("viz-cell");
+                  reductionCell.id = "sd_Unverified_Addition_Viz";
+
+                  vizRow.appendChild(reductionCell);
+                   
+                    if (!$("#ua_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {                        
+                        var ur_viz_div = document.getElementById("ur_viz_div");
+                        var ua_viz_div = document.getElementById("ua_viz_div");
+
+                        additionCell.appendChild(ua_viz_div);
+                        reductionCell.appendChild(ur_viz_div);
+                        ur_viz_div.classList.remove("hidden");
+                        ua_viz_div.classList.remove("hidden");
+                        
+                    }                     
                     break;            
             }
             headerRow.appendChild(additionHeader);
@@ -810,6 +867,9 @@ function loadVisualization() {
         }
 
         function setEvent(container) {
+            //$(".viz-hdr")
+            //$(".details-viz-button").click();
+            
             $(".viz-hdr").on("click", function() {
               var tab = $(this).closest(".tab-pane"); 
               
@@ -817,33 +877,52 @@ function loadVisualization() {
               var cell = hdr.closest('table').find('td').eq(hdr.index());
               var table = $(this).closest("table");
               var viz = cell.children().eq(0);
-              console.log(viz);
+              var text_model = viz.children(".details-viz-text-model");
+              var text_model_pre = text_model.children("pre").eq(0);;
+              
+              var text_model_pre_width = text_model_pre.width();
+
+              if (viz.hasClass("emptyViz")) return;
+              
+                var button = viz.children(".details-viz-recenter-button");
+              console.log(button);
               
               if ($(this).hasClass("unexpanded")) {
                 tab.find(".viz-cell").not(cell).addClass("hide");
                 tab.find(".viz-hdr").closest("th").not(hdr).addClass("hide");
                 tab.find(".viz-table").not(table).addClass("hide");
 
-
+                viz.addClass("expanded-viz-div");
                 table.height("50%");
                 $(this).removeClass("unexpanded");
                 $(this).addClass("expanded");
+                button.trigger("click", [viz.width(), viz.height()]);
+               
+                text_model_pre.width("inherit");
+                text_model_pre.addClass("expanded");
+                
               } else {
 
                 tab.find(".viz-cell").not(cell).removeClass("hide");
                 tab.find(".viz-hdr").closest("th").not(hdr).removeClass("hide");
                 tab.find(".viz-table").removeClass("hide");
 
-                table.height("30%");
-
+                table.height("10%");
+                viz.removeClass("expanded-viz-div");
                 $(this).removeClass("expanded");
                 $(this).addClass("unexpanded");
+                button.trigger("click", [viz.width(), viz.height()]);
+               
+                text_model_pre.removeClass("expanded");
+                text_model_pre.width(text_model_pre_width);
               }
+
             });
         }       
     });
     
 }
+
 
 function toggleTextModel(viz_table, text_table) {
     if (!$(viz_table.toLowerCase()).length) {

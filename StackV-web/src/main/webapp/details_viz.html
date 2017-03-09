@@ -366,7 +366,7 @@
             viz += "<button class=\"details-viz-button btn btn-default\" id=\"manifest_button\" onclick=\"showManifest()\">Display Manifest</button>";
         }
 
-        viz += "<button class=\"details-viz-button btn btn-default\" id=\"" + prefix + "_viz_recenter_button\">Recenter</button>" +
+        viz += "<button class=\"details-viz-button btn btn-default details-viz-recenter-button\" id=\"" + prefix + "_viz_recenter_button\">Recenter</button>" +
                 "<button  class=\"details-viz-button btn btn-default\" id=\"" + prefix + "_viz_toggle_model\">View Text Model</button>" +
                 "</div>";
 
@@ -375,11 +375,12 @@
 
 
 
-    function recenterGraph(o, model) {
+    function recenterGraph(o, model,  width, height) {
         o.resetZoom();
-        var width = $("#" + o.svgContainerName).closest("td").width();
-        var height = $("#" + o.svgContainerName).closest("td").height();
-
+        if (width === undefined && height === undefined) {
+            width = $("#" + o.svgContainerName).closest("td").width();
+            height = $("#" + o.svgContainerName).closest("td").height();
+        }
         layout.stop();
         //layout.force().gravity(1).charge(-900).start();
         layout.doLayout(model, null, width, height);
@@ -401,9 +402,13 @@
 
 
     function drawGraph(outputApi, model2) {
-        var width = $("#" + outputApi.svgContainerName).closest("td").width();//document.documentElement.clientWidth / settings.INIT_ZOOM;
-        var height = $("#" + outputApi.svgContainerName).closest("td").height(); //document.documentElement.clientHeight / settings.INIT_ZOOM;
-        //TODO, figure out why we need to call this twice
+       // $("#" + outputApi.svgContainerName).width("50%");
+       // $("#" + outputApi.svgContainerName).height("50%");
+
+        var width =993;  //$("#" + outputApi.svgContainerName).closest("td").width();//document.documentElement.clientWidth / settings.INIT_ZOOM;
+        var height = 130; //$("#" + outputApi.svgContainerName).closest("td").height(); //document.documentElement.clientHeight / settings.INIT_ZOOM;
+        var tdID =  $("#" + outputApi.svgContainerName).closest("td").attr("id");
+ //TODO, figure out why we need to call this twice
         //If we do not, the layout does to converge as nicely, even if we double the number of iterations
         layout.doLayout(model2, null, width, height);
         layout.doLayout(model2, null, width, height);
@@ -412,13 +417,17 @@
 //                animStart(30);
     }
     function displayError(error, d3_obj, viz_id, offset) {
-        var div_width = $("#" + viz_id).width();
-        var div_height = $("#" + viz_id).height();
+        var div_width = 993; //$("#" + viz_id).width();
+        var div_height = 130; //$("#" + viz_id).height();
         var x = (div_width / 4) + (div_width / 8);
         var y = (div_height / 2) + (div_height / 8);
         if (offset === undefined) {
             offset = 0;
         }
+        
+        if (error === "Empty")
+            $("#" + viz_id + "_div").addClass("emptyViz");
+
         d3_obj.select("#" + viz_id).append("text")
                 .attr("x", x + offset)
                 .attr("y", y)
@@ -450,7 +459,7 @@
         width -= width / 4;
         var height = viz_svg.height();
 
-        var textModelDiv = "<div id=\"" + prefix + "_text_div\" class=\"hide\"> <pre style=\"width: " + width +
+        var textModelDiv = "<div id=\"" + prefix + "_text_div\" class=\"hide details-viz-text-model\"> <pre class=\"details-viz-pre\" style=\"width: " + width +
                 "px; height: " + height + "px;overflow:scroll;\"> " + textModel
                 + "</pre></div>";
         viz_svg.after(textModelDiv);
@@ -493,8 +502,8 @@
                     var outputApi = new outputApi_(render.API, contextMenu, "serva_viz");
                     outputApiMap["serva_viz"] = outputApi;
                     drawGraph(outputApi, servAModel);
-                    $("#serva_viz_recenter_button").click(function (evt) {
-                        recenterGraph(outputApi, servAModel);
+                    $("#serva_viz_recenter_button").on("click", function (evt, width, height) {
+                        recenterGraph(outputApi, servAModel, width, height);
                         evt.preventDefault();
                     });
                     createTextToggle("serva", data.serviceModelAddition);
@@ -511,8 +520,8 @@
                     var outputApi2 = new outputApi_(render.API, contextMenu, "servr_viz");
                     outputApiMap["servr_viz"] = outputApi2;
                     drawGraph(outputApi2, servRModel);
-                    $("#servr_viz_recenter_button").click(function (evt) {
-                        recenterGraph(outputApi2, servRModel);
+                    $("#servr_viz_recenter_button").on("click", function (evt, width, height) {
+                        recenterGraph(outputApi2, servRModel, width, height);
                         evt.preventDefault();
                     });
                     createTextToggle("servr", data.serviceModelReduction);
@@ -529,8 +538,8 @@
                     var outputApi3 = new outputApi_(render.API, contextMenu, "sysa_viz");
                     outputApiMap["sysa_viz"] = outputApi3;
                     drawGraph(outputApi3, sysAModel);
-                    $("#sysa_viz_recenter_button").click(function (evt) {
-                        recenterGraph(outputApi3, sysAModel);
+                    $("#sysa_viz_recenter_button").on("click", function (evt, width, height) {
+                        recenterGraph(outputApi3, sysAModel, width, height);
                         evt.preventDefault();
                     });
                     createTextToggle("sysa", data.systemModelAddition);
@@ -547,8 +556,8 @@
                     var outputApi4 = new outputApi_(render.API, contextMenu, "sysr_viz");
                     outputApiMap["sysr_viz"] = outputApi4;
                     drawGraph(outputApi4, sysrModel);
-                    $("#sysr_viz_recenter_button").click(function (evt) {
-                        recenterGraph(outputApi4, sysrModel);
+                    $("#sysr_viz_recenter_button").on("click", function (evt, width, height) {
+                        recenterGraph(outputApi4, sysrModel, width, height);
                         evt.preventDefault();
                     });
                     createTextToggle("sysr", data.systemModelReduction);
@@ -592,8 +601,8 @@
                     var outputApi5 = new outputApi_(render.API, contextMenu, "va_viz");
                     outputApiMap["va_viz"] = outputApi5;
                     drawGraph(outputApi5, vaModel);
-                    $("#va_viz_recenter_button").click(function (evt) {
-                        recenterGraph(outputApi5, vaModel);
+                    $("#va_viz_recenter_button").on("click", function (evt, width, height) {
+                        recenterGraph(outputApi5, vaModel, width, height);
                         evt.preventDefault();
                     });
                     createTextToggle("va", data.verified_addition);
@@ -610,8 +619,8 @@
                     var outputApi6 = new outputApi_(render.API, contextMenu, "vr_viz");
                     outputApiMap["vr_viz"] = outputApi6;
                     drawGraph(outputApi6, vrModel);
-                    $("#vr_viz_recenter_button").click(function (evt) {
-                        recenterGraph(outputApi6, vrModel);
+                    $("#vr_viz_recenter_button").on("click", function (evt, width, height) {
+                        recenterGraph(outputApi6, vrModel, width, height);
                         evt.preventDefault();
                     });
                     createTextToggle("vr", data.verified_reduction);
@@ -628,8 +637,8 @@
                     var outputApi7 = new outputApi_(render.API, contextMenu, "ua_viz");
                     outputApiMap["ua_viz"] = outputApi7;
                     drawGraph(outputApi7, uaModel);
-                    $("#ua_viz_recenter_button").click(function (evt) {
-                        recenterGraph(outputApi7, uaModel);
+                    $("#ua_viz_recenter_button").on("click", function (evt, width, height) {
+                        recenterGraph(outputApi7, uaModel, width, height);
                         evt.preventDefault();
                     });
                     createTextToggle("ua", data.unverified_addition);
@@ -646,8 +655,8 @@
                     var outputApi8 = new outputApi_(render.API, contextMenu, "ur_viz");
                     outputApiMap["ur_viz"] = outputApi8;
                     drawGraph(outputApi8, urModel);
-                    $("#ur_viz_recenter_button").click(function (evt) {
-                        recenterGraph(outputApi8, urModel);
+                    $("#ur_viz_recenter_button").on("click", function (evt, width, height) {
+                        recenterGraph(outputApi8, urModel, width, height);
                         evt.preventDefault();
                     });
                     createTextToggle("ur", data.unverified_reduction);
