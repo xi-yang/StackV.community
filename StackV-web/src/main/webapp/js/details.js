@@ -624,7 +624,7 @@ function buildDeltaTable(type) {
 function loadVisualization() {
     $("#details-viz").load("/StackV-web/details_viz.html", function () {
         var State =  document.getElementById("instance-substate").innerHTML;
-        State = "READY";
+       // State = "READY";
         var States = {
           "INIT" : 0, 
           "COMPILED" : 1, 
