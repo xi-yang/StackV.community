@@ -22,6 +22,9 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <div id="details-panel">
@@ -30,13 +33,14 @@
         </div>
         <div id="details-viz" ></div>
 
+
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
-        
+
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/details.js"></script>
 

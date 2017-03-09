@@ -9,7 +9,7 @@ div#details-panel {
 }
 
 .details-table, .verification-table {
-    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 #service-delta-table, #system-delta-table {

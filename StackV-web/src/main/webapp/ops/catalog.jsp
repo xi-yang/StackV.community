@@ -19,6 +19,9 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
         <div id="main-pane">
@@ -133,7 +136,7 @@
                 </div>
             </div>
         </div>
-        
+
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>

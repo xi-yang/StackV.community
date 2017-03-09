@@ -21,6 +21,9 @@
     <body>
         <!-- NAV BAR -->
         <div id="nav"></div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
         <div id="main-pane">
@@ -64,7 +67,7 @@
                     <table class="fs-table">
                         <thead id="awsStage2-base">
 
-                       </thead>
+                        </thead>
                         <tr>
                             <td>
                                 <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
@@ -294,9 +297,9 @@
         <!-- jQuery easing plugin -->
         <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
         <script>
-            $(function () {
-                $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
-            });
+                        $(function () {
+                            $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
+                        });
         </script>
     </body>
 </html>
