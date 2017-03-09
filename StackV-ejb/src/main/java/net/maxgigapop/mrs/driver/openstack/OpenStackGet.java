@@ -122,6 +122,9 @@ public class OpenStackGet {
         }
         for (Server server : servers) {
             Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+            if (data == null) {
+                continue;
+            }
             if (metadata == null && !data.isEmpty()) {
                 metadata = new HashMap<>();
             }
