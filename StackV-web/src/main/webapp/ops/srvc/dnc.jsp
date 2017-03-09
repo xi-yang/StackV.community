@@ -60,6 +60,12 @@
                     
                 </fieldset>
             </form>
+            <div>
+                <p id="ret_field" style="color: white;">
+                    
+                </p>
+                <button type="button" class="action-button" onclick="test();">Test</button>
+            </div>
         </div>
         <!-- TAG PANEL -->
         <div id="tag-panel">

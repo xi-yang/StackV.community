@@ -158,3 +158,32 @@ function submitToBackend(){
         } 
     });
 }
+
+function test(){
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver';
+    var sentData = "<driverInstance><properties>" 
+            + "<entry><key>topologyUri</key><value>urn:ogf:network:sdn.maxgigapop.net:network</value></entry>"
+            + "<entry><key>driverEjbPath</key><value>java:module/GenericRESTDriver</value></entry>"
+            + "<entry><key>subsystemBaseUrl</key><value></value>http://206.196.179.139:8080/VersaNS-0.0.1-SNAPSHOT</entry>"
+            + "</properties></driverInstance>";
+    
+    $.ajax({
+        url: apiUrl,
+        data: sentData,
+        type: 'POST',
+        contentType: "application/xml",
+        dataType: "xml",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            document.getElementById("ret_field").innerHTML = result;
+        },
+        error: function (){
+            document.getElementById("ret_field").innerHTML = "failure";
+        } 
+    });
+
+}
+
