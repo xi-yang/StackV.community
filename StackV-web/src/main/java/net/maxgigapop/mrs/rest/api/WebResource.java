@@ -456,6 +456,24 @@ public class WebResource {
         prep.executeUpdate();
     }
 
+    @PUT
+    @Path("driver/{user}/edit/{topur}")
+    @RolesAllowed("Drivers")
+    public String editDriverProfile(@PathParam("user") String username, @PathParam("topuri") String uri) throws SQLException {
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+        
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
+        prep.setString(1, username);
+        prep.setString(2, uri);
+        ResultSet ret = prep.executeQuery();
+
+        return "Deleted";
+    }
+    
     /**
      * @api {delete} /app/driver/:username/delete/:topuri Delete Driver Profile
      * @apiVersion 1.0.0

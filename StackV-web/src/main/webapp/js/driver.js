@@ -422,6 +422,22 @@ function addDriver() {
         }
     });
 }
+function editDriverProfile(clickID){
+    var userId = keycloak.tokenParsed.preferred_username;
+    var topuri = clickID;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/edit/' + topuri;
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result){
+            
+        }
+    });
+}
 //meds to change
 function removeDriverProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
@@ -460,6 +476,7 @@ function updateDrivers() {
                 var cell3 = document.createElement("td");
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
+                var edButton = document.createElement("button");
                 var spacer = document.createElement("div");
                 
                 detButton.innerHTML = "Details";
@@ -470,6 +487,11 @@ function updateDrivers() {
                 
                 delButton.innerHTML = "Delete";
                 delButton.onclick = function() {removeDriverProfile(this.id);};
+                delButton.style.width = "50px";
+                delButton.id = result[i+3];
+                
+                delButton.innerHTML = "edit";
+                delButton.onclick = function() {editDriverProfile(this.id);};
                 delButton.style.width = "50px";
                 delButton.id = result[i+3];
                 
