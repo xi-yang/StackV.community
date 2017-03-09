@@ -881,11 +881,11 @@ function loadVisualization() {
               var text_model_pre = text_model.children("pre").eq(0);;
               
               var text_model_pre_width = text_model_pre.width();
+              var text_model_pre_height = text_model_pre.height();
 
               if (viz.hasClass("emptyViz")) return;
               
-                var button = viz.children(".details-viz-recenter-button");
-              console.log(button);
+              var button = viz.children(".details-viz-recenter-button");
               
               if ($(this).hasClass("unexpanded")) {
                 tab.find(".viz-cell").not(cell).addClass("hide");
@@ -900,7 +900,7 @@ function loadVisualization() {
                
                 text_model_pre.width("inherit");
                 text_model_pre.addClass("expanded");
-                
+                text_model_pre.height(viz.height()*2);
               } else {
 
                 tab.find(".viz-cell").not(cell).removeClass("hide");
@@ -914,7 +914,9 @@ function loadVisualization() {
                 button.trigger("click", [viz.width(), viz.height()]);
                
                 text_model_pre.removeClass("expanded");
-                text_model_pre.width(text_model_pre_width);
+                text_model_pre.width("initial");
+                text_model_pre.height(text_model_pre_height/2.5);
+
               }
 
             });

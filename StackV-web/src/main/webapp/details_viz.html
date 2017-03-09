@@ -458,6 +458,11 @@
         var width = viz_svg.width();
         width -= width / 4;
         var height = viz_svg.height();
+        
+        if (prefix.includes("serv")) {
+           width = "inherit";
+           height += height / 2; 
+        }
 
         var textModelDiv = "<div id=\"" + prefix + "_text_div\" class=\"hide details-viz-text-model\"> <pre class=\"details-viz-pre\" style=\"width: " + width +
                 "px; height: " + height + "px;overflow:scroll;\"> " + textModel
