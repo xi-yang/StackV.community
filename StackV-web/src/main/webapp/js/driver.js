@@ -45,6 +45,7 @@ function activateSide(){
     $('#driver-panel-bot').removeClass('no-side-tab');
     $('#driver-panel-top').addClass('side-tab');
     $('#driver-panel-bot').addClass('side-tab');
+    document.getElementById("driver-panel-right").style.opacity = "1";
 }
 
 function closeSide(){
@@ -55,6 +56,7 @@ function closeSide(){
     $('#driver-panel-bot').removeClass('side-tab');
     $('#driver-panel-top').addClass('no-side-tab');
     $('#driver-panel-bot').addClass('no-side-tab');
+    document.getElementById("driver-panel-right").style.opacity = "0";
     
 }
 function installRaw(){
@@ -64,9 +66,9 @@ function installRaw(){
 
     first.innerHTML= "Enter Raw XML:";
     first.style.color = "white";
-    second.id = "modelExt";
+    second.id = "rawXML";
     second.rows = "15";
-    second.cols = "30";
+    second.cols = "45";
     divContent.appendChild(first);
     divContent.appendChild(second);
 }
@@ -345,6 +347,17 @@ function changeNameInst() {
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
     instButton.onclick = function() {installDriver();};
+    document.getElementById('install-options').appendChild(instButton);
+}
+function changeNameInstRaw() {
+    var saveButton = document.createElement("button");
+    document.getElementById('side-name').innerHTML="Install";
+    saveButton.innerHTML = "Save Driver";
+    saveButton.onclick = function() {openWindow();};
+    document.getElementById('install-options').appendChild(saveButton);
+    var instButton = document.createElement("button");
+    instButton.innerHTML = "Install Driver";
+    instButton.onclick = function() {plugRaw();};
     document.getElementById('install-options').appendChild(instButton);
 }
 function openWindow(){
@@ -749,4 +762,24 @@ function installDriver(){
             getAllDetails();
         }
     });
+}
+function plugRaw(){
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver';
+    var sentData = document.getElementById("rawXML").value;
+    
+    $.ajax({
+        url: apiUrl,
+        data: sentData,
+        type: 'POST',
+        contentType: "application/xml",
+        dataType: "xml",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            document.getElementById("ret_field").innerHTML = result;
+        }
+    });
+
 }

@@ -102,7 +102,7 @@
                                     <td>Raw</td>
                                     <td>This is a placement description</td>
                                     <td  style="width: 180px;">
-                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install' id='install-button'>Install</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -174,7 +174,7 @@
             
             
             
-            <div class="inactive" id="driver-panel-right">
+            <div class="inactive" id="driver-panel-right" style="opacity: 0;">
                 <ul class="nav nav-tabs catalog-tabs">
                     <li style="width: 100%;" id="side-tab"><a id="side-name">Details</a></li>
                 </ul>
