@@ -670,6 +670,7 @@ public class serviceBeans {
                     if (!vmPara[7].equals(" ")) {
                         try {
                             vmRouteArr = (JSONArray) jsonParser.parse(vmPara[7]);
+                            svcDelta += ";\n    mrs:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-route&gt;\n";
                         } catch (Exception ex) {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -729,7 +730,8 @@ public class serviceBeans {
                                                     routeArr.add(rt);
                                                 }
                                             }
-                                            // add VM level routes
+                                            // add VM level routes - noop
+                                            /*
                                             if (vmRouteArr != null && !vmRouteArr.isEmpty()) {
                                                 if (routeArr == null) {
                                                     routeArr = vmRouteArr;
@@ -738,6 +740,7 @@ public class serviceBeans {
                                                 }
                                                 vmRouteArr = null;
                                             }
+                                            */
                                             // sriov port_profile
                                             if (gwJSON.containsKey("from")) {
                                                 JSONArray fromArr = (JSONArray) gwJSON.get("from");
@@ -817,6 +820,32 @@ public class serviceBeans {
                         }
                     } else {
                         svcDelta += ".\n\n";
+                    }
+                    if (vmRouteArr != null) {
+                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-route&gt;\n"
+                                + "     a   mrs:RoutingServie;\n"
+                                + "     mrs:type   \"linux-route\";\n"
+                                + "     mrs:providesRoute    \n";
+                        int routeCt = 0;
+                        for (Object r : vmRouteArr) {
+                            JSONObject route = (JSONObject) r;
+                            if (routeCt > 0) {
+                                svcDelta += ",\n";
+                            }
+                            svcDelta += "      [";
+                            svcDelta += "      a  mrs:Route;\n";
+                            if (route.containsKey("to")) {
+                                svcDelta += "      mrs:routeTo " + networkAddressFromJson((JSONObject) route.get("to")) + ";";
+                            }
+                            if (route.containsKey("from")) {
+                                svcDelta += "      mrs:routeFrom " + networkAddressFromJson((JSONObject) route.get("from")) + ";";
+                            }
+                            if (route.containsKey("next_hop")) {
+                                svcDelta += "      mrs:nextHop " + networkAddressFromJson((JSONObject) route.get("next_hop")) + ";";
+                            }
+                            svcDelta += "      ]";
+                        }
+                        svcDelta += ". \n\n";
                     }
                     // Ceph RBD
                     if (!vmPara[5].equals(" ")) {
@@ -1240,6 +1269,7 @@ public class serviceBeans {
                         JSONArray vmRouteArr = null;
                         if (vmJson.containsKey("routes")) {
                             vmRouteArr = (JSONArray) vmJson.get("routes");
+                            svcDelta += ";\n    mrs:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-route&gt;\n";
                         }
                         // interfaces
                         if (!vmJson.containsKey("interfaces")) {
@@ -1279,6 +1309,7 @@ public class serviceBeans {
                                             mac = str.contains("mac") ? str.substring(str.indexOf("mac") + 4) : mac;
                                         }
                                         JSONArray routeArr = (JSONArray) interJson.get("routes");
+                                        /*
                                         if (vmRouteArr != null && !vmRouteArr.isEmpty()) {
                                             if (routeArr == null) {
                                                 routeArr = vmRouteArr;
@@ -1287,6 +1318,7 @@ public class serviceBeans {
                                             }
                                             vmRouteArr = null;
                                         }
+                                        */
                                         //Find sriov parameter from Gateways.
                                         for (Object gwEle : gatewayArr) {
                                             JSONObject gwJSON = (JSONObject) gwEle;
@@ -1471,6 +1503,31 @@ public class serviceBeans {
                             } else {
                                 svcDelta += ".\n\n";
                             }
+                        }
+                        if (vmRouteArr != null) {
+                            svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-route&gt;\n"
+                                    + "     a   mrs:RoutingServie;\n"
+                                    + "     mrs:type   \"linux-route\";\n"
+                                    + "     mrs:providesRoute    \n";
+                            int routeCt = 0;
+                            for (Object r : vmRouteArr) {
+                                JSONObject route = (JSONObject) r;
+                                if (routeCt > 0) {
+                                    svcDelta += ",\n";
+                                }
+                                svcDelta += "      [";
+                                if (route.containsKey("to")) {
+                                    svcDelta += "      mrs:routeTo " + networkAddressFromJson((JSONObject)route.get("to")) + ";";
+                                }
+                                if (route.containsKey("from")) {
+                                    svcDelta += "      mrs:routeFrom " + networkAddressFromJson((JSONObject)route.get("from")) + ";";
+                                }
+                                if (route.containsKey("next_hop")) {
+                                    svcDelta += "      mrs:nextHop " + networkAddressFromJson((JSONObject)route.get("next_hop")) + ";";
+                                }
+                                svcDelta += "      ]";
+                            }
+                            svcDelta += ". \n\n";
                         }
                     }
                 }
@@ -1898,6 +1955,17 @@ public class serviceBeans {
         }
     }
 
+    private String networkAddressFromJson(JSONObject jsonAddr) {
+        if (!jsonAddr.containsKey("value")) {
+            return "";
+        }
+        String type = "ipv4-address";
+        if (jsonAddr.containsKey("type")) {
+            type = jsonAddr.get("type").toString();
+        } 
+        return String.format("[a    mrs:NetworkAddress; mrs:type    \"%s\"; mrs:value   \"%s\"]", type, jsonAddr.get("value").toString());
+    }
+    
     private void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, String refresh) {
         String result;
         try {
