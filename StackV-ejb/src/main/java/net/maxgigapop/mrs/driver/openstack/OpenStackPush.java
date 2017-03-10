@@ -141,7 +141,7 @@ public class OpenStackPush {
         requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
         requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
-        requests.addAll(sriovRequests(modelRef, modelReduct, false));
+                    requests.addAll(sriovRequests(modelRef, modelReduct, false));
         requests.addAll(portAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumeRequests(modelRef, modelReduct, false));
@@ -804,6 +804,10 @@ public class OpenStackPush {
                     String servername = (String)obj;
                     client.setMetadata(servername, "sriov_vnic:status", "create");
                 }
+            } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("linux")) {
+                String servername = o.get("server name").toString();
+            } else if (o.get("request").toString().equals("DeleteVirtualRouterRequest") && o.get("routing table").equals("linux")) {
+                String servername = o.get("server name").toString();
             } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
                 // OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 // handling only Quagga BGP for now
@@ -1885,15 +1889,22 @@ public class OpenStackPush {
         HashMap<String, String> routinginfo = new HashMap<String, String>();
         JSONObject o = new JSONObject();
         //1 find out if any new routes are being add to the model
-        query = "SELECT ?rtservice ?rttable ?route ?nextHop ?routeTo WHERE {"
+        query = "SELECT ?rtservice ?rttable ?route ?nextHop ?routeTo ?rttype WHERE {"
                 + "?rtservice mrs:providesRoutingTable ?rttable. "
                 + "?rttable mrs:hasRoute ?route. "
                 + "?route a mrs:Route ."
                 + "?route mrs:nextHop ?nextHop ."
-                + "?route mrs:routeTo ?routeTo}";
+                + "?route mrs:routeTo ?routeTo "
+                + "OPTIONAL {?rttable mrs:type ?rttype} }";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution q = r.next();
+            if (q.contains("rttype")) {
+                String rtType = q.get("rttype").toString();
+                if (rtType.equals("quagga") || rtType.equals("linux")) {
+                    continue;
+                }
+            }
             RDFNode routeResource = q.get("route");
             RDFNode nextHopResource = q.get("nextHop");
             RDFNode routeToResource = q.get("routeTo");
@@ -2401,7 +2412,7 @@ public class OpenStackPush {
                     + String.format("<%s> mrs:hasRoute ?route .", rtTable.getURI())
                     + "OPTIONAL {?route mrs:routeTo ?route_to. "
                     + "     ?route_to mrs:type ?route_to_type. "
-                    + "     ?route_to mrs:value ?troute_to_value. } ."
+                    + "     ?route_to mrs:value ?route_to_value. } ."
                     + "OPTIONAL {?route mrs:routeFrom ?route_from. "
                     + "     ?route_from mrs:type ?route_from_type. "
                     + "     ?route_from mrs:value ?route_from_value. } ."
@@ -2415,7 +2426,7 @@ public class OpenStackPush {
                 QuerySolution q3 = r3.next();
                 JSONObject jsonRoute = new JSONObject();
                 Resource route = q3.getResource("route");
-                jsonRoute.put("name", route.getURI());
+                jsonRoute.put("name", route.getURI()); 
                 Resource routeTo = q3.contains("route_to") ? q3.getResource("route_to") : null;
                 if (routeTo != null) {
                     String routeToType = q3.get("route_to_type").toString();

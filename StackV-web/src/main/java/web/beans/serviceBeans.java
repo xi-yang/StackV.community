@@ -661,20 +661,20 @@ public class serviceBeans {
                             + "    a                         nml:Node ;\n"
                             + "    nml:name         \"" + vmPara[0] + "\";\n"
                             + (vmPara[2].equals(" ") ? "" : "    mrs:type       \"" + vmPara[2] + "\";\n")
-                            + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n"
-                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
-                            + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
-                            + "    a            nml:BidirectionalPort;\n"
-                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;";
+                            + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt; ;\n";
                     JSONArray vmRouteArr = null;
                     if (!vmPara[7].equals(" ")) {
                         try {
                             vmRouteArr = (JSONArray) jsonParser.parse(vmPara[7]);
-                            svcDelta += ";\n    mrs:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-route&gt;\n";
+                            svcDelta += "    nml:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-routing&gt; ;\n";
                         } catch (Exception ex) {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
+                    svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
+                            + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0&gt;\n"
+                            + "    a            nml:BidirectionalPort;\n"
+                            + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "-eth0&gt;";
                     if (!vmPara[4].equals(" ")) {
                         try {
                             JSONArray interfaceArr = (JSONArray) jsonParser.parse(vmPara[4]);
@@ -822,10 +822,13 @@ public class serviceBeans {
                         svcDelta += ".\n\n";
                     }
                     if (vmRouteArr != null) {
-                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-route&gt;\n"
-                                + "     a   mrs:RoutingServie;\n"
-                                + "     mrs:type   \"linux-route\";\n"
-                                + "     mrs:providesRoute    \n";
+                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-routing&gt;\n"
+                                + "     a   mrs:RoutingService;\n"
+                                + "     mrs:providesRoutingTable     " + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-rtable&gt; .\n";
+                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-rtable&gt;\n"
+                                + "     a   mrs:RoutingTable;\n"
+                                + "     mrs:type   \"linux\";\n"
+                                + "     mrs:hasRoute    \n";
                         int routeCt = 0;
                         for (Object r : vmRouteArr) {
                             JSONObject route = (JSONObject) r;
@@ -1244,8 +1247,14 @@ public class serviceBeans {
                                 + "    nml:name         \"" + vmName + "\";\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
                                 + (nodeHasVolume.isEmpty() ? "" : "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ";\n")
-                                + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n"
-                                + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
+                                + "    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt; ;\n";
+                        // VM level routes
+                        JSONArray vmRouteArr = null;
+                        if (vmJson.containsKey("routes")) {
+                            vmRouteArr = (JSONArray) vmJson.get("routes");
+                            svcDelta += "    mrs:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-routing&gt; ;\n";
+                        }
+                        svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
                                 + "    a            spa:PolicyAction ;\n"
                                 + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
@@ -1265,12 +1274,6 @@ public class serviceBeans {
                                 + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt;\n"
                                 + "    a            nml:BidirectionalPort ;\n"
                                 + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "-eth0&gt; ";
-                        // VM level routes
-                        JSONArray vmRouteArr = null;
-                        if (vmJson.containsKey("routes")) {
-                            vmRouteArr = (JSONArray) vmJson.get("routes");
-                            svcDelta += ";\n    mrs:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-route&gt;\n";
-                        }
                         // interfaces
                         if (!vmJson.containsKey("interfaces")) {
                             svcDelta += ".\n\n";
@@ -1505,10 +1508,13 @@ public class serviceBeans {
                             }
                         }
                         if (vmRouteArr != null) {
-                            svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-route&gt;\n"
-                                    + "     a   mrs:RoutingServie;\n"
-                                    + "     mrs:type   \"linux-route\";\n"
-                                    + "     mrs:providesRoute    \n";
+                            svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-routing&gt;\n"
+                                    + "     a   mrs:RoutingService;\n"
+                                    + "     mrs:providesRoutingTable     " + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-rtable&gt; .\n";
+                            svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-rtable&gt;\n"
+                                    + "     a   mrs:RoutingTable;\n"
+                                    + "     mrs:type   \"linux\";\n"
+                                    + "     mrs:hasRoute    \n";
                             int routeCt = 0;
                             for (Object r : vmRouteArr) {
                                 JSONObject route = (JSONObject) r;
