@@ -217,7 +217,7 @@ public class OpenStackNeutronModelBuilder {
                 model.add(model.createStatement(VM, hasBidirectionalPort, Port));
             }
             Map<String, String> metadata = openstackget.getMetadata(server);
-            //Quagga BGP routing table  
+            //Linux and Quagga BGP routing tables  
             Resource vmRoutingSvc = null;
             Resource vmLinuxRtTable = null;
             int linuxRouteNum = 1;
@@ -246,37 +246,32 @@ public class OpenStackNeutronModelBuilder {
                     Resource resLinuxRoute = RdfOwl.createResource(model, routeUri, Mrs.Route);
                     model.add(model.createStatement(vmLinuxRtTable, Mrs.hasRoute, resLinuxRoute));
                     if (linuxRoute.containsKey("to")) {
-                        String[] netAddr = linuxRoute.get("to").toString().split("=");
-                        if (netAddr.length == 1) {
-                            model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, netAddr[0]));
-                        } else if (netAddr.length == 2) {
-                            Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":route_to", Mrs.NetworkAddress);
-                            model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
-                            model.add(model.createStatement(resNetAddr, Mrs.type, netAddr[0]));
-                            model.add(model.createStatement(resNetAddr, Mrs.value, netAddr[1]));
-                        }
+                        String netAddr = linuxRoute.get("to").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":route_to", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "ipv4-prefix"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
                     }
                     if (linuxRoute.containsKey("from")) {
-                        String[] netAddr = linuxRoute.get("from").toString().split("=");
-                        if (netAddr.length == 1) {
-                            model.add(model.createStatement(resLinuxRoute, Mrs.routeFrom, netAddr[0]));
-                        } else if (netAddr.length == 2) {
-                            Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":route_from", Mrs.NetworkAddress);
-                            model.add(model.createStatement(resLinuxRoute, Mrs.routeFrom, resNetAddr));
-                            model.add(model.createStatement(resNetAddr, Mrs.type, netAddr[0]));
-                            model.add(model.createStatement(resNetAddr, Mrs.value, netAddr[1]));
-                        }
+                        String netAddr = linuxRoute.get("from").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":route_from", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "ipv4-prefix-list"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
                     }
                     if (linuxRoute.containsKey("via")) {
-                        String[] netAddr = linuxRoute.get("via").toString().split("=");
-                        if (netAddr.length == 1) {
-                            model.add(model.createStatement(resLinuxRoute, Mrs.nextHop, netAddr[0]));
-                        } else if (netAddr.length == 2) {
-                            Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":next_hop", Mrs.NetworkAddress);
-                            model.add(model.createStatement(resLinuxRoute, Mrs.nextHop, resNetAddr));
-                            model.add(model.createStatement(resNetAddr, Mrs.type, netAddr[0]));
-                            model.add(model.createStatement(resNetAddr, Mrs.value, netAddr[1]));
-                        }
+                        String netAddr = linuxRoute.get("via").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":next_hop", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "ipv4-address"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
+                    }
+                    if (linuxRoute.containsKey("dev")) {
+                        String netAddr = linuxRoute.get("dev").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":next_hop_dev", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "device"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
                     }
                 } catch (ParseException e) {
                     log.warning("OpenStackNeutronModelBuilder:createOntology() cannot parse json string due to: " + e.getMessage());

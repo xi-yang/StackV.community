@@ -99,10 +99,6 @@ public class OpenStackPush {
 
     private String defaultFlavor;
 
-    /*public static void main(String[] args) {
-     OpenStackPush test = new OpenStackPush();
-
-     }*/
     public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, 
         String adminUsername, String adminPassword, String adminTenant, String topologyUri, String defaultImage, String defaultFlavor) {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
@@ -821,18 +817,31 @@ public class OpenStackPush {
                     }
                     if (o2.containsKey("route to")) {
                         String addrValue = (String) o2.get("route to");
+                        if (addrValue.contains("=")) {
+                            addrValue = addrValue.split("=")[1];
+                        }
                         jsonRoute.put("to", addrValue);
                     }
                     if (o2.containsKey("next hop")) {
                         String addrValue = (String) o2.get("next hop");
                         String[] typeValue = addrValue.split("=");
-                        jsonRoute.put("via", addrValue);
+                        if (typeValue.length == 1) {
+                            jsonRoute.put("via", addrValue);
+                        } else if (typeValue[0].startsWith("ip")) {
+                            jsonRoute.put("via", typeValue[1]);                            
+                        } else if (typeValue[0].startsWith("dev")) {
+                            jsonRoute.put("dev", typeValue[1]);                            
+                        }
                     }
                     if (o2.containsKey("route from")) {
                         String addrValue = (String) o2.get("route from");
+                        if (addrValue.contains("=")) {
+                            addrValue = addrValue.split("=")[1];
+                        }
                         jsonRoute.put("from", addrValue);
                     }
                     client.setMetadata(servername, String.format("linux:route:%d", routeNum), jsonRoute.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/"));
+                    routeNum++;
                 }                
             } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
                 // OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);

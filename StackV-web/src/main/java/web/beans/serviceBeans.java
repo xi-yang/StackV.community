@@ -850,6 +850,7 @@ public class serviceBeans {
                             }
                             vmRoutes = vmRoutes.trim();
                             vmRoutes += ".\n\n";
+                            routeCt++;
                         }
                         svcDelta += ". \n\n" + vmRoutes;
                     }
