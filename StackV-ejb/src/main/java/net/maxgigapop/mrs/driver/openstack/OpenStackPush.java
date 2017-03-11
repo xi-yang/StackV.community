@@ -804,10 +804,36 @@ public class OpenStackPush {
                     String servername = (String)obj;
                     client.setMetadata(servername, "sriov_vnic:status", "create");
                 }
-            } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("linux")) {
+            } else if ((o.get("request").toString().equals("CreateVirtualRouterRequest") || o.get("request").toString().equals("DeleteVirtualRouterRequest"))
+                    && o.get("routing table").equals("linux")) {
                 String servername = o.get("server name").toString();
-            } else if (o.get("request").toString().equals("DeleteVirtualRouterRequest") && o.get("routing table").equals("linux")) {
-                String servername = o.get("server name").toString();
+                String operation = "create";
+                if (o.get("request").toString().equals("DeleteVirtualRouterRequest")) {
+                    operation = "delete";
+                }
+                int routeNum = 1;
+                while (o.containsKey(String.format("route %d", routeNum))) {
+                    Map o2 = (Map) o.get(String.format("route %d", routeNum));
+                    JSONObject jsonRoute = new JSONObject();
+                    jsonRoute.put("status", operation);
+                    if (o2.containsKey("name")) {
+                        jsonRoute.put("uri", (String) o2.get("name"));
+                    }
+                    if (o2.containsKey("route to")) {
+                        String addrValue = (String) o2.get("route to");
+                        jsonRoute.put("to", addrValue);
+                    }
+                    if (o2.containsKey("next hop")) {
+                        String addrValue = (String) o2.get("next hop");
+                        String[] typeValue = addrValue.split("=");
+                        jsonRoute.put("via", addrValue);
+                    }
+                    if (o2.containsKey("route from")) {
+                        String addrValue = (String) o2.get("route from");
+                        jsonRoute.put("from", addrValue);
+                    }
+                    client.setMetadata(servername, String.format("linux:route:%d", routeNum), jsonRoute.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/"));
+                }                
             } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
                 // OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 // handling only Quagga BGP for now

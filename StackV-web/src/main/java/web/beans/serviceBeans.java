@@ -666,7 +666,7 @@ public class serviceBeans {
                     if (!vmPara[7].equals(" ")) {
                         try {
                             vmRouteArr = (JSONArray) jsonParser.parse(vmPara[7]);
-                            svcDelta += "    nml:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-routing&gt; ;\n";
+                            svcDelta += "    nml:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice&gt; ;\n";
                         } catch (Exception ex) {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -822,33 +822,36 @@ public class serviceBeans {
                         svcDelta += ".\n\n";
                     }
                     if (vmRouteArr != null) {
-                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-routing&gt;\n"
+                        String vmRoutes = "";
+                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice&gt;\n"
                                 + "     a   mrs:RoutingService;\n"
-                                + "     mrs:providesRoutingTable     " + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-rtable&gt; .\n";
-                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":linux-rtable&gt;\n"
+                                + "     mrs:providesRoutingTable     " + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice:routingtable+linux&gt; .\n";
+                        svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice:routingtable+linux&gt;\n"
                                 + "     a   mrs:RoutingTable;\n"
                                 + "     mrs:type   \"linux\";\n"
                                 + "     mrs:hasRoute    \n";
-                        int routeCt = 0;
+                        int routeCt = 1;
                         for (Object r : vmRouteArr) {
                             JSONObject route = (JSONObject) r;
-                            if (routeCt > 0) {
+                            if (routeCt > 1) {
                                 svcDelta += ",\n";
                             }
-                            svcDelta += "      [";
-                            svcDelta += "      a  mrs:Route;\n";
+                            svcDelta += "            &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice:routingtable+linux:route+"+routeCt+"&gt;\n";
+                            vmRoutes += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice:routingtable+linux:route+" + routeCt + "&gt;\n"
+                                        +"      a  mrs:Route;\n";
                             if (route.containsKey("to")) {
-                                svcDelta += "      mrs:routeTo " + networkAddressFromJson((JSONObject) route.get("to")) + ";";
+                                vmRoutes += "      mrs:routeTo " + networkAddressFromJson((JSONObject) route.get("to")) + ";";
                             }
                             if (route.containsKey("from")) {
-                                svcDelta += "      mrs:routeFrom " + networkAddressFromJson((JSONObject) route.get("from")) + ";";
+                                vmRoutes += "      mrs:routeFrom " + networkAddressFromJson((JSONObject) route.get("from")) + ";";
                             }
                             if (route.containsKey("next_hop")) {
-                                svcDelta += "      mrs:nextHop " + networkAddressFromJson((JSONObject) route.get("next_hop")) + ";";
+                                vmRoutes += "      mrs:nextHop " + networkAddressFromJson((JSONObject) route.get("next_hop")) + ";";
                             }
-                            svcDelta += "      ]";
+                            vmRoutes = vmRoutes.trim();
+                            vmRoutes += ".\n\n";
                         }
-                        svcDelta += ". \n\n";
+                        svcDelta += ". \n\n" + vmRoutes;
                     }
                     // Ceph RBD
                     if (!vmPara[5].equals(" ")) {
@@ -1252,7 +1255,7 @@ public class serviceBeans {
                         JSONArray vmRouteArr = null;
                         if (vmJson.containsKey("routes")) {
                             vmRouteArr = (JSONArray) vmJson.get("routes");
-                            svcDelta += "    mrs:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-routing&gt; ;\n";
+                            svcDelta += "    mrs:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":routingservice&gt; ;\n";
                         }
                         svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
@@ -1508,10 +1511,10 @@ public class serviceBeans {
                             }
                         }
                         if (vmRouteArr != null) {
-                            svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-routing&gt;\n"
+                            svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":routingservice&gt;\n"
                                     + "     a   mrs:RoutingService;\n"
-                                    + "     mrs:providesRoutingTable     " + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-rtable&gt; .\n";
-                            svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":linux-rtable&gt;\n"
+                                    + "     mrs:providesRoutingTable     " + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":routingservice:routingtable+linux&gt; .\n";
+                            svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":routingservice:routingtable+linux&gt;\n"
                                     + "     a   mrs:RoutingTable;\n"
                                     + "     mrs:type   \"linux\";\n"
                                     + "     mrs:hasRoute    \n";
