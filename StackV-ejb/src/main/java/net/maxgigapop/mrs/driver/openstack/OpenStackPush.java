@@ -99,10 +99,6 @@ public class OpenStackPush {
 
     private String defaultFlavor;
 
-    /*public static void main(String[] args) {
-     OpenStackPush test = new OpenStackPush();
-
-     }*/
     public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, 
         String adminUsername, String adminPassword, String adminTenant, String topologyUri, String defaultImage, String defaultFlavor) {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
@@ -804,6 +800,49 @@ public class OpenStackPush {
                     String servername = (String)obj;
                     client.setMetadata(servername, "sriov_vnic:status", "create");
                 }
+            } else if ((o.get("request").toString().equals("CreateVirtualRouterRequest") || o.get("request").toString().equals("DeleteVirtualRouterRequest"))
+                    && o.get("routing table").equals("linux")) {
+                String servername = o.get("server name").toString();
+                String operation = "create";
+                if (o.get("request").toString().equals("DeleteVirtualRouterRequest")) {
+                    operation = "delete";
+                }
+                int routeNum = 1;
+                while (o.containsKey(String.format("route %d", routeNum))) {
+                    Map o2 = (Map) o.get(String.format("route %d", routeNum));
+                    JSONObject jsonRoute = new JSONObject();
+                    jsonRoute.put("status", operation);
+                    if (o2.containsKey("name")) {
+                        jsonRoute.put("uri", (String) o2.get("name"));
+                    }
+                    if (o2.containsKey("route to")) {
+                        String addrValue = (String) o2.get("route to");
+                        if (addrValue.contains("=")) {
+                            addrValue = addrValue.split("=")[1];
+                        }
+                        jsonRoute.put("to", addrValue);
+                    }
+                    if (o2.containsKey("next hop")) {
+                        String addrValue = (String) o2.get("next hop");
+                        String[] typeValue = addrValue.split("=");
+                        if (typeValue.length == 1) {
+                            jsonRoute.put("via", addrValue);
+                        } else if (typeValue[0].startsWith("ip")) {
+                            jsonRoute.put("via", typeValue[1]);                            
+                        } else if (typeValue[0].startsWith("dev")) {
+                            jsonRoute.put("dev", typeValue[1]);                            
+                        }
+                    }
+                    if (o2.containsKey("route from")) {
+                        String addrValue = (String) o2.get("route from");
+                        if (addrValue.contains("=")) {
+                            addrValue = addrValue.split("=")[1];
+                        }
+                        jsonRoute.put("from", addrValue);
+                    }
+                    client.setMetadata(servername, String.format("linux:route:%d", routeNum), jsonRoute.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/"));
+                    routeNum++;
+                }                
             } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
                 // OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 // handling only Quagga BGP for now
@@ -1885,15 +1924,22 @@ public class OpenStackPush {
         HashMap<String, String> routinginfo = new HashMap<String, String>();
         JSONObject o = new JSONObject();
         //1 find out if any new routes are being add to the model
-        query = "SELECT ?rtservice ?rttable ?route ?nextHop ?routeTo WHERE {"
+        query = "SELECT ?rtservice ?rttable ?route ?nextHop ?routeTo ?rttype WHERE {"
                 + "?rtservice mrs:providesRoutingTable ?rttable. "
                 + "?rttable mrs:hasRoute ?route. "
                 + "?route a mrs:Route ."
                 + "?route mrs:nextHop ?nextHop ."
-                + "?route mrs:routeTo ?routeTo}";
+                + "?route mrs:routeTo ?routeTo "
+                + "OPTIONAL {?rttable mrs:type ?rttype} }";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution q = r.next();
+            if (q.contains("rttype")) {
+                String rtType = q.get("rttype").toString();
+                if (rtType.equals("quagga") || rtType.equals("linux")) {
+                    continue;
+                }
+            }
             RDFNode routeResource = q.get("route");
             RDFNode nextHopResource = q.get("nextHop");
             RDFNode routeToResource = q.get("routeTo");
@@ -2401,7 +2447,7 @@ public class OpenStackPush {
                     + String.format("<%s> mrs:hasRoute ?route .", rtTable.getURI())
                     + "OPTIONAL {?route mrs:routeTo ?route_to. "
                     + "     ?route_to mrs:type ?route_to_type. "
-                    + "     ?route_to mrs:value ?troute_to_value. } ."
+                    + "     ?route_to mrs:value ?route_to_value. } ."
                     + "OPTIONAL {?route mrs:routeFrom ?route_from. "
                     + "     ?route_from mrs:type ?route_from_type. "
                     + "     ?route_from mrs:value ?route_from_value. } ."
@@ -2415,7 +2461,7 @@ public class OpenStackPush {
                 QuerySolution q3 = r3.next();
                 JSONObject jsonRoute = new JSONObject();
                 Resource route = q3.getResource("route");
-                jsonRoute.put("name", route.getURI());
+                jsonRoute.put("name", route.getURI()); 
                 Resource routeTo = q3.contains("route_to") ? q3.getResource("route_to") : null;
                 if (routeTo != null) {
                     String routeToType = q3.get("route_to_type").toString();
