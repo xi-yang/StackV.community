@@ -54,9 +54,9 @@ $(function () {
             getAllDetails();
         }
 
-        if ($("#tag-panel").length) {
+        /*if ($("#tag-panel").length) {
             loadLabels();
-        }
+        }*/
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
