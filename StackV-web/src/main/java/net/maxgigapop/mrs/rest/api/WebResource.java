@@ -39,8 +39,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ws.rs.core.Context;
@@ -72,9 +70,12 @@ import java.util.Set;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HttpsURLConnection;
 import net.maxgigapop.mrs.common.ModelUtil;
+import org.apache.logging.log4j.Level;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * REST Web Service
@@ -84,7 +85,7 @@ import org.keycloak.representations.AccessToken;
 @Path("app")
 public class WebResource {
 
-    private static final Logger logger = Logger.getLogger(WebResource.class.getName());
+    private final Logger logger = LogManager.getLogger(WebResource.class.getName());
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
     String host = "http://127.0.0.1:8080/StackV-web/restapi";
@@ -149,7 +150,7 @@ public class WebResource {
             prep.setString(2, refUUID);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            logger.error("SQL Exception: " + ex.getMessage());
         }
     }
 
@@ -190,7 +191,7 @@ public class WebResource {
             prep.setString(2, refUUID);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -280,8 +281,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException | IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            ////Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -431,7 +431,7 @@ public class WebResource {
             inputJSON = (JSONObject) obj;
 
         } catch (ParseException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         String user = (String) inputJSON.get("username");
@@ -648,8 +648,7 @@ public class WebResource {
 
             return retList;
         } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -711,8 +710,7 @@ public class WebResource {
 
             return retList;
         } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -774,8 +772,7 @@ public class WebResource {
 
             return retList;
         } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -837,8 +834,7 @@ public class WebResource {
             }
             return retList;
         } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -888,8 +884,7 @@ public class WebResource {
 
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
         }
     }
 
@@ -938,8 +933,7 @@ public class WebResource {
 
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
         }
     }
 
@@ -1060,8 +1054,7 @@ public class WebResource {
 
             return retList;
         } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -1111,8 +1104,7 @@ public class WebResource {
 
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
         }
     }
 
@@ -1161,8 +1153,7 @@ public class WebResource {
 
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
         }
     }
 
@@ -1211,7 +1202,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -1243,7 +1234,7 @@ public class WebResource {
             inputJSON = (JSONObject) obj;
 
         } catch (ParseException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         String user = (String) inputJSON.get("user");
@@ -1422,6 +1413,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Panels")
     public ArrayList<ArrayList<String>> loadInstances(@PathParam("userId") String userId) throws SQLException {
+        logger.trace("Loading Instances.");
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
         ArrayList<String> banList = new ArrayList<>();
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -1429,7 +1421,7 @@ public class WebResource {
         // Verify user
         String username = authUsername(userId);
         if (username == null) {
-            logger.log(Level.WARNING, "Logged-in user does not match requested user information!");
+            //logger.log(Level.WARNING, "Logged-in user does not match requested user information!");
             return retList;
         }
 
@@ -1477,7 +1469,7 @@ public class WebResource {
 
                     retList.add(instanceList);
                 } catch (IOException ex) {
-                    logger.log(Level.INFO, "Instance Status Check Failed on UUID = {0}", instanceUUID);
+                    //logger.log(Level.INFO, "Instance Status Check Failed on UUID = {0}", instanceUUID);
                 }
             }
         }
@@ -1496,7 +1488,7 @@ public class WebResource {
             // Verify user
             String username = authUsername(userId);
             if (username == null) {
-                logger.log(Level.WARNING, "Logged-in user does not match requested user information!");
+                //logger.log(Level.WARNING, "Logged-in user does not match requested user information!");
                 return retList;
             }
 
@@ -1530,7 +1522,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -1571,8 +1563,7 @@ public class WebResource {
             }
             return retList;
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -1600,8 +1591,7 @@ public class WebResource {
             }
             return retList;
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -1633,8 +1623,7 @@ public class WebResource {
             }
             return retList;
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -1791,8 +1780,7 @@ public class WebResource {
             return retMap;
 
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -1844,8 +1832,7 @@ public class WebResource {
             }
 
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -1889,8 +1876,7 @@ public class WebResource {
             return "";
 
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -1927,7 +1913,7 @@ public class WebResource {
             prep.executeUpdate();
 
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
         }
     }
 
@@ -1976,7 +1962,7 @@ public class WebResource {
             prep.executeUpdate();
             return null;
         } catch (SQLException | ParseException e) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return e.toString();
         }
     }
@@ -2009,8 +1995,7 @@ public class WebResource {
             prep.executeUpdate();
 
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
         }
     }
 
@@ -2079,7 +2064,7 @@ public class WebResource {
             Thread.sleep(300);
             return status(svcInstanceUUID, auth);
         } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
     }
@@ -2129,8 +2114,7 @@ public class WebResource {
             });
 
         } catch (ParseException ex) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -2185,8 +2169,7 @@ public class WebResource {
                 Class.forName("com.mysql.jdbc.Driver").newInstance();
 
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
-                Logger.getLogger(WebResource.class
-                        .getName()).log(Level.SEVERE, null, ex);
+                //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
             }
 
             Properties front_connectionProps = new Properties();
@@ -2374,7 +2357,7 @@ public class WebResource {
                 prep.setString(1, refUuid);
                 prep.executeUpdate();
             } catch (SQLException ex2) {
-                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex2);
+                //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex2);
             }
             return "<<<OPERATION ERROR - " + action + ": " + ex.getMessage() + "\r\n";
         }
@@ -2408,8 +2391,7 @@ public class WebResource {
                 return "{verified_addition: \"{ }\",verified_reduction: \"{ }\",unverified_addition: \"{ }\",unverified_reduction: \"{ }\"}";
             }
         } catch (IOException | SQLException e) {
-            Logger.getLogger(WebResource.class
-                    .getName()).log(Level.SEVERE, null, e);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, e);
             return null;
         }
     }
@@ -2447,7 +2429,7 @@ public class WebResource {
             return jsonManifest.toJSONString();
 
         } catch (SQLException e) {
-            Logger.getLogger(WebResource.class
+            //Logger.getLogger(WebResource.class
                     .getName()).log(Level.SEVERE, null, e);
             return null;
         }
@@ -2534,7 +2516,7 @@ public class WebResource {
                 Thread.sleep(5000);
             }
         } catch (EJBException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
@@ -2564,7 +2546,7 @@ public class WebResource {
             }
             return -1;
         } catch (EJBException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
@@ -2848,8 +2830,8 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        logger.log(Level.INFO, "Sending Propagate Command");
-        logger.log(Level.INFO, "Response Code : {0}", result);
+        //logger.log(Level.INFO, "Sending Propagate Command");
+        //logger.log(Level.INFO, "Response Code : {0}", result);
 
         return result.equalsIgnoreCase("PROPAGATED");
     }
@@ -2858,8 +2840,8 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        logger.log(Level.INFO, "Sending Forced Propagate Command");
-        logger.log(Level.INFO, "Response Code : {0}", result);
+        //logger.log(Level.INFO, "Sending Forced Propagate Command");
+        //logger.log(Level.INFO, "Response Code : {0}", result);
 
         return result.equalsIgnoreCase("PROPAGATED");
     }
@@ -2868,8 +2850,8 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        logger.log(Level.INFO, "Sending Commit Command");
-        logger.log(Level.INFO, "Response Code : {0}", result);
+        //logger.log(Level.INFO, "Sending Commit Command");
+        //logger.log(Level.INFO, "Response Code : {0}", result);
 
         return result.equalsIgnoreCase("COMMITTED");
     }
@@ -2878,8 +2860,8 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/commit_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        logger.log(Level.INFO, "Sending Forced Commit Command");
-        logger.log(Level.INFO, "Response Code : {0}", result);
+        //logger.log(Level.INFO, "Sending Forced Commit Command");
+        //logger.log(Level.INFO, "Response Code : {0}", result);
 
         return result.equalsIgnoreCase("COMMITTED");
     }
@@ -2888,8 +2870,8 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        logger.log(Level.INFO, "Sending Revert Command");
-        logger.log(Level.INFO, "Response Code : {0}", result);
+        //logger.log(Level.INFO, "Sending Revert Command");
+        //logger.log(Level.INFO, "Response Code : {0}", result);
 
         // Revert now returns service delta UUID; pending changes.
         return true;
@@ -2899,8 +2881,8 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/revert_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        logger.log(Level.INFO, "Sending Forced Revert Command");
-        logger.log(Level.INFO, "Response Code : {0}", result);
+        //logger.log(Level.INFO, "Sending Forced Revert Command");
+        //logger.log(Level.INFO, "Response Code : {0}", result);
 
         // Revert now returns service delta UUID; pending changes.
         return true;
@@ -2910,8 +2892,8 @@ public class WebResource {
         URL url = new URL(String.format("%s/service/%s/", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "DELETE", null, auth);
-        logger.log(Level.INFO, "Sending Delete Command");
-        logger.log(Level.INFO, "Response Code : {0}", result);
+        //logger.log(Level.INFO, "Sending Delete Command");
+        //logger.log(Level.INFO, "Response Code : {0}", result);
 
         return result;
     }
@@ -2978,7 +2960,7 @@ public class WebResource {
                 return rs1.getString("name");
             }
         } catch (SQLException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         }
         throw new EJBException("getServiceType failed to find service type for service uuid=" + refUuid);
     }
