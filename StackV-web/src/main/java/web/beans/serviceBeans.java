@@ -290,68 +290,74 @@ public class serviceBeans {
     }
     */
     
-    public JSONObject getLinks(JSONObject JSONinput){
+    public String getLinks(JSONObject JSONinput){
         ArrayList<String> retList = new ArrayList<>();
         JSONArray tempArray = (JSONArray) JSONinput.get("connections");
         JSONObject retJSON = new JSONObject();
+        String retString = "{";
+        
+        Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, tempArray.toString() + "\n\n\n\n\n\n\n\n");
         
         if (tempArray != null) {
             for (int i = 0; i < tempArray.size(); i++){
                 JSONObject tempJSON = (JSONObject) tempArray.get(i);
                 JSONArray innerArray = (JSONArray) tempJSON.get("terminals");
                 
-                for (int j = 0; j < innerArray.size(); j++){
-                    JSONObject innerTempJSON = (JSONObject) innerArray.get(j);
-                    JSONObject vlanO = new JSONObject();
-                    JSONObject uriO = new JSONObject();
-                    
-                    vlanO.put("vlan_tag", innerTempJSON.get("vlan_tag"));
-                    uriO.put(innerTempJSON.get("uri"), vlanO);
-                    
-                    retJSON.put(tempJSON.get("name"), uriO);
+                if (!retString.equals("{")){
+                    retString += ",";
                 }
-
-
+                retString += "\n\"" + tempJSON.get("name") + "\": {\n\t\""
+                        + ((JSONObject) innerArray.get(0)).get("uri")
+                        + "\":{\"vlan_tag\":\""
+                        + ((JSONObject) innerArray.get(0)).get("vlan_tag")
+                        + "\"},\n\t\""
+                        + ((JSONObject) innerArray.get(1)).get("uri")
+                        + "\":{\"vlan_tag\":\""
+                        + ((JSONObject) innerArray.get(1)).get("vlan_tag")
+                        + "\"}\n\t}\n";
             }
         }
+        if (retString == null)
+            return null;
         
-        return retJSON;
+        return retString + "}";
     }
     
     public int createDNC(JSONObject JSONinput, String auth, String refresh, String refUuid) {
         
-        String deltaJSON = getLinks(JSONinput).toJSONString();
+        String deltaJSON = getLinks(JSONinput);
         
-        String svcDelta = 
-                "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#> .\n"
-                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#> .\n"
-                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#> ."
-                + "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#> .\n"
-                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#> .\n"
-                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#> .\n"
-                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#> .\n\n"
+        String svcDelta = "<serviceDelta>\n<uuid>" + refUuid + "</uuid>\n\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
+                + "\n\n<modelAddition>\n"
+                + "\n@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+                + "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
+                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n"
 
-                + "&lt;urn:ogf:network:vo1.maxgigapop.net:link=abstract>\n"
-                    + "a            nml:Link ;\n"
-                    + "spa:type            spa:Abstraction ;\n"
-                    + "spa:dependOn &lt;x-policy-annotation:action:create-path>.\n\n"
+                + "&lt;urn:ogf:network:vo1.maxgigapop.net:link=abstract&gt;\n"
+                    + "\ta            nml:Link ;\n"
+                    + "\tspa:type            spa:Abstraction ;\n"
+                    + "\tspa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n"
 
-                + "&lt;x-policy-annotation:action:create-path>\n"
-                    + "a            spa:PolicyAction ;\n"
-                    + "spa:type     \"MCE_MPVlanConnection\" ;\n"
-                    + "spa:importFrom &lt;x-policy-annotation:data:conn-criteria> ;\n"
-                    + "spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport> .\n\n"
+                + "&lt;x-policy-annotation:action:create-path&gt;\n"
+                    + "\ta            spa:PolicyAction ;\n"
+                    + "\tspa:type     \"MCE_MPVlanConnection\" ;\n"
+                    + "\tspa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
+                    + "\tspa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"
 
-                + "&lt;x-policy-annotation:data:conn-criteria>\n"
-                    + "a            spa:PolicyData;\n"
-                    + "spa:type     \"JSON\";\n"
-                    + "spa:value    \"\"\"{\"\n";
+                + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
+                    + "\ta            spa:PolicyData;\n"
+                    + "\tspa:type     \"JSON\";\n"
+                    + "\tspa:value    \"\"\"";
                     
         svcDelta += deltaJSON;
         
-        svcDelta += "}\"\"\".\n\n"
-                + "&lt;x-policy-annotation:data:conn-criteriaexport>\n"
-                +"a            spa:PolicyData.";
+        svcDelta += "\"\"\".\n\n"
+                + "&lt;x-policy-annotation:data:conn-criteriaexport&gt;\n"
+                +"\ta            spa:PolicyData.</modelAddition></serviceDelta>";
         
         
          Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, svcDelta);
