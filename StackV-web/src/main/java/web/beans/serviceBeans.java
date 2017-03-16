@@ -290,61 +290,68 @@ public class serviceBeans {
     }
     */
     
-    public ArrayList<String> getLinks(JSONObject JSONinput){
+    public JSONObject getLinks(JSONObject JSONinput){
         ArrayList<String> retList = new ArrayList<>();
         JSONArray tempArray = (JSONArray) JSONinput.get("connections");
+        JSONObject retJSON = new JSONObject();
         
         if (tempArray != null) {
-            for (int i=0; i < tempArray.size(); i++){
-                JSONObject tempJson = (JSONObject) tempArray.get(i);
-                retList.add((String) tempJson.get("name"));
+            for (int i = 0; i < tempArray.size(); i++){
+                JSONObject tempJSON = (JSONObject) tempArray.get(i);
+                JSONArray innerArray = (JSONArray) tempJSON.get("terminals");
+                
+                for (int j = 0; j < innerArray.size(); j++){
+                    JSONObject innerTempJSON = (JSONObject) innerArray.get(j);
+                    JSONObject vlanO = new JSONObject();
+                    JSONObject uriO = new JSONObject();
+                    
+                    vlanO.put("vlan_tag", innerTempJSON.get("vlan_tag"));
+                    uriO.put(innerTempJSON.get("uri"), vlanO);
+                    
+                    retJSON.put(tempJSON.get("name"), uriO);
+                }
+
+
             }
         }
         
-        return retList;
+        return retJSON;
     }
     
     public int createDNC(JSONObject JSONinput, String auth, String refresh, String refUuid) {
         
-        String JSONstring = JSONinput.toJSONString();
-        ArrayList<String> linkUri = getLinks(JSONinput);
-        String deltaUUID = UUID.randomUUID().toString();
+        String deltaJSON = getLinks(JSONinput).toJSONString();
+        
+        String svcDelta = 
+                "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#> .\n"
+                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#> .\n"
+                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#> ."
+                + "@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#> .\n"
+                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#> .\n"
+                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#> .\n"
+                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#> .\n\n"
 
-        String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
-                + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
-                + "\n\n<modelAddition>\n"
-                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
-                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
-                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
-                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
-                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
-                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
-                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
+                + "&lt;urn:ogf:network:vo1.maxgigapop.net:link=abstract>\n"
+                    + "a            nml:Link ;\n"
+                    + "spa:type            spa:Abstraction ;\n"
+                    + "spa:dependOn &lt;x-policy-annotation:action:create-path>.\n\n"
 
-        for (String linkName : linkUri) {
-            svcDelta += "&lt;" + linkName + "&gt;\n"
-                    + "      a            mrs:SwitchingSubnet ;\n"
-                    + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n";
-        }
+                + "&lt;x-policy-annotation:action:create-path>\n"
+                    + "a            spa:PolicyAction ;\n"
+                    + "spa:type     \"MCE_MPVlanConnection\" ;\n"
+                    + "spa:importFrom &lt;x-policy-annotation:data:conn-criteria> ;\n"
+                    + "spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport> .\n\n"
 
-        svcDelta += "&lt;urn:ogf:network:openstack.com:openstack-cloud:vlan&gt;\n"
-                + "a mrs:SwitchingSubnet; spa:type spa:Abstraction;\n"
-                + "spa:dependOn &lt;x-policy-annotation:action:create-path&gt; .\n\n";
-
-        svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
-                + "    a            spa:PolicyAction ;\n"
-                + "    spa:type     \"MCE_MPVlanConnection\" ;\n"
-                + "    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
-                + "    spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"
-                + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
-                + "    a            spa:PolicyData;\n"
-                + "    spa:type     \"JSON\";\n"
-                + "    spa:value    \"\"\"" + JSONstring
-                + "    \"\"\".\n\n&lt;x-policy-annotation:data:conn-criteriaexport&gt;\n"
-                + "    a            spa:PolicyData;\n"
-                + "    spa:type     \"JSON\" .\n\n"
-                + "</modelAddition>\n\n"
-                + "</serviceDelta>";
+                + "&lt;x-policy-annotation:data:conn-criteria>\n"
+                    + "a            spa:PolicyData;\n"
+                    + "spa:type     \"JSON\";\n"
+                    + "spa:value    \"\"\"{\"\n";
+                    
+        svcDelta += deltaJSON;
+        
+        svcDelta += "}\"\"\".\n\n"
+                + "&lt;x-policy-annotation:data:conn-criteriaexport>\n"
+                +"a            spa:PolicyData.";
         
         orchestrateInstance(refUuid, svcDelta, refUuid, refresh);
         return 0;

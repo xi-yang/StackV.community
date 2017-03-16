@@ -63,7 +63,7 @@
             </form>
             <div>
                 <p style="color: white;">add:</p>
-                <textarea rows="20" cols="100" id="addfield"></textarea>
+                <textarea rows="10" cols="100" id="addfield"></textarea>
                 <p style="color: white;">Del:</p>
                 <input type="text" id="delfield">
                 <p id="ret_field" style="color: white;"></p>
