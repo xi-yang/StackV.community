@@ -24,14 +24,14 @@
 /* global XDomainRequest, baseUrl, keycloak */
 
 function driver_tab_fix(){
-    document.getElementById("driver-tab").style.display = "block";
+    document.getElementById("driver-tab1").style.display = "block";
     document.getElementById("saved-tab").style.display = "none";
 }
 
 
 function saved_tab_fix(){
     document.getElementById("saved-tab").style.display = "block";
-    document.getElementById("driver-tab").style.display = "none";
+    document.getElementById("driver-tab1").style.display = "none";
 }
 
 function activateDetails(){

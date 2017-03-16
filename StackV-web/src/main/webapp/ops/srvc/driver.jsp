@@ -53,7 +53,7 @@
 
                 <div class="tab-content" id="catalog-tab-content">
                     
-                    <div style="width: 100%; height: 85%; overflow: auto;" id="driver-tab" class="tab-pane fadeIn active">
+                    <div style="width: 100%; height: 85%; overflow: auto; display: block;" id="driver-tab1" class="tab-pane fadeIn">
                         <table class="management-table">
                             <thead>
                                 <tr>
