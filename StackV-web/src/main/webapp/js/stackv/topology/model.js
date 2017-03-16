@@ -1019,7 +1019,10 @@ define([
                           that.policyMap[key] = toAdd;
                           break;                                        
                       default:
-                          console.log("Unknown type: " + type);
+                          var toAdd;
+                          toAdd = new Node(val, map);
+                          toAdd.isTopology = type === values.topology;
+                          that.nodeMap[key] = toAdd;
                           break;
                     }
                 });     
