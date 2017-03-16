@@ -1614,9 +1614,7 @@ public class serviceBeans {
 
     public int createOperationModelModification(Map<String, String> paraMap, String auth) {
         String refUuid = paraMap.get("instanceUUID");
-
         String deltaUUID = UUID.randomUUID().toString();
-
         String delta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelReduction>\n"
@@ -1650,7 +1648,7 @@ public class serviceBeans {
         System.out.println(delta);
 
         // Cache serviceDelta.
-        int[] results = cacheServiceDelta(refUuid, deltaUUID, delta);
+        int[] results = cacheServiceDelta(refUuid, delta, deltaUUID);
         int instanceID = results[0];
         int historyID = results[1];
 
