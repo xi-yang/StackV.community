@@ -23,10 +23,15 @@
 
 /* global XDomainRequest, baseUrl, keycloak */
 
-function tab_fix(){
-    $('#driver-tab').removeClass('active');
-    $('#saved-tab').removeClass('active');
-    $('#driver-tab').addClass('active');
+function driver_tab_fix(){
+    document.getElementById("driver-tab").style.display = "block";
+    document.getElementById("saved-tab").style.display = "none";
+}
+
+
+function saved_tab_fix(){
+    document.getElementById("saved-tab").style.display = "block";
+    document.getElementById("driver-tab").style.display = "none";
 }
 
 function activateDetails(){
