@@ -353,6 +353,9 @@ public class serviceBeans {
                 + "&lt;x-policy-annotation:data:conn-criteriaexport>\n"
                 +"a            spa:PolicyData.";
         
+        
+         Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, svcDelta);
+        
         orchestrateInstance(refUuid, svcDelta, refUuid, refresh);
         return 0;
     }
