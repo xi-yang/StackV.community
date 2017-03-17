@@ -217,8 +217,67 @@ public class OpenStackNeutronModelBuilder {
                 model.add(model.createStatement(VM, hasBidirectionalPort, Port));
             }
             Map<String, String> metadata = openstackget.getMetadata(server);
-            //Quagga BGP routing table  
+            //Linux and Quagga BGP routing tables  
             Resource vmRoutingSvc = null;
+            Resource vmLinuxRtTable = null;
+            int linuxRouteNum = 1;
+            while (metadata != null && metadata.containsKey("linux:route:" + linuxRouteNum)) {
+                if (vmRoutingSvc == null) {
+                    vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
+                    model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
+                    vmLinuxRtTable = RdfOwl.createResource(model, vmRoutingSvc.getURI() + ":routingtable+linux", Mrs.RoutingTable);
+                    model.add(model.createStatement(vmRoutingSvc, Mrs.providesRoutingTable, vmLinuxRtTable));
+                }
+                JSONParser parser = new JSONParser();
+                try {
+                    String metaJson = (String) metadata.get("linux:route:" + linuxRouteNum);
+                    metaJson = metaJson.replaceAll("\'", "\"");
+                    JSONObject linuxRoute = (JSONObject) parser.parse(metaJson);
+                    if (!linuxRoute.containsKey("status") || !linuxRoute.get("status").toString().equals("up")) {
+                        linuxRouteNum++;
+                        continue;
+                    }
+                    String routeUri = null;
+                    if (linuxRoute.containsKey("uri")) {
+                        routeUri = linuxRoute.get("uri").toString();
+                    } else {
+                        routeUri = vmLinuxRtTable.getURI() + ":route+" + linuxRouteNum;
+                    }
+                    Resource resLinuxRoute = RdfOwl.createResource(model, routeUri, Mrs.Route);
+                    model.add(model.createStatement(vmLinuxRtTable, Mrs.hasRoute, resLinuxRoute));
+                    if (linuxRoute.containsKey("to")) {
+                        String netAddr = linuxRoute.get("to").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":route_to", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "ipv4-prefix"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
+                    }
+                    if (linuxRoute.containsKey("from")) {
+                        String netAddr = linuxRoute.get("from").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":route_from", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "ipv4-prefix-list"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
+                    }
+                    if (linuxRoute.containsKey("via")) {
+                        String netAddr = linuxRoute.get("via").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":next_hop", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "ipv4-address"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
+                    }
+                    if (linuxRoute.containsKey("dev")) {
+                        String netAddr = linuxRoute.get("dev").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":next_hop_dev", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "device"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
+                    }
+                } catch (ParseException e) {
+                    log.warning("OpenStackNeutronModelBuilder:createOntology() cannot parse json string due to: " + e.getMessage());
+                }
+                linuxRouteNum++;
+            }
             if (metadata != null && metadata.containsKey("quagga:bgp:info")) {
                 if (vmRoutingSvc == null) {
                     vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
