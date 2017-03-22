@@ -40,9 +40,12 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
 import org.json.simple.JSONArray;
@@ -134,6 +137,7 @@ public class OpenStackPush {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(nfsRequests(modelRef, modelReduct, false));
         requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
         requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
@@ -162,6 +166,7 @@ public class OpenStackPush {
         requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
         requests.addAll(globusConnectRequests(modelRef, modelAdd, true));
+        requests.addAll(nfsRequests(modelRef, modelAdd, true));
 
         return requests;
     }
@@ -1005,7 +1010,7 @@ public class OpenStackPush {
                 String nfsExports = (String) o.get("exports");
                 String endpointUri = (String) o.get("uri");
                 String status =  (String) o.get("status");
-                client.setMetadata(servername, "nfs:info", String.format("{'exports':'%s','status':'%s'}", 
+                client.setMetadata(servername, "nfs:info", String.format("{'exports':%s,'status':'%s'}", 
                         nfsExports, status));
                 client.setMetadata(servername, "nfs:info:uri", endpointUri);
             } 

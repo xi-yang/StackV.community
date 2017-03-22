@@ -558,8 +558,8 @@ public class OpenStackNeutronModelBuilder {
                     }
                     String exports = jsonObj.get("exports").toString();
                     String endpointUri = "";
-                    if (metadata.containsKey("globus:info:uri")) {
-                        endpointUri = metadata.get("globus:info:uri");
+                    if (metadata.containsKey("nfs:info:uri")) {
+                        endpointUri = metadata.get("nfs:info:uri");
                     } else {
                         endpointUri = VM.getURI() + ":service+nfs";
                     }
@@ -568,8 +568,8 @@ public class OpenStackNeutronModelBuilder {
                     model.add(model.createStatement(resNfs, Mrs.type, "nfs"));
                     if (!exports.isEmpty()) {
                         Resource resNA = RdfOwl.createResource(model, endpointUri+":exports", Mrs.NetworkAddress);
-                        model.add(model.createStatement(resNA, Mrs.type, "globus:exports"));
-                        model.add(model.createStatement(resNA, Mrs.type, exports));
+                        model.add(model.createStatement(resNA, Mrs.type, "nfs:exports"));
+                        model.add(model.createStatement(resNA, Mrs.value, exports));
                         model.add(model.createStatement(resNfs, Mrs.hasNetworkAddress, resNA));
                     }
                 } catch (ParseException e) {
