@@ -2668,7 +2668,18 @@ public class WebResource {
                     } else {
                         vmString += "& ";
                     }
-
+                    // VM Routes
+                    if (vmJSON.containsKey("routes")) {
+                        JSONArray routeArr = (JSONArray) vmJSON.get("routes");
+                        if (!routeArr.isEmpty()) {
+                            vmString += "&" + routeArr.toString();
+                        } else {
+                            vmString += "& ";
+                        }
+                    } else {
+                        vmString += "& ";
+                    }
+                    
                     // CephRBD
                     if (vmJSON.containsKey("ceph_rbd")) {
                         JSONArray rbdArr = (JSONArray) vmJSON.get("ceph_rbd");
@@ -2688,18 +2699,15 @@ public class WebResource {
                     } else {
                         vmString += "& ";
                     }
-
-                    // VM Routes
-                    if (vmJSON.containsKey("routes")) {
-                        JSONArray routeArr = (JSONArray) vmJSON.get("routes");
-                        if (!routeArr.isEmpty()) {
-                            vmString += "&" + routeArr.toString();
-                        } else {
-                            vmString += "& ";
-                        }
+                    
+                    // NFS
+                    if (vmJSON.containsKey("nfs")) {
+                        JSONObject nfsJSON = (JSONObject) vmJSON.get("nfs");
+                        vmString += "&" + nfsJSON.toString();
                     } else {
                         vmString += "& ";
                     }
+
                     paraMap.put("vm" + vmCounter++, vmString);
                 }
             }

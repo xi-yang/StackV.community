@@ -522,6 +522,7 @@ public class OpenStackNeutronModelBuilder {
                     Resource resGlobus = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
                     model.add(model.createStatement(VM, Nml.hasService, resGlobus));
                     model.add(model.createStatement(resGlobus, Nml.name, shortName));
+                    model.add(model.createStatement(resGlobus, Mrs.type, "globus:connect"));
                     if (!userName.isEmpty()) {
                         Resource resNA = RdfOwl.createResource(model, endpointUri+":username", Mrs.NetworkAddress);
                         model.add(model.createStatement(resNA, Mrs.type, "globus:username"));
@@ -543,6 +544,37 @@ public class OpenStackNeutronModelBuilder {
                 } catch (ParseException e) {
                     Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
                             String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), globusJson, "globus:info"));
+                }
+            }
+            // NFS Service
+            if (metadata != null && metadata.containsKey("nfs:info")) {
+                String nfsJson = metadata.get("nfs:info");
+                JSONParser parser = new JSONParser();
+                try {
+                    nfsJson = nfsJson.replaceAll("'", "\""); // single quotes into double quotes
+                    JSONObject jsonObj = (JSONObject) parser.parse(nfsJson);
+                    if (!jsonObj.get("status").equals("up")) {
+                        continue;
+                    }
+                    String exports = jsonObj.get("exports").toString();
+                    String endpointUri = "";
+                    if (metadata.containsKey("globus:info:uri")) {
+                        endpointUri = metadata.get("globus:info:uri");
+                    } else {
+                        endpointUri = VM.getURI() + ":service+nfs";
+                    }
+                    Resource resNfs = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
+                    model.add(model.createStatement(VM, Nml.hasService, resNfs));
+                    model.add(model.createStatement(resNfs, Mrs.type, "nfs"));
+                    if (!exports.isEmpty()) {
+                        Resource resNA = RdfOwl.createResource(model, endpointUri+":exports", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resNA, Mrs.type, "globus:exports"));
+                        model.add(model.createStatement(resNA, Mrs.type, exports));
+                        model.add(model.createStatement(resNfs, Mrs.hasNetworkAddress, resNA));
+                    }
+                } catch (ParseException e) {
+                    Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
+                            String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), nfsJson, "nfs:info"));
                 }
             }
         }

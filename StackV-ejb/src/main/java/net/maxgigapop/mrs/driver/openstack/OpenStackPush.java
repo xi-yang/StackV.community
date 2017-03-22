@@ -1000,6 +1000,14 @@ public class OpenStackPush {
                 client.setMetadata(servername, "globus:info", String.format("{'user':'%s','password':'%s','shortname':'%s','directory':'%s','interface':'%s','status':'%s'}", 
                         globusUser, globusPass, shortName, defaultDir, dataInterface, status));
                 client.setMetadata(servername, "globus:info:uri", endpointUri);
+            } else if (o.get("request").toString().equals("NfsRequest")) {
+                String servername = (String) o.get("server name");
+                String nfsExports = (String) o.get("exports");
+                String endpointUri = (String) o.get("uri");
+                String status =  (String) o.get("status");
+                client.setMetadata(servername, "nfs:info", String.format("{'exports':'%s','status':'%s'}", 
+                        nfsExports, status));
+                client.setMetadata(servername, "nfs:info:uri", endpointUri);
             } 
         }
     }
@@ -2572,6 +2580,7 @@ public class OpenStackPush {
         String query = "SELECT ?vm ?ep ?shortname ?username ?password ?directory ?interface  WHERE {"
                 + "?vm nml:hasService ?ep. "
                 + "?ep a mrs:EndPoint. "
+                + "?ep mrs:type \"globus:connect\". "
                 + "?ep nml:name ?shortname. "
                 + "OPTIONAL {?ep mrs:hasNetworkAddress ?naUsername. "
                 + "     ?naUsername mrs:type \"globus:username\"."
@@ -2628,6 +2637,40 @@ public class OpenStackPush {
         return requests;
     }
     
+    private List<JSONObject> nfsRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query = "SELECT ?vm ?ep ?exports  WHERE {"
+                + "?vm nml:hasService ?ep. "
+                + "?ep a mrs:EndPoint. "
+                + "?ep mrs:type \"nfs\". "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naExports. "
+                + "     ?naExports mrs:type \"nfs:exports\". "
+                + "     ?naExports mrs:value ?exports. } "
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject o = new JSONObject();
+            requests.add(o);
+            o.put("request", "NfsRequest");
+            if (creation == true) {
+                o.put("status", "create");
+            } else {
+                o.put("status", "delete");
+            }
+            String vmUri = q.getResource("vm").getURI();
+            String serverName = ResourceTool.getResourceName(vmUri, OpenstackPrefix.vm);
+            o.put("server name", serverName);
+            String exports = "[]";
+            if (q.contains("exports")) {
+                exports = q.get("exports").toString();
+            }
+            o.put("exports", exports);
+            String endpointUri = q.getResource("ep").getURI();
+            o.put("uri", endpointUri);
+        }
+        return requests;
+    }    
     /**
      * ****************************************************************
      * function that executes a query using a model addition/subtraction and a
