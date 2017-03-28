@@ -1,27 +1,27 @@
-/* 
- * Copyright (c) 2013-2016 University of Maryland
- * Created by: Alberto Jimenez 2015
- * Modified by: Tao-Hung Yang 2016
- * Modified by: Xi Yang 2016
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
- * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
- * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
- * IN THE WORK.
- */
+/*
+* Copyright (c) 2013-2016 University of Maryland
+* Created by: Alberto Jimenez 2015
+* Modified by: Tao-Hung Yang 2016
+* Modified by: Xi Yang 2016
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and/or hardware specification (the “Work”) to deal in the
+* Work without restriction, including without limitation the rights to use,
+* copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Work, and to permit persons to whom the Work is furnished to do so,
+* subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Work.
+*
+* THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+* FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
+* IN THE WORK.
+*/
 package web.beans;
 
 import java.io.BufferedReader;
@@ -60,15 +60,15 @@ import org.keycloak.admin.client.token.TokenManager;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 public class serviceBeans {
-
+    
     private static final Logger logger = Logger.getLogger(serviceBeans.class.getName());
-
+    
     private final String kc_url = "https://k152.maxgigapop.net:8543/auth";
     private final String kc_user = "admin";
     private final String kc_pass = "MAX123!";
-
+    
     JSONParser parser = new JSONParser();
-
+    
     String login_db_user = "login_view";
     String login_db_pass = "loginuser";
     String front_db_user = "front_view";
@@ -76,11 +76,11 @@ public class serviceBeans {
     String rains_db_user = "root";
     String rains_db_pass = "root";
     String host = "http://localhost:8080/StackV-web/restapi";
-
+    
     public serviceBeans() {
-
+        
     }
-
+    
     /**
      * Installs driver with the user defined properties via the system API
      *
@@ -121,7 +121,7 @@ public class serviceBeans {
                 String ttlModel = entry.getValue().replaceAll("<", "&lt;");
                 ttlModel = ttlModel.replaceAll(">", "&gt;");
                 driver += "<entry><key>stubModelTtl</key><value>" + ttlModel + "</value></entry>";
-
+                
             } //if it indicates it's a natserver in openstack, add this entry
             else if (entry.getKey().equalsIgnoreCase("NATServer") && entry.getValue().equalsIgnoreCase("yes")) {
                 driver += "<entry><key>NATServer</key><value></value></entry>";
@@ -132,7 +132,7 @@ public class serviceBeans {
             }
         }
         driver += "</properties></driverInstance>";
-
+        
         //push to the system api and get response
         try {
             URL url = new URL(String.format("%s/driver", host));
@@ -145,10 +145,10 @@ public class serviceBeans {
         } catch (Exception e) {
             System.out.println(">>DRIVER INSTALL ERROR");
         }
-
+        
         return 0;
     }
-
+    
     /**
      * Uninstalls driver via the system API
      *
@@ -172,120 +172,120 @@ public class serviceBeans {
         }
         return 0;
     }
-
+    
 // -------------------------- SERVICE FUNCTIONS --------------------------------
-/*
+    /*
     public int createflow(Map<String, String> paraMap) {
-        String topUri = null;
-        String refUuid = null;
-        String eth_src = null;
-        String eth_des = null;
-
-        for (Map.Entry<String, String> entry : paraMap.entrySet()) {
-            if (entry.getKey().contains("topUri")) {
-                topUri = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
-                refUuid = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("eth-src")) {
-                eth_src = entry.getValue();
-            } else if (entry.getKey().equalsIgnoreCase("eth-des")) {
-                eth_des = entry.getValue();
-            }
-        }
-
-        String deltaUUID = UUID.randomUUID().toString();
-
-        String delta = "<serviceDelta>\n<uuid>" + deltaUUID
-                + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
-                + "\n\n<modelAddition>\n\n"
-                + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
-                + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
-                + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
-                + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
-                + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
-                + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
-                + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n"
-                + "@prefix sna:   &lt;http://schemas.ogf.org/mrs/2015/08/network#&gt; .\n\n\n"
-                + "&lt;" + topUri + "&gt; \n"
-                + "        a                         owl:NamedIndividual , nml:Link ;\n"
-                + "        spa:type                  spa:Abstraction;\n"
-                + "        nml:name                  \"l2-connetion-test\" ;\n"
-                + "        spa:dependOn &lt;x-policy-annotation:action:connect-path1&gt; .\n\n"
-                + "&lt;x-policy-annotation:action:connect-path1&gt;\n"
-                + "        a            spa:PolicyAction ;\n"
-                + "        spa:type     \"MCE_L2OpenflowPath\" ;\n"
-                + "        spa:value    \"SRRG Path Pair\" ;\n"
-                + "        spa:importFrom &lt;x-policy-annotation:data:left-location&gt;, &lt;x-policy-annotation:data:right-location&gt; ;\n"
-                + "        spa:exportTo &lt;x-policy-annotation:data:path1-vlan&gt; .\n\n"
-                + "&lt;x-policy-annotation:data:left-location&gt;\n"
-                + "        a            spa:PolicyData ;\n"
-                + "        spa:type     \"port\";\n"
-                + "        spa:value    \" " + eth_src + "\"  .\n\n"
-                + "&lt;x-policy-annotation:data:right-location&gt;\n"
-                + "        a            spa:PolicyData ;\n"
-                + "        spa:type     \"port\";\n"
-                + "        spa:value    \" " + eth_des + "\" .\n\n"
-                + "&lt;x-policy-annotation:data:path1-vlan&gt;\n"
-                + "        a            spa:PolicyData.\n\n"
-                + "</modelAddition>\n\n"
-                + "</serviceDelta>";
-
-        String result;
-
-        try {
-            Connection front_conn;
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id, service_state_id"
-                    + " FROM service_instance WHERE referenceUUID = ?");
-            prep.setString(1, refUuid);
-            ResultSet rs1 = prep.executeQuery();
-            rs1.next();
-            int instanceId = rs1.getInt(1);
-            int stateId = rs1.getInt(2);
-
-        } catch (SQLException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        try {
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
-            HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", delta);
-            if (!result.contains("referenceVersion")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-            HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null);
-            if (!result.equals("PROPAGATED")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-            HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null);
-            if (!result.equals("COMMITTED")) {
-                return 2;//Error occurs when interacting with back-end system
-            }
-            url = new URL(String.format("%s/%s/status", host, refUuid));
-            while (true) {
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null);
-                if (result.equals("READY")) {
-                    return 0;//create network successfully
-                } else if (!result.equals("COMMITTED")) {
-                    return 3;//Fail to create network
-                }
-                sleep(5000);//wait for 5 seconds and check again later
-            }
-        } catch (Exception e) {
-            return 1;//connection error
-        }
+    String topUri = null;
+    String refUuid = null;
+    String eth_src = null;
+    String eth_des = null;
+    
+    for (Map.Entry<String, String> entry : paraMap.entrySet()) {
+    if (entry.getKey().contains("topUri")) {
+    topUri = entry.getValue();
+    } else if (entry.getKey().equalsIgnoreCase("instanceUUID")) {
+    refUuid = entry.getValue();
+    } else if (entry.getKey().equalsIgnoreCase("eth-src")) {
+    eth_src = entry.getValue();
+    } else if (entry.getKey().equalsIgnoreCase("eth-des")) {
+    eth_des = entry.getValue();
+    }
+    }
+    
+    String deltaUUID = UUID.randomUUID().toString();
+    
+    String delta = "<serviceDelta>\n<uuid>" + deltaUUID
+    + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
+    + "\n\n<modelAddition>\n\n"
+    + "@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .\n"
+    + "@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .\n"
+    + "@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .\n"
+    + "@prefix rdf:   &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; .\n"
+    + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
+    + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
+    + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n"
+    + "@prefix sna:   &lt;http://schemas.ogf.org/mrs/2015/08/network#&gt; .\n\n\n"
+    + "&lt;" + topUri + "&gt; \n"
+    + "        a                         owl:NamedIndividual , nml:Link ;\n"
+    + "        spa:type                  spa:Abstraction;\n"
+    + "        nml:name                  \"l2-connetion-test\" ;\n"
+    + "        spa:dependOn &lt;x-policy-annotation:action:connect-path1&gt; .\n\n"
+    + "&lt;x-policy-annotation:action:connect-path1&gt;\n"
+    + "        a            spa:PolicyAction ;\n"
+    + "        spa:type     \"MCE_L2OpenflowPath\" ;\n"
+    + "        spa:value    \"SRRG Path Pair\" ;\n"
+    + "        spa:importFrom &lt;x-policy-annotation:data:left-location&gt;, &lt;x-policy-annotation:data:right-location&gt; ;\n"
+    + "        spa:exportTo &lt;x-policy-annotation:data:path1-vlan&gt; .\n\n"
+    + "&lt;x-policy-annotation:data:left-location&gt;\n"
+    + "        a            spa:PolicyData ;\n"
+    + "        spa:type     \"port\";\n"
+    + "        spa:value    \" " + eth_src + "\"  .\n\n"
+    + "&lt;x-policy-annotation:data:right-location&gt;\n"
+    + "        a            spa:PolicyData ;\n"
+    + "        spa:type     \"port\";\n"
+    + "        spa:value    \" " + eth_des + "\" .\n\n"
+    + "&lt;x-policy-annotation:data:path1-vlan&gt;\n"
+    + "        a            spa:PolicyData.\n\n"
+    + "</modelAddition>\n\n"
+    + "</serviceDelta>";
+    
+    String result;
+    
+    try {
+    Connection front_conn;
+    Properties front_connectionProps = new Properties();
+    front_connectionProps.put("user", "root");
+    front_connectionProps.put("password", "root");
+    
+    front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+    front_connectionProps);
+    
+    PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id, service_state_id"
+    + " FROM service_instance WHERE referenceUUID = ?");
+    prep.setString(1, refUuid);
+    ResultSet rs1 = prep.executeQuery();
+    rs1.next();
+    int instanceId = rs1.getInt(1);
+    int stateId = rs1.getInt(2);
+    
+    } catch (SQLException ex) {
+    Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    
+    try {
+    URL url = new URL(String.format("%s/service/%s", host, refUuid));
+    HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+    result = this.executeHttpMethod(url, compile, "POST", delta);
+    if (!result.contains("referenceVersion")) {
+    return 2;//Error occurs when interacting with back-end system
+    }
+    url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+    HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+    result = this.executeHttpMethod(url, propagate, "PUT", null);
+    if (!result.equals("PROPAGATED")) {
+    return 2;//Error occurs when interacting with back-end system
+    }
+    url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+    HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+    result = this.executeHttpMethod(url, commit, "PUT", null);
+    if (!result.equals("COMMITTED")) {
+    return 2;//Error occurs when interacting with back-end system
+    }
+    url = new URL(String.format("%s/%s/status", host, refUuid));
+    while (true) {
+    HttpURLConnection status = (HttpURLConnection) url.openConnection();
+    result = this.executeHttpMethod(url, status, "GET", null);
+    if (result.equals("READY")) {
+    return 0;//create network successfully
+    } else if (!result.equals("COMMITTED")) {
+    return 3;//Fail to create network
+    }
+    sleep(5000);//wait for 5 seconds and check again later
+    }
+    } catch (Exception e) {
+    return 1;//connection error
+    }
     
     }
     */
@@ -296,7 +296,6 @@ public class serviceBeans {
         JSONObject retJSON = new JSONObject();
         String retString = "{";
         
-        Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, tempArray.toString() + "\n\n\n\n\n\n\n\n");
         
         if (tempArray != null) {
             for (int i = 0; i < tempArray.size(); i++){
@@ -316,10 +315,7 @@ public class serviceBeans {
                         + ((JSONObject) innerArray.get(1)).get("vlan_tag")
                         + "\"}\n\t}\n";
             }
-        }
-        if (retString == null)
-            return null;
-        
+        }        
         return retString + "}";
     }
     
@@ -336,23 +332,23 @@ public class serviceBeans {
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n"
-
+                
                 + "&lt;urn:ogf:network:vo1.maxgigapop.net:link=abstract&gt;\n"
-                    + "\ta            nml:Link ;\n"
-                    + "\tspa:type            spa:Abstraction ;\n"
-                    + "\tspa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n"
-
+                + "\ta            nml:Link ;\n"
+                + "\tspa:type            spa:Abstraction ;\n"
+                + "\tspa:dependOn &lt;x-policy-annotation:action:create-path&gt;.\n\n"
+                
                 + "&lt;x-policy-annotation:action:create-path&gt;\n"
-                    + "\ta            spa:PolicyAction ;\n"
-                    + "\tspa:type     \"MCE_MPVlanConnection\" ;\n"
-                    + "\tspa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
-                    + "\tspa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"
-
+                + "\ta            spa:PolicyAction ;\n"
+                + "\tspa:type     \"MCE_MPVlanConnection\" ;\n"
+                + "\tspa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;\n"
+                + "\tspa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .\n\n"
+                
                 + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
-                    + "\ta            spa:PolicyData;\n"
-                    + "\tspa:type     \"JSON\";\n"
-                    + "\tspa:value    \"\"\"";
-                    
+                + "\ta            spa:PolicyData;\n"
+                + "\tspa:type     \"JSON\";\n"
+                + "\tspa:value    \"\"\"";
+        
         svcDelta += deltaJSON;
         
         svcDelta += "\"\"\".\n\n"
@@ -360,12 +356,12 @@ public class serviceBeans {
                 +"\ta            spa:PolicyData.</modelAddition></serviceDelta>";
         
         
-         Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, svcDelta);
+        Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, svcDelta);
         
         orchestrateInstance(refUuid, svcDelta, refUuid, refresh);
         return 0;
     }
-
+    
     public int createNetwork(Map<String, String> paraMap, String auth, String refresh) {
         String topoUri = null;
         String driverType = null;
@@ -377,11 +373,11 @@ public class serviceBeans {
         JSONParser jsonParser = new JSONParser();
         JSONArray gateArr = null;
         boolean gwVpn = false;
-
+        
         for (Map.Entry<String, String> entry : paraMap.entrySet()) {
             if (entry.getKey().equalsIgnoreCase("topoUri")) {
                 topoUri = entry.getValue();
-
+                
                 Properties rains_connectionProps = new Properties();
                 rains_connectionProps.put("user", rains_db_user);
                 rains_connectionProps.put("password", rains_db_pass);
@@ -399,7 +395,7 @@ public class serviceBeans {
                     } else if (driverPath.contains("OpenStack")) {
                         driverType = "ops";
                     }
-
+                    
                 } catch (SQLException ex) {
                     Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -422,7 +418,7 @@ public class serviceBeans {
                             break;
                         }
                     }
-
+                    
                 } catch (ParseException ex) {
                     Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -433,7 +429,7 @@ public class serviceBeans {
             }
             //example for vm : vm1&0
         }
-
+        
         try {
             URL url = new URL(String.format("%s/service/property/%s/host/", host, refUuid));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -441,12 +437,12 @@ public class serviceBeans {
         } catch (IOException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        
         JSONObject network = new JSONObject();
         network.put("type", "internal");
         network.put("cidr", netCidr);
         network.put("parent", topoUri);
-
+        
         JSONArray subnetsJson = new JSONArray();
         //routing problem solved. need testing.
         for (String net : subnets) {
@@ -477,14 +473,14 @@ public class serviceBeans {
             subnetsJson.add(subnetValue);
         }
         network.put("subnets", subnetsJson);
-
+        
         JSONArray routesJson = new JSONArray();
         JSONObject routesValue = new JSONObject();
         routesValue.put("to", "0.0.0.0/0");
         routesValue.put("nextHop", "internet");
         routesJson.add(routesValue);
         network.put("routes", routesJson);
-
+        
         JSONArray gatewaysJson = new JSONArray();
         JSONObject temp = new JSONObject();
         temp.put("type", "internet");
@@ -495,9 +491,9 @@ public class serviceBeans {
             gatewaysJson.add(gatewayValue);
         }
         network.put("gateways", gatewaysJson);
-
+        
         String deltaUUID = UUID.randomUUID().toString();
-
+        
         String svcDelta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelAddition>\n"
@@ -510,7 +506,7 @@ public class serviceBeans {
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n"
                 + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+vpc1&gt;\n"
                 + "    a                         nml:Topology ;\n";
-
+        
         String exportTo = "";
         if (driverType.equals("aws") && directConn != null) {
             String dest = directConn.contains("?vlan") ? directConn.substring(0, directConn.indexOf("?vlan")) : directConn;
@@ -557,7 +553,7 @@ public class serviceBeans {
         } else {
             svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .\n\n";
         }
-
+        
         if (!vmList.isEmpty()) {
             if (driverType.equals("aws")) {
                 for (String vm : vmList) {
@@ -585,7 +581,7 @@ public class serviceBeans {
                                         + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;\n"
                                         + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
                                         + "    mrs:value     \"" + addressString + "\" .\n\n";
-
+                                
                             }
                         } catch (Exception ex) {
                             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
@@ -619,7 +615,7 @@ public class serviceBeans {
                 JSONObject connCriteriaValue = new JSONObject();
                 String providesVolume = "";
                 String svcDeltaCeph = "";
-
+                
                 for (String vm : vmList) {
                     String[] vmPara = vm.split("&");
                     //0:vm name.
@@ -659,17 +655,17 @@ public class serviceBeans {
                                     sriovList.add(interfaceJSON);
                                 }
                             }
-
+                            
                             if (addressString != null) {
                                 svcDelta += ";\n    mrs:hasNetworkAddress   "
                                         + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;.\n\n"
                                         + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":eth0:floating&gt;\n"
                                         + "    a            mrs:NetworkAddress;\n    mrs:type     \"floating-ip\";\n"
                                         + "    mrs:value     \"" + addressString + "\".\n\n";
-
+                                
                                 for (int i = 0; i < sriovList.size(); i++) {
                                     JSONObject sriov = sriovList.get(i);
-
+                                    
                                     //Parse sriov ip and mac address.
                                     String address = (String) sriov.get("address");
                                     String[] addArr = address.split(",");
@@ -679,7 +675,7 @@ public class serviceBeans {
                                         ip = str.contains("ipv4") ? str.substring(str.indexOf("ipv4") + 5) : ip;
                                         mac = str.contains("mac") ? str.substring(str.indexOf("mac") + 4) : mac;
                                     }
-
+                                    
                                     //Find sriov parameter from Gateways.
                                     for (Object gwEle : gateArr) {
                                         JSONObject gwJSON = (JSONObject) gwEle;
@@ -732,7 +728,7 @@ public class serviceBeans {
                                                             + "\n    }\"\"\" .\n\n";
                                                 }
                                             }
-
+                                            
                                             //sriov stitch_port
                                             if (gwJSON.containsKey("to")) {
                                                 JSONArray toArr = (JSONArray) gwJSON.get("to");
@@ -777,7 +773,7 @@ public class serviceBeans {
                                         }
                                     }
                                 }
-
+                                
                             } else {
                                 svcDelta += ".\n\n";
                             }
@@ -809,7 +805,7 @@ public class serviceBeans {
                             svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ".\n\n";
                         }
                     }
-
+                    
                     svcDelta += "&lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
                             + "    spa:type     \"MCE_VMFilterPlacement\" ;\n"
@@ -833,7 +829,7 @@ public class serviceBeans {
                             + "    spa:type     \"JSON\";\n    spa:format    \"\"\"{ "
                             + "\"place_into\": \"%$.subnets[" + sub + "].uri%\"}\"\"\" .\n\n";
                 }
-
+                
                 if (!createPathExportTo.isEmpty()) {
                     svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
@@ -846,20 +842,20 @@ public class serviceBeans {
                             + "    spa:type     \"JSON\";\n"
                             + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
                 }
-
+                
                 if (!providesVolume.isEmpty()) {
                     svcDeltaCeph += "&lt;urn:ogf:network:openstack.com:openstack-cloud:ceph-rbd&gt;\n"
                             + "   mrs:providesVolume " + providesVolume.substring(0, providesVolume.length() - 2) + " .\n\n";
                     svcDelta += svcDeltaCeph;
                 }
-
+                
                 if (!dependOn.isEmpty()) {
                     svcDelta += "&lt;" + topoUri + ":vt&gt;\n"
                             + "   a  nml:Topology;\n"
                             + "   spa:type spa:Abstraction;\n"
                             + "   spa:dependOn  " + dependOn.substring(0, (dependOn.length() - 2)) + ".\n\n";
                 }
-
+                
             }
         }
         svcDelta += "&lt;x-policy-annotation:action:create-vpc&gt;\n"
@@ -867,7 +863,7 @@ public class serviceBeans {
                 + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
                 + "    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt; ";
         svcDelta += exportTo.isEmpty() ? ".\n\n" : ";\n    spa:exportTo " + exportTo.substring(0, (exportTo.length() - 2)) + " .\n\n";
-
+        
         svcDelta += "&lt;x-policy-annotation:data:vpc-criteria&gt;\n"
                 + "    a            spa:PolicyData;\n"
                 + "    spa:type     nml:Topology;\n"
@@ -875,11 +871,11 @@ public class serviceBeans {
                 + "\"\"\".\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
-
+        
         orchestrateInstance(refUuid, svcDelta, refUuid, refresh);
         return 0;
     }
-
+    
     public int createHybridCloud(Map<String, String> paraMap, String auth, String refresh) {
         String refUuid = null;
         JSONParser jsonParser = new JSONParser();
@@ -897,7 +893,7 @@ public class serviceBeans {
                 }
             }
         }
-
+        
         String deltaUuid = UUID.randomUUID().toString();
         String awsExportTo = "";
         String awsDxStitching = "";
@@ -911,24 +907,24 @@ public class serviceBeans {
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
-
+        
         for (Object obj : vcnArr) {
             JSONObject vcnJson = (JSONObject) obj;
             String topoUri = (String) vcnJson.get("parent");
             String driverType = "";
             String vcnName = (String) vcnJson.get("name");
             vcnJson.remove("name");
-
+            
             JSONArray subArr = (JSONArray) vcnJson.get("subnets");
             ArrayList<JSONArray> vmList = new ArrayList<JSONArray>();
             for (int i = 0; i < subArr.size(); i++) {
                 JSONObject subObj = (JSONObject) subArr.get(i);
-
+                
                 //store the vm value in the vmList and remove from the subnet Json Array
                 JSONArray vmArr = (JSONArray) subObj.get("virtual_machines");
                 vmList.add(i, vmArr);
                 subObj.remove("virtual_machines");
-
+                
                 //modify the subnet routes info to be directly use in ttl model
                 JSONArray subRoutesArr = (JSONArray) subObj.get("routes");
                 for (Object r : subRoutesArr) {
@@ -947,7 +943,7 @@ public class serviceBeans {
                     }
                 }
             }
-
+            
             //modify the network routes info to be directly use in ttl model
             JSONArray netRoutesArr = (JSONArray) vcnJson.get("routes");
             for (Object r : netRoutesArr) {
@@ -965,10 +961,10 @@ public class serviceBeans {
                     route.put("nextHop", value.get("value"));
                 }
             }
-
+            
             //absence check ?
             JSONArray gatewayArr = (JSONArray) vcnJson.get("gateways");
-
+            
             //find driver type
             Properties rains_connectionProps = new Properties();
             rains_connectionProps.put("user", rains_db_user);
@@ -987,11 +983,11 @@ public class serviceBeans {
                 } else if (driverPath.contains("OpenStack")) {
                     driverType = "ops";
                 }
-
+                
             } catch (SQLException ex) {
                 Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
             }
-
+            
             if (driverType.equals("aws")) {
                 //add gateway for aws cloud
                 JSONArray gatewaysJson = new JSONArray();
@@ -1002,7 +998,7 @@ public class serviceBeans {
                 temp.put("type", "vpn");
                 gatewaysJson.add(temp);
                 vcnJson.put("gateways", gatewaysJson);
-
+                
                 svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;\n"
                         + "    a                         nml:Topology ;\n"
                         + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
@@ -1021,7 +1017,7 @@ public class serviceBeans {
                         + " &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; ;\n"
                         + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;,"
                         + " &lt;x-policy-annotation:action:create-aws-ops-path&gt;";
-
+                
                 String vncExportTo = "";
                 for (int i = 0; i < vmList.size(); i++) {
                     String subnetCriteria = "&lt;x-policy-annotation:data:" + vcnName + "-subnet" + i + "-vm-criteria&gt;";
@@ -1031,7 +1027,7 @@ public class serviceBeans {
                             + "    spa:format    \"\"\"{\n"
                             + "       \"place_into\": \"%$.subnets[" + i + "].uri%\"\n"
                             + "    }\"\"\" .\n\n";
-
+                    
                     JSONArray vmArr = vmList.get(i);
                     for (Object vmObj : vmArr) {
                         JSONObject vmJson = (JSONObject) vmObj;
@@ -1078,7 +1074,7 @@ public class serviceBeans {
                                 + "    spa:importFrom " + subnetCriteria + " .\n\n";
                     }
                 }
-
+                
                 svcDelta += "&lt;x-policy-annotation:action:create-" + vcnName + "&gt;\n"
                         + "    a            spa:PolicyAction ;\n"
                         + "    spa:type     \"MCE_VirtualNetworkCreation\" ;\n"
@@ -1095,7 +1091,7 @@ public class serviceBeans {
                 svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + vcnName + "&gt;\n"
                         + "    a                         nml:Topology ;\n"
                         + "    spa:dependOn &lt;x-policy-annotation:action:create-" + vcnName + "&gt;.\n\n";
-
+                
                 String vncExportTo = "";
                 for (int i = 0; i < vmList.size(); i++) {
                     String subnetCriteria = "&lt;x-policy-annotation:data:" + vcnName + "-subnet" + i + "-vm-criteria&gt;";
@@ -1105,7 +1101,7 @@ public class serviceBeans {
                             + "    spa:format    \"\"\"{\n"
                             + "       \"place_into\": \"%$.subnets[" + i + "].uri%\"\n"
                             + "    }\"\"\" .\n\n";
-
+                    
                     JSONArray vmArr = vmList.get(i);
                     for (Object vmObj : vmArr) {
                         JSONObject vmJson = (JSONObject) vmObj;
@@ -1125,7 +1121,7 @@ public class serviceBeans {
                             }
                             providesVolume += nodeHasVolume;
                         }
-
+                        
                         svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n"
                                 + "    a                         nml:Node ;\n"
                                 + (vmType == null ? "" : "    mrs:type       \"" + vmType + "\";\n")
@@ -1223,7 +1219,7 @@ public class serviceBeans {
                                                             + "       \"to_l2path\": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%\n"
                                                             + "       \"mac_address\": \"" + mac + "\""
                                                             + (ip == null ? "" : ",\n       \"ip_address\": \"" + ip + "\"");
-
+                                                    
                                                     if (routeArr != null) {
                                                         for (Object r : routeArr) {
                                                             JSONObject route = (JSONObject) r;
@@ -1389,12 +1385,12 @@ public class serviceBeans {
                         }
                     }
                 }
-
+                
                 if (!providesVolume.isEmpty()) {
                     svcDeltaCeph += "&lt;urn:ogf:network:openstack.com:openstack-cloud:ceph-rbd&gt;\n"
                             + "   mrs:providesVolume " + providesVolume.substring(0, providesVolume.length() - 2) + " .\n\n";
                 }
-
+                
                 svcDelta += svcDeltaCeph
                         + "&lt;x-policy-annotation:action:create-" + vcnName + "&gt;\n"
                         + "    a            spa:PolicyAction ;\n"
@@ -1406,7 +1402,7 @@ public class serviceBeans {
                         + "   a  nml:Topology;\n"
                         + "   spa:type spa:Abstraction;\n"
                         + "   spa:dependOn  " + dependOn.substring(0, dependOn.length() - 2) + ".\n\n";
-
+                
                 if (!createPathExportTo.isEmpty()) {
                     svcDelta += "&lt;x-policy-annotation:action:create-path&gt;\n"
                             + "    a            spa:PolicyAction ;\n"
@@ -1420,17 +1416,17 @@ public class serviceBeans {
                             + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
                 }
             }
-
+            
             svcDelta += "&lt;x-policy-annotation:data:" + vcnName + "-criteria&gt;\n"
                     + "    a            spa:PolicyData;\n"
                     + "    spa:type     nml:Topology;\n"
                     + "    spa:value    \"\"\"" + vcnJson.toString().replace("\\", "")
                     + "\"\"\".\n\n";
         }
-
+        
         awsDxStitching += awsExportTo.isEmpty() ? ".\n\n"
                 : ";\n    spa:exportTo " + awsExportTo.substring(0, awsExportTo.length() - 2) + ".\n\n";
-
+        
         svcDelta += awsDxStitching
                 + "&lt;x-policy-annotation:action:create-aws-ops-path&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
@@ -1446,25 +1442,24 @@ public class serviceBeans {
                 + "    }\"\"\" .\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
-
+        
         try {
             PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
             out.println(svcDelta);
             out.close();
         } catch (Exception e) {
-
+            
         }
         //System.out.println(svcDelta);
-
         orchestrateInstance(refUuid, svcDelta, deltaUuid, refresh);
         return 0;
     }
-
+    
     public int createOperationModelModification(Map<String, String> paraMap, String auth) {
         String refUuid = paraMap.get("instanceUUID");
-
+        
         String deltaUUID = UUID.randomUUID().toString();
-
+        
         String delta = "<serviceDelta>\n<uuid>" + deltaUUID
                 + "</uuid>\n<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>"
                 + "\n\n<modelReduction>\n"
@@ -1475,7 +1470,7 @@ public class serviceBeans {
                 + "@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .\n"
                 + "@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .\n"
                 + "@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .\n\n";
-
+        
         delta += "&lt;x-policy-annotation:action:apply-modifications&gt;\n"
                 + "    a            spa:PolicyAction ;\n"
                 + "    spa:type     \"MCE_OperationalModelModification\" ;\n"
@@ -1484,24 +1479,24 @@ public class serviceBeans {
                 + "    a            spa:PolicyData;\n"
                 + "    spa:type     \"JSON\";\n"
                 + "    spa:value    \"\"\"" + paraMap.get("removeResource").replace("\\", "") + "\"\"\".\n\n";
-
-        // need this for compilation 
+        
+        // need this for compilation
         delta += "&lt;urn:off:network:omm-abs&gt;\n"
                 + "   a  nml:Topology;\n"
                 + "   spa:type spa:Abstraction;\n"
                 + "   spa:dependOn  &lt;x-policy-annotation:action:apply-modifications&gt;.\n\n";
-
+        
         delta += "</modelReduction>\n\n"
                 + "</serviceDelta>";
-
+        
         String result;
         System.out.println(delta);
-
+        
         // Cache serviceDelta.
         int[] results = cacheServiceDelta(refUuid, deltaUUID, delta);
         int instanceID = results[0];
         int historyID = results[1];
-
+        
         try {
             URL url = new URL(String.format("%s/service/%s", host, refUuid));
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
@@ -1509,10 +1504,10 @@ public class serviceBeans {
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-
+            
             // Cache System Delta
             cacheSystemDelta(instanceID, historyID, result);
-
+            
             url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
@@ -1534,15 +1529,15 @@ public class serviceBeans {
                     return 3;//Fail to create network
                 }
             }
-
+            
             return 0;
         } catch (Exception e) {
             return 1;//connection error
         }
     }
-
+    
     // ------ Operations ------
-// --------------------------- UTILITY FUNCTIONS -------------------------------    
+// --------------------------- UTILITY FUNCTIONS -------------------------------
     /**
      * Executes HTTP Request.
      *
@@ -1558,12 +1553,12 @@ public class serviceBeans {
         conn.setRequestMethod(method);
         conn.setRequestProperty("Content-type", "application/xml");
         conn.setRequestProperty("Accept", "application/json");
-
+        
         if (authHeader != null) {
             conn.setRequestProperty("Authorization", authHeader);
             //logger.log(Level.INFO, "{0} header added", authHeader);
         }
-
+        
         if (body != null && !body.isEmpty()) {
             conn.setDoOutput(true);
             try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
@@ -1574,7 +1569,7 @@ public class serviceBeans {
         logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
         int responseCode = conn.getResponseCode();
         logger.log(Level.INFO, "Response Code : {0}", responseCode);
-
+        
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             String inputLine;
@@ -1585,7 +1580,7 @@ public class serviceBeans {
         }
         return responseStr.toString();
     }
-
+    
     public String detailsStatus(String instanceUUID) throws SQLException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         try {
             URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
@@ -1595,7 +1590,7 @@ public class serviceBeans {
             return "Error retrieving backend status!";
         }
     }
-
+    
     public ArrayList<ArrayList<String>> catalogPull(int usergroup_id, int user_id) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
         Class.forName("com.mysql.jdbc.Driver").newInstance();
@@ -1603,79 +1598,79 @@ public class serviceBeans {
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
-
+        
         try {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT S.name, S.filename, S.description FROM service S JOIN acl A, acl_entry_group G, acl_entry_user U "
                     + "WHERE S.atomic = 0 AND A.service_id = S.service_id AND ((A.acl_id = G.acl_id AND G.usergroup_id = ?) OR (A.acl_id = U.acl_id AND U.user_id = ?))");
             prep.setInt(1, usergroup_id);
             prep.setInt(2, user_id);
             ResultSet rs1 = prep.executeQuery();
-
+            
             while (rs1.next()) {
                 ArrayList<String> instanceList = new ArrayList<>();
-
+                
                 instanceList.add(rs1.getString("name"));
                 instanceList.add(rs1.getString("description"));
                 instanceList.add(rs1.getString("filename"));
-
+                
                 retList.add(instanceList);
             }
         } catch (SQLException e) {
             System.out.println("THIS IS A NEW BUILD.");
             System.out.println("Exception: " + e);
         }
-
+        
         return retList;
     }
-
+    
     public void cleanInstances() throws SQLException {
         Connection front_conn;
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
-
+        
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
-
+        
         PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.service_instance");
         prep.executeUpdate();
     }
-
+    
     public int getInstanceID(String referenceUUID) throws SQLException {
         Connection front_conn;
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
-
+        
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
-
+        
         PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");
         prep.setString(1, referenceUUID);
         ResultSet rs1 = prep.executeQuery();
         rs1.next();
         return rs1.getInt("service_instance_id");
     }
-
+    
     public int currentHistoryID(int instanceID) throws SQLException {
         Connection front_conn;
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", "root");
         front_connectionProps.put("password", "root");
-
+        
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
-
+        
         PreparedStatement prep = front_conn.prepareStatement("SELECT service_history_id FROM service_history WHERE `service_instance_id` = ? ORDER BY service_history_id DESC LIMIT 0, 1");
         prep.setInt(1, instanceID);
         ResultSet rs1 = prep.executeQuery();
         rs1.next();
         return rs1.getInt(1);
     }
-
+    
     /**
      *
      * @param serviceType filename of the service
@@ -1693,7 +1688,7 @@ public class serviceBeans {
                 return "ERROR";
         }
     }
-
+    
     public int[] cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
         // Cache serviceDelta.
         int instanceID = -1;
@@ -1703,22 +1698,22 @@ public class serviceBeans {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", "root");
             front_connectionProps.put("password", "root");
-
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id"
                     + " FROM service_instance WHERE referenceUUID = ?");
             prep.setString(1, refUuid);
             ResultSet rs1 = prep.executeQuery();
             rs1.next();
             instanceID = rs1.getInt(1);
-
+            
             historyID = currentHistoryID(instanceID);
-
+            
             String formatDelta = svcDelta.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
-
+            
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
                     + "(`service_instance_id`, `service_history_id`, `type`, `referenceUUID`, `delta`) "
                     + "VALUES (?, ?, 'Service', ?, ?)");
@@ -1727,31 +1722,31 @@ public class serviceBeans {
             prep.setString(3, deltaUUID);
             prep.setString(4, formatDelta);
             prep.executeUpdate();
-
+            
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        
         return new int[]{instanceID, historyID};
     }
-
+    
     private void cacheSystemDelta(int instanceID, int historyID, String result) {
         try {
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", "root");
             front_connectionProps.put("password", "root");
-
+            
             // Retrieve UUID from delta
             /*
             
-             */
+            */
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             String formatDelta = result.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
-
+            
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
                     + "(`service_instance_id`, `service_history_id`, `type`, `delta`) "
                     + "VALUES (?, ?, 'System', ?)");
@@ -1759,12 +1754,12 @@ public class serviceBeans {
             prep.setInt(2, historyID);
             prep.setString(3, formatDelta);
             prep.executeUpdate();
-
+            
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
+    
     public int getServiceID(String filename) {
         try {
             Connection front_conn;
@@ -1773,21 +1768,21 @@ public class serviceBeans {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT service_id FROM service WHERE filename = ?");
             prep.setString(1, filename);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 return rs1.getInt(1);
             }
-
+            
             return -1;
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
-
+    
     public int getUserID(String username) {
         try {
             Connection front_conn;
@@ -1796,39 +1791,39 @@ public class serviceBeans {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT user_id FROM user_info WHERE username = ?");
             prep.setString(1, username);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 return rs1.getInt(1);
             }
-
+            
             return -1;
         } catch (SQLException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
             return -1;
         }
     }
-
+    
     private void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, String refresh) {
         String result;
         try {
             String token = refreshToken(refresh);
             result = initInstance(refUuid, svcDelta, token);
-
+            
             // Cache serviceDelta.
             int[] results = cacheServiceDelta(refUuid, svcDelta, deltaUUID);
             int instanceID = results[0];
             int historyID = results[1];
             cacheSystemDelta(instanceID, historyID, result);
-
+            
             token = refreshToken(refresh);
             propagateInstance(refUuid, svcDelta, token);
-
+            
             token = refreshToken(refresh);
             result = commitInstance(refUuid, svcDelta, token);
-
+            
             verifyInstance(refUuid, result, refresh);
         } catch (EJBException | IOException | InterruptedException | SQLException e) {
             try {
@@ -1845,12 +1840,12 @@ public class serviceBeans {
             } catch (SQLException ex) {
                 Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
             }
-
+            
             System.out.println("ERROR: " + e.getMessage() + " - " + e.getStackTrace());
             //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, e);
         }
     }
-
+    
     private String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s", host, refUuid));
         HttpURLConnection compile = (HttpURLConnection) url.openConnection();
@@ -1860,7 +1855,7 @@ public class serviceBeans {
         }
         return result;
     }
-
+    
     private String propagateInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
@@ -1870,7 +1865,7 @@ public class serviceBeans {
         }
         return result;
     }
-
+    
     private String commitInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection commit = (HttpURLConnection) url.openConnection();
@@ -1880,7 +1875,7 @@ public class serviceBeans {
         }
         return result;
     }
-
+    
     private void verifyInstance(String refUuid, String result, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
         String token = refreshToken(refresh);
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
@@ -1895,13 +1890,13 @@ public class serviceBeans {
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
             result = this.executeHttpMethod(url, status, "GET", null, token);
             /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-                 throw new EJBException("Ready Check Failed!");
-                 }*/
+            throw new EJBException("Ready Check Failed!");
+            }*/
         }
-
+        
         verify(refUuid, refresh);
     }
-
+    
     public boolean verify(String refUuid, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
         int instanceID = getInstanceID(refUuid);
         Connection front_conn;
@@ -1911,21 +1906,21 @@ public class serviceBeans {
         front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
         PreparedStatement prep;
-
+        
         System.out.println("Verifying Delta for service" + refUuid);
-
+        
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
-
+        
         for (int i = 1; i <= 5; i++) {
             String auth = refreshToken(refresh);
-
+            
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String result = executeHttpMethod(url, conn, "GET", null, auth);
-
+            
             // Pull data from JSON.
             JSONObject verifyJSON = new JSONObject();
             try {
@@ -1934,7 +1929,7 @@ public class serviceBeans {
             } catch (ParseException ex) {
                 throw new IOException("Parse Error within Verification: " + ex.getMessage());
             }
-
+            
             // Update verification results cache.
             prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? WHERE `service_instance_id`=?");
             prep.setString(1, (String) verifyJSON.get("referenceUUID"));
@@ -1948,58 +1943,58 @@ public class serviceBeans {
             prep.setInt(9, i);
             prep.setInt(10, instanceID);
             prep.executeUpdate();
-
+            
             if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
                 redVerified = false;
             }
             if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
                 addVerified = false;
             }
-
+            
             //System.out.println("Verify Result: " + result + "\r\n");
             if (redVerified && addVerified) {
                 prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1' WHERE `service_verification`.`service_instance_id` = ?");
                 prep.setInt(1, instanceID);
                 prep.executeUpdate();
-
+                
                 return true;
             }
-
+            
             prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '0' WHERE `service_verification`.`service_instance_id` = ?");
             prep.setInt(1, instanceID);
             prep.executeUpdate();
-
+            
             Thread.sleep(60000);
         }
-
+        
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
-
+        
         return false;
     }
-
+    
     public String refreshToken(String refresh) {
         try {
             URL url = new URL("https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-
+            
             // restapi
             //String encode = "cmVzdGFwaTpjMTZkMjRjMS0yNjJmLTQ3ZTgtYmY1NC1hZGE5YmQ4ZjdhY2E=";
             // StackV
             String encode = "U3RhY2tWOjQ4OTdlOGMzLWI4MzctNDIxMS1hOGYyLWFmM2Q2ZTM2M2RmMg==";
-
+            
             conn.setRequestProperty("Authorization", "Basic " + encode);
             conn.setReadTimeout(10000);
             conn.setConnectTimeout(15000);
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
-
+            
             System.out.println("Init Refresh: " + refresh.substring(0, Math.min(refresh.length(), 10)) + "...");
             //System.out.println("Init Refresh: " + refresh);
             String data = "grant_type=refresh_token&refresh_token=" + refresh;
-
+            
             OutputStream os = conn.getOutputStream();
             BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(os, "UTF-8"));
@@ -2007,7 +2002,7 @@ public class serviceBeans {
             writer.flush();
             writer.close();
             os.close();
-
+            
             conn.connect();
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
             StringBuilder responseStr;
@@ -2018,11 +2013,11 @@ public class serviceBeans {
                     responseStr.append(inputLine);
                 }
             }
-
+            
             JSONParser parser = new JSONParser();
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
-
+            
             return "bearer " + (String) result.get("access_token");
         } catch (ParseException | IOException ex) {
             Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
