@@ -627,10 +627,11 @@ function loadVisualization() {
        // State = "READY";
         var States = {
           "INIT" : 0, 
-          "COMPILED" : 1, 
-          "FAILED" : 2, 
-          "READY" : 3
-        }
+          "COMPILED" : 1,           
+          "COMMITTED" : 2, 
+          "FAILED" : 3, 
+          "READY" : 4
+        };
 
         var tabs = [
           {
@@ -759,6 +760,7 @@ function loadVisualization() {
 
                     break;
                 case "Verified":
+                  $(".verification-table").addClass("hide");
                   var a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
                   additionHeader.appendChild(a);
                   additionCell.classList.add("viz-cell");
@@ -785,6 +787,7 @@ function loadVisualization() {
               
                     break;
                 case "Unverified":
+                  $(".verification-table").addClass("hide");
                   var a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
                   additionHeader.appendChild(a);
                   additionCell.classList.add("viz-cell");
