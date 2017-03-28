@@ -52,10 +52,10 @@ $(function () {
             loadACLPortal();
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
             getAllDetails();
-        }
-
+        } 
+        
         if ($("#tag-panel").length) {
-            loadLabels();
+            initTagPanel();
         }
     };
     keycloak.onTokenExpire = function () {
@@ -936,4 +936,16 @@ function enableLoading() {
 
 function disableLoading() {
     $("#main-pane").removeClass("loading");
+}
+
+function initTagPanel() {
+    $.getScript( "/StackV-web/js/stackv/label.js", function( data, textStatus, jqxhr ) {
+        if ($.trim($("#tag-panel").html())!=='')  {
+            loadLabels();
+        } else {
+            $("#tag-panel").load("/StackV-web/tagPanel.jsp", function () {
+               loadLabels();
+            });
+        }
+    });
 }

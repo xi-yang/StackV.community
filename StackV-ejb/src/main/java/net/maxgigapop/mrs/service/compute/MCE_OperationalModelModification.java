@@ -34,13 +34,18 @@ import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
+import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.bean.ServiceInstance;
+import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.service.compile.CompilerBase;
+import net.maxgigapop.mrs.service.compile.CompilerFactory;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -58,6 +63,7 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
     JSONParser parser = new JSONParser();
 
     @Override
+    @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw new EJBException(String.format("%s::process ", this.getClass().getName()));
@@ -99,22 +105,62 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
         
         Model subModel = ModelFactory.createDefaultModel();
         OntModel model = systemModel.getOntModel();
+        
         List<Resource> resources = new ArrayList<>();
         List<String> includeMatches = new ArrayList<String>();
         List<String> excludeMatches = new ArrayList<String>();
         List<String> excludeExtentials = new ArrayList<String>();
         
+        CompilerBase simpleCompiler = CompilerFactory.createCompiler("net.maxgigapop.mrs.service.compile.SimpleCompiler");
+  
         for (int i = 0; i < resourcesToRemove.size(); i++) {
             String resourceURI = (String) resourcesToRemove.get(i);
+            if (isTopLevelTopology(systemModel.getOntModel(), resourceURI) || isTopLevelService(systemModel.getOntModel(), resourceURI)) {
+                throw new UnsupportedOperationException("MCE_OperationalModelModification::Cannot delete top level service or topology from model. ");
+            }
             Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
-            resources.add(node);
+            if (node != null) {
+                subModel.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));
+                resources.add(node);
+            } else {
+                throw new NullPointerException("MCE_OperationalModelModification:: Resource cannot be null.");
+            }
         }
+        subModel.add(ModelUtil.getModelSubTree(systemModel.getOntModel(), resources, includeMatches, excludeMatches, excludeExtentials)); 
+       
         ServiceDelta outputDelta = new ServiceDelta();
+        DeltaModel dmReduction = new DeltaModel();
 
-        Model removalModel =  ModelUtil.getModelSubTree(systemModel.getOntModel(), resources, includeMatches, excludeMatches, excludeExtentials);        
+        dmReduction.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
+        dmReduction.getOntModel().add(subModel);
+
+        outputDelta.setModelReduction(dmReduction);
         
-        outputDelta.getModelReduction().getOntModel().add(removalModel);
         return new AsyncResult(outputDelta);
     }   
+        
+    public boolean isTopLevelTopology(OntModel systemModel, String URI) {
+        String sparql = "SELECT ?resource WHERE {"   
+               + "{?resource a nml:Topology.} UNION {?resource a nml:Node.}" 
+               + "MINUS { {?parent nml:hasNode ?resource.} UNION {?parent nml:hasTopology ?resource.}}" 
+               + String.format("FILTER ( ?resource = <%s>)", URI)                
+               + "}";
+        
+        ResultSet r = ModelUtil.sparqlQuery(systemModel, sparql);
+        return r.hasNext();
+    }
+    
+    public boolean isTopLevelService(OntModel systemModel, String URI) {
+        String sparql = "SELECT ?resource WHERE {" 
+           + " {" 
+           +"  	{{?parent nml:hasService ?resource} UNION {?parent nml:providesService ?resouce.}}" 
+           +" 	MINUS {{?other nml:hasNode ?parent.} UNION {?other nml:hasTopology ?parent.}}" 
+           +"  }" 
+           + String.format("FILTER ( ?resource = <%s>)", URI)                
+           + "}";
+        
+        ResultSet r = ModelUtil.sparqlQuery(systemModel, sparql);
+        return r.hasNext();   
+    }
 }
  

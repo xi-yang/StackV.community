@@ -10,13 +10,14 @@
 			"External Connection": {
 				"Virtual Private Gateway": "?vgw?",
 				"Direct Connect VLAN": "?dxvlan?",
-				"External Stitching Path": [ {
-                                        "Switch Port": "?extport?",
-                                        "VLAN Tag": "?extport_vlan?",
-				        "sparql": "SELECT ?extport ?extport_vlan WHERE {?ext_sw_svc mrs:providesSubnet ?ext_subnet. ?ext_subnet nml:hasBidirectionalPort ?vlan_port. ?vlan_port nml:hasLabel ?vlan_label. ?vlan_label nml:value \"?dxvlan?\". ?extport nml:hasBidirectionalPort ?vlan_port. ?vlan_port nml:hasLabel ?vlan_port_label. ?vlan_port_label nml:value ?extport_vlan. FILTER (?ext_subnet != ?extport)}",
-				        "required": "true"
-                                     }
-                                ],
+				"External Stitching Path": [
+					{
+						"Switch Port": "?extport?",
+						"VLAN Tag": "?extport_vlan?",
+						"sparql": "SELECT ?extport ?extport_vlan WHERE {?ext_sw_svc mrs:providesSubnet ?ext_subnet. ?ext_subnet nml:hasBidirectionalPort ?vlan_port. ?vlan_port nml:hasLabel ?vlan_label. ?vlan_label nml:value \"?dxvlan?\". ?extport nml:hasBidirectionalPort ?vlan_port. ?vlan_port nml:hasLabel ?vlan_port_label. ?vlan_port_label nml:value ?extport_vlan. FILTER (?ext_subnet != ?extport)}",
+						"required": "true"
+					}
+				],
 				"Instruction": "",
 				"sparql": "SELECT ?vgw ?dxvlan ?extport WHERE {?vpc nml:hasBidirectionalPort ?vgw. ?vgw nml:isAlias ?dxvif. ?dxvif mrs:type \"direct-connect-vif\". ?dxvif nml:hasLabel ?dxvif_label. ?dxvif_label nml:value ?dxvlan.}",
 				"required": "false"
@@ -28,9 +29,16 @@
 					"Virtual Machines": [
 						{
 							"VM Name": "?vm?",
-                                                        "Private IP": "?vm_private_ip?",
 							"Instruction": "To access the VM: ssh -i ?vm_keyname? ec2_user@?vm_public_ip? ",
-							"sparql": "SELECT ?vm ?vm_keyname ?vm_keyname ?vm_public_ip ?vm_private_ip WHERE { ?subnet nml:hasBidirectionalPort ?vm_eth0. ?vm  nml:hasBidirectionalPort ?vm_eth0. ?ec2 mrs:providesVM ?vm. ?vm_eth0 mrs:hasNetworkAddress ?vm_private_na. ?vm_private_na mrs:type \"ipv4:private\". ?vm_private_na mrs:value ?vm_private_ip. OPTIONAL { ?vm mrs:type ?vm_keyname. FILTER (regex(?vm_keyname,'^keypair.+$')) } OPTIONAL { ?vm mrs:hasNetworkAddress ?vm_public_na.?vm_public_na mrs:type \"ipv4:public\".  ?vm_public_na mrs:value ?vm_public_ip. } }",
+							"Private IP(s)": [
+								{
+									"Interface": "?vm_eth?",
+									"IP Address": "?vm_private_ip?",
+									"sparql": "SELECT DISTINCT ?vm_eth ?vm_private_ip WHERE { ?subnet nml:hasBidirectionalPort ?vm_eth. ?vm nml:hasBidirectionalPort ?vm_eth. ?vm_eth mrs:hasNetworkAddress ?vm_private_na. ?vm_private_na mrs:type \"ipv4:private\". ?vm_private_na mrs:value ?vm_private_ip. } ",
+									"required": "false"
+								}
+							],
+							"sparql": "SELECT DISTINCT ?vm ?vm_keyname ?vm_public_ip WHERE { ?subnet nml:hasBidirectionalPort ?vm_eth. ?vm  nml:hasBidirectionalPort ?vm_eth. ?ec2 mrs:providesVM ?vm. OPTIONAL { ?vm mrs:type ?vm_keyname. FILTER (regex(?vm_keyname,'^keypair.+$')) } OPTIONAL { ?vm mrs:hasNetworkAddress ?vm_public_na.?vm_public_na mrs:type \"ipv4:public\".  ?vm_public_na mrs:value ?vm_public_ip. } } ",
 							"required": "false"
 						}
 					],
