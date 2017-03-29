@@ -566,7 +566,7 @@ function buildDeltaTable(type) {
     var panel = document.getElementById("details-panel");
 
     var table = document.createElement("table");
-    table.className = "management-table details-table";
+    table.className = "management-table details-table " +  type.toLowerCase() + "-delta-table";
     table.id = type.toLowerCase() + "-delta-table";
 
     var thead = document.createElement("thead");
