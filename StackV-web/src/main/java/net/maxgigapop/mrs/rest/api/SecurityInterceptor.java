@@ -83,7 +83,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             logger.trace("API Request Received: {}.", uri.getPath());
 
             if (freeRoles.contains(role)) {
-                logger.trace("Authenticated Freely: {}.");
+                logger.trace("Authenticated Freely.");
                 return;
             }
 

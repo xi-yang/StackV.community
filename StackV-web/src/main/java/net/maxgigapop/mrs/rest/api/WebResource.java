@@ -1368,6 +1368,20 @@ public class WebResource {
     }
 
     // >Logging
+    /**
+     * @api {get} /app/logging/ Get Logging
+     * @apiVersion 1.0.0
+     * @apiDescription Get system logging level.
+     * @apiGroup Logging
+     * @apiUse AuthHeader
+     *
+     ** @apiExample {curl} Example Call:
+     * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/ -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess String logging level
+     * @apiSuccessExample {json} Example Response:
+     * info
+     */
     @GET
     @Path("/logging/")
     @Produces("application/json")
@@ -1375,7 +1389,18 @@ public class WebResource {
     public String getLogLevel() {
         return logger.getLevel().name();
     }
-    
+
+    /**
+     * @api {put} /app/logging/:level Set Logging
+     * @apiVersion 1.0.0
+     * @apiDescription Set system logging level.
+     * @apiGroup Logging
+     * @apiUse AuthHeader
+     * @apiParam {String} level logging level, one of the following: TRACE, DEBUG, INFO, WARN, ERROR
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/trace -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @PUT
     @Path("/logging/{level}")
     @Produces("application/json")
@@ -1403,8 +1428,78 @@ public class WebResource {
                 Configurator.setLevel(SecurityInterceptor.class.getName(), Level.ERROR);
                 break;
         }
-        
+
         logger.info("Logging level changed to {}.", level);
+    }
+
+    /**
+     * @api {get} /app/logging/logs/:refUUID:level Get Logs
+     * @apiVersion 1.0.0
+     * @apiDescription Get logs associated with an instance.
+     * @apiGroup Logging
+     * @apiUse AuthHeader
+     * @apiParam {String} refUUID service instance UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/logs/e4d3bfd6-c269-4063-b02b-44aaef71d5b6 -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} logs logs JSON
+     * @apiSuccess {JSONObject} logs.log log JSON
+     * @apiSuccess {String} logs.log.marker log marker
+     * @apiSuccess {String} logs.log.timestamp log timestamp
+     * @apiSuccess {String} logs.log.level log level
+     * @apiSuccess {String} logs.log.logger log source
+     * @apiSuccess {String} logs.log.message log message
+     * @apiSuccess {String} logs.log.exception log exception
+     * @apiSuccessExample {json} Example Response:
+     * [
+     * {
+     * "exception": "",
+     * "level": "INFO",
+     * "marker": "",
+     * "logger": "net.maxgigapop.mrs.rest.api.WebResource",
+     * "message": "Initialized.",
+     * "timestamp": "2017-03-17 12:23:16.0"
+     * },
+     * ...]
+     */
+    @GET
+    @Path("/logging/logs/{refUUID}")
+    @Produces("application/json")
+    @RolesAllowed("Logging")
+    public String getLogs(@PathParam("refUUID") String refUUID) {
+        try {
+            Connection front_conn;
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            PreparedStatement prep;
+            prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ?");
+            prep.setString(1, refUUID);
+
+            ResultSet rs1 = prep.executeQuery();
+            JSONArray logArr = new JSONArray();
+            while (rs1.next()) {
+                JSONObject logJSON = new JSONObject();
+
+                logJSON.put("marker", rs1.getString("marker"));
+                logJSON.put("timestamp", rs1.getTimestamp("timestamp").toString());
+                logJSON.put("level", rs1.getString("level"));
+                logJSON.put("logger", rs1.getString("logger"));
+                logJSON.put("message", rs1.getString("message"));
+                logJSON.put("exception", rs1.getString("exception"));
+
+                logArr.add(logJSON);
+            }
+
+            return logArr.toJSONString();
+        } catch (SQLException ex) {
+            logger.catching(ex);
+            return null;
+        }
     }
 
     // >Manifests
@@ -2359,7 +2454,7 @@ public class WebResource {
                 default:
             }
 
-            long endTime = System.currentTimeMillis();            
+            long endTime = System.currentTimeMillis();
             logger.info("Service Creation End, Duration: " + (endTime - startTime) + " ms.");
 
             // Return instance UUID
