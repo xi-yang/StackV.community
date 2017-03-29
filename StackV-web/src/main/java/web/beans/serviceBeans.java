@@ -27,6 +27,7 @@ package web.beans;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -46,10 +47,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.net.ssl.HttpsURLConnection;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -57,7 +59,7 @@ import org.json.simple.parser.ParseException;
 
 public class serviceBeans {
 
-    private static final Logger logger = Logger.getLogger(serviceBeans.class.getName());
+    private final Logger logger = LogManager.getLogger("net.maxgigapop.mrs.rest.api.WebResource");
 
     private final String kc_url = "https://k152.maxgigapop.net:8543/auth";
     private final String kc_user = "admin";
@@ -138,8 +140,8 @@ public class serviceBeans {
             {
                 return 2;
             }
-        } catch (Exception e) {
-            System.out.println(">>DRIVER INSTALL ERROR");
+        } catch (Exception ex) {
+            logger.catching(ex);
         }
 
         return 0;
@@ -163,8 +165,8 @@ public class serviceBeans {
             {
                 return 2;
             }
-        } catch (Exception e) {
-            System.out.println(">>DRIVER UNINSTALL ERROR");
+        } catch (Exception ex) {
+            logger.catching(ex);
         }
         return 0;
     }
@@ -429,7 +431,7 @@ public class serviceBeans {
                     }
 
                 } catch (SQLException ex) {
-                    Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                    logger.catching(ex);
                 }
             } else if (entry.getKey().equalsIgnoreCase("netCidr")) {
                 netCidr = entry.getValue();
@@ -452,7 +454,7 @@ public class serviceBeans {
                     }
 
                 } catch (ParseException ex) {
-                    Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                    logger.catching(ex);
                 }
             } else if (entry.getKey().contains("subnet")) {
                 subnets.add(entry.getValue());
@@ -467,7 +469,7 @@ public class serviceBeans {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             executeHttpMethod(url, connection, "POST", driverType, auth);
         } catch (IOException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            logger.catching(ex);
         }
 
         JSONObject network = new JSONObject();
@@ -615,8 +617,8 @@ public class serviceBeans {
                                         + "    mrs:value     \"" + addressString + "\" .\n\n";
 
                             }
-                        } catch (Exception ex) {
-                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (ParseException ex) {
+                            logger.catching(ex);
                         }
                     }
                     svcDelta += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n"
@@ -670,8 +672,8 @@ public class serviceBeans {
                         try {
                             vmRouteArr = (JSONArray) jsonParser.parse(vmPara[5]);
                             svcDelta += "    nml:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice&gt; ;\n";
-                        } catch (Exception ex) {
-                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (ParseException ex) {
+                            logger.catching(ex);
                         }
                     }
                     svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmPara[0] + "&gt;.\n\n"
@@ -743,7 +745,7 @@ public class serviceBeans {
                                                 }
                                                 vmRouteArr = null;
                                             }
-                                            */
+                                             */
                                             // sriov port_profile
                                             if (gwJSON.containsKey("from")) {
                                                 JSONArray fromArr = (JSONArray) gwJSON.get("from");
@@ -818,8 +820,8 @@ public class serviceBeans {
                             } else {
                                 svcDelta += ".\n\n";
                             }
-                        } catch (Exception ex) {
-                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (ParseException ex) {
+                            logger.catching(ex);
                         }
                     } else {
                         svcDelta += ".\n\n";
@@ -839,9 +841,9 @@ public class serviceBeans {
                             if (routeCt > 1) {
                                 svcDelta += ",\n";
                             }
-                            svcDelta += "            &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice:routingtable+linux:route+"+routeCt+"&gt;\n";
+                            svcDelta += "            &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice:routingtable+linux:route+" + routeCt + "&gt;\n";
                             vmRoutes += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + ":routingservice:routingtable+linux:route+" + routeCt + "&gt;\n"
-                                        +"      a  mrs:Route;\n";
+                                    + "      a  mrs:Route;\n";
                             if (route.containsKey("to")) {
                                 vmRoutes += "      mrs:routeTo " + networkAddressFromJson((JSONObject) route.get("to")) + ";";
                             }
@@ -873,8 +875,8 @@ public class serviceBeans {
                                 volNum++;
                             }
                             providesVolume += nodeHasVolume;
-                        } catch (Exception ex) {
-                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (ParseException ex) {
+                            logger.catching(ex);
                         }
                         if (!nodeHasVolume.isEmpty()) {
                             svcDeltaCeph += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    mrs:hasVolume       " + nodeHasVolume.substring(0, nodeHasVolume.length() - 2) + ".\n\n";
@@ -890,6 +892,7 @@ public class serviceBeans {
                                     + "   a  mrs:EndPoint ;\n"
                                     + "   mrs:type \"globus:connect\" ;\n";
                             if (globusJSON.containsKey("username")) {
+
                                 String naUri = globusUri+":username";
                                 svcDeltaEndPoints += "mrs:hasNetworkAddress &lt;" + naUri + "&gt; ;\n";
                                 netAdresses += "&lt;" + naUri + "&gt;\n"
@@ -1039,7 +1042,7 @@ public class serviceBeans {
                 try {
                     vcnArr = (JSONArray) jsonParser.parse(entry.getValue());
                 } catch (ParseException ex) {
-                    Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                    logger.catching(ex);
                 }
             }
         }
@@ -1135,7 +1138,7 @@ public class serviceBeans {
                 }
 
             } catch (SQLException ex) {
-                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                logger.catching(ex);
             }
 
             if (driverType.equals("aws")) {
@@ -1424,7 +1427,7 @@ public class serviceBeans {
                                             }
                                             vmRouteArr = null;
                                         }
-                                        */
+                                         */
                                         //Find sriov parameter from Gateways.
                                         for (Object gwEle : gatewayArr) {
                                             JSONObject gwJSON = (JSONObject) gwEle;
@@ -1626,13 +1629,13 @@ public class serviceBeans {
                                 }
                                 svcDelta += "      [";
                                 if (route.containsKey("to")) {
-                                    svcDelta += "      mrs:routeTo " + networkAddressFromJson((JSONObject)route.get("to")) + ";";
+                                    svcDelta += "      mrs:routeTo " + networkAddressFromJson((JSONObject) route.get("to")) + ";";
                                 }
                                 if (route.containsKey("from")) {
-                                    svcDelta += "      mrs:routeFrom " + networkAddressFromJson((JSONObject)route.get("from")) + ";";
+                                    svcDelta += "      mrs:routeFrom " + networkAddressFromJson((JSONObject) route.get("from")) + ";";
                                 }
                                 if (route.containsKey("next_hop")) {
-                                    svcDelta += "      mrs:nextHop " + networkAddressFromJson((JSONObject)route.get("next_hop")) + ";";
+                                    svcDelta += "      mrs:nextHop " + networkAddressFromJson((JSONObject) route.get("next_hop")) + ";";
                                 }
                                 svcDelta += "      ]";
                             }
@@ -1703,10 +1706,9 @@ public class serviceBeans {
             PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
             out.println(svcDelta);
             out.close();
-        } catch (Exception e) {
-
+        } catch (FileNotFoundException ex) {
+            logger.catching(ex);
         }
-        //System.out.println(svcDelta);
 
         orchestrateInstance(refUuid, svcDelta, deltaUuid, refresh);
         return 0;
@@ -1745,7 +1747,7 @@ public class serviceBeans {
                 + "</serviceDelta>";
 
         String result;
-        System.out.println(delta);
+        logger.trace(delta);
 
         // Cache serviceDelta.
         int[] results = cacheServiceDelta(refUuid, delta, deltaUUID);
@@ -1786,7 +1788,8 @@ public class serviceBeans {
             }
 
             return 0;
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException ex) {
+            logger.catching(ex);
             return 1;//connection error
         }
     }
@@ -1821,9 +1824,10 @@ public class serviceBeans {
                 wr.flush();
             }
         }
-        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        
+        logger.trace("Sending {} request to URL: {}.", method, url);        
         int responseCode = conn.getResponseCode();
-        logger.log(Level.INFO, "Response Code : {0}", responseCode);
+        logger.trace("Response Code: {}", responseCode);
 
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
@@ -1833,8 +1837,13 @@ public class serviceBeans {
                 responseStr.append(inputLine);
             }
         }
-        logger.log(Level.INFO, "Response: {0}", responseStr.substring(0, Math.min(responseStr.length(), 10)) + "...");
-
+        
+        
+        String retStr = responseStr.substring(0, Math.min(responseStr.length(), 20));
+        if (retStr.length() == 20)
+            retStr += "...";
+            
+        logger.trace("Response: {}", retStr);
         return responseStr.toString();
     }
 
@@ -1875,9 +1884,9 @@ public class serviceBeans {
 
                 retList.add(instanceList);
             }
-        } catch (SQLException e) {
-            System.out.println("THIS IS A NEW BUILD.");
-            System.out.println("Exception: " + e);
+        } catch (SQLException ex) {
+            logger.warn("THIS IS A NEW BUILD.");
+            logger.catching(ex);
         }
 
         return retList;
@@ -1981,7 +1990,7 @@ public class serviceBeans {
             prep.executeUpdate();
 
         } catch (SQLException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            logger.catching(ex);
         }
 
         return new int[]{instanceID, historyID};
@@ -2013,7 +2022,7 @@ public class serviceBeans {
             prep.executeUpdate();
 
         } catch (SQLException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            logger.catching(ex);
         }
     }
 
@@ -2035,7 +2044,7 @@ public class serviceBeans {
 
             return -1;
         } catch (SQLException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            logger.catching(ex);
             return -1;
         }
     }
@@ -2058,7 +2067,7 @@ public class serviceBeans {
 
             return -1;
         } catch (SQLException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            logger.catching(ex);
             return -1;
         }
     }
@@ -2070,10 +2079,10 @@ public class serviceBeans {
         String type = "ipv4-address";
         if (jsonAddr.containsKey("type")) {
             type = jsonAddr.get("type").toString();
-        } 
+        }
         return String.format("[a    mrs:NetworkAddress; mrs:type    \"%s\"; mrs:value   \"%s\"]", type, jsonAddr.get("value").toString());
     }
-    
+
     private void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, String refresh) {
         String result;
         try {
@@ -2093,7 +2102,7 @@ public class serviceBeans {
             result = commitInstance(refUuid, svcDelta, token);
 
             verifyInstance(refUuid, result, refresh);
-        } catch (EJBException | IOException | InterruptedException | SQLException e) {
+        } catch (EJBException | IOException | InterruptedException | SQLException ex) {
             try {
                 Connection front_conn;
                 Properties front_connectionProps = new Properties();
@@ -2105,12 +2114,10 @@ public class serviceBeans {
                 prep = front_conn.prepareStatement("UPDATE service_verification V INNER JOIN service_instance I SET V.verification_state = '-1' WHERE V.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
                 prep.setString(1, refUuid);
                 prep.executeUpdate();
-            } catch (SQLException ex) {
-                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SQLException ex2) {
+                logger.catching(ex2);
             }
-
-            System.out.println("ERROR: " + e.getMessage() + " - " + e.getStackTrace());
-            //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, e);
+            logger.catching(ex);
         }
     }
 
@@ -2175,14 +2182,15 @@ public class serviceBeans {
                 front_connectionProps);
         PreparedStatement prep;
 
-        System.out.println("Verifying Delta for service: " + refUuid);
+        ThreadContext.put("refUUID", refUuid);
+        logger.traceEntry("Verification Start.");
 
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
 
         for (int i = 1; i <= 5; i++) {
-            System.out.println("Verification Run " + i + "/5: " + refUuid);
+            logger.trace("Start verification Run {}/5.", i);
             String auth = refreshToken(refresh);
 
             boolean redVerified = true, addVerified = true;
@@ -2219,14 +2227,13 @@ public class serviceBeans {
             if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
                 addVerified = false;
             }
-
-            //System.out.println("Verify Result: " + result + "\r\n");
+            
             if (redVerified && addVerified) {
                 prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1' WHERE `service_verification`.`service_instance_id` = ?");
                 prep.setInt(1, instanceID);
                 prep.executeUpdate();
 
-                System.out.println("Verification Success: " + refUuid);
+                logger.info("Verification Success.");
                 return true;
             }
 
@@ -2241,7 +2248,7 @@ public class serviceBeans {
         prep.setInt(1, instanceID);
         prep.executeUpdate();
 
-        System.out.println("Verification Failure: " + refUuid);
+        logger.info("Verification Failed.");
         return false;
     }
 
@@ -2262,10 +2269,7 @@ public class serviceBeans {
             conn.setDoInput(true);
             conn.setDoOutput(true);
 
-            System.out.println("Init Refresh: " + "..." + refresh.substring(Math.max(refresh.length() - 10, 0)));
-            //System.out.println("Init Refresh: " + refresh);
             String data = "grant_type=refresh_token&refresh_token=" + refresh;
-
             OutputStream os = conn.getOutputStream();
             BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(os, "UTF-8"));
@@ -2275,7 +2279,6 @@ public class serviceBeans {
             os.close();
 
             conn.connect();
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
             StringBuilder responseStr;
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
@@ -2285,15 +2288,12 @@ public class serviceBeans {
                 }
             }
 
-            JSONParser parser = new JSONParser();
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
 
-            System.out.println("Refresh complete.");
-
             return "bearer " + (String) result.get("access_token");
         } catch (ParseException | IOException ex) {
-            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            logger.catching(ex);
         }
         return null;
     }
