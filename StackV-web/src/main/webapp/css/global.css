@@ -20,6 +20,10 @@ a {
 
 #nav {
     z-index: 99;
+    height: 52px;
+}
+#select-logging-level {
+    margin: 15px 0px 15px 5px;
 }
 
 a.hover {
