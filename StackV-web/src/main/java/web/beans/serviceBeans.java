@@ -926,7 +926,7 @@ public class serviceBeans {
                             }
                             svcDeltaEndPoints += "   nml:name \"" + (String) globusJSON.get("short_name") + "\" .\n\n";
                         } catch (Exception ex) {
-                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                            logger.catching(ex);
                         }
                         svcDeltaEndPoints += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    nml:hasService       &lt;" + globusUri + "&gt;. \n";
                         svcDeltaEndPoints += netAdresses;
@@ -949,7 +949,7 @@ public class serviceBeans {
                                         + "   mrs:value \"" + (String) nfsJSON.get("exports") + "\" .\n";
                             }
                         } catch (Exception ex) {
-                            Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                            logger.catching(ex);
                         }
                         svcDeltaEndPoints += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmPara[0] + "&gt;\n" + "    nml:hasService       &lt;" + nfsUri + "&gt;. \n";
                         svcDeltaEndPoints += netAdresses;
@@ -1319,7 +1319,7 @@ public class serviceBeans {
                                 }
                                 svcDeltaEndPoints += "   nml:name \"" + (String) globusJSON.get("short_name") + "\" .\n\n";
                             } catch (Exception ex) {
-                                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                                logger.catching(ex);
                             }
                             svcDeltaEndPoints += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n" + "    nml:hasService       &lt;" + globusUri + "&gt;. \n";
                             svcDeltaEndPoints += netAdresses;
@@ -1342,7 +1342,7 @@ public class serviceBeans {
                                             + "   mrs:value \"" + (String) nfsJSON.get("exports") + "\" .\n";
                                 }
                             } catch (Exception ex) {
-                                Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+                                logger.catching(ex);
                             }
                             svcDeltaEndPoints += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + "&gt;\n" + "    nml:hasService       &lt;" + nfsUri + "&gt;. \n";
                             svcDeltaEndPoints += netAdresses;
