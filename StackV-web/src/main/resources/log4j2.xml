@@ -21,11 +21,11 @@
         </JDBC>      
     </Appenders>
     <Loggers>
-        <AsyncLogger name="net.maxgigapop.mrs.rest.api.WebResource" level="trace" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.rest.api.WebResource" level="info" additivity="false">
             <AppenderRef ref="APIOut" />
             <AppenderRef ref="MySQL" level="info" />
         </AsyncLogger>
-        <AsyncLogger name="net.maxgigapop.mrs.rest.api.SecurityInterceptor" level="trace" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.rest.api.SecurityInterceptor" level="info" additivity="false">
             <AppenderRef ref="InterceptorOut" />
         </AsyncLogger>
         <Root level="warn">

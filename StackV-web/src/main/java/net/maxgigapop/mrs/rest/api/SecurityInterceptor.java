@@ -69,7 +69,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             RolesAllowed rolesAnnotation = method.getAnnotation(RolesAllowed.class);
             String role;
             // Ban list
-            List<String> freeRoles = Arrays.asList("Free", "Logging", "ACL", "Panel");
+            List<String> freeRoles = Arrays.asList("Free", "Logging", "ACL", "Panels");
             if (rolesAnnotation == null) {
                 role = "Free";
             } else {

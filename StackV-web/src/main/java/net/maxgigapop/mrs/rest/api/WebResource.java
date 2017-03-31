@@ -25,7 +25,6 @@
 package net.maxgigapop.mrs.rest.api;
 
 import java.io.IOException;
-import java.lang.String;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -62,7 +61,6 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.util.Iterator;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.HashSet;
@@ -1433,7 +1431,7 @@ public class WebResource {
     }
 
     /**
-     * @api {get} /app/logging/logs/:refUUID:level Get Logs
+     * @api {get} /app/logging/logs/:refUUID Get Logs
      * @apiVersion 1.0.0
      * @apiDescription Get logs associated with an instance.
      * @apiGroup Logging
