@@ -2168,7 +2168,7 @@ public class serviceBeans {
                  throw new EJBException("Ready Check Failed!");
                  }*/
         }
-
+        String _method = "";
         verify(refUuid, refresh);
     }
 

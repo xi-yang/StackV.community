@@ -16,7 +16,7 @@
             <Column name="logger" pattern="%logger" />
             <Column name="message" pattern="%message" />
                        
-            <Column name="exception" pattern="%ex{5}" />
+            <Column name="exception" pattern="%ex" />
             <Column name="referenceUUID" pattern="%X{refUUID}" />
         </JDBC>      
     </Appenders>
