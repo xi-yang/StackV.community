@@ -82,7 +82,7 @@ public class HandleServiceCall {
     @EJB
     HandleSystemCall systemCallHandler;
 
-    private final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "ServiceSession");
+    private final StackLogger logger = new StackLogger(HandleServiceCall.class.getPackage().getName(), "ServiceSession");
     
     public ServiceInstance createInstance() {
         logger.start("createInstance");

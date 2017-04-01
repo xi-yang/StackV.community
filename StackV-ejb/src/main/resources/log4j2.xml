@@ -2,7 +2,7 @@
 <Configuration status="info" package="net.maxgigapop.mrs.service"  name="RAINS-Service">
     <Appenders>
         <Console name="RainsOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="%logger{1} [%marker] [%X{module}.%X{method} %X{refUUID}] - %msg :%X{severity}: %ex{2}%n" />
+            <PatternLayout pattern="%X{module}.%X{method} %X{refUUID} [%marker]  - %msg :%X{severity}: %ex{2}%n" />
         </Console>
         
         <JDBC name="MySQL" tableName="frontend.log">
@@ -20,7 +20,7 @@
         </JDBC>      
     </Appenders>
     <Loggers>
-        <AsyncLogger name="net.maxgigapop.mrs.service.HandleServiceCall" level="trace" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.service" level="trace" additivity="false">
             <AppenderRef ref="RainsOut" />
             <AppenderRef ref="MySQL" level="info" />
         </AsyncLogger>
