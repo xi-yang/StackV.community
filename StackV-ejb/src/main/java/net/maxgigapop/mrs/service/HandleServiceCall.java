@@ -102,7 +102,7 @@ public class HandleServiceCall {
             serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         }
         if (serviceInstance == null) {
-            logger.error_and_throw("terminateInstance", "Cannot find the ServiceInstance by refUUID");
+            throw logger.error_throwing("terminateInstance", "Cannot find the ServiceInstance by refUUID");
         }
         if (serviceInstance.getServiceDeltas() != null) {
             // clean up serviceDeltas
@@ -163,17 +163,17 @@ public class HandleServiceCall {
         logger.start("compileAddDelta");
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
-            logger.error_and_throw("compileAddDelta", "Cannot find the ServiceInstance by refUUID");
+            throw logger.error_throwing("compileAddDelta", "Cannot find the ServiceInstance by refUUID");
         }
         if (ServiceDeltaPersistenceManager.findByReferenceUUID(spaDelta.getReferenceUUID()) != null) {
-            logger.error_and_throw("compileAddDelta", "Has already received a spaDelta with same refUUID");
+            throw logger.error_throwing("compileAddDelta", "Has already received a spaDelta with same refUUID");
         }
         // run with chosen worker
         WorkerBase worker = null;
         try {
             worker = (WorkerBase) this.getClass().getClassLoader().loadClass(workerClassPath).newInstance();
         } catch (Exception ex) {
-            logger.catch_and_throw("compileAddDelta", ex);
+            throw logger.throwing("compileAddDelta", ex);
         }
         worker.setAnnoatedModel(spaDelta);
         try {
@@ -181,7 +181,7 @@ public class HandleServiceCall {
         } catch (EJBException ex) {
             serviceInstance.setStatus("FAILED");
             ServiceInstancePersistenceManager.merge(serviceInstance);
-            logger.catch_and_throw("compileAddDelta", ex);
+            throw logger.throwing("compileAddDelta", ex);
         }
         // save serviceInstance, spaDelta and systemDelta
         SystemDelta resultDelta = worker.getResultModelDelta();
