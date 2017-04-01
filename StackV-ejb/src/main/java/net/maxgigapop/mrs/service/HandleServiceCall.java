@@ -66,7 +66,7 @@ import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.common.Mrs;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
@@ -82,20 +82,27 @@ public class HandleServiceCall {
     @EJB
     HandleSystemCall systemCallHandler;
 
+    private final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "ServiceSession");
+    
     public ServiceInstance createInstance() {
+        logger.start("createInstance");
         ServiceInstance serviceInstance = new ServiceInstance();
         serviceInstance.setReferenceUUID(UUID.randomUUID().toString());
+        logger.refuuid(serviceInstance.getReferenceUUID());
         ServiceInstancePersistenceManager.save(serviceInstance);
+        logger.end("createInstance");
         return serviceInstance;
     }
 
     public void terminateInstance(String refUUID) {
+        logger.refuuid(refUUID);
+        logger.start("terminateInstance");
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(refUUID);
         if (serviceInstance != null) {
             serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         }
         if (serviceInstance == null) {
-            throw new EJBException(String.format("terminateInstance cannot find the ServiceInstance with referenceUUID=%s", refUUID));
+            logger.error_and_throw("terminateInstance", "Cannot find the ServiceInstance by refUUID");
         }
         if (serviceInstance.getServiceDeltas() != null) {
             // clean up serviceDeltas
@@ -122,6 +129,7 @@ public class HandleServiceCall {
             }
         }
         ServiceInstancePersistenceManager.delete(serviceInstance);
+        logger.end("terminateInstance");
     }
 
     public void setInstanceProperty(String refUUID, String property, String value) {
@@ -151,20 +159,21 @@ public class HandleServiceCall {
     }
     
     public SystemDelta compileAddDelta(String serviceInstanceUuid, String workerClassPath, ServiceDelta spaDelta) {
+        logger.refuuid(serviceInstanceUuid);
+        logger.start("compileAddDelta");
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
-            throw new EJBException(HandleServiceCall.class.getName() + ".compileDelta cannot find serviceInstance with uuid=" + serviceInstanceUuid);
+            logger.error_and_throw("compileAddDelta", "Cannot find the ServiceInstance by refUUID");
         }
         if (ServiceDeltaPersistenceManager.findByReferenceUUID(spaDelta.getReferenceUUID()) != null) {
-            throw new EJBException(HandleServiceCall.class.getName() + ".compileDelta has already received a spaDelta with same uuid=" + spaDelta.getReferenceUUID());
+            logger.error_and_throw("compileAddDelta", "Has already received a spaDelta with same refUUID");
         }
         // run with chosen worker
         WorkerBase worker = null;
         try {
             worker = (WorkerBase) this.getClass().getClassLoader().loadClass(workerClassPath).newInstance();
         } catch (Exception ex) {
-            Logger.getLogger(HandleServiceCall.class.getName()).log(Level.SEVERE, null, ex);
-            throw new EJBException(ex);
+            logger.catch_and_throw("compileAddDelta", ex);
         }
         worker.setAnnoatedModel(spaDelta);
         try {
@@ -172,7 +181,7 @@ public class HandleServiceCall {
         } catch (EJBException ex) {
             serviceInstance.setStatus("FAILED");
             ServiceInstancePersistenceManager.merge(serviceInstance);
-            throw ex;
+            logger.catch_and_throw("compileAddDelta", ex);
         }
         // save serviceInstance, spaDelta and systemDelta
         SystemDelta resultDelta = worker.getResultModelDelta();
@@ -188,6 +197,7 @@ public class HandleServiceCall {
         //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         serviceInstance.setStatus("COMPILED");
         ServiceInstancePersistenceManager.merge(serviceInstance);
+        logger.end("compileAddDelta");
         return resultDelta;
     }
 

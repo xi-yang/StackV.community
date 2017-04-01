@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="info" name="RAINS-Logging">
+<Configuration status="info" package="net.maxgigapop.mrs.service"  name="RAINS-Service">
     <Appenders>
         <Console name="RainsOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="%logger{1} [%marker] %level - %msg :: %ex{5}%n" />
+            <PatternLayout pattern="%logger{1} [%marker] [%X{module}.%X{method} %X{refUUID}] - %msg :%X{severity}: %ex{2}%n" />
         </Console>
         
         <JDBC name="MySQL" tableName="frontend.log">
@@ -12,14 +12,17 @@
             <Column name="level" pattern="%level" />
             <Column name="logger" pattern="%logger" />
             <Column name="message" pattern="%message" />
-                       
-            <Column name="exception" pattern="%ex{5}" />
+            <Column name="exception" pattern="%ex" />
+            <Column name="severity" pattern="%X{severity}" />                       
+            <Column name="module" pattern="%X{module}" />
+            <Column name="method" pattern="%X{method}" />
             <Column name="referenceUUID" pattern="%X{refUUID}" />
         </JDBC>      
     </Appenders>
     <Loggers>
-        <AsyncLogger name="RAINSLogger" level="trace" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.service.HandleServiceCall" level="trace" additivity="false">
             <AppenderRef ref="RainsOut" />
+            <AppenderRef ref="MySQL" level="info" />
         </AsyncLogger>
         <Root level="warn">
             <AppenderRef ref="RainsOut" />
