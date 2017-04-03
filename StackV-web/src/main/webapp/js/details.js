@@ -895,12 +895,15 @@ function loadVisualization() {
               var button = viz.children(".details-viz-recenter-button");
               
               if ($(this).hasClass("unexpanded")) {
+                if (!$("#instance-details-table").hasClass("hide"))  
+                     $("#instance-details-table").addClass("hide");
+        
                 tab.find(".viz-cell").not(cell).addClass("hide");
                 tab.find(".viz-hdr").closest("th").not(hdr).addClass("hide");
                 tab.find(".viz-table").not(table).addClass("hide");
 
                 viz.addClass("expanded-viz-div");
-                table.height("50%");
+                table.height("95%");
                 $(this).removeClass("unexpanded");
                 $(this).addClass("expanded");
                 button.trigger("click", [viz.width(), viz.height()]);
@@ -909,6 +912,9 @@ function loadVisualization() {
                 text_model_pre.addClass("expanded");
                 text_model_pre.height(viz.height()*2);
               } else {
+                if ($("#instance-details-table").hasClass("hide") && !$(".viz-hdr.expanded").not(this).length)  {
+                    $("#instance-details-table").removeClass("hide");
+                }
 
                 tab.find(".viz-cell").not(cell).removeClass("hide");
                 tab.find(".viz-hdr").closest("th").not(hdr).removeClass("hide");
