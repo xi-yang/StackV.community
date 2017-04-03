@@ -68,6 +68,7 @@ import java.util.Set;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HttpsURLConnection;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.logging.log4j.Level;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.KeycloakSecurityContext;
@@ -87,7 +88,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 @Path("app")
 public class WebResource {
 
-    private final Logger logger = LogManager.getLogger(WebResource.class.getName());
+    private final StackLogger logger = new StackLogger(WebResource.class.getName(), "WebResource");
     private static final Marker SERVICE_MARKER = MarkerManager.getMarker("SQL");
 
     private final String front_db_user = "front_view";
@@ -154,7 +155,7 @@ public class WebResource {
             prep.setString(2, refUUID);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("addACLEntry", ex);
         }
     }
 
@@ -195,7 +196,7 @@ public class WebResource {
             prep.setString(2, refUUID);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("removeACLEntry", ex);
         }
     }
 
@@ -245,7 +246,7 @@ public class WebResource {
                     sqlList.add(rs1.getString("subject"));
                 }
             } catch (SQLException ex) {
-                logger.catching(ex);
+                logger.catching("getACLwithInfo", ex);
             }
 
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -290,7 +291,7 @@ public class WebResource {
 
             return retList;
         } catch (IOException | ParseException ex) {
-            logger.error("getACL Failed.", ex);
+            logger.catching("getACLwithInfo", ex);
             return null;
         }
     }
@@ -343,7 +344,7 @@ public class WebResource {
                 return "PLUGIN FAILED: Driver Resource did not return successfull";
             }
         } catch (IOException ex) {
-            logger.error("Driver Plugin Failed.", ex);
+            logger.catching("installDriver", ex);
             return "PLUGIN FAILED: Exception" + ex;
         }
 
@@ -405,7 +406,7 @@ public class WebResource {
                 return "PLUGIN FAILED: Driver Resource Failed";
             }
         } catch (IOException ex) {
-            logger.error("Driver Plugin Failed.", ex);
+            logger.catching("installDriverProfile", ex);
             return "PLUGIN FAILED: Exception" + ex;
         }
 
@@ -444,7 +445,7 @@ public class WebResource {
                 inputJSON = (JSONObject) obj;
 
             } catch (ParseException ex) {
-                logger.error("Driver Profile Addition Failed : " + ex.getClass() + " : " + ex.getMessage());
+                logger.catching("addDriver", ex);
             }
 
             String user = (String) inputJSON.get("username");
@@ -468,7 +469,7 @@ public class WebResource {
             prep.setString(6, drivertype);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("addDriver", ex);
         }
     }
 
@@ -506,7 +507,7 @@ public class WebResource {
 
             return "Deleted";
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("deleteDriverProfile", ex);
             return "Failed";
         }
     }
@@ -597,7 +598,7 @@ public class WebResource {
 
             return list;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("getDriver", ex);
             return null;
         }
     }
@@ -674,7 +675,7 @@ public class WebResource {
 
             return retList;
         } catch (IOException | ParseException ex) {
-            logger.error("getUsers Failed.", ex);
+            logger.catching("getUsers", ex);
             return null;
         }
     }
@@ -736,7 +737,7 @@ public class WebResource {
 
             return retList;
         } catch (IOException | ParseException ex) {
-            logger.error("getGroups Failed.", ex);
+            logger.catching("getGroups", ex);
             return null;
         }
     }
@@ -798,7 +799,7 @@ public class WebResource {
 
             return retList;
         } catch (IOException | ParseException ex) {
-            logger.error("getRoles Failed.", ex);
+            logger.catching("getRoles", ex);
             return null;
         }
     }
@@ -838,7 +839,6 @@ public class WebResource {
             conn.setRequestMethod("GET");
             conn.setDoInput(true);
             conn.connect();
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
             StringBuilder responseStr;
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
@@ -860,7 +860,7 @@ public class WebResource {
             }
             return retList;
         } catch (IOException | ParseException ex) {
-            logger.error("getUserGroups Failed.", ex);
+            logger.catching("getUserGroups", ex);
             return null;
         }
     }
@@ -910,7 +910,7 @@ public class WebResource {
 
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException ex) {
-            logger.error("addUserGroup Failed.", ex);
+            logger.catching("addUserGroup", ex);
         }
     }
 
@@ -959,7 +959,7 @@ public class WebResource {
 
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException ex) {
-            logger.error("removeUserGroup Failed.", ex);
+            logger.catching("removeUserGroup", ex);
         }
     }
 
@@ -1080,7 +1080,7 @@ public class WebResource {
 
             return retList;
         } catch (IOException | ParseException ex) {
-            logger.error("getUserRoles Failed.", ex);
+            logger.catching("getUserRoles", ex);
             return null;
         }
     }
@@ -1130,7 +1130,7 @@ public class WebResource {
 
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException ex) {
-            logger.error("addUserRole Failed.", ex);
+            logger.catching("addUserRole", ex);
         }
     }
 
@@ -1179,7 +1179,7 @@ public class WebResource {
 
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException ex) {
-            logger.error("removeUserRole Failed.", ex);
+            logger.catching("removeUserRole", ex);
         }
     }
 
@@ -1228,7 +1228,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("getLabels", ex);
             return null;
         }
     }
@@ -1261,7 +1261,7 @@ public class WebResource {
                 inputJSON = (JSONObject) obj;
 
             } catch (ParseException ex) {
-                logger.error("label Failed.", ex);
+                logger.catching("label", ex);
             }
 
             String user = (String) inputJSON.get("user");
@@ -1284,7 +1284,7 @@ public class WebResource {
 
             return "Added";
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("label", ex);
             return "Failed";
         }
     }
@@ -1323,7 +1323,7 @@ public class WebResource {
 
             return "Deleted";
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("deleteLabel", ex);
             return "Failed";
         }
     }
@@ -1360,7 +1360,7 @@ public class WebResource {
 
             return "Labels Cleared";
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("clearLabels", ex);
             return "Failed";
         }
     }
@@ -1385,7 +1385,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Logging")
     public String getLogLevel() {
-        return logger.getLevel().name();
+        return logger.getLogger().getLevel().name();
     }
 
     /**
@@ -1427,7 +1427,7 @@ public class WebResource {
                 break;
         }
 
-        logger.info("Logging level changed to {}.", level);
+        logger.status("setLogLevel", level);
     }
 
     /**
@@ -1495,7 +1495,7 @@ public class WebResource {
 
             return logArr.toJSONString();
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("getLogs", ex);
             return null;
         }
     }
@@ -1588,7 +1588,7 @@ public class WebResource {
             // Verify user
             String username = authUsername(userId);
             if (username == null) {
-                logger.warn("Logged-in user does not match requested user information!");
+                logger.error("loadInstances", "Logged-in user does not match requested user information");
                 return retList;
             }
 
@@ -1635,14 +1635,14 @@ public class WebResource {
 
                         retList.add(instanceList);
                     } catch (IOException ex) {
-                        logger.error("Instance Status Check Failed.", ex);
+                        logger.catching("loadInstances", ex);
                     }
                 }
             }
 
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("loadInstances", ex);
             return null;
         }
     }
@@ -1658,7 +1658,7 @@ public class WebResource {
             // Verify user
             String username = authUsername(userId);
             if (username == null) {
-                logger.warn("Logged-in user does not match requested user information!");
+                logger.error("loadInstances", "Logged-in user does not match requested user information");
                 return retList;
             }
 
@@ -1692,7 +1692,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("loadWizard", ex);
             return null;
         }
     }
@@ -1733,7 +1733,7 @@ public class WebResource {
             }
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("loadEditor", ex);
             return null;
         }
     }
@@ -1761,7 +1761,7 @@ public class WebResource {
             }
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("loadObjectACL", ex);
             return null;
         }
     }
@@ -1793,7 +1793,7 @@ public class WebResource {
             }
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("loadObjectACL", ex);
             return null;
         }
     }
@@ -1830,7 +1830,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("loadInstanceDetails", ex);
             return null;
         }
     }
@@ -1868,7 +1868,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("loadInstanceDelta", ex);
             return null;
         }
     }
@@ -1905,7 +1905,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("loadInstanceVerification", ex);
             return null;
         }
     }
@@ -1935,7 +1935,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("loadInstanceACL", ex);
             return null;
         }
     }
@@ -1970,7 +1970,7 @@ public class WebResource {
             return retMap;
 
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("getVerificationResults", ex);
             return null;
         }
     }
@@ -2022,7 +2022,7 @@ public class WebResource {
             }
 
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("getVerificationResultsUnion", ex);
             return null;
         }
     }
@@ -2066,7 +2066,7 @@ public class WebResource {
             return "";
 
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("getProfile", ex);
             return null;
         }
     }
@@ -2103,7 +2103,7 @@ public class WebResource {
             prep.executeUpdate();
 
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("editProfile", ex);
         }
     }
 
@@ -2152,7 +2152,7 @@ public class WebResource {
             prep.executeUpdate();
             return null;
         } catch (SQLException | ParseException ex) {
-            logger.catching(ex);
+            logger.catching("newProfile", ex);
             return ex.toString();
         }
     }
@@ -2185,7 +2185,7 @@ public class WebResource {
             prep.executeUpdate();
 
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("deleteProfile", ex);
         }
     }
 
@@ -2220,7 +2220,7 @@ public class WebResource {
             Thread.sleep(300);
             return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID, auth) + "\n";
         } catch (IOException | InterruptedException ex) {
-            logger.catching(ex);
+            logger.catching("checkStatus", ex);
             return null;
         }
     }
@@ -2255,7 +2255,7 @@ public class WebResource {
             Thread.sleep(300);
             return status(svcInstanceUUID, auth);
         } catch (IOException | InterruptedException ex) {
-            logger.catching(ex);
+            logger.catching("subStatus", ex);
         }
         return null;
     }
@@ -2305,7 +2305,7 @@ public class WebResource {
             });
 
         } catch (ParseException ex) {
-            logger.catching(ex);
+            logger.catching("createService", ex);
         }
     }
 
@@ -2344,8 +2344,7 @@ public class WebResource {
     private String doCreateService(JSONObject inputJSON, String auth, String refresh) {
         try {
             long startTime = System.currentTimeMillis();
-            ThreadContext.put("method", "doCreateService");
-            logger.traceEntry();
+            logger.start("doCreateService");
 
             String serviceType = (String) inputJSON.get("type");
             String alias = (String) inputJSON.get("alias");
@@ -2359,7 +2358,7 @@ public class WebResource {
                 Class.forName("com.mysql.jdbc.Driver").newInstance();
 
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
-                logger.catching(ex);
+                logger.catching("doCreateService", ex);
             }
 
             Properties front_connectionProps = new Properties();
@@ -2373,7 +2372,7 @@ public class WebResource {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestProperty("Authorization", auth);
             String refUUID = servBean.executeHttpMethod(url, connection, "GET", null, auth);
-            ThreadContext.put("refUUID", refUUID);
+            logger.refuuid(refUUID);
 
             // Create Parameter Map
             HashMap<String, String> paraMap = new HashMap<>();
@@ -2436,7 +2435,7 @@ public class WebResource {
             prep.setString(2, refUUID);
             prep.executeUpdate();
 
-            logger.info("Initialized.");
+            logger.init();
 
             // Execute service creation.
             switch (serviceType) {
@@ -2452,25 +2451,20 @@ public class WebResource {
                 default:
             }
 
-            long endTime = System.currentTimeMillis();
-            logger.info("Service Creation End, Duration: " + (endTime - startTime) + " ms.");
-
+            long endTime = System.currentTimeMillis();            
             // Return instance UUID
-            logger.traceExit(refUUID);
+            logger.end("doCreateService");
             return refUUID;
 
         } catch (EJBException | SQLException | IOException ex) {
-            logger.catching(ex);
+            logger.catching("doCreateService", ex);
             return "<<<CREATION ERROR: " + ex.getMessage();
         }
     }
 
     private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, String auth, String refresh) {
-        long startTime = System.currentTimeMillis();
-        ThreadContext.put("refUUID", refUUID);
-        ThreadContext.put("method", "doOperate:" + action);
-        logger.traceEntry(action);
-        long endTime;
+        logger.start("doOperate:" + action);
+        logger.refuuid(refUUID);
 
         try {
             clearVerification(refUUID);
@@ -2500,27 +2494,25 @@ public class WebResource {
                 case "delete":
                 case "force_delete":
                     deleteInstance(refUUID, auth);
-
-                    endTime = System.currentTimeMillis();
-                    logger.traceExit(action, "Deletion Complete.\r\n");
+                    
+                    logger.end("doOperate:" + action);
                     return "Deletion Complete.\r\n";
 
                 case "verify":
                 case "reverify":
                     servBean.verify(refUUID, refresh);
-
-                    endTime = System.currentTimeMillis();
-                    logger.traceExit(action, "Verification Complete.\r\n");
+                    
+                    logger.end("doOperate:" + action);
                     return "Verification Complete.\r\n";
 
                 default:
-                    logger.warn("Invalid Action: {}.", action);
+                    logger.warning("doOperate", "Invalid action: " + action);
             }
 
             auth = servBean.refreshToken(refresh);
             String retString = superStatus(refUUID) + " - " + status(refUUID, auth) + "\r\n";
 
-            logger.traceExit(action, retString);
+            logger.end("doOperate:" + action, retString);
             return retString;
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
             try {
@@ -2535,9 +2527,9 @@ public class WebResource {
                 prep.setString(1, refUUID);
                 prep.executeUpdate();
             } catch (SQLException ex2) {
-                logger.catching(ex2);
+                logger.catching("doOperate", ex2);
             }
-            logger.catching(ex);
+            logger.catching("doOperate", ex);
             return "<<<OPERATION ERROR - " + action + ": " + ex.getMessage() + "\r\n";
         }
     }
@@ -2570,7 +2562,7 @@ public class WebResource {
                 return "{verified_addition: \"{ }\",verified_reduction: \"{ }\",unverified_addition: \"{ }\",unverified_reduction: \"{ }\"}";
             }
         } catch (IOException | SQLException ex) {
-            logger.catching(ex);
+            logger.catching("getDeltaBacked", ex);
             return null;
         }
     }
@@ -2656,7 +2648,7 @@ public class WebResource {
                 Thread.sleep(5000);
             }
         } catch (EJBException ex) {
-            logger.error(SERVICE_MARKER, "Error canceling instance with uuid {}", refUuid, ex);
+            logger.catching("cancelInstance", ex);
             return -1;
         }
     }
@@ -2686,7 +2678,7 @@ public class WebResource {
             }
             return -1;
         } catch (EJBException ex) {
-            //Logger.getLogger(serviceBeans.class.getName()).log(Level.SEVERE, null, ex);
+            logger.catching("forceCancelInstance", ex);
             return -1;
         }
     }
@@ -2974,7 +2966,7 @@ public class WebResource {
             prep.setInt(2, instanceID);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("setSupereState", ex);
         }
     }
 
@@ -3069,7 +3061,7 @@ public class WebResource {
 
             return true;
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("clearVerification", ex);
             return false;
         }
     }
@@ -3092,7 +3084,7 @@ public class WebResource {
             }
             return "ERROR";
         } catch (SQLException ex) {
-            logger.catching(ex);
+            logger.catching("superStatus", ex);
             return "ERROR";
         }
     }
