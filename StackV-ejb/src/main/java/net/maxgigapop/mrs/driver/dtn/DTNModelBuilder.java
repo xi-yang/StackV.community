@@ -362,7 +362,7 @@ public class DTNModelBuilder {
                     String taskid = parts[3];
                     Resource TRANSFER = RdfOwl.createResource(model, CLUSTERSERVICE.getURI()+":transfer-"+taskid, dataTransfer);
                     model.add(model.createStatement(CLUSTERSERVICE, hasTransfer, TRANSFER));
-                    Property tag = Mrs.hasTag;
+                    Property tag = Mrs.tag;
                     Property src = Mrs.source;
                     Property dst = Mrs.destination;
                     model.addLiteral(TRANSFER, tag, ResourceFactory.createTypedLiteral(parts[0],XSDDatatype.XSDstring));

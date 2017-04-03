@@ -106,7 +106,6 @@ public class OpenStackNeutronModelBuilder {
         Property hasTopology = Nml.hasTopology;
         Property targetDevice = model.createProperty(model.getNsPrefixURI("mrs") + "target_device");
 
-        Property hasTag = Mrs.hasTag;
         Property hasNetworkAddress = Mrs.hasNetworkAddress;
         Property providesRoutingTable = model.createProperty(model.getNsPrefixURI("mrs") + "providesRoutingTable");
         Property isAlias = Nml.isAlias;
