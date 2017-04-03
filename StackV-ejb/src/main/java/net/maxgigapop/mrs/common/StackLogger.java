@@ -38,13 +38,22 @@ public class StackLogger {
         this.logger = logger;
     }
     
-    public void refuuid(String refUuid) {
-        ThreadContext.put("refUUID", refUuid);
+    public void refuuid(String refuuid) {
+        ThreadContext.put("refuuid", refuuid);
+    }
+    
+    public void targetid(String targetid) {
+        ThreadContext.put("objectid", targetid);
     }
     
     public void init() {
         ThreadContext.put("module", moduleName);
         logger.info(String.format("{\"event\":\"%s.initiate\"}", moduleName));
+    }
+
+    public void init(String entity) {
+        ThreadContext.put("module", moduleName);
+        logger.info(String.format("{\"event\":\"%s.%s.initiate\"}", entity, moduleName));
     }
 
     public void start(String method) {
@@ -74,34 +83,43 @@ public class StackLogger {
     public void status(String method, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
-        //ThreadContext.put("severity", Severity.INFO.name());
-        logger.info(String.format("{\"event\":\"%s.%s\", \"status\"=\"%s\"}", moduleName, method, status));
+        logger.info(String.format("{\"event\":\"%s.%s.status\", \"status\"=\"%s\"}", moduleName, method, status));
     }
     
     public void message(String method, String message) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
-        logger.info(String.format("{\"event\":\"%s.%s\", \"message\"=\"%s\"}", moduleName, method, message));
+        logger.info(String.format("{\"event\":\"%s.%s.message\", \"message\"=\"%s\"}", moduleName, method, message));
     }
     
-    public void trace(String method, String message) {
+    public void trace(String method, String message, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
-        logger.trace(String.format("{\"event\":\"%s.%s\", \"message\"=\"%s\"}", moduleName, method, message));      
+        if (status == null || status.isEmpty()) {
+            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, message));               
+        } else {
+            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"message\"=\"%s\", \"status\"=\"%s\"}", moduleName, method, message, status));   
+        }
     }
     
-    public void warn(String method, String message) {
+    public void trace(String method, String status) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, status));      
+    }
+ 
+    public void warning(String method, String message) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.put("severity", Severity.WARNING.name());
-        logger.warn(String.format("{\"event\":\"%s.%s\", \"message\"=\"%s\"}", moduleName, method, message));        
+        logger.warn(String.format("{\"event\":\"%s.%s.warning\", \"message\"=\"%s\"}", moduleName, method, message));        
     }
 
     public void error(String method, String message, Severity severity) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.put("severity", severity.name());
-        logger.error(String.format("{\"event\":\"%s.%s\", \"message\"=\"%s\", \"severity\"=\"%s\"}", moduleName, method, message, severity.name()));        
+        logger.error(String.format("{\"event\":\"%s.%s.error\", \"message\"=\"%s\", \"severity\"=\"%s\"}", moduleName, method, message, severity.name()));        
     }
     
     public void error(String method, String message) {
@@ -124,7 +142,7 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.put("severity", severity.name());
-        String errMsg = String.format("{\"event\":\"%s.%s\", \"message\"=\"%s\", \"severity\"=\"%s\"}", moduleName, method, message, severity.name());
+        String errMsg = String.format("{\"event\":\"%s.%s.error\", \"message\"=\"%s\", \"severity\"=\"%s\"}", moduleName, method, message, severity.name());
         logger.error(errMsg);
         return new EJBException(errMsg);
     }

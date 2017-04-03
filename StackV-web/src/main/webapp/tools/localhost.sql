@@ -91,16 +91,17 @@ INSERT INTO `label` (`identifier`, `username`, `label`, `color`) VALUES
 DROP TABLE IF EXISTS `log`;
 CREATE TABLE `log` (
   `log_id` int(11) NOT NULL,
-  `marker` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `marker` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   `timestamp` datetime NOT NULL,
   `level` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
   `logger` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
-  `message` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
-  `exception` longtext COLLATE utf8_unicode_ci default NULL,
-  `severity` varchar(10) COLLATE utf8_unicode_ci default NULL,
   `module` varchar(40) COLLATE utf8_unicode_ci NOT NULL,
   `method` varchar(40) COLLATE utf8_unicode_ci default NULL,
-  `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
+  `referenceUUID` varchar(40) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `targetUUID` varchar(40) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `message` longtext COLLATE utf8_unicode_ci NOT NULL,
+  `severity` varchar(10) COLLATE utf8_unicode_ci default NULL,
+  `exception` longtext COLLATE utf8_unicode_ci default NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
