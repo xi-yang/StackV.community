@@ -98,22 +98,6 @@ public class StackLogger {
         logger.info(String.format("{\"event\":\"%s.%s.message\", \"message\"=\"%s\"}", moduleName, method, message));
     }
     
-    public void trace(String method, String message, String status) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        if (status == null || status.isEmpty()) {
-            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, message));               
-        } else {
-            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"message\"=\"%s\", \"status\"=\"%s\"}", moduleName, method, message, status));   
-        }
-    }
-    
-    public void trace(String method, String status) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, status));      
-    }
- 
     public void warning(String method, String message) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
@@ -184,5 +168,21 @@ public class StackLogger {
     
     public EJBException throwing(String method, Exception ex) {
         return throwing(method, ex, Severity.ERROR);
+    }
+    
+    public void trace(String method, String message, String status) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        if (status == null || status.isEmpty()) {
+            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, message));               
+        } else {
+            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"message\"=\"%s\", \"status\"=\"%s\"}", moduleName, method, message, status));   
+        }
+    }
+    
+    public void trace(String method, String status) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, status));      
     }
 }
