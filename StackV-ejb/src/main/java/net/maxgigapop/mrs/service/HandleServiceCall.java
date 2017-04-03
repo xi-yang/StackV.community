@@ -82,7 +82,7 @@ public class HandleServiceCall {
     @EJB
     HandleSystemCall systemCallHandler;
 
-    private final StackLogger logger = new StackLogger(HandleServiceCall.class.getPackage().getName(), "ServiceSession");
+    private final StackLogger logger = new StackLogger(HandleServiceCall.class.getPackage().getName(), "ServiceOrchestrationAPI");
     
     public ServiceInstance createInstance() {
         logger.start("createInstance");
@@ -160,6 +160,7 @@ public class HandleServiceCall {
     
     public SystemDelta compileAddDelta(String serviceInstanceUuid, String workerClassPath, ServiceDelta spaDelta) {
         logger.refuuid(serviceInstanceUuid);
+        logger.targetid(spaDelta.getId());
         logger.start("compileAddDelta");
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
@@ -235,6 +236,7 @@ public class HandleServiceCall {
     // handling multiple deltas:  propagate + commit + query = transactional propagate + parallel commits
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public String propagateDeltas(String serviceInstanceUuid, boolean useCachedVG, boolean refreshForced) {
+        logger.refuuid(serviceInstanceUuid);
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
             throw new EJBException(HandleServiceCall.class.getName() + ".propogateDeltas cannot find serviceInstance with uuid=" + serviceInstanceUuid);
@@ -256,7 +258,9 @@ public class HandleServiceCall {
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getSystemDelta() == null) {
-                continue; // ??
+                logger.targetid(serviceDelta.getId());
+                logger.error("propagateDeltas", "serviceDelta.getSystemDelta() == null");
+                continue; 
             } else if (serviceDelta.getStatus().equals("INIT")) {
                 SystemInstance systemInstance = systemCallHandler.createInstance();
                 try {

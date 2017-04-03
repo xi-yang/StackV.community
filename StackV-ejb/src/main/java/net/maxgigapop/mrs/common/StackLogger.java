@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.common;
 
 import javax.ejb.EJBException;
+import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Marker;
@@ -29,9 +30,13 @@ public class StackLogger {
         this.moduleName = moduleName;
     }
     
-    public StackLogger(String className, String moduleName) {
-        this.logger = LogManager.getLogger(className);
+    public StackLogger(String loggerName, String moduleName) {
+        this.logger = LogManager.getLogger(loggerName);
         this.moduleName = moduleName;
+    }
+    
+    public Logger getLogger() {
+        return this.logger;
     }
     
     public void setLogger(Logger logger) {
@@ -40,10 +45,11 @@ public class StackLogger {
     
     public void refuuid(String refuuid) {
         ThreadContext.put("refuuid", refuuid);
+        ThreadContext.remove("targetid"); // clean up targetID with new refUUID
     }
     
     public void targetid(String targetid) {
-        ThreadContext.put("objectid", targetid);
+        ThreadContext.put("targetid", targetid);
     }
     
     public void init() {
@@ -51,7 +57,7 @@ public class StackLogger {
         logger.info(String.format("{\"event\":\"%s.initiate\"}", moduleName));
     }
 
-    public void init(String entity) {
+    public void init(Object entity) {
         ThreadContext.put("module", moduleName);
         logger.info(String.format("{\"event\":\"%s.%s.initiate\"}", entity, moduleName));
     }
@@ -144,7 +150,9 @@ public class StackLogger {
         ThreadContext.put("severity", severity.name());
         String errMsg = String.format("{\"event\":\"%s.%s.error\", \"message\"=\"%s\", \"severity\"=\"%s\"}", moduleName, method, message, severity.name());
         logger.error(errMsg);
-        return new EJBException(errMsg);
+        String refUUID = ThreadContext.get("refuuid");
+        String targetID = ThreadContext.get("targetid");
+        return new EJBException(String.format("%s-%s-%s", moduleName, method, (refUUID == null ? "" : refUUID), errMsg, (targetID == null ? "" : ":"+targetID)));
     }
 
     public EJBException error_throwing(String method, String message) {

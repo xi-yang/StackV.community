@@ -46,6 +46,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -53,7 +54,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class ServiceManifest {
-    private static final Logger log = Logger.getLogger(ServiceManifest.class.getName());
+    private final StackLogger logger = new StackLogger(HandleServiceCall.class.getPackage().getName(), "ServiceOrchestrationAPI");
     
     static public JSONObject generateManifest (String jsonModel, String serviceType) {
         JSONObject joMan = new JSONObject();
