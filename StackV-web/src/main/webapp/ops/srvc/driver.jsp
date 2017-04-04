@@ -47,13 +47,13 @@
             
             <div style="margin: 0 auto;" class="closed driver-panel no-side-tab" id="driver-panel-top">
                 <ul class="nav nav-tabs catalog-tabs">
-                    <li onclick="tab_fix();" class="active"><a data-toggle="tab" href="#driver-tab">Template Drivers</a></li>
-                    <li onclick="updateDrivers();"><a data-toggle="tab" href="#saved-tab">Saved Drivers</a></li>
+                    <li id="driver-nav-tab" onclick="driver_tab_fix();" class="active"><a>Template Drivers</a></li>
+                    <li id="saved-nav-tab" onclick="saved_tab_fix(); updateDrivers();"><a>Saved Drivers</a></li>
                 </ul>
 
                 <div class="tab-content" id="catalog-tab-content">
                     
-                    <div style="width: 100%; height: 85%; overflow: auto;" id="driver-tab" class="tab-pane fadeIn active">
+                    <div style="width: 100%; height: 85%; overflow: auto; display: block;" id="driver-tab1" class="tab-pane fadeIn">
                         <table class="management-table">
                             <thead>
                                 <tr>
@@ -96,6 +96,13 @@
                                     <td>This is a placement description</td>
                                     <td  style="width: 180px;">
                                         <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                    </td>
+                                </tr> 
+                                <tr>
+                                    <td>Raw</td>
+                                    <td>This is a placement description</td>
+                                    <td  style="width: 180px;">
+                                        <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install' id='install-button'>Install</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -167,7 +174,7 @@
             
             
             
-            <div class="inactive" id="driver-panel-right">
+            <div class="inactive" id="driver-panel-right" style="opacity: 0;">
                 <ul class="nav nav-tabs catalog-tabs">
                     <li style="width: 100%;" id="side-tab"><a id="side-name">Details</a></li>
                 </ul>

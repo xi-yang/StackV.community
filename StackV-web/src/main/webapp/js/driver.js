@@ -23,19 +23,19 @@
 
 /* global XDomainRequest, baseUrl, keycloak */
 
-function tab_fix(){
-    $('#driver-tab').removeClass('active');
-    $('#saved-tab').removeClass('active');
-    $('#driver-tab').addClass('active');
+function driver_tab_fix(){
+    document.getElementById("driver-tab1").style.display = "block";
+    document.getElementById("saved-tab").style.display = "none";
+    document.getElementById("saved-nav-tab").className = "";
+    document.getElementById("driver-nav-tab").className = "active";
 }
 
-function activateDetails(){
-    $('#driver-panel-right').addClass('active-detail');
-    $('#detail-content').addClass('active');
-    $('#driver-panel-top').removeClass('no-side-tab');
-    $('#driver-panel-bot').removeClass('no-side-tab');
-    $('#driver-panel-top').addClass('side-tab');
-    $('#driver-panel-bot').addClass('side-tab');
+
+function saved_tab_fix(){
+    document.getElementById("saved-tab").style.display = "block";
+    document.getElementById("driver-tab1").style.display = "none";
+    document.getElementById("saved-nav-tab").className = "active";
+    document.getElementById("driver-nav-tab").className = "";
 }
 
 function activateSide(){
@@ -45,6 +45,7 @@ function activateSide(){
     $('#driver-panel-bot').removeClass('no-side-tab');
     $('#driver-panel-top').addClass('side-tab');
     $('#driver-panel-bot').addClass('side-tab');
+    document.getElementById("driver-panel-right").style.opacity = "1";
 }
 
 function closeSide(){
@@ -55,7 +56,21 @@ function closeSide(){
     $('#driver-panel-bot').removeClass('side-tab');
     $('#driver-panel-top').addClass('no-side-tab');
     $('#driver-panel-bot').addClass('no-side-tab');
+    document.getElementById("driver-panel-right").style.opacity = "0";
     
+}
+function installRaw(){
+    var first = document.createElement("p");
+    var second = document.createElement("textarea");
+    var divContent = document.getElementById("install-type");
+
+    first.innerHTML= "Enter Raw XML:";
+    first.style.color = "white";
+    second.id = "rawXML";
+    second.rows = "15";
+    second.cols = "45";
+    divContent.appendChild(first);
+    divContent.appendChild(second);
 }
 function installStub(){
     var type = document.createElement("p");
@@ -334,6 +349,17 @@ function changeNameInst() {
     instButton.onclick = function() {installDriver();};
     document.getElementById('install-options').appendChild(instButton);
 }
+function changeNameInstRaw() {
+    var saveButton = document.createElement("button");
+    document.getElementById('side-name').innerHTML="Install";
+    saveButton.innerHTML = "Save Driver";
+    saveButton.onclick = function() {openWindow();};
+    document.getElementById('install-options').appendChild(saveButton);
+    var instButton = document.createElement("button");
+    instButton.innerHTML = "Install Driver";
+    instButton.onclick = function() {plugRaw();};
+    document.getElementById('install-options').appendChild(instButton);
+}
 function openWindow(){
     $('#info-fields').empty();
     $('#info-option').empty();
@@ -422,6 +448,22 @@ function addDriver() {
         }
     });
 }
+function editDriverProfile(clickID){
+    var userId = keycloak.tokenParsed.preferred_username;
+    var topuri = clickID;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/edit/' + topuri;
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result){
+            
+        }
+    });
+}
 //meds to change
 function removeDriverProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
@@ -460,11 +502,12 @@ function updateDrivers() {
                 var cell3 = document.createElement("td");
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
+                var edButton = document.createElement("button");
                 var spacer = document.createElement("div");
                 
                 detButton.innerHTML = "Details";
                 detButton.onclick = function() {clearPanel(); activateSide(); 
-                    activateDetails(); changeNameDet(); getDetailsProfile(this.id);};
+                    changeNameDet(); getDetailsProfile(this.id);};
                 detButton.style.width = "50px";
                 detButton.id = result[i+3];
                 
@@ -473,14 +516,20 @@ function updateDrivers() {
                 delButton.style.width = "50px";
                 delButton.id = result[i+3];
                 
+                edButton.innerHTML = "Edit";
+                edButton.onclick = function() {clearPanel(); activateSide(); 
+                    editDriverProfile(this.id);};
+                edButton.style.width = "50px";
+                edButton.id = result[i+3];
+                
                 spacer.style.width = "25px";
                 
                 drivername.innerHTML = result[i];
                 description.innerHTML = result[i+1];
                 cell3.appendChild(detButton);
-                cell3.appendChild(spacer);
+                cell3.appendChild(edButton);
                 cell3.appendChild(delButton);
-                cell3.style.width = "170px";
+                cell3.style.width = "200px";
                 
                 row.appendChild(drivername);
                 row.appendChild(description);
@@ -490,7 +539,18 @@ function updateDrivers() {
         }
     });
 }
-
+function editDriverProfile(clickID) {
+    getDetailsProfile(clickID);
+    var table = document.getElementById("details_table");
+    for (var i = 1; i < table.rows.length; i++){
+        var row = table.rows[i];
+        var textbox = document.createElement("input");
+        textbox.type = "text";
+        textbox.innerHTML = row.cells[0].value;
+        row.cells[0].value="";
+        row.appendChild(textbox);
+    }
+}
 function getDetailsProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var panel = document.getElementById("install-type");
@@ -503,6 +563,7 @@ function getDetailsProfile(clickID) {
     var headkey = document.createElement("th");
     var headval = document.createElement("th");
     $(table).addClass('management-table');
+    table.id = "details_table";
     headkey.innerHTML = "Key";
     headval.innerHTML = "Value";
     head_row.appendChild(headkey);
@@ -564,7 +625,7 @@ function getAllDetails(){
                 
                 detButton.innerHTML = "Details";
                 detButton.onclick = function() {clearPanel(); activateSide(); 
-                    activateDetails(); changeNameDet(); getDetails(this.id);};
+                    changeNameDet(); getDetails(this.id);};
                 detButton.style.width = "50px";
                 detButton.id = result[i];
                 
@@ -714,4 +775,24 @@ function installDriver(){
             getAllDetails();
         }
     });
+}
+function plugRaw(){
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver';
+    var sentData = document.getElementById("rawXML").value;
+    
+    $.ajax({
+        url: apiUrl,
+        data: sentData,
+        type: 'POST',
+        contentType: "application/xml",
+        dataType: "xml",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            document.getElementById("ret_field").innerHTML = result;
+        }
+    });
+
 }
