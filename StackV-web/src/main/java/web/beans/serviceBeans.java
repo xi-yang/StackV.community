@@ -989,7 +989,7 @@ public class serviceBeans {
                             + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
                             + "    a            spa:PolicyData;\n"
                             + "    spa:type     \"JSON\";\n"
-                            + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
+                            + "    spa:value    \"\"\"" + connCriteriaValue.toString().replace("\\", "") + "\"\"\".\n\n";
                 }
 
                 if (!providesVolume.isEmpty()) {
