@@ -2130,9 +2130,11 @@ public class WebResource {
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
+            
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
             Object obj = parser.parse(inputString);
             JSONObject inputJSON = (JSONObject) obj;
+            
             String name = (String) inputJSON.get("name");
             String description = (String) inputJSON.get("description");
             String inputData = (String) inputJSON.get("data");
@@ -2141,7 +2143,7 @@ public class WebResource {
             JSONObject dataJSON = (JSONObject) obj2;
             String username = authUsername((String) dataJSON.get("userID"));
             String type = (String) dataJSON.get("type");
-
+            
             int serviceID = servBean.getServiceID(type);
 
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (service_id, username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?, ?)");
@@ -2381,7 +2383,6 @@ public class WebResource {
             HashMap<String, String> paraMap = new HashMap<>();
             switch (serviceType) {
                 case "dnc":
-                    paraMap = parseDNC(dataJSON, refUUID);
                     break;
                 case "netcreate":
                     paraMap = parseNet(dataJSON, refUUID);
@@ -2450,6 +2451,9 @@ public class WebResource {
                     break;
                 case "omm":
                     servBean.createOperationModelModification(paraMap, auth);
+                    break;
+                case "dnc":
+                    servBean.createDNC(dataJSON, auth, refresh, refUuid);
                     break;
                 default:
             }
