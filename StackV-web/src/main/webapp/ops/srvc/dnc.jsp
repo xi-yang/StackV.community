@@ -61,6 +61,7 @@
                     
                 </fieldset>
             </form>
+            <!--
             <div>
                 <p style="color: white;">add:</p>
                 <textarea rows="10" cols="100" id="addfield"></textarea>
@@ -70,7 +71,7 @@
                 <button type="button" class="action-button" onclick="test();">Add</button>
                 <button type="button" class="action-button" onclick="del();">Delete</button>
             </div>
-        </div>
+        </div> -->
         <!-- TAG PANEL -->
         <div id="tag-panel">
         </div>
