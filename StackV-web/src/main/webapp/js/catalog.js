@@ -21,30 +21,53 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak */
+/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen */
+// Tweens
+var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.easeInOut, paused: true, top: "30px"});
+var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
+var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 
 $(function () {
     setTimeout(catalogLoad, 750);
     setRefresh(60);
 
+    $("#black-screen").click(function () {
+        $("#info-panel").removeClass("active");
+        closeCatalog();
+    });
+
+    $(".nav-tabs li").click(function () {
+        if ($("#catalog-panel").hasClass("closed")) {
+            openCatalog();
+        } else if (this.className === 'active') {
+            closeCatalog();
+        }
+    });
+
     //$("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
 });
+
+function openCatalog() {
+    tweenCatalogPanel.play();
+    tweenBlackScreen.play();
+    $("#catalog-panel").removeClass("closed");
+}
+function closeCatalog() {
+    tweenCatalogPanel.reverse();
+    tweenBlackScreen.reverse();
+    $("#catalog-panel").addClass("closed");
+}
 
 function catalogLoad() {
     loadInstances();
     loadWizard();
     loadEditor();
-
-    setTimeout(function (){
-        $("#instance-panel").removeClass("closed");
-        $("#catalog-panel").removeClass("closed");
-    }, 250);
 }
 
 function loadInstances() {
+
     var userId = keycloak.subject;
     var tbody = document.getElementById("status-body");
-    $("#status-body").empty();
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
     $.ajax({
@@ -54,12 +77,14 @@ function loadInstances() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
+            $("#status-body").empty();
+
             for (i = 0; i < result.length; i++) {
                 var instance = result[i];
 
                 var row = document.createElement("tr");
                 row.className = "clickable-row";
-                row.setAttribute("data-href", '/StackV-web/ops/details/templateDetails.jsp?uuid=' + instance[1]);
+                row.setAttribute("data-href", instance[1]);
 
                 var cell1_1 = document.createElement("td");
                 cell1_1.innerHTML = instance[3];
@@ -77,16 +102,20 @@ function loadInstances() {
             }
 
             $(".clickable-row").click(function () {
-                window.document.location = $(this).data("href");
+                sessionStorage.setItem("uuid", $(this).data("href"));
+                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
             });
+
+            tweenInstancePanel.play();
         }
     });
+
 }
 
 function loadWizard() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("wizard-body");
-    $("#wizard-body").empty();
+    $("tbody#wizard-body").find("tr").remove();
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/wizard';
     $.ajax({
@@ -96,6 +125,8 @@ function loadWizard() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
+            // unbind all click functions!
+            $("button").off("click");
             for (i = 0; i < result.length; i++) {
                 var profile = result[i];
 
@@ -105,15 +136,17 @@ function loadWizard() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-profile-select btn btn-default' id='" + profile[2] + "'>Select</button><button class='button-profile-delete btn btn-default' id='" + profile[2] + "'>Delete</button>";
+                cell1_3.innerHTML = "<button class='button-profile-select btn btn-default' id='" + profile[2] + "'>Select</button><button class='button-profile-delete btn btn' id='" + profile[2] + "'>Delete</button>";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
 
-            $(".button-profile-select").click(function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
+            $(".button-profile-select").on("click", function (evt) {
+                var resultID = this.id,
+                        apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
+
                 $.ajax({
                     url: apiUrl,
                     type: 'GET',
@@ -122,9 +155,12 @@ function loadWizard() {
                     },
                     success: function (result) {
                         $("#black-screen").removeClass("off");
-                        $("#info-panel").addClass("active");
+                        $("#profile-modal").modal("show");
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(JSON.stringify(result));
+                        $(".button-profile-save").attr('id', resultID);
+                        $(".button-profile-save-as").attr('id', resultID);
+                        $(".button-profile-submit").attr('id', resultID);
                         prettyPrintInfo();
                     },
                     error: function (textStatus, errorThrown) {
@@ -136,7 +172,7 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-delete").click(function (evt) {
+            $(".button-profile-delete").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
                 $.ajax({
                     url: apiUrl,
@@ -145,7 +181,7 @@ function loadWizard() {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
                     success: function (result) {
-                        wizardLoad();
+                        loadWizard();
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
@@ -156,7 +192,7 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-submit").click(function (evt) {
+            $(".button-profile-submit").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
                 $.ajax({
                     url: apiUrl,
@@ -166,15 +202,102 @@ function loadWizard() {
                     dataType: "json",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
-
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
                         console.log(errorThrown);
                     }
                 });
+                // reload top table and hide modal
+                reloadCatalog();
+                $("div#profile-modal").modal("hide");
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+
+            // Hide the regular buttons and reveal the save as box
+            $("button.button-profile-save-as").on("click", function (evt) {
+                $("div.info-panel-regular-buttons").css("display", "none");
+                $("div.info-panel-save-as-description").css("display", "block");
+            });
+
+            // Reveal the regular buttons and hide the save as boxes
+            $("button.button-profile-save-as-cancel").on("click", function (evt) {
+                $("div.info-panel-save-as-description").css("display", "none");
+                $("div.info-panel-regular-buttons").css("display", "block");
+            });
+
+
+            // After the user has put a new name and description for the new profile
+            $(".button-profile-save-as-confirm").on("click", function (evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                var data = {
+                    name: $("#new-profile-name").val(),
+                    userID: keycloak.subject,
+                    description: $("#new-profile-description").val(),
+                    data: $("#info-panel-text-area").val()
+                };
+
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: JSON.stringify(data), //stringify to get escaped JSON in backend
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        // revert to regular buttons and close modal
+                        $("input#new-profile-name").val("");
+                        $("input#new-profile-description").val("");
+                        $("div.info-panel-save-as-description").css("display", "none");
+                        $("div.info-panel-regular-buttons").css("display", "block");
+                        $("div#profile-modal").modal("hide");
+                        // reload table
+                        loadWizard();
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                // reload the bottom panel
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+
+            $(".button-profile-save").on("click", function (evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
+
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: $("#info-panel-text-area").val(),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        // reload the bottom panel
+                        loadWizard();
+                        $("#profile-modal").modal("hide");
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
                 evt.preventDefault();
@@ -221,6 +344,7 @@ function loadEditor() {
     });
 }
 
+/* REFRESH */
 function timerChange(sel) {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
@@ -231,52 +355,56 @@ function timerChange(sel) {
     }
 }
 
+function refreshCountdown() {
+    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+    countdown--;
+}
+
 function setRefresh(time) {
     countdown = time;
     refreshTimer = setInterval(function () {
-        reloadTracker(time);
+        reloadCatalog(time);
     }, (time * 1000));
     countdownTimer = setInterval(function () {
         refreshCountdown(time);
     }, 1000);
 }
 
-function reloadTracker(time) {
-    enableLoading();
-
-    var manual = false;
-    if (typeof time === "undefined") {
-        time = countdown;
-    }
-    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-        manual = true;
-    }
-
-    $('#instance-panel').load(document.URL + ' #status-table', function () {
-        loadInstances();
-
-        $(".clickable-row").click(function () {
-            window.document.location = $(this).data("href");
-        });
-
-        if (manual === false) {
-            countdown = time;
-            document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-        } else {
-            document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-        }
-
+function reloadCatalog(time) {
+    keycloak.updateToken(60).error(function () {
+        console.log("Error updating token!");
+    }).success(function (refreshed) {
+        tweenInstancePanel.reverse();
         setTimeout(function () {
-            disableLoading();
+            if (refreshed) {
+                sessionStorage.setItem("token", keycloak.token);
+                console.log("Token Refreshed by nexus!");
+            }
+
+            var timerSetting = $("#refresh-timer").val();
+            var manual = false;
+            if (typeof time === "undefined") {
+                time = countdown;
+            }
+            if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+                manual = true;
+            }
+
+            $('#instance-panel').load(document.URL + ' #status-table', function () {
+                loadInstances();
+
+                $("#refresh-timer").val(timerSetting);
+                if (manual === false) {
+                    countdown = time;
+                    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+                } else {
+                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+                }
+            });
         }, 750);
     });
 }
 
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
-}
-
 function getURLParameter(name) {
-  return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
 }

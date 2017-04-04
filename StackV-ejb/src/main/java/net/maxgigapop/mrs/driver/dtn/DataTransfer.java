@@ -17,27 +17,36 @@ class DataTransfer implements Serializable {
     private final String source;
     private final String destination;
     private final String task_id;
-    private String parallelism;
-    private String concurrency;
-    private String pipeline;
+    private long bytes_transferred;
+    private long files_transferred;
+    private int parallelism;
+    private int concurrency;
+    private long request_time;
+    private long completion_time;
+    private double mbits_sec;
     private String protocol;
-
+    private long backgroud_transfers;
+    private String backgroud_traffic;
+    
     public DataTransfer(String task_id, String source, String destination) {
         this.task_id = task_id;
         this.source = source;
         this.destination = destination;
     }
 
-    public void setParallelism(String parallelism) {
-        this.parallelism = parallelism;
+    public void setDetails(long bt, long ft, int p, int cc, long rt, long ct, double mbits) {
+        this.bytes_transferred = bt;
+        this.files_transferred = ft;
+        this.parallelism = p;
+        this.concurrency = cc;        
+        this.request_time = rt;
+        this.completion_time = ct;
+        this.mbits_sec = mbits;        
     }
-
-    public void setConcurrency(String concur) {
-        this.concurrency = concur;
-    }
-
-    public void setPipeline(String pipe) {
-        this.pipeline = pipe;
+    
+    public void setBackgroud(long at, String traffic){       
+        this.backgroud_transfers = at;
+        this.backgroud_traffic = traffic;
     }
 
     public void setProtocol(String protocol) {
@@ -56,28 +65,24 @@ class DataTransfer implements Serializable {
         return this.task_id;
     }
 
-    public String getParallelism() {
-        return this.parallelism;
-    }
-
-    public String getConcurrency() {
-        return this.concurrency;
-    }
-
-    public String getPipeline() {
-        return this.pipeline;
-    }
-
     public String getProtocol() {
         return this.protocol;
     }
 
     @Override
     public String toString() {
-        String tmp = null;
-        tmp += "Source=" + this.source;
-        tmp += "|Destination=" + this.destination;
-        tmp += "|Protocol=" + this.protocol;
+        String tmp = this.source + ";"
+                    + this.destination + ";"
+                    + this.task_id + ";"
+                    + this.bytes_transferred + ";"
+                    + this.files_transferred + ";"
+                    + this.parallelism + ";"
+                    + this.concurrency + ";"
+                    + this.request_time + ";"
+                    + this.completion_time + ";"
+                    + this.mbits_sec + ";"
+                    + this.backgroud_transfers + ";"
+                    + this.backgroud_traffic;
         return tmp;
     }
 

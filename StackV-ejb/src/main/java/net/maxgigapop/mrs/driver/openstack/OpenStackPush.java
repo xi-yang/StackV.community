@@ -40,9 +40,12 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
 import org.json.simple.JSONArray;
@@ -99,10 +102,6 @@ public class OpenStackPush {
 
     private String defaultFlavor;
 
-    /*public static void main(String[] args) {
-     OpenStackPush test = new OpenStackPush();
-
-     }*/
     public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, 
         String adminUsername, String adminPassword, String adminTenant, String topologyUri, String defaultImage, String defaultFlavor) {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
@@ -138,6 +137,8 @@ public class OpenStackPush {
         List<JSONObject> requests = new ArrayList();
 
         //get all the requests
+        requests.addAll(nfsRequests(modelRef, modelReduct, false));
+        requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
         requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
         requests.addAll(sriovRequests(modelRef, modelReduct, false));
@@ -164,6 +165,8 @@ public class OpenStackPush {
         requests.addAll(sriovRequests(modelRef, modelAdd, true));
         requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
+        requests.addAll(globusConnectRequests(modelRef, modelAdd, true));
+        requests.addAll(nfsRequests(modelRef, modelAdd, true));
 
         return requests;
     }
@@ -308,6 +311,9 @@ public class OpenStackPush {
                     for (String secgroup : sgs) {
                         SecurityGroupAddCheck(s.getId(), secgroup);
                     }
+                }
+                if (o.containsKey("alt name")) {
+                    client.setMetadata(o.get("server name").toString(), "alt name", o.get("alt name").toString());
                 }
             } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
                 Server server = client.getServer(o.get("server name").toString());
@@ -720,6 +726,11 @@ public class OpenStackPush {
                 String floatip = o.get("floating ip").toString();
                 Server s = client.getServer(servername);
                 Port p = client.getPort(portname);
+                //@TODO: check if floating ip is already associated with other VM/port
+                NetFloatingIP fipObj = client.findFloatingIp(floatip);
+                if (fipObj == null || fipObj.getFixedIpAddress() != null) {
+                    throw new EJBException("floating IP does not exist or has been associated with other instance / port: " + floatip);                    
+                }
                 ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, ((IP)p.getFixedIps().toArray()[0]).getIpAddress(), floatip);
             } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
@@ -764,6 +775,7 @@ public class OpenStackPush {
                     }
                     JSONArray routes = new JSONArray();
                     int routeNum = 0;
+                    JSONObject defaultRoute = null;
                     while (o2.containsKey(String.format("routeto %d", routeNum)) && o2.containsKey(String.format("nexthop %d", routeNum))) {
                         JSONObject route = new JSONObject();
                         String routeTo = o2.get(String.format("routeto %d", routeNum)).toString();
@@ -771,7 +783,15 @@ public class OpenStackPush {
                         route.put("to", routeTo);
                         route.put("via", nextHop);
                         routes.add(route);
+                        if (routeTo.equals("default") || routeTo.equals("0.0.0.0/0")) {
+                            defaultRoute = route;
+                        }
                         routeNum++;
+                    }
+                    // make sure default route is handled last 
+                    if (defaultRoute != null) { 
+                        routes.remove(defaultRoute);
+                        routes.add(defaultRoute);
                     }
                     // add routes even is empty
                     metaObj.put("routes", routes);
@@ -785,6 +805,49 @@ public class OpenStackPush {
                     String servername = (String)obj;
                     client.setMetadata(servername, "sriov_vnic:status", "create");
                 }
+            } else if ((o.get("request").toString().equals("CreateVirtualRouterRequest") || o.get("request").toString().equals("DeleteVirtualRouterRequest"))
+                    && o.get("routing table").equals("linux")) {
+                String servername = o.get("server name").toString();
+                String operation = "create";
+                if (o.get("request").toString().equals("DeleteVirtualRouterRequest")) {
+                    operation = "delete";
+                }
+                int routeNum = 1;
+                while (o.containsKey(String.format("route %d", routeNum))) {
+                    Map o2 = (Map) o.get(String.format("route %d", routeNum));
+                    JSONObject jsonRoute = new JSONObject();
+                    jsonRoute.put("status", operation);
+                    if (o2.containsKey("name")) {
+                        jsonRoute.put("uri", (String) o2.get("name"));
+                    }
+                    if (o2.containsKey("route to")) {
+                        String addrValue = (String) o2.get("route to");
+                        if (addrValue.contains("=")) {
+                            addrValue = addrValue.split("=")[1];
+                        }
+                        jsonRoute.put("to", addrValue);
+                    }
+                    if (o2.containsKey("next hop")) {
+                        String addrValue = (String) o2.get("next hop");
+                        String[] typeValue = addrValue.split("=");
+                        if (typeValue.length == 1) {
+                            jsonRoute.put("via", addrValue);
+                        } else if (typeValue[0].startsWith("ip")) {
+                            jsonRoute.put("via", typeValue[1]);                            
+                        } else if (typeValue[0].startsWith("dev")) {
+                            jsonRoute.put("dev", typeValue[1]);                            
+                        }
+                    }
+                    if (o2.containsKey("route from")) {
+                        String addrValue = (String) o2.get("route from");
+                        if (addrValue.contains("=")) {
+                            addrValue = addrValue.split("=")[1];
+                        }
+                        jsonRoute.put("from", addrValue);
+                    }
+                    client.setMetadata(servername, String.format("linux:route:%d", routeNum), jsonRoute.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/"));
+                    routeNum++;
+                }                
             } else if (o.get("request").toString().equals("CreateVirtualRouterRequest") && o.get("routing table").equals("quagga-bgp")) {
                 // OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 // handling only Quagga BGP for now
@@ -930,6 +993,26 @@ public class OpenStackPush {
                 if (status.equals("delete")) {
                     CephRbdDeletionCheck(servername, deviceId);
                 }
+            } else if (o.get("request").toString().equals("GlobusConnectRequest")) {
+                String servername = (String) o.get("server name");
+                String globusUser = (String) o.get("username");
+                String globusPass = (String) o.get("password");
+                String shortName = (String) o.get("shortname");
+                String defaultDir = (String) o.get("directory");
+                String dataInterface = (String) o.get("interface");
+                String endpointUri = (String) o.get("uri");
+                String status =  (String) o.get("status");
+                client.setMetadata(servername, "globus:info", String.format("{'user':'%s','password':'%s','shortname':'%s','directory':'%s','interface':'%s','status':'%s'}", 
+                        globusUser, globusPass, shortName, defaultDir, dataInterface, status));
+                client.setMetadata(servername, "globus:info:uri", endpointUri);
+            } else if (o.get("request").toString().equals("NfsRequest")) {
+                String servername = (String) o.get("server name");
+                String nfsExports = (String) o.get("exports");
+                String endpointUri = (String) o.get("uri");
+                String status =  (String) o.get("status");
+                client.setMetadata(servername, "nfs:info", String.format("{'exports':%s,'status':'%s'}", 
+                        nfsExports, status));
+                client.setMetadata(servername, "nfs:info:uri", endpointUri);
             } 
         }
     }
@@ -1479,6 +1562,25 @@ public class OpenStackPush {
             JSONObject o = new JSONObject();
 
             if (creation == true) {
+                // check if floating ip already exists in modelRef
+                String query2 = "SELECT ?node ?port WHERE {"
+                        + "?node nml:hasBidirectionalPort ?port ."
+                        + "?node a nml:Node. "
+                        + "?port mrs:hasNetworkAddress ?addr. "
+                        + "?addr mrs:type \"floating-ip\". "
+                        + String.format("?addr mrs:value \"%s\". ", floatingIp)
+                        + "}";
+                ResultSet r2 = executeQuery(query2, emptyModel, modelRef);
+                if (r2.hasNext()) {
+                    q = r2.next();
+                    server = q.get("node");
+                    port = q.get("port");
+                    servername = server.asResource().toString();
+                    serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
+                    portname = port.asResource().toString();
+                    portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
+                    throw new EJBException(String.format("floating IP '%s' is in use by server '%s' port '%s'", floatingIp, serverName, portName));
+                }
                 o.put("request", "AssociateFloatingIpRequest");
                 o.put("server name", serverName);
                 o.put("port name", portName);
@@ -1509,8 +1611,9 @@ public class OpenStackPush {
         String query;
 
         //1 check for any operation involving a server
-        query = "SELECT ?server ?port WHERE {"
-                + "?server a nml:Node"
+        query = "SELECT ?server ?port ?name WHERE {"
+                + "?server a nml:Node. "
+                + "OPTIONAL { ?server nml:name ?name. }" 
                 + "}";
         ResultSet r = executeQuery(query, modelDelta, emptyModel);//here modified 
 
@@ -1520,7 +1623,10 @@ public class OpenStackPush {
             String servername = vm.asResource().toString();
             String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
             Server server = client.getServer(serverName);
-
+            String serverAltName = "";
+            if (q.contains("name")) {
+                serverAltName = q.get("name").toString();
+            }
             //1.1 check if the desired operation is a valid operation
             if (server == null ^ creation) //check if server needs to be created or deleted
             {
@@ -1538,7 +1644,8 @@ public class OpenStackPush {
                 }
                 QuerySolution q1 = r1.next();
                 RDFNode hypervisorService = q1.get("service");
-                String hyperVisorServiceName = hypervisorService.asResource().toString().replace(topologyUri, "");//need to change here
+                
+                
 
                 //1.3 check that service is a hypervisor service
                 query = "SELECT ?type WHERE { ?type a mrs:HypervisorService}";//modified here
@@ -1673,6 +1780,9 @@ public class OpenStackPush {
                 }
                 if (hostName != null && !hostName.isEmpty()) {
                     o.put("host name", hostName);
+                }
+                if (serverAltName != null && !serverAltName.isEmpty()) {
+                    o.put("alt name", serverAltName);
                 }
                 //1.10.1 put all the ports in the request
                 int index = 0;
@@ -1827,15 +1937,22 @@ public class OpenStackPush {
         HashMap<String, String> routinginfo = new HashMap<String, String>();
         JSONObject o = new JSONObject();
         //1 find out if any new routes are being add to the model
-        query = "SELECT ?rtservice ?rttable ?route ?nextHop ?routeTo WHERE {"
+        query = "SELECT ?rtservice ?rttable ?route ?nextHop ?routeTo ?rttype WHERE {"
                 + "?rtservice mrs:providesRoutingTable ?rttable. "
                 + "?rttable mrs:hasRoute ?route. "
                 + "?route a mrs:Route ."
                 + "?route mrs:nextHop ?nextHop ."
-                + "?route mrs:routeTo ?routeTo}";
+                + "?route mrs:routeTo ?routeTo "
+                + "OPTIONAL {?rttable mrs:type ?rttype} }";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution q = r.next();
+            if (q.contains("rttype")) {
+                String rtType = q.get("rttype").toString();
+                if (rtType.equals("quagga") || rtType.equals("linux")) {
+                    continue;
+                }
+            }
             RDFNode routeResource = q.get("route");
             RDFNode nextHopResource = q.get("nextHop");
             RDFNode routeToResource = q.get("routeTo");
@@ -2343,7 +2460,7 @@ public class OpenStackPush {
                     + String.format("<%s> mrs:hasRoute ?route .", rtTable.getURI())
                     + "OPTIONAL {?route mrs:routeTo ?route_to. "
                     + "     ?route_to mrs:type ?route_to_type. "
-                    + "     ?route_to mrs:value ?troute_to_value. } ."
+                    + "     ?route_to mrs:value ?route_to_value. } ."
                     + "OPTIONAL {?route mrs:routeFrom ?route_from. "
                     + "     ?route_from mrs:type ?route_from_type. "
                     + "     ?route_from mrs:value ?route_from_value. } ."
@@ -2357,7 +2474,7 @@ public class OpenStackPush {
                 QuerySolution q3 = r3.next();
                 JSONObject jsonRoute = new JSONObject();
                 Resource route = q3.getResource("route");
-                jsonRoute.put("name", route.getURI());
+                jsonRoute.put("name", route.getURI()); 
                 Resource routeTo = q3.contains("route_to") ? q3.getResource("route_to") : null;
                 if (routeTo != null) {
                     String routeToType = q3.get("route_to_type").toString();
@@ -2463,6 +2580,102 @@ public class OpenStackPush {
         return requests;
     }
 
+    private List<JSONObject> globusConnectRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query = "SELECT ?vm ?ep ?shortname ?username ?password ?directory ?interface  WHERE {"
+                + "?vm nml:hasService ?ep. "
+                + "?ep a mrs:EndPoint. "
+                + "?ep mrs:type \"globus:connect\". "
+                + "?ep nml:name ?shortname. "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naUsername. "
+                + "     ?naUsername mrs:type \"globus:username\"."
+                + "     ?naUsername mrs:value ?username. "
+                + "     ?ep mrs:hasNetworkAddress ?naPassword. "
+                + "     ?naPassword mrs:type \"globus:password\"."
+                + "     ?naPassword mrs:value ?password. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naDirecotry. "
+                + "     ?naDirecotry mrs:type \"globus:directory\". "
+                + "     ?naDirecotry mrs:value ?directory. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naInterface. "
+                + "     ?naInterface mrs:type \"globus:interface\". "
+                + "     ?naInterface mrs:value ?interface. } "
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject o = new JSONObject();
+            requests.add(o);
+            o.put("request", "GlobusConnectRequest");
+            if (creation == true) {
+                o.put("status", "create");
+            } else {
+                o.put("status", "delete");
+            }
+            String vmUri = q.getResource("vm").getURI();
+            String serverName = ResourceTool.getResourceName(vmUri, OpenstackPrefix.vm);
+            o.put("server name", serverName);
+            String shortName = q.get("shortname").toString();
+            o.put("shortname", shortName);
+            String userName = "";
+            if (q.contains("username")) {
+                userName = q.get("username").toString();
+            }
+            o.put("username", userName);
+            String userPass = "";
+            if (q.contains("password")) {
+                userPass = q.get("password").toString();
+            }
+            o.put("password", userPass);
+            String defaultDir = "";
+            if (q.contains("directory")) {
+                defaultDir = q.get("directory").toString();
+            }
+            o.put("directory", defaultDir);
+            String dataInterface = "";
+            if (q.contains("interface")) {
+                dataInterface = q.get("interface").toString();
+            }
+            o.put("interface", dataInterface);
+            String endpointUri = q.getResource("ep").getURI();
+            o.put("uri", endpointUri);
+        }
+        return requests;
+    }
+    
+    private List<JSONObject> nfsRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+        List<JSONObject> requests = new ArrayList();
+        String query = "SELECT ?vm ?ep ?exports  WHERE {"
+                + "?vm nml:hasService ?ep. "
+                + "?ep a mrs:EndPoint. "
+                + "?ep mrs:type \"nfs\". "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naExports. "
+                + "     ?naExports mrs:type \"nfs:exports\". "
+                + "     ?naExports mrs:value ?exports. } "
+                + "}";
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject o = new JSONObject();
+            requests.add(o);
+            o.put("request", "NfsRequest");
+            if (creation == true) {
+                o.put("status", "create");
+            } else {
+                o.put("status", "delete");
+            }
+            String vmUri = q.getResource("vm").getURI();
+            String serverName = ResourceTool.getResourceName(vmUri, OpenstackPrefix.vm);
+            o.put("server name", serverName);
+            String exports = "[]";
+            if (q.contains("exports")) {
+                exports = q.get("exports").toString();
+            }
+            o.put("exports", exports);
+            String endpointUri = q.getResource("ep").getURI();
+            o.put("uri", endpointUri);
+        }
+        return requests;
+    }    
     /**
      * ****************************************************************
      * function that executes a query using a model addition/subtraction and a

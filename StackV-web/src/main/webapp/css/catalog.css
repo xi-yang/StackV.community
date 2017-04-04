@@ -1,120 +1,103 @@
 ul.catalog-tabs li {
-  width: 50%;
+    width: 50%;
 }
 ul.catalog-tabs li a {
-  color: #c7c7c7;
-  border: 1px solid #FFF;
-  background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/StackV-web/img/background.png');
+    color: #c7c7c7;
+    border: 1px solid #FFF;
+    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/StackV-web/img/background.png');
 }
 ul.catalog-tabs li a:hover {
-  color: #FFF;
+    color: #FFF;
 }
 ul.catalog-tabs li.active a {
-  background: white;
+    background: white;
 }
 ul.catalog-tabs li.active a:hover {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 button#button-service-cancel {
-  color: #B60000;
-  margin-left: 75%;
-  position: relative;
+    color: #B60000;
+    margin-left: 75%;
+    position: relative;
 }
 
 button.button-header {
-  background-color: #50657c;
-  float: right;
-  border: 0
+    background-color: #50657c;
+    float: right;
+    border: 0
 }
 
 /*Not quite sure if this belongs in this page... but we'll stick it here for now*/
 div.service-instance-panel {
-  float: right;
+    float: right;
 }
 div#refresh-panel {
-  display: inline;
-  vertical-align: text-top;
-  color: #ffffff;
-  float: right;
-  margin-right: 10px;
-  margin-left: 10px;
+    display: inline;
+    vertical-align: text-top;
+    color: #ffffff;
+    float: right;
+    margin-right: 10px;
+    margin-left: 10px;
 }
 
 div#instance-panel {
-  left: 40px;
-  padding: 5px 5px;
-  height: calc(90% - 42px);
-  width: calc(100% - 80px);
-  position: absolute;
-  overflow-y: scroll;
+    left: 40px;
+    padding: 5px 5px;
+    height: calc(90% - 42px);
+    width: calc(100% - 80px);
+    position: absolute;
+    overflow-y: scroll;
+    top: calc(-90% + 42px);
 }
-div#instance-panel.closed {
-  overflow: hidden;
-  left: 100%;
-  padding: 0px;
-}
-div#instance-panel::-webkit-scrollbar {
-  width: 0px;  /* remove scrollbar space */
-  background: transparent;  /* optional: just make scrollbar invisible */
-}
-/*Animations for both instance panel and catalog panel*/
-div#instance-panel, div#catalog-panel {
-  -webkit-transition: all .75s ease-in;
-  -moz-transition: all .75s ease-in;
-  -o-transition: all .75s ease-in;
-  -ms-transition: all .75s ease-in;
-  transition: all .5s ease;
-}
+
 
 /*Make content within tab scrollable*/
 div.tab-content {
-  overflow-y: auto;
+    overflow-y: auto;
 }
 
 div#catalog-panel {
-  padding: 10px 10px 0 10px;
-  bottom: 0;
-  left: 10%;
-  height: 50%;
-  width: 80%;
-  position: fixed;
-}
-div#catalog-panel.closed {
-  overflow: hidden;
-  height: 42px;
+    padding: 10px 10px 0 10px;
+    bottom: calc(-45% + 42px);
+    left: 0;
+    /*overflow: scroll;*/
+    height: 45%;
+    width: 80%;
+    position: fixed;
+    z-index: 5;
 }
 
 table#status-table {
-  margin: 20px auto;
-  width: 80%;
-  max-height: 100%;
+    margin: 0px auto auto auto;
+    width: 80%;
+    max-height: 100%;
 }
 table#status-table th {
-  padding-top: 12px;
-  padding-bottom: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
 }
 table#status-table tr {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 div#catalog-tab-content {
-  padding-top: 20px;
-  background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/StackV-web/img/background.png');
-  width: 100%;
-  height: calc(100% - 32px);
-  border-right: 1px solid white;
-  border-left: 1px solid white;
+    padding-top: 20px;
+    background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/StackV-web/img/background.png');
+    width: 100%;
+    height: calc(100% - 32px);
+    border-right: 1px solid white;
+    border-left: 1px solid white;
 }
 
 /*Don't show these buttons on open - only trigger when click on save as*/
 div.info-panel-save-as-description {
-  display: none;
+    display: none;
 }
 div#profile-modal div.info-panel-save-as-description input {
-  font-weight: 400;
+    font-weight: 400;
 }
 div#profile-modal textarea#info-panel-text-area {
-  width: 100%;
-  min-height: 600px;
+    width: 100%;
+    min-height: 600px;
 }

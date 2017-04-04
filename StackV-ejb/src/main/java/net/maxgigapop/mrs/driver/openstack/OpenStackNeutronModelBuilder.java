@@ -23,8 +23,6 @@
  */
 package net.maxgigapop.mrs.driver.openstack;
 
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.ec2.model.Instance;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.ResultSet;
@@ -32,7 +30,6 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,21 +38,16 @@ import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
-import static net.maxgigapop.mrs.common.Mrs.hasNetworkAddress;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
-import net.maxgigapop.mrs.service.compute.MCE_NfvBgpRouting;
-import org.apache.commons.net.util.SubnetUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.openstack4j.api.OSClient;
-import org.openstack4j.api.networking.RouterService;
 import org.openstack4j.model.compute.Server;
 import org.openstack4j.model.compute.ext.Hypervisor;
-import org.openstack4j.model.network.AllowedAddressPair;
 import org.openstack4j.model.network.HostRoute;
 import org.openstack4j.model.network.IP;
 import org.openstack4j.model.network.NetFloatingIP;
@@ -63,12 +55,8 @@ import org.openstack4j.model.network.Network;
 import org.openstack4j.model.network.Pool;
 import org.openstack4j.model.network.Port;
 import org.openstack4j.model.network.Router;
-import org.openstack4j.model.network.RouterInterface;
 import org.openstack4j.model.network.Subnet;
 import org.openstack4j.model.storage.block.Volume;
-import org.openstack4j.openstack.compute.domain.NovaFloatingIP;
-import org.openstack4j.openstack.networking.domain.AddRouterInterfaceAction;
-import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 
 /**
  *
@@ -159,13 +147,19 @@ public class OpenStackNeutronModelBuilder {
         model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
 
         for (Hypervisor hv : openstackget.getHypervisors()) {
-            //@TODO: hypervisor to host mapping by naming convention or configuration
             String hypervisorName = hv.getHypervisorHostname(); 
             String hostName = hypervisorName.split("\\.")[0]; 
             Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostName, Nml.Node);
             Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorName, Mrs.HypervisorService);
             model.add(model.createStatement(OpenstackTopology, hasNode, HOST));
             model.add(model.createStatement(HOST, hasService, HYPERVISOR));
+            // hypervisor / host available resources 
+            model.add(model.createStatement(HOST, Mrs.num_core, Integer.toString(hv.getVirtualCPU())));
+            model.add(model.createStatement(HOST, Mrs.memory_mb, Integer.toString(hv.getLocalMemory())));
+            model.add(model.createStatement(HOST, Mrs.disk_gb, Integer.toString(hv.getLocalDisk())));
+            model.add(model.createStatement(HYPERVISOR, Mrs.num_core, Integer.toString(hv.getVirtualUsedCPU())));
+            model.add(model.createStatement(HYPERVISOR, Mrs.memory_mb, Integer.toString(hv.getLocalMemoryUsed())));
+            model.add(model.createStatement(HYPERVISOR, Mrs.disk_gb, Integer.toString(hv.getLocalDiskUsed())));
         }
         
         for (Port p : openstackget.getPorts()) {
@@ -213,15 +207,77 @@ public class OpenStackNeutronModelBuilder {
             model.add(model.createStatement(VM, type, "image+" + imageid));
             model.add(model.createStatement(VM, type, "flavor+" + flavorid));
             model.add(model.createStatement(VM, type, "keypair+" + keypair));
-
+            model.add(model.createStatement(VM, Mrs.num_core, Integer.toString(server.getFlavor().getVcpus())));
+            model.add(model.createStatement(VM, Mrs.memory_mb, Integer.toString(server.getFlavor().getRam())));
+            model.add(model.createStatement(VM, Mrs.disk_gb, Integer.toString(server.getFlavor().getDisk())));
+            
             for (Port port : openstackget.getServerPorts(server)) {
                 String PortName = openstackget.getResourceName(port);
                 Resource Port = RdfOwl.createResource(model, ResourceTool.getResourceUri(PortName, OpenstackPrefix.PORT, PortName), biPort);
                 model.add(model.createStatement(VM, hasBidirectionalPort, Port));
             }
             Map<String, String> metadata = openstackget.getMetadata(server);
-            //Quagga BGP routing table  
+            //Linux and Quagga BGP routing tables  
             Resource vmRoutingSvc = null;
+            Resource vmLinuxRtTable = null;
+            int linuxRouteNum = 1;
+            while (metadata != null && metadata.containsKey("linux:route:" + linuxRouteNum)) {
+                if (vmRoutingSvc == null) {
+                    vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
+                    model.add(model.createStatement(VM, Nml.hasService, vmRoutingSvc));
+                    vmLinuxRtTable = RdfOwl.createResource(model, vmRoutingSvc.getURI() + ":routingtable+linux", Mrs.RoutingTable);
+                    model.add(model.createStatement(vmRoutingSvc, Mrs.providesRoutingTable, vmLinuxRtTable));
+                }
+                JSONParser parser = new JSONParser();
+                try {
+                    String metaJson = (String) metadata.get("linux:route:" + linuxRouteNum);
+                    metaJson = metaJson.replaceAll("\'", "\"");
+                    JSONObject linuxRoute = (JSONObject) parser.parse(metaJson);
+                    if (!linuxRoute.containsKey("status") || !linuxRoute.get("status").toString().equals("up")) {
+                        linuxRouteNum++;
+                        continue;
+                    }
+                    String routeUri = null;
+                    if (linuxRoute.containsKey("uri")) {
+                        routeUri = linuxRoute.get("uri").toString();
+                    } else {
+                        routeUri = vmLinuxRtTable.getURI() + ":route+" + linuxRouteNum;
+                    }
+                    Resource resLinuxRoute = RdfOwl.createResource(model, routeUri, Mrs.Route);
+                    model.add(model.createStatement(vmLinuxRtTable, Mrs.hasRoute, resLinuxRoute));
+                    if (linuxRoute.containsKey("to")) {
+                        String netAddr = linuxRoute.get("to").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":route_to", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "ipv4-prefix"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
+                    }
+                    if (linuxRoute.containsKey("from")) {
+                        String netAddr = linuxRoute.get("from").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":route_from", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "ipv4-prefix-list"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
+                    }
+                    if (linuxRoute.containsKey("via")) {
+                        String netAddr = linuxRoute.get("via").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":next_hop", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "ipv4-address"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
+                    }
+                    if (linuxRoute.containsKey("dev")) {
+                        String netAddr = linuxRoute.get("dev").toString();
+                        Resource resNetAddr = RdfOwl.createResource(model, resLinuxRoute.getURI() + ":next_hop_dev", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resLinuxRoute, Mrs.routeTo, resNetAddr));
+                        model.add(model.createStatement(resNetAddr, Mrs.type, "device"));
+                        model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
+                    }
+                } catch (ParseException e) {
+                    log.warning("OpenStackNeutronModelBuilder:createOntology() cannot parse json string due to: " + e.getMessage());
+                }
+                linuxRouteNum++;
+            }
             if (metadata != null && metadata.containsKey("quagga:bgp:info")) {
                 if (vmRoutingSvc == null) {
                     vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
@@ -440,6 +496,85 @@ public class OpenStackNeutronModelBuilder {
                 } catch (ParseException e) {
                     Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
                             String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), cephRbdJson, cephRbdKey));
+                }
+            }
+            // Globus Connect Service
+            if (metadata != null && metadata.containsKey("globus:info")) {
+                String globusJson = metadata.get("globus:info");
+                JSONParser parser = new JSONParser();
+                try {
+                    globusJson = globusJson.replaceAll("'", "\""); // single quotes into double quotes
+                    JSONObject jsonObj = (JSONObject) parser.parse(globusJson);
+                    if (!jsonObj.get("status").equals("up")) {
+                        continue;
+                    }
+                    String shortName = jsonObj.get("shortname").toString();
+                    String userName = jsonObj.get("user").toString();
+                    //## Do not expose password
+                    String defautDir = jsonObj.get("directory").toString();
+                    String dataInterface = jsonObj.get("interface").toString();
+                    String endpointUri = "";
+                    if (metadata.containsKey("globus:info:uri")) {
+                        endpointUri = metadata.get("globus:info:uri");
+                    } else {
+                        endpointUri = VM.getURI() + ":globus+" + shortName;
+                    }
+                    Resource resGlobus = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
+                    model.add(model.createStatement(VM, Nml.hasService, resGlobus));
+                    model.add(model.createStatement(resGlobus, Nml.name, shortName));
+                    model.add(model.createStatement(resGlobus, Mrs.type, "globus:connect"));
+                    if (!userName.isEmpty()) {
+                        Resource resNA = RdfOwl.createResource(model, endpointUri+":username", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resNA, Mrs.type, "globus:username"));
+                        model.add(model.createStatement(resNA, Mrs.type, userName));
+                        model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
+                    }
+                    if (!defautDir.isEmpty()) {
+                        Resource resNA = RdfOwl.createResource(model, endpointUri+":directory", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resNA, Mrs.type, "globus:directory"));
+                        model.add(model.createStatement(resNA, Mrs.type, defautDir));
+                        model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
+                    }
+                    if (!dataInterface.isEmpty()) {
+                        Resource resNA = RdfOwl.createResource(model, endpointUri+":interface", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resNA, Mrs.type, "globus:interface"));
+                        model.add(model.createStatement(resNA, Mrs.type, dataInterface));
+                        model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
+                    }
+                } catch (ParseException e) {
+                    Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
+                            String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), globusJson, "globus:info"));
+                }
+            }
+            // NFS Service
+            if (metadata != null && metadata.containsKey("nfs:info")) {
+                String nfsJson = metadata.get("nfs:info");
+                JSONParser parser = new JSONParser();
+                try {
+                    nfsJson = nfsJson.replaceAll("'", "\""); // single quotes into double quotes
+                    JSONObject jsonObj = (JSONObject) parser.parse(nfsJson);
+                    if (!jsonObj.get("status").equals("up")) {
+                        continue;
+                    }
+                    String exports = jsonObj.get("exports").toString();
+                    String endpointUri = "";
+                    if (metadata.containsKey("nfs:info:uri")) {
+                        endpointUri = metadata.get("nfs:info:uri");
+                    } else {
+                        endpointUri = VM.getURI() + ":service+nfs";
+                    }
+                    Resource resNfs = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
+                    model.add(model.createStatement(VM, Nml.hasService, resNfs));
+                    model.add(model.createStatement(resNfs, Mrs.type, "nfs"));
+                    if (!exports.isEmpty()) {
+                        Resource resNA = RdfOwl.createResource(model, endpointUri+":exports", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resNA, Mrs.type, "nfs:exports"));
+                        model.add(model.createStatement(resNA, Mrs.value, exports));
+                        model.add(model.createStatement(resNfs, Mrs.hasNetworkAddress, resNA));
+                    }
+                } catch (ParseException e) {
+                    Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
+                            String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), nfsJson, "nfs:info"));
                 }
             }
         }

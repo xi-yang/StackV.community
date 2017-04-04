@@ -208,7 +208,7 @@ public class CompilerBase {
         }
     }
 
-    protected List<Statement> listUpDownStatements(OntModel model, Resource res) {
+    public List<Statement> listUpDownStatements(OntModel model, Resource res) {
         List<Statement> listStmt = null;
         StmtIterator its = model.listStatements(null, null, res);
         while (its.hasNext()) {

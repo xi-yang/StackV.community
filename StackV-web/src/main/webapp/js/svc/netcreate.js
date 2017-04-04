@@ -157,6 +157,7 @@ function configureForm(type) {
 
     if (type === 'aws') {
         $("#msform").addClass("aws");
+        $("input[name=netHost]").val("aws");
 
         $("#progressbar li").eq(4).addClass("disabled");
         $("#progressbar li").eq(5).addClass("disabled");
@@ -171,6 +172,7 @@ function configureForm(type) {
         tbody.appendChild(arow2);
     } else {
         $("#msform").addClass("ops");
+        $("input[name=netHost]").val("ops");
     }
 }
 

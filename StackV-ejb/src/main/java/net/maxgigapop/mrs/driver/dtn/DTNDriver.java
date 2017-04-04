@@ -36,27 +36,31 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 public class DTNDriver implements IHandleDriverSystemCall {
 
     Logger logger = Logger.getLogger(DTNDriver.class.getName());
-
-    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    String transferMap = "";
+    String perfMap = "";    
     @Override
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
 
         String user_account = driverInstance.getProperty("user_account");
         String access_key = driverInstance.getProperty("access_key");
         String address = driverInstance.getProperty("address");
         String topologyURI = driverInstance.getProperty("topologyUri");
+        String map = driverInstance.getProperty("mappingId");
 
         String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
         String modelAdd = aDelta.getModelAddition().getTtlModel();
         String modelReduc = aDelta.getModelReduction().getTtlModel();
 
-        DTNPush push = new DTNPush(user_account, access_key, address, topologyURI);
+        DTNPush push = new DTNPush(user_account, access_key, address, topologyURI, map);
         String requests = null;
         try {
             requests = push.pushPropagate(model, modelAdd, modelReduc);
         } catch (Exception ex) {
-            Logger.getLogger(DTNDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            logger.log(Level.SEVERE, ex.getMessage());
         }
 
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
@@ -77,15 +81,23 @@ public class DTNDriver implements IHandleDriverSystemCall {
         String access_key = driverInstance.getProperty("access_key");
         String address = driverInstance.getProperty("address");
         String topologyURI = driverInstance.getProperty("topologyUri");
+        String map = driverInstance.getProperty("mappingId");
+        
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
 
-        DTNPush push = new DTNPush(user_account, access_key, address, topologyURI);
-        push.pushCommit(requests);
-
-        driverInstance.getProperties().remove(requestId);
+        DTNPush push = new DTNPush(user_account, access_key, address, topologyURI, map);
+        try {
+            push.pushCommit(requests);
+        } catch (Exception ex) {
+            logger.log(Level.SEVERE, ex.getMessage());
+        }
+        
+        driverInstance.getProperties().remove(requestId);        
+        //get transfer information
+        this.transferMap = push.getTransferMap();
+        driverInstance.putProperty("mappingId", this.transferMap);    
         DriverInstancePersistenceManager.merge(driverInstance);
-
         logger.log(Level.INFO, "DTN driver delta models succesfully commited");
         return new AsyncResult<>("SUCCESS");
     }
@@ -101,12 +113,18 @@ public class DTNDriver implements IHandleDriverSystemCall {
         try {
             String user_account = driverInstance.getProperty("user_account");
             String access_key = driverInstance.getProperty("access_key");
+            String proxy_server = driverInstance.getProperty("proxy_server");
             String topologyURI = driverInstance.getProperty("topologyUri");
             String addresses = driverInstance.getProperty("addresses");
             String endpoint = driverInstance.getProperty("endpoint");
+            String mappingId = driverInstance.getProperty("mappingId");
+            String perf = driverInstance.getProperty("performance");
             
-            OntModel ontModel = DTNModelBuilder.createOntology(user_account, access_key, addresses, topologyURI, endpoint);
-
+            DTNModelBuilder pull = new DTNModelBuilder(user_account, mappingId, perf);
+            OntModel ontModel = pull.createOntology(user_account, access_key, proxy_server, addresses, topologyURI, endpoint);
+            this.transferMap=pull.getTransferMap();
+            this.perfMap = pull.getPerformanceMap();
+          
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);
@@ -118,9 +136,13 @@ public class DTNDriver implements IHandleDriverSystemCall {
                 vi.setReferenceUUID(UUID.randomUUID().toString());
                 vi.setDriverInstance(driverInstance);
                 VersionItemPersistenceManager.save(vi);
-                driverInstance.setHeadVersionItem(vi);
+                driverInstance.setHeadVersionItem(vi);                
             }
+            driverInstance.putProperty("mappingId", this.transferMap);
+            driverInstance.putProperty("performance", this.perfMap);
+            DriverInstancePersistenceManager.merge(driverInstance);            
         } catch (Exception ex) {
+            ex.printStackTrace();
             logger.log(Level.SEVERE, ex.getMessage());
         }
 

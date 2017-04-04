@@ -1,0 +1,46 @@
+.driver-panel {
+    padding: 10px 10px 0 10px;
+    left: 65px;
+    height: 50%;
+    position: absolute;
+}
+.no-side-tab {
+    width: 88%;
+}
+.side-tab{
+    width: 55%;
+}
+#driver-panel-top {
+    top: 50px;
+}
+#driver-panel-bot {
+    bottom: 0;
+}
+#driver-panel-right {
+    padding: 10px 10px 0 10px;
+    top: 50px;
+    right: 0;
+    height: 94.8%;
+    position: absolute;
+}
+.inactive{
+    width: 0%;
+}
+.active-detail{
+    width: 40%;
+}
+
+.driver-tab-table {
+    float: left;
+    width: calc(100% - 40px);
+    margin: 20px;
+    max-height: 100%;
+}
+.divider{
+    width:25px;
+    height:auto;
+    display:inline-block;
+}
+.button-head {
+    width: 160px
+}

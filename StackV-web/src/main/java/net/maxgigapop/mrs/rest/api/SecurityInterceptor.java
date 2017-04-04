@@ -22,9 +22,12 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
@@ -32,6 +35,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Provider;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
 import org.jboss.resteasy.core.Headers;
 import org.jboss.resteasy.core.ServerResponse;
@@ -45,6 +51,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     @Context
     private ResourceInfo resourceInfo;
 
+    private final Logger logger = LogManager.getLogger(SecurityInterceptor.class.getName());
     private static final ServerResponse ACCESS_DENIED = new ServerResponse("Access denied for this resource.\n", 401, new Headers<Object>());
     private static final ServerResponse SERVER_ERROR = new ServerResponse("INTERNAL SERVER ERROR\n", 500, new Headers<Object>());
     private final String front_db_user = "front_view";
@@ -53,33 +60,47 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) {
         UriInfo uri = requestContext.getUriInfo();
-        String methodName = resourceInfo.getResourceMethod().getName();
-        if ((uri.getPath()).startsWith("/app/")) {
-            // Ban list
-            List<String> supplierNames = Arrays.asList("loadWizard","loadEditor", "loadInstances",
-                    "loadInstanceDetails", "loadInstanceDelta", "loadInstanceVerification", "loadInstanceACL",
-                    "loadObjectACL", "loadSubjectACL", "subStatus", "getProfile", "editProfile",  "executeProfile", "newProfile", "deleteProfile",
-                    "getLabels", "label", "deleteLabel", "clearLabels", "getDeltaBacked",
-                    "getVerificationResults", "getVerificationResultsUnion", "testAuth", "createService");
-            if (supplierNames.contains(methodName)) {
-                System.out.println("Authenticated: " + methodName);
-                return;
-            }
 
+        if ((uri.getPath()).startsWith("/app/")) {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) requestContext.getProperty(KeycloakSecurityContext.class.getName());
             Set<String> roleSet;
             AccessToken accessToken = securityContext.getToken();
-            roleSet = accessToken.getResourceAccess("StackV").getRoles();
-            if (!accessToken.isActive()) {
-                System.out.println("NOT ACTIVE");
+            Method method = resourceInfo.getResourceMethod();
+            RolesAllowed rolesAnnotation = method.getAnnotation(RolesAllowed.class);
+            String role;
+            // Ban list
+            List<String> freeRoles = Arrays.asList("Free", "Logging", "ACL", "Panel");
+            if (rolesAnnotation == null) {
+                role = "Free";
+            } else {
+                role = Arrays.asList(rolesAnnotation.value()).get(0);
             }
 
-            if (!roleSet.contains(methodName)) {
+            ThreadContext.put("username", accessToken.getPreferredUsername());
+            ThreadContext.put("method", method.getName());
+            ThreadContext.put("role", role);
+
+            logger.trace("API Request Received: {}.", uri.getPath());
+
+            if (freeRoles.contains(role)) {
+                logger.trace("Authenticated Freely.");
+                return;
+            }
+
+            roleSet = accessToken.getResourceAccess("StackV").getRoles();
+            if (!accessToken.isActive()) {
+                logger.warn("Token is not active.");
+            }
+
+            if (!roleSet.contains(role)) {
                 requestContext.abortWith(Response
                         .status(Response.Status.UNAUTHORIZED)
-                        .entity("User is not allowed to access the resource:" + methodName)
+                        .entity("User is not allowed to access the resource:" + method.getName())
                         .build());
+                logger.warn("Denied.");
             }
+
+            logger.info("Authenticated.");
         }
     }
 }

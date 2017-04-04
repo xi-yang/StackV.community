@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2016 University of Maryland
- * Created by: Xi Yang 2014
+ * Created by: Xi Yang 2014 Jared Welsh 2016
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -23,8 +23,13 @@
 
 package net.maxgigapop.mrs.rest.api;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Properties;
 import java.util.Set;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
@@ -47,6 +52,9 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Path("driver")
 public class DriverResource {
+    
+    private final String front_db_user = "root";
+    private final String front_db_pass = "root";
 
     @Context
     private UriInfo context;
@@ -58,24 +66,55 @@ public class DriverResource {
     }
 
     @GET
-    @Produces({"application/xml", "application/json"})
-    public String pullAll() {
+    @Produces({"application/json"})
+    public ArrayList<String> pullAll() throws SQLException {
         Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
-        String allInstance = "";
-        for (String instance : instanceSet) {
-            allInstance += instance + "\n";
-        }
-        return allInstance;
-    }
+        ArrayList<String> retList = new ArrayList<>();
+        
 
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                prop);
+        
+        for (String instance : instanceSet) {
+            
+            PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance WHERE topologyUri = ?");
+            prep.setString(1, instance);
+            ResultSet ret = prep.executeQuery();
+            
+            while (ret.next()) {
+                retList.add(ret.getString("id"));
+                retList.add(ret.getString("driverEjbPath"));
+                retList.add(ret.getString("topologyUri"));
+            }
+        }
+        return retList;
+    }
+    
     @GET
-    @Produces({"application/xml", "application/json"})
-    @Path("/{topoUri}")
-    public ApiDriverInstance pull(@PathParam("topoUri") String topoUri) {
-        DriverInstance driverInstance = systemCallHandler.retrieveDriverInstance(topoUri);
-        ApiDriverInstance adi = new ApiDriverInstance();
-        adi.setProperties(driverInstance.getProperties());
-        return adi;
+    @Produces({"application/json"})
+    @Path("/{driverId}")
+    public ArrayList<String> pull(@PathParam("driverId") String driverId) throws SQLException {
+        ArrayList<String> retList = new ArrayList<>();
+        
+        
+        Properties prop = new Properties();
+        prop.put("user", front_db_user);
+        prop.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
+                prop);
+        
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ?");
+        prep.setString(1, driverId);
+        ResultSet ret = prep.executeQuery();
+        
+        while (ret.next()) {
+            retList.add(ret.getString("property"));
+            retList.add(ret.getString("value"));
+        }
+        return retList;
     }
 
     @DELETE

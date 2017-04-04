@@ -264,7 +264,7 @@ public class HandleSystemCall {
         OntModel referenceOntModel = referenceModel.getOntModel();
         OntModel targetOntModel = referenceModel.dryrunDelta(sysDelta);
 
-        //## Step 2. verify model change if refreshForced = true.
+        //## Step 2. verify model change if refreshForced = false.
         // Under 'forced', delta apply to refreshed headVG. No need to compare to referenceVG as referenceModel is from headVG.
         // Under other conditions, do compare their models to see if the head VG is newer than the referenceVG.
         if (!refreshForced && headVG != null && !headVG.equals(referenceVG)) {
@@ -291,9 +291,9 @@ public class HandleSystemCall {
         }
         //## Step 3. decompose sysDelta into driverSystemDeltas by <Topology>
         // 3.1. split targetOntModel to otain list of target driver topologies
-        Map<String, OntModel> targetDriverSystemModels = ModelUtil.splitOntModelByTopology(targetOntModel);
+        Map<String, OntModel> targetDriverSystemModels = ModelUtil.splitOntModelByTopology(targetOntModel, sysDelta);
         // 3.2. split referenceOntModel to otain list of reference driver topologies 
-        Map<String, OntModel> referenceDriverSystemModels = ModelUtil.splitOntModelByTopology(referenceOntModel);
+        Map<String, OntModel> referenceDriverSystemModels = ModelUtil.splitOntModelByTopology(referenceOntModel, sysDelta);
         // 3.3. create list of non-empty driverSystemDeltas by diff referenceOntModel components to targetOntModel
         List<DriverSystemDelta> targetDriverSystemDeltas = new ArrayList<>();
         for (String driverSystemTopoUri : targetDriverSystemModels.keySet()) {

@@ -16,7 +16,6 @@
     </head>
     
     <body>
-        <!-- NAV BAR -->
         <div id="nav">
         </div>
         <!-- MAIN PANEL -->

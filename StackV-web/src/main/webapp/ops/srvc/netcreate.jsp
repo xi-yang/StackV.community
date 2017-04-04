@@ -21,6 +21,9 @@
     <body>
         <!-- NAV BAR -->
         <div id="nav"></div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
         <div id="main-pane">
@@ -28,6 +31,7 @@
             <form action="/StackV-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateVCN()">
                 <input type="hidden" name="username" value="${sessionStorage.username}"/>
                 <input type="hidden" name="netCreate" value="true"/>
+                <input type="hidden" name="netHost" value=""/>
                 <!-- Progress Bar -->
                 <ul class="vcn-progress" id="progressbar">
                     <li class="disabled active">Service Host</li>
@@ -63,7 +67,7 @@
                     <table class="fs-table">
                         <thead id="awsStage2-base">
 
-                       </thead>
+                        </thead>
                         <tr>
                             <td>
                                 <sql:query dataSource="${rains_conn}" sql="SELECT topologyUri FROM driver_instance WHERE driverEjbPath='java:module/AwsDriver'" var="driverlist" />
@@ -143,7 +147,7 @@
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="submit" name="save" class="profile-save-button action-button" value="Save" />
-                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>
+                    <button type="submit" name="submit" class="action-button" value="aws">Submit</button>
                 </fieldset>
 
 
@@ -271,7 +275,7 @@
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="submit" name="save" class="profile-save-button action-button" value="Save" />
-                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>
+                    <button type="submit" name="submit" class="action-button" value="ops">Submit</button>
                 </fieldset>
             </form>
             <div id="info-panel">
@@ -293,9 +297,9 @@
         <!-- jQuery easing plugin -->
         <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
         <script>
-            $(function () {
-                $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
-            });
+                        $(function () {
+                            $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
+                        });
         </script>
     </body>
 </html>

@@ -49,3 +49,5 @@ black-screen: 3
 @import "driver.css";
 @import "usr.css";
 @import "ops.css";
+@import "acl.css";
+@import "details.css";
