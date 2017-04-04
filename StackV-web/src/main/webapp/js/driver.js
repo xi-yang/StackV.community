@@ -26,21 +26,16 @@
 function driver_tab_fix(){
     document.getElementById("driver-tab1").style.display = "block";
     document.getElementById("saved-tab").style.display = "none";
+    document.getElementById("saved-nav-tab").className = "";
+    document.getElementById("driver-nav-tab").className = "active";
 }
 
 
 function saved_tab_fix(){
     document.getElementById("saved-tab").style.display = "block";
     document.getElementById("driver-tab1").style.display = "none";
-}
-
-function activateDetails(){
-    $('#driver-panel-right').addClass('active-detail');
-    $('#detail-content').addClass('active');
-    $('#driver-panel-top').removeClass('no-side-tab');
-    $('#driver-panel-bot').removeClass('no-side-tab');
-    $('#driver-panel-top').addClass('side-tab');
-    $('#driver-panel-bot').addClass('side-tab');
+    document.getElementById("saved-nav-tab").className = "active";
+    document.getElementById("driver-nav-tab").className = "";
 }
 
 function activateSide(){
@@ -512,7 +507,7 @@ function updateDrivers() {
                 
                 detButton.innerHTML = "Details";
                 detButton.onclick = function() {clearPanel(); activateSide(); 
-                    activateDetails(); changeNameDet(); getDetailsProfile(this.id);};
+                    changeNameDet(); getDetailsProfile(this.id);};
                 detButton.style.width = "50px";
                 detButton.id = result[i+3];
                 
@@ -521,19 +516,20 @@ function updateDrivers() {
                 delButton.style.width = "50px";
                 delButton.id = result[i+3];
                 
-                delButton.innerHTML = "edit";
-                delButton.onclick = function() {editDriverProfile(this.id);};
-                delButton.style.width = "50px";
-                delButton.id = result[i+3];
+                edButton.innerHTML = "Edit";
+                edButton.onclick = function() {clearPanel(); activateSide(); 
+                    editDriverProfile(this.id);};
+                edButton.style.width = "50px";
+                edButton.id = result[i+3];
                 
                 spacer.style.width = "25px";
                 
                 drivername.innerHTML = result[i];
                 description.innerHTML = result[i+1];
                 cell3.appendChild(detButton);
-                cell3.appendChild(spacer);
+                cell3.appendChild(edButton);
                 cell3.appendChild(delButton);
-                cell3.style.width = "170px";
+                cell3.style.width = "200px";
                 
                 row.appendChild(drivername);
                 row.appendChild(description);
@@ -543,7 +539,18 @@ function updateDrivers() {
         }
     });
 }
-
+function editDriverProfile(clickID) {
+    getDetailsProfile(clickID);
+    var table = document.getElementById("details_table");
+    for (var i = 1; i < table.rows.length; i++){
+        var row = table.rows[i];
+        var textbox = document.createElement("input");
+        textbox.type = "text";
+        textbox.innerHTML = row.cells[0].value;
+        row.cells[0].value="";
+        row.appendChild(textbox);
+    }
+}
 function getDetailsProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var panel = document.getElementById("install-type");
@@ -556,6 +563,7 @@ function getDetailsProfile(clickID) {
     var headkey = document.createElement("th");
     var headval = document.createElement("th");
     $(table).addClass('management-table');
+    table.id = "details_table";
     headkey.innerHTML = "Key";
     headval.innerHTML = "Value";
     head_row.appendChild(headkey);
@@ -617,7 +625,7 @@ function getAllDetails(){
                 
                 detButton.innerHTML = "Details";
                 detButton.onclick = function() {clearPanel(); activateSide(); 
-                    activateDetails(); changeNameDet(); getDetails(this.id);};
+                    changeNameDet(); getDetails(this.id);};
                 detButton.style.width = "50px";
                 detButton.id = result[i];
                 
