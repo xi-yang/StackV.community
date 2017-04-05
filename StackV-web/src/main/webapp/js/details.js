@@ -656,12 +656,9 @@ function loadVisualization() {
           var div = document.createElement("div");
           div.classList.add("viz");
           div.id = "sd_" + viz_type;
-          if (viz_type !== "Verification") {
-              div.appendChild(buildViz(viz_type));
-          } else {
-            div.appendChild(buildViz("Addition"));
-            div.appendChild(buildViz("Reduction"));
-          } 
+          div.appendChild(buildViz(viz_type + " Addition"));
+          div.appendChild(buildViz(viz_type + " Reduction"));
+
           div.classList.add("tab-pane");
           div.classList.add("fade");
           div.classList.add("in");
@@ -694,9 +691,8 @@ function loadVisualization() {
 
             switch (viz_type) {
 
-                case "System":
-                  $("#delta-System").addClass("hide");
-                  table.id = "sd_System";
+                case "System Addition":
+                  table.id = "sd_System_Addition";
 
                   var a = buildHeaderLink("sd_System_Addition_Link", "Addition");
                   additionHeader.appendChild(a);
@@ -704,63 +700,66 @@ function loadVisualization() {
                   additionCell.id = "sd_System_Addition_Viz";
 
                   vizRow.appendChild(additionCell);
+              
+                   if(!$("#sysa_viz_div").hasClass("emptyViz")) {
+                      var sysa_viz_div = document.getElementById("sysa_viz_div");
+                      additionCell.appendChild(sysa_viz_div);
+                      sysa_viz_div.classList.remove("hidden");
+                   }
+                  break;
+                case "System Reduction":
+                  table.id = "sd_System_Reduction";
 
-                  a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
+                  var a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
                   reductionHeader.appendChild(a);
                   reductionCell.classList.add("viz-cell");
                   reductionCell.id = "sd_System_Reduction_Viz";
 
                   vizRow.appendChild(reductionCell);
-                  
-                  if (!$("#sysr_viz_div").hasClass("emptyViz") || !$("#sysa_viz_div").hasClass("emptyViz")) {
+                   
+                  if (!$("#sysr_viz_div").hasClass("emptyViz")) {
                     //  $(".system-delta-table").removeClass("hide");
-
                       var sysr_viz_div = document.getElementById("sysr_viz_div");
-                      var sysa_viz_div = document.getElementById("sysa_viz_div");
-
-                      additionCell.appendChild(sysa_viz_div)
-
                       reductionCell.appendChild(sysr_viz_div);
-
-                       sysa_viz_div.classList.remove("hidden");
-                       sysr_viz_div.classList.remove("hidden");
+                      sysr_viz_div.classList.remove("hidden");
                    }
-                  break;
-                case "Service":
-                  $("#delta-Service").addClass("hide");
-                  
                     
-                  var a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
-                  additionHeader.appendChild(a);
-                  additionCell.classList.add("viz-cell");
-                  additionCell.id = "sd_Service_Addition_Viz";
+                    break;
+                case "Service Addition":
+                    table.id = "sd_Service_Addition";
 
-                  vizRow.appendChild(additionCell);
+                    var a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
+                    additionHeader.appendChild(a);
+                    additionCell.classList.add("viz-cell");
+                    additionCell.id = "sd_Service_Addition_Viz";
 
-                  a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
+                    vizRow.appendChild(additionCell);
+                    
+                    if (!$("#serva_viz_div").hasClass("emptyViz")) {
+                     // $(".service-delta-table").removeClass("hide");
+                      var serva_viz_div = document.getElementById("serva_viz_div");
+                      additionCell.appendChild(serva_viz_div);
+                      serva_viz_div.classList.remove("hidden");
+                    }
+
+                    break;
+                case "Service Reduction":
+                  table.id = "sd_Service_Reduction";
+      
+                  var a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
                   reductionHeader.appendChild(a);
                   reductionCell.classList.add("viz-cell");
                   reductionCell.id = "sd_Service_Addition_Viz";
 
                   vizRow.appendChild(reductionCell);
               
-                  if (!$("#serva_viz_div").hasClass("emptyViz") || !$("#servr_viz_div").hasClass("emptyViz")) {
-                   // $(".service-delta-table").removeClass("hide");
-
-                    var servr_viz_div = document.getElementById("servr_viz_div");
-                    var serva_viz_div = document.getElementById("serva_viz_div");
-
-                    additionCell.appendChild(serva_viz_div);
-
-                    reductionCell.appendChild(servr_viz_div);
-                    servr_viz_div.classList.remove("hidden");
-                    serva_viz_div.classList.remove("hidden");
-
+                  if(!$("#servr_viz_div").hasClass("emptyViz")) {
+                     var servr_viz_div = document.getElementById("servr_viz_div");
+                     reductionCell.appendChild(servr_viz_div);
+                     servr_viz_div.classList.remove("hidden");
                   }
-
                     break;
-                case "Addition":
-                  $(".verification-table").addClass("hide");
+                case "Verification Addition":
                   var a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
                   additionHeader.appendChild(a);
                   additionCell.classList.add("viz-cell");
@@ -789,8 +788,7 @@ function loadVisualization() {
                   }
               
                     break;
-                case "Reduction":
-                  $(".verification-table").addClass("hide");
+                case "Verification Reduction":
 
                   var a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
                   additionHeader.appendChild(a);
@@ -818,8 +816,14 @@ function loadVisualization() {
                     }                     
                     break;            
             }
-            headerRow.appendChild(additionHeader);
-            headerRow.appendChild(reductionHeader);
+            if (viz_type.includes("Verification")) {
+                headerRow.appendChild(additionHeader);  
+                headerRow.appendChild(reductionHeader);
+             } else if (viz_type.includes("Addition")) {
+                headerRow.appendChild(additionHeader);
+             } else {
+                headerRow.appendChild(reductionHeader);
+             }
             table.appendChild(headerRow);
             table.appendChild(vizRow);
         
@@ -829,6 +833,13 @@ function loadVisualization() {
 
 
         function createTabs() {
+          $(".verification-table").addClass("hide");
+          $(".system-delta-table").addClass("hide");
+          $(".service-delta-table").addClass("hide");
+          $("#delta-Service").addClass("hide");
+          $("#delta-System").addClass("hide");
+            
+            
           var tabBar = document.createElement("ul");
           tabBar.classList.add("nav");
           tabBar.classList.add("nav-tabs");
@@ -851,11 +862,6 @@ function loadVisualization() {
           details_panel.appendChild(tabBar);
           details_panel.appendChild(tabContent);
 
-          for (var i = 0; i < tabs.length; i++) {
-            if (States[tabs[i].state] <= States[State]) {
-             // setEvent(make_tab_id(tabs[i]));
-            }
-          }
           setEvent();
         }
 

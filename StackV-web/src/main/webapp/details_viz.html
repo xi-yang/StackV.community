@@ -392,7 +392,7 @@
 
     function displayError(error, d3_obj) {
         d3_obj.select("#viz").append("text")
-                .attr("x", $(window).width() / 4)
+                .attr("x", $(window).width() / 2)
                 .attr("y", $(window).height() / 2)
                 .attr("fill", "black")
                 .attr("font-size", "80px")
@@ -405,8 +405,13 @@
        // $("#" + outputApi.svgContainerName).width("50%");
        // $("#" + outputApi.svgContainerName).height("50%");
 
-        var width =993;  //$("#" + outputApi.svgContainerName).closest("td").width();//document.documentElement.clientWidth / settings.INIT_ZOOM;
-        var height = 130; //$("#" + outputApi.svgContainerName).closest("td").height(); //document.documentElement.clientHeight / settings.INIT_ZOOM;
+        if (outputApi.svgContainerName.includes("serv") || outputApi.svgContainerName.includes("sys")) {
+            var width = $(window).width() * .85;; //$("#" + viz_id).width();
+            var height =  $(window).height() * .1; //$("#" + viz_id).height();
+        } else {
+            var width = 993;; //$("#" + viz_id).width();
+            var height =  130; //$("#" + viz_id).height();
+        } 
         var tdID =  $("#" + outputApi.svgContainerName).closest("td").attr("id");
  //TODO, figure out why we need to call this twice
         //If we do not, the layout does to converge as nicely, even if we double the number of iterations
@@ -417,10 +422,15 @@
 //                animStart(30);
     }
     function displayError(error, d3_obj, viz_id, offset) {
-        var div_width = 993; //$("#" + viz_id).width();
-        var div_height = 130; //$("#" + viz_id).height();
-        var x = (div_width / 4) + (div_width / 8);
-        var y = (div_height / 2) + (div_height / 8);
+        if (viz_id.includes("serv") || viz_id.includes("sys")) {
+            var div_width = $(window).width() * .85;; //$("#" + viz_id).width();
+            var div_height =  $(window).height() * .1; //$("#" + viz_id).height();
+        } else {
+            var div_width = 993;; //$("#" + viz_id).width();
+            var div_height =  130; //$("#" + viz_id).height();
+        } 
+        var x = (div_width / 4) + (div_width / 6);
+        var y = (div_height / 2) + (div_height / 2);
         if (offset === undefined) {
             offset = 0;
         }
