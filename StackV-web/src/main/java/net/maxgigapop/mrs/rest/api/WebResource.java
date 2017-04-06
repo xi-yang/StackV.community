@@ -1724,12 +1724,15 @@ public class WebResource {
             ResultSet rs1 = prep.executeQuery();
 
             while (rs1.next()) {
-                ArrayList<String> wizardList = new ArrayList<>();
-                wizardList.add(rs1.getString("name"));
-                wizardList.add(rs1.getString("description"));
-                wizardList.add(rs1.getString("filename"));
+                System.out.println(rs1.getString("filename"));
+                if (roleSet.contains(rs1.getString("filename"))) {
+                    ArrayList<String> wizardList = new ArrayList<>();
+                    wizardList.add(rs1.getString("name"));
+                    wizardList.add(rs1.getString("description"));
+                    wizardList.add(rs1.getString("filename"));
 
-                retList.add(wizardList);
+                    retList.add(wizardList);
+                }
             }
             return retList;
         } catch (SQLException ex) {
@@ -2290,19 +2293,24 @@ public class WebResource {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
+            Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
 
-            String username = accessToken.getPreferredUsername();
-            System.out.println("User:" + username);
-            inputJSON.remove("username");
-            inputJSON.put("username", username);
+            if (roleSet.contains(serviceType)) {
+                System.out.println(roleSet);
+                String username = accessToken.getPreferredUsername();
+                inputJSON.remove("username");
+                inputJSON.put("username", username);
 
-            //System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
-            executorService.execute(new Runnable() {
-                @Override
-                public void run() {
-                    asyncResponse.resume(doCreateService(inputJSON, auth, refresh));
-                }
-            });
+                //System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
+                executorService.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        asyncResponse.resume(doCreateService(inputJSON, auth, refresh));
+                    }
+                });
+            } else {
+                logger.warning("createService", "User not allowed access to " + serviceType);
+            }
 
         } catch (ParseException ex) {
             logger.catching("createService", ex);
@@ -2451,7 +2459,7 @@ public class WebResource {
                 default:
             }
 
-            long endTime = System.currentTimeMillis();            
+            long endTime = System.currentTimeMillis();
             // Return instance UUID
             logger.end("doCreateService");
             return refUUID;
@@ -2494,14 +2502,14 @@ public class WebResource {
                 case "delete":
                 case "force_delete":
                     deleteInstance(refUUID, auth);
-                    
+
                     logger.end("doOperate:" + action);
                     return "Deletion Complete.\r\n";
 
                 case "verify":
                 case "reverify":
                     servBean.verify(refUUID, refresh);
-                    
+
                     logger.end("doOperate:" + action);
                     return "Verification Complete.\r\n";
 
@@ -2793,7 +2801,7 @@ public class WebResource {
                     } else {
                         vmString += "& ";
                     }
-                    
+
                     // CephRBD
                     if (vmJSON.containsKey("ceph_rbd")) {
                         JSONArray rbdArr = (JSONArray) vmJSON.get("ceph_rbd");
@@ -2813,7 +2821,7 @@ public class WebResource {
                     } else {
                         vmString += "& ";
                     }
-                    
+
                     // NFS
                     if (vmJSON.containsKey("nfs")) {
                         JSONObject nfsJSON = (JSONObject) vmJSON.get("nfs");
