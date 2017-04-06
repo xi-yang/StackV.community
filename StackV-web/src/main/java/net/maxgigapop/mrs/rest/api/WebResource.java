@@ -258,7 +258,7 @@ public class WebResource {
             conn.setRequestMethod("GET");
             conn.setDoInput(true);
             conn.connect();
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("getACLwithInfo", conn.getResponseCode() + " - " + conn.getResponseMessage(), "users");
             StringBuilder responseStr;
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
@@ -641,7 +641,7 @@ public class WebResource {
             conn.setRequestMethod("GET");
             conn.setDoInput(true);
             conn.connect();
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("getUsers", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
             StringBuilder responseStr;
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
@@ -714,7 +714,7 @@ public class WebResource {
             conn.setRequestMethod("GET");
             conn.setDoInput(true);
             conn.connect();
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("getGroups", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
             StringBuilder responseStr;
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
@@ -776,7 +776,7 @@ public class WebResource {
             conn.setRequestMethod("GET");
             conn.setDoInput(true);
             conn.connect();
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("getRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
             StringBuilder responseStr;
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
@@ -908,7 +908,7 @@ public class WebResource {
                 out.write(roleArr.toString());
             }
 
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("addUserGroup", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("addUserGroup", ex);
         }
@@ -957,7 +957,7 @@ public class WebResource {
                 out.write(roleArr.toString());
             }
 
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("removeUserGroup", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("removeUserGroup", ex);
         }
@@ -1000,7 +1000,7 @@ public class WebResource {
             conn.setConnectTimeout(15000);
             conn.setRequestMethod("GET");
             conn.setDoInput(true);
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("getUserRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "roles");
             StringBuilder responseStr;
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
@@ -1030,7 +1030,7 @@ public class WebResource {
             conn.setConnectTimeout(15000);
             conn.setRequestMethod("GET");
             conn.setDoInput(true);
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("getUserRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "groups");
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
                 responseStr = new StringBuilder();
@@ -1056,7 +1056,7 @@ public class WebResource {
                 conn.setConnectTimeout(15000);
                 conn.setRequestMethod("GET");
                 conn.setDoInput(true);
-                System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+                logger.trace("getUserRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "composites");
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                     String inputLine;
                     responseStr = new StringBuilder();
@@ -1128,7 +1128,7 @@ public class WebResource {
                 out.write(roleArr.toString());
             }
 
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("addUserRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("addUserRole", ex);
         }
@@ -1177,7 +1177,7 @@ public class WebResource {
                 out.write(roleArr.toString());
             }
 
-            System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
+            logger.trace("removeUserRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("removeUserRole", ex);
         }
@@ -1723,8 +1723,7 @@ public class WebResource {
             PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT S.name, S.filename, S.description FROM service S WHERE S.atomic = 0");
             ResultSet rs1 = prep.executeQuery();
 
-            while (rs1.next()) {
-                System.out.println(rs1.getString("filename"));
+            while (rs1.next()) {                
                 if (roleSet.contains(rs1.getString("filename"))) {
                     ArrayList<String> wizardList = new ArrayList<>();
                     wizardList.add(rs1.getString("name"));
@@ -2296,12 +2295,10 @@ public class WebResource {
             Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
 
             if (roleSet.contains(serviceType)) {
-                System.out.println(roleSet);
                 String username = accessToken.getPreferredUsername();
                 inputJSON.remove("username");
                 inputJSON.put("username", username);
 
-                //System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
                 executorService.execute(new Runnable() {
                     @Override
                     public void run() {
