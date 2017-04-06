@@ -1,7 +1,7 @@
 .driver-panel {
     padding: 10px 10px 0 10px;
     left: 65px;
-    height: 50%;
+    height: 70%;
     position: absolute;
 }
 .no-side-tab {
@@ -20,7 +20,7 @@
     padding: 10px 10px 0 10px;
     top: 50px;
     right: 0;
-    height: 94.8%;
+    height: 93%;
     position: absolute;
 }
 .inactive{

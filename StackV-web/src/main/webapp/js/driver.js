@@ -26,16 +26,28 @@
 function driver_tab_fix(){
     document.getElementById("driver-tab1").style.display = "block";
     document.getElementById("saved-tab").style.display = "none";
+    document.getElementById("installed-content").style.display = "none";
     document.getElementById("saved-nav-tab").className = "";
     document.getElementById("driver-nav-tab").className = "active";
+    document.getElementById("installed-driver-tab").className = "";
 }
 
 
 function saved_tab_fix(){
     document.getElementById("saved-tab").style.display = "block";
     document.getElementById("driver-tab1").style.display = "none";
+    document.getElementById("installed-content").style.display = "none";
     document.getElementById("saved-nav-tab").className = "active";
     document.getElementById("driver-nav-tab").className = "";
+    document.getElementById("installed-driver-tab").className = "";
+}
+function installed_tab_fix(){
+    document.getElementById("installed-content").style.display = "block";
+    document.getElementById("driver-tab1").style.display = "none";
+    document.getElementById("saved-tab").style.display = "none";
+    document.getElementById("installed-driver-tab").className = "active";
+    document.getElementById("driver-nav-tab").className = "";
+    document.getElementById("saved-nav-tab").className = "";
 }
 
 function activateSide(){
@@ -275,11 +287,11 @@ function installStack(){
     sixth.type="text";
     sixth.id="authServer";
     
-    seventh.innerHTML="Crendentials:";
+    seventh.innerHTML="Credentials:";
     seventh.style.color = "white";
     
     eighth.type="password";
-    eighth.id = "subsystemBaseUrl";
+    eighth.id = "credentials";
     
     
     divContent.appendChild(first);
@@ -448,23 +460,6 @@ function addDriver() {
         }
     });
 }
-function editDriverProfile(clickID){
-    var userId = keycloak.tokenParsed.preferred_username;
-    var topuri = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/edit/' + topuri;
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        success: function (result){
-            
-        }
-    });
-}
-//meds to change
 function removeDriverProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var topuri = clickID;
