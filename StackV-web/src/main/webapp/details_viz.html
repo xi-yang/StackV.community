@@ -340,7 +340,7 @@
     }
 
     function make_viz(div_id, prefix) {
-        var viz = "<div id=\"" + prefix + "_viz_div\" class=\"hidden\">" +
+        var viz = "<div id=\"" + prefix + "_viz_div\" class=\"hidden details_viz_div\">" +
                 "<div class=\"hover_div\" id=\"hoverdiv_" + prefix + "_viz\"></div>" +
                 "<svg class =\"details_viz\" id= \"" + prefix + "_viz\"> " +
                 '<defs>' +
@@ -435,9 +435,11 @@
             offset = 0;
         }
         
-        if (error === "Empty")
+        if (error === "Empty") {
             $("#" + viz_id + "_div").addClass("emptyViz");
-
+            $("#" + viz_id + "_div").trigger("emptyViz");
+        }
+        
         d3_obj.select("#" + viz_id).append("text")
                 .attr("x", x + offset)
                 .attr("y", y)
@@ -508,7 +510,13 @@
                 xhr.setRequestHeader("Authorization", "bearer " + token);
             },
             dataType: "json",
-            success: function (data, textStatus, jqXHR) {
+            success: function (data, textStatus, jqXHR) {            
+                $('.details_viz_div').bind('emptyViz', function() {
+                    var id = $(this).attr("id");
+                    if (id.includes("ser") || id.includes("sys"))
+                        removeIfEmpty(id);
+                 });
+
                 if (data.serviceModelAddition && data.serviceModelAddition !== "{ }") {
                     var servAObj = JSON.parse(data.serviceModelAddition);
                     var servAModel = new ModelConstructor();
@@ -696,6 +704,13 @@
         });
 
     }
+    function removeIfEmpty(viz) {
+          var viz =  $("#" + viz);
+          var table = viz.closest("table");
+          if (viz.hasClass("emptyViz"))
+            table.addClass("hide");
+    }
+    
     function outputApi_(renderAPI, contextMenu, svg) {
         var that = this;
         this.renderApi = renderAPI;
