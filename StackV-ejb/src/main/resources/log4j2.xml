@@ -2,7 +2,7 @@
 <Configuration status="info" package="net.maxgigapop.mrs.service"  name="RAINS-Service">
     <Appenders>
         <Console name="RainsOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="%logger{1}: %X{module}.%X{method} %X{refuuid}: %X{objectid} [%marker] - %msg - %X{severity}: %ex{2}%n" />
+            <PatternLayout pattern="%X{module}.%X{method} %X{refuuid}: %X{objectid} %msg -%X{severity}- %ex{2}%n" />
         </Console>
         
         <JDBC name="MySQL" tableName="frontend.log">
