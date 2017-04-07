@@ -54,7 +54,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class ServiceManifest {
-    private final StackLogger logger = new StackLogger(HandleServiceCall.class.getPackage().getName(), "ServiceOrchestrationAPI");
+    private final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "ServiceOrchestrationAPI");
     
     static public JSONObject generateManifest (String jsonModel, String serviceType) {
         JSONObject joMan = new JSONObject();

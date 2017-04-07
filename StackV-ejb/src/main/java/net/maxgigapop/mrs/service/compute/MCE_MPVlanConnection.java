@@ -24,17 +24,10 @@
 package net.maxgigapop.mrs.service.compute;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.ontology.OntTools.PredicatesFilter;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
-import com.hp.hpl.jena.util.iterator.Filter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -50,9 +43,9 @@ import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.common.Nml;
-import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -65,7 +58,7 @@ import org.json.simple.parser.ParseException;
 @Stateless
 public class MCE_MPVlanConnection implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_MPVlanConnection.class.getName());
+    private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
     /*
      ** Simple L2 connection will create new SwitchingSubnet on every transit switching node.
      */
@@ -73,10 +66,15 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+        String method = "process";
+        if (annotatedDelta.getServiceInstance() != null) {
+            logger.refuuid(annotatedDelta.getServiceInstance().getReferenceUUID());
+            logger.targetid(annotatedDelta.getId());
+        }
         try {
-            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            logger.trace(method, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()) failed -- "+ex);
         }
 
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
@@ -152,22 +150,23 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             */
         }
         try {
-            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+            logger.trace(method, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()) failed -- "+ex);
         }
 
         return new AsyncResult(outputDelta);
     }
 
     private Map<String, MCETools.Path> doMultiPathFinding(OntModel systemModel, OntModel spaModel, Resource policyAction, Map connDataMap) {
+        String method = "doMultiPathFinding";
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
         try {
-            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+            logger.trace(method, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalModel(transformedModel) failed -- "+ex);
         }
         Map<String, MCETools.Path> mapConnPaths = new HashMap<>();
         //List<Resource> connList = (List<Resource>)connDataMap.get("connections");
@@ -217,9 +216,14 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             Resource nodeA = terminals.get(0);
             Resource nodeZ = terminals.get(1);
             // KSP-MP path computation on the connected graph model (point2point for now - will do MP in future)
-            List<MCETools.Path> KSP = MCETools.computeFeasibleL2KSP(transformedModel, nodeA, nodeZ, jsonConnReq);
+            List<MCETools.Path> KSP;
+            try {
+                KSP = MCETools.computeFeasibleL2KSP(transformedModel, nodeA, nodeZ, jsonConnReq);
+            } catch (Exception ex) {
+                throw logger.error_throwing(method, String.format("connectionId=%s computeFeasibleL2KSP(nodeA=%s, nodeZ=%s, jsonConnReq=%s) exception -- ", connId, nodeA, nodeZ, jsonConnReq) + ex);
+            }
             if (KSP == null || KSP.size() == 0) {
-                throw new EJBException(String.format("%s::process doMultiPathFinding cannot find feasible path for connection '%s'", MCE_MPVlanConnection.class.getName(), connId));
+                throw logger.error_throwing(method, String.format("cannot find feasible path for connection '%s'", connId));
             }
             // pick the shortest path from remaining/feasible paths in KSP
             MCETools.Path connPath = MCETools.getLeastCostPath(KSP);
@@ -230,6 +234,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     }
 
     private void exportPolicyData(OntModel spaModel, Resource resPolicy, String connId, MCETools.Path l2Path) {
+        String method = "exportPolicyData";
         // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
@@ -285,7 +290,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 try {
                     exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
                 } catch (EJBException ex) {
-                    log.log(Level.WARNING, ex.getMessage());
+                    logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
                     continue;
                 }
             }

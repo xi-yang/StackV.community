@@ -170,6 +170,14 @@ public class StackLogger {
         return throwing(method, ex, Severity.ERROR);
     }
     
+    public EJBException catch_throwing(String method, Exception ex, Severity severity) {
+        return error_throwing(method, "Catching "+ex.getMessage(), severity);
+    }
+    
+    public EJBException catch_throwing(String method, Exception ex) {
+        return catch_throwing(method, ex, Severity.ERROR);
+    }
+    
     public void trace(String method, String message, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);

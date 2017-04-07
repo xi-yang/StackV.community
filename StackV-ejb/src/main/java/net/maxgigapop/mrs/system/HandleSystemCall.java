@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
@@ -59,8 +61,10 @@ import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import net.maxgigapop.mrs.service.HandleServiceCall;
 
 /**
  *
@@ -69,6 +73,8 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 @Stateless
 @LocalBean
 public class HandleSystemCall {
+    
+    private static final StackLogger logger = new StackLogger(HandleSystemCall.class.getName(), "SystemIntegrationAPI");
 
     public VersionGroup createHeadVersionGroup(String refUuid) {
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
@@ -231,10 +237,12 @@ public class HandleSystemCall {
     // useCachedVG = false: 'forward' mode  |  useRefreshedVG = true: 'forced' mode
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta, boolean useCachedVG, boolean refreshForced) {
+        String method = "propagateDelta";
         // refresh systemInstance into current persistence context
         if (systemInstance.getId() != 0) {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         }
+        logger.refuuid(systemInstance.getReferenceUUID());
         if (systemInstance.getSystemDelta() != null
                 && systemInstance.getSystemDelta().getDriverSystemDeltas() != null
                 && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
@@ -291,9 +299,19 @@ public class HandleSystemCall {
         }
         //## Step 3. decompose sysDelta into driverSystemDeltas by <Topology>
         // 3.1. split targetOntModel to otain list of target driver topologies
-        Map<String, OntModel> targetDriverSystemModels = ModelUtil.splitOntModelByTopology(targetOntModel, sysDelta);
+        Map<String, OntModel> targetDriverSystemModels;
+        try {
+            targetDriverSystemModels = ModelUtil.splitOntModelByTopology(targetOntModel, sysDelta);
+        } catch (Exception ex) {
+            throw logger.error_throwing(method, "failed to split targetOntModel -- " + ex);
+        }
         // 3.2. split referenceOntModel to otain list of reference driver topologies 
-        Map<String, OntModel> referenceDriverSystemModels = ModelUtil.splitOntModelByTopology(referenceOntModel, sysDelta);
+        Map<String, OntModel> referenceDriverSystemModels;
+        try {
+            referenceDriverSystemModels = ModelUtil.splitOntModelByTopology(referenceOntModel, sysDelta);
+        } catch (Exception ex) {
+            throw logger.error_throwing(method, "failed to split referenceOntModel -- " + ex);
+        }
         // 3.3. create list of non-empty driverSystemDeltas by diff referenceOntModel components to targetOntModel
         List<DriverSystemDelta> targetDriverSystemDeltas = new ArrayList<>();
         for (String driverSystemTopoUri : targetDriverSystemModels.keySet()) {

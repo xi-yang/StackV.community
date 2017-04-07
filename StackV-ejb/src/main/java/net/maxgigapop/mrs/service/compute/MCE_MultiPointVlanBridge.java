@@ -34,7 +34,6 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.util.iterator.Filter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,10 +54,12 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TagSet;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_action;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_flow;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_match;
+import org.apache.logging.log4j.core.net.Severity;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -70,15 +71,21 @@ import org.json.simple.parser.ParseException;
  */
 @Stateless
 public class MCE_MultiPointVlanBridge implements IModelComputationElement {
-    private static final Logger log = Logger.getLogger(MCE_MultiPointVlanBridge.class.getName());
+    
+    private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
 
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+        String method = "process"; 
+        if (annotatedDelta.getServiceInstance() != null) {
+            logger.refuuid(annotatedDelta.getServiceInstance().getReferenceUUID());
+            logger.targetid(annotatedDelta.getId());
+        }
         try {
-            log.log(Level.FINE, "\n>>>MCE_MultiPointVlanBridge--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            logger.trace(method, "\n>>>MCE_MultiPointVlanBridge--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MultiPointVlanBridge.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()) failed -- "+ex);
         }
 
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
@@ -154,22 +161,23 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
             */
         }
         try {
-            log.log(Level.FINE, "\n>>>MCE_MultiPointVlanBridge--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+            logger.trace(method, "\n>>>MCE_MultiPointVlanBridge--DeltaAddModel Input=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MultiPointVlanBridge.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()) failed -- "+ex);
         }
 
         return new AsyncResult(outputDelta);
     }
 
     private Map<String, MCETools.Path> doMultiPathFinding(OntModel systemModel, OntModel spaModel, Resource policyAction, Map connDataMap) {
+        String method = "doMultiPathFinding";
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
         try {
-            log.log(Level.FINE, "\n>>>MCE_MultiPointVlanBridge--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+            logger.trace(method, "\n>>>MCE_MultiPointVlanBridge--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MultiPointVlanBridge.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalModel(marshalModel(transformedModel) failed -- "+ex);
         }
         Map<String, MCETools.Path> mapConnPaths = new HashMap<>();
         //List<Resource> connList = (List<Resource>)connDataMap.get("connections");
@@ -222,7 +230,12 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
             terminals.remove(0);
             Resource terminal2 = terminals.get(0);
             terminals.remove(0);
-            List<MCETools.Path> feasibleKSP12 = MCETools.computeFeasibleL2KSP(transformedModel, terminal1, terminal2, jsonConnReq);
+            List<MCETools.Path> feasibleKSP12;
+            try {
+                feasibleKSP12 = MCETools.computeFeasibleL2KSP(transformedModel, terminal1, terminal2, jsonConnReq);
+            } catch (Exception ex) {
+                throw logger.error_throwing(method, String.format("connectionId=%s computeFeasibleL2KSP(nodeA=%s, nodeZ=%s, jsonConnReq=%s) exception -- ", connId, terminal1, terminal2, jsonConnReq) + ex);
+            }
             if (feasibleKSP12 == null || feasibleKSP12.size() == 0) {
                 throw new EJBException(String.format("%s::process doMultiPathFinding cannot find initial feasible path for connection '%s' between '%s' and '%s'", 
                         MCE_MultiPointVlanBridge.class.getName(), connId, terminal1, terminal2));
@@ -246,13 +259,19 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
     }
 
     private MCETools.Path connectTerminalToPath(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX, JSONObject jsonConnReq) {
+        String method = "connectTerminalToPath";
         Resource bridgeOpenflowService = checkTerminalOnPath(transformedModel, mpvbPath, terminalX);
         if (bridgeOpenflowService != null) {
             Resource bridgePort = terminalX;
             JSONObject jsonTe = (JSONObject) jsonConnReq.get(terminalX.getURI());
             String bridgeVlanTag = null;
             if (jsonTe != null && jsonTe.containsKey("vlan_tag")) {
-                TagSet vlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
+                TagSet vlanRange;
+                try {
+                    vlanRange = new TagSet((String) jsonTe.get("vlan_tag"));
+                } catch (TagSet.InvalidVlanRangeExeption ex) {
+                    throw logger.error_throwing(method, String.format("terminal <%s> exception ", terminalX.getURI()) + ex);
+                }
                 bridgeVlanTag = Integer.toOctalString(vlanRange.getRandom());
             }
             MCETools.Path bridgePath = new MCETools.Path();
@@ -290,7 +309,13 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
                     Resource bridgePort = bridgePath.get(0).getSubject();
                     Resource bridgePortNext = bridgePath.get(0).getObject().asResource();
                     // initial vlanRange in of bridgePort could be full range but will eventually constrained by terminalX
-                    if (MCETools.verifyL2Path(transformedModel, bridgePath)) {
+                    boolean verified;
+                    try {
+                        verified = MCETools.verifyL2Path(transformedModel, bridgePath);
+                    } catch (Exception ex) {
+                        throw logger.error_throwing(method, "verifyL2Path failed -- "+ex);
+                    }
+                    if (verified) {
                         // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
                         OntModel bridgePathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonConnReq);
                         if (bridgePathModel != null) {
@@ -574,6 +599,7 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
     }
 
     private void exportPolicyData(OntModel spaModel, Resource resPolicy, String connId, MCETools.Path l2Path) {
+        String method = "exportPolicyData";
         // find Connection policy -> exportTo -> policyData
         String sparql = "SELECT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
@@ -629,7 +655,7 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
                 try {
                     exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
                 } catch (EJBException ex) {
-                    log.log(Level.WARNING, ex.getMessage());
+                    logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
                     continue;
                 }
             }
