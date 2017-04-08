@@ -81,7 +81,7 @@ public class HandleServiceCall {
     @EJB
     HandleSystemCall systemCallHandler;
 
-    private static final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "ServiceOrchestrationAPI");
+    private static final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "HandleServiceCall");
     
     public ServiceInstance createInstance() {
         logger.start("createInstance");
@@ -178,7 +178,7 @@ public class HandleServiceCall {
         try {
             worker = (WorkerBase) this.getClass().getClassLoader().loadClass(workerClassPath).newInstance();
         } catch (Exception ex) {
-            throw logger.catch_throwing("compileAddDelta", ex);
+            throw logger.throwing("compileAddDelta", ex);
         }
         worker.setAnnoatedModel(spaDelta);
         try {
@@ -187,7 +187,7 @@ public class HandleServiceCall {
             serviceInstance.setStatus("FAILED");
             ServiceInstancePersistenceManager.merge(serviceInstance);
             logger.status("compileAddDelta", "FAILED");
-            throw logger.catch_throwing("compileAddDelta", ex);
+            throw logger.throwing("compileAddDelta", ex);
         }
         // save serviceInstance, spaDelta and systemDelta
         SystemDelta resultDelta = worker.getResultModelDelta();
@@ -793,7 +793,7 @@ public class HandleServiceCall {
                     apiData.setModelAdditionUnverified(ModelUtil.marshalModel(modelAdditionUnverified));
                 }
             } catch (Exception ex) {
-                throw logger.catch_throwing(method, ex);
+                throw logger.throwing(method, ex);
             }
         }
         if (serviceDelta.getSystemDelta().getModelReduction()!= null && serviceDelta.getSystemDelta().getModelReduction().getOntModel() != null) {
@@ -811,7 +811,7 @@ public class HandleServiceCall {
                     apiData.setModelReductionUnverified(ModelUtil.marshalModel(modelReductionUnverified));
                 }
             } catch (Exception ex) {
-                throw logger.catch_throwing(method, ex);
+                throw logger.throwing(method, ex);
             }
         }
         logger.end(method);
@@ -925,7 +925,7 @@ public class HandleServiceCall {
                     apiData.setModelReductionSvc(ModelUtil.marshalModel(serviceDelta.getModelReduction().getOntModel()));
             }
         } catch (Exception ex) {
-            throw logger.catch_throwing(method, ex);
+            throw logger.throwing(method, ex);
         }
         if (serviceDelta.getSystemDelta() == null) {
             return;

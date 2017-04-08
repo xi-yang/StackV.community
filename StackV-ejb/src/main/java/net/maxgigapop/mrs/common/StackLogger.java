@@ -143,39 +143,40 @@ public class StackLogger {
         return error_throwing(method, message, Severity.ERROR);
     }
 
+    // differing log4j.catching (no marker)
     public void catching(String method, Exception ex, Severity severity) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.put("severity", severity.name());
-        logger.catching(ex);        
+        error(method, "catching "+ex, severity);
     }
     
     public void catching(String method, Exception ex) {
         catching(method, ex, Severity.ERROR);        
     }
     
-    public EJBException throwing(String method, Exception ex, Severity severity) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.put("severity", severity.name());
-        logger.catching(ex);
+    // differing log4j.throwing (no marker)
+    public EJBException throwing(String method, String message, Exception ex, Severity severity) {
+        error(method, message, severity);
         if (ex instanceof  EJBException) {
             return (EJBException)(ex);
         } else {
-            return new EJBException(ex);
+            return new EJBException(message, ex);
+        }
+    }
+
+    public EJBException throwing(String method, Exception ex, Severity severity) {
+        return throwing(method, "catching "+ex, ex, Severity.ERROR);
+    }
+    
+    public EJBException throwing(String method, String message, Exception ex) {
+        error(method, message, Severity.ERROR);
+        if (ex instanceof  EJBException) {
+            return (EJBException)(ex);
+        } else {
+            return new EJBException(message, ex);
         }
     }
     
     public EJBException throwing(String method, Exception ex) {
         return throwing(method, ex, Severity.ERROR);
-    }
-    
-    public EJBException catch_throwing(String method, Exception ex, Severity severity) {
-        return error_throwing(method, "Catching "+ex.getMessage(), severity);
-    }
-    
-    public EJBException catch_throwing(String method, Exception ex) {
-        return catch_throwing(method, ex, Severity.ERROR);
     }
     
     public void trace(String method, String message, String status) {

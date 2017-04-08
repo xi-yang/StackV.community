@@ -74,7 +74,7 @@ import net.maxgigapop.mrs.service.HandleServiceCall;
 @LocalBean
 public class HandleSystemCall {
     
-    private static final StackLogger logger = new StackLogger(HandleSystemCall.class.getName(), "SystemIntegrationAPI");
+    private static final StackLogger logger = new StackLogger(HandleSystemCall.class.getName(), "HandleSystemCall");
 
     public VersionGroup createHeadVersionGroup(String refUuid) {
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();

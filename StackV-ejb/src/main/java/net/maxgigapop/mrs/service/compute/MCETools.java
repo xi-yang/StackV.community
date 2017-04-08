@@ -898,7 +898,7 @@ public class MCETools {
                 try {
                     vlanSubRange = new TagSet(solution.getLiteral("range").toString());
                 } catch (TagSet.InvalidVlanRangeExeption ex) {
-                    throw logger.catch_throwing(method, ex);
+                    throw logger.throwing(method, ex);
                 }
                 if (vlanSubRange.hasTag(suggestedVlan)) {
                     subPort = solution.getResource("sub_port");
