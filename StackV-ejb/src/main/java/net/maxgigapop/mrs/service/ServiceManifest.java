@@ -37,11 +37,6 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJB;
-import javax.ejb.EJBException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -55,22 +50,23 @@ import org.json.simple.parser.ParseException;
 
 public class ServiceManifest {
     
-    private final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "ServiceManifest");
+    private static final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "ServiceManifest");
     
     static public JSONObject generateManifest (String jsonModel, String serviceType) {
+        String method = "generateManifest";
         JSONObject joMan = new JSONObject();
         OntModel omAdd = null;
         try {
             omAdd = ModelUtil.unmarshalOntModelJson(jsonModel);
         } catch (Exception ex) {
-            throw new EJBException(ServiceManifest.class.getName()+" generateManifest failed to parse: "+jsonModel, ex);
+            throw logger.throwing(method, ex);
         }
         SystemModelCoordinator systemModelCoordinator = null;
         try {
             Context ejbCxt = new InitialContext();
             systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/SystemModelCoordinator");
         } catch (NamingException ex) {
-            throw new EJBException(ServiceManifest.class.getName() + " failed to inject systemModelCoordinator", ex);
+            throw logger.throwing(method, ex);
         }
         OntModel omRef = systemModelCoordinator.getCachedOntModel();
 
@@ -91,24 +87,25 @@ public class ServiceManifest {
             joMan.put("private_cloud", generateManifestVcnAws(omAdd));
             joMan.put("connections", generateManifestDncLinks(omAdd));
         } else {
-            throw new EJBException("Cannot generate maniest for service type " + serviceType); 
+            throw logger.error_throwing(method, "Cannot generate maniest for service type " + serviceType);
         }
         return joMan;
     }
 
     static public JSONObject resolveManifestJsonTemplate (String serviceTemplate, String jsonModel) {
+        String method = "resolveManifestJsonTemplate";
         OntModel omAdd = null;
         try {
             omAdd = ModelUtil.unmarshalOntModelJson(jsonModel);
         } catch (Exception ex) {
-            throw new EJBException(ServiceManifest.class.getName()+" generateManifest failed to parse: "+jsonModel, ex);
+            throw logger.throwing(method, ex);
         }
         SystemModelCoordinator systemModelCoordinator = null;
         try {
             Context ejbCxt = new InitialContext();
             systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/SystemModelCoordinator");
         } catch (NamingException ex) {
-            throw new EJBException(ServiceManifest.class.getName() + " failed to inject systemModelCoordinator", ex);
+            throw logger.throwing(method, ex);
         }
         OntModel omRef = systemModelCoordinator.getCachedOntModel();
         return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd, omRef);
@@ -173,6 +170,7 @@ public class ServiceManifest {
     
     // top method to parse / query JSON template
     static public Object querySparsqlTemplateJson(String template, OntModel model, OntModel modelRef) {
+        String method = "querySparsqlTemplateJson";
         //parse temlate into json
         JSONParser parser = new JSONParser();
         try {
@@ -196,22 +194,22 @@ public class ServiceManifest {
                 }
                 return joArrRet;
             }
-            throw new EJBException("error: querySparsqlTemplateJson - template contains non-json text: " + template);
+            throw logger.error_throwing(method, "template contains non-json text: " + template);
         } catch (ParseException ex) {
-            throw new EJBException("error: querySparsqlTemplateJson failed to parse: "+template, ex);
-        } catch (EJBException ex) {
-            throw new EJBException("error: querySparsqlTemplateJson failed. ", ex);
+            throw logger.throwing(method, "failed to parse: : " + template, ex);
         }
     }
 
     // common methods to parse / query JSON joTemplate ... 
     static private void querySparsqlTemplateJsonRecursive(JSONObject joTemplate, OntModel model, OntModel modelRef) {
+        String method = "querySparsqlTemplateJsonRecursive";
         JSONArray jaRecursive = new JSONArray();
         JSONObject joVarMap = null;
         if (joTemplate.containsKey("varmap") ) {
             joVarMap = (JSONObject)joTemplate.get("varmap");
             joTemplate.remove("varmap");
         } 
+        logger.trace(method, "joTemplate => " + joTemplate.toJSONString());
         Iterator itKey = joTemplate.keySet().iterator();
         while (itKey.hasNext()) {
             Object key = itKey.next();
@@ -246,6 +244,7 @@ public class ServiceManifest {
     }
     
     static private JSONArray handleSparsqlJsonMap(JSONObject jo, OntModel model, OntModel modelRef) {
+        String method = "handleSparsqlJsonMap";
         JSONArray joArr = new JSONArray();
         String sparql = null;
         boolean required = true;
@@ -269,13 +268,14 @@ public class ServiceManifest {
         } else {
             varMap = new JSONObject();
         }
+        logger.trace(method, "jo => " + jo.toJSONString());
         // Recondition sparql using varMap
         sparql = replaceSparqlVars(sparql, varMap);
         // Run sparql query and get vars and add to varMap
         ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
         if (!rs.hasNext()) {
             if (required) {
-                throw new EJBException("no required reqsult for manifest query for: "+sparql);
+                throw logger.error_throwing(method, "no required reqsult for manifest query for: "+sparql);
             } else {
                 return null;
             }
@@ -318,7 +318,7 @@ public class ServiceManifest {
                         // add joResolved into joArr
                         joArr.add(joResolved);
                     } catch (ParseException ex) {
-                        throw new EJBException("handleSparsqlJsonMap failed parse json: " + json);
+                        throw logger.throwing(method, "failed parse json: " + json, ex);
                     }
                 }
             } else {
@@ -337,7 +337,7 @@ public class ServiceManifest {
                     // add joResolved into joArr
                     joArr.add(joResolved);
                 } catch (ParseException ex) {
-                    throw new EJBException("handleSparsqlJsonMap failed parse json: " + json);
+                    throw logger.throwing(method, "failed parse json: " + json, ex);
                 }
             }
         }

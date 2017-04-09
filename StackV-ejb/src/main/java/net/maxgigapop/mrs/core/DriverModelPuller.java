@@ -45,7 +45,9 @@ import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import net.maxgigapop.mrs.service.HandleServiceCall;
 
 /**
  *
@@ -59,6 +61,8 @@ public class DriverModelPuller {
     private @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
 
+    private static final StackLogger logger = new StackLogger(DriverModelPuller.class.getName(), "DriverModelPuller");
+
     private Map<DriverInstance, Future<String>> pullResultMap = new HashMap<DriverInstance, Future<String>>();
 
     @PostConstruct
@@ -69,11 +73,14 @@ public class DriverModelPuller {
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null) {
             DriverInstancePersistenceManager.refreshAll();
         }
+        logger.init();
     }
 
     @Lock(LockType.WRITE)
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void run() {
+        String method = "run";
+        logger.start(method);
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
             DriverInstancePersistenceManager.refreshAll();
@@ -86,12 +93,14 @@ public class DriverModelPuller {
                 if (previousResult.isDone()) {
                     try {
                         String status = previousResult.get();
-                    } catch (Exception e) {
-                        //@TODO: error handling: retry in this current pull, then exception if still failed
+                        logger.trace(method, "model pulling - previousResult ready for topologyURI="+topoUri+" with status="+status);
+                    } catch (Exception ex) {
+                        logger.catching(method, ex);
+                        //@TODO: retry couple of times, then exception if still failed
                     }
                 } else {
-                    //@TODO: timeout handling: skip this current pull and check after one more cycle, then do
-                    //previousResult.cancel(true); // assume the underlying driverSystem puller is cooperative
+                    logger.trace(method, "model pulling - previousResult not ready for topologyURI="+topoUri);
+                    //@TODO: timeout handling: skip and check after one more cycle, then previousResult.cancel(true); 
                 }
             }
             try {
@@ -103,9 +112,9 @@ public class DriverModelPuller {
                 // Call async pullModel -> the driverInstance persistence session will be invalid in another session bean / thread
                 Future<String> result = driverSystemHandler.pullModel(driverInstance.getId());
                 pullResultMap.put(driverInstance, result);
-            } catch (Exception e) {
-                // exception handling without destroying the puller session by throwing EJBException to container
-                // throw new EJBException(e);
+                logger.trace(method, "model pulling - putting async result for topologyURI="+topoUri);
+            } catch (Exception ex) {
+                logger.catching(method, ex);
             }
         }
     }
