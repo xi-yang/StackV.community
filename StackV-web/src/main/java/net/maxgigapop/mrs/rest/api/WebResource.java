@@ -73,11 +73,8 @@ import org.apache.logging.log4j.Level;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
-import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.config.Configurator;
 
 /**
@@ -94,6 +91,7 @@ public class WebResource {
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
     String host = "http://127.0.0.1:8080/StackV-web/restapi";
+    String kc_url = System.getProperty("kc_url");
     private final serviceBeans servBean = new serviceBeans();
     JSONParser parser = new JSONParser();
     private final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
@@ -137,6 +135,8 @@ public class WebResource {
     @RolesAllowed("ACL")
     public void addACLEntry(@PathParam("refUUID") String refUUID, final String subject) {
         try {
+            String method = "addACLEntry";
+            logger.start(method);
             // Authorize service.
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                     .getName());
@@ -154,6 +154,8 @@ public class WebResource {
             prep.setString(1, subject);
             prep.setString(2, refUUID);
             prep.executeUpdate();
+
+            logger.end(method);
         } catch (SQLException ex) {
             logger.catching("addACLEntry", ex);
         }
@@ -179,6 +181,8 @@ public class WebResource {
     @RolesAllowed("ACL")
     public void removeACLEntry(@PathParam("refUUID") String refUUID, final String subject) {
         try {
+            String method = "removeACLEntry";
+            logger.start(method);
             // Authorize service.
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                     .getName());
@@ -195,6 +199,8 @@ public class WebResource {
             prep.setString(1, subject);
             prep.setString(2, refUUID);
             prep.executeUpdate();
+            
+            logger.end(method);
         } catch (SQLException ex) {
             logger.catching("removeACLEntry", ex);
         }
@@ -227,7 +233,8 @@ public class WebResource {
     @RolesAllowed("ACL")
     public ArrayList<ArrayList<String>> getACLwithInfo(@PathParam("refUuid") String refUUID) {
         try {
-
+            String method = "getACLwithInfo";
+            logger.traceStart(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             ArrayList<String> sqlList = new ArrayList<>();
             Connection front_conn;
@@ -250,7 +257,7 @@ public class WebResource {
             }
 
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -289,6 +296,7 @@ public class WebResource {
                 }
             }
 
+            logger.traceEnd(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getACLwithInfo", ex);
@@ -631,9 +639,11 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getUsers() {
         try {
+            String method = "getUsers";
+            logger.traceStart(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -673,6 +683,7 @@ public class WebResource {
                 retList.add(userList);
             }
 
+            logger.traceEnd(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getUsers", ex);
@@ -704,9 +715,11 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getGroups() {
         try {
+            String method = "getGroups";
+            logger.traceStart(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/roles");
+            URL url = new URL(kc_url + "/admin/realms/StackV/roles");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -735,6 +748,7 @@ public class WebResource {
                 retList.add(groupList);
             }
 
+            logger.traceEnd(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getGroups", ex);
@@ -766,9 +780,11 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getRoles() {
         try {
+            String method = "getRoles";
+            logger.traceStart(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/clients/" + keycloakStackVClientID + "/roles");
+            URL url = new URL(kc_url + "/admin/realms/StackV/clients/" + keycloakStackVClientID + "/roles");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -797,6 +813,7 @@ public class WebResource {
                 retList.add(roleList);
             }
 
+            logger.traceEnd(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getRoles", ex);
@@ -829,9 +846,11 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getUserGroups(@PathParam("user") String subject) {
         try {
+            String method = "getUserGroups";
+            logger.traceStart(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -858,6 +877,8 @@ public class WebResource {
 
                 retList.add(roleList);
             }
+            
+            logger.traceEnd(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getUserGroups", ex);
@@ -887,8 +908,10 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public void addUserGroup(@PathParam("user") String subject, final String inputString) {
         try {
+            String method = "addUserGroup";
+            logger.start(method);
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -936,8 +959,10 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public void removeUserGroup(@PathParam("user") String subject, final String inputString) {
         try {
+            String method = "removeUserGroup";
+            logger.start(method);
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -989,11 +1014,13 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getUserRoles(@PathParam("user") String subject) {
         try {
+            String method = "getUserRoles";
+            logger.traceStart(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
 
             // Get assigned roles.
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID);
+            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -1023,7 +1050,7 @@ public class WebResource {
             }
 
             // Get groups.
-            url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
+            url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
             conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -1049,7 +1076,7 @@ public class WebResource {
 
             // Get delegated roles.
             for (String group : groupList) {
-                url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/roles/" + group + "/composites");
+                url = new URL(kc_url + "/admin/realms/StackV/roles/" + group + "/composites");
                 conn = (HttpsURLConnection) url.openConnection();
                 conn.setRequestProperty("Authorization", auth);
                 conn.setReadTimeout(10000);
@@ -1078,6 +1105,7 @@ public class WebResource {
                 }
             }
 
+            logger.traceEnd(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getUserRoles", ex);
@@ -1107,8 +1135,10 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public void addUserRole(@PathParam("user") String subject, final String inputString) {
         try {
+            String method = "addUserRole";
+            logger.start(method);
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID + "");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID + "");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -1156,8 +1186,10 @@ public class WebResource {
     @RolesAllowed("Keycloak")
     public void removeUserRole(@PathParam("user") String subject, final String inputString) {
         try {
+            String method = "removeUserRole";
+            logger.start(method);
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID);
+            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -1205,6 +1237,8 @@ public class WebResource {
     @RolesAllowed("Labels")
     public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {
         try {
+            String method = "getLabels";
+            logger.traceStart(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
             Properties front_connectionProps = new Properties();
@@ -1226,6 +1260,7 @@ public class WebResource {
                 retList.add(labelList);
             }
 
+            logger.traceEnd(method);
             return retList;
         } catch (SQLException ex) {
             logger.catching("getLabels", ex);
@@ -1255,6 +1290,8 @@ public class WebResource {
     @RolesAllowed("Labels")
     public String label(final String inputString) {
         try {
+            String method = "label";
+            logger.start(method);
             JSONObject inputJSON = new JSONObject();
             try {
                 Object obj = parser.parse(inputString);
@@ -1282,6 +1319,7 @@ public class WebResource {
             prep.setString(4, color);
             prep.executeUpdate();
 
+            logger.end(method);
             return "Added";
         } catch (SQLException ex) {
             logger.catching("label", ex);
@@ -1310,6 +1348,8 @@ public class WebResource {
     @RolesAllowed("Labels")
     public String deleteLabel(@PathParam(value = "username") String username, @PathParam(value = "identifier") String identifier) {
         try {
+            String method = "deleteLabel";
+            logger.start(method);
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -1321,6 +1361,7 @@ public class WebResource {
             prep.setString(2, identifier);
             prep.executeUpdate();
 
+            logger.end(method);
             return "Deleted";
         } catch (SQLException ex) {
             logger.catching("deleteLabel", ex);
@@ -1348,6 +1389,8 @@ public class WebResource {
     @RolesAllowed("Labels")
     public String clearLabels(@PathParam(value = "username") String username) {
         try {
+            String method = "clearLabels";
+            logger.start(method);
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -1358,6 +1401,7 @@ public class WebResource {
             prep.setString(1, username);
             prep.executeUpdate();
 
+            logger.end(method);
             return "Labels Cleared";
         } catch (SQLException ex) {
             logger.catching("clearLabels", ex);
@@ -1467,6 +1511,8 @@ public class WebResource {
     @RolesAllowed("Logging")
     public String getLogs(@PathParam("refUUID") String refUUID) {
         try {
+            String method = "getLogs";
+            logger.traceStart(method);
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
@@ -1493,6 +1539,7 @@ public class WebResource {
                 logArr.add(logJSON);
             }
 
+            logger.traceEnd(method);
             return logArr.toJSONString();
         } catch (SQLException ex) {
             logger.catching("getLogs", ex);
@@ -1723,7 +1770,7 @@ public class WebResource {
             PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT S.name, S.filename, S.description FROM service S WHERE S.atomic = 0");
             ResultSet rs1 = prep.executeQuery();
 
-            while (rs1.next()) {                
+            while (rs1.next()) {
                 if (roleSet.contains(rs1.getString("filename"))) {
                     ArrayList<String> wizardList = new ArrayList<>();
                     wizardList.add(rs1.getString("name"));
@@ -2052,6 +2099,8 @@ public class WebResource {
     @RolesAllowed("Profiles")
     public String getProfile(@PathParam("wizardID") int wizardID) {
         try {
+            String method = "getProfile";
+            logger.traceStart(method);
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -2065,8 +2114,8 @@ public class WebResource {
                 return rs1.getString(1);
             }
 
+            logger.traceEnd(method);
             return "";
-
         } catch (SQLException ex) {
             logger.catching("getProfile", ex);
             return null;
@@ -2092,6 +2141,8 @@ public class WebResource {
     @RolesAllowed("Profiles")
     public void editProfile(@PathParam("wizardID") int wizardId, final String inputString) {
         try {
+            String method = "editProfile";
+            logger.start(method);
             // Connect to the DB
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
@@ -2104,6 +2155,7 @@ public class WebResource {
             prep.setInt(2, wizardId);
             prep.executeUpdate();
 
+            logger.end(method);
         } catch (SQLException ex) {
             logger.catching("editProfile", ex);
         }
@@ -2127,6 +2179,8 @@ public class WebResource {
     @RolesAllowed("Profiles")
     public String newProfile(final String inputString) {
         try {
+            String method = "newProfile";
+            logger.start(method);
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -2152,6 +2206,8 @@ public class WebResource {
             prep.setString(5, description);
             prep.setInt(6, 0);
             prep.executeUpdate();
+            
+            logger.end(method);
             return null;
         } catch (SQLException | ParseException ex) {
             logger.catching("newProfile", ex);
@@ -2176,6 +2232,8 @@ public class WebResource {
     @RolesAllowed("Profiles")
     public void deleteProfile(@PathParam("wizardId") int wizardId) {
         try {
+            String method = "deleteProfile";
+            logger.start(method);
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -2186,6 +2244,7 @@ public class WebResource {
             prep.setInt(1, wizardId);
             prep.executeUpdate();
 
+            logger.end(method);
         } catch (SQLException ex) {
             logger.catching("deleteProfile", ex);
         }
@@ -2282,6 +2341,7 @@ public class WebResource {
     public void createService(@Suspended
             final AsyncResponse asyncResponse, final String inputString) {
         try {
+            logger.start("createService");
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             Object obj = parser.parse(inputString);
@@ -2334,6 +2394,7 @@ public class WebResource {
             final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
             final String refUuid, @PathParam(value = "action")
             final String action) {
+        logger.start("operate");
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
 
