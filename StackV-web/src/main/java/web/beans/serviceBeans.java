@@ -61,10 +61,8 @@ public class serviceBeans {
 
     private final Logger logger = LogManager.getLogger("net.maxgigapop.mrs.rest.api.WebResource");
 
-    private final String kc_url = "https://k152.maxgigapop.net:8543/auth";
-    private final String kc_user = "admin";
-    private final String kc_pass = "MAX123!";
-
+    private final String kc_url = System.getProperty("kc_url");
+    
     JSONParser parser = new JSONParser();
 
     String login_db_user = "login_view";
@@ -2254,7 +2252,7 @@ public class serviceBeans {
 
     public String refreshToken(String refresh) {
         try {
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token");
+            URL url = new URL(kc_url + "/realms/StackV/protocol/openid-connect/token");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
 
             // restapi
