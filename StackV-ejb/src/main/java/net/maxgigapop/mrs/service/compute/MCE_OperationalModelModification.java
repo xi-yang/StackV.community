@@ -5,10 +5,6 @@
  */
 package net.maxgigapop.mrs.service.compute;
 
-import com.hp.hpl.jena.rdf.model.Resource;
-import java.util.concurrent.Future;
-import net.maxgigapop.mrs.bean.ModelBase;
-import net.maxgigapop.mrs.bean.ServiceDelta;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.QuerySolution;
@@ -17,8 +13,6 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,25 +26,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
-import net.maxgigapop.mrs.bean.ServiceInstance;
-import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.common.Mrs;
-import net.maxgigapop.mrs.common.Nml;
-import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.service.compile.CompilerBase;
 import net.maxgigapop.mrs.service.compile.CompilerFactory;
 import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import org.apache.commons.net.util.SubnetUtils;
  
 /**
  *
@@ -59,21 +44,27 @@ import org.apache.commons.net.util.SubnetUtils;
 @Stateless
 public class MCE_OperationalModelModification implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_OperationalModelModification.class.getName());
+    private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
+
     JSONParser parser = new JSONParser();
 
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+        String method = "process";
+        if (annotatedDelta.getServiceInstance() != null) {
+            logger.refuuid(annotatedDelta.getServiceInstance().getReferenceUUID());
+            logger.targetid(annotatedDelta.getId());
+        }
+        logger.start(method);
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
-            throw new EJBException(String.format("%s::process ", this.getClass().getName()));
+            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
         }
         try {
-            log.log(Level.FINE, "\n>>>MCE_OperationalModelModification--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_OperationalModelModification.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
         }
-
         // importPolicyData
         String sparql = "SELECT ?policy ?data ?dataType ?dataValue WHERE {"
                 + "?policy a spa:PolicyAction. "
@@ -100,7 +91,7 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
             resourcesToRemove = (JSONArray)parser.parse(inputString);
             if (resourcesToRemove == null)throw new Exception();
         } catch ( Exception ex) {
-            Logger.getLogger(MCE_OperationalModelModification.class.getName()).log(Level.SEVERE, null, ex);
+            throw logger.throwing(method, "cannot parse json string "+inputString, ex);
         } 
         
         Model subModel = ModelFactory.createDefaultModel();
@@ -120,7 +111,11 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
             }
             Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
             if (node != null) {
-                subModel.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));
+                try {
+                    subModel.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));
+                } catch (Exception ex) {
+                    throw logger.error_throwing(method, String.format("listUpDownStatements(%s) -exception- %s", node, ex));
+                }
                 resources.add(node);
             } else {
                 throw new NullPointerException("MCE_OperationalModelModification:: Resource cannot be null.");
@@ -130,12 +125,16 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
        
         ServiceDelta outputDelta = new ServiceDelta();
         DeltaModel dmReduction = new DeltaModel();
-
         dmReduction.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
         dmReduction.getOntModel().add(subModel);
-
         outputDelta.setModelReduction(dmReduction);
         
+        try {
+            logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+        } catch (Exception ex) {
+            logger.trace(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
+        }
+        logger.end(method);        
         return new AsyncResult(outputDelta);
     }   
         

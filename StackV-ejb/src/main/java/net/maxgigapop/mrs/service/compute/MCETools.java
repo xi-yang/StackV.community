@@ -57,7 +57,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
@@ -1262,7 +1261,7 @@ public class MCETools {
         //spaModel.remove(listStmtsToRemove);
     }
     
-    public static String formatJsonExport(String jsonExport, String formatOutput)  {
+    public static String formatJsonExport(String jsonExport, String formatOutput) throws Exception  {
         // get all format patterns
         Matcher m = Pattern.compile("\\%[^\\%]+\\%").matcher(formatOutput);
         List<String> jsonPathList = new ArrayList();
@@ -1284,7 +1283,7 @@ public class MCETools {
                 }
                 formatOutput = formatOutput.replace(jsonPath, jsonPattern);
             } catch (Exception ex) {
-                throw new EJBException(String.format("MCETools.formatJsonExport failed to export with JsonPath('%s') from:\n %s",
+                throw new Exception(String.format("MCETools.formatJsonExport failed to export with JsonPath('%s') from:\n %s",
                         jsonPath.substring(1, jsonPath.length() - 1), jsonExport));
             }
 

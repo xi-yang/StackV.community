@@ -34,18 +34,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.system.HandleSystemCall;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -71,12 +67,15 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             logger.refuuid(annotatedDelta.getServiceInstance().getReferenceUUID());
             logger.targetid(annotatedDelta.getId());
         }
-        try {
-            logger.trace(method, "\n>>>MCE_MPVlanConnection--DeltaAddModel Input=\n" + ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
-        } catch (Exception ex) {
-            logger.trace(method, "marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()) failed -- "+ex);
+        logger.start(method);
+        if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
+            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
         }
-
+        try {
+            logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+        } catch (Exception ex) {
+            logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
+        }
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
         String sparql = "SELECT ?conn ?policy ?data ?type ?value WHERE {"
                 + "?conn spa:dependOn ?policy . "
@@ -128,7 +127,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
         for (Resource policyAction : connPolicyMap.keySet()) {
             Map<String, MCETools.Path> l2pathMap = this.doMultiPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policyAction, connPolicyMap.get(policyAction));
             if (l2pathMap == null) {
-                throw new EJBException(String.format("%s::process cannot find paths for %s", this.getClass().getName(), policyAction));
+                throw logger.error_throwing(method, String.format("cannot find paths for %s", policyAction));
             }
 
             //2. merge the placement satements into spaModel
@@ -150,11 +149,11 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             */
         }
         try {
-            logger.trace(method, "\n>>>MCE_MPVlanConnection--DeltaAddModel Output=\n" + ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+            logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
-            logger.trace(method, "marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()) failed -- "+ex);
+            logger.trace(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
         }
-
+        logger.end(method);        
         return new AsyncResult(outputDelta);
     }
 
@@ -189,14 +188,14 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                         }
                     }
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::process doMultiPathFinding cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
+                    throw logger.throwing(method, String.format("cannot parse json string %s", entry.get("value")), e);
                 }
             } else {
-                throw new EJBException(String.format("%s::process doMultiPathFinding does not import policyData of %s type", entry.get("type").toString()));
+                throw logger.error_throwing(method, String.format("cannot import policyData of %s type", entry.get("type")));
             }
         }
         if (jsonConnReqs == null || jsonConnReqs.isEmpty()) {
-            throw new EJBException(String.format("%s::process doMultiPathFinding receive none connection request for <%s>", this.getClass().getName(), policyAction));
+            throw logger.error_throwing(method, String.format("received none connection request for policy <%s>", policyAction));
         }
         //@TODO: verify that all connList elements have been covered by jsonConnReqs
         for (Object connReq: jsonConnReqs.keySet()) {
@@ -204,12 +203,12 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             List<Resource> terminals = new ArrayList<>();
             JSONObject jsonConnReq = (JSONObject)jsonConnReqs.get(connReq);
             if (jsonConnReq.size() != 2) {
-                throw new EJBException(String.format("%s::process cannot doMultiPathFinding for connection '%s' should have exactly 2 terminals.", this.getClass().getName(), connId));
+                throw logger.error_throwing(method, String.format("cannot find path for connection '%s' - request must have exactly 2 terminals", connId));
             }
             for (Object key : jsonConnReq.keySet()) {
                 Resource terminal = systemModel.getResource((String) key);
                 if (!systemModel.contains(terminal, null)) {
-                    throw new EJBException(String.format("%s::process doMultiPathFinding cannot identify terminal <%s> in JSON data", this.getClass().getName(), key));
+                    throw logger.error_throwing(method, String.format("cannot identify terminal <%s> in JSON data", key));
                 }
                 terminals.add(terminal);
             }
@@ -220,7 +219,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             try {
                 KSP = MCETools.computeFeasibleL2KSP(transformedModel, nodeA, nodeZ, jsonConnReq);
             } catch (Exception ex) {
-                throw logger.error_throwing(method, String.format("connectionId=%s computeFeasibleL2KSP(nodeA=%s, nodeZ=%s, jsonConnReq=%s) exception -- ", connId, nodeA, nodeZ, jsonConnReq) + ex);
+                throw logger.throwing(method, String.format("connectionId=%s computeFeasibleL2KSP(nodeA=%s, nodeZ=%s, jsonConnReq=%s) exception -- ", connId, nodeA, nodeZ, jsonConnReq), ex);
             }
             if (KSP == null || KSP.size() == 0) {
                 throw logger.error_throwing(method, String.format("cannot find feasible path for connection '%s'", connId));
@@ -257,7 +256,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
             List<QuerySolution> terminalVlanSolutions = MCETools.getTerminalVlanLabels(l2Path);
             // require two terminal vlan ports and labels.
             if (solutions.isEmpty()) {
-                throw new EJBException("exportPolicyData failed to find '2' terminal Vlan tags for " + l2Path);
+                throw logger.error_throwing(method, "failed to find '2' terminal Vlan tags for " + l2Path);
             }
             if (dataType == null) {
                 spaModel.add(resData, Spa.type, "JSON");
@@ -270,7 +269,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 try {
                     jsonValue = (JSONObject)parser.parse(dataValue.toString());
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::exportPolicyData  cannot parse json string %s due to: %s", this.getClass().getName(), dataValue.toString(), e));
+                    throw logger.throwing(method, String.format("cannot parse json string %s", dataValue), e);
                 }
             }
             JSONArray jsonHops = new JSONArray();
@@ -289,7 +288,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
                 String exportFormat = querySolution.get("format").toString();
                 try {
                     exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
-                } catch (EJBException ex) {
+                } catch (Exception ex) {
                     logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
                     continue;
                 }

@@ -274,7 +274,7 @@ public class HandleServiceCall {
                 logger.error(method, "target:ServiceDelta getSystemDelta() == null -but- continue");
                 continue; 
             } else if (serviceDelta.getStatus().equals("INIT")) {
-                SystemInstance systemInstance = systemCallHandler.createInstance();
+                SystemInstance systemInstance = systemCallHandler.createInstance(serviceInstanceUuid);
                 systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
                 serviceDelta.setStatus("PROPAGATED");
                 DeltaPersistenceManager.merge(serviceDelta);
@@ -694,7 +694,7 @@ public class HandleServiceCall {
             } else if (canMultiPropagate || !itSD.hasNext()) {
                 SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
                 if (systemInstance == null) {
-                    systemInstance = systemCallHandler.createInstance();
+                    systemInstance = systemCallHandler.createInstance(serviceInstanceUuid);
                 } else {
                     systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
                 }
@@ -942,7 +942,7 @@ public class HandleServiceCall {
             }
             apiData.setReferenceModelUUID(serviceDelta.getSystemDelta().getReferenceVersionGroup().getRefUuid());
         } catch (Exception ex) {
-            throw new EJBException(ex);
+            throw logger.throwing(method, ex);
         }
     }
     

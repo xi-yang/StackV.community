@@ -237,6 +237,17 @@ public class HandleSystemCall {
         return systemInstance;
     }
 
+    public SystemInstance createInstance(String refUUID) {
+        String method = "createInstance";
+        logger.refuuid(refUUID);
+        logger.start(method);
+        SystemInstance systemInstance = new SystemInstance();
+        systemInstance.setReferenceUUID(refUUID);
+        SystemInstancePersistenceManager.save(systemInstance);
+        logger.end(method);
+        return systemInstance;
+    }
+
     public void terminateInstance(String refUUID) {
         String method = "terminateInstance";
         logger.refuuid(refUUID);
