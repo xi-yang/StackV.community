@@ -145,29 +145,38 @@ public class StackLogger {
         return error_throwing(method, message, Severity.ERROR);
     }
 
+    // differing log4j.catching (no marker)
     public void catching(String method, Exception ex, Severity severity) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.put("severity", severity.name());
-        logger.catching(ex);
+        error(method, "catching "+ex, severity);
     }
-
+    
     public void catching(String method, Exception ex) {
-        catching(method, ex, Severity.ERROR);
+        catching(method, ex, Severity.ERROR);        
     }
-
-    public EJBException throwing(String method, Exception ex, Severity severity) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.put("severity", severity.name());
-        logger.catching(ex);
-        if (ex instanceof EJBException) {
-            return (EJBException) (ex);
+    
+    // differing log4j.throwing (no marker)
+    public EJBException throwing(String method, String message, Exception ex, Severity severity) {
+        error(method, message, severity);
+        if (ex instanceof  EJBException) {
+            return (EJBException)(ex);
         } else {
-            return new EJBException(ex);
+            return new EJBException(message, ex);
         }
     }
 
+    public EJBException throwing(String method, Exception ex, Severity severity) {
+        return throwing(method, "catching "+ex, ex, Severity.ERROR);
+    }
+    
+    public EJBException throwing(String method, String message, Exception ex) {
+        error(method, message, Severity.ERROR);
+        if (ex instanceof  EJBException) {
+            return (EJBException)(ex);
+        } else {
+            return new EJBException(message, ex);
+        }
+    }
+    
     public EJBException throwing(String method, Exception ex) {
         return throwing(method, ex, Severity.ERROR);
     }
@@ -188,16 +197,27 @@ public class StackLogger {
         logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, status));
     }
 
-    public void traceStart(String method) {
+    public void trace_start(String method) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         logger.trace(String.format("{\"event\":\"%s.%s.start\"}", moduleName, method));
     }
 
-    public void traceEnd(String method) {
+    public void trace_start(String method, String status) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        logger.trace(String.format("{\"event\":\"%s.%s.start\", \"status\"=\"%s\"}", moduleName, method, status));
+    }
+
+    public void trace_end(String method) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         logger.trace(String.format("{\"event\":\"%s.%s.end\"}", moduleName, method));
     }
 
+    public void trace_end(String method, String status) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        logger.trace(String.format("{\"event\":\"%s.%s.end\", \"status\"=\"%s\"}", moduleName, method, status));
+    }
 }

@@ -234,7 +234,7 @@ public class WebResource {
     public ArrayList<ArrayList<String>> getACLwithInfo(@PathParam("refUuid") String refUUID) {
         try {
             String method = "getACLwithInfo";
-            logger.traceStart(method);
+            logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             ArrayList<String> sqlList = new ArrayList<>();
             Connection front_conn;
@@ -296,7 +296,7 @@ public class WebResource {
                 }
             }
 
-            logger.traceEnd(method);
+            logger.trace_end(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getACLwithInfo", ex);
@@ -640,7 +640,7 @@ public class WebResource {
     public ArrayList<ArrayList<String>> getUsers() {
         try {
             String method = "getUsers";
-            logger.traceStart(method);
+            logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL(kc_url + "/admin/realms/StackV/users");
@@ -683,7 +683,7 @@ public class WebResource {
                 retList.add(userList);
             }
 
-            logger.traceEnd(method);
+            logger.trace_end(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getUsers", ex);
@@ -716,7 +716,7 @@ public class WebResource {
     public ArrayList<ArrayList<String>> getGroups() {
         try {
             String method = "getGroups";
-            logger.traceStart(method);
+            logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL(kc_url + "/admin/realms/StackV/roles");
@@ -748,7 +748,7 @@ public class WebResource {
                 retList.add(groupList);
             }
 
-            logger.traceEnd(method);
+            logger.trace_end(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getGroups", ex);
@@ -781,7 +781,7 @@ public class WebResource {
     public ArrayList<ArrayList<String>> getRoles() {
         try {
             String method = "getRoles";
-            logger.traceStart(method);
+            logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL(kc_url + "/admin/realms/StackV/clients/" + keycloakStackVClientID + "/roles");
@@ -813,7 +813,7 @@ public class WebResource {
                 retList.add(roleList);
             }
 
-            logger.traceEnd(method);
+            logger.trace_end(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getRoles", ex);
@@ -847,7 +847,7 @@ public class WebResource {
     public ArrayList<ArrayList<String>> getUserGroups(@PathParam("user") String subject) {
         try {
             String method = "getUserGroups";
-            logger.traceStart(method);
+            logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
@@ -878,7 +878,7 @@ public class WebResource {
                 retList.add(roleList);
             }
             
-            logger.traceEnd(method);
+            logger.trace_end(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getUserGroups", ex);
@@ -1015,7 +1015,7 @@ public class WebResource {
     public ArrayList<ArrayList<String>> getUserRoles(@PathParam("user") String subject) {
         try {
             String method = "getUserRoles";
-            logger.traceStart(method);
+            logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
 
@@ -1105,7 +1105,7 @@ public class WebResource {
                 }
             }
 
-            logger.traceEnd(method);
+            logger.trace_end(method);
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getUserRoles", ex);
@@ -1238,7 +1238,7 @@ public class WebResource {
     public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {
         try {
             String method = "getLabels";
-            logger.traceStart(method);
+            logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
             Properties front_connectionProps = new Properties();
@@ -1260,7 +1260,7 @@ public class WebResource {
                 retList.add(labelList);
             }
 
-            logger.traceEnd(method);
+            logger.trace_end(method);
             return retList;
         } catch (SQLException ex) {
             logger.catching("getLabels", ex);
@@ -1512,7 +1512,7 @@ public class WebResource {
     public String getLogs(@PathParam("refUUID") String refUUID) {
         try {
             String method = "getLogs";
-            logger.traceStart(method);
+            logger.trace_start(method);
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
@@ -1539,7 +1539,7 @@ public class WebResource {
                 logArr.add(logJSON);
             }
 
-            logger.traceEnd(method);
+            logger.trace_end(method);
             return logArr.toJSONString();
         } catch (SQLException ex) {
             logger.catching("getLogs", ex);
@@ -2100,7 +2100,7 @@ public class WebResource {
     public String getProfile(@PathParam("wizardID") int wizardID) {
         try {
             String method = "getProfile";
-            logger.traceStart(method);
+            logger.trace_start(method);
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -2114,7 +2114,7 @@ public class WebResource {
                 return rs1.getString(1);
             }
 
-            logger.traceEnd(method);
+            logger.trace_end(method);
             return "";
         } catch (SQLException ex) {
             logger.catching("getProfile", ex);

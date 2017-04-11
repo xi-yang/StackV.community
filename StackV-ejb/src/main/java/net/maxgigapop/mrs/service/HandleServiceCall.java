@@ -969,6 +969,7 @@ public class HandleServiceCall {
         } catch (NamingException ex) {
             throw logger.error_throwing("resetSystemBootStrapped", " failed to inject systemModelCoordinator -exception- " + ex);
         }
+        logger.message("resetSystemBootStrapped", "systemBootstraped=false");
         systemModelCoordinator.setBootStrapped(false);
     }
     
