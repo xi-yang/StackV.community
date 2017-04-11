@@ -44,7 +44,7 @@ import org.json.simple.parser.JSONParser;
 @Stateless
 public class MCE_OperationalModelModification implements IModelComputationElement {
 
-    private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
+    private static final StackLogger logger = new StackLogger(MCE_OperationalModelModification.class.getName(), "MCE_OperationalModelModification");
 
     JSONParser parser = new JSONParser();
 

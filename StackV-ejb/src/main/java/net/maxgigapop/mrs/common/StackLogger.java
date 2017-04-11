@@ -194,4 +194,16 @@ public class StackLogger {
         ThreadContext.put("method", method);
         logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, status));      
     }
+
+    public void trace_start(String method) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        logger.trace(String.format("{\"event\":\"%s.%s.start\"}", moduleName, method));
+    }
+
+    public void trace_end(String method) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        logger.trace(String.format("{\"event\":\"%s.%s.end\"}", moduleName, method));
+    }
 }

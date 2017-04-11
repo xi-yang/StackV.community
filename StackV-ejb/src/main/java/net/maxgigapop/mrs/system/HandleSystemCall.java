@@ -289,6 +289,7 @@ public class HandleSystemCall {
         if (systemInstance.getId() != 0) {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         }
+        logger.refuuid(systemInstance.getReferenceUUID());
         if (systemInstance.getSystemDelta() != null
                 && systemInstance.getSystemDelta().getDriverSystemDeltas() != null
                 && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
@@ -444,6 +445,8 @@ public class HandleSystemCall {
                 driverSystemHandler.propagateDelta(driverInstance, targetDSD);
             } catch (NamingException ex) {
                 throw logger.throwing(method, ex);
+            } catch (EJBException ex) {
+                throw logger.throwing(method, ex);
             }
         }
         // save systemInstance
@@ -508,6 +511,8 @@ public class HandleSystemCall {
                     String resultStatus = asyncResult.get();
                 } catch (InterruptedException | ExecutionException e) {
                     throw logger.throwing(method, String.format("commiting %s at minute %d -exception- ", dsd, minute+1), e);
+                } catch (EJBException ex) {
+                    throw logger.throwing(method, ex);
                 }
             }
             if (doneSucessful) {

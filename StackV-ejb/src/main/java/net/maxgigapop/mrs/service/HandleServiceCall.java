@@ -275,7 +275,11 @@ public class HandleServiceCall {
                 continue; 
             } else if (serviceDelta.getStatus().equals("INIT")) {
                 SystemInstance systemInstance = systemCallHandler.createInstance(serviceInstanceUuid);
-                systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
+                try {
+                    systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
+                } catch (EJBException ex) {
+                    logger.throwing(method, ex);
+                }
                 serviceDelta.setStatus("PROPAGATED");
                 DeltaPersistenceManager.merge(serviceDelta);
                 if (!canMultiPropagate) {

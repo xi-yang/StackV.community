@@ -20,20 +20,18 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
  * @author xin
  */
 public class DTNPush {
+    
+    private static final StackLogger logger = DTNDriver.logger;
 
     private String topologyUri = null;
-    static final Logger logger = Logger.getLogger(DTNPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String output;
     private String error;
@@ -57,7 +55,7 @@ public class DTNPush {
      * function to propagate all the requests
      * ************************************************
      */
-    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) throws EJBException, Exception {
+    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) throws Exception {
         String requests = "";
 
         OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
@@ -74,9 +72,11 @@ public class DTNPush {
     }
 
     public void pushCommit(String r) {
+        String _method = "pushCommit";
         String[] requests = r.split("[\\n]");
 
         for (String request : requests) {
+            logger.trace_start(_method+"."+request);
             if (request.contains("CreateDataTransfer")) {
 //                String[] parameters = request.split("\\s+");
                 String[] parameters = request.split(";");
@@ -98,7 +98,7 @@ public class DTNPush {
                     if(id.contains("-copy")){   //add transfer info to transferMap
                         id = id.substring(0, id.indexOf("-copy"));
                         this.localMap += source+";"+destination+";"+id+";"+"ACTIVE;"+at+";"+traffic+";\n";
-                        logger.info("Request 'CreateDataTransfer' successful committed.");
+                        logger.trace(_method, "Request 'CreateDataTransfer' successful committed.");
                     } else {    //create transfer
                         cmdarray.add("gsissh"); cmdarray.add("cli.globusonline.org"); cmdarray.add("transfer");
                         cmdarray.add("--taskid="+id); 
@@ -114,7 +114,7 @@ public class DTNPush {
                         cmd = cmdarray.toArray(cmd);
                         int exit = runcommand(cmd);
                         if (exit==0) {
-                            logger.info("Request 'CreateDataTransfer' successful committed. " + this.output);
+                            logger.trace(_method, "Request 'CreateDataTransfer' successful committed. " + this.output);
                             //add transfer info to transferMap
                             this.localMap += source+";"+destination+";"+id+";"+"ACTIVE;"+at+";"+traffic+";\n";
                         }
@@ -170,7 +170,7 @@ public class DTNPush {
                         }
                     }
                     if(exit==0)
-                        logger.info("Request 'CreateDataTransfer' successful committed " + this.output);
+                        logger.trace(_method, "Request 'CreateDataTransfer' successful committed " + this.output);
                 }
             }   
 
@@ -180,12 +180,14 @@ public class DTNPush {
                 String[] cmd = {"gsissh", "cli.globusonline.org", "cancel", taskid};
                 int exit = runcommand(cmd);
                 if (exit==0)
-                    logger.info("Request 'CancelDataTransfer' successful committed " + this.output);
+                    logger.trace(_method, "Request 'CancelDataTransfer' successful committed " + this.output);
             }
+            logger.trace_end(_method+"."+request);
         }
     }
     
     private String cancelDataTransfer(OntModel model, OntModel modelReduct){
+        String method = "cancelDataTransfer";
         String requests = "";
         String query;
         query = "SELECT ?transfer WHERE {?transfer a nml:DataTransfer}";
@@ -199,7 +201,7 @@ public class DTNPush {
             query = "SELECT ?taskid WHERE {<" + transfer.asResource() + "> mrs:taskid ?taskid}";
             ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("model reduction does not specified taskid for data transfer: %s", transfer));
+                throw logger.error_throwing(method, String.format("model reduction does not specified taskid for data transfer: %s", transfer));
             }
             QuerySolution querySolution1 = r1.next();
             RDFNode taskid = querySolution1.get("taskid");
@@ -212,6 +214,7 @@ public class DTNPush {
     }
 
     private String createDataTransfer(OntModel model, OntModel modelAdd) {
+        String method = "cancelDataTransfer";
         String requests = "";
         String query;
         query = "SELECT ?transfer WHERE {?transfer a mrs:DataTransfer}";
@@ -226,7 +229,7 @@ public class DTNPush {
             query = "SELECT ?source WHERE {<" + transfer.asResource() + "> mrs:source ?source}";
             ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("model addition does not specify source of data transfer: %s", transfer));
+                throw logger.error_throwing(method, String.format("model addition does not specify source of data transfer: %s", transfer));
             }
             QuerySolution querySolution1 = r1.next();
             RDFNode source = querySolution1.get("source");
@@ -235,7 +238,7 @@ public class DTNPush {
             query = "SELECT ?destination WHERE {<" + transfer.asResource() + "> mrs:destination ?destination}";
             r1 = executeQuery(query, emptyModel, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("model addition does not specify destination of data transfer: %s", transfer));
+                throw logger.error_throwing(method, String.format("model addition does not specify destination of data transfer: %s", transfer));
             }
             querySolution1 = r1.next();
             RDFNode destination = querySolution1.get("destination");
@@ -284,7 +287,7 @@ public class DTNPush {
             query = "SELECT ?type WHERE {<" + transfer.asResource() + "> mrs:type ?type}";
             r1 = executeQuery(query, emptyModel, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("model addition does not specify type of data transfer: %s", transfer));
+                throw logger.error_throwing(method, String.format("model addition does not specify type of data transfer: %s", transfer));
             }
             querySolution1 = r1.next();
             RDFNode type = querySolution1.get("type");
@@ -374,7 +377,7 @@ public class DTNPush {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException ex) {
-            Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, ex.getMessage());
+            logger.catching("runcommand", ex);
         }
         return exitVal;
     }

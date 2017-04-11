@@ -63,7 +63,7 @@ import org.apache.commons.net.util.SubnetUtils;
 @Stateless
 public class MCE_NfvBgpRouting implements IModelComputationElement {
 
-    private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
+    private static final StackLogger logger = new StackLogger(MCE_NfvBgpRouting.class.getName(), "MCE_NfvBgpRouting");
 
     @Override
     @Asynchronous

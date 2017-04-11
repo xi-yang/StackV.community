@@ -68,7 +68,7 @@ import org.json.simple.parser.ParseException;
 @Stateless
 public class MCE_MultiPointVlanBridge implements IModelComputationElement {
     
-    private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
+    private static final StackLogger logger = new StackLogger(MCE_MultiPointVlanBridge.class.getName(), "MCE_MultiPointVlanBridge");
 
     @Override
     @Asynchronous

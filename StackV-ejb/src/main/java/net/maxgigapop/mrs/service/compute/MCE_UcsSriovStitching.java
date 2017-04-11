@@ -62,7 +62,7 @@ import org.json.simple.parser.ParseException;
 @Stateless
 public class MCE_UcsSriovStitching implements IModelComputationElement {
 
-    private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
+    private static final StackLogger logger = new StackLogger(MCE_UcsSriovStitching.class.getName(), "MCE_UcsSriovStitching");
 
     @Override
     @Asynchronous

@@ -64,7 +64,7 @@ import org.json.simple.parser.ParseException;
 @Stateless
 public class MCE_VMFilterPlacement implements IModelComputationElement {
 
-    private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
+    private static final StackLogger logger = new StackLogger(MCE_VMFilterPlacement.class.getName(), "MCE_VMFilterPlacement");
 
     @Override
     @Asynchronous

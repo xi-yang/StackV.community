@@ -33,13 +33,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -52,6 +48,7 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -64,20 +61,25 @@ import org.json.simple.parser.ParseException;
 @Stateless
 public class GenericRESTDriver implements IHandleDriverSystemCall {
 
-    private static final Logger logger = Logger.getLogger(GenericRESTDriver.class.getName());
+    private static final StackLogger logger = new StackLogger(GenericRESTDriver.class.getName(), "GenericRESTDriver");
 
     //@Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        String method = "propagateDelta";
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
-            throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
+            throw logger.error_throwing(method, driverInstance +"has no property key=subsystemBaseUrl");
         }
         VersionItem refVI = aDelta.getReferenceVersionItem();
         if (refVI == null) {
-            throw new EJBException(String.format("%s has no referenceVersionItem", aDelta));
+            throw logger.error_throwing(method, "target:DriverSystemDelta has no reference VersionItem");
         }
         try {
             // compose string body (delta) using JSONObject
@@ -99,33 +101,38 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "POST", deltaJSON.toString());
             if (!status.toUpperCase().equals("CONFIRMED")) {
-                throw new EJBException(String.format("%s failed to push %s into CONFIRMED status", driverInstance, aDelta));
+                throw logger.error_throwing(method, driverInstance + "failed to push target:DriverSystemDelta into CONFIRMED status");
             }
         } catch (Exception e) {
-            throw new EJBException(String.format("propagateDelta failed for %s with %s due to exception (%s)", driverInstance, aDelta, e.getMessage()));
+            throw logger.throwing(method, driverInstance + " failed to propagate", e);
         }
-        Logger.getLogger(GenericRESTDriver.class.getName()).log(Level.INFO, "GenericRESTDriver delta models succesfully propagated: "+subsystemBaseUrl);
+        logger.end(method);
     }
 
     //@Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        String method = "commitDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
-            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
+            throw logger.error_throwing(method, "DriverInstance == null");
         }
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
-            throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
+            throw logger.error_throwing(method, driverInstance +"has no property key=subsystemBaseUrl");
         }
         // commit through PUT
         try {
             URL url = new URL(String.format("%s/delta/%s/%s/commit", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "PUT", null);
-            //$$  if status == FAILED and raise exception
         } catch (IOException ex) {
-            throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
+            throw logger.throwing(method, driverInstance + " failed to communicate with subsystem ", ex);
         }
         // query through GET
         boolean doPoll = true;
@@ -140,19 +147,19 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
                 if (status.toUpperCase().equals("ACTIVE") || status.toUpperCase().equals("TERMINATED")) {
                     doPoll = false; // committed successfully
                 } else if (status.toUpperCase().contains("FAILED")) {
-                    throw new EJBException(String.format("%s failed to commit %s with status=%s", driverInstance, aDelta, status));
+                    throw logger.error_throwing(method, driverInstance + " failed to commit target:DriverSystemDelta with status=" + status);
                 }
             } catch (InterruptedException ex) {
-                throw new EJBException(String.format("%s poll for commit status is interrupted", driverInstance));
+                throw logger.error_throwing(method, driverInstance + " polling commit status got interrupted");
             } catch (IOException ex) {
                 if (ex instanceof java.io.FileNotFoundException) {
-                    logger.warning(String.format("%s failed with exception (%s) - check the subsystem for expected resource change...", driverInstance, ex));
+                    logger.warning(method, String.format("%s failed with exception (%s) - check the subsystem for expected resource change...", driverInstance, ex));
                 } else {
-                    throw new EJBException(String.format("%s failed to communicate with subsystem with exception (%s)", driverInstance, ex));
+                    throw logger.throwing(method, driverInstance + " failed to communicate with subsystem ", ex);
                 }
             }
         }
-        Logger.getLogger(GenericRESTDriver.class.getName()).log(Level.INFO, "GenericRESTDriver delta models succesfully commited: "+subsystemBaseUrl);
+        logger.end(method);
         return new AsyncResult<>("SUCCESS");
     }
 
@@ -160,16 +167,20 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
     @Asynchronous
     @SuppressWarnings("empty-statement")
     public Future<String> pullModel(Long driverInstanceId) {
+        String method = "pullModel";
+        logger.targetid(driverInstanceId.toString());
+        logger.start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
-            throw new EJBException(String.format("pullModel cannot find driverInance(id=%d)", driverInstanceId));
+            throw logger.error_throwing(method, "pullModel cannot find target:driverInance");
         }
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
-            throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
+            throw logger.error_throwing(method, driverInstance +"has no property key=subsystemBaseUrl");
         }
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || !DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().containsKey(driverInstance.getTopologyUri())) {
+            logger.warning(method, "driver instance is initializing");
             return new AsyncResult<>("INITIALIZING");
         }
         // sync on cached DriverInstance object = once per driverInstance to avoid write multiple vi of same version 
@@ -194,20 +205,20 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
                 JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(responseStr);
                 version = responseJSON.get("version").toString();
                 if (version == null || version.isEmpty()) {
-                    throw new EJBException(String.format("%s pulled model from subsystem with null/empty version", driverInstance));
+                        throw logger.error_throwing(method, driverInstance + "encounters null/empty version in pulled model from subsystem");
                 }
                 ttlModel = responseJSON.get("ttlModel").toString();
                 if (ttlModel == null || ttlModel.isEmpty()) {
-                    throw new EJBException(String.format("%s pulled model from subsystem with null/empty ttlModel content", driverInstance));
+                    throw logger.error_throwing(method, driverInstance + "encounters null/empty ttlModel content");
                 }
                 creationTimestamp = responseJSON.get("creationTime").toString();
                 if (creationTimestamp == null || creationTimestamp.isEmpty()) {
-                    throw new EJBException(String.format("%s pulled model from subsystem with null/empty creationTime", driverInstance));
+                    throw logger.error_throwing(method, driverInstance + "encounters null/empty creationTime");
                 }
             } catch (IOException ex) {
-                throw new EJBException(String.format("%s failed to connect to subsystem with exception (%s)", driverInstance, ex));
+                throw logger.throwing(method, driverInstance + " failed to connect to subsystem with ", ex);
             } catch (ParseException ex) {
-                throw new EJBException(String.format("%s failed to parse pulled information from subsystem with exception (%s)", driverInstance, ex));
+                throw logger.throwing(method, driverInstance + " parse pulled information from subsystem ", ex);
             }
             VersionItem vi = null;
             DriverModel dm = null;
@@ -232,7 +243,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
                 VersionItemPersistenceManager.save(vi);
                 driverInstance.setHeadVersionItem(vi);
                 VersionItemPersistenceManager.save(vi);
-                logger.info(String.format("persisted %s", vi));
+                logger.trace(method, driverInstance + String.format(" persisted %s", vi));
             } catch (Exception e) {
                 try {
                     if (dm != null) {
@@ -244,9 +255,10 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
                 } catch (Exception ex) {
                     ; // do nothing (logging?)
                 }
-                throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
+                throw logger.throwing(method, driverInstance + " failed to pull model ", e);
             }
         }
+        logger.end(method);
         return new AsyncResult<>("SUCCESS");
     }
 
@@ -262,9 +274,9 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
                 wr.flush();
             }
         }
-        logger.log(Level.FINEST, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        logger.trace("executeHttpMethod", String.format("Sending %s request to URL : %s", method, url));
         int responseCode = conn.getResponseCode();
-        logger.log(Level.FINEST, "Response Code : {0}", responseCode);
+        logger.trace("executeHttpMethod", String.format("Response Code : %s", responseCode));
 
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
