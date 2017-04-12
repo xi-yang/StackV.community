@@ -26,6 +26,46 @@ tr.button-row {
     height: 51px;
 }
 
+/* 
+    Visualization tab styling 
+*/
+a.viz-hdr{
+  color:inherit;
+  text-decoration: none;
+ }
+
+#table-tab{
+    transition: all 1000ms;    
+}
+.viz-table {
+    width:100%;
+    height:10%;   
+    transition: all 1000ms;   
+}
+
+.viz-cell {
+  width : 50%;
+  height:100%;
+}
+
+.viz-tab-content {
+    height: 100%;
+}
+
+.expanded-viz-div {
+    height:93%;
+}
+
+pre.expanded{
+   width: inherit;
+   height: inherit;
+   white-space: pre-wrap; 
+}
+
+.details-viz-pre{
+  white-space: pre-wrap; 
+}
+
 #log-div {
     background: white;
     padding: 10px;
