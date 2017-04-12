@@ -136,7 +136,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
     public Future<String> pullModel(Long driverInstanceId) {
         String method = "pullModel";
         logger.targetid(driverInstanceId.toString());
-        logger.start(method);
+        logger.trace_start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
             throw new EJBException(String.format("pullModel cannot find driverInance(id=%d)", driverInstanceId));
@@ -177,7 +177,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         } catch (Exception ex) {
             throw logger.throwing(method, driverInstance + " failed pull model", ex);
         }
-        logger.end(method);
+        logger.trace_end(method);
         return new AsyncResult<>("SUCCESS");
     }
     

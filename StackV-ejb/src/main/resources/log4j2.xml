@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="info" package="net.maxgigapop.mrs.service"  name="RAINS-Service">
+<Configuration status="info" package="net.maxgigapop.mrs"  name="StackV-ejb">
     <Appenders>
         <Console name="RainsOut" target="SYSTEM_OUT">
             <PatternLayout pattern="%msg ref[%X{refuuid}] target[%X{targetID}] -%X{severity}- %ex{2}%n" />
@@ -21,11 +21,15 @@
         </JDBC>      
     </Appenders>
     <Loggers>
-        <AsyncLogger name="net.maxgigapop.mrs.service" level="trace" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.service" level="debug" additivity="false">
             <AppenderRef ref="RainsOut" />
             <AppenderRef ref="MySQL" level="info" />
         </AsyncLogger>
-        <Root level="warn">
+        <AsyncLogger name="net.maxgigapop.mrs.system" level="debug" additivity="false">
+            <AppenderRef ref="RainsOut" />
+            <AppenderRef ref="MySQL" level="info" />
+        </AsyncLogger>
+        <Root level="info">
             <AppenderRef ref="RainsOut" />
         </Root>
     </Loggers>

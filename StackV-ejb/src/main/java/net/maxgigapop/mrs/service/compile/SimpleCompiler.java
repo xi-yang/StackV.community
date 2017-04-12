@@ -61,8 +61,6 @@ public class SimpleCompiler extends CompilerBase {
     @Override
     public void compile(WorkerBase worker) {
         String method = "compile";
-        logger.refuuid(spaDelta.getServiceInstance().getReferenceUUID());
-        logger.targetid(spaDelta.getId());
         logger.start(method);
         OntModel spaOntModelReduction = this.spaDelta.getModelReduction() == null ? null : this.spaDelta.getModelReduction().getOntModel();
         OntModel spaOntModelAddition = this.spaDelta.getModelAddition() == null ? null : this.spaDelta.getModelAddition().getOntModel();

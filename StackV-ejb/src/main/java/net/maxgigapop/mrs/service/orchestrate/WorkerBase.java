@@ -99,8 +99,6 @@ public class WorkerBase {
 
     protected void runWorkflow() {
         String method = "runWorkflow";
-        logger.refuuid(this.annoatedModelDelta.getServiceInstance().getReferenceUUID());
-        logger.targetid(this.annoatedModelDelta.getId());
         logger.start(method);
         
         ActionBase mergedRoot = null;

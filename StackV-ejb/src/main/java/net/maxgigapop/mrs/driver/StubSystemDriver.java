@@ -127,7 +127,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
     public Future<String> pullModel(Long driverInstanceId) {
         String method = "pullModel";
         logger.targetid(driverInstanceId.toString());
-        logger.start(method);
+        logger.trace_start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
             throw logger.error_throwing(method, "pullModel cannot find target:driverInance");
@@ -163,7 +163,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
         } catch (Exception e) {
             throw logger.throwing(method, driverInstance + " failed to pull model ", e);
         }
-        logger.end(method);
+        logger.trace_end(method);
         return new AsyncResult<String>("SUCCESS");
     }
 

@@ -77,8 +77,6 @@ public class CompilerBase {
 
     protected Map<Resource, OntModel> decomposeByPolicyActions(OntModel spaModel) {
         String method = "decomposeByPolicyActions";
-        logger.refuuid(spaDelta.getServiceInstance().getReferenceUUID());
-        logger.targetid(spaDelta.getReferenceUUID());
         Map<Resource, OntModel> leafPolicyModelMap = null;
         List<Resource> spaActions = getPolicyActionList(spaModel);
         if (spaActions == null) {
@@ -100,8 +98,6 @@ public class CompilerBase {
 
     protected OntModel getModelPartByPolicy(OntModel spaModel, Resource policy) {
         String method = "getModelPartByPolicy";
-        logger.refuuid(spaDelta.getServiceInstance().getReferenceUUID());
-        logger.targetid(spaDelta.getReferenceUUID());
         OntModel modelPart;
         try {
             modelPart = getReverseDependencyTree(spaModel, policy);

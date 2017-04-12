@@ -79,7 +79,7 @@ public class DriverModelPuller {
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void run() {
         String method = "run";
-        logger.start(method);
+        logger.trace_start(method);
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
             DriverInstancePersistenceManager.refreshAll();
@@ -116,5 +116,6 @@ public class DriverModelPuller {
                 logger.catching(method, ex);
             }
         }
+        logger.trace_end(method);
     }
 }

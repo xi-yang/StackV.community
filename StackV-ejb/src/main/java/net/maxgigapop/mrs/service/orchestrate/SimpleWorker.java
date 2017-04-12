@@ -42,8 +42,6 @@ public class SimpleWorker extends WorkerBase {
         if (annoatedModelDelta == null) {
             throw logger.error_throwing("run", "Workerflow cannot run with null annoatedModel");
         }
-        logger.refuuid(annoatedModelDelta.getServiceInstance().getReferenceUUID());
-        logger.targetid(annoatedModelDelta.getId());
         retrieveSystemModel();
         try {
             CompilerBase simpleCompiler = CompilerFactory.createCompiler("net.maxgigapop.mrs.service.compile.SimpleCompiler");

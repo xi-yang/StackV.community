@@ -220,10 +220,6 @@ public class ActionBase {
 
     public Future<ServiceDelta> execute() {
         String method = "execute";
-        if (inputDelta != null) {
-            logger.refuuid(inputDelta.getServiceInstance().getReferenceUUID());
-            logger.targetid(inputDelta.getId());
-        }
         try {
             Context ejbCxt = new InitialContext();
             IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(this.mceBeanPath);
@@ -244,8 +240,6 @@ public class ActionBase {
             inputDelta = childDelta;
             logger.trace(method, "inputDelta == null, then inputDelta <= childDelta" );
             return;
-        } else {
-            logger.refuuid(inputDelta.getServiceInstance().getReferenceUUID());
         }
         // if outputDelta is null (action not executed) merge to inputDelta
         ServiceDelta targetDelta = inputDelta;
@@ -315,8 +309,6 @@ public class ActionBase {
 
     public void sanitizeOutputDelta(ServiceDelta spaDelta) {
         String method = "sanitizeSpaModel";
-        logger.refuuid(spaDelta.getServiceInstance().getReferenceUUID());
-        logger.targetid(spaDelta.getId());
         if (this.outputDelta != null) {
             if (this.outputDelta.getModelAddition() != null && this.outputDelta.getModelAddition().getOntModel() != null) {
                 sanitizeSpaModel(this.outputDelta.getModelAddition().getOntModel(), spaDelta.getModelAddition().getOntModel());

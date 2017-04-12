@@ -178,7 +178,35 @@ public class StackLogger {
     public EJBException throwing(String method, Exception ex) {
         return throwing(method, ex, Severity.ERROR);
     }
+
+    public void debug(String method, String message, String status) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        if (status == null || status.isEmpty()) {
+            logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"status\"=\"%s\"}", moduleName, method, message));               
+        } else {
+            logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"message\"=\"%s\", \"status\"=\"%s\"}", moduleName, method, message, status));   
+        }
+    }
     
+    public void debug(String method, String status) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"status\"=\"%s\"}", moduleName, method, status));      
+    }
+
+    public void debug_start(String method) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        logger.debug(String.format("{\"event\":\"%s.%s.start\"}", moduleName, method));
+    }
+
+    public void debug_end(String method) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        logger.debug(String.format("{\"event\":\"%s.%s.end\"}", moduleName, method));
+    }
+
     public void trace(String method, String message, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
