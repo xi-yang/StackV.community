@@ -30,6 +30,7 @@ import javax.ejb.EJBException;
 import javax.persistence.Query;
 import net.maxgigapop.mrs.bean.*;
 import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
@@ -37,6 +38,8 @@ import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
  */
 @SuppressWarnings("unchecked")
 public class SystemInstancePersistenceManager extends PersistenceManager {
+    
+    private static final StackLogger logger = new StackLogger(SystemInstancePersistenceManager.class.getName(), "SystemInstancePersistenceManager");
 
     private static Map<String, SystemInstance> systemInstanceByUuidMap = null;
 
@@ -56,10 +59,12 @@ public class SystemInstancePersistenceManager extends PersistenceManager {
             }
             return listSI.get(0);
         } catch (Exception e) {
+            logger.targetid(uuid);
             if (e.getMessage().contains("No entity found")) {
+                logger.warning("findByReferenceUUID", "target:SystemInstance - no entity found");
                 return null;
             }
-            throw new EJBException(String.format("SystemInstancePersistenceManager::findByReferenceUUID raised exception: %s", e.getMessage()));
+            throw logger.error_throwing("findByReferenceUUID", e.getMessage());
         }
     }
 
@@ -72,10 +77,12 @@ public class SystemInstancePersistenceManager extends PersistenceManager {
             }
             return listSI.get(0);
         } catch (Exception e) {
+            logger.targetid(delta.getId().toString());
             if (e.getMessage().contains("No entity found")) {
+                logger.warning("findBySystemDelta", "target:SystemDelta - no entity found");
                 return null;
             }
-            throw new EJBException(String.format("SystemInstancePersistenceManager::findBySystemDelta raised exception: %s", e.getMessage()));
+            throw logger.error_throwing("findBySystemDelta", e.getMessage());
         }
     }
 

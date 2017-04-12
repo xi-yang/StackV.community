@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.RdfOwl;
@@ -61,7 +60,6 @@ import org.json.simple.JSONObject;
  */
 public class AwsBatchResourcesTool {
 
-    private static final Logger log = Logger.getLogger(AwsBatchResourcesTool.class.getName());
     private AwsEC2Get ec2Client = null;
     private AwsPrefix awsPrefix = null;
 

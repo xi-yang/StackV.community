@@ -39,11 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
@@ -52,6 +49,7 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -65,18 +63,25 @@ import org.apache.commons.net.util.SubnetUtils;
 @Stateless
 public class MCE_NfvBgpRouting implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_NfvBgpRouting.class.getName());
+    private static final StackLogger logger = new StackLogger(MCE_NfvBgpRouting.class.getName(), "MCE_NfvBgpRouting");
 
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
-        log.log(Level.FINE, "MCE_NfvBgpRouting::process {0}", annotatedDelta);
-        try {
-            log.log(Level.FINE, "\n>>>MCE_NfvBgpRouting--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_NfvBgpRouting.class.getName()).log(Level.SEVERE, null, ex);
+        String method = "process";
+        if (annotatedDelta.getServiceInstance() != null) {
+            logger.refuuid(annotatedDelta.getServiceInstance().getReferenceUUID());
+            logger.targetid(annotatedDelta.getId());
         }
-
+        logger.start(method);
+        if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
+            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
+        }
+        try {
+            logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+        } catch (Exception ex) {
+            logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
+        }
         // importPolicyData : Interface->Stitching->List<PolicyData>
         String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
                 + "?policy a spa:PolicyAction. "
@@ -129,10 +134,18 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
             // remove policy dependency
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
         }
+        
+        try {
+            logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+        } catch (Exception ex) {
+            logger.trace(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
+        }
+        logger.end(method);        
         return new AsyncResult(outputDelta);
     }
 
     private OntModel doRouting(OntModel systemModel, OntModel spaModel, Resource policyAction, Map stitchPolicyData) {
+        String method = "doMultiPathFinding";
         //@TODO: common logic
         List<Map> dataMapList = (List<Map>)stitchPolicyData.get("imports");
         JSONObject jsonReqData = null;
@@ -152,27 +165,22 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
                         }
                     }
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::process doRouting cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
+                    throw logger.throwing(method, String.format("cannot parse json string %s", entry.get("value")), e);
                 }
             } else {
-                throw new EJBException(String.format("%s::process doRouting does not import policyData of %s type", entry.get("type").toString()));
+                throw logger.error_throwing(method, String.format("cannot import policyData of %s type", entry.get("type")));
             }
         }
         
         if (jsonReqData == null || jsonReqData.isEmpty()) {
-            throw new EJBException(String.format("%s::process doRouting receive none request for <%s>", this.getClass().getName(), policyAction));
+            throw logger.error_throwing(method, String.format("received none request for policy <%s>", policyAction));
         }
 
         OntModel routingModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Model unionSysModel = spaModel.union(systemModel);
-        try {
-            log.log(Level.FINE, "\n>>>MCE_AWSDirectConnectStitch--unionSysModel=\n" + ModelUtil.marshalModel(unionSysModel));
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_NfvBgpRouting.class.getName()).log(Level.SEVERE, null, ex);
-        }
         if (!jsonReqData.containsKey("parent") || !jsonReqData.containsKey("router_id") 
                 || !jsonReqData.containsKey("as_number") || !jsonReqData.containsKey("neighbors")) {
-            throw new EJBException(String.format("%s::process doRouting imports incomplete JSON data", this.getClass().getName()));
+            throw logger.error_throwing(method, "imported incomplete JSON data");
         }
         String parentVM = (String) jsonReqData.get("parent");
         String routerId = (String) jsonReqData.get("router_id");
@@ -210,8 +218,7 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
                 resBgpRtTable = solution.getResource("bgpRtTable");
             } 
         } else {
-            throw new EJBException(String.format("%s::process doRouting cannot identify NFV parent VM: %s", this.getClass().getName(), parentVM));
-        }
+            throw logger.error_throwing(method, "cannot identify NFV parent VM: " + parentVM);        }
         if (resBgpRtTable == null) {
             resBgpRtTable = RdfOwl.createResource(spaModel, resRtSvc.getURI() + ":routingtable+quagga_bgp", Mrs.RoutingTable);
             routingModel.add(routingModel.createStatement(resRtSvc, Mrs.providesRoutingTable, resBgpRtTable));
@@ -288,6 +295,7 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
     }
     
     private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel routingModel, OntModel systemModel) {
+        String method = "exportPolicyData";
         String sparql = "SELECT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
                 + String.format("<%s> spa:type 'MCE_NfvBgpRouting'. ", resPolicy.getURI())
@@ -317,7 +325,7 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
                 try {
                     jsonValue = (JSONObject)parser.parse(dataValue.toString());
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::exportPolicyData  cannot parse json string %s due to: %s", this.getClass().getName(), dataValue.toString(), e));
+                    throw logger.throwing(method, String.format("cannot parse json string %s", dataValue), e);
                 }
             }
             
@@ -336,8 +344,8 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
                 String exportFormat = querySolution.get("format").toString();
                 try {
                     exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
-                } catch (EJBException ex) {
-                    log.log(Level.WARNING, ex.getMessage());
+                } catch (Exception ex) {
+                    logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
                     continue;
                 }
             }

@@ -104,7 +104,7 @@ function reloadDetails(time) {
 /* DETAILS */
 
 function loadDetails() {
-    // Subfunctions
+    // Subfunctions    
     subloadInstance();
 }
 
@@ -263,6 +263,88 @@ function subloadInstance() {
 
             // Next steps
             loadStatus(uuid);
+            subloadLogging();
+        }
+    });
+}
+
+function subloadLogging() {
+    var uuid = sessionStorage.getItem("uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs/' + uuid;
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (logs) {
+            var panel = document.getElementById("details-panel");
+            var table = document.createElement("table");
+
+            table.id = "instance-details-table";
+            table.className = "management-table";
+
+            var thead = document.createElement("thead");
+            var row = document.createElement("tr");
+            var head = document.createElement("th");
+            head.innerHTML = "Service Logs";
+            row.appendChild(head);
+            thead.appendChild(row);
+            table.appendChild(thead);
+
+            var tbody = document.createElement("tbody");
+            var row = document.createElement("tr");
+            var cell = document.createElement("td");
+            var div = document.createElement("div");
+            div.id = "log-div";
+
+            for (i = 0; i < logs.length; i++) {
+                var log = logs[i];
+                var detail = document.createElement("details");
+                if (log["level"] === "WARN") {
+                    detail.style = "color:orange";
+                }
+                if (log["level"] === "ERROR") {
+                    detail.style = "color:red";
+                }
+                
+                /*  log mapping:
+                 *      marker
+                 *      timestamp
+                 *      level
+                 *      logger
+                 *      message
+                 *      exception     
+                 */
+
+                var summary = document.createElement("summary");
+                summary.innerHTML = log["timestamp"] + " - " + log["message"];
+                detail.appendChild(summary);
+                var data = document.createElement("p");
+                data.innerHTML = "Level: " + log["level"];
+                detail.appendChild(data);
+                if (log["marker"]) {
+                    var data = document.createElement("p");
+                    data.innerHTML = "Marker: " + log["marker"];
+                    detail.appendChild(data);
+                }
+                var data = document.createElement("p");
+                data.innerHTML = "Logger: " + log["logger"];
+                detail.appendChild(data);
+                if (log["exception"]) {
+                    var data = document.createElement("p");
+                    data.innerHTML = "Exception: " + log["exception"];
+                    detail.appendChild(data);
+                }
+                div.appendChild(detail);
+            }
+
+            cell.appendChild(div);
+            row.appendChild(cell);
+            tbody.appendChild(row);
+            table.appendChild(tbody);
+            panel.appendChild(table);
+
             subloadVerification();
         }
     });

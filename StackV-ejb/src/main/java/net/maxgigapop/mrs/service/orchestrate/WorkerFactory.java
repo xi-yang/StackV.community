@@ -23,9 +23,11 @@
 
 package net.maxgigapop.mrs.service.orchestrate;
 
-import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.StackLogger;
 
 public class WorkerFactory {
+
+    private static final StackLogger logger = new StackLogger(WorkerFactory.class.getName(), "WorkerFactory");
 
     static public WorkerBase createWorker(String workerClassStr) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -34,7 +36,7 @@ public class WorkerFactory {
             Class<?> aClass = cl.loadClass(workerClassStr);
             worker = (WorkerBase) aClass.newInstance();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
-            throw new EJBException("WorkerFactory failed to create " + workerClassStr, ex);
+            throw logger.throwing("createWorker", "failed to create worker=" + workerClassStr, ex);
         }
         return worker;
     }

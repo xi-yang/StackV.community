@@ -23,20 +23,15 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
-import com.amazonaws.AmazonServiceException;
-import net.maxgigapop.mrs.driver.aws.AwsAuthenticateService;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.directconnect.AmazonDirectConnectAsyncClient;
-import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
 import com.amazonaws.services.directconnect.model.*;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -150,7 +145,7 @@ public class AwsDCGet {
                     }
                     break;
                 } catch (InterruptedException ex) {
-                    Logger.getLogger(AwsEC2Get.class.getName()).log(Level.SEVERE, null, ex);
+                    AwsDriver.logger.catching("dxvifDeletionCheck", ex);
                 }
             }
             try {

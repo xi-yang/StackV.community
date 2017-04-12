@@ -30,11 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -47,7 +44,9 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import static net.maxgigapop.mrs.driver.aws.AwsDriver.logger;
 import org.json.simple.JSONObject;
 
 /**
@@ -57,14 +56,18 @@ import org.json.simple.JSONObject;
 @Stateless
 public class OpenStackDriver implements IHandleDriverSystemCall {
 
-    static final Logger logger = Logger.getLogger(OpenStackDriver.class.getName());
+    public static final StackLogger logger = new StackLogger(OpenStackDriver.class.getName(), "OpenStackDriver");
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     //@Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
-
+        String method = "propagateDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
         String username = driverInstance.getProperty("username");
         String password = driverInstance.getProperty("password");
         String tenant = driverInstance.getProperty("tenant");
@@ -87,17 +90,22 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         requests = push.propagate(model, modelAdd, modelReduc);
         driverInstance.putProperty(requestId, requests.toString());
         DriverInstancePersistenceManager.merge(driverInstance);
-        Logger.getLogger(OpenStackDriver.class.getName()).log(Level.INFO, "OpenStack driver delta models succesfully propagated");
+        logger.end(method);
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     //@Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-
+        String method = "commitDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
-            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
+            throw logger.error_throwing(method, "DriverInstance == null");
         }
 
         String username = driverInstance.getProperty("username");
@@ -120,18 +128,17 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         try {
             r = mapper.readValue(requests, mapper.getTypeFactory().constructCollectionType(List.class, JSONObject.class));
         } catch (IOException ex) {
-            throw new EJBException("failed to load JSON requests due to " + ex);
+            throw logger.throwing(method, ex);
         }
         try {
             push.pushCommit(r, url, NATServer, username, password, tenant, topologyURI);
         } catch (InterruptedException ex) {
-            throw new EJBException("failed to pushCommit due to " + ex);
+            throw logger.throwing(method, ex);
         }
 
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
-
-        Logger.getLogger(OpenStackDriver.class.getName()).log(Level.INFO, "OpenStack driver delta models succesfully commited");
+        logger.end(method);
         return new AsyncResult<String>("SUCCESS");
     }
 
@@ -139,10 +146,12 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
     @Asynchronous
     @Override
     public Future<String> pullModel(Long driverInstanceId) {
-
+        String method = "pullModel";
+        logger.targetid(driverInstanceId.toString());
+        logger.start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
-            throw new EJBException(String.format("pullModel cannot find driverInstance(id=%d)", driverInstanceId));
+            throw logger.error_throwing(method, "DriverInstance == null");
         }
 
         try {
@@ -180,9 +189,9 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
                 driverInstance.setHeadVersionItem(vi);
             }
         } catch (Exception ex) {
-            Logger.getLogger(OpenStackDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-            throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, ex.getMessage()));
+            throw logger.throwing(method, driverInstance + " failed pull model", ex);
         }
+        logger.end(method);
         return new AsyncResult<>("SUCCESS");
     }
 
