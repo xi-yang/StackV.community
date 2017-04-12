@@ -577,7 +577,7 @@ public class HandleServiceCall {
             ServiceInstancePersistenceManager.merge(serviceInstance);
         }
         if (!serviceInstance.getStatus().equals("COMMITTED")) {
-            logger.end(method, serviceInstance.getStatus());
+            logger.trace_end(method, serviceInstance.getStatus());
             return serviceInstance.getStatus();
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();

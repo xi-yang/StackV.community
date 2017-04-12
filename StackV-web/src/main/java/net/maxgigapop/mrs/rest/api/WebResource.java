@@ -1521,7 +1521,7 @@ public class WebResource {
                     front_connectionProps);
 
             PreparedStatement prep;
-            prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ?");
+            prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
             prep.setString(1, refUUID);
 
             ResultSet rs1 = prep.executeQuery();

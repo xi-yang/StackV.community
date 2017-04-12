@@ -49,7 +49,7 @@ a.viz-hdr{
 }
 
 .viz-tab-content {
-    height: 100%;
+    margin-bottom: 50px;
 }
 
 .expanded-viz-div {
@@ -70,7 +70,7 @@ pre.expanded{
     background: white;
     padding: 10px;
     box-shadow: 0px 5px 10px 2px rgba(0, 0, 0, 0.35);
-    height: 150px;
+    height: 300px;
     overflow-y: scroll;
 }
 
