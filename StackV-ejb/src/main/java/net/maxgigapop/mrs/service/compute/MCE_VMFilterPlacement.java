@@ -70,10 +70,6 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         String method = "process";
-        if (annotatedDelta.getServiceInstance() != null) {
-            logger.refuuid(annotatedDelta.getServiceInstance().getReferenceUUID());
-            logger.targetid(annotatedDelta.getId());
-        }
         logger.start(method);
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw logger.error_throwing(method, "target:ServiceDelta has null addition model");

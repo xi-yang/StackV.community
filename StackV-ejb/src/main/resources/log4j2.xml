@@ -29,6 +29,10 @@
             <AppenderRef ref="RainsOut" />
             <AppenderRef ref="MySQL" level="info" />
         </AsyncLogger>
+        <AsyncLogger name="net.maxgigapop.mrs.driver" level="debug" additivity="false">
+            <AppenderRef ref="RainsOut" />
+            <AppenderRef ref="MySQL" level="info" />
+        </AsyncLogger>
         <Root level="info">
             <AppenderRef ref="RainsOut" />
         </Root>

@@ -117,7 +117,11 @@ public class AwsDriver implements IHandleDriverSystemCall {
             return new AsyncResult<String>("SUCCESS");
         }
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
-        push.pushCommit(requests);
+        try {
+            push.pushCommit(requests);
+        } catch (com.amazonaws.AmazonServiceException ex) {
+            throw logger.throwing(method, ex);
+        }
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
 

@@ -128,6 +128,7 @@ public class WorkerBase {
             //4. poll action status 
             long timeout = 3000; // 3000 intervals x 100ms = 300 seconds 
             while (timeout-- > 0 && !resultMap.isEmpty()) {
+                total_timeout--;
                 try {
                     sleep(100);
                 } catch (InterruptedException ex) {
@@ -177,7 +178,6 @@ public class WorkerBase {
                     total_timeout -= (3000-timeout);
                     break;
                 }
-                total_timeout -= 3000;
             }
             // continue to batch execution (to exectute new action and/or wait ones in processing)            
         }

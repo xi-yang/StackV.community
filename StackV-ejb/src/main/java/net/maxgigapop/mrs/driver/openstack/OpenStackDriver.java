@@ -107,7 +107,14 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
-
+        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requests = driverInstance.getProperty(requestId);
+        if (requests == null) {
+            throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
+        }
+        if (requests.isEmpty()) {
+            throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
+        }        
         String username = driverInstance.getProperty("username");
         String password = driverInstance.getProperty("password");
         String tenant = driverInstance.getProperty("tenant");
@@ -119,8 +126,6 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String NATServer = driverInstance.getProperty("NATServer");
         String defaultImage = driverInstance.getProperty("defaultImage");
         String defaultFlavor = driverInstance.getProperty("defaultFlavor");
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
-        String requests = driverInstance.getProperty(requestId);
 
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, topologyURI, defaultImage, defaultFlavor);
         ObjectMapper mapper = new ObjectMapper();

@@ -86,7 +86,10 @@ public class SystemModelCoordinator {
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void autoUpdate() {
         String method = "autoUpdate";
-        logger.start(method);
+        logger.trace_start(method);
+        if (!bootStrapped) {
+            logger.message(method, "bootstrapping - bootStrapped==false");
+        }
         //check driverInstances (catch: if someone unplug and plug a driver within a minute, we will have problem)
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null || ditMap.isEmpty()) {
@@ -136,7 +139,7 @@ public class SystemModelCoordinator {
             bootStrapped = true;
             logger.message(method, "done - bootStrapped changed to true");
         }
-        logger.end(method);
+        logger.trace_end(method);
     }
 
     @Lock(LockType.WRITE)
