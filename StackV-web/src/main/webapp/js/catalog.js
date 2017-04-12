@@ -21,7 +21,7 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen */
+/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap */
 // Tweens
 var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.easeInOut, paused: true, top: "30px"});
 var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
@@ -30,6 +30,14 @@ var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOu
 $(function () {
     setTimeout(catalogLoad, 750);
     setRefresh(60);
+
+    Mousetrap.bind('space', function () {
+        if ($("#catalog-panel").hasClass("closed")) {
+            openCatalog();
+        } else {
+            closeCatalog();
+        }
+    });
 
     $("#black-screen").click(function () {
         $("#info-panel").removeClass("active");

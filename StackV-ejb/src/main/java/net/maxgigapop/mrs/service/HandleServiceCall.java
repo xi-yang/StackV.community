@@ -568,7 +568,7 @@ public class HandleServiceCall {
     public String checkStatus(String serviceInstanceUuid) {
         String method = "checkStatus";
         logger.refuuid(serviceInstanceUuid);
-        logger.start(method);
+        logger.trace_start(method);
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
             throw logger.error_throwing(method, "cannot find ref:ServiceInstance");
@@ -577,7 +577,7 @@ public class HandleServiceCall {
             ServiceInstancePersistenceManager.merge(serviceInstance);
         }
         if (!serviceInstance.getStatus().equals("COMMITTED")) {
-            logger.end(method, serviceInstance.getStatus());
+            logger.trace_end(method, serviceInstance.getStatus());
             return serviceInstance.getStatus();
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
@@ -656,7 +656,7 @@ public class HandleServiceCall {
             serviceInstance.setStatus("COMMITTED");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
-        logger.end(method, serviceInstance.getStatus());
+        logger.trace_end(method, serviceInstance.getStatus());
         return serviceInstance.getStatus();
     }
 
