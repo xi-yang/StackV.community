@@ -70,8 +70,9 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
-        // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
-                
+        String method = "process";
+        logger.refuuid(annotatedDelta.getReferenceUUID());
+        logger.start(method);
         String sparql = "SELECT ?link ?type ?value ?data ?policyData ?spaType ?spaValue WHERE {"
                 + "?link a spa:PolicyAction . "
                 + "?link spa:type ?type . "

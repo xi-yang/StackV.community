@@ -2,11 +2,11 @@
 <Configuration status="info" package="net.maxgigapop.mrs"  name="StackV-ejb">
     <Appenders>
         <Console name="RainsOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="%msg ref[%X{refuuid}] target[%X{targetID}] -%X{severity}- %ex{2}%n" />
+            <PatternLayout pattern="%msg ref[%X{refuuid}] target[%X{targetid}] -%X{severity}- %ex{2}%n" />
         </Console>
         
         <JDBC name="MySQL" tableName="frontend.log">
-            <DataSource jndiName="java:jboss/datasources/MysqlDS" />
+            <DataSource jndiName="java:jboss/datasources/LoggerDS" />
             <Column name="marker" pattern="%marker" />
             <Column name="timestamp" isEventTimestamp="true" />
             <Column name="level" pattern="%level" />

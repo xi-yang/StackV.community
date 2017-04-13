@@ -46,6 +46,7 @@ public class StackLogger {
     public void refuuid(String refuuid) {
         ThreadContext.put("refuuid", refuuid);
         ThreadContext.remove("targetid"); // clean up targetID with new refUUID
+        ThreadContext.remove("serverity"); // cleanup serverity
     }
     
     public void targetid(String targetid) {
@@ -75,7 +76,7 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.info(String.format("{\"event\":\"%s.%s.start\", \"status\"=\"%s\"}", moduleName, method, status));
+        logger.info(String.format("{\"event\":\"%s.%s.start\", \"status\":\"%s\"}", moduleName, method, status));
     }
     
     public void end(String method) {
@@ -89,35 +90,35 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.info(String.format("{\"event\":\"%s.%s.end\", \"status\"=\"%s\"}", moduleName, method, status));
+        logger.info(String.format("{\"event\":\"%s.%s.end\", \"status\":\"%s\"}", moduleName, method, status));
     }
     
     public void status(String method, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.info(String.format("{\"event\":\"%s.%s.status\", \"status\"=\"%s\"}", moduleName, method, status));
+        logger.info(String.format("{\"event\":\"%s.%s.status\", \"status\":\"%s\"}", moduleName, method, status));
     }
     
     public void message(String method, String message) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.info(String.format("{\"event\":\"%s.%s.message\", \"message\"=\"%s\"}", moduleName, method, message));
+        logger.info(String.format("{\"event\":\"%s.%s.message\", \"message\":\"%s\"}", moduleName, method, message));
     }
     
     public void warning(String method, String message) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.put("severity", Severity.WARNING.name());
-        logger.warn(String.format("{\"event\":\"%s.%s.warning\", \"message\"=\"%s\"}", moduleName, method, message));        
+        logger.warn(String.format("{\"event\":\"%s.%s.warning\", \"message\":\"%s\"}", moduleName, method, message));        
     }
 
     public void error(String method, String message, Severity severity) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.put("severity", severity.name());
-        logger.error(String.format("{\"event\":\"%s.%s.error\", \"message\"=\"%s\", \"severity\"=\"%s\"}", moduleName, method, message, severity.name()));        
+        logger.error(String.format("{\"event\":\"%s.%s.error\", \"message\":\"%s\", \"severity\":\"%s\"}", moduleName, method, message, severity.name()));        
     }
     
     public void error(String method, String message) {
@@ -140,7 +141,7 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.put("severity", severity.name());
-        String errMsg = String.format("{\"event\":\"%s.%s.error\", \"message\"=\"%s\", \"severity\"=\"%s\"}", moduleName, method, message, severity.name());
+        String errMsg = String.format("{\"event\":\"%s.%s.error\", \"message\":\"%s\", \"severity\":\"%s\"}", moduleName, method, message, severity.name());
         logger.error(errMsg);
         String refUUID = ThreadContext.get("refuuid");
         String targetID = ThreadContext.get("targetid");
@@ -192,9 +193,9 @@ public class StackLogger {
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
         if (status == null || status.isEmpty()) {
-            logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"status\"=\"%s\"}", moduleName, method, message));               
+            logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"status\":\"%s\"}", moduleName, method, message));               
         } else {
-            logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"message\"=\"%s\", \"status\"=\"%s\"}", moduleName, method, message, status));   
+            logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"message\":\"%s\", \"status\":\"%s\"}", moduleName, method, message, status));   
         }
     }
     
@@ -202,7 +203,7 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"status\"=\"%s\"}", moduleName, method, status));      
+        logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"status\":\"%s\"}", moduleName, method, status));      
     }
 
     public void debug_start(String method) {
@@ -216,7 +217,7 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.debug(String.format("{\"event\":\"%s.%s.start\", \"status\"=\"%s\"}", moduleName, method, status));
+        logger.debug(String.format("{\"event\":\"%s.%s.start\", \"status\":\"%s\"}", moduleName, method, status));
     }
 
     public void debug_end(String method) {
@@ -230,7 +231,7 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.debug(String.format("{\"event\":\"%s.%s.end\", \"status\"=\"%s\"}", moduleName, method, status));
+        logger.debug(String.format("{\"event\":\"%s.%s.end\", \"status\":\"%s\"}", moduleName, method, status));
     }
     
     public void trace(String method, String message, String status) {
@@ -238,9 +239,9 @@ public class StackLogger {
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
         if (status == null || status.isEmpty()) {
-            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, message));               
+            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\":\"%s\"}", moduleName, method, message));               
         } else {
-            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"message\"=\"%s\", \"status\"=\"%s\"}", moduleName, method, message, status));   
+            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"message\":\"%s\", \"status\":\"%s\"}", moduleName, method, message, status));   
         }
     }
     
@@ -248,7 +249,7 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\"=\"%s\"}", moduleName, method, status));      
+        logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\":\"%s\"}", moduleName, method, status));      
     }
 
     public void trace_start(String method) {
@@ -262,7 +263,7 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.trace(String.format("{\"event\":\"%s.%s.start\", \"status\"=\"%s\"}", moduleName, method, status));
+        logger.trace(String.format("{\"event\":\"%s.%s.start\", \"status\":\"%s\"}", moduleName, method, status));
     }
 
     public void trace_end(String method) {
@@ -276,6 +277,6 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("serverity"); // cleanup serverity
-        logger.trace(String.format("{\"event\":\"%s.%s.end\", \"status\"=\"%s\"}", moduleName, method, status));
+        logger.trace(String.format("{\"event\":\"%s.%s.end\", \"status\":\"%s\"}", moduleName, method, status));
     }
 }

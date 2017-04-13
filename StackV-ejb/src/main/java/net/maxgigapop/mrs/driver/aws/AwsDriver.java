@@ -63,9 +63,8 @@ public class AwsDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
-        String method = "propagateDelta";
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
+        String method = "propagateDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
@@ -100,7 +99,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         }
         logger.targetid(aDelta.getId());
         logger.start(method);
-        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
+        DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }

@@ -178,6 +178,7 @@ public class HandleServiceCall {
         } catch (Exception ex) {
             throw logger.throwing("compileAddDelta", ex);
         }
+        spaDelta.setReferenceUUID(serviceInstanceUuid);
         worker.setAnnoatedModel(spaDelta);
         try {
             worker.run();
@@ -762,7 +763,6 @@ public class HandleServiceCall {
     public void verifyDelta(String serviceDeltaUuid, ModelUtil.DeltaVerification apiData, boolean marshallWithJson) {
         String method = "verifyDelta";
         logger.targetid(serviceDeltaUuid);
-        logger.start(method);
         ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
         if (serviceDelta == null) {
             //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
@@ -773,6 +773,7 @@ public class HandleServiceCall {
                 logger.targetid(serviceDelta.getId());
             }
         }
+        logger.start(method);
         if (serviceDelta == null || serviceDelta.getSystemDelta() == null) {
             throw logger.error_throwing(method, "does not know target:ServiceDelta or target:ServiceInstance");
         }
@@ -948,6 +949,7 @@ public class HandleServiceCall {
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
+        logger.end(method);
     }
     
     public boolean hasSystemBootStrapped() {

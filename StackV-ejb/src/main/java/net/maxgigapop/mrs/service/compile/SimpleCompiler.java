@@ -104,6 +104,7 @@ public class SimpleCompiler extends CompilerBase {
                 ServiceDelta inputDelta = action.getInputDelta();
                 if (inputDelta == null) {
                     inputDelta = new ServiceDelta();
+                    inputDelta.setReferenceUUID(this.spaDelta.getReferenceUUID());
                 }
                 inputDelta.setModelAddition(model);
                 action.setInputDelta(inputDelta);

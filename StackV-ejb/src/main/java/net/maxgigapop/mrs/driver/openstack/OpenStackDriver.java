@@ -86,8 +86,8 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
 
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, topologyURI, defaultImage, defaultFlavor);
         List<JSONObject> requests = null;
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         requests = push.propagate(model, modelAdd, modelReduc);
+        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests.toString());
         DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);

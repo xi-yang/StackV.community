@@ -69,6 +69,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         String method = "process";
+        logger.refuuid(annotatedDelta.getReferenceUUID());
         logger.start(method);
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw logger.error_throwing(method, "target:ServiceDelta has null addition model");

@@ -118,7 +118,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         }
         logger.targetid(aDelta.getId());
         logger.start(method);
-        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
+        DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }

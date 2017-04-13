@@ -150,12 +150,10 @@ public class SystemModelCoordinator {
             logger.message(method, "this.systemVersionGroup == null");
             this.systemVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
             if (this.systemVersionGroup != null) {
-                logger.refuuid(this.systemVersionGroup.getRefUuid());
                 logger.message(method, "created new ref:VersionGroup");
                 this.systemVersionGroup.createUnionModel();
             }
         } else {
-            logger.refuuid(this.systemVersionGroup.getRefUuid());
             VersionGroup newVersionGroup = null;
             try {
                 logger.message(method, "update head VersionGroup");
@@ -163,7 +161,6 @@ public class SystemModelCoordinator {
             } catch (Exception ex) {
                 logger.catching(method, ex);
                 newVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
-                logger.refuuid(this.systemVersionGroup.getRefUuid());
                 logger.message(method, "re-created new ref:VersionGroup");
             }
             if (newVersionGroup == null) {
@@ -173,7 +170,6 @@ public class SystemModelCoordinator {
             if (!newVersionGroup.equals(systemVersionGroup)) {
                 this.systemVersionGroup = newVersionGroup;
                 this.systemVersionGroup.createUnionModel();
-                logger.targetid(systemVersionGroup.getRefUuid());
                 logger.message(method, "replace existing target:VersionGrup with new ref:VersionGroup ");
             }
         }

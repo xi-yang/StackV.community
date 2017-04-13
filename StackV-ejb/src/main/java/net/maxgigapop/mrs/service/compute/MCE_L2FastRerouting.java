@@ -76,13 +76,13 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
         String method = "process";
+        logger.refuuid(annotatedDelta.getReferenceUUID());
         try {
             logger.trace(method, "\n>>>MCE_L2FastRerouting--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
             logger.trace(method, "Entering L2FastRerouting process!");
         } catch (Exception ex) {
             logger.trace(method, "ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()) failed -- "+ex);
         }
-
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
         String sparql = "SELECT ?link ?type ?value ?load ?data ?policyData ?spaType ?spaValue WHERE {"
                 + "?link a spa:PolicyAction . "
