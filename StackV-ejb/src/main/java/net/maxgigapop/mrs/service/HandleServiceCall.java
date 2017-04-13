@@ -901,7 +901,6 @@ public class HandleServiceCall {
     public void retrieveDelta(String serviceDeltaUuid, ModelUtil.DeltaRetrieval apiData, boolean marshallWithJson) {
         String method = "retrieveDelta";
         logger.targetid(serviceDeltaUuid);
-        logger.start(method);
         ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
         if (serviceDelta == null) {
             //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
@@ -912,6 +911,7 @@ public class HandleServiceCall {
                 logger.targetid(serviceDelta.getId());
             }
         }
+        logger.start(method);
         if (serviceDelta == null) {
             throw logger.error_throwing(method, "does not know target:ServiceDelta or target:ServiceInstance");
         }

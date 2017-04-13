@@ -46,9 +46,12 @@ public class StackLogger {
     }
     
     public void refuuid(String refuuid) {
-        ThreadContext.put("refuuid", refuuid);
+        if (!ThreadContext.containsKey("refuuid")) {
+            ThreadContext.put("refuuid", refuuid);
+        }
+        // targetID may change, refuuid also serve to clean it up
+        ThreadContext.remove("targetid");
         ThreadContext.remove("targetid"); // clean up targetID with new refUUID
-        ThreadContext.remove("serverity"); // cleanup serverity
     }
     
     public void targetid(String targetid) {
