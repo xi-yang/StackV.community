@@ -762,18 +762,17 @@ public class HandleServiceCall {
     
     public void verifyDelta(String serviceDeltaUuid, ModelUtil.DeltaVerification apiData, boolean marshallWithJson) {
         String method = "verifyDelta";
+        logger.refuuid(serviceDeltaUuid);
         logger.targetid(serviceDeltaUuid);
+        logger.start(method);
         ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
         if (serviceDelta == null) {
             //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
             ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceDeltaUuid);
             if (serviceInstance != null && serviceInstance.getServiceDeltas() !=null && !serviceInstance.getServiceDeltas().isEmpty()) {
-                logger.refuuid(serviceDeltaUuid);
                 serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
-                logger.targetid(serviceDelta.getId());
             }
         }
-        logger.start(method);
         if (serviceDelta == null || serviceDelta.getSystemDelta() == null) {
             throw logger.error_throwing(method, "does not know target:ServiceDelta or target:ServiceInstance");
         }
@@ -900,18 +899,17 @@ public class HandleServiceCall {
     
     public void retrieveDelta(String serviceDeltaUuid, ModelUtil.DeltaRetrieval apiData, boolean marshallWithJson) {
         String method = "retrieveDelta";
+        logger.refuuid(serviceDeltaUuid);
         logger.targetid(serviceDeltaUuid);
+        logger.start(method);
         ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
         if (serviceDelta == null) {
             //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
             ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceDeltaUuid);
             if (serviceInstance != null && serviceInstance.getServiceDeltas() !=null && !serviceInstance.getServiceDeltas().isEmpty()) {
-                logger.refuuid(serviceDeltaUuid);
                 serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
-                logger.targetid(serviceDelta.getId());
             }
         }
-        logger.start(method);
         if (serviceDelta == null) {
             throw logger.error_throwing(method, "does not know target:ServiceDelta or target:ServiceInstance");
         }
