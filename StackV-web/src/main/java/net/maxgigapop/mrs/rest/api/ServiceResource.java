@@ -332,17 +332,17 @@ public class ServiceResource {
 
     @GET
     @Produces("application/json")
-    @Path("/verify/{sdUUID}")
-    public ApiDeltaVerification verifyJson(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
+    @Path("/verify/{siUUID}")
+    public ApiDeltaVerification verifyJson(@PathParam("siUUID") String svcUUID) throws Exception {
         String method = "verifyJson";
-        logger.refuuid(svcDeltaUUID);
+        logger.refuuid(svcUUID);
         logger.trace_start(method);        
         ApiDeltaVerification apiDeltaVerification = new ApiDeltaVerification();
         java.util.Date now = new java.util.Date();
         apiDeltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
-        apiDeltaVerification.setReferenceUUID(svcDeltaUUID);
+        apiDeltaVerification.setReferenceUUID(svcUUID);
         ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
-        serviceCallHandler.verifyDelta(svcDeltaUUID, deltaVerification, true);
+        serviceCallHandler.verifyDelta(svcUUID, deltaVerification, true);
         if (deltaVerification.getModelAdditionVerified() != null) {
             apiDeltaVerification.setVerifiedModelAddition(deltaVerification.getModelAdditionVerified());
         }
@@ -367,17 +367,17 @@ public class ServiceResource {
     
     @GET
     @Produces("application/xml")
-    @Path("/verify/{sdUUID}")
-    public ApiDeltaVerification verify(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
+    @Path("/verify/{siUUID}")
+    public ApiDeltaVerification verify(@PathParam("siUUID") String svcUUID) throws Exception {
         String method = "verify";
-        logger.refuuid(svcDeltaUUID);
+        logger.refuuid(svcUUID);
         logger.trace_start(method);        
         ApiDeltaVerification apiDeltaVerification = new ApiDeltaVerification();
         java.util.Date now = new java.util.Date();
         apiDeltaVerification.setCreationTime(now.toString());
-        apiDeltaVerification.setReferenceUUID(svcDeltaUUID);
+        apiDeltaVerification.setReferenceUUID(svcUUID);
         ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
-        serviceCallHandler.verifyDelta(svcDeltaUUID, deltaVerification, false);
+        serviceCallHandler.verifyDelta(svcUUID, deltaVerification, false);
         if (deltaVerification.getModelAdditionVerified() != null) {
             apiDeltaVerification.setVerifiedModelAddition(deltaVerification.getModelAdditionVerified());
         }

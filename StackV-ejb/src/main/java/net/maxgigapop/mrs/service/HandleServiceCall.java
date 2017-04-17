@@ -275,7 +275,7 @@ public class HandleServiceCall {
                 logger.error(method, "target:ServiceDelta getSystemDelta() == null -but- continue");
                 continue; 
             } else if (serviceDelta.getStatus().equals("INIT")) {
-                SystemInstance systemInstance = systemCallHandler.createInstance(serviceInstanceUuid);
+                SystemInstance systemInstance = systemCallHandler.createInstance();
                 try {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
                 } catch (EJBException ex) {
@@ -345,7 +345,6 @@ public class HandleServiceCall {
         }
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            logger.targetid(serviceDelta.getId().toString());
             if (serviceDelta.getSystemDelta() == null) {
                 logger.warning(method, "target:SreviceDelta is null -but- skip and continue");
                 continue; // ?? exception ??
@@ -489,7 +488,6 @@ public class HandleServiceCall {
             if (!canRevertAll && itSD.hasNext()) {
                 continue;
             }
-            logger.targetid(serviceDelta.getId());
             SystemDelta systemDelta = serviceDelta.getSystemDelta();
             if (systemDelta == null) {
                 throw logger.error_throwing(method, "ref:ServiceInstance encounters uncompiled ref:ServiceDelta (having null SystemDelta).");
@@ -593,7 +591,6 @@ public class HandleServiceCall {
             if (!checkAllDeltas && itSD.hasNext()) {
                 continue;
             }
-            logger.targetid(serviceDelta.getId());
             if (serviceDelta.getSystemDelta() == null) {
                 throw logger.error_throwing(method, "ref:ServiceInstance encounters uncompiled ref:ServiceDelta (having null SystemDelta).");
             }
@@ -699,7 +696,7 @@ public class HandleServiceCall {
             } else if (canMultiPropagate || !itSD.hasNext()) {
                 SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
                 if (systemInstance == null) {
-                    systemInstance = systemCallHandler.createInstance(serviceInstanceUuid);
+                    systemInstance = systemCallHandler.createInstance();
                 } else {
                     systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
                 }
@@ -760,21 +757,21 @@ public class HandleServiceCall {
         return serviceInstance.getStatus();
     }
     
-    public void verifyDelta(String serviceDeltaUuid, ModelUtil.DeltaVerification apiData, boolean marshallWithJson) {
+    public void verifyDelta(String svcUUID, ModelUtil.DeltaVerification apiData, boolean marshallWithJson) {
         String method = "verifyDelta";
-        logger.refuuid(serviceDeltaUuid);
-        logger.targetid(serviceDeltaUuid);
-        logger.start(method);
-        ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
-        if (serviceDelta == null) {
-            //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
-            ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceDeltaUuid);
-            if (serviceInstance != null && serviceInstance.getServiceDeltas() !=null && !serviceInstance.getServiceDeltas().isEmpty()) {
-                serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
-            }
+        logger.refuuid(svcUUID);
+        ServiceDelta serviceDelta;
+        //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(svcUUID);
+        if (serviceInstance != null && serviceInstance.getServiceDeltas() != null && !serviceInstance.getServiceDeltas().isEmpty()) {
+            serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size() - 1);
+        } else {
+            throw logger.error_throwing(method, "ref:ServiceInstance has no ServiceDelta to verify");
         }
-        if (serviceDelta == null || serviceDelta.getSystemDelta() == null) {
-            throw logger.error_throwing(method, "does not know target:ServiceDelta or target:ServiceInstance");
+        logger.targetid(serviceDelta.getId());
+        logger.start(method);
+        if (serviceDelta.getSystemDelta() == null) {
+            throw logger.error_throwing(method, "there is no SystemDelta associated with target:ServiceDelta");
         }
         OntModel refModel = this.fetchReferenceModel();
         if (refModel == null) {
@@ -897,22 +894,19 @@ public class HandleServiceCall {
         return allEssentialVerified;
     }
     
-    public void retrieveDelta(String serviceDeltaUuid, ModelUtil.DeltaRetrieval apiData, boolean marshallWithJson) {
+    public void retrieveDelta(String svcUUID, ModelUtil.DeltaRetrieval apiData, boolean marshallWithJson) {
         String method = "retrieveDelta";
-        logger.refuuid(serviceDeltaUuid);
-        logger.targetid(serviceDeltaUuid);
+        logger.refuuid(svcUUID);
+        ServiceDelta serviceDelta;
+        //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(svcUUID);
+        if (serviceInstance != null && serviceInstance.getServiceDeltas() != null && !serviceInstance.getServiceDeltas().isEmpty()) {
+            serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size() - 1);
+        } else {
+            throw logger.error_throwing(method, "ref:ServiceInstance has no ServiceDelta to retrieve");
+        }
+        logger.targetid(serviceDelta.getId());
         logger.start(method);
-        ServiceDelta serviceDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(serviceDeltaUuid);
-        if (serviceDelta == null) {
-            //try serviceDeltaUuid as a serviceInstanceUuid and look for the latest serviceDeltaUuid in this instance
-            ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceDeltaUuid);
-            if (serviceInstance != null && serviceInstance.getServiceDeltas() !=null && !serviceInstance.getServiceDeltas().isEmpty()) {
-                serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
-            }
-        }
-        if (serviceDelta == null) {
-            throw logger.error_throwing(method, "does not know target:ServiceDelta or target:ServiceInstance");
-        }
         try {
             if (marshallWithJson) {
                 if (serviceDelta.getModelAddition() != null && serviceDelta.getModelAddition().getOntModel() != null)

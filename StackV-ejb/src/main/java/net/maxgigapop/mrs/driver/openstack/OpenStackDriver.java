@@ -107,7 +107,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requestId = driverInstance.getId().toString() + aDelta.getId();
         String requests = driverInstance.getProperty(requestId);
         if (requests == null) {
             throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);

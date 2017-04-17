@@ -145,35 +145,35 @@ public class SystemModelCoordinator {
     @Lock(LockType.WRITE)
     public VersionGroup getLatest() {
         String method = "getLatest";
-        logger.start(method);
+        logger.trace_start(method);
         if (this.systemVersionGroup == null) {
-            logger.message(method, "this.systemVersionGroup == null");
+            logger.trace(method, "this.systemVersionGroup == null");
             this.systemVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
             if (this.systemVersionGroup != null) {
-                logger.message(method, "created new ref:VersionGroup");
+                logger.trace(method, "created new ref:VersionGroup");
                 this.systemVersionGroup.createUnionModel();
             }
         } else {
             VersionGroup newVersionGroup = null;
             try {
-                logger.message(method, "update head VersionGroup");
+                logger.trace(method, "update head VersionGroup");
                 newVersionGroup = systemCallHandler.updateHeadVersionGroup(systemVersionGroup.getRefUuid());
             } catch (Exception ex) {
                 logger.catching(method, ex);
                 newVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
-                logger.message(method, "re-created new ref:VersionGroup");
+                logger.trace(method, "re-created new ref:VersionGroup");
             }
             if (newVersionGroup == null) {
                 logger.error(method, "failed to create new ref:VersionGroup");
                 return null;
             }
             if (!newVersionGroup.equals(systemVersionGroup)) {
+                logger.trace(method, "replace " + systemVersionGroup + " with " + newVersionGroup);
                 this.systemVersionGroup = newVersionGroup;
                 this.systemVersionGroup.createUnionModel();
-                logger.message(method, "replace existing target:VersionGrup with new ref:VersionGroup ");
             }
         }
-        logger.end(method);
+        logger.trace_end(method);
         return this.systemVersionGroup;
     }
     

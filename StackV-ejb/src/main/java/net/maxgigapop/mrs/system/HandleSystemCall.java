@@ -237,17 +237,6 @@ public class HandleSystemCall {
         return systemInstance;
     }
 
-    public SystemInstance createInstance(String refUUID) {
-        String method = "createInstance";
-        logger.refuuid(refUUID);
-        logger.start(method);
-        SystemInstance systemInstance = new SystemInstance();
-        systemInstance.setReferenceUUID(refUUID);
-        SystemInstancePersistenceManager.save(systemInstance);
-        logger.end(method);
-        return systemInstance;
-    }
-
     public void terminateInstance(String refUUID) {
         String method = "terminateInstance";
         logger.refuuid(refUUID);
@@ -563,6 +552,7 @@ public class HandleSystemCall {
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
+        logger.message(method, "plugged " + newDI);
         logger.end(method);
     }
 
@@ -588,7 +578,8 @@ public class HandleSystemCall {
             } catch (Exception ex) {
             throw logger.throwing(method, ex);
             }
-        } 
+        }
+        logger.message(method, "unplugged " + di);
         logger.end(method);
     }
 
