@@ -1,11 +1,38 @@
-div#details-panel {
-    padding: 0 10px;
-    height: calc(100% - 20px);
-    left: calc(5% + 40px);
-    width: calc(90% - 80px);
+div.details-main#main-pane {
+    height: calc(100% - 104px);
+    top: 104px;
+}
+
+#details-nav {
+    z-index: 98;
+    height: 52px;
+}
+#details-nav nav {
+    border-radius: 0;
+}
+#details-nav #refresh-timer {
+    margin: 15px 0px 15px 5px;
+}
+#details-nav #refresh-button {
+    margin: 11px 0px 11px 5px;
+    color: white;
+}
+
+div#details-panel, div#logging-panel, div#visual-panel {
+    padding: 30px 10% 30px 10%;
+    height: calc(100% - 52px);
+    width: 100%;
     position: absolute;
-    overflow-y: scroll;
+    overflow-y: hidden;
+}
+div#details-panel {
     top: -100%;
+}
+div#logging-panel {
+    left: -100%;
+}
+div#visual-panel {
+    right: -100%;
 }
 
 .details-table, .verification-table {
@@ -30,9 +57,9 @@ tr.button-row {
     Visualization tab styling 
 */
 a.viz-hdr{
-  color:inherit;
-  text-decoration: none;
- }
+    color:inherit;
+    text-decoration: none;
+}
 
 #table-tab{
     transition: all 1000ms;    
@@ -44,8 +71,8 @@ a.viz-hdr{
 }
 
 .viz-cell {
-  width : 50%;
-  height:100%;
+    width : 50%;
+    height:100%;
 }
 
 .viz-tab-content {
@@ -57,21 +84,22 @@ a.viz-hdr{
 }
 
 pre.expanded{
-   width: inherit;
-   height: inherit;
-   white-space: pre-wrap; 
+    width: inherit;
+    height: inherit;
+    white-space: pre-wrap; 
 }
 
 .details-viz-pre{
-  white-space: pre-wrap; 
+    white-space: pre-wrap; 
 }
 
 #log-div {
     background: white;
     padding: 10px;
     box-shadow: 0px 5px 10px 2px rgba(0, 0, 0, 0.35);
-    height: 300px;
+    height: 600px;
     overflow-y: scroll;
+    width: 100%;
 }
 
 #log-div details p {

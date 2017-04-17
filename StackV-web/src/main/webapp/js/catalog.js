@@ -27,17 +27,17 @@ var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.ease
 var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
 var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 
+Mousetrap.bind('space', function () {
+    if ($("#catalog-panel").hasClass("closed")) {
+        openCatalog();
+    } else {
+        closeCatalog();
+    }
+});
+
 $(function () {
     setTimeout(catalogLoad, 750);
     setRefresh(60);
-
-    Mousetrap.bind('space', function () {
-        if ($("#catalog-panel").hasClass("closed")) {
-            openCatalog();
-        } else {
-            closeCatalog();
-        }
-    });
 
     $("#black-screen").click(function () {
         $("#info-panel").removeClass("active");

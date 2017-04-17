@@ -19,17 +19,22 @@
     </head>
 
     <body>
+        <div id="black-screen"></div>
         <!-- NAV BAR -->
         <div id="nav">
         </div>
         <!-- TAG PANEL -->
         <div id="tag-panel">
-        </div>
+        </div>       
         <!-- MAIN PANEL -->
-        <div id="main-pane">
-            <div id="details-panel">
-            </div>
+        <div class="details-main" id="main-pane">
+            <div id="details-panel"></div>
+            <div id="logging-panel"></div>
+            <div id="visual-panel"></div>
+
             <div id="loading-panel"></div>
+        </div>
+        <div id="details-nav">            
         </div>
         <div id="details-viz" ></div>
 
@@ -40,6 +45,9 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+
+        <script src="/StackV-web/js/mousetrap.js"></script>
+        <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/details.js"></script>

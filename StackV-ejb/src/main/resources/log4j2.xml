@@ -8,7 +8,7 @@
         <JDBC name="MySQL" tableName="frontend.log">
             <DataSource jndiName="java:jboss/datasources/LoggerDS" />
             <Column name="marker" pattern="%marker" />
-            <Column name="timestamp" isEventTimestamp="true" />
+            <Column name="timestamp" pattern="%d{DEFAULT}" />
             <Column name="level" pattern="%level" />
             <Column name="logger" pattern="%logger" />
             <Column name="message" pattern="%message" />

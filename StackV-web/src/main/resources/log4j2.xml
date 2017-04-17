@@ -5,13 +5,13 @@
             <PatternLayout pattern="%logger{1}: %X{username}:%X{method}>%X{role} %X{objectid} [%marker] - %msg - %X{severity}%n" />
         </Console>
         <Console name="APIOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="%logger{1}: %X{module}.%X{method} %X{refuuid}: %X{objectid} [%marker] - %msg - %X{severity}: %ex{2}%n" />
+            <PatternLayout pattern="%logger{1}: %X{module}.%X{method} %X{refuuid}: %X{objectid} [%marker] - %msg - %X{severity}: %ex{5}%n" />
         </Console>
         
         <JDBC name="MySQL" tableName="frontend.log">
             <DataSource jndiName="java:jboss/datasources/MysqlDS" />
             <Column name="marker" pattern="%marker" />
-            <Column name="timestamp" isEventTimestamp="true" />
+            <Column name="timestamp" pattern="%d{DEFAULT}" />
             <Column name="level" pattern="%level" />
             <Column name="logger" pattern="%logger" />
             <Column name="message" pattern="%message" />
