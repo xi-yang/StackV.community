@@ -21,7 +21,7 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, TweenLite, Power2 */
+/* global XDomainRequest, baseUrl, keycloak, TweenLite, Power2, Mousetrap */
 // Tweens
 var tweenRolePanel = new TweenLite("#acl-role-panel", .5, {ease: Power2.easeInOut, paused: true, right: "5%"});
 var tweenRoleGroupsPanel = new TweenLite("#acl-role-group-div", .5, {ease: Power2.easeInOut, paused: true, top: "5px"});
@@ -29,9 +29,24 @@ var tweenRoleRolesPanel = new TweenLite("#acl-role-role-div", .5, {ease: Power2.
 var tweenInstancePanel = new TweenLite("#acl-instance-panel", .5, {ease: Power2.easeInOut, paused: true, left: "5%"});
 var tweenInstanceACLPanel = new TweenLite("#acl-instance-acl", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
 
+Mousetrap.bind('left', function () {
+    if ($("#catalog-panel").hasClass("closed")) {
+        openCatalog();
+    } else {
+        closeCatalog();
+    }
+});
+
+function openLeft() {
+    
+}
+function openRight() {
+    
+}
 
 // ACL Load
 function loadACLPortal() {
+
     subloadRoleACLUsers();
     subloadRoleACLGroups();
     subloadRoleACLRoles();

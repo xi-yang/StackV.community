@@ -20,19 +20,107 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2 */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
 // Tweens
-var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut, paused: true, top: "20px"});
-var tweenServiceDeltaTable = new TweenLite("#service-delta-table", .5, {ease: Power2.easeInOut, paused: true, top: 0});
-var tweenSystemDeltaTable = new TweenLite("#system-delta-table", .5, {ease: Power2.easeInOut, paused: true, top: 0});
-var tweenLoggingTable = new TweenLite("#instance-logging-table", .5, {ease: Power2.easeInOut, paused: true, top: 0});
+var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px"});
+var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
+var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
 
-$(function () {
+var view = "center";
+
+Mousetrap.bind({
+    'left': function () {
+        viewShift("left");
+    },
+    'right': function () {
+        viewShift("right");
+    }
+});
+function viewShift(dir) {
+    resetView();
+    switch (view) {
+        case "left":
+            if (dir === "right") {
+                newView("details");
+            }
+            break;
+        case "center":
+            switch (dir) {
+                case "left":
+                    newView("logging");
+                    break;
+                case "right":
+                    newView("visual");
+                    break;
+            }
+            view = dir;
+            break;
+        case "right":
+            if (dir === "left") {
+                newView("details");
+            }
+            break;
+    }
+}
+
+$(function () {  
     setTimeout(function () {
         setRefresh(60);
     }, 1000);
 });
 
+function loadDetailsNavbar() {
+    $("#details-nav").load("/StackV-web/details_navbar.html", function () {
+        $("#logging-tab").click(function () {
+            resetView();
+            newView("logging");
+        });
+        $("#details-tab").click(function () {
+            resetView();
+            newView("details");
+        });
+        $("#visual-tab").click(function () {
+            resetView();
+            newView("visual");
+        });
+    });
+}
+
+function resetView() {
+    switch (view) {
+        case "left":
+            $("#details-nav .active").removeClass("active");
+            tweenLoggingPanel.reverse();
+            break;
+        case "center":
+            $("#details-nav .active").removeClass("active");
+            tweenDetailsPanel.reverse();
+            break;
+        case "right":
+            $("#details-nav .active").removeClass("active");
+            tweenVisualPanel.reverse();
+            break;
+    }
+}
+function newView(panel) {
+    switch (panel) {
+        case "logging":
+            tweenLoggingPanel.play();
+            $("#logging-tab").addClass("active");
+            view = "left";
+            break;
+        case "details":
+            tweenDetailsPanel.play();
+            $("#details-tab").addClass("active");
+            view = "center";
+            break;
+        case "visual":
+            tweenVisualPanel.play();
+            $("#visual-tab").addClass("active");
+            view = "right";
+            break;
+    }
+}
 /* REFRESH */
 
 function timerChange(sel) {
@@ -61,11 +149,20 @@ function refreshCountdown() {
 }
 
 function reloadDetails(time) {
-    enableLoading();
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        tweenDetailsPanel.reverse();
+        switch (view) {
+            case "left":
+                tweenLoggingPanel.reverse();
+                break;
+            case "center":
+                tweenDetailsPanel.reverse();
+                break;
+            case "right":
+                tweenVisualPanel.reverse();
+                break;
+        }
         setTimeout(function () {
             if (refreshed) {
                 sessionStorage.setItem("token", keycloak.token);
@@ -97,7 +194,7 @@ function reloadDetails(time) {
                     $("#body-" + this.id).toggleClass("hide");
                 });
             });
-        }, 750);
+        }, 1000);
     });
 }
 
@@ -140,17 +237,7 @@ function subloadInstance() {
             head.innerHTML = instance[1] + " Service Details";
             row.appendChild(head);
             head = document.createElement("th");
-            head.innerHTML = '<div id="refresh-panel" class="form-inline">'
-                    + '<label for="refresh-timer">Auto-Refresh Interval</label>'
-                    + '<select id="refresh-timer" onchange="timerChange(this)" class="form-control">'
-                    + '<option value="off">Off</option>'
-                    + '<option value="5">5 sec.</option>'
-                    + '<option value="10">10 sec.</option>'
-                    + '<option value="30">30 sec.</option>'
-                    + '<option value="60" selected>60 sec.</option>'
-                    + '</select>'
-                    + '</div>'
-                    + '<button class="button-header btn btn-sm" id="refresh-button" onclick="reloadDetails()">Refresh in    seconds</button>';
+            head.innerHTML = '';
             row.appendChild(head);
             thead.appendChild(row);
             table.appendChild(thead);
@@ -249,7 +336,6 @@ function subloadInstance() {
                     },
                     success: function () {
                         if (command === "delete" || command === "force_delete") {
-                            enableLoading();
                             setTimeout(function () {
                                 window.document.location = "/StackV-web/ops/catalog.jsp";
                             }, 250);
@@ -260,7 +346,9 @@ function subloadInstance() {
                 });
             });
 
-            tweenDetailsPanel.play();
+            if (view === "center") {
+                tweenDetailsPanel.play();
+            }
 
             // Next steps
             loadStatus(uuid);
@@ -279,8 +367,9 @@ function subloadLogging() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (logs) {
-            var panel = document.getElementById("details-panel");
+            var panel = document.getElementById("logging-panel");
             var table = document.createElement("table");
+            panel.innerHTML = "";
 
             table.id = "instance-logging-table";
             table.className = "management-table";
@@ -288,7 +377,7 @@ function subloadLogging() {
             var thead = document.createElement("thead");
             var row = document.createElement("tr");
             var head = document.createElement("th");
-            head.innerHTML = "Service Logs";
+            head.innerHTML = "Service Logs (Click to open)";
             row.appendChild(head);
             thead.appendChild(row);
             table.appendChild(thead);
@@ -345,6 +434,15 @@ function subloadLogging() {
             tbody.appendChild(row);
             table.appendChild(tbody);
             panel.appendChild(table);
+
+            $("#black-screen").click(function () {
+                $("#info-panel").removeClass("active");
+                closeCatalog();
+            });
+
+            if (view === "left") {
+                tweenLoggingPanel.play();
+            }
 
             subloadVerification();
         }
@@ -706,6 +804,7 @@ function buildDeltaTable(type) {
 
 function loadVisualization() {
     $("#details-viz").load("/StackV-web/details_viz.html", function () {
+        document.getElementById("visual-panel").innerHTML = "";
         var State = document.getElementById("instance-substate").innerHTML;
         // State = "READY";
         var States = {
@@ -731,7 +830,7 @@ function loadVisualization() {
                 "name": "Verification",
                 "state": "READY",
                 "createContent": createVizTab.bind(undefined, "Verification")
-            },
+            }
         ];
 
         createTabs();
@@ -942,9 +1041,9 @@ function loadVisualization() {
             tabBar.lastChild.classList.add("active");
             tabContent.lastChild.classList.add("active");
 
-            var details_panel = document.getElementById("details-panel");
-            details_panel.appendChild(tabBar);
-            details_panel.appendChild(tabContent);
+            var visualization_panel = document.getElementById("visual-panel");
+            visualization_panel.appendChild(tabBar);
+            visualization_panel.appendChild(tabContent);
 
             setEvent();
         }
@@ -1025,6 +1124,10 @@ function loadVisualization() {
                 }
 
             });
+        }
+
+        if (view === "right") {
+            tweenVisualPanel.play();
         }
     });
 

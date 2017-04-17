@@ -47,15 +47,15 @@ $(function () {
     keycloak.onAuthSuccess = function () {
         loadNavbar();
 
-        // templateDetails
         if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
+            loadDetailsNavbar();
             loadDetails();
         } else if (window.location.pathname === "/StackV-web/ops/acl.jsp") {
             loadACLPortal();
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
             getAllDetails();
-        } 
-        
+        }
+
         if ($("#tag-panel").length) {
             initTagPanel();
         }
@@ -93,10 +93,6 @@ $(function () {
     $(".clickable-row").click(function () {
         sessionStorage.setItem("uuid", $(this).data("href"));
         window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
-    });
-
-    $("#black-screen").click(function () {
-        tweenBlackScreen.reverse();
     });
 
     clearCounters();
@@ -156,7 +152,7 @@ function loggingChange(sel) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function () {
-            
+
         }
     });
 }
@@ -974,12 +970,12 @@ function disableLoading() {
 }
 
 function initTagPanel() {
-    $.getScript( "/StackV-web/js/stackv/label.js", function( data, textStatus, jqxhr ) {
-        if ($.trim($("#tag-panel").html())!=='')  {
+    $.getScript("/StackV-web/js/stackv/label.js", function (data, textStatus, jqxhr) {
+        if ($.trim($("#tag-panel").html()) !== '') {
             loadLabels();
         } else {
             $("#tag-panel").load("/StackV-web/tagPanel.jsp", function () {
-               loadLabels();
+                loadLabels();
             });
         }
     });

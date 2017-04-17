@@ -59,6 +59,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
+        ThreadContext.clearMap();
         UriInfo uri = requestContext.getUriInfo();
 
         if ((uri.getPath()).startsWith("/app/")) {

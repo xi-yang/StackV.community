@@ -199,7 +199,7 @@ public class WebResource {
             prep.setString(1, subject);
             prep.setString(2, refUUID);
             prep.executeUpdate();
-            
+
             logger.end(method);
         } catch (SQLException ex) {
             logger.catching("removeACLEntry", ex);
@@ -877,7 +877,7 @@ public class WebResource {
 
                 retList.add(roleList);
             }
-            
+
             logger.trace_end(method);
             return retList;
         } catch (IOException | ParseException ex) {
@@ -1530,7 +1530,7 @@ public class WebResource {
                 JSONObject logJSON = new JSONObject();
 
                 logJSON.put("marker", rs1.getString("marker"));
-                logJSON.put("timestamp", rs1.getTimestamp("timestamp").toString());
+                logJSON.put("timestamp", rs1.getString("timestamp"));
                 logJSON.put("level", rs1.getString("level"));
                 logJSON.put("logger", rs1.getString("logger"));
                 logJSON.put("message", rs1.getString("message"));
@@ -1568,6 +1568,10 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Manifests")
     public String getManifest(@PathParam("svcUUID") String svcUUID) {
+        logger.refuuid(svcUUID);
+        String method = "getManifest";
+        logger.trace_start(method);
+        
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         String serviceType = getServiceType(svcUUID);
         if (serviceType.equals("Virtual Cloud Network")) {
@@ -1607,6 +1611,8 @@ public class WebResource {
         if (!obj.has("jsonTemplate")) {
             throw new EJBException("getManifest cannot get manifest for service uuid=" + svcUUID);
         }
+        
+        logger.trace_end(method);
         return obj.getString("jsonTemplate");
     }
 
@@ -1615,6 +1621,7 @@ public class WebResource {
     @Produces("application/xml")
     @RolesAllowed("Manifests")
     public String getManifestXml(@PathParam("svcUUID") String svcUUID) {
+        logger.refuuid(svcUUID);
         String manifestJStr = getManifest(svcUUID);
         org.json.JSONObject obj = new org.json.JSONObject(manifestJStr);
         String manifest = org.json.XML.toString(obj);
@@ -1852,6 +1859,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Panels")
     public ArrayList<String> loadInstanceDetails(@PathParam("uuid") String uuid) {
+        logger.refuuid(uuid);
         try {
             ArrayList<String> retList = new ArrayList<>();
 
@@ -1889,6 +1897,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Panels")
     public ArrayList<ArrayList<String>> loadInstanceDelta(@PathParam("uuid") String uuid) {
+        logger.refuuid(uuid);
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
@@ -1927,6 +1936,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Panels")
     public ArrayList<String> loadInstanceVerification(@PathParam("uuid") String uuid) {
+        logger.refuuid(uuid);
         try {
             ArrayList<String> retList = new ArrayList<>();
 
@@ -1964,6 +1974,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Panels")
     public ArrayList<String> loadInstanceACL(@PathParam("uuid") String uuid) {
+        logger.refuuid(uuid);
         try {
             ArrayList<String> retList = new ArrayList<>();
 
@@ -1994,6 +2005,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Panels")
     public HashMap<String, String> getVerificationResults(@PathParam("siUUID") String serviceUUID) {
+        logger.refuuid(serviceUUID);
         try {
             HashMap<String, String> retMap = new HashMap<>();
             Properties front_connectionProps = new Properties();
@@ -2029,6 +2041,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Panels")
     public String getVerificationResultsUnion(@PathParam("siUUID") String serviceUUID) throws Exception {
+        logger.refuuid(serviceUUID);
         try {
             HashMap<String, String> retMap = new HashMap<>();
             Properties front_connectionProps = new Properties();
@@ -2206,7 +2219,7 @@ public class WebResource {
             prep.setString(5, description);
             prep.setInt(6, 0);
             prep.executeUpdate();
-            
+
             logger.end(method);
             return null;
         } catch (SQLException | ParseException ex) {
@@ -2271,6 +2284,7 @@ public class WebResource {
     @Path("/service/{siUUID}/status")
     @RolesAllowed("Services")
     public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
+        logger.refuuid(svcInstanceUUID);
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         if (refresh != null) {
@@ -2306,6 +2320,7 @@ public class WebResource {
     @Path("/service/{siUUID}/substatus")
     @RolesAllowed("Services")
     public String subStatus(@PathParam("siUUID") String svcInstanceUUID) {
+        logger.refuuid(svcInstanceUUID);
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         if (refresh != null) {
