@@ -19,7 +19,7 @@
             <Column name="severity" pattern="%X{severity}" />                       
             <Column name="module" pattern="%X{module}" />
             <Column name="method" pattern="%X{method}" />
-            <Column name="referenceUUID" pattern="%X{refUUID}" />
+            <Column name="referenceUUID" pattern="%X{refuuid}" />
         </JDBC>      
     </Appenders>
     <Loggers>

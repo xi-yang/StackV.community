@@ -208,6 +208,11 @@ function loadDetails() {
 
 function subloadInstance() {
     var uuid = sessionStorage.getItem("uuid");
+    if (!uuid) {
+        alert("No Service Instance Selected!");
+        window.location.replace('/StackV-web/ops/catalog.jsp');
+    }
+    
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
     $.ajax({
         url: apiUrl,
@@ -346,10 +351,6 @@ function subloadInstance() {
                 });
             });
 
-            if (view === "center") {
-                tweenDetailsPanel.play();
-            }
-
             // Next steps
             loadStatus(uuid);
             subloadLogging();
@@ -377,7 +378,7 @@ function subloadLogging() {
             var thead = document.createElement("thead");
             var row = document.createElement("tr");
             var head = document.createElement("th");
-            head.innerHTML = "Service Logs (Click to open)";
+            head.innerHTML = "Service Logs";
             row.appendChild(head);
             thead.appendChild(row);
             table.appendChild(thead);
@@ -738,7 +739,11 @@ function loadStatus(refUuid) {
 
             deltaModerate();
             instructionModerate();
-            buttonModerate();
+            buttonModerate();            
+            
+            if (view === "center") {
+                tweenDetailsPanel.play();
+            }
             loadVisualization();
         }
     });

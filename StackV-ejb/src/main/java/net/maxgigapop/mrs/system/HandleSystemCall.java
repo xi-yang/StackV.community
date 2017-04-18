@@ -171,7 +171,7 @@ public class HandleSystemCall {
         logger.cleanup();
         String method = "retrieveVersionGroupModel";
         logger.refuuid(refUuid);
-        logger.start(method);
+        logger.trace_start(method);
         if (refUuid.equals("default")) {
             try {
                 Context ejbCxt = new InitialContext();
@@ -189,7 +189,7 @@ public class HandleSystemCall {
                 throw logger.error_throwing(method, "cannot find ref:VersionGroup");
             }
             ModelBase model = vg.createUnionModel();
-            logger.end(method);
+            logger.trace_end(method);
             return model;
         }
     }

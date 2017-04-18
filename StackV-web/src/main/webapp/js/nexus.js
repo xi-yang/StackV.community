@@ -110,6 +110,8 @@ function loadNavbar() {
             $("li#visualization-tab").addClass("active");
         else if (/acl.jsp/.test(url))
             $("li#acl-tab").addClass("active");
+        else if (/templateDetails.jsp/.test(url))
+            $("li#details-tab").addClass("active");
 
         var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
         $.ajax({
