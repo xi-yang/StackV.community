@@ -1571,7 +1571,7 @@ public class WebResource {
         logger.refuuid(svcUUID);
         String method = "getManifest";
         logger.trace_start(method);
-        
+
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         String serviceType = getServiceType(svcUUID);
         if (serviceType.equals("Virtual Cloud Network")) {
@@ -1611,7 +1611,7 @@ public class WebResource {
         if (!obj.has("jsonTemplate")) {
             throw new EJBException("getManifest cannot get manifest for service uuid=" + svcUUID);
         }
-        
+
         logger.trace_end(method);
         return obj.getString("jsonTemplate");
     }
@@ -2409,7 +2409,6 @@ public class WebResource {
             final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
             final String refUuid, @PathParam(value = "action")
             final String action) {
-        logger.start("operate");
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
 
@@ -2544,8 +2543,8 @@ public class WebResource {
     }
 
     private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, String auth, String refresh) {
-        logger.start("doOperate:" + action);
         logger.refuuid(refUUID);
+        logger.start("doOperate:" + action);
 
         try {
             clearVerification(refUUID);
