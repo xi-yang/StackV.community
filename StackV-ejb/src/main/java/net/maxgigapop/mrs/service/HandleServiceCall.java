@@ -82,6 +82,7 @@ public class HandleServiceCall {
     private static final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "HandleServiceCall");
     
     public ServiceInstance createInstance() {
+        logger.cleanup();
         logger.start("createInstance");
         ServiceInstance serviceInstance = new ServiceInstance();
         serviceInstance.setReferenceUUID(UUID.randomUUID().toString());
@@ -92,6 +93,7 @@ public class HandleServiceCall {
     }
 
     public void terminateInstance(String refUUID) {
+        logger.cleanup();
         logger.refuuid(refUUID);
         logger.start("terminateInstance");
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(refUUID);
@@ -207,6 +209,7 @@ public class HandleServiceCall {
     }
 
     public SystemDelta compileAddDelta(String serviceInstanceUuid, String workerClassPath, String uuid, String modelAdditionTtl, String modelReductionTtl) {
+        logger.cleanup();
         logger.refuuid(serviceInstanceUuid);
         logger.targetid(uuid);
         logger.start("compileAddDelta");
@@ -246,6 +249,7 @@ public class HandleServiceCall {
     // handling multiple deltas:  propagate + commit + query = transactional propagate + parallel commits
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public String propagateDeltas(String serviceInstanceUuid, boolean useCachedVG, boolean refreshForced) {
+        logger.cleanup();
         String method = "propagateDeltas";
         logger.refuuid(serviceInstanceUuid);
         logger.start(method);
@@ -320,6 +324,7 @@ public class HandleServiceCall {
     }
 
     public String commitDeltas(String serviceInstanceUuid, boolean forced) {
+        logger.cleanup();
         String method = "commitDeltas";
         logger.refuuid(serviceInstanceUuid);
         logger.start(method);
@@ -397,6 +402,7 @@ public class HandleServiceCall {
     }
 
     public void refreshVersionGroup(String serviceInstanceUuid) {
+        logger.cleanup();
         String method = "refreshVersionGroup";
         logger.refuuid(serviceInstanceUuid);
         logger.start(method);
@@ -421,6 +427,7 @@ public class HandleServiceCall {
     }
 
     public String revertDeltas(String serviceInstanceUuid, boolean forced) {
+        logger.cleanup();
         String method = "revertDeltas";
         logger.refuuid(serviceInstanceUuid);
         logger.start(method);
@@ -666,6 +673,7 @@ public class HandleServiceCall {
     
     // retry always companies FAILED status | forced => VG refresh requested
     public String propagateRetry(String serviceInstanceUuid, boolean useCachedVG, boolean refreshForced) {
+        logger.cleanup();
         String method = "propagateRetry";
         logger.refuuid(serviceInstanceUuid);
         logger.start(method);
@@ -758,6 +766,7 @@ public class HandleServiceCall {
     }
     
     public void verifyDelta(String svcUUID, ModelUtil.DeltaVerification apiData, boolean marshallWithJson) {
+        logger.cleanup();
         String method = "verifyDelta";
         logger.refuuid(svcUUID);
         ServiceDelta serviceDelta;
@@ -895,6 +904,7 @@ public class HandleServiceCall {
     }
     
     public void retrieveDelta(String svcUUID, ModelUtil.DeltaRetrieval apiData, boolean marshallWithJson) {
+        logger.cleanup();
         String method = "retrieveDelta";
         logger.refuuid(svcUUID);
         ServiceDelta serviceDelta;

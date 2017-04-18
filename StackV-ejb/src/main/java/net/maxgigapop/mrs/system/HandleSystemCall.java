@@ -76,6 +76,11 @@ public class HandleSystemCall {
     
     private static final StackLogger logger = new StackLogger(HandleSystemCall.class.getName(), "HandleSystemCall");
 
+    public VersionGroup createHeadVersionGroup_API(String refUuid) {
+        logger.cleanup();
+        return createHeadVersionGroup(refUuid);
+    }
+    
     public VersionGroup createHeadVersionGroup(String refUuid) {
         String method = "createHeadVersionGroup";
         logger.refuuid(refUuid);
@@ -147,6 +152,11 @@ public class HandleSystemCall {
         return vg;
     }
 
+    public VersionGroup updateHeadVersionGroup_API(String refUuid) {
+        logger.cleanup();
+        return updateHeadVersionGroup(refUuid);
+    }
+    
     public VersionGroup updateHeadVersionGroup(String refUuid) {
         String method = "updateHeadVersionGroup";
         logger.refuuid(refUuid);
@@ -158,6 +168,7 @@ public class HandleSystemCall {
     }
 
     public ModelBase retrieveVersionGroupModel(String refUuid) {
+        logger.cleanup();
         String method = "retrieveVersionGroupModel";
         logger.refuuid(refUuid);
         logger.start(method);
@@ -184,6 +195,7 @@ public class HandleSystemCall {
     }
 
     public OntModel queryModelView(String refUuid, List<ModelUtil.ModelViewFilter> mvfs) {
+        logger.cleanup();
         String method = "queryModelView";
         logger.refuuid(refUuid);
         logger.start(method);
@@ -226,20 +238,27 @@ public class HandleSystemCall {
         return resultModel;
     }
 
+    public SystemInstance createInstance_API() {
+        logger.cleanup();
+        return createInstance();
+    }
+    
     public SystemInstance createInstance() {
         String method = "createInstance";
         logger.start(method);
         SystemInstance systemInstance = new SystemInstance();
         systemInstance.setReferenceUUID(UUID.randomUUID().toString());
         SystemInstancePersistenceManager.save(systemInstance);
-        logger.refuuid(systemInstance.getReferenceUUID());
         logger.end(method);
         return systemInstance;
     }
 
+    public void terminateInstance_API(String refUUID) {
+        terminateInstance(refUUID);
+    }
+    
     public void terminateInstance(String refUUID) {
         String method = "terminateInstance";
-        logger.refuuid(refUUID);
         logger.start(method);
         SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
         systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
@@ -447,6 +466,7 @@ public class HandleSystemCall {
 
     @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
+        logger.cleanup();
         String method = "commitDelta";
         // 1. refresh systemInstance
         if (systemInstance.getId() != 0) {
@@ -519,6 +539,7 @@ public class HandleSystemCall {
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(String sysInstanceUUID, SystemDelta sysDelta, boolean useCachedVG, boolean refreshForced) {
+        logger.cleanup();
         String method = "commitDelta";
         logger.refuuid(sysInstanceUUID);
         logger.start(method);
@@ -532,6 +553,7 @@ public class HandleSystemCall {
     }
     
     public void plugDriverInstance(Map<String, String> properties) {
+        logger.cleanup();
         String method = "plugDriverInstance";
         logger.start(method);
         if (!properties.containsKey("topologyUri") || !properties.containsKey("driverEjbPath")) {
@@ -557,6 +579,7 @@ public class HandleSystemCall {
     }
 
     public void unplugDriverInstance(String topoUri) {
+        logger.cleanup();
         String method = "unplugDriverInstance";
         logger.start(method);
         DriverInstance di = DriverInstancePersistenceManager.findByTopologyUri(topoUri);

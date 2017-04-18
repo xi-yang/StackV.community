@@ -283,4 +283,8 @@ public class StackLogger {
         ThreadContext.remove("severity"); // cleanup severity
         logger.trace(String.format("{\"event\":\"%s.%s.end\", \"status\":\"%s\"}", moduleName, method, status));
     }
+
+    public void cleanup() {
+        ThreadContext.clearAll();
+    }
 }

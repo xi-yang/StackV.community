@@ -125,7 +125,7 @@ public class ModelResource {
         String method = "update";
         logger.refuuid(refUUID);
         logger.trace_start(method);
-        systemCallHandler.updateHeadVersionGroup(refUUID);
+        systemCallHandler.updateHeadVersionGroup_API(refUUID);
         ApiModelBase apiData = this.pull(refUUID);
         logger.trace_end(method);
         return apiData;
@@ -136,7 +136,7 @@ public class ModelResource {
     public ApiModelBase creatHeadVersionGroup() throws Exception {
         String method = "creatHeadVersionGroup";
         logger.trace_start(method);
-        VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
+        VersionGroup vg = systemCallHandler.createHeadVersionGroup_API(UUID.randomUUID().toString());
         ApiModelBase apiData = this.pullXml(vg.getRefUuid());
         logger.trace_end(method);
         return apiData;
@@ -147,7 +147,7 @@ public class ModelResource {
     public ApiModelBase creatHeadVersionGroupJson() throws Exception {
         String method = "creatHeadVersionGroupJson";
         logger.trace_start(method);
-        VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
+        VersionGroup vg = systemCallHandler.createHeadVersionGroup_API(UUID.randomUUID().toString());
         ApiModelBase apiData = this.pull(vg.getRefUuid());
         logger.trace_end(method);
         return apiData;
@@ -159,7 +159,7 @@ public class ModelResource {
     public String push() {
         String method = "push";
         logger.trace_start(method);
-        String ret = systemCallHandler.createInstance().getReferenceUUID();
+        String ret = systemCallHandler.createInstance_API().getReferenceUUID();
         logger.trace_end(method);
         return ret;
     }
@@ -169,7 +169,7 @@ public class ModelResource {
     public String terminate(@PathParam("refUUID") String refUUID) {
         String method = "terminate";
         logger.refuuid(refUUID);
-        systemCallHandler.terminateInstance(refUUID);
+        systemCallHandler.terminateInstance_API(refUUID);
         logger.trace_end(method);
         return "Successfully terminated";
     }

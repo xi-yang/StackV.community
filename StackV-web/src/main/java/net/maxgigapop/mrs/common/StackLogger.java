@@ -55,6 +55,7 @@ public class StackLogger {
     }
     
     public void targetid(String targetid) {
+        ThreadContext.push(targetid);
         ThreadContext.put("targetid", targetid);
     }
     
@@ -88,6 +89,8 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
+        String targetid = ThreadContext.pop();
+        ThreadContext.put("targetid", targetid);
         logger.info(String.format("{\"event\":\"%s.%s.end\"}", moduleName, method));        
     }
 
@@ -95,6 +98,8 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
+        String targetid = ThreadContext.pop();
+        ThreadContext.put("targetid", targetid);
         logger.info(String.format("{\"event\":\"%s.%s.end\", \"status\":\"%s\"}", moduleName, method, status));
     }
     
@@ -283,5 +288,9 @@ public class StackLogger {
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
         logger.trace(String.format("{\"event\":\"%s.%s.end\", \"status\":\"%s\"}", moduleName, method, status));
+    }
+
+    public void cleanup() {
+        ThreadContext.clearAll();
     }
 }
