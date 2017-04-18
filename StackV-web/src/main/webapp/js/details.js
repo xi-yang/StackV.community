@@ -418,6 +418,7 @@ function subloadLogging() {
                 }
 
                 /*  log mapping:
+                 *      referenceUUID
                  *      marker
                  *      timestamp
                  *      level
@@ -429,6 +430,9 @@ function subloadLogging() {
                 var summary = document.createElement("summary");
                 summary.innerHTML = log["timestamp"] + " - " + log["message"];
                 detail.appendChild(summary);
+                var data = document.createElement("p");
+                data.innerHTML = "UUID: " + log["referenceUUID"];
+                detail.appendChild(data);
                 var data = document.createElement("p");
                 data.innerHTML = "Level: " + log["level"];
                 detail.appendChild(data);

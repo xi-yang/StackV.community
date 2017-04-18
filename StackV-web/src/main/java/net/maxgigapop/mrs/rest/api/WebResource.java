@@ -1548,6 +1548,7 @@ public class WebResource {
             while (rs1.next()) {                
                 JSONObject logJSON = new JSONObject();
 
+                logJSON.put("referenceUUID", rs1.getString("referenceUUID"));
                 logJSON.put("marker", rs1.getString("marker"));
                 logJSON.put("timestamp", rs1.getString("timestamp"));
                 logJSON.put("level", rs1.getString("level"));
