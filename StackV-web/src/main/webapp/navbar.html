@@ -8,15 +8,16 @@
             <li id="acl-tab"><a href="/StackV-web/ops/acl.jsp">ACL Management</a></li>
         </ul>
         <ul class="nav navbar-nav navbar-right">
-            <li>
-                <label for="select-logging-level" style="color: #9d9d9d;font-weight: normal;">Logging Level</label>
+            <li id="admin-tab" class="nav-admin"><a href="/StackV-web/ops/admin.jsp">Admin Panel</a></li>
+            <li class="nav-admin">
+                <label for="select-logging-level" style="color: #9d9d9d;font-weight: normal;margin-left: 15px;">Logging Level</label>
                 <select id="select-logging-level" onchange="loggingChange(this)">
                     <option value="TRACE">TRACE</option>
                     <option value="DEBUG">DEBUG</option>
                     <option value="INFO">INFO</option>
                     <option value="WARN">WARN</option>
                     <option value="ERROR">ERROR</option>
-                </select>
+                </select>                
             </li>
 
             <li id="account-button"><a href="#">Account</a></li>

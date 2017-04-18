@@ -29,6 +29,12 @@ var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut
 var view = "center";
 
 Mousetrap.bind({
+    'shift+left': function () {
+        window.location.href = "/StackV-web/ops/catalog.jsp";
+    },
+    'shift+right': function () {
+        window.location.href = "/StackV-web/ops/srvc/driver.jsp";
+    },
     'left': function () {
         viewShift("left");
     },
@@ -63,14 +69,26 @@ function viewShift(dir) {
     }
 }
 
-$(function () {  
+$(function () {
     setTimeout(function () {
         setRefresh(60);
     }, 1000);
 });
 
 function loadDetailsNavbar() {
-    $("#details-nav").load("/StackV-web/details_navbar.html", function () {
+    $("#sub-nav").load("/StackV-web/details_navbar.html", function () {
+        switch (view) {
+            case "left":
+                $("#logging-tab").addClass("active");
+                break;
+            case "center":
+                $("#details-tab").addClass("active");
+                break;
+            case "right":
+                $("#visual-tab").addClass("active");
+                break;
+        }
+
         $("#logging-tab").click(function () {
             resetView();
             newView("logging");
@@ -89,15 +107,15 @@ function loadDetailsNavbar() {
 function resetView() {
     switch (view) {
         case "left":
-            $("#details-nav .active").removeClass("active");
+            $("#sub-nav .active").removeClass("active");
             tweenLoggingPanel.reverse();
             break;
         case "center":
-            $("#details-nav .active").removeClass("active");
+            $("#sub-nav .active").removeClass("active");
             tweenDetailsPanel.reverse();
             break;
         case "right":
-            $("#details-nav .active").removeClass("active");
+            $("#sub-nav .active").removeClass("active");
             tweenVisualPanel.reverse();
             break;
     }
@@ -212,7 +230,7 @@ function subloadInstance() {
         alert("No Service Instance Selected!");
         window.location.replace('/StackV-web/ops/catalog.jsp');
     }
-    
+
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
     $.ajax({
         url: apiUrl,
@@ -360,7 +378,7 @@ function subloadInstance() {
 
 function subloadLogging() {
     var uuid = sessionStorage.getItem("uuid");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs/' + uuid;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -739,8 +757,8 @@ function loadStatus(refUuid) {
 
             deltaModerate();
             instructionModerate();
-            buttonModerate();            
-            
+            buttonModerate();
+
             if (view === "center") {
                 tweenDetailsPanel.play();
             }
@@ -1149,7 +1167,7 @@ function toggleTextModel(viz_table, text_table) {
         // delta-Service, service verification etc must always display before
         // everything else.
         if (text_table.toLowerCase().indexOf("service") > 0) {
-            $(text_table).insertAfter("#instance-details-table")
+            $(text_table).insertAfter("#instance-details-table");
         }
         $(text_table).toggleClass("hide");
 

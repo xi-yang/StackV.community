@@ -50,6 +50,9 @@ $(function () {
         if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
             loadDetailsNavbar();
             loadDetails();
+        } else if (window.location.pathname === "/StackV-web/ops/admin.jsp") {
+            loadAdminNavbar();
+            loadAdmin();
         } else if (window.location.pathname === "/StackV-web/ops/acl.jsp") {
             loadACLPortal();
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
@@ -100,6 +103,9 @@ $(function () {
 
 function loadNavbar() {
     $("#nav").load("/StackV-web/navbar.html", function () {
+        if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
+            $("#nav-admin").hide();
+        }
         // set the active link - get everything after StackV-web
         var url = $(location).attr('href').split(/\/StackV-web\//)[1];
         if (/driver.jsp/.test(url))
@@ -112,6 +118,8 @@ function loadNavbar() {
             $("li#acl-tab").addClass("active");
         else if (/templateDetails.jsp/.test(url))
             $("li#details-tab").addClass("active");
+        else if (/admin.jsp/.test(url))
+            $("li#admin-tab").addClass("active");
 
         var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
         $.ajax({

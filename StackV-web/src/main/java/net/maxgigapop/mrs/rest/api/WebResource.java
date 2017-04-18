@@ -67,6 +67,7 @@ import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HttpsURLConnection;
+import javax.ws.rs.QueryParam;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.logging.log4j.Level;
@@ -1448,39 +1449,43 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Logging")
     public void setLogLevel(@PathParam("level") String level) {
-        switch (level) {
-            case "TRACE":
-                Configurator.setLevel(WebResource.class.getName(), Level.TRACE);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.TRACE);
-                break;
-            case "DEBUG":
-                Configurator.setLevel(WebResource.class.getName(), Level.DEBUG);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.DEBUG);
-                break;
-            case "INFO":
-                Configurator.setLevel(WebResource.class.getName(), Level.INFO);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.INFO);
-                break;
-            case "WARN":
-                Configurator.setLevel(WebResource.class.getName(), Level.WARN);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.WARN);
-                break;
-            case "ERROR":
-                Configurator.setLevel(WebResource.class.getName(), Level.ERROR);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.ERROR);
-                break;
-        }
+        if (verifyUserRole("realm", "admin")) {
+            switch (level) {
+                case "TRACE":
+                    Configurator.setLevel(WebResource.class.getName(), Level.TRACE);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.TRACE);
+                    break;
+                case "DEBUG":
+                    Configurator.setLevel(WebResource.class.getName(), Level.DEBUG);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.DEBUG);
+                    break;
+                case "INFO":
+                    Configurator.setLevel(WebResource.class.getName(), Level.INFO);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.INFO);
+                    break;
+                case "WARN":
+                    Configurator.setLevel(WebResource.class.getName(), Level.WARN);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.WARN);
+                    break;
+                case "ERROR":
+                    Configurator.setLevel(WebResource.class.getName(), Level.ERROR);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.ERROR);
+                    break;
+            }
 
-        logger.status("setLogLevel", level);
+            logger.status("setLogLevel", level);
+        } else {
+            logger.warning("setLogLevel", "User not authorized.");
+        }
     }
 
     /**
-     * @api {get} /app/logging/logs/:refUUID Get Logs
+     * @api {get} /app/logging/logs? Get Logs
      * @apiVersion 1.0.0
-     * @apiDescription Get logs associated with an instance.
+     * @apiDescription Get logs according to filters.
      * @apiGroup Logging
      * @apiUse AuthHeader
-     * @apiParam {String} refUUID service instance UUID
+     * @apiParam
      *
      * @apiExample {curl} Example Call:
      * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/logs/e4d3bfd6-c269-4063-b02b-44aaef71d5b6 -H "Authorization: bearer $KC_ACCESS_TOKEN"
@@ -1506,12 +1511,12 @@ public class WebResource {
      * ...]
      */
     @GET
-    @Path("/logging/logs/{refUUID}")
+    @Path("/logging/logs")
     @Produces("application/json")
     @RolesAllowed("Logging")
-    public String getLogs(@PathParam("refUUID") String refUUID) {
+    public String getLogs(@QueryParam("refUUID") String refUUID, @QueryParam("level") String level) {
+        String method = "getLogs";
         try {
-            String method = "getLogs";
             logger.trace_start(method);
             Connection front_conn;
             Properties front_connectionProps = new Properties();
@@ -1521,12 +1526,26 @@ public class WebResource {
                     front_connectionProps);
 
             PreparedStatement prep;
-            prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
-            prep.setString(1, refUUID);
+            // Filtering by UUID alone
+            if (refUUID != null && level == null) {
+                prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
+                prep.setString(1, refUUID);
+            } // Filtering by level alone 
+            else if (refUUID == null && level != null) {
+                prep = front_conn.prepareStatement("SELECT * FROM log WHERE level = ? ORDER BY timestamp DESC");
+                prep.setString(1, level);
+            } // Filtering by both
+            else if (refUUID != null && level != null) {
+                prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level = ? ORDER BY timestamp DESC");
+                prep.setString(1, refUUID);
+                prep.setString(2, level);
+            } else {
+                prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
+            }
 
             ResultSet rs1 = prep.executeQuery();
             JSONArray logArr = new JSONArray();
-            while (rs1.next()) {
+            while (rs1.next()) {                
                 JSONObject logJSON = new JSONObject();
 
                 logJSON.put("marker", rs1.getString("marker"));
@@ -3237,5 +3256,20 @@ public class WebResource {
         }
         xmldata += "</properties></driverInstance>";
         return xmldata;
+    }
+
+    private boolean verifyUserRole(String scope, String role) {
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
+                .getName());
+        final AccessToken accessToken = securityContext.getToken();
+
+        Set<String> roleSet;
+        if (scope.equals("realm")) {
+            roleSet = accessToken.getRealmAccess().getRoles();
+        } else {
+            roleSet = accessToken.getResourceAccess("StackV").getRoles();
+        }
+
+        return roleSet.contains(role);
     }
 }
