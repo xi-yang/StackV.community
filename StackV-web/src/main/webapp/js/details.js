@@ -71,7 +71,7 @@ function viewShift(dir) {
 
 $(function () {
     setTimeout(function () {
-        setRefresh(60);
+        setRefresh(30);
     }, 1000);
 });
 
@@ -82,7 +82,7 @@ function loadDetailsNavbar() {
                 $("#logging-tab").addClass("active");
                 break;
             case "center":
-                $("#details-tab").addClass("active");
+                $("#sub-details-tab").addClass("active");
                 break;
             case "right":
                 $("#visual-tab").addClass("active");
@@ -93,7 +93,7 @@ function loadDetailsNavbar() {
             resetView();
             newView("logging");
         });
-        $("#details-tab").click(function () {
+        $("#sub-details-tab").click(function () {
             resetView();
             newView("details");
         });
@@ -129,7 +129,7 @@ function newView(panel) {
             break;
         case "details":
             tweenDetailsPanel.play();
-            $("#details-tab").addClass("active");
+            $("#sub-details-tab").addClass("active");
             view = "center";
             break;
         case "visual":
@@ -138,82 +138,6 @@ function newView(panel) {
             view = "right";
             break;
     }
-}
-/* REFRESH */
-
-function timerChange(sel) {
-    clearInterval(refreshTimer);
-    clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
-        setRefresh(sel.value);
-    } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-    }
-}
-
-function setRefresh(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadDetails(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
-}
-
-function reloadDetails(time) {
-    keycloak.updateToken(90).error(function () {
-        console.log("Error updating token!");
-    }).success(function (refreshed) {
-        switch (view) {
-            case "left":
-                tweenLoggingPanel.reverse();
-                break;
-            case "center":
-                tweenDetailsPanel.reverse();
-                break;
-            case "right":
-                tweenVisualPanel.reverse();
-                break;
-        }
-        setTimeout(function () {
-            if (refreshed) {
-                sessionStorage.setItem("token", keycloak.token);
-                console.log("Token Refreshed by nexus!");
-            }
-
-            var timerSetting = $("#refresh-timer").val();
-            var uuid = getURLParameter("uuid");
-            var manual = false;
-            if (typeof time === "undefined") {
-                time = countdown;
-            }
-            if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-                manual = true;
-            }
-
-            $('#details-panel').load(document.URL + ' #instance-details-table', function () {
-                loadDetails();
-
-                $("#refresh-timer").val(timerSetting);
-                if (manual === false) {
-                    countdown = time;
-                    $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
-                } else {
-                    $("#refresh-button").html('Manually Refresh Now');
-                }
-
-                $(".delta-table-header").click(function () {
-                    $("#body-" + this.id).toggleClass("hide");
-                });
-            });
-        }, 1000);
-    });
 }
 
 
@@ -246,9 +170,10 @@ function subloadInstance() {
              *      3 - creation_time
              *      4 - super_state     */
 
-            $("#details-panel").append("<div id='instance-verification' class='hide'>" + instance[0] + "</div>");
             var panel = document.getElementById("details-panel");
+            panel.innerHTML = "";
 
+            $("#details-panel").append("<div id='instance-verification' class='hide'>" + instance[0] + "</div>");
             var table = document.createElement("table");
 
             table.id = "instance-details-table";
@@ -430,9 +355,6 @@ function subloadLogging() {
                 var summary = document.createElement("summary");
                 summary.innerHTML = log["timestamp"] + " - " + log["message"];
                 detail.appendChild(summary);
-                var data = document.createElement("p");
-                data.innerHTML = "UUID: " + log["referenceUUID"];
-                detail.appendChild(data);
                 var data = document.createElement("p");
                 data.innerHTML = "Level: " + log["level"];
                 detail.appendChild(data);
@@ -1372,3 +1294,73 @@ function buttonModerate() {
 }
 
 
+/* REFRESH */
+function reloadData(time) {
+    keycloak.updateToken(90).error(function () {
+        console.log("Error updating token!");
+    }).success(function (refreshed) {
+        switch (view) {
+            case "left":
+                tweenLoggingPanel.reverse();
+                break;
+            case "center":
+                tweenDetailsPanel.reverse();
+                break;
+            case "right":
+                tweenVisualPanel.reverse();
+                break;
+        }
+        setTimeout(function () {
+            // Refresh Operations                        
+            loadDetails();
+            $(".delta-table-header").click(function () {
+                $("#body-" + this.id).toggleClass("hide");
+            });
+            refreshSync(refreshed, time);
+        }, 1000);
+    });
+}
+
+function refreshSync(refreshed, time) {
+    if (refreshed) {
+        sessionStorage.setItem("token", keycloak.token);
+        console.log("Token Refreshed by nexus!");
+    }
+    var timerSetting = $("#refresh-timer").val();
+    var manual = false;
+    if (typeof time === "undefined") {
+        time = countdown;
+    }
+    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+        manual = true;
+    }
+    $("#refresh-timer").val(timerSetting);
+    if (manual === false) {
+        countdown = time;
+        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
+    } else {
+        $("#refresh-button").html('Manually Refresh Now');
+    }
+}
+function timerChange(sel) {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+    if (sel.value !== 'off') {
+        setRefresh(sel.value);
+    } else {
+        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+    }
+}
+function setRefresh(time) {
+    countdown = time;
+    refreshTimer = setInterval(function () {
+        reloadData(time);
+    }, (time * 1000));
+    countdownTimer = setInterval(function () {
+        refreshCountdown(time);
+    }, 1000);
+}
+function refreshCountdown() {
+    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+    countdown--;
+}

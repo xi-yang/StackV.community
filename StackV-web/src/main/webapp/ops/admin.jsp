@@ -31,7 +31,24 @@
         <!-- MAIN PANEL -->
         <div class="sub-main" id="main-pane">
             <div id="admin-panel"></div>
-            <div id="logging-panel"></div>
+            <div id="logging-panel">
+                <div id="logging-header-div">
+                    Logs                  
+                    <div id="filter-search-div">
+                        <input id="searchinput" type="search" class="form-control">
+                        <span id="searchclear" class="glyphicon glyphicon-remove-circle"></span>
+                    </div>
+                    <div id="filter-level-div">
+                        <label><input class="checkbox-level" type="checkbox" name="trace" checked>Trace</label>
+                        <label><input class="checkbox-level" type="checkbox" name="info" checked>Info</label>
+                        <label><input class="checkbox-level" type="checkbox" name="warn" checked>Warn</label>
+                        <label><input class="checkbox-level" type="checkbox" name="error" checked>Error</label>                        
+                    </div>
+                </div>
+                <div id="logging-body-div">
+                    <div id="log-div"></div>
+                </div>
+            </div>
         </div>
         <div id="details-viz" ></div>
 
