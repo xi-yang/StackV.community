@@ -2453,7 +2453,7 @@ public class WebResource {
                     servBean.createOperationModelModification(paraMap, auth);
                     break;
                 case "dnc":
-                    servBean.createDNC(dataJSON, auth, refresh, refUuid);
+                    servBean.createDNC(dataJSON, auth, refresh, refUUID);
                     break;
                 default:
             }

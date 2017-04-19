@@ -1,3 +1,12 @@
+
+### Deployment Instructions ###
+
+### mvn clean install -DskipTests  -Pdeploy-nuke
+### docker build -f Dockerfile -t stackv .
+### docker run -p 8080:8080 -d -t stackv
+
+#################
+
 # Use latest jboss/base-jdk:8 image as the base
 FROM jboss/base-jdk:8
 
@@ -18,12 +27,10 @@ RUN cd $HOME \
     && rm wildfly-$WILDFLY_VERSION.tar.gz \
     && chown -R jboss:0 ${JBOSS_HOME} \
     && chmod -R g+rw ${JBOSS_HOME}
+  
 
+ADD ./StackV-ear/src/main/docker/standalone-full.xml /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
 
-## customize standalone-full.xml (copy from template in StackV source, e.g. ejb max-threads = 100)
-	# with https (fixed configs, with self-signed keystore that trusts self-signed keycloak server)
-	# with datasources (fixed rainsdb and user/pass - MysqlDS + LoggerDS)
-	# with keycloak (fixed configured with localhost for initial kc_url)
 
 ## install mariadb
 RUN yum install -y mariadb-server mariadb-client
@@ -48,13 +55,9 @@ RUN \
   bash /tmp/config && \
   rm -f /tmp/config
 
-##?? install mysql driver to wildfly
-
-##?? install keycloak adaptor to wildfly
-
 
 ## make jboss sudoer
-RUN yum install -y sudo 
+RUN yum install -y sudo wget
 RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe" > /etc/sudoers.d/jboss && \
     chmod 0440 /etc/sudoers.d/jboss
 
@@ -67,20 +70,43 @@ USER jboss
 ## deploy StackV ear
 ADD ./StackV-ear/target/StackV-ear-1.0-SNAPSHOT.ear /opt/jboss/wildfly/standalone/deployments/
 
-## Run wildfly once to create rainsdb. Then stop it and modify persistence.xml for StackV ear 
+# Install Keycloak adaptor
+RUN cd ${JBOSS_HOME} \
+    && wget https://downloads.jboss.org/keycloak/3.0.0.Final/adapters/keycloak-oidc/keycloak-wildfly-adapter-dist-3.0.0.Final.tar.gz \
+    && tar zxf keycloak-wildfly-adapter-dist-3.0.0.Final.tar.gz \
+    && ./bin/jboss-cli.sh --file=./bin/adapter-install-offline.cli
 
+# Install mysql driver to wildfly
+RUN cd ${JBOSS_HOME} \
+    && wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.41.tar.gz \
+    && tar zxf mysql-connector-java-5.1.41.tar.gz \
+    && mkdir -p ./modules/com/mysql/main \
+    && mv mysql-connector-java-5.1.41/mysql-connector-java-5.1.41-bin.jar ./modules/com/mysql/main/ \
+    && rm -rf mysql-connector-java-5.1.41* \
+    && echo '<module xmlns="urn:jboss:module:1.3" name="com.mysql"> \
+  <resources> \
+    <resource-root path="mysql-connector-java-5.1.41-bin.jar"/> \
+  </resources> \
+  <dependencies> \
+    <module name="javax.api"/> \
+  </dependencies> \
+</module>' >> ./modules/com/mysql/main/module.xml 
+ 
 
 # Expose the ports we're interested in
 EXPOSE 8080 8443
 
-# Set the default command to run on boot
-# This will boot WildFly in the standalone mode and bind to all interface
-
-## Replace CMD with ENTRYPOINT that takes -e keycloak_server to replace standalone-full.xml and ear/war keycloak.json 
-	# optional: keystore at /keystore/wildfly.jks -> script to change keystore config in standalone-full.xml
-
+# Entrypoint script to start mysqld and wildfly 
 ADD ./StackV-ear/src/main/docker/entrypoint.sh /opt/jboss/entrypoint.sh
 
 ENTRYPOINT ["/bin/bash", "/opt/jboss/entrypoint.sh"]
 
-#CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-c", "standalone-full.xml", "-b", "0.0.0.0"]
+###############
+
+#?# TODO: customize standalone-full.xml with with environment variables
+#?# -e KEYCLOAK=https://k152.maxgigapop.net:8543/auth, then replace it in standalone-full.xml and in keycloak.json files in StackV ear
+#?# -e KEYSTORE=/keystore/wildfly.jks, then verify /keystore/widfly.jks exists (hint: 'docker run -v /host/keystore/path:/keystore ...')
+#?# and then add TrustStore and HTTPS configuration lines to standalone-full.xml. 
+
+#?# TODO: Add admin script (/bin/persist-rainsdb.sh) to stop wildfly, modify persistence.xml to disable drop-create, and then restart wildfly 
+
