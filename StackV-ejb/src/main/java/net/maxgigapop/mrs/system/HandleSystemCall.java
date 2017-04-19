@@ -160,10 +160,10 @@ public class HandleSystemCall {
     public VersionGroup updateHeadVersionGroup(String refUuid) {
         String method = "updateHeadVersionGroup";
         logger.refuuid(refUuid);
-        logger.start(method);
+        logger.trace_start(method);
         VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
         vg = VersionGroupPersistenceManager.refreshToHead(vg, true);
-        logger.end(method);
+        logger.trace_end(method);
         return vg;
     }
 

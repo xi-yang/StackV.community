@@ -34,6 +34,21 @@ Mousetrap.bind('space', function () {
         closeCatalog();
     }
 });
+Mousetrap.bind({
+    'shift+left': function () {
+        window.location.href = "/StackV-web/orch/graphTest.jsp";
+    },
+    'shift+right': function () {
+        window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
+    },
+    'space': function () {
+        if ($("#catalog-panel").hasClass("closed")) {
+            openCatalog();
+        } else {
+            closeCatalog();
+        }
+    }
+});
 
 $(function () {
     setTimeout(catalogLoad, 750);
