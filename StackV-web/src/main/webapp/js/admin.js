@@ -54,7 +54,7 @@ function viewShift(dir) {
     }
 }
 
-$(function () {  
+$(function () {
     $(".checkbox-level").change(function () {
         if ($(this).is(":checked")) {
             $("#log-div").removeClass("hide-" + this.name);
@@ -129,9 +129,11 @@ function subloadAdmin() {
 
 function subloadLogging() {
     loadLogs();
-    if (view === "left") {
-        tweenLoggingPanel.play();
-    }
+    setTimeout(function () {
+        if (view === "left") {
+            tweenLoggingPanel.play();
+        }
+    }, 1000);
 }
 
 
@@ -187,7 +189,7 @@ function loadLogs() {
                 }
                 div.appendChild(detail);
             }
-            
+
             filterLogs();
         }
     });

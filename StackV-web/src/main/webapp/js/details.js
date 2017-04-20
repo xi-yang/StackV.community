@@ -314,9 +314,11 @@ function subloadInstance() {
 /* LOGGING */
 function subloadLogging() {
     loadLogs();
-    if (view === "left") {
-        tweenLoggingPanel.play();
-    }
+    setTimeout(function () {
+        if (view === "left") {
+            tweenLoggingPanel.play();
+        }
+    }, 1000);
     subloadVerification();
 }
 
