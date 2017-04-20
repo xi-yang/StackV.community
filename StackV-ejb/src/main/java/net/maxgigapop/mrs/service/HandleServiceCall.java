@@ -916,7 +916,7 @@ public class HandleServiceCall {
             throw logger.error_throwing(method, "ref:ServiceInstance has no ServiceDelta to retrieve");
         }
         logger.targetid(serviceDelta.getId());
-        logger.start(method);
+        logger.trace_start(method);
         try {
             if (marshallWithJson) {
                 if (serviceDelta.getModelAddition() != null && serviceDelta.getModelAddition().getOntModel() != null)
@@ -951,7 +951,7 @@ public class HandleServiceCall {
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
-        logger.end(method);
+        logger.trace_end(method);
     }
     
     public boolean hasSystemBootStrapped() {
