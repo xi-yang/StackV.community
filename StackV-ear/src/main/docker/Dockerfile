@@ -5,7 +5,7 @@
 
 ### cd $STACKV_HOME
 ### mvn clean install -DskipTests  -Pdeploy-nuke
-### docker build -f ./StackV-ear/src/main/docker/Dockerfile.StackV -t stackv .
+### docker build -f ./StackV-ear/src/main/docker/Dockerfile -t stackv .
 ### docker run -p8443:8443 -p 8080:8080 -d -t -e KEYCLOAK=k152.maxgigapop.net stackv
 
 #################
