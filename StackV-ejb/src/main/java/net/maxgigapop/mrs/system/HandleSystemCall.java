@@ -178,7 +178,7 @@ public class HandleSystemCall {
                 SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
                 VersionGroup vg = systemModelCoordinator.getSystemVersionGroup();
                 ModelBase model = vg.getCachedModelBase();
-                logger.end(method);
+                logger.trace_end(method);
                 return model;
             } catch (Exception ex) {
                 throw logger.throwing(method, ex);
