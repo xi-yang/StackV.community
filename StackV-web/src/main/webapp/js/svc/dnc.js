@@ -63,10 +63,47 @@ function addLinkDNC(){
     panel.append(row);
     panel.append(spacer);
 }
+function openWindow(){
+    $('#info-fields').empty();
+    $('#info-option').empty();
+    $('#main-pane, #overlay-black').fadeIn(500);
+    document.getElementById("main-pane").style.zIndex="-1";
+    document.getElementById("overlay-black").style.zIndex="1";
+    document.getElementById("info-panel").style.zIndex="2";
+    var divContent = document.getElementById("info-fields");
+    var profilename = document.createElement("p");
+    var profile = document.createElement("input");
+    var descname = document.createElement("p");
+    var desc = document.createElement("input");
+    var saveButton = document.createElement("button");
+    
+    $('#info-panel').addClass("active");
+    
+    profilename.innerHTML="Profile Name:";
+    profile.type="text";
+    profile.id="profilename";
+    divContent.appendChild(profilename);
+    divContent.appendChild(profile);
+    
+    descname.innerHTML="Description:";
+    desc.type="text";
+    desc.id="new-profile-description";
+    
+    divContent.appendChild(descname);
+    divContent.appendChild(desc);
+    
+    saveButton.innerHTML = "Save Profile";
+    saveButton.onclick = function() {save();};
+    document.getElementById("info-option").appendChild(saveButton);
+}
 
 function save(){
     var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+    $('#info-panel').removeClass("active");
+    document.getElementById("overlay-black").style.display="none";
+    document.getElementById("main-pane").style.zIndex="2";
     var innerData = {
+        savedname: $('#profilename').val(),
         userID: sessionStorage.getItem("username"),
         type: "dnc",
         alias: $('#service-name').val(),

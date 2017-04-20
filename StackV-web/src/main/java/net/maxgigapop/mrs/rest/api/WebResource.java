@@ -1,27 +1,27 @@
 /*
- * Copyright (c) 2013-2016 University of Maryland
- * Created by: Alberto Jimenez 2015
- * Modified by: Tao-Hung Yang 2016
- * Modified by: Xi Yang 2016
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and/or hardware specification (the “Work”) to deal in the
- * Work without restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Work, and to permit persons to whom the Work is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Work.
- *
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
- * IN THE WORK.
- */
+* Copyright (c) 2013-2016 University of Maryland
+* Created by: Alberto Jimenez 2015
+* Modified by: Tao-Hung Yang 2016
+* Modified by: Xi Yang 2016
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and/or hardware specification (the “Work”) to deal in the
+* Work without restriction, including without limitation the rights to use,
+* copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Work, and to permit persons to whom the Work is furnished to do so,
+* subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Work.
+*
+* THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+* FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
+* IN THE WORK.
+*/
 package net.maxgigapop.mrs.rest.api;
 
 import java.io.IOException;
@@ -88,36 +88,36 @@ import org.apache.logging.log4j.core.config.Configurator;
  */
 @Path("app")
 public class WebResource {
-
+    
     private final Logger logger = LogManager.getLogger(WebResource.class.getName());
     private static final Marker SERVICE_MARKER = MarkerManager.getMarker("SQL");
-
+    
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
     String host = "http://127.0.0.1:8080/StackV-web/restapi";
     private final serviceBeans servBean = new serviceBeans();
     JSONParser parser = new JSONParser();
     private final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
-
+    
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
-
+    
     @Context
     private HttpRequest httpRequest;
-
+    
     @EJB
-    HandleSystemCall systemCallHandler;
-
+            HandleSystemCall systemCallHandler;
+    
     /**
      * Creates a new instance of WebResource
      */
     public WebResource() {
     }
-
+    
     /**
      * @apiDefine AuthHeader
      * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
      */
-    // >ACL 
+    // >ACL
     /**
      * @api {post} /app/acl/:refUUID Add ACL Entry
      * @apiVersion 1.0.0
@@ -142,14 +142,14 @@ public class WebResource {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
-
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
                     + "VALUES (?, '0', ?)");
             prep.setString(1, subject);
@@ -159,7 +159,7 @@ public class WebResource {
             logger.catching(ex);
         }
     }
-
+    
     /**
      * @api {delete} /app/acl/:refUUID Delete ACL Entry
      * @apiDescription Delete subject associated with object specified by UUID.
@@ -184,14 +184,14 @@ public class WebResource {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
-
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE subject = ? AND object = ?");
             prep.setString(1, subject);
             prep.setString(2, refUUID);
@@ -200,7 +200,7 @@ public class WebResource {
             logger.catching(ex);
         }
     }
-
+    
     /**
      * @api {GET} /app/acl/:refUUID Get ACL Entries
      * @apiVersion 1.0.0
@@ -228,7 +228,7 @@ public class WebResource {
     @RolesAllowed("ACL")
     public ArrayList<ArrayList<String>> getACLwithInfo(@PathParam("refUuid") String refUUID) {
         try {
-
+            
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             ArrayList<String> sqlList = new ArrayList<>();
             Connection front_conn;
@@ -238,18 +238,18 @@ public class WebResource {
             try {
                 front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                         front_connectionProps);
-
+                
                 PreparedStatement prep = front_conn.prepareStatement("SELECT A.subject FROM acl A WHERE A.object = ?");
                 prep.setString(1, refUUID);
                 ResultSet rs1 = prep.executeQuery();
-
+                
                 while (rs1.next()) {
                     sqlList.add(rs1.getString("subject"));
                 }
             } catch (SQLException ex) {
                 logger.catching(ex);
             }
-
+            
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
@@ -268,36 +268,36 @@ public class WebResource {
                     responseStr.append(inputLine);
                 }
             }
-
+            
             Object obj = parser.parse(responseStr.toString());
             JSONArray userArr = (JSONArray) obj;
             for (Object user : userArr) {
                 JSONObject userJSON = (JSONObject) user;
                 String username = (String) userJSON.get("username");
-
+                
                 if (sqlList.contains(username)) {
                     ArrayList<String> userList = new ArrayList<>();
                     userList.add(username);
-
+                    
                     if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
                         userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
                     } else {
                         userList.add("");
                     }
-
+                    
                     userList.add((String) userJSON.get("email"));
                     retList.add(userList);
                 }
             }
-
+            
             return retList;
         } catch (IOException | ParseException ex) {
             logger.error("getACL Failed.", ex);
             return null;
         }
     }
-
-    // >Drivers   
+    
+    // >Drivers
     /**
      * @api {put} /app/driver/install Install Driver
      * @apiVersion 1.0.0
@@ -328,14 +328,14 @@ public class WebResource {
         if (refresh != null) {
             auth = servBean.refreshToken(refresh);
         }
-
+        
         Object obj = parser.parse(dataInput);
         JSONObject JSONtemp = (JSONObject) obj;
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
+        
         String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("drivertype"));
-
+        
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -348,10 +348,10 @@ public class WebResource {
             logger.error("Driver Plugin Failed.", ex);
             return "PLUGIN FAILED: Exception" + ex;
         }
-
+        
         return "PLUGIN SUCCEEDED";
     }
-
+    
     /**
      * @api {put} /app/driver/:user/install/:topuri Install Driver Profile
      * @apiVersion 1.0.0
@@ -378,26 +378,26 @@ public class WebResource {
         if (refresh != null) {
             auth = servBean.refreshToken(refresh);
         }
-
+        
         Properties prop = new Properties();
         prop.put("user", front_db_user);
         prop.put("password", front_db_pass);
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 prop);
-
+        
         PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
         prep.setString(1, username);
         prep.setString(2, topuri);
         ResultSet ret = prep.executeQuery();
-
+        
         ret.next();
         Object obj = parser.parse(ret.getString("data"));
         JSONObject JSONtemp = (JSONObject) obj;
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
+        
         String xmldata = JSONtoxml(JSONdata, ret.getString("drivertype"));
-
+        
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -410,10 +410,10 @@ public class WebResource {
             logger.error("Driver Plugin Failed.", ex);
             return "PLUGIN FAILED: Exception" + ex;
         }
-
+        
         return "PLUGIN SUCCEEDED";
     }
-
+    
     /**
      * @api {put} /app/driver/:user/add Add Driver Profile
      * @apiVersion 1.0.0
@@ -444,36 +444,49 @@ public class WebResource {
             try {
                 Object obj = parser.parse(dataInput);
                 inputJSON = (JSONObject) obj;
-
+                
             } catch (ParseException ex) {
                 logger.error("Driver Profile Addition Failed : " + ex.getClass() + " : " + ex.getMessage());
             }
-
+            
             String user = (String) inputJSON.get("username");
             String driver = (String) inputJSON.get("drivername");
             String desc = (String) inputJSON.get("driverDescription");
             String data = (String) inputJSON.get("data");
             String uri = (String) inputJSON.get("topuri");
             String drivertype = (String) inputJSON.get("drivertype");
-
+            
             Properties prop = new Properties();
             prop.put("user", front_db_user);
             prop.put("password", front_db_pass);
             Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
-
-            PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
-            prep.setString(1, user);
-            prep.setString(2, driver);
-            prep.setString(3, desc);
-            prep.setString(4, data);
-            prep.setString(5, uri);
-            prep.setString(6, drivertype);
-            prep.executeUpdate();
+            
+            if(drivertype.equals("raw")){
+                PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
+                prep.setString(1, user);
+                prep.setString(2, driver);
+                prep.setString(3, desc);
+                prep.setString(4, data);
+                prep.setString(5, "");
+                prep.setString(6, drivertype);
+                prep.executeUpdate();
+            }
+            else {
+                PreparedStatement prep = conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
+                prep.setString(1, user);
+                prep.setString(2, driver);
+                prep.setString(3, desc);
+                prep.setString(4, data);
+                prep.setString(5, uri);
+                prep.setString(6, drivertype);
+                prep.executeUpdate();
+                
+            }
         } catch (SQLException ex) {
             logger.catching(ex);
         }
     }
-
+    
     @PUT
     @Path("driver/{user}/edit/{topur}")
     @RolesAllowed("Drivers")
@@ -488,7 +501,7 @@ public class WebResource {
         prep.setString(1, username);
         prep.setString(2, uri);
         ResultSet ret = prep.executeQuery();
-
+        
         return "Deleted";
     }
     
@@ -518,19 +531,19 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
             prep.setString(1, username);
             prep.setString(2, topuri);
             prep.executeUpdate();
-
+            
             return "Deleted";
         } catch (SQLException ex) {
             logger.catching(ex);
             return "Failed";
         }
     }
-
+    
     /**
      * @api {get} /app/driver/:username/getdetails/:topuri Get Driver Profile
      * @apiVersion 1.0.0
@@ -552,28 +565,28 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Drivers")
     public JSONObject getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
-
+        
         Properties prop = new Properties();
         prop.put("user", front_db_user);
         prop.put("password", front_db_pass);
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 prop);
-
+        
         PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
         prep.setString(1, username);
         prep.setString(2, topuri);
         ResultSet ret = prep.executeQuery();
-
+        
         ret.next();
-
+        
         Object obj = parser.parse(ret.getString("data"));
         JSONObject JSONtemp = (JSONObject) obj;
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
+        
         return JSONdata;
     }
-
+    
     /**
      * @api {get} /app/driver/:user/get Get Profile Information
      * @apiVersion 1.0.0
@@ -597,31 +610,31 @@ public class WebResource {
     public ArrayList<String> getDriver(@PathParam("user") String username) {
         try {
             ArrayList<String> list = new ArrayList<>();
-
+            
             Properties prop = new Properties();
             prop.put("user", front_db_user);
             prop.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     prop);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ?");
             prep.setString(1, username);
             ResultSet ret = prep.executeQuery();
-
+            
             while (ret.next()) {
                 list.add(ret.getString("drivername"));
                 list.add(ret.getString("description"));
                 list.add(ret.getString("data"));
                 list.add(ret.getString("TopUri"));
             }
-
+            
             return list;
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     // >Keycloak
     /**
      * @api {get} /app/keycloak/users Get Users
@@ -669,36 +682,36 @@ public class WebResource {
                     responseStr.append(inputLine);
                 }
             }
-
+            
             Object obj = parser.parse(responseStr.toString());
             JSONArray userArr = (JSONArray) obj;
             for (Object user : userArr) {
                 JSONObject userJSON = (JSONObject) user;
                 String subject = (String) userJSON.get("id");
                 String username = (String) userJSON.get("username");
-
+                
                 ArrayList<String> userList = new ArrayList<>();
                 userList.add(username);
-
+                
                 if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
                     userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
                 } else {
                     userList.add("");
                 }
-
+                
                 userList.add((String) userJSON.get("email"));
                 userList.add(Long.toString((Long) userJSON.get("createdTimestamp")));
                 userList.add(subject);
                 retList.add(userList);
             }
-
+            
             return retList;
         } catch (IOException | ParseException ex) {
             logger.error("getUsers Failed.", ex);
             return null;
         }
     }
-
+    
     /**
      * @api {get} /app/keycloak/groups Get Groups
      * @apiVersion 1.0.0
@@ -742,7 +755,7 @@ public class WebResource {
                     responseStr.append(inputLine);
                 }
             }
-
+            
             Object obj = parser.parse(responseStr.toString());
             JSONArray groupArr = (JSONArray) obj;
             for (Object group : groupArr) {
@@ -750,17 +763,17 @@ public class WebResource {
                 JSONObject groupJSON = (JSONObject) group;
                 groupList.add((String) groupJSON.get("id"));
                 groupList.add((String) groupJSON.get("name"));
-
+                
                 retList.add(groupList);
             }
-
+            
             return retList;
         } catch (IOException | ParseException ex) {
             logger.error("getGroups Failed.", ex);
             return null;
         }
     }
-
+    
     /**
      * @api {get} /app/keycloak/roles Get Roles
      * @apiVersion 1.0.0
@@ -804,7 +817,7 @@ public class WebResource {
                     responseStr.append(inputLine);
                 }
             }
-
+            
             Object obj = parser.parse(responseStr.toString());
             JSONArray roleArr = (JSONArray) obj;
             for (Object role : roleArr) {
@@ -812,17 +825,17 @@ public class WebResource {
                 JSONObject roleJSON = (JSONObject) role;
                 roleList.add((String) roleJSON.get("id"));
                 roleList.add((String) roleJSON.get("name"));
-
+                
                 retList.add(roleList);
             }
-
+            
             return retList;
         } catch (IOException | ParseException ex) {
             logger.error("getRoles Failed.", ex);
             return null;
         }
     }
-
+    
     /**
      * @api {get} /app/keycloak/users/:user/groups Get User Groups
      * @apiVersion 1.0.0
@@ -867,7 +880,7 @@ public class WebResource {
                     responseStr.append(inputLine);
                 }
             }
-
+            
             Object obj = parser.parse(responseStr.toString());
             JSONArray roleArr = (JSONArray) obj;
             for (Object obj2 : roleArr) {
@@ -875,7 +888,7 @@ public class WebResource {
                 JSONObject role = (JSONObject) obj2;
                 roleList.add((String) role.get("id"));
                 roleList.add((String) role.get("name"));
-
+                
                 retList.add(roleList);
             }
             return retList;
@@ -884,7 +897,7 @@ public class WebResource {
             return null;
         }
     }
-
+    
     /**
      * @api {post} /app/keycloak/users/:user/groups Add User to Group
      * @apiVersion 1.0.0
@@ -917,23 +930,23 @@ public class WebResource {
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
-
+            
             // Construct array
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
                 Object obj = parser.parse(inputString);
                 final JSONObject inputJSON = (JSONObject) obj;
                 JSONArray roleArr = new JSONArray();
                 roleArr.add(inputJSON);
-
+                
                 out.write(roleArr.toString());
             }
-
+            
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException ex) {
             logger.error("addUserGroup Failed.", ex);
         }
     }
-
+    
     /**
      * @api {delete} /app/keycloak/users/:user/groups Remove User from Group
      * @apiVersion 1.0.0
@@ -966,23 +979,23 @@ public class WebResource {
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
-
+            
             // Construct array
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
                 Object obj = parser.parse(inputString);
                 final JSONObject inputJSON = (JSONObject) obj;
                 JSONArray roleArr = new JSONArray();
                 roleArr.add(inputJSON);
-
+                
                 out.write(roleArr.toString());
             }
-
+            
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException ex) {
             logger.error("removeUserGroup Failed.", ex);
         }
     }
-
+    
     /**
      * @api {get} /app/keycloak/users/:user/roles Get User Roles
      * @apiVersion 1.0.0
@@ -1011,7 +1024,7 @@ public class WebResource {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-
+            
             // Get assigned roles.
             URL url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID);
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
@@ -1029,7 +1042,7 @@ public class WebResource {
                     responseStr.append(inputLine);
                 }
             }
-
+            
             Object obj = parser.parse(responseStr.toString());
             JSONArray roleArr = (JSONArray) obj;
             for (Object obj2 : roleArr) {
@@ -1038,10 +1051,10 @@ public class WebResource {
                 roleList.add((String) role.get("id"));
                 roleList.add((String) role.get("name"));
                 roleList.add("assigned");
-
+                
                 retList.add(roleList);
             }
-
+            
             // Get groups.
             url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
             conn = (HttpsURLConnection) url.openConnection();
@@ -1058,7 +1071,7 @@ public class WebResource {
                     responseStr.append(inputLine);
                 }
             }
-
+            
             obj = parser.parse(responseStr.toString());
             JSONArray groupArr = (JSONArray) obj;
             ArrayList<String> groupList = new ArrayList<>();
@@ -1066,7 +1079,7 @@ public class WebResource {
                 JSONObject role = (JSONObject) obj2;
                 groupList.add((String) role.get("name"));
             }
-
+            
             // Get delegated roles.
             for (String group : groupList) {
                 url = new URL("https://k152.maxgigapop.net:8543/auth/admin/realms/StackV/roles/" + group + "/composites");
@@ -1084,7 +1097,7 @@ public class WebResource {
                         responseStr.append(inputLine);
                     }
                 }
-
+                
                 obj = parser.parse(responseStr.toString());
                 roleArr = (JSONArray) obj;
                 for (Object obj2 : roleArr) {
@@ -1093,18 +1106,18 @@ public class WebResource {
                     roleList.add((String) role.get("id"));
                     roleList.add((String) role.get("name"));
                     roleList.add(group);
-
+                    
                     retList.add(roleList);
                 }
             }
-
+            
             return retList;
         } catch (IOException | ParseException ex) {
             logger.error("getUserRoles Failed.", ex);
             return null;
         }
     }
-
+    
     /**
      * @api {post} /app/keycloak/users/:user/roles Add User Role
      * @apiVersion 1.0.0
@@ -1137,23 +1150,23 @@ public class WebResource {
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
-
+            
             // Construct array
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
                 Object obj = parser.parse(inputString);
                 final JSONObject inputJSON = (JSONObject) obj;
                 JSONArray roleArr = new JSONArray();
                 roleArr.add(inputJSON);
-
+                
                 out.write(roleArr.toString());
             }
-
+            
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException ex) {
             logger.error("addUserRole Failed.", ex);
         }
     }
-
+    
     /**
      * @api {delete} /app/keycloak/users/:user/roles Delete User Role
      * @apiVersion 1.0.0
@@ -1186,23 +1199,23 @@ public class WebResource {
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
-
+            
             // Construct array
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
                 Object obj = parser.parse(inputString);
                 final JSONObject inputJSON = (JSONObject) obj;
                 JSONArray roleArr = new JSONArray();
                 roleArr.add(inputJSON);
-
+                
                 out.write(roleArr.toString());
             }
-
+            
             System.out.println(conn.getResponseCode() + " - " + conn.getResponseMessage());
         } catch (IOException | ParseException ex) {
             logger.error("removeUserRole Failed.", ex);
         }
     }
-
+    
     // >Labels
     /**
      * @api {get} /app/label/:user
@@ -1226,33 +1239,33 @@ public class WebResource {
     public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
+            
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM label WHERE username = ?");
             prep.setString(1, username);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 ArrayList<String> labelList = new ArrayList<>();
-
+                
                 labelList.add(rs1.getString("identifier"));
                 labelList.add(rs1.getString("label"));
                 labelList.add(rs1.getString("color"));
-
+                
                 retList.add(labelList);
             }
-
+            
             return retList;
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     /**
      * @api {put} /app/label Add Label
      * @apiVersion 1.0.0
@@ -1279,36 +1292,36 @@ public class WebResource {
             try {
                 Object obj = parser.parse(inputString);
                 inputJSON = (JSONObject) obj;
-
+                
             } catch (ParseException ex) {
                 logger.error("label Failed.", ex);
             }
-
+            
             String user = (String) inputJSON.get("user");
             String identifier = (String) inputJSON.get("identifier");
             String label = (String) inputJSON.get("label");
             String color = (String) inputJSON.get("color");
-
+            
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`label` (`identifier`, `username`, `label`, `color`) VALUES (?, ?, ?, ?)");
             prep.setString(1, identifier);
             prep.setString(2, user);
             prep.setString(3, label);
             prep.setString(4, color);
             prep.executeUpdate();
-
+            
             return "Added";
         } catch (SQLException ex) {
             logger.catching(ex);
             return "Failed";
         }
     }
-
+    
     /**
      * @api {delete} /app/label/:username/delete/:identifier Delete Label
      * @apiVersion 1.0.0
@@ -1335,19 +1348,19 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend` .`label` WHERE username = ? AND identifier = ?");
             prep.setString(1, username);
             prep.setString(2, identifier);
             prep.executeUpdate();
-
+            
             return "Deleted";
         } catch (SQLException ex) {
             logger.catching(ex);
             return "Failed";
         }
     }
-
+    
     /**
      * @api {delete} /app/label/:username/clearall Clear Labels
      * @apiVersion 1.0.0
@@ -1373,18 +1386,18 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`label` WHERE username = ? ");
             prep.setString(1, username);
             prep.executeUpdate();
-
+            
             return "Labels Cleared";
         } catch (SQLException ex) {
             logger.catching(ex);
             return "Failed";
         }
     }
-
+    
     // >Logging
     /**
      * @api {get} /app/logging/ Get Logging
@@ -1407,7 +1420,7 @@ public class WebResource {
     public String getLogLevel() {
         return logger.getLevel().name();
     }
-
+    
     /**
      * @api {put} /app/logging/:level Set Logging
      * @apiVersion 1.0.0
@@ -1446,10 +1459,10 @@ public class WebResource {
                 Configurator.setLevel(SecurityInterceptor.class.getName(), Level.ERROR);
                 break;
         }
-
+        
         logger.info("Logging level changed to {}.", level);
     }
-
+    
     /**
      * @api {get} /app/logging/logs/:refUUID:level Get Logs
      * @apiVersion 1.0.0
@@ -1493,33 +1506,33 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep;
             prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ?");
             prep.setString(1, refUUID);
-
+            
             ResultSet rs1 = prep.executeQuery();
             JSONArray logArr = new JSONArray();
             while (rs1.next()) {
                 JSONObject logJSON = new JSONObject();
-
+                
                 logJSON.put("marker", rs1.getString("marker"));
                 logJSON.put("timestamp", rs1.getTimestamp("timestamp").toString());
                 logJSON.put("level", rs1.getString("level"));
                 logJSON.put("logger", rs1.getString("logger"));
                 logJSON.put("message", rs1.getString("message"));
                 logJSON.put("exception", rs1.getString("exception"));
-
+                
                 logArr.add(logJSON);
             }
-
+            
             return logArr.toJSONString();
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     // >Manifests
     /**
      * @api {get} /app/manifest/:svcUUID Get Manifest
@@ -1582,7 +1595,7 @@ public class WebResource {
         }
         return obj.getString("jsonTemplate");
     }
-
+    
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/xml")
@@ -1593,7 +1606,7 @@ public class WebResource {
         String manifest = org.json.XML.toString(obj);
         return manifest;
     }
-
+    
     // >Panels
     @GET
     @Path("/panel/{userId}/instances")
@@ -1604,23 +1617,23 @@ public class WebResource {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             ArrayList<String> banList = new ArrayList<>();
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-
+            
             // Verify user
             String username = authUsername(userId);
             if (username == null) {
                 logger.warn("Logged-in user does not match requested user information!");
                 return retList;
             }
-
+            
             banList.add("Driver Management");
-
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep;
             if (username.equals("admin")) {
                 prep = front_conn.prepareStatement("SELECT DISTINCT S.name, I.referenceUUID, X.super_state, I.alias_name "
@@ -1636,7 +1649,7 @@ public class WebResource {
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 ArrayList<String> instanceList = new ArrayList<>();
-
+                
                 String instanceName = rs1.getString("name");
                 String instanceUUID = rs1.getString("referenceUUID");
                 String instanceSuperState = rs1.getString("super_state");
@@ -1645,28 +1658,28 @@ public class WebResource {
                     try {
                         URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
                         HttpURLConnection status = (HttpURLConnection) url.openConnection();
-
+                        
                         String instanceState = instanceSuperState + " - " + servBean.executeHttpMethod(url, status, "GET", null, auth);
-
+                        
                         instanceList.add(instanceName);
                         instanceList.add(instanceUUID);
                         instanceList.add(instanceState);
                         instanceList.add(instanceAlias);
-
+                        
                         retList.add(instanceList);
                     } catch (IOException ex) {
                         logger.error("Instance Status Check Failed.", ex);
                     }
                 }
             }
-
+            
             return retList;
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     @GET
     @Path("/panel/{userId}/wizard")
     @Produces("application/json")
@@ -1674,22 +1687,22 @@ public class WebResource {
     public ArrayList<ArrayList<String>> loadWizard(@PathParam("userId") String userId) {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
+            
             // Verify user
             String username = authUsername(userId);
             if (username == null) {
                 logger.warn("Logged-in user does not match requested user information!");
                 return retList;
             }
-
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep;
             if (username.equals("admin")) {
                 prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
@@ -1702,21 +1715,21 @@ public class WebResource {
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 ArrayList<String> wizardList = new ArrayList<>();
-
+                
                 wizardList.add(rs1.getString("name"));
                 wizardList.add(rs1.getString("description"));
                 wizardList.add(rs1.getString("service_wizard_id"));
-
+                
                 retList.add(wizardList);
             }
-
+            
             return retList;
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     @GET
     @Path("/panel/{userId}/editor")
     @Produces("application/json")
@@ -1724,31 +1737,31 @@ public class WebResource {
     public ArrayList<ArrayList<String>> loadEditor(@PathParam("userId") String userId) {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
+            
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
             AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
-
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
-
+            
             front_connectionProps.put(
                     "user", front_db_user);
             front_connectionProps.put(
                     "password", front_db_pass);
-
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT DISTINCT S.name, S.filename, S.description FROM service S WHERE S.atomic = 0");
             ResultSet rs1 = prep.executeQuery();
-
+            
             while (rs1.next()) {
                 ArrayList<String> wizardList = new ArrayList<>();
                 wizardList.add(rs1.getString("name"));
                 wizardList.add(rs1.getString("description"));
                 wizardList.add(rs1.getString("filename"));
-
+                
                 retList.add(wizardList);
             }
             return retList;
@@ -1757,7 +1770,7 @@ public class WebResource {
             return null;
         }
     }
-
+    
     @GET
     @Path("/panel/{refUuid}/acl")
     @Produces("application/json")
@@ -1771,11 +1784,11 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT A.subject FROM acl A WHERE A.object = ?");
             prep.setString(1, refUuid);
             ResultSet rs1 = prep.executeQuery();
-
+            
             while (rs1.next()) {
                 retList.add(rs1.getString("subject"));
             }
@@ -1785,7 +1798,7 @@ public class WebResource {
             return null;
         }
     }
-
+    
     @GET
     @Path("/panel/acl")
     @Produces("application/json")
@@ -1795,7 +1808,7 @@ public class WebResource {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
             AccessToken accessToken = securityContext.getToken();
             String username = accessToken.getPreferredUsername();
-
+            
             ArrayList<String> retList = new ArrayList<>();
             Connection front_conn;
             Properties front_connectionProps = new Properties();
@@ -1803,11 +1816,11 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT A.object FROM acl A WHERE A.subject = ?");
             prep.setString(1, username);
             ResultSet rs1 = prep.executeQuery();
-
+            
             while (rs1.next()) {
                 retList.add(rs1.getString("subject"));
             }
@@ -1817,7 +1830,7 @@ public class WebResource {
             return null;
         }
     }
-
+    
     @GET
     @Path("/details/{uuid}/instance")
     @Produces("application/json")
@@ -1825,20 +1838,20 @@ public class WebResource {
     public ArrayList<String> loadInstanceDetails(@PathParam("uuid") String uuid) {
         try {
             ArrayList<String> retList = new ArrayList<>();
-
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep;
             prep = front_conn.prepareStatement("SELECT S.name, I.creation_time, I.alias_name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V "
                     + "WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id");
             prep.setString(1, uuid);
-
+            
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 retList.add(rs1.getString("verification_state"));
@@ -1847,14 +1860,14 @@ public class WebResource {
                 retList.add(rs1.getString("creation_time"));
                 retList.add(rs1.getString("super_state"));
             }
-
+            
             return retList;
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     @GET
     @Path("/details/{uuid}/delta")
     @Produces("application/json")
@@ -1862,20 +1875,20 @@ public class WebResource {
     public ArrayList<ArrayList<String>> loadInstanceDelta(@PathParam("uuid") String uuid) {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep;
             prep = front_conn.prepareStatement("SELECT D.service_delta_id, D.delta, D.type, S.super_state FROM service_delta D, service_instance I, service_state S, service_history H "
                     + "WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND D.service_history_id = H.service_history_id AND D.service_instance_id = H.service_instance_id AND H.service_state_id = S.service_state_id");
             prep.setString(1, uuid);
-
+            
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 ArrayList<String> deltaList = new ArrayList<>();
@@ -1885,14 +1898,14 @@ public class WebResource {
                 deltaList.add(rs1.getString("delta"));
                 retList.add(deltaList);
             }
-
+            
             return retList;
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     @GET
     @Path("/details/{uuid}/verification")
     @Produces("application/json")
@@ -1900,20 +1913,20 @@ public class WebResource {
     public ArrayList<String> loadInstanceVerification(@PathParam("uuid") String uuid) {
         try {
             ArrayList<String> retList = new ArrayList<>();
-
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep;
             prep = front_conn.prepareStatement("SELECT V.service_instance_id, V.verification_run, V.creation_time, V.addition, V.reduction, V.verified_reduction, V.verified_addition, V.unverified_reduction, V.unverified_addition "
                     + "FROM service_verification V, service_instance I WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
             prep.setString(1, uuid);
-
+            
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 retList.add(rs1.getString("verification_run"));
@@ -1922,14 +1935,14 @@ public class WebResource {
                 retList.add(rs1.getString("reduction"));
                 retList.add(rs1.getString("service_instance_id"));
             }
-
+            
             return retList;
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     @GET
     @Path("/details/{uuid}/acl")
     @Produces("application/json")
@@ -1937,29 +1950,29 @@ public class WebResource {
     public ArrayList<String> loadInstanceACL(@PathParam("uuid") String uuid) {
         try {
             ArrayList<String> retList = new ArrayList<>();
-
+            
             Connection front_conn;
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-
+            
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep;
             prep = front_conn.prepareStatement("SELECT * FROM `acl`");
-
+            
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
             }
-
+            
             return retList;
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     @GET
     @Path("/service/lastverify/{siUUID}")
     @Produces("application/json")
@@ -1972,7 +1985,7 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
             prep.setString(1, serviceUUID);
             ResultSet rs1 = prep.executeQuery();
@@ -1986,15 +1999,15 @@ public class WebResource {
                 retMap.put("reduction", rs1.getString("reduction"));
                 retMap.put("addition", rs1.getString("addition"));
             }
-
+            
             return retMap;
-
+            
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     @GET
     @Path("/service/availibleitems/{siUUID}")
     @Produces("application/json")
@@ -2007,7 +2020,7 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
             prep.setString(1, serviceUUID);
             ResultSet rs1 = prep.executeQuery();
@@ -2015,38 +2028,38 @@ public class WebResource {
             String unverified_reduction = "";
             OntModel vAddition;
             OntModel uReduction;
-
+            
             while (rs1.next()) {
                 verified_addition = rs1.getString("verified_addition");
                 unverified_reduction = rs1.getString("unverified_reduction");
             }
-
+            
             if (verified_addition != null && unverified_reduction != null) {
                 vAddition = ModelUtil.unmarshalOntModelJson(verified_addition);
                 uReduction = ModelUtil.unmarshalOntModelJson(unverified_reduction);
-
+                
                 ArrayList<OntModel> modelList = new ArrayList<>();
                 modelList.add(vAddition);
                 modelList.add(uReduction);
                 OntModel newModel = ModelUtil.createUnionOntModel(modelList);
                 return ModelUtil.marshalOntModelJson(newModel);
             }
-
+            
             if (verified_addition != null) {
                 return verified_addition;
             } else if (unverified_reduction != null) {
                 return unverified_reduction;
             } else {
                 return null;
-
+                
             }
-
+            
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     // >Profiles
     /**
      * @api {get} /app/profile/:wizardID Get Profile
@@ -2075,22 +2088,22 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT wizard_json FROM service_wizard WHERE service_wizard_id = ?");
             prep.setInt(1, wizardID);
             ResultSet rs1 = prep.executeQuery();
             while (rs1.next()) {
                 return rs1.getString(1);
             }
-
+            
             return "";
-
+            
         } catch (SQLException ex) {
             logger.catching(ex);
             return null;
         }
     }
-
+    
     /**
      * @api {put} /app/profile/:wizardID/edit Modify Profile
      * @apiVersion 1.0.0
@@ -2115,18 +2128,18 @@ public class WebResource {
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
-
+            
             // TODO: Sanitize the input!
             PreparedStatement prep = front_conn.prepareStatement("UPDATE service_wizard SET wizard_json = ? WHERE service_wizard_id = ? ");
             prep.setString(1, inputString);
             prep.setInt(2, wizardId);
             prep.executeUpdate();
-
+            
         } catch (SQLException ex) {
             logger.catching(ex);
         }
     }
-
+    
     /**
      * @api {put} /app/profile/new Add New Profile
      * @apiVersion 1.0.0
@@ -2156,14 +2169,14 @@ public class WebResource {
             String name = (String) inputJSON.get("name");
             String description = (String) inputJSON.get("description");
             String inputData = (String) inputJSON.get("data");
-
+            
             Object obj2 = parser.parse(inputData);
             JSONObject dataJSON = (JSONObject) obj2;
             String username = authUsername((String) dataJSON.get("userID"));
             String type = (String) dataJSON.get("type");
             
             int serviceID = servBean.getServiceID(type);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (service_id, username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setInt(1, serviceID);
             prep.setString(2, username);
@@ -2178,7 +2191,7 @@ public class WebResource {
             return ex.toString();
         }
     }
-
+    
     /**
      * @api {delete} /app/profile/:wizardID Delete Profile
      * @apiVersion 1.0.0
@@ -2201,16 +2214,16 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM service_wizard WHERE service_wizard_id = ?");
             prep.setInt(1, wizardId);
             prep.executeUpdate();
-
+            
         } catch (SQLException ex) {
             logger.catching(ex);
         }
     }
-
+    
     // >Services
     /**
      * @api {get} /app/service/:siUUID/status Check Status
@@ -2237,7 +2250,7 @@ public class WebResource {
         if (refresh != null) {
             auth = servBean.refreshToken(refresh);
         }
-
+        
         try {
             Thread.sleep(300);
             return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID, auth) + "\n";
@@ -2246,7 +2259,7 @@ public class WebResource {
             return null;
         }
     }
-
+    
     /**
      * @api {get} /app/service/:siUUID/substatus Check Substatus
      * @apiVersion 1.0.0
@@ -2272,7 +2285,7 @@ public class WebResource {
         if (refresh != null) {
             auth = servBean.refreshToken(refresh);
         }
-
+        
         try {
             Thread.sleep(300);
             return status(svcInstanceUUID, auth);
@@ -2281,7 +2294,7 @@ public class WebResource {
         }
         return null;
     }
-
+    
     /**
      * @api {post} /app/service Create Service
      * @apiVersion 1.0.0
@@ -2300,24 +2313,24 @@ public class WebResource {
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("Services")
     public void createService(@Suspended
-            final AsyncResponse asyncResponse, final String inputString) {
+    final AsyncResponse asyncResponse, final String inputString) {
         try {
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
             String serviceType = (String) inputJSON.get("type");
-
+            
             // Authorize service.
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
-
+            
             String username = accessToken.getPreferredUsername();
             System.out.println("User:" + username);
             inputJSON.remove("username");
             inputJSON.put("username", username);
-
+            
             //System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
             executorService.execute(new Runnable() {
                 @Override
@@ -2325,12 +2338,12 @@ public class WebResource {
                     asyncResponse.resume(doCreateService(inputJSON, auth, refresh));
                 }
             });
-
+            
         } catch (ParseException ex) {
             logger.catching(ex);
         }
     }
-
+    
     /**
      * @api {put} /app/service/:siUUID/:action Operate Service
      * @apiVersion 1.0.0
@@ -2348,12 +2361,12 @@ public class WebResource {
     @Path(value = "/service/{siUUID}/{action}")
     @RolesAllowed("Services")
     public void operate(@Suspended
-            final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
-            final String refUuid, @PathParam(value = "action")
-            final String action) {
+    final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
+    final String refUuid, @PathParam(value = "action")
+    final String action) {
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-
+        
         executorService.execute(new Runnable() {
             @Override
             public void run() {
@@ -2361,42 +2374,42 @@ public class WebResource {
             }
         });
     }
-
+    
     // Async Methods -----------------------------------------------------------
     private String doCreateService(JSONObject inputJSON, String auth, String refresh) {
         try {
             long startTime = System.currentTimeMillis();
             ThreadContext.put("method", "doCreateService");
             logger.traceEntry();
-
+            
             String serviceType = (String) inputJSON.get("type");
             String alias = (String) inputJSON.get("alias");
             String username = (String) inputJSON.get("username");
-
+            
             JSONObject dataJSON = (JSONObject) inputJSON.get("data");
-
+            
             // Find user ID.
             Connection front_conn;
             try {
                 Class.forName("com.mysql.jdbc.Driver").newInstance();
-
+                
             } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
                 logger.catching(ex);
             }
-
+            
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             // Instance Creation
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestProperty("Authorization", auth);
             String refUUID = servBean.executeHttpMethod(url, connection, "GET", null, auth);
             ThreadContext.put("refUUID", refUUID);
-
+            
             // Create Parameter Map
             HashMap<String, String> paraMap = new HashMap<>();
             switch (serviceType) {
@@ -2416,7 +2429,7 @@ public class WebResource {
                     break;
                 default:
             }
-
+            
             // Initialize service parameters.
             PreparedStatement prep = front_conn.prepareStatement("SELECT service_id"
                     + " FROM service WHERE filename = ?");
@@ -2427,7 +2440,7 @@ public class WebResource {
                 serviceID = rs1.getInt(1);
             }
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
-
+            
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
                     + "(`service_id`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `service_state_id`) VALUES (?, ?, ?, ?, ?, ?)");
@@ -2438,27 +2451,27 @@ public class WebResource {
             prep.setString(5, alias);
             prep.setInt(6, 1);
             prep.executeUpdate();
-
+            
             int instanceID = servBean.getInstanceID(refUUID);
-
+            
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` "
                     + "(`service_state_id`, `service_instance_id`) VALUES (1, ?)");
             prep.setInt(1, instanceID);
             prep.executeUpdate();
-
+            
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
                     + "(`service_instance_id`) VALUES (?)");
             prep.setInt(1, instanceID);
             prep.executeUpdate();
-
+            
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
                     + "VALUES (?, '0', ?)");
             prep.setString(1, username);
             prep.setString(2, refUUID);
             prep.executeUpdate();
-
+            
             logger.info("Initialized.");
-
+            
             // Execute service creation.
             switch (serviceType) {
                 case "netcreate":
@@ -2475,27 +2488,27 @@ public class WebResource {
                     break;
                 default:
             }
-
+            
             long endTime = System.currentTimeMillis();
             logger.info("Service Creation End, Duration: " + (endTime - startTime) + " ms.");
-
+            
             // Return instance UUID
             logger.traceExit(refUUID);
             return refUUID;
-
+            
         } catch (EJBException | SQLException | IOException ex) {
             logger.catching(ex);
             return "<<<CREATION ERROR: " + ex.getMessage();
         }
     }
-
+    
     private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, String auth, String refresh) {
         long startTime = System.currentTimeMillis();
         ThreadContext.put("refUUID", refUUID);
         ThreadContext.put("method", "doOperate:" + action);
         logger.traceEntry(action);
         long endTime;
-
+        
         try {
             clearVerification(refUUID);
             switch (action) {
@@ -2507,7 +2520,7 @@ public class WebResource {
                     setSuperState(refUUID, 2);
                     forceCancelInstance(refUUID, auth, refresh);
                     break;
-
+                    
                 case "reinstate":
                     setSuperState(refUUID, 4);
                     cancelInstance(refUUID, auth, refresh);
@@ -2516,34 +2529,34 @@ public class WebResource {
                     setSuperState(refUUID, 4);
                     forceCancelInstance(refUUID, auth, refresh);
                     break;
-
+                    
                 case "force_retry":
                     forceRetryInstance(refUUID, auth, refresh);
                     break;
-
+                    
                 case "delete":
                 case "force_delete":
                     deleteInstance(refUUID, auth);
-
+                    
                     endTime = System.currentTimeMillis();
                     logger.traceExit(action, "Deletion Complete.\r\n");
                     return "Deletion Complete.\r\n";
-
+                    
                 case "verify":
                 case "reverify":
                     servBean.verify(refUUID, refresh);
-
+                    
                     endTime = System.currentTimeMillis();
                     logger.traceExit(action, "Verification Complete.\r\n");
                     return "Verification Complete.\r\n";
-
+                    
                 default:
                     logger.warn("Invalid Action: {}.", action);
             }
-
+            
             auth = servBean.refreshToken(refresh);
             String retString = superStatus(refUUID) + " - " + status(refUUID, auth) + "\r\n";
-
+            
             logger.traceExit(action, retString);
             return retString;
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
@@ -2565,7 +2578,7 @@ public class WebResource {
             return "<<<OPERATION ERROR - " + action + ": " + ex.getMessage() + "\r\n";
         }
     }
-
+    
     @GET
     @Path("/delta/{siUUID}")
     @Produces("application/json")
@@ -2578,17 +2591,17 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
             prep.setString(1, serviceUUID);
             ResultSet rs1 = prep.executeQuery();
             rs1.next();
-
+            
             if (rs1.getInt(1) > 0) {
                 URL url = new URL(String.format("%s/service/delta/%s", host, serviceUUID));
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
-
+                
                 return result;
             } else {
                 return "{verified_addition: \"{ }\",verified_reduction: \"{ }\",unverified_addition: \"{ }\",unverified_reduction: \"{ }\"}";
@@ -2598,7 +2611,7 @@ public class WebResource {
             return null;
         }
     }
-
+    
     // Operation Methods -------------------------------------------------------
     /**
      * Deletes a service instance.
@@ -2615,21 +2628,21 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
             prep.setString(1, refUuid);
             prep.executeUpdate();
-
+            
             prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE `acl`.`object` = ?");
             prep.setString(1, refUuid);
             prep.executeUpdate();
-
+            
             return 0;
         } else {
             return 1;
         }
     }
-
+    
     /**
      * Cancels a service instance. Requires instance to be in 'ready' substate.
      *
@@ -2646,37 +2659,37 @@ public class WebResource {
             if (!instanceState.equalsIgnoreCase("READY")) {
                 return 1;
             }
-
+            
             auth = servBean.refreshToken(refresh);
             result = revert(refUuid, auth);
             if (!result) {
                 return 2;
             }
-
+            
             auth = servBean.refreshToken(refresh);
             result = propagate(refUuid, auth);
             if (!result) {
                 return 3;
             }
-
+            
             auth = servBean.refreshToken(refresh);
             result = commit(refUuid, auth);
             if (!result) {
                 return 4;
             }
-
+            
             while (true) {
                 auth = servBean.refreshToken(refresh);
-
+                
                 instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
                     servBean.verify(refUuid, refresh);
-
+                    
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED"))) {
                     return 5;
                 }
-
+                
                 Thread.sleep(5000);
             }
         } catch (EJBException ex) {
@@ -2684,24 +2697,24 @@ public class WebResource {
             return -1;
         }
     }
-
+    
     private int forceCancelInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
         try {
             forceRevert(refUuid, auth);
-
+            
             auth = servBean.refreshToken(refresh);
             forcePropagate(refUuid, auth);
-
+            
             auth = servBean.refreshToken(refresh);
             forceCommit(refUuid, auth);
-
+            
             for (int i = 0; i < 20; i++) {
                 auth = servBean.refreshToken(refresh);
                 String instanceState = status(refUuid, auth);
                 if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
                     servBean.verify(refUuid, refresh);
-
+                    
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED"))) {
                     return 5;
@@ -2714,20 +2727,20 @@ public class WebResource {
             return -1;
         }
     }
-
+    
     private int forceRetryInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
         forcePropagate(refUuid, auth);
-
+        
         auth = servBean.refreshToken(refresh);
         forceCommit(refUuid, auth);
-
+        
         for (int i = 0; i < 20; i++) {
             auth = servBean.refreshToken(refresh);
             String instanceState = status(refUuid, auth);
             if (instanceState.equals("READY")) {
                 servBean.verify(refUuid, refresh);
-
+                
                 return 0;
             } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
                 return 5;
@@ -2736,13 +2749,13 @@ public class WebResource {
         }
         return -1;
     }
-
+    
     // Parsing Methods ---------------------------------------------------------
     // @TODO: PRETTY MUCH UNDOING SERVLET CODE?
     private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
-
+        
         JSONArray linksArr = (JSONArray) dataJSON.get("links");
         for (int i = 1; i <= linksArr.size(); i++) {
             JSONObject linksJSON = (JSONObject) linksArr.get(i - 1);
@@ -2751,58 +2764,58 @@ public class WebResource {
             String srcVlan = (String) linksJSON.get("src-vlan");
             String des = (String) linksJSON.get("des");
             String desVlan = (String) linksJSON.get("des-vlan");
-
+            
             String linkUrn = servBean.urnBuilder("dnc", name, refUuid);
-
+            
             paraMap.put("linkUri" + i, linkUrn);
             paraMap.put("src-conn" + i, src);
             paraMap.put("des-conn" + i, des);
             paraMap.put("src-vlan" + i, srcVlan);
             paraMap.put("des-vlan" + i, desVlan);
         }
-
+        
         return paraMap;
     }
-
+    
     private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
-
+        
         JSONArray vcnArr = (JSONArray) dataJSON.get("virtual_clouds");
         JSONObject vcnJSON = (JSONObject) vcnArr.get(0);
         paraMap.put("netType", (String) vcnJSON.get("type"));
         paraMap.put("netCidr", (String) vcnJSON.get("cidr"));
-
+        
         String parent = (String) vcnJSON.get("parent");
         paraMap.put("topoUri", parent);
-
+        
         // Parse Subnets.
         JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
         int vmCounter = 1;
         for (int i = 0; i < subArr.size(); i++) {
             JSONObject subJSON = (JSONObject) subArr.get(i);
-
+            
             String subName = (String) subJSON.get("name");
             String subCidr = (String) subJSON.get("cidr");
-
+            
             // Parse VMs.
             JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
             if (vmArr != null) {
                 for (Object vmEle : vmArr) {
                     //value format: "vm_name & subnet_index_number & type_detail & host & interfaces"
                     JSONObject vmJSON = (JSONObject) vmEle;
-
+                    
                     // Name
                     String vmString = (String) vmJSON.get("name");
                     // Subnet Index
                     vmString += "&" + (i + 1);
-
+                    
                     // TYPES
                     vmString += vmJSON.containsKey("type") ? "&" + (String) vmJSON.get("type") : "& ";
-
+                    
                     // VM Host
                     vmString += vmJSON.containsKey("host") ? "&" + (String) vmJSON.get("host") : "& ";
-
+                    
                     // INTERFACES
                     if (vmJSON.containsKey("interfaces")) {
                         JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
@@ -2837,7 +2850,7 @@ public class WebResource {
                     } else {
                         vmString += "& ";
                     }
-
+                    
                     // Globus
                     if (vmJSON.containsKey("globus_connect")) {
                         JSONObject globusJSON = (JSONObject) vmJSON.get("globus_connect");
@@ -2853,11 +2866,11 @@ public class WebResource {
                     } else {
                         vmString += "& ";
                     }
-
+                    
                     paraMap.put("vm" + vmCounter++, vmString);
                 }
             }
-
+            
             // Parse subroutes.
             JSONArray subRouteArr = (JSONArray) subJSON.get("routes");
             String routeString = "";
@@ -2865,103 +2878,103 @@ public class WebResource {
                 routeString = "routes";
                 for (Object routeEle : subRouteArr) {
                     JSONObject routeJSON = (JSONObject) routeEle;
-
+                    
                     JSONObject fromJSON = (JSONObject) routeJSON.get("from");
                     if (fromJSON != null) {
                         routeString += "from+" + fromJSON.get("value") + ",";
                     }
-
+                    
                     JSONObject toJSON = (JSONObject) routeJSON.get("to");
                     if (toJSON != null) {
                         routeString += "to+" + toJSON.get("value") + ",";
                     }
-
+                    
                     JSONObject nextJSON = (JSONObject) routeJSON.get("next_hop");
                     if (nextJSON != null) {
                         routeString += "nextHop+" + nextJSON.get("value");
                     }
-
+                    
                     routeString += "\r\n";
                 }
-
+                
                 if (!routeString.equals("routes")) {
                     routeString = routeString.substring(0, routeString.length() - 2);
                 }
             }
-
+            
             String subString = "name+" + subName + "&cidr+" + subCidr;
             if (!routeString.equals("routes")) {
                 subString += "&" + routeString;
             }
-
+            
             paraMap.put("subnet" + (i + 1), subString);
         }
-
+        
         // Parse Network Routes.
         JSONArray netRouteArr = (JSONArray) vcnJSON.get("routes");
         String netRouteString = "";
         if (netRouteArr != null) {
             for (Object routeEle : netRouteArr) {
                 JSONObject routeJSON = (JSONObject) routeEle;
-
+                
                 JSONObject fromJSON = (JSONObject) routeJSON.get("from");
                 if (fromJSON != null) {
                     netRouteString += "from+" + fromJSON.get("value") + ",";
                 }
-
+                
                 JSONObject toJSON = (JSONObject) routeJSON.get("to");
                 if (toJSON != null) {
                     netRouteString += "to+" + toJSON.get("value") + ",";
                 }
-
+                
                 JSONObject nextJSON = (JSONObject) routeJSON.get("next_hop");
                 if (nextJSON != null) {
                     netRouteString += "nextHop+" + nextJSON.get("value");
                 }
-
+                
                 netRouteString += "\r\n";
             }
         }
         paraMap.put("netRoutes", netRouteString);
-
+        
         // Parse Gateways.
         if (vcnJSON.get("gateways") != null) {
             JSONArray gatewayArr = (JSONArray) vcnJSON.get("gateways");
             paraMap.put("gateways", gatewayArr.toString());
         }
-
+        
         return paraMap;
     }
-
+    
     private HashMap<String, String> parseHybridCloud(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
         paraMap.put("virtual_clouds", dataJSON.get("virtual_clouds").toString());
-
+        
         return paraMap;
     }
-
+    
     private HashMap<String, String> parseFlow(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
-
+        
         JSONObject flowJSON = (JSONObject) dataJSON.get("flow");
         String name = (String) flowJSON.get("name");
         String src = (String) flowJSON.get("src");
         String des = (String) flowJSON.get("des");
-
+        
         String flowUrn = servBean.urnBuilder("flow", name, refUuid);
         paraMap.put("topUri", flowUrn);
         paraMap.put("eth_src", src);
         paraMap.put("eth_des", des);
-
+        
         return paraMap;
     }
-
+    
     private HashMap<String, String> parseOperatationalModifications(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
-
+        
         // { "modification" : "params", .. }
         Iterator<?> keys = dataJSON.keySet().iterator();
         while (keys.hasNext()) {
@@ -2970,10 +2983,10 @@ public class WebResource {
             paraMap.put(key, dataJSON.get(key).toString());
             //}
         }
-
+        
         return paraMap;
     }
-
+    
     // Utility Methods ---------------------------------------------------------
     private void setSuperState(String refUuid, int superStateId) {
         try {
@@ -2983,15 +2996,15 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("UPDATE service_instance SET service_state_id = ? "
                     + "WHERE referenceUUID = ?");
             prep.setInt(1, superStateId);
             prep.setString(2, refUuid);
             prep.executeUpdate();
-
+            
             int instanceID = servBean.getInstanceID(refUuid);
-
+            
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` (`service_state_id`, `service_instance_id`) "
                     + "VALUES (?, ?)");
             prep.setInt(1, superStateId);
@@ -3001,79 +3014,79 @@ public class WebResource {
             logger.catching(ex);
         }
     }
-
+    
     private boolean propagate(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Propagate Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
-
+        
         return result.equalsIgnoreCase("PROPAGATED");
     }
-
+    
     private boolean forcePropagate(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Forced Propagate Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
-
+        
         return result.equalsIgnoreCase("PROPAGATED");
     }
-
+    
     private boolean commit(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Commit Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
-
+        
         return result.equalsIgnoreCase("COMMITTED");
     }
-
+    
     private boolean forceCommit(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Forced Commit Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
-
+        
         return result.equalsIgnoreCase("COMMITTED");
     }
-
+    
     private boolean revert(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Revert Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
-
+        
         // Revert now returns service delta UUID; pending changes.
         return true;
     }
-
+    
     private boolean forceRevert(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/revert_forced", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Forced Revert Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
-
+        
         // Revert now returns service delta UUID; pending changes.
         return true;
     }
-
+    
     private String delete(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, propagate, "DELETE", null, auth);
         //logger.log(Level.INFO, "Sending Delete Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
-
+        
         return result;
     }
-
+    
     private boolean clearVerification(String refUuid) {
         try {
             Connection front_conn;
@@ -3083,21 +3096,21 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
             PreparedStatement prep;
-
+            
             int instanceID = servBean.getInstanceID(refUuid);
-
+            
             prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = ? WHERE `service_verification`.`service_instance_id` = ?");
             prep.setNull(1, java.sql.Types.INTEGER);
             prep.setInt(2, instanceID);
             prep.executeUpdate();
-
+            
             return true;
         } catch (SQLException ex) {
             logger.catching(ex);
             return false;
         }
     }
-
+    
     private String superStatus(String refUuid) {
         try {
             Connection front_conn;
@@ -3106,7 +3119,7 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("SELECT X.super_state FROM"
                     + " service_instance I, service_state X WHERE I.referenceUUID = ? AND I.service_state_id = X.service_state_id");
             prep.setString(1, refUuid);
@@ -3120,15 +3133,15 @@ public class WebResource {
             return "ERROR";
         }
     }
-
+    
     private String status(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
         HttpURLConnection status = (HttpURLConnection) url.openConnection();
         String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
-
+        
         return result;
     }
-
+    
     private String getServiceType(String refUuid) {
         Connection front_conn;
         Properties front_connectionProps = new Properties();
@@ -3137,7 +3150,7 @@ public class WebResource {
         try {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
+            
             PreparedStatement prep = front_conn.prepareStatement("select S.name from service_instance I, service S "
                     + "where I.referenceUUID=? AND I.service_id=S.service_id");
             prep.setString(1, refUuid);
@@ -3150,7 +3163,7 @@ public class WebResource {
         }
         throw new EJBException("getServiceType failed to find service type for service uuid=" + refUuid);
     }
-
+    
     private String resolveManifest(String refUuid, String jsonTemplate, String auth) {
         try {
             URL url = new URL(String.format("%s/service/manifest/%s", host, refUuid));
@@ -3164,7 +3177,7 @@ public class WebResource {
             throw new EJBException("resolveManifest cannot fetch manifest for service uuid=" + refUuid, ex);
         }
     }
-
+    
     private String authUsername(String subject) {
         KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                 .getName());
@@ -3175,12 +3188,12 @@ public class WebResource {
             return null;
         }
     }
-
+    
     private String JSONtoxml(JSONObject JSONdata, String drivertype) {
         String xmldata = "<driverInstance><properties>\n";
         xmldata += "\t<entry><key>topologyUri</key><value>" + JSONdata.get("TOPURI") + "</value></entry>\n";
         xmldata += "\t<entry><key>driverEjbPath</key><value>java:module/" + drivertype + "</value></entry>\n";
-
+        
         Set<String> key = new HashSet<>(JSONdata.keySet());
         for (String i : key) {
             if (!(i.equals("TOPURI")) && !(i.equals("drivertype"))) {

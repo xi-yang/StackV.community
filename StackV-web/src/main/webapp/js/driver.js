@@ -72,10 +72,17 @@ function closeSide(){
     
 }
 function installRaw(){
+    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("textarea");
     var divContent = document.getElementById("install-type");
+    
+    type.innerHTML = "raw";
+    type.style.color = "white";
+    type.id = "drivertype";
+    divContent.appendChild(type);
 
+    
     first.innerHTML= "Enter Raw XML:";
     first.style.color = "white";
     second.id = "rawXML";
@@ -362,11 +369,7 @@ function changeNameInst() {
     document.getElementById('install-options').appendChild(instButton);
 }
 function changeNameInstRaw() {
-    var saveButton = document.createElement("button");
     document.getElementById('side-name').innerHTML="Install";
-    saveButton.innerHTML = "Save Driver";
-    saveButton.onclick = function() {openWindow();};
-    document.getElementById('install-options').appendChild(saveButton);
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
     instButton.onclick = function() {plugRaw();};
@@ -541,9 +544,8 @@ function editDriverProfile(clickID) {
         var row = table.rows[i];
         var textbox = document.createElement("input");
         textbox.type = "text";
-        textbox.innerHTML = row.cells[0].value;
-        row.cells[0].value="";
-        row.appendChild(textbox);
+        textbox.innerHTML = row.cells[1].innerHTML;
+        row.cells[1].appendChild(textbox);
     }
 }
 function getDetailsProfile(clickID) {
