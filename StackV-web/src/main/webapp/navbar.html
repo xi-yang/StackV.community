@@ -1,4 +1,4 @@
-<nav class="navbar navbar-inverse">
+<nav id="stack-nav" class="navbar navbar-inverse">
     <div class="container-fluid">    
         <ul class="nav navbar-nav navbar-left">
             <li id="visualization-tab"><a href="/StackV-web/orch/graphTest.jsp">Visualization</a></li>
@@ -6,10 +6,10 @@
             <li id="details-tab"><a href="/StackV-web/ops/details/templateDetails.jsp">Service Details</a></li>
             <li id="driver-tab"><a href="/StackV-web/ops/srvc/driver.jsp">Driver Management</a></li>
             <li id="acl-tab"><a href="/StackV-web/ops/acl.jsp">ACL Management</a></li>
-        </ul>
-        <ul class="nav navbar-nav navbar-right">
-            <li id="admin-tab" class="nav-admin"><a href="/StackV-web/ops/admin.jsp">Admin Panel</a></li>
-            <li class="nav-admin">
+            
+            <li class="pull-right" id="logout-button"><a href="#">Logout</a></li>
+            <li class="pull-right" id="account-button"><a href="#">Account</a></li>
+            <li class="pull-right hide nav-admin">
                 <label for="select-logging-level" style="color: #9d9d9d;font-weight: normal;margin-left: 15px;">Logging Level</label>
                 <select id="select-logging-level" onchange="loggingChange(this)">
                     <option value="TRACE">TRACE</option>
@@ -18,9 +18,7 @@
                     <option value="ERROR">ERROR</option>
                 </select>                
             </li>
-
-            <li id="account-button"><a href="#">Account</a></li>
-            <li id="logout-button"><a href="#">Logout</a></li>
+            <li id="admin-tab" class="pull-right nav-admin"><a href="/StackV-web/ops/admin.jsp">Admin Panel</a></li>
         </ul>
     </div>
 </nav>

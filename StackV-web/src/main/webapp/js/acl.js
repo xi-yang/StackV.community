@@ -30,19 +30,19 @@ var tweenInstancePanel = new TweenLite("#acl-instance-panel", .5, {ease: Power2.
 var tweenInstanceACLPanel = new TweenLite("#acl-instance-acl", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
 
 Mousetrap.bind('left', function () {
-    if ($("#catalog-panel").hasClass("closed")) {
-        openCatalog();
-    } else {
-        closeCatalog();
-    }
-});
+    tweenInstancePanel.reverse();
+    tweenRolePanel.play();
 
-function openLeft() {
-    
-}
-function openRight() {
-    
-}
+    $(".left-tab").animate({left: "-45px"}, 500);
+    $(".right-tab").animate({right: "0px"}, 500);
+});
+Mousetrap.bind('right', function () {
+    tweenInstancePanel.play();
+    tweenRolePanel.reverse();
+
+    $(".right-tab").animate({right: "-45px"}, 500);
+    $(".left-tab").animate({left: "0px"}, 500);
+});
 
 // ACL Load
 function loadACLPortal() {

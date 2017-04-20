@@ -74,3 +74,10 @@ pre.expanded{
 .details-viz-pre{
     white-space: pre-wrap; 
 }
+
+
+#stack-nav ul {
+    width: 100%;
+    white-space: nowrap;
+    overflow-x: auto;
+}
