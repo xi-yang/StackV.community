@@ -103,14 +103,13 @@ function save(){
     document.getElementById("overlay-black").style.display="none";
     document.getElementById("main-pane").style.zIndex="2";
     var innerData = {
-        savedname: $('#profilename').val(),
         userID: sessionStorage.getItem("username"),
         type: "dnc",
         alias: $('#service-name').val(),
         data: generateJSON()
     };
     var sentData = {
-        name: $('#service-name').val(),
+        name: $('#profilename').val(),
         description: $("#new-profile-description").val(),
         data: JSON.stringify(innerData)
     };
