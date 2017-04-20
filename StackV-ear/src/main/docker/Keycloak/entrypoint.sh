@@ -20,5 +20,8 @@ fi
 # start service
 export LAUNCH_JBOSS_IN_BACKGROUND=true
 export JBOSS_PIDFILE=/opt/jboss/keycloak.pid
-exec /opt/jboss/keycloak/bin/standalone.sh $@
-exit $?
+/opt/jboss/keycloak/bin/standalone.sh -b 0.0.0.0  &
+
+# maintain main process
+/bin/bash -c "while true; do sleep 1; done"                    
+

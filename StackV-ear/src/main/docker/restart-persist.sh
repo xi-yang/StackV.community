@@ -26,4 +26,4 @@ rm -rf StackV-ejb-1.0-SNAPSHOT.jar META-INF
 export LAUNCH_JBOSS_IN_BACKGROUND=true
 export JBOSS_PIDFILE=/opt/jboss/wildfly.pid
 /opt/jboss/wildfly/bin/standalone.sh -c standalone-full.xml -b 0.0.0.0  &
-
+exit $?

@@ -58,5 +58,6 @@ export LAUNCH_JBOSS_IN_BACKGROUND=true
 export JBOSS_PIDFILE=/opt/jboss/wildfly.pid
 /opt/jboss/wildfly/bin/standalone.sh -c standalone-full.xml -b 0.0.0.0  &
 
-/bin/bash -c "while true; do echo 'Hit CTRL+C'; sleep 1; done" 
+# maintain main process
+/bin/bash -c "while true; do sleep 1; done" 
 
