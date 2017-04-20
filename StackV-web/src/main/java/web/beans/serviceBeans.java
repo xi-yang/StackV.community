@@ -1045,6 +1045,7 @@ public class serviceBeans {
             }
         }
 
+        
         String deltaUuid = UUID.randomUUID().toString();
         String awsExportTo = "";
         String awsDxStitching = "";
@@ -1700,13 +1701,6 @@ public class serviceBeans {
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
 
-        try {
-            PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
-            out.println(svcDelta);
-            out.close();
-        } catch (FileNotFoundException ex) {
-            logger.catching(ex);
-        }
 
         orchestrateInstance(refUuid, svcDelta, deltaUuid, refresh);
         return 0;

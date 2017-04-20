@@ -55,7 +55,15 @@ function viewShift(dir) {
 }
 
 $(function () {
+    setRefresh(10);
     
+    $(".checkbox-level").change(function() {
+        if ($(this).is(":checked")) {
+            $("#log-div").removeClass("hide-" + this.name);
+        } else {
+            $("#log-div").addClass("hide-" + this.name);
+        } 
+    });
 });
 
 function loadAdminNavbar() {
@@ -65,15 +73,15 @@ function loadAdminNavbar() {
                 $("#logging-tab").addClass("active");
                 break;
             case "center":
-                $("#admin-tab").addClass("active");
+                $("#sub-admin-tab").addClass("active");
                 break;
         }
-        
+
         $("#logging-tab").click(function () {
             resetView();
             newView("logging");
         });
-        $("#admin-tab").click(function () {
+        $("#sub-admin-tab").click(function () {
             resetView();
             newView("admin");
         });
@@ -101,7 +109,7 @@ function newView(panel) {
             break;
         case "admin":
             tweenAdminPanel.play();
-            $("#admin-tab").addClass("active");
+            $("#sub-admin-tab").addClass("active");
             view = "center";
             break;
     }
@@ -117,7 +125,13 @@ function subloadAdmin() {
 }
 
 function subloadLogging() {
-    var uuid = sessionStorage.getItem("uuid");
+    loadLogs();
+    if (view === "left") {
+        tweenLoggingPanel.play();
+    }
+}
+
+function loadLogs() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
     $.ajax({
         url: apiUrl,
@@ -126,37 +140,13 @@ function subloadLogging() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (logs) {
-            var panel = document.getElementById("logging-panel");
-            var table = document.createElement("table");
-            panel.innerHTML = "";
-
-            table.id = "logging-table";
-            table.className = "management-table";
-
-            var thead = document.createElement("thead");
-            var row = document.createElement("tr");
-            var head = document.createElement("th");
-            head.innerHTML = "Logs";
-            row.appendChild(head);
-            thead.appendChild(row);
-            table.appendChild(thead);
-
-            var tbody = document.createElement("tbody");
-            var row = document.createElement("tr");
-            var cell = document.createElement("td");
-            var div = document.createElement("div");
-            div.id = "log-div";
-
+            var div = document.getElementById("log-div");
+            div.innerHTML = "";
             for (i = 0; i < logs.length; i++) {
                 var log = logs[i];
                 var detail = document.createElement("details");
-                if (log["level"] === "WARN") {
-                    detail.style = "color:orange";
-                }
-                if (log["level"] === "ERROR") {
-                    detail.style = "color:red";
-                }
-
+                detail.className = "level-" + log["level"];
+               
                 /*  log mapping:
                  *      referenceUUID
                  *      marker
@@ -191,16 +181,63 @@ function subloadLogging() {
                 }
                 div.appendChild(detail);
             }
-
-            cell.appendChild(div);
-            row.appendChild(cell);
-            tbody.appendChild(row);
-            table.appendChild(tbody);
-            panel.appendChild(table);
-
-            if (view === "left") {
-                tweenLoggingPanel.play();
-            }
         }
     });
+}
+
+/* REFRESH */
+
+function reloadData(time) {
+    keycloak.updateToken(90).error(function () {
+        console.log("Error updating token!");
+    }).success(function (refreshed) {
+        refreshSync(refreshed, time);
+
+        // Refresh Operations
+        loadLogs();
+    });
+}
+
+function refreshSync(refreshed, time) {
+    if (refreshed) {
+        sessionStorage.setItem("token", keycloak.token);
+        console.log("Token Refreshed by nexus!");
+    }
+    var timerSetting = $("#refresh-timer").val();
+    var manual = false;
+    if (typeof time === "undefined") {
+        time = countdown;
+    }
+    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+        manual = true;
+    }
+    $("#refresh-timer").val(timerSetting);
+    if (manual === false) {
+        countdown = time;
+        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
+    } else {
+        $("#refresh-button").html('Manually Refresh Now');
+    }
+}
+function timerChange(sel) {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+    if (sel.value !== 'off') {
+        setRefresh(sel.value);
+    } else {
+        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+    }
+}
+function setRefresh(time) {
+    countdown = time;
+    refreshTimer = setInterval(function () {
+        reloadData(time);
+    }, (time * 1000));
+    countdownTimer = setInterval(function () {
+        refreshCountdown(time);
+    }, 1000);
+}
+function refreshCountdown() {
+    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+    countdown--;
 }
