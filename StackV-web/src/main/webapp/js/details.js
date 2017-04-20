@@ -70,13 +70,22 @@ function viewShift(dir) {
 }
 
 $(function () {
-    setTimeout(function () {
-        setRefresh(30);
-    }, 1000);
+    $(".checkbox-level").change(function () {
+        if ($(this).is(":checked")) {
+            $("#log-div").removeClass("hide-" + this.name);
+        } else {
+            $("#log-div").addClass("hide-" + this.name);
+        }
+    });
+    $("#filter-search-clear").click(function () {
+        $("#filter-search-input").val("");
+        loadLogs();
+    });
 });
 
 function loadDetailsNavbar() {
     $("#sub-nav").load("/StackV-web/details_navbar.html", function () {
+        setRefresh(30);
         switch (view) {
             case "left":
                 $("#logging-tab").addClass("active");
@@ -301,9 +310,18 @@ function subloadInstance() {
     });
 }
 
+
+/* LOGGING */
 function subloadLogging() {
-    var uuid = sessionStorage.getItem("uuid");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
+    loadLogs();
+    if (view === "left") {
+        tweenLoggingPanel.play();
+    }
+    subloadVerification();
+}
+
+function loadLogs() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -311,36 +329,12 @@ function subloadLogging() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (logs) {
-            var panel = document.getElementById("logging-panel");
-            var table = document.createElement("table");
-            panel.innerHTML = "";
-
-            table.id = "instance-logging-table";
-            table.className = "management-table";
-
-            var thead = document.createElement("thead");
-            var row = document.createElement("tr");
-            var head = document.createElement("th");
-            head.innerHTML = "Service Logs";
-            row.appendChild(head);
-            thead.appendChild(row);
-            table.appendChild(thead);
-
-            var tbody = document.createElement("tbody");
-            var row = document.createElement("tr");
-            var cell = document.createElement("td");
-            var div = document.createElement("div");
-            div.id = "log-div";
-
+            var div = document.getElementById("log-div");
+            div.innerHTML = "";
             for (i = 0; i < logs.length; i++) {
                 var log = logs[i];
                 var detail = document.createElement("details");
-                if (log["level"] === "WARN") {
-                    detail.style = "color:orange";
-                }
-                if (log["level"] === "ERROR") {
-                    detail.style = "color:red";
-                }
+                detail.className = "level-" + log["level"];
 
                 /*  log mapping:
                  *      referenceUUID
@@ -355,6 +349,9 @@ function subloadLogging() {
                 var summary = document.createElement("summary");
                 summary.innerHTML = log["timestamp"] + " - " + log["message"];
                 detail.appendChild(summary);
+                var data = document.createElement("p");
+                data.innerHTML = "UUID: " + log["referenceUUID"];
+                detail.appendChild(data);
                 var data = document.createElement("p");
                 data.innerHTML = "Level: " + log["level"];
                 detail.appendChild(data);
@@ -374,25 +371,30 @@ function subloadLogging() {
                 div.appendChild(detail);
             }
 
-            cell.appendChild(div);
-            row.appendChild(cell);
-            tbody.appendChild(row);
-            table.appendChild(tbody);
-            panel.appendChild(table);
+            filterLogs();
 
             $("#black-screen").click(function () {
                 $("#info-panel").removeClass("active");
                 closeCatalog();
             });
-
-            if (view === "left") {
-                tweenLoggingPanel.play();
-            }
-
-            subloadVerification();
         }
     });
 }
+
+function filterLogs() {
+    // Declare variables  
+    var input = document.getElementById("filter-search-input");
+    var filter = input.value.toUpperCase();
+    $('#log-div').children('details').each(function () {
+        if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
+            $(this).removeClass("hide");
+        } else {
+            $(this).addClass("hide");
+        }
+    });
+}
+
+
 
 function subloadVerification() {
     var uuid = sessionStorage.getItem("uuid");

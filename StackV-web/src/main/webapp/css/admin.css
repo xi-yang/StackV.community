@@ -7,18 +7,21 @@
     position: relative;
     text-shadow: 0 1px 0 #000;
     outline: 1px solid black;
-    height: 40px
+    height: 54px;
 }
 #filter-level-div {
     float: right;
 }
 
-#searchinput {
+#filter-search-input {
     width: 200px;
+    display: inline;
+    margin-left: 20px;
+    padding-right: 25px;
 }
-#searchclear {
-    position: absolute;
-    right: 5px;
+#filter-search-clear {
+    position: relative;
+    right: 25px;
     top: 0;
     bottom: 0;
     height: 14px;
@@ -27,7 +30,6 @@
     cursor: pointer;
     color: #ccc;
 }
-
 
 #logging-body-div {
     padding: 15px;

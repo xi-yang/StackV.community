@@ -31,7 +31,24 @@
         <!-- MAIN PANEL -->
         <div class="sub-main" id="main-pane">
             <div id="details-panel"></div>
-            <div id="logging-panel"></div>
+            <div id="logging-panel">
+                <div id="logging-header-div">
+                    Logs                  
+                    <div id="filter-search-div" style="display:inline;">
+                        <input id="filter-search-input" onkeyup="filterLogs(this)" type="search" class="form-control">
+                        <span id="filter-search-clear" class="glyphicon glyphicon-remove-circle"></span>
+                    </div>
+                    <div id="filter-level-div">
+                        <label><input class="checkbox-level" type="checkbox" name="trace" checked>Trace</label>
+                        <label><input class="checkbox-level" type="checkbox" name="info" checked>Info</label>
+                        <label><input class="checkbox-level" type="checkbox" name="warn" checked>Warn</label>
+                        <label><input class="checkbox-level" type="checkbox" name="error" checked>Error</label>                        
+                    </div>
+                </div>
+                <div id="logging-body-div">
+                    <div id="log-div"></div>
+                </div>
+            </div>
             <div id="visual-panel"></div>
 
             <div id="loading-panel"></div>
@@ -53,35 +70,35 @@
         <script src="/StackV-web/js/details.js"></script>
 
         <script>
-            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-            dojoConfig = {
-                has: {
-                    "dojo-firebug": true,
-                    "dojo-debug-messages": true
-                },
-                async: true,
-                parseOnLoad: true,
-                packages: [
-                    {
-                        name: "d3",
-                        location: "//d3js.org/",
-                        main: "d3.v3"
-                    },
-                    {
-                        name: "local",
-                        location: "/StackV-web/js/"
-                    }
-                ]
-            };
+                            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+                            dojoConfig = {
+                                has: {
+                                    "dojo-firebug": true,
+                                    "dojo-debug-messages": true
+                                },
+                                async: true,
+                                parseOnLoad: true,
+                                packages: [
+                                    {
+                                        name: "d3",
+                                        location: "//d3js.org/",
+                                        main: "d3.v3"
+                                    },
+                                    {
+                                        name: "local",
+                                        location: "/StackV-web/js/"
+                                    }
+                                ]
+                            };
 
-            $(function () {
-                $("#dialog_policyAction").dialog({
-                    autoOpen: false
-                });
-                $("#dialog_policyData").dialog({
-                    autoOpen: false
-                });
-            });
+                            $(function () {
+                                $("#dialog_policyAction").dialog({
+                                    autoOpen: false
+                                });
+                                $("#dialog_policyData").dialog({
+                                    autoOpen: false
+                                });
+                            });
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
     </body>

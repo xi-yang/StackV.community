@@ -15,7 +15,6 @@
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
-
     </head>
 
     <body>
@@ -34,9 +33,9 @@
             <div id="logging-panel">
                 <div id="logging-header-div">
                     Logs                  
-                    <div id="filter-search-div">
-                        <input id="searchinput" type="search" class="form-control">
-                        <span id="searchclear" class="glyphicon glyphicon-remove-circle"></span>
+                    <div id="filter-search-div" style="display:inline;">
+                        <input id="filter-search-input" onkeyup="filterLogs(this)" type="search" class="form-control">
+                        <span id="filter-search-clear" class="glyphicon glyphicon-remove-circle"></span>
                     </div>
                     <div id="filter-level-div">
                         <label><input class="checkbox-level" type="checkbox" name="trace" checked>Trace</label>

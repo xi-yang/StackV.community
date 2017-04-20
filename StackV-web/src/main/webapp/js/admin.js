@@ -54,19 +54,22 @@ function viewShift(dir) {
     }
 }
 
-$(function () {
-    setRefresh(10);
-    
-    $(".checkbox-level").change(function() {
+$(function () {  
+    $(".checkbox-level").change(function () {
         if ($(this).is(":checked")) {
             $("#log-div").removeClass("hide-" + this.name);
         } else {
             $("#log-div").addClass("hide-" + this.name);
-        } 
+        }
+    });
+    $("#filter-search-clear").click(function () {
+        $("#filter-search-input").val("");
+        loadLogs();
     });
 });
 
 function loadAdminNavbar() {
+    setRefresh(10);
     $("#sub-nav").load("/StackV-web/admin_navbar.html", function () {
         switch (view) {
             case "left":
@@ -131,6 +134,9 @@ function subloadLogging() {
     }
 }
 
+
+/* LOGGING */
+
 function loadLogs() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
     $.ajax({
@@ -146,7 +152,7 @@ function loadLogs() {
                 var log = logs[i];
                 var detail = document.createElement("details");
                 detail.className = "level-" + log["level"];
-               
+
                 /*  log mapping:
                  *      referenceUUID
                  *      marker
@@ -181,9 +187,25 @@ function loadLogs() {
                 }
                 div.appendChild(detail);
             }
+            
+            filterLogs();
         }
     });
 }
+
+function filterLogs() {
+    // Declare variables  
+    var input = document.getElementById("filter-search-input");
+    var filter = input.value.toUpperCase();
+    $('#log-div').children('details').each(function () {
+        if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
+            $(this).removeClass("hide");
+        } else {
+            $(this).addClass("hide");
+        }
+    });
+}
+
 
 /* REFRESH */
 
