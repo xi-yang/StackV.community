@@ -34,13 +34,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
 import javax.ejb.Stateless;
-import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
@@ -52,6 +49,8 @@ import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.Sna;
 import static net.maxgigapop.mrs.service.compute.MCETools.evaluateStatement_AnyTrue;
 import java.lang.Math;
+import java.util.logging.Level;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.onosystem.*;
 import org.apache.commons.codec.binary.Base64;
 import org.json.simple.JSONArray;
@@ -68,7 +67,7 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
     public int link_count=0;
     String[] bandwidth = new String[1000];
 
-    private static final Logger log = Logger.getLogger(MCE_L2FastRerouting.class.getName());
+    private static final StackLogger logger = new StackLogger(MCE_L2FastRerouting.class.getName(), "MCE_L2FastRerouting");
     /*
      ** Simple L2 connection will create new SwitchingSubnet on every transit switching node.
      */
@@ -76,13 +75,14 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+        String method = "process";
+        logger.refuuid(annotatedDelta.getReferenceUUID());
         try {
-            log.log(Level.INFO, "\n>>>MCE_L2FastRerouting--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
-            log.log(Level.INFO, "Entering L2FastRerouting process!");
+            logger.trace(method, "\n>>>MCE_L2FastRerouting--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
+            logger.trace(method, "Entering L2FastRerouting process!");
         } catch (Exception ex) {
-            Logger.getLogger(MCE_L2FastRerouting.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()) failed -- "+ex);
         }
-
         // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
         String sparql = "SELECT ?link ?type ?value ?load ?data ?policyData ?spaType ?spaValue WHERE {"
                 + "?link a spa:PolicyAction . "
@@ -132,7 +132,7 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
             }
         }
 
-        log.log(Level.INFO, "There are {0} link request in the spaModel", String.valueOf(linkMap.size()));
+        logger.trace(method, String.format("There are %d link request in the spaModel", String.valueOf(linkMap.size())));
         ServiceDelta outputDelta = annotatedDelta.clone();
         // compute a List<Model> of L2Openflow connections
         for (Resource resLink : linkMap.keySet()) {
@@ -162,22 +162,21 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
                 flow_model = generateFlowsPathModel_new(l2path, ETH_SRC_MAC, ETH_DST_MAC);
 
             } catch (IOException ex) {
-                Logger.getLogger(MCE_L2FastRerouting.class.getName()).log(Level.SEVERE, null, ex);
+                throw logger.error_throwing(method, "generateFlowsPathModel_new failed -- " + ex);
             }
-
+            OntModel modelAddition;
             try {
-                OntModel modelAddition = ModelUtil.unmarshalOntModel(flow_model);
-                outputDelta.getModelAddition().getOntModel().add(modelAddition.getBaseModel());
-
+                modelAddition = ModelUtil.unmarshalOntModel(flow_model);
             } catch (Exception ex) {
-                Logger.getLogger(MCE_L2FastRerouting.class.getName()).log(Level.SEVERE, null, ex);
+                throw logger.error_throwing(method, "unmarshalOntModel(flow_model) failed -- " + ex);
             }
+            outputDelta.getModelAddition().getOntModel().add(modelAddition.getBaseModel());
         }
 
         try {
-            log.log(Level.FINE, "\n>>>MCE_L2FastRerouting--DeltaAddModel Output=\n{0}", ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+            logger.trace(method, "\n>>>MCE_L2FastRerouting--DeltaAddModel Output=\n{0}", ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_L2FastRerouting.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()) failed -- " + ex);
         }
 
         return new AsyncResult(outputDelta);
@@ -261,6 +260,7 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
 
     private MCETools.Path doReroutingPathFinding(OntModel systemModel, OntModel spaModel, 
             Resource resLink, List<Map> connTerminalData, String load) {
+        String method = "doReroutingPathFinding";
         String linkname="";
 
         System.out.println("In doReroutingPathFinding");
@@ -274,7 +274,7 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
                 bandwidth=this.executeHttpMethod(url, conn, "GET", null, "karaf", "karaf");
 
         } catch (IOException ex) {
-                        Logger.getLogger(MCE_L2FastRerouting.class.getName()).log(Level.SEVERE, null, ex);
+                throw logger.throwing(method, ex);
         }
 
         String [] json_links=new String[link_count];
@@ -313,14 +313,14 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
         Resource nodeA = terminals.get(0);
         Resource nodeZ = terminals.get(1);
 
-        log.log(Level.INFO, "Link-src: {0}", nodeA.toString());
-        log.log(Level.INFO, "Link-dst: {0}", nodeZ.toString());
+        logger.trace(method, "Link-src: " + nodeA.toString());
+        logger.trace(method, "Link-dst: " + nodeZ.toString());
 
         Property[] filterProperties = {Nml.connectsTo};
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
 
-        log.log(Level.INFO, "Found {0} shortest path before verify", KSP.size());
+        logger.trace(method, String.format("Found %d shortest path before verify", KSP.size()));
 
         int counting;
         int bwreq=Integer.parseInt(load);
@@ -377,7 +377,13 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
             MCETools.Path candidatePath = itP.next();
 
             //verifyOpenflowPath: filter out useless ones
-            if (!MCETools.verifyOpenFlowPath(transformedModel, candidatePath)) {
+            boolean verified;
+            try {
+                verified = MCETools.verifyOpenFlowPath(transformedModel, candidatePath);
+            } catch (Exception ex) {
+                throw logger.error_throwing(method, "verifyOpenFlowPath(transformedModel, candidatePath) exception -- "+ex);
+            }
+            if (!verified) {
                 itP.remove();
             } else {
                 //generating connection subnets (statements added to candidatePath) while verifying VLAN availability
@@ -395,10 +401,10 @@ public class MCE_L2FastRerouting implements IModelComputationElement {
         }
 
         if (KSP.isEmpty()) {
-            log.log(Level.INFO, "Could not find any shortest path after verify");
+            logger.trace(method, "Could not find any shortest path after verify");
             throw new EJBException(String.format("%s::process doReroutingPathFinding cannot find any feasible path for <%s>", this.getClass().getName(), resLink));
         } else {
-            log.log(Level.INFO, "Found {0} KSP after verify", KSP.size());
+            logger.trace(method, String.format("Found %d KSP after verify", KSP.size()));
         }
 
         //return the shortest path

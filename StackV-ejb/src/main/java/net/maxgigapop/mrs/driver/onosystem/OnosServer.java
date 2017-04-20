@@ -12,8 +12,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -26,13 +25,13 @@ import org.apache.commons.codec.binary.Base64;
  */
 public class OnosServer {
 
+    private static final StackLogger logger = OnosRESTDriver.logger;
+
     public int qtyDevices = 0;
     public int qtyLinks = 0;
     public int qtyHosts = 0;
     //public int qtyPorts = 0;
     //public int qtyFlows = 0;
-
-    private static final Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
 
     //pull Devices data
     public String[][] getOnosDevices(String subsystemBaseUrl, String access_key_id, String secret_access_key)
@@ -267,9 +266,9 @@ public class OnosServer {
                 wr.flush();
             }
         }
-        logger.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        logger.trace("executeHttpMethod", String.format("Sending %s request to URL : %s", method, url));
         int responseCode = conn.getResponseCode();
-        logger.log(Level.INFO, "Response Code : {0}", responseCode);
+        logger.trace("executeHttpMethod", "Response Code : " + responseCode);
 
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {

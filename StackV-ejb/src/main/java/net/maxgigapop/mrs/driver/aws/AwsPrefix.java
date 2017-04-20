@@ -24,7 +24,6 @@
 package net.maxgigapop.mrs.driver.aws;
 
 import java.util.logging.Logger;
-import javax.ejb.EJBException;
 
 /**
  *
@@ -55,7 +54,7 @@ public class AwsPrefix {
                     return;
                 }
             }
-            log.warning("AwsPrefix failed with invalid uri="+uri);
+            AwsDriver.logger.warning("setTopologyPrefix", "AwsPrefix failed with invalid uri="+uri);
         }
     }
     

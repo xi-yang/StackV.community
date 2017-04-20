@@ -8,14 +8,13 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>Service Details</title>
+        <title>Administrator's Panel</title>
 
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
-
     </head>
 
     <body>
@@ -30,7 +29,7 @@
         </div>       
         <!-- MAIN PANEL -->
         <div class="sub-main" id="main-pane">
-            <div id="details-panel"></div>
+            <div id="admin-panel"></div>
             <div id="logging-panel">
                 <div id="logging-header-div">
                     Logs                  
@@ -49,9 +48,6 @@
                     <div id="log-div"></div>
                 </div>
             </div>
-            <div id="visual-panel"></div>
-
-            <div id="loading-panel"></div>
         </div>
         <div id="details-viz" ></div>
 
@@ -67,38 +63,38 @@
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
-        <script src="/StackV-web/js/details.js"></script>
+        <script src="/StackV-web/js/admin.js"></script>
 
         <script>
-                            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-                            dojoConfig = {
-                                has: {
-                                    "dojo-firebug": true,
-                                    "dojo-debug-messages": true
-                                },
-                                async: true,
-                                parseOnLoad: true,
-                                packages: [
-                                    {
-                                        name: "d3",
-                                        location: "//d3js.org/",
-                                        main: "d3.v3"
-                                    },
-                                    {
-                                        name: "local",
-                                        location: "/StackV-web/js/"
-                                    }
-                                ]
-                            };
+            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+            dojoConfig = {
+                has: {
+                    "dojo-firebug": true,
+                    "dojo-debug-messages": true
+                },
+                async: true,
+                parseOnLoad: true,
+                packages: [
+                    {
+                        name: "d3",
+                        location: "//d3js.org/",
+                        main: "d3.v3"
+                    },
+                    {
+                        name: "local",
+                        location: "/StackV-web/js/"
+                    }
+                ]
+            };
 
-                            $(function () {
-                                $("#dialog_policyAction").dialog({
-                                    autoOpen: false
-                                });
-                                $("#dialog_policyData").dialog({
-                                    autoOpen: false
-                                });
-                            });
+            $(function () {
+                $("#dialog_policyAction").dialog({
+                    autoOpen: false
+                });
+                $("#dialog_policyData").dialog({
+                    autoOpen: false
+                });
+            });
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
     </body>

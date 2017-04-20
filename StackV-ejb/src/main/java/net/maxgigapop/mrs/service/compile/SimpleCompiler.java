@@ -35,9 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -50,6 +47,7 @@ import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.SimpleWorker;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 
 /**
@@ -58,28 +56,35 @@ import net.maxgigapop.mrs.service.compute.IModelComputationElement;
  */
 public class SimpleCompiler extends CompilerBase {
 
-    private static final Logger log = Logger.getLogger(SimpleCompiler.class.getName());
+    private static final StackLogger logger = new StackLogger(CompilerBase.class.getName(), "CompilerBase");
 
     @Override
     public void compile(WorkerBase worker) {
+        String method = "compile";
+        logger.start(method);
         OntModel spaOntModelReduction = this.spaDelta.getModelReduction() == null ? null : this.spaDelta.getModelReduction().getOntModel();
         OntModel spaOntModelAddition = this.spaDelta.getModelAddition() == null ? null : this.spaDelta.getModelAddition().getOntModel();
         // assemble workflow parts for reduction
         if (spaOntModelReduction != null && !ModelUtil.isEmptyModel(spaOntModelReduction)) {
+            logger.trace(method, "compiling reduction model");
             compileModel(worker, spaOntModelReduction);
         }
         // assemble workflow parts for addition
         if (spaOntModelAddition != null && !ModelUtil.isEmptyModel(spaOntModelAddition)) {
+            logger.trace(method, "compiling addition model");
             compileModel(worker, spaOntModelAddition);
         }
+        logger.end(method);
     }
 
     private void compileModel(WorkerBase worker, OntModel spaModel) {
+        String method = "compileModel";
+        logger.start(method);
         Queue<Resource> policyQueue = new LinkedBlockingQueue<>();
         // start with leaf policies
         Map<Resource, OntModel> modelParts = this.decomposeByPolicyActions(spaModel);
         if (modelParts == null) {
-            throw new EJBException(SimpleCompiler.class.getName() + " found none terminal / leaf policy action.");
+            throw logger.error_throwing(method, "Found none terminal / leaf policy action.");
         }
         // start queue terminal / leaf policy actions
         for (Resource policy : modelParts.keySet()) {
@@ -99,6 +104,7 @@ public class SimpleCompiler extends CompilerBase {
                 ServiceDelta inputDelta = action.getInputDelta();
                 if (inputDelta == null) {
                     inputDelta = new ServiceDelta();
+                    inputDelta.setReferenceUUID(this.spaDelta.getReferenceUUID());
                 }
                 inputDelta.setModelAddition(model);
                 action.setInputDelta(inputDelta);
@@ -139,9 +145,12 @@ public class SimpleCompiler extends CompilerBase {
                 worker.addRooAction(action);
             }
         }
+        logger.end(method);
     }
 
     private ActionBase createAction(OntModel spaModel, Resource policy) {
+        String method = "createAction";
+        logger.trace(method, "policy="+policy);
         String policyActionType = null;
 
         String sparql = "SELECT ?policyAction ?actionType WHERE {"
@@ -162,14 +171,14 @@ public class SimpleCompiler extends CompilerBase {
                 Context ejbCxt = new InitialContext();
                 IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(policyAction.getMceBeanPath());
                 if (ejbMce == null) {
-                    throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not support policy action type: " + policyActionType);
+                    throw logger.error_throwing(method, " does not support policy action type: " + policyActionType);
                 }
             } catch (NamingException ex) {
-                throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not support policy action type: " + policyActionType);
+                throw logger.throwing(method, ex);
             }
             return policyAction;
         } else {
-            throw new EJBException(SimpleCompiler.class.getName() + ":createAction encounters malformed policy action: " + policy.getLocalName());
+            throw logger.error_throwing(method, " encounters malformed policy action: " + policy.getLocalName());
         }
     }
 }

@@ -21,11 +21,34 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen */
+/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap */
 // Tweens
 var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.easeInOut, paused: true, top: "30px"});
 var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
 var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
+
+Mousetrap.bind('space', function () {
+    if ($("#catalog-panel").hasClass("closed")) {
+        openCatalog();
+    } else {
+        closeCatalog();
+    }
+});
+Mousetrap.bind({
+    'shift+left': function () {
+        window.location.href = "/StackV-web/orch/graphTest.jsp";
+    },
+    'shift+right': function () {
+        window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
+    },
+    'space': function () {
+        if ($("#catalog-panel").hasClass("closed")) {
+            openCatalog();
+        } else {
+            closeCatalog();
+        }
+    }
+});
 
 $(function () {
     setTimeout(catalogLoad, 750);

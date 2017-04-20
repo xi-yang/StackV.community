@@ -53,14 +53,14 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.common.*;
-import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
 
 /**
  *
  * @author xyang
  */
 public class CompilerBase {
-    private static final Logger log = Logger.getLogger(MCE_MPVlanConnection.class.getName());
+    
+    private static final StackLogger logger = new StackLogger(CompilerBase.class.getName(), "CompilerBase");
     protected ServiceDelta spaDelta = null;
 
     public ServiceDelta getSpaDelta() {
@@ -72,15 +72,15 @@ public class CompilerBase {
     }
 
     public void compile(WorkerBase worker) {
-        throw new EJBException("CompilerBase::compile() is abstract. Use a specific implementation instead!");
+        throw logger.error_throwing("compile", "Cannot call abstract method. Use a specific implementation instead.");
     }
 
-    //@TODO: add back all the non-spa statements
     protected Map<Resource, OntModel> decomposeByPolicyActions(OntModel spaModel) {
+        String method = "decomposeByPolicyActions";
         Map<Resource, OntModel> leafPolicyModelMap = null;
         List<Resource> spaActions = getPolicyActionList(spaModel);
         if (spaActions == null) {
-            throw new EJBException("CompilerBase::decomposeByPolicyActions() found none terminal / leaf action!");
+            throw logger.error_throwing(method, "Found none terminal / leaf action.");
         }
         for (Resource policy : spaActions) {
             // test resAtion is terminal/leaf
@@ -97,7 +97,13 @@ public class CompilerBase {
     }
 
     protected OntModel getModelPartByPolicy(OntModel spaModel, Resource policy) {
-        OntModel modelPart = getReverseDependencyTree(spaModel, policy);
+        String method = "getModelPartByPolicy";
+        OntModel modelPart;
+        try {
+            modelPart = getReverseDependencyTree(spaModel, policy);
+        } catch (Exception ex) {
+            throw logger.error_throwing(method, String.format("getReverseDependencyTree(%s) -exception- %s", policy, ex));
+        }
         StmtIterator stmtIter = spaModel.listStatements(policy, Spa.importFrom, (Resource) null);
         while (stmtIter.hasNext()) {
             Statement stmt = stmtIter.next();
@@ -116,6 +122,7 @@ public class CompilerBase {
                 modelPart.add(stmtIter2.next());
             }
         }
+        logger.trace(method, "returned model part for policy="+policy);
         return modelPart;
     }
     
@@ -184,7 +191,7 @@ public class CompilerBase {
         return newModel;
     }
 
-    protected OntModel getReverseDependencyTree(OntModel spaModel, Resource leaf) {
+    protected OntModel getReverseDependencyTree(OntModel spaModel, Resource leaf) throws Exception {
         OntModel modelPart = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         List<Resource> visited = new ArrayList<>();
         List<Statement> stmts = new ArrayList<>();
@@ -193,7 +200,7 @@ public class CompilerBase {
         return modelPart;
     }
 
-    private void reverseDFS(OntModel ontModel, Resource res, List<Resource> visited, List<Statement> allStmts) {
+    private void reverseDFS(OntModel ontModel, Resource res, List<Resource> visited, List<Statement> allStmts) throws Exception {
         if (visited.contains(res)) {
             return;
         } else {
@@ -208,7 +215,7 @@ public class CompilerBase {
         }
     }
 
-    public List<Statement> listUpDownStatements(OntModel model, Resource res) {
+    public List<Statement> listUpDownStatements(OntModel model, Resource res) throws Exception {
         List<Statement> listStmt = null;
         StmtIterator its = model.listStatements(null, null, res);
         while (its.hasNext()) {
@@ -232,7 +239,7 @@ public class CompilerBase {
                 continue;
             }
             if (listStmt == null) {
-                throw new EJBException("CompilerBase::listUpDownStatements() found none resource refering to policy action: " + res);
+                throw new Exception("CompilerBase::listUpDownStatements() found none resource refering to policy action: " + res);
             }
             listStmt.add(stmt);
             Resource object = stmt.getObject().asResource();
@@ -249,7 +256,7 @@ public class CompilerBase {
                 continue;
             }
             if (listStmt == null) {
-                throw new EJBException("CompilerBase::listUpDownStatements() found none resource refering to policy action: " + res);
+                throw new Exception("CompilerBase::listUpDownStatements() found none resource refering to policy action: " + res);
             }
             listStmt.add(stmt);
             Resource object = stmt.getObject().asResource();

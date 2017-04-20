@@ -40,9 +40,12 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.VersionGroup;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 
 public class WorkerBase {
+    
+    private static final StackLogger logger = new StackLogger(WorkerBase.class.getName(), "WorkerBase");
 
     protected VersionGroup referenceSystemModelVG = null;
     protected ServiceDelta annoatedModelDelta = null;
@@ -95,6 +98,9 @@ public class WorkerBase {
     }
 
     protected void runWorkflow() {
+        String method = "runWorkflow";
+        logger.start(method);
+        
         ActionBase mergedRoot = null;
         Map<ActionBase, Future<ServiceDelta>> resultMap = new HashMap<>();
 
@@ -104,8 +110,8 @@ public class WorkerBase {
         //2.  lookupIndependentActions to find list of parallel actions for the step
         Set<ActionBase> batchOfActions = this.lookupIndependentActions(nextAction);
         // Top loop to exhaust idle actions in rootActions list and sub-trees
-        //$$ Timeout for the top loop ?
-        while (!batchOfActions.isEmpty()) {
+        long total_timeout = 9000; // 9000 intervals x 100ms = 900 seconds 
+        while (!batchOfActions.isEmpty() && total_timeout > 0) {
             //3. execute the idle actions in the list (asynchronously)
             Iterator<ActionBase> itA = batchOfActions.iterator();
             while (itA.hasNext()) {
@@ -120,8 +126,9 @@ public class WorkerBase {
                 }
             }
             //4. poll action status 
-            long timeout = 9000; // 3000 intervals x 100ms = 300 seconds 
+            long timeout = 3000; // 3000 intervals x 100ms = 300 seconds 
             while (timeout-- > 0 && !resultMap.isEmpty()) {
+                total_timeout--;
                 try {
                     sleep(100);
                 } catch (InterruptedException ex) {
@@ -159,7 +166,7 @@ public class WorkerBase {
                             } else {
                                 errMsg = "workflow is interrupted when " + action + " is in sate " + action.getState();
                             }
-                            throw new EJBException(errMsg + action, ex);
+                            throw logger.throwing(method, errMsg, ex);
                         }
                     }
                 }
@@ -168,22 +175,18 @@ public class WorkerBase {
                 if (nextAction != null) {
                     //lookupIndependentActions and add all independent idel actions to execution batch
                     batchOfActions.addAll(this.lookupIndependentActions(nextAction));
+                    total_timeout -= (3000-timeout);
                     break;
                 }
             }
             // continue to batch execution (to exectute new action and/or wait ones in processing)            
         }
-        //@TODO: throw exception if top loop times out
-
-        mergedRoot.sanitizeOutputDelta(this.annoatedModelDelta);
-        /*
-        try {
-            Logger.getLogger(WorkerBase.class.getName()).log(Level.INFO, "\n>>>Workflow--DeltaAddModel(after cleanup) Output=\n" + ModelUtil.marshalOntModel(mergedRoot.getOutputDelta().getModelAddition().getOntModel()));
-        } catch (Exception ex) {
-            Logger.getLogger(WorkerBase.class.getName()).log(Level.SEVERE, null, ex);
+        if (total_timeout < 0) {
+            throw logger.error_throwing(method, "timed out after 900 seconds - workflow unsuccessful");
         }
-        */
-        //@TODO: convert serviceDelta into systemDelta and raise exception if some annotation remains
+
+        // final touch to convert serviceDelta into systemDelta and raise exception if some annotation remains
+        mergedRoot.sanitizeOutputDelta(this.annoatedModelDelta);
         this.resultModelDelta = new SystemDelta();
         this.resultModelDelta.setModelAddition(mergedRoot.getOutputDelta().getModelAddition());
         this.resultModelDelta.setModelReduction(mergedRoot.getOutputDelta().getModelReduction());
@@ -191,32 +194,33 @@ public class WorkerBase {
     }
 
     protected void retrieveSystemModel() {
+        String method = "retrieveSystemModel";
         try {
             Context ejbCxt = new InitialContext();
             SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
             //referenceSystemModelVG = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
             referenceSystemModelVG = systemModelCoordinator.getSystemVersionGroup();
             if (referenceSystemModelVG == null) {
-                throw new EJBException(this.getClass().getName() + " got null referenceVersionGroup - systemModelCoordinator is not ready");
+                throw logger.error_throwing(method, "null referenceVersionGroup - systemModelCoordinator is not ready");
             }
             ModelBase referenceSystemModel = referenceSystemModelVG.getCachedModelBase();
             if (referenceSystemModel == null) {
-                throw new EJBException(this.getClass().getName() + " got null  referenceSystemModel from " + referenceSystemModelVG);
+                throw logger.error_throwing(method, "null referenceSystemModel from " + referenceSystemModelVG);
             }
         } catch (NamingException ex) {
-            throw new EJBException(this.getClass().getName() + " failed to inject systemModelCoordinator");
+            throw logger.throwing(method, ex);
         }
     }
 
     public void run() {
-        // get system base model from SystemModelCoordinator singleton
-        retrieveSystemModel();
         // annoatedModel and rootActions should have been instantiated by caller
         if (annoatedModelDelta == null) {
-            throw new EJBException("Workerflow cannot run with null annoatedModel");
+            throw logger.error_throwing("run", "Workerflow cannot run with null annoatedModel");
         }
+        // get system base model from SystemModelCoordinator singleton
+        retrieveSystemModel();
         if (rootActions.isEmpty()) {
-            throw new EJBException("Workerflow cannot run with empty rootActions");
+            throw logger.error_throwing("run", "Workerflow cannot run with empty rootActions");
         }
         this.runWorkflow();
     }

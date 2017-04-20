@@ -98,8 +98,6 @@ public class Mrs {
 
     public static final Property hasRoute = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasRoute");
 
-    public static final Property hasTag = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasTag");
-
     public static final Property hasTransfer = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasTransfer");
 
     public static final Property hasVolume = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasVolume");
@@ -166,6 +164,10 @@ public class Mrs {
 
     public static final Property value = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#value");
     
+    public static final Property tag = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#tag");
+
+    public static final Property order = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#order");
+
     public static final Property active_transfers = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#active_transfers");
     
     public static final Property average_traffic = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#average_traffic");
@@ -227,8 +229,6 @@ public class Mrs {
     public static final Resource SwitchingService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService");
 
     public static final Resource SwitchingSubnet = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#SwitchingSubnet");
-
-    public static final Resource Tag = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#Tag");
 
     public static final Resource VirtualCloudService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#VirtualCloudService");
 

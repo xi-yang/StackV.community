@@ -47,15 +47,18 @@ $(function () {
     keycloak.onAuthSuccess = function () {
         loadNavbar();
 
-        // templateDetails
         if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
+            loadDetailsNavbar();
             loadDetails();
+        } else if (window.location.pathname === "/StackV-web/ops/admin.jsp") {
+            loadAdminNavbar();
+            loadAdmin();
         } else if (window.location.pathname === "/StackV-web/ops/acl.jsp") {
             loadACLPortal();
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
             getAllDetails();
-        } 
-        
+        }
+
         if ($("#tag-panel").length) {
             initTagPanel();
         }
@@ -95,54 +98,58 @@ $(function () {
         window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
     });
 
-    $("#black-screen").click(function () {
-        tweenBlackScreen.reverse();
-    });
-
     clearCounters();
 });
 
 function loadNavbar() {
     $("#nav").load("/StackV-web/navbar.html", function () {
-        // set the active link - get everything after StackV-web
-        var url = $(location).attr('href').split(/\/StackV-web\//)[1];
-        if (/driver.jsp/.test(url))
-            $("li#driver-tab").addClass("active");
-        else if (/catalog.jsp/.test(url))
-            $("li#catalog-tab").addClass("active");
-        else if (/graphTest.jsp/.test(url))
-            $("li#visualization-tab").addClass("active");
-        else if (/acl.jsp/.test(url))
-            $("li#acl-tab").addClass("active");
+        if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
+            $(".nav-admin").hide();
+        } else {
+            // set the active link - get everything after StackV-web
+            var url = $(location).attr('href').split(/\/StackV-web\//)[1];
+            if (/driver.jsp/.test(url))
+                $("li#driver-tab").addClass("active");
+            else if (/catalog.jsp/.test(url))
+                $("li#catalog-tab").addClass("active");
+            else if (/graphTest.jsp/.test(url))
+                $("li#visualization-tab").addClass("active");
+            else if (/acl.jsp/.test(url))
+                $("li#acl-tab").addClass("active");
+            else if (/templateDetails.jsp/.test(url))
+                $("li#details-tab").addClass("active");
+            else if (/admin.jsp/.test(url))
+                $("li#admin-tab").addClass("active");
 
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
-        $.ajax({
-            url: apiUrl,
-            type: 'GET',
-            dataType: "text",
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            },
-            success: function (result) {
-                $("#select-logging-level").val(result);
-            },
-            error: function (error, status, thrown) {
-                console.log(error);
-                console.log(status);
-                console.log(thrown);
-            }
-        });
+            var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
+            $.ajax({
+                url: apiUrl,
+                type: 'GET',
+                dataType: "text",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                },
+                success: function (result) {
+                    $("#select-logging-level").val(result);
+                },
+                error: function (error, status, thrown) {
+                    console.log(error);
+                    console.log(status);
+                    console.log(thrown);
+                }
+            });
 
-        $("#logout-button").click(function (evt) {
-            keycloak.logout();
+            $("#logout-button").click(function (evt) {
+                keycloak.logout();
 
-            evt.preventDefault();
-        });
-        $("#account-button").click(function (evt) {
-            keycloak.accountManagement();
+                evt.preventDefault();
+            });
+            $("#account-button").click(function (evt) {
+                keycloak.accountManagement();
 
-            evt.preventDefault();
-        });
+                evt.preventDefault();
+            });
+        }
     });
 }
 
@@ -156,7 +163,7 @@ function loggingChange(sel) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function () {
-            
+
         }
     });
 }
@@ -974,12 +981,12 @@ function disableLoading() {
 }
 
 function initTagPanel() {
-    $.getScript( "/StackV-web/js/stackv/label.js", function( data, textStatus, jqxhr ) {
-        if ($.trim($("#tag-panel").html())!=='')  {
+    $.getScript("/StackV-web/js/stackv/label.js", function (data, textStatus, jqxhr) {
+        if ($.trim($("#tag-panel").html()) !== '') {
             loadLabels();
         } else {
             $("#tag-panel").load("/StackV-web/tagPanel.jsp", function () {
-               loadLabels();
+                loadLabels();
             });
         }
     });

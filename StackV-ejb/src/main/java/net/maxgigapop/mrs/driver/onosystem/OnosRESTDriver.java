@@ -6,7 +6,6 @@
 
 package net.maxgigapop.mrs.driver.onosystem;
 
-import static java.lang.Thread.sleep;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,7 +29,7 @@ import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
-import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 import org.apache.commons.codec.binary.Base64;
 /**
@@ -42,15 +41,23 @@ import org.apache.commons.codec.binary.Base64;
 
 @Stateless
 public class OnosRESTDriver implements IHandleDriverSystemCall{       
-    Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
+
+    public static final StackLogger logger = new StackLogger(OnosRESTDriver.class.getName(), "OnosRESTDriver");
+
     String fakeMap="";
     //String requests="";
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
 
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
+        String method = "propagateDelta";
+        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         String access_key_id = driverInstance.getProperty("onos_access_key_id");
         String secret_access_key = driverInstance.getProperty("onos_secret_access_key");
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
@@ -65,25 +72,30 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         
         String requests = null;
         try {
-            requests = push.pushPropagate(access_key_id, secret_access_key, mappingId, model, modelAdd, modelReduc, topologyURI, subsystemBaseUrl);
-            
+            requests = push.pushPropagate(access_key_id, secret_access_key, mappingId, model, modelAdd, modelReduc, topologyURI, subsystemBaseUrl);            
         } catch (Exception ex) {
-            Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-            throw (new EJBException(ex));
+            throw logger.throwing(method, ex);
         }
 
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
         DriverInstancePersistenceManager.merge(driverInstance);
-        Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.INFO, "ONOS REST driver delta models succesfully propagated");
-       }
+        logger.end(method);
+    }
 
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        logger.cleanup();
+        String method = "commitDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
-            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
+            throw logger.error_throwing(method, "DriverInstance == null");
         }
         String access_key_id = driverInstance.getProperty("onos_access_key_id");
         String secret_access_key = driverInstance.getProperty("onos_secret_access_key");
@@ -106,8 +118,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         try {
             push.pushCommit( access_key_id,  secret_access_key,requests, mappingId, topologyURI,  subsystemBaseUrl, aDelta);
         } catch (Exception ex) {
-            Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, null, ex);
-            throw(new EJBException(ex));
+            throw logger.throwing(method, ex);
         }
 
         driverInstance.getProperties().remove(requestId);
@@ -116,7 +127,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         fakeMap=push.getFakeFlowId();
         driverInstance.putProperty("mappingId", fakeMap);
         DriverInstancePersistenceManager.merge(driverInstance);
-        
+        logger.end(method);
         return new AsyncResult<String>("SUCCESS");
     }
     
@@ -124,6 +135,10 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
     @Asynchronous
     @SuppressWarnings("empty-statement")
     public Future<String> pullModel(Long driverInstanceId) {
+        logger.cleanup();
+        String method = "pullModel";
+        logger.targetid(driverInstanceId.toString());
+        logger.trace_start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
             throw new EJBException(String.format("pullModel cannot find driverInance(id=%d)", driverInstanceId));
@@ -161,13 +176,10 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
                 driverInstance.setHeadVersionItem(vi);
             } 
            
-        } catch (IOException e) {
-            throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
         } catch (Exception ex) {
-            Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-            throw(new EJBException(ex));
+            throw logger.throwing(method, driverInstance + " failed pull model", ex);
         }
-        
+        logger.trace_end(method);
         return new AsyncResult<>("SUCCESS");
     }
     
