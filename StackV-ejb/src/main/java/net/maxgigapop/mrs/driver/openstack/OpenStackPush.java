@@ -40,12 +40,9 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
-import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.commons.net.util.SubnetUtils;
 import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
 import org.json.simple.JSONArray;
@@ -86,7 +83,7 @@ import org.openstack4j.openstack.storage.block.domain.CinderVolume;
  */
 public class OpenStackPush {
 
-    private static final Logger log = Logger.getLogger(OpenStackPush.class.getName());
+    public static final StackLogger logger = OpenStackDriver.logger;
 
     //global variables
     private OpenStackGet client = null;
@@ -133,10 +130,12 @@ public class OpenStackPush {
      * Method to get the requests provided in the model addition and model
      * reduction ************************************************
      */
-    public List<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) throws EJBException {
+    public List<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
+        String method = "pushPropagate";
         List<JSONObject> requests = new ArrayList();
-
         //get all the requests
+        
+        logger.trace(method, "propgate reduction model");
         requests.addAll(nfsRequests(modelRef, modelReduct, false));
         requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
@@ -151,7 +150,7 @@ public class OpenStackPush {
         requests.addAll(isAliasRequest(modelRef, modelReduct, false));
         requests.addAll(subnetRequests(modelRef, modelReduct, false));
         requests.addAll(networkRequests(modelRef, modelReduct, false));
-
+        logger.trace(method, "propgate addition model");
         requests.addAll(networkRequests(modelRef, modelAdd, true));
         requests.addAll(subnetRequests(modelRef, modelAdd, true));
         requests.addAll(volumeRequests(modelRef, modelAdd, true));
@@ -177,8 +176,10 @@ public class OpenStackPush {
      * **********************************************************************
      */
     public void pushCommit(List<JSONObject> requests, String url, String NATServer, String username, String password, String tenantName, String topologyUri) throws InterruptedException {
+        String method = "pushCommit";
+        logger.start(method);        
         for (JSONObject o : requests) {
-
+            logger.trace_start(method+"."+o.get("request"));
             if (o.get("request").toString().equals("CreatePortRequest")) {
                 Port port = new NeutronPort();
                 Subnet net = client.getSubnet(o.get("subnet name").toString());
@@ -224,7 +225,7 @@ public class OpenStackPush {
                 String subnet_name = o.get("name").toString();
                 Network network1 = client.getNetwork(o.get("network name").toString());
                 if (network1 == null) {
-                    throw new EJBException("CreateSubnetRequest for" + subnet_name + "failed without network =" + o.get("network name"));
+                    throw logger.error_throwing(method, "CreateSubnetRequest for" + subnet_name + "failed without network =" + o.get("network name"));
                 }
                 subnet.toBuilder().cidr(o.get("cidr block").toString())
                         //.network(client.getNetwork(o.get("network name").toString()))
@@ -250,7 +251,7 @@ public class OpenStackPush {
                 String id = network.getId();
                 for (Port p : client.getPorts()) {
                     if (p.getNetworkId().equals(network.getId())) {
-                        throw new EJBException(("port" + p.getId() + "is still attached to the network, so network" + network.getName() + "cannot be deleted"));
+                        throw logger.error_throwing(method, "port" + p.getId() + "is still attached to the network, so network" + network.getName() + "cannot be deleted");
                     }
                 }
                 osClient.networking().network().delete(network.getId());
@@ -478,7 +479,7 @@ public class OpenStackPush {
                                                                 }
                                                             }
                                                             if (portCreated == false) {
-                                                                throw new EJBException(String.format("could not create port %s", router_name + "port" + i));
+                                                                throw logger.error_throwing(method, String.format("could not create port %s", router_name + "port" + i));
                                                             }
 
                                                             String portid = client.getPort(router_name + "port" + i).getId();
@@ -606,7 +607,7 @@ public class OpenStackPush {
 
                 }
                 if (subnet == null) {
-                    throw new EJBException("unknown subnet:" + o.get("subnet name"));
+                    throw logger.error_throwing(method, "unknown subnet:" + o.get("subnet name"));
                 }
                 if (o.get("private address").toString().equals("any")) {
                     port.toBuilder().name(o.get("port name").toString())
@@ -729,7 +730,7 @@ public class OpenStackPush {
                 //@TODO: check if floating ip is already associated with other VM/port
                 NetFloatingIP fipObj = client.findFloatingIp(floatip);
                 if (fipObj == null || fipObj.getFixedIpAddress() != null) {
-                    throw new EJBException("floating IP does not exist or has been associated with other instance / port: " + floatip);                    
+                    throw logger.error_throwing(method, "floating IP does not exist or has been associated with other instance / port: " + floatip);                    
                 }
                 ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, ((IP)p.getFixedIps().toArray()[0]).getIpAddress(), floatip);
             } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
@@ -961,7 +962,7 @@ public class OpenStackPush {
                         client.setMetadata(servername, "quagga:bgp:info", jsonObj.toJSONString().replaceAll("\"", "'").replaceAll("\\\\/", "/"));
                     }
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s:DeleteVirtualRouterRequest cannot parse json string %s", this.getClass().getName(),bgpInfoStr));
+                    throw logger.error_throwing(method, String.format("%s:DeleteVirtualRouterRequest cannot parse json string %s", this.getClass().getName(),bgpInfoStr));
                 }
                 // set status=down
             } else if (o.get("request").toString().equals("DetachSriovRequest")) {
@@ -1013,8 +1014,10 @@ public class OpenStackPush {
                 client.setMetadata(servername, "nfs:info", String.format("{'exports':%s,'status':'%s'}", 
                         nfsExports, status));
                 client.setMetadata(servername, "nfs:info:uri", endpointUri);
-            } 
+            }
+            logger.trace_end(method+"."+o.get("request"));
         }
+        logger.end(method);
     }
 
     /**
@@ -1022,7 +1025,8 @@ public class OpenStackPush {
      * Function to create a Vpc from a modelRef
      * /*****************************************************************
      */
-    private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> networkRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "networkRequests";
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -1046,9 +1050,9 @@ public class OpenStackPush {
             if (net == null ^ creation) // if network  exists, no need to create it .......some error here neeed to be fixed
             {
                 if (creation == true) {
-                    throw new EJBException(String.format("Network %s already exists", network));
+                    throw logger.error_throwing(method, String.format("Network %s already exists", network));
                 } else {
-                    throw new EJBException(String.format("Network %s does not exists", network));
+                    throw logger.error_throwing(method, String.format("Network %s does not exists", network));
                 }
             } else {
                 //1.1 make sure root topology has the newtork
@@ -1056,7 +1060,7 @@ public class OpenStackPush {
                 query = "SELECT ?cloud WHERE {?cloud nml:hasTopology <" + network.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify the openStack-cloud that"
+                    throw logger.error_throwing(method, String.format("model addition does not specify the openStack-cloud that"
                             + "provides network : %s", network));
                 }
 
@@ -1065,7 +1069,7 @@ public class OpenStackPush {
                  query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
                  r1 = executeQuery(query, modelRef, modelDelta);
                  if (!r1.hasNext()) {
-                 throw new EJBException(String.format("network %s does  ot have a tag", network));
+                 throw logger.error_throwing(method, String.format("network %s does  ot have a tag", network));
                  }
                  QuerySolution q1 = r1.next();
                  RDFNode networkTag = q1.get("tag");
@@ -1074,7 +1078,7 @@ public class OpenStackPush {
                  + "<" + networkTag.asResource() + "> mrs:value ?value}";
                  r1 = executeQuery(query, modelRef, modelDelta);
                  if (!r1.hasNext()) {
-                 throw new EJBException(String.format("network %s has improper type of tag", network));
+                 throw logger.error_throwing(method, String.format("network %s has improper type of tag", network));
                  }
                  q1 = r1.next();
                  String networkTagValue = q1.get("value").asLiteral().toString();
@@ -1084,7 +1088,7 @@ public class OpenStackPush {
                         + "?service a  mrs:SwitchingService}";
                 r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("New network %s does not speicfy Switching Service", network));
+                    throw logger.error_throwing(method, String.format("New network %s does not speicfy Switching Service", network));
                 }
                 JSONObject o = new JSONObject();
                 query = "SELECT ?exnetwork WHERE {?exnetwork mrs:Type \"external-network\"}";
@@ -1119,7 +1123,8 @@ public class OpenStackPush {
      * Function to create a subnets from a modelRef
      * ***************************************************************
      */
-    private List<JSONObject> subnetRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> subnetRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "subnetRequests";
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -1139,9 +1144,9 @@ public class OpenStackPush {
             if (s == null ^ creation) //subnet  exists,does not need to create one
             {
                 if (creation == true) {
-                    throw new EJBException(String.format("Subnet %s already exists", subnet));
+                    throw logger.error_throwing(method, String.format("Subnet %s already exists", subnet));
                 } else {
-                    throw new EJBException(String.format("Subnet %s does not exist, cannot be deleted", subnet));
+                    throw logger.error_throwing(method, String.format("Subnet %s does not exist, cannot be deleted", subnet));
                 }
             } else {
                 //1.2 check the subnet is being provided a service and get the service
@@ -1149,7 +1154,7 @@ public class OpenStackPush {
                 query = "SELECT ?service {?service mrs:providesSubnet <" + subnet.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("No service has subnet %s", subnet));
+                    throw logger.error_throwing(method, String.format("No service has subnet %s", subnet));
                 }
                 QuerySolution q1 = r1.next();
                 RDFNode service = q1.get("service");
@@ -1159,7 +1164,7 @@ public class OpenStackPush {
                         + "<" + service.asResource() + "> a mrs:SwitchingService}";
                 r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Subnet %s does not belong a network", subnet));
+                    throw logger.error_throwing(method, String.format("Subnet %s does not belong a network", subnet));
                 }
                 q1 = r1.next();
                 RDFNode network = q1.get("network");
@@ -1170,7 +1175,7 @@ public class OpenStackPush {
                  query = "SELECT ?tag {<" + network.asResource() + "> mrs:hasTag ?tag}";
                  r1 = executeQuery(query, modelRef, modelDelta);
                  if (!r1.hasNext()) {
-                 throw new EJBException(String.format("network %s does  not have a tag", network));
+                 throw logger.error_throwing(method, String.format("network %s does  not have a tag", network));
                  }
                  q1 = r1.next();
                  RDFNode networkTag = q1.get("tag");
@@ -1179,7 +1184,7 @@ public class OpenStackPush {
                  + "<" + networkTag.asResource() + "> mrs:value ?value}";
                  r1 = executeQuery(query, modelRef, modelDelta);
                  if (!r1.hasNext()) {
-                 throw new EJBException(String.format("network %s for subnet  %s has improper type of tag", network, subnet));
+                 throw logger.error_throwing(method, String.format("network %s for subnet  %s has improper type of tag", network, subnet));
                  }
                  q1 = r1.next();
                  String networkTagValue = q1.get("value").asLiteral().toString();
@@ -1188,7 +1193,7 @@ public class OpenStackPush {
                  query = "SELECT ?tag {<" + subnet.asResource() + "> mrs:hasTag ?tag}";
                  r1 = executeQuery(query, emptyModel, modelDelta);
                  if (!r1.hasNext()) {
-                 throw new EJBException(String.format("Subnet %s does  ot have a tag", subnet));
+                 throw logger.error_throwing(method, String.format("Subnet %s does  ot have a tag", subnet));
                  }
                  q1 = r1.next();
                  RDFNode tag = q1.get("tag");
@@ -1197,18 +1202,18 @@ public class OpenStackPush {
                  + "<" + tag.asResource() + "> mrs:value ?value}";
                  r1 = executeQuery(query, modelRef, modelDelta);
                  if (!r1.hasNext()) {
-                 throw new EJBException(String.format("Subnet %s has improper type of tag", subnet));
+                 throw logger.error_throwing(method, String.format("Subnet %s has improper type of tag", subnet));
                  }
                  q1 = r1.next();
                  String subnetTagValue = q1.get("value").asLiteral().toString();
 
                  //1.5 check that a public subnet is not being created in a private network or viceversa
                  if (networkTagValue.equals("tenant") && subnetTagValue.equals("public")) {
-                 throw new EJBException(String.format("public subnet %s cannot be in tenant network "
+                 throw logger.error_throwing(method, String.format("public subnet %s cannot be in tenant network "
                  + "network %s", subnet, network));
                  }
                  if ((networkTagValue.equals("external") && subnetTagValue.equals("private"))) {
-                 throw new EJBException(String.format("private subnet %s cannot be in external network "
+                 throw logger.error_throwing(method, String.format("private subnet %s cannot be in external network "
                  + "network %s", subnet, network));
                  }
                  */
@@ -1220,7 +1225,7 @@ public class OpenStackPush {
                         + "?address mrs:value ?value}";
                 r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Subnet %s does nto specify network address", subnet));
+                    throw logger.error_throwing(method, String.format("Subnet %s does nto specify network address", subnet));
                 }
                 q1 = r1.next();
                 RDFNode value = q1.get("value");
@@ -1259,7 +1264,8 @@ public class OpenStackPush {
      * Function to create/delete a volumes from a modelRef
      * ***************************************************************
      */
-    private List<JSONObject> volumeRequests(OntModel modelRef, OntModel model, boolean creation) throws EJBException {
+    private List<JSONObject> volumeRequests(OntModel modelRef, OntModel model, boolean creation) {
+        String method = "volumeRequests";
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -1279,10 +1285,10 @@ public class OpenStackPush {
             if (v == null ^ creation) //volume exists, no need to create a volume
             {
                 if (creation == true) {
-                    throw new EJBException(String.format("Volume %s already exists", v));
+                    throw logger.error_throwing(method, String.format("Volume %s already exists", v));
                 } else {
-                    //throw new EJBException(String.format("Volume %s does not exist, cannot be deleted", v));                  
-                    log.warning(String.format("Volume %s does not exist, no need to delete", volumeName));        
+                    //throw logger.error_throwing(method, String.format("Volume %s does not exist, cannot be deleted", v));                  
+                    logger.warning(method, String.format("Volume %s does not exist, no need to delete", volumeName));        
                 }
             } else {
                 //1.2 check what service is providing the volume
@@ -1291,7 +1297,7 @@ public class OpenStackPush {
                         + "}";
                 ResultSet r1 = executeQueryUnion(query, modelRef, model);
                 if (!r1.hasNext()) {
-                    //throw new EJBException(String.format("model does not specify service that provides volume: %s", volume));
+                    //throw logger.error_throwing(method, String.format("model does not specify service that provides volume: %s", volume));
                     continue;
                 }
                 QuerySolution q1 = r1.next();
@@ -1301,14 +1307,14 @@ public class OpenStackPush {
                 query = "SELECT ?type WHERE {<" + service.asResource() + ">  a mrs:BlockStorageService}";
                 r1 = executeQuery(query, modelRef, model);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Service %s is not a block storage service", service));
+                    throw logger.error_throwing(method, String.format("Service %s is not a block storage service", service));
                 }
 
                 //1.4 find out the type of the volume
                 query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:value ?type}";
                 r1 = executeQuery(query, modelRef, model);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify new type of volume: %s", volume));
+                    throw logger.error_throwing(method, String.format("model addition does not specify new type of volume: %s", volume));
                 }
                 q1 = r1.next();
                 RDFNode type = q1.get("type");
@@ -1317,7 +1323,7 @@ public class OpenStackPush {
                 query = "SELECT ?size WHERE {<" + volume.asResource() + "> mrs:disk_gb ?size}";
                 r1 = executeQuery(query, modelRef, model);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify new size of volume: %s", volume));
+                    throw logger.error_throwing(method, String.format("model addition does not specify new size of volume: %s", volume));
                 }
                 q1 = r1.next();
                 RDFNode size = q1.get("size");
@@ -1345,7 +1351,8 @@ public class OpenStackPush {
      * Function to create network interfaces from a model
      * ****************************************************************
      */
-    private List<JSONObject> portRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> portRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "portRequests";
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -1365,9 +1372,9 @@ public class OpenStackPush {
             if (p == null ^ creation) //network interface  exists, no need to create a network interface
             {
                 if (creation == true) {
-                    throw new EJBException(String.format("Network interface %s already exists", portName));
+                    throw logger.error_throwing(method, String.format("Network interface %s already exists", portName));
                 } else {
-                    //throw new EJBException(String.format("Network interface %s does not exist, cannot be deleted", portName));
+                    //throw logger.error_throwing(method, String.format("Network interface %s does not exist, cannot be deleted", portName));
                     continue;
                 }
             } else {
@@ -1382,14 +1389,14 @@ public class OpenStackPush {
                     QuerySolution querySolution1 = r1.next();
                     RDFNode value = querySolution1.get("value");
                     //privateAddress = value.asLiteral().toString();
-                    log.warning(String.format("Overiding the specifci private IP %s into 'any' for port: %s.", value.toString(), portName));
+                    logger.warning(method, String.format("Overiding the specifci private IP %s into 'any' for port: %s.", value.toString(), portName));
                 }
                 //2.3 find the subnet that has the port previously found
                 query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet. ?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">"
                         + "}";
                 r1 = executeQueryUnion(query, modelDelta, modelRef);//
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Delta model does not specify network interface subnet of port: %s", port));
+                    throw logger.error_throwing(method, String.format("Delta model does not specify network interface subnet of port: %s", port));
                 }
                 query = "SELECT ?subnet WHERE {?subnet a mrs:SwitchingSubnet. ?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">"
                         + " FILTER (not exists {$subnet mrs:type \"Cisco_UCS_Port_Profile\"})"
@@ -1439,7 +1446,8 @@ public class OpenStackPush {
      * Function to attach (if not on server creation) or detach a port from a
      * server ****************************************************************
      */
-    private List<JSONObject> portAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> portAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "portAttachmentRequests";
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -1478,7 +1486,7 @@ public class OpenStackPush {
                  query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
                  ResultSet r2 = executeQuery(query, modelRef, modelDelta);
                  if (!r2.hasNext()) {
-                 throw new EJBException(String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
+                 throw logger.error_throwing(method, String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
                  }
                  QuerySolution q2 = r2.next();
                  RDFNode tag = q2.get("tag");
@@ -1488,7 +1496,7 @@ public class OpenStackPush {
                  + "<" + tag.asResource() + "> mrs:value \"network\"}";
                  r2 = executeQuery(query, modelRef, modelDelta);
                  if (!r2.hasNext()) {
-                 throw new EJBException(String.format("bidirectional port %s to be attached to instance is not a net"
+                 throw logger.error_throwing(method, String.format("bidirectional port %s to be attached to instance is not a net"
                  + "work interface", port));
                  }
                  */
@@ -1497,7 +1505,7 @@ public class OpenStackPush {
                 /*
                  Port p = client.getPort(portName);
                  if (p == null) {
-                 throw new EJBException(String.format("unknown port name '%s'", portName));
+                 throw logger.error_throwing(method, String.format("unknown port name '%s'", portName));
                  }
                  */
                 //1.4.1 port attachment will be added
@@ -1509,7 +1517,7 @@ public class OpenStackPush {
 
                      if (p.getDeviceOwner() != null && !p.getDeviceOwner().isEmpty()) {
 
-                     throw new EJBException(String.format("bidirectional port %s to be attached to instance %s is already"
+                     throw logger.error_throwing(method, String.format("bidirectional port %s to be attached to instance %s is already"
                      + " attached to an instance", port, serverName));
                      }
                      */
@@ -1535,7 +1543,8 @@ public class OpenStackPush {
      * Function to allocate floating ip to an interface that is attached to server
      * server ****************************************************************
      */
-    private List<JSONObject> floatingIpRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> floatingIpRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "floatingIpRequests";
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -1579,7 +1588,7 @@ public class OpenStackPush {
                     serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
                     portname = port.asResource().toString();
                     portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
-                    throw new EJBException(String.format("floating IP '%s' is in use by server '%s' port '%s'", floatingIp, serverName, portName));
+                    throw logger.error_throwing(method, String.format("floating IP '%s' is in use by server '%s' port '%s'", floatingIp, serverName, portName));
                 }
                 o.put("request", "AssociateFloatingIpRequest");
                 o.put("server name", serverName);
@@ -1606,7 +1615,8 @@ public class OpenStackPush {
      * ****************************************************************
      */
     //query has error
-    private List<JSONObject> serverRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> serverRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "serverRequests";
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -1631,16 +1641,16 @@ public class OpenStackPush {
             if (server == null ^ creation) //check if server needs to be created or deleted
             {
                 if (creation == true) {
-                    throw new EJBException(String.format("Server %s already exists", serverName));
+                    throw logger.error_throwing(method, String.format("Server %s already exists", serverName));
                 } else {
-                    throw new EJBException(String.format("Server %s does not exist, cannot be deleted", serverName));
+                    throw logger.error_throwing(method, String.format("Server %s does not exist, cannot be deleted", serverName));
                 }
             } else {
                 //1.2 check what service is providing the instance
                 query = "SELECT ?service WHERE {?service mrs:providesVM <" + vm.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Dleta model does not specify service that provides the VM: %s", vm));
+                    throw logger.error_throwing(method, String.format("Dleta model does not specify service that provides the VM: %s", vm));
                 }
                 QuerySolution q1 = r1.next();
                 RDFNode hypervisorService = q1.get("service");
@@ -1651,14 +1661,14 @@ public class OpenStackPush {
                 query = "SELECT ?type WHERE { ?type a mrs:HypervisorService}";//modified here
                 r1 = executeQuery(query, modelRef, modelDelta);//here may error
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Service %s is not a hypervisor service", hypervisorService));
+                    throw logger.error_throwing(method, String.format("Service %s is not a hypervisor service", hypervisorService));
                 }
 
                 //1.4 find the host of the VM
                 query = "SELECT ?host WHERE {?host nml:hasService <" + hypervisorService.asResource() + ">}";//the deltamodel
                 r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Delta model does not specify host that provides service %s", hypervisorService));
+                    throw logger.error_throwing(method, String.format("Delta model does not specify host that provides service %s", hypervisorService));
                 }
                 q1 = r1.next();
                 RDFNode host = q1.get("host");
@@ -1669,7 +1679,7 @@ public class OpenStackPush {
                 query = "SELECT ?node WHERE {?node a nml:Node. FILTER(?node = <" + host.asResource() + ">)}";
                 r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Host %s to host node %s is not of type nml:Node", host, vm));
+                    throw logger.error_throwing(method, String.format("Host %s to host node %s is not of type nml:Node", host, vm));
                 }
                 String hostName = ResourceTool.getResourceName(host.toString(), OpenstackPrefix.host);
 
@@ -1680,7 +1690,7 @@ public class OpenStackPush {
                         + "?subnet nml:hasBidirectionalPort ?port}";
                 r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("VM %s does not specify network", vm));
+                    throw logger.error_throwing(method, String.format("VM %s does not specify network", vm));
                 }
                 q1 = r1.next();
                 RDFNode subnet = q1.get("subnet");
@@ -1689,7 +1699,7 @@ public class OpenStackPush {
                 query = "SELECT ?port WHERE {<" + subnet.asResource() + "> nml:hasBidirectionalPort ?port}";
                 ResultSet r5 = executeQuery(query, modelRef, modelDelta);
                 if (!r5.hasNext()) {
-                    throw new EJBException(String.format("Vm %s does not specify the attached network interface", vm));
+                    throw logger.error_throwing(method, String.format("Vm %s does not specify the attached network interface", vm));
                 }
                 query = "SELECT ?type WHERE {<" + vm.asResource() + "> mrs:type ?type}";
                 r5 = executeQuery(query, emptyModel, modelDelta);
@@ -1732,7 +1742,7 @@ public class OpenStackPush {
                 query = "SELECT ?port WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port}";
                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
                 if (creation && !r2.hasNext()) {
-                    throw new EJBException(String.format("Vm %s does not specify the attached network interface", vm));
+                    throw logger.error_throwing(method, String.format("Vm %s does not specify the attached network interface", vm));
                 }
                 List<String> portNames = new ArrayList();
                 while (creation && r2.hasNext())//there could be multiple network interfaces attached to the instance
@@ -1757,10 +1767,10 @@ public class OpenStackPush {
                 String flavorType = defaultFlavor;
 
                 if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
-                    throw new EJBException(String.format("Cannot determine server image type."));
+                    throw logger.error_throwing(method, String.format("Cannot determine server image type."));
                 }
                 if ((flavorType == null || flavorType.isEmpty()) && flavorID.equals("any")) {
-                    throw new EJBException(String.format("Cannot determine server flavor type."));
+                    throw logger.error_throwing(method, String.format("Cannot determine server flavor type."));
                 }
                 if (imageID.equals("any")) {
                     o.put("image", imageType);
@@ -1803,7 +1813,8 @@ public class OpenStackPush {
      * Function to attach or detach volume to an instance
      * ****************************************************************
      */
-    private List<JSONObject> volumesAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> volumesAttachmentRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "volumesAttachmentRequests";
         List<JSONObject> requests = new ArrayList();
         String query;
 
@@ -1826,7 +1837,7 @@ public class OpenStackPush {
                     + "}";
             ResultSet r2 = executeQueryUnion(query, modelRef, modelDelta);
             if (!r2.hasNext()) {
-                //throw new EJBException(String.format("volume device name is not specified for volume %s in the model delta", volume));
+                //throw logger.error_throwing(method, String.format("volume device name is not specified for volume %s in the model delta", volume));
                 continue;
             }
             QuerySolution querySolution2 = r2.next();
@@ -1845,7 +1856,7 @@ public class OpenStackPush {
                             + "<" + volume.asResource() + "> mrs:size ?size }";
                     r2 = executeQuery(query, modelRef, modelDelta);
                     if (!r2.hasNext()) {
-                        throw new EJBException(String.format("volume %s is not well specified in volume delta", volume));
+                        throw logger.error_throwing(method, String.format("volume %s is not well specified in volume delta", volume));
                     }
                 }
                 //1.4 if s is not null 
@@ -1853,7 +1864,7 @@ public class OpenStackPush {
                     List<String> map = s.getOsExtendedVolumesAttached();
                     if (vol == null) {
                         if (creation == false) {
-                            throw new EJBException(String.format("volume %s to be detached does not exist", volumeName));
+                            throw logger.error_throwing(method, String.format("volume %s to be detached does not exist", volumeName));
                         } else {
                             JSONObject o = new JSONObject();
                             o.put("request", "AttachVolumeRequest");
@@ -1872,7 +1883,7 @@ public class OpenStackPush {
                                 o.put("device name", device);
                                 requests.add(o);
                             } else {
-                                throw new EJBException(String.format("volume %s is already attached to"
+                                throw logger.error_throwing(method, String.format("volume %s is already attached to"
                                         + " server %s", volumeName, serverName));
                             }
                         } else if (creation == false) {
@@ -1889,7 +1900,7 @@ public class OpenStackPush {
                                 s.getOsExtendedVolumesAttached();
                                 requests.add(o);
                             } else {
-                                throw new EJBException(String.format("volume %s is not attached to"
+                                throw logger.error_throwing(method, String.format("volume %s is not attached to"
                                         + " server %s", volumeName, serverName));
                             }
                         }
@@ -1904,7 +1915,7 @@ public class OpenStackPush {
                         o.put("device name", device);
                         requests.add(o);
                     } else {
-                        throw new EJBException(String.format("server %s where the volume %s will be"
+                        throw logger.error_throwing(method, String.format("server %s where the volume %s will be"
                                 + "detached does not exists", serverName, volumeName));
                     }
                 }
@@ -1921,7 +1932,8 @@ public class OpenStackPush {
      * of the previous commits. If the
      * ****************************************************************
      */
-    private List<JSONObject> layer3Requests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> layer3Requests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "layer3Requests";
         List<JSONObject> requests = new ArrayList();
         int x = 0;
         int z = 0;
@@ -1976,7 +1988,7 @@ public class OpenStackPush {
 
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("nexthop %s for route %s is "
+                    throw logger.error_throwing(method, String.format("nexthop %s for route %s is "
                             + "malformed", nextHopResource, routeResource));
                 }
 
@@ -2010,7 +2022,7 @@ public class OpenStackPush {
                 r1 = executeQuery(query, modelRef, modelDelta);
 
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("routeTo %s for route %s is "
+                    throw logger.error_throwing(method, String.format("routeTo %s for route %s is "
                             + "malformed", routeToResource, routeResource));
                 }
                 //while (r1.hasNext()) {
@@ -2038,7 +2050,7 @@ public class OpenStackPush {
                             + "<" + routeFromResource + "> mrs:value ?value}";
                     r1 = executeQuery(query, emptyModel, modelDelta);
                     if (!r1.hasNext()) {
-                        throw new EJBException(String.format("routeTo %s for route %s is "
+                        throw logger.error_throwing(method, String.format("routeTo %s for route %s is "
                                 + "malformed", routeToResource, routeResource));
                     }
                     q1 = r1.next();
@@ -2125,7 +2137,8 @@ public class OpenStackPush {
         return requests;
     }
 
-    private List<JSONObject> hostRouteRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> hostRouteRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "hostRouteRequests";
         List<JSONObject> requests = new ArrayList();
         JSONObject o = new JSONObject();
         String query = "";
@@ -2145,7 +2158,7 @@ public class OpenStackPush {
                 query = "SELECT ?routingtable WHERE {?routingtable mrs:hasRoute <" + routeResource.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("route %s is not provided"
+                    throw logger.error_throwing(method, String.format("route %s is not provided"
                             + "by any service", routeResource));
                 }
 
@@ -2157,7 +2170,7 @@ public class OpenStackPush {
                 query = "SELECT ?service WHERE {?service mrs:providesRoutingTable <" + routingtable.asResource() + ">}";
                 ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("routingtalbe %s is not provided"
+                    throw logger.error_throwing(method, String.format("routingtalbe %s is not provided"
                             + "by any service", routingtable));
                 }
                 QuerySolution q2 = r2.next();
@@ -2169,7 +2182,7 @@ public class OpenStackPush {
 
                 r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("fixip  %s  is "
+                    throw logger.error_throwing(method, String.format("fixip  %s  is "
                             + "malformed", nextHopResource));
 
                 }
@@ -2183,7 +2196,7 @@ public class OpenStackPush {
 
                 r1 = executeQuery(query, emptyModel, modelDelta);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("routeto resource  %s  is "
+                    throw logger.error_throwing(method, String.format("routeto resource  %s  is "
                             + "malformed", routeToResource));
 
                 }
@@ -2208,7 +2221,8 @@ public class OpenStackPush {
         return requests;
     }
 
-    private List<JSONObject> isAliasRequest(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> isAliasRequest(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "isAliasRequest";
         List<JSONObject> requests = new ArrayList();
         String query = "";
         query = "SELECT ?fixip ?floatingip WHERE{?fixedip a mrs:NetworkAddress ."
@@ -2227,7 +2241,7 @@ public class OpenStackPush {
                     + "?subnet mrs:hasNetworkAddress <" + fixip.asResource() + "> }";
             r1 = executeQuery(query, emptyModel, modelDelta);
             if (!r1.hasNext()) {
-                return requests; //? throw new EJBException
+                return requests; //? logger.error_throwing 
             }
             QuerySolution q1 = r1.next();
 
@@ -2240,7 +2254,7 @@ public class OpenStackPush {
                     + "?subnet mrs:hasNetworkAddress <" + floatingip.asResource() + "> }";
             r1 = executeQuery(query, emptyModel, modelDelta);
             if (!r1.hasNext()) {
-                return requests; //? throw new EJBException
+                return requests; //? logger.error_throwing 
             }
             QuerySolution q2 = r1.next();
 
@@ -2253,7 +2267,7 @@ public class OpenStackPush {
                     + "?server  mrs:hasNetworkAddress <" + fixip.asResource() + ">}";
             r1 = executeQuery(query, emptyModel, modelDelta);
             if (!r1.hasNext()) {
-                return requests; //? throw new EJBException
+                return requests; //? logger.error_throwing 
             }
             QuerySolution q3 = r1.next();
             RDFNode serVer = q3.get("server");
@@ -2266,7 +2280,7 @@ public class OpenStackPush {
 
             r1 = executeQuery(query, emptyModel, modelDelta);
             if (!r1.hasNext()) {
-                return requests; //? throw new EJBException
+                return requests; //? logger.error_throwing 
             }
             QuerySolution q4 = r1.next();
             RDFNode valUe = q4.get("value");
@@ -2278,7 +2292,7 @@ public class OpenStackPush {
 
             r1 = executeQuery(query, emptyModel, modelDelta);
             if (!r1.hasNext()) {
-                return requests; //? throw new EJBException
+                return requests; //? logger.error_throwing 
             }
             QuerySolution q5 = r1.next();
             RDFNode floatvalUe = q5.get("value");
@@ -2301,7 +2315,8 @@ public class OpenStackPush {
         return requests;
     }
 
-    private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "sriovRequests";
         List<JSONObject> requests = new ArrayList();
         JSONObject JO = new JSONObject();
         String query = "SELECT ?vmfex ?vnic WHERE {"
@@ -2340,7 +2355,7 @@ public class OpenStackPush {
                     routingSvc = q1.getResource("routing");
                 }
             } else {
-                throw new EJBException("sriovRequests related resoruces for vNic='" + vNic.getURI() + "' cannot be resolved");
+                throw logger.error_throwing(method, "sriovRequests related resoruces for vNic='" + vNic.getURI() + "' cannot be resolved");
             }
             query = "SELECT ?ip WHERE {"
                     + String.format("<%s> mrs:hasNetworkAddress ?ipAddr . ", vNic)
@@ -2408,7 +2423,8 @@ public class OpenStackPush {
         return requests;
     }
 
-    private List<JSONObject> virtualRouterRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> virtualRouterRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "virtualRouterRequests";
         List<JSONObject> requests = new ArrayList();
         String query = "SELECT ?rtsvc ?rtable ?rtable_type WHERE {"
                 + "?rtsvc mrs:providesRoutingTable ?rtable ."
@@ -2436,7 +2452,7 @@ public class OpenStackPush {
                 QuerySolution q1 = r1.next();
                 VM = q1.getResource("vm");
             } else {
-                throw new EJBException("virtualRouterRequests cannot find a VM hosting routingService='" + rtService.getURI());
+                throw logger.error_throwing(method, "virtualRouterRequests cannot find a VM hosting routingService='" + rtService.getURI());
             }
             JO.put("server name", VM.getURI());
             query = "SELECT ?netaddr ?netaddr_type ?netaddr_value WHERE {"
@@ -2522,7 +2538,8 @@ public class OpenStackPush {
         return requests;
     }
 
-    private List<JSONObject> cephStorageRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> cephStorageRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "cephStorageRequests";
         List<JSONObject> requests = new ArrayList();
         String query = "SELECT ?vol ?vm ?size ?mount  WHERE {"
                 + "?vm mrs:hasVolume ?vol. "
@@ -2580,7 +2597,8 @@ public class OpenStackPush {
         return requests;
     }
 
-    private List<JSONObject> globusConnectRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> globusConnectRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "globusConnectRequests";
         List<JSONObject> requests = new ArrayList();
         String query = "SELECT ?vm ?ep ?shortname ?username ?password ?directory ?interface  WHERE {"
                 + "?vm nml:hasService ?ep. "
@@ -2642,7 +2660,8 @@ public class OpenStackPush {
         return requests;
     }
     
-    private List<JSONObject> nfsRequests(OntModel modelRef, OntModel modelDelta, boolean creation) throws EJBException {
+    private List<JSONObject> nfsRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "nfsRequests";
         List<JSONObject> requests = new ArrayList();
         String query = "SELECT ?vm ?ep ?exports  WHERE {"
                 + "?vm nml:hasService ?ep. "

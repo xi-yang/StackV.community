@@ -29,6 +29,7 @@ import java.util.Map;
 import javax.ejb.EJBException;
 import javax.persistence.Query;
 import net.maxgigapop.mrs.bean.DriverInstance;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
@@ -36,6 +37,8 @@ import net.maxgigapop.mrs.bean.DriverInstance;
  */
 @SuppressWarnings("unchecked")
 public class DriverInstancePersistenceManager extends PersistenceManager {
+
+    private static final StackLogger logger = new StackLogger(DriverInstancePersistenceManager.class.getName(), "DriverInstancePersistenceManager");
 
     private static Map<String, DriverInstance> driverInstanceByTopologyMap = null;
 
@@ -52,7 +55,8 @@ public class DriverInstancePersistenceManager extends PersistenceManager {
         List<DriverInstance> listDriverInstances = createQuery("FROM " + DriverInstance.class.getSimpleName()).getResultList();
         for (DriverInstance di : listDriverInstances) {
             if (di.getTopologyUri() == null || di.getTopologyUri().isEmpty()) {
-                throw new EJBException(String.format("%s has null/empty topologyUri", di));
+                logger.targetid(di.getId().toString());
+                throw logger.error_throwing("DriverInstancePersistenceManager", "target:DriverInstance has null/empty topologyUri");
             }
             driverInstanceByTopologyMap.put(di.getTopologyUri(), di);
         }

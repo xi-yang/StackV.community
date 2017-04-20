@@ -31,16 +31,13 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -63,13 +60,13 @@ import org.openstack4j.model.storage.block.Volume;
  * @author max
  */
 public class OpenStackNeutronModelBuilder {
-    private static final Logger log = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
+    
+    public static final StackLogger logger = OpenStackDriver.logger;
 
     public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName,
             String adminUsername, String adminPassword, String adminTenant, OntModel modelExt) throws IOException, Exception {
+        String method = "createOntology";
         ArrayList fip = new ArrayList();
-        String POOL = null;
-        Logger logger = Logger.getLogger(OpenStackNeutronModelBuilder.class.getName());
 
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -106,7 +103,6 @@ public class OpenStackNeutronModelBuilder {
         Property hasTopology = Nml.hasTopology;
         Property targetDevice = model.createProperty(model.getNsPrefixURI("mrs") + "target_device");
 
-        Property hasTag = Mrs.hasTag;
         Property hasNetworkAddress = Mrs.hasNetworkAddress;
         Property providesRoutingTable = model.createProperty(model.getNsPrefixURI("mrs") + "providesRoutingTable");
         Property isAlias = Nml.isAlias;
@@ -274,7 +270,7 @@ public class OpenStackNeutronModelBuilder {
                         model.add(model.createStatement(resNetAddr, Mrs.value, netAddr));
                     }
                 } catch (ParseException e) {
-                    log.warning("OpenStackNeutronModelBuilder:createOntology() cannot parse json string due to: " + e.getMessage());
+                    logger.catching(method, e);
                 }
                 linuxRouteNum++;
             }
@@ -345,7 +341,7 @@ public class OpenStackNeutronModelBuilder {
                             model.add(model.createStatement(resRouteToNeighbor, Mrs.routeFrom, resNetAddrLocalPrefixes));
                         }
                     } catch (ParseException e) {
-                        log.warning("OpenStackNeutronModelBuilder:createOntology() cannot parse json string due to: " + e.getMessage());
+                        logger.catching(method, e);
                     }
                     neighborNum++;
                 }
@@ -369,8 +365,7 @@ public class OpenStackNeutronModelBuilder {
                         JSONObject jsonObj = (JSONObject) parser.parse(sriovVnicJson);
                         // interface
                         if (!jsonObj.containsKey("interface") || !jsonObj.containsKey("profile")) {
-                            Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
-                                    String.format("OpenStack driver model server '%s' SRIOV interface without both 'interface' and 'profile' parameters in metadata ''%s'", server_name, sriovVnicKey));
+                            logger.warning(method, String.format("modeling server '%s' SRIOV interface without both 'interface' and 'profile' parameters in metadata ''%s'", server_name, sriovVnicKey));
                             sriovVnicNum++;
                             continue;
                         }
@@ -398,8 +393,7 @@ public class OpenStackNeutronModelBuilder {
                                 + "}";
                         r = ModelUtil.sparqlQuery(modelExt, sparql);
                         if (!r.hasNext()) {
-                            Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
-                                    String.format("OpenStack driver model server '%s' SRIOV interface without 'profile'='%s' already being defined in modelExtention", server_name, portProfile));
+                            logger.warning(method, String.format("modeling server '%s' SRIOV interface without 'profile'='%s' already being defined in modelExtention", server_name, portProfile));
                             sriovVnicNum++;
                             continue;
                         }
@@ -445,8 +439,7 @@ public class OpenStackNeutronModelBuilder {
                             }
                         }
                     } catch (ParseException e) {
-                        Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
-                                String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), sriovVnicJson, sriovVnicKey));
+                        logger.warning(method,  String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), sriovVnicJson, sriovVnicKey));
                     }
                     sriovVnicNum++;
                 }
@@ -462,8 +455,7 @@ public class OpenStackNeutronModelBuilder {
                     cephRbdJson = cephRbdJson.replaceAll("'", "\""); // tolerate single quotes
                     JSONObject jsonObj = (JSONObject) parser.parse(cephRbdJson);
                     if (!jsonObj.containsKey("volume") || !jsonObj.containsKey("size") || !jsonObj.containsKey("status")) {
-                        Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
-                                String.format("OpenStack driver model server '%s' Ceph RBD requires both 'volume', 'size' and 'status' parameters in metadata ''%s'", server_name, cephRbdKey));
+                        logger.warning(method, String.format("modeling server '%s' Ceph RBD requires both 'volume', 'size' and 'status' parameters in metadata ''%s'", server_name, cephRbdKey));
                         continue;
                     }
                     if (!jsonObj.get("status").equals("up")) {
@@ -494,8 +486,7 @@ public class OpenStackNeutronModelBuilder {
                         model.add(model.createStatement(resCephRbd, Mrs.providesVolume, resVolume));
                     }
                 } catch (ParseException e) {
-                    Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
-                            String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), cephRbdJson, cephRbdKey));
+                    logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), cephRbdJson, cephRbdKey));
                 }
             }
             // Globus Connect Service
@@ -542,8 +533,7 @@ public class OpenStackNeutronModelBuilder {
                         model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
                     }
                 } catch (ParseException e) {
-                    Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
-                            String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), globusJson, "globus:info"));
+                    logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), globusJson, "globus:info"));
                 }
             }
             // NFS Service
@@ -573,8 +563,7 @@ public class OpenStackNeutronModelBuilder {
                         model.add(model.createStatement(resNfs, Mrs.hasNetworkAddress, resNA));
                     }
                 } catch (ParseException e) {
-                    Logger.getLogger(OpenStackNeutronModelBuilder.class.getName()).log(Level.WARNING,
-                            String.format("OpenStack driver cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), nfsJson, "nfs:info"));
+                    logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), nfsJson, "nfs:info"));
                 }
             }
         }

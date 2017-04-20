@@ -143,8 +143,12 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
-
+        
+        <script src="/StackV-web/js/mousetrap.js"></script>
+        <script src="/StackV-web/js/mousetrap-dict.js"></script>
+        
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/catalog.js"></script>
+
     </body>
 </html>

@@ -59,17 +59,21 @@ public class SecurityInterceptor implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
+        ThreadContext.clearMap();
         UriInfo uri = requestContext.getUriInfo();
 
         if ((uri.getPath()).startsWith("/app/")) {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) requestContext.getProperty(KeycloakSecurityContext.class.getName());
             Set<String> roleSet;
             AccessToken accessToken = securityContext.getToken();
-            Method method = resourceInfo.getResourceMethod();
-            RolesAllowed rolesAnnotation = method.getAnnotation(RolesAllowed.class);
+            String method = resourceInfo.getResourceMethod().getName();
+            RolesAllowed rolesAnnotation = resourceInfo.getResourceMethod().getAnnotation(RolesAllowed.class);
             String role;
-            // Ban list
-            List<String> freeRoles = Arrays.asList("Free", "Logging", "ACL", "Panel");
+
+            // Ban lists
+            List<String> freeRoles = Arrays.asList("Free", "Logging", "ACL", "Panels", "Labels");
+            List<String> quietRoles = Arrays.asList("");
+
             if (rolesAnnotation == null) {
                 role = "Free";
             } else {
@@ -77,7 +81,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             }
 
             ThreadContext.put("username", accessToken.getPreferredUsername());
-            ThreadContext.put("method", method.getName());
+            ThreadContext.put("method", method);
             ThreadContext.put("role", role);
 
             logger.trace("API Request Received: {}.", uri.getPath());
@@ -95,11 +99,15 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             if (!roleSet.contains(role)) {
                 requestContext.abortWith(Response
                         .status(Response.Status.UNAUTHORIZED)
-                        .entity("User is not allowed to access the resource:" + method.getName())
+                        .entity("User is not allowed to access the resource:" + method)
                         .build());
                 logger.warn("Denied.");
             }
 
+            if (quietRoles.contains(role) || method.equals("subStatus")) {
+                logger.trace("Authenticated Quietly.");
+                return;
+            }
             logger.info("Authenticated.");
         }
     }

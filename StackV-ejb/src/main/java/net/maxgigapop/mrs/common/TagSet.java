@@ -25,7 +25,8 @@ package net.maxgigapop.mrs.common;
 
 import java.util.ArrayList;
 import java.util.Random;
-import javax.ejb.EJBException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -35,10 +36,17 @@ public class TagSet {
 
     public static final Integer MAX_VLAN = 4096;
     public static final String VLAN_ANY_RANGE = "2-4094";
-    public static TagSet VlanRangeANY = new TagSet(TagSet.VLAN_ANY_RANGE);
     private int base;
     private int interval;
     private boolean[] map;
+
+    public static TagSet VlanRangeANY() {
+        try {
+            return new TagSet(TagSet.VLAN_ANY_RANGE);
+        } catch (Exception ex) {
+            return null; // cannot get here though 
+        }
+    }
 
     public static class EmptyTagSetExeption extends Exception {
 
@@ -53,6 +61,19 @@ public class TagSet {
         @Override
         public String getMessage() {
             return "Found none VLAN resource.";
+        }
+    }
+
+    public static class InvalidVlanRangeExeption extends Exception {
+        String msg;
+ 
+        InvalidVlanRangeExeption(String msg) {
+            this.msg = msg;
+        }
+        
+        @Override
+        public String getMessage() {
+            return "Invalid VLAN range as " + msg;
         }
     }
 
@@ -74,7 +95,7 @@ public class TagSet {
     }
 
     // VLAN range only
-    public TagSet(String range) {
+    public TagSet(String range) throws InvalidVlanRangeExeption {
         init(MAX_VLAN, 0, 1);
 
         if (range == null) {
@@ -91,30 +112,30 @@ public class TagSet {
 
         String[] rangeList = range.split(",");
         try {
-            for (int i = 0; i < rangeList.length; i++) {
-                if (rangeList[i].trim().equals("")) {
-                    continue;
+        for (int i = 0; i < rangeList.length; i++) {
+            if (rangeList[i].trim().equals("")) {
+                continue;
+            }
+            String[] rangeEnds = rangeList[i].trim().split("-");
+            if (rangeEnds.length == 1) {
+                int tag = Integer.parseInt(rangeEnds[0].trim());
+                map[tag] = true;
+            } else if (rangeEnds.length == 2 && "".equals(rangeEnds[0])) {
+                int tag = Integer.parseInt(rangeEnds[1].trim());
+                map[tag] = true;
+            } else if (rangeEnds.length == 2) {
+                int start = Integer.parseInt(rangeEnds[0].trim());
+                int end = Integer.parseInt(rangeEnds[1].trim());
+                if (end < start) {
+                    throw new InvalidVlanRangeExeption(" end < start: " + range);
                 }
-                String[] rangeEnds = rangeList[i].trim().split("-");
-                if (rangeEnds.length == 1) {
-                    int tag = Integer.parseInt(rangeEnds[0].trim());
-                    map[tag] = true;
-                } else if (rangeEnds.length == 2 && "".equals(rangeEnds[0])) {
-                    int tag = Integer.parseInt(rangeEnds[1].trim());
-                    map[tag] = true;
-                } else if (rangeEnds.length == 2) {
-                    int start = Integer.parseInt(rangeEnds[0].trim());
-                    int end = Integer.parseInt(rangeEnds[1].trim());
-                    if (end < start) {
-                        throw new RuntimeException("Invalid range: end < start: " + range);
-                    }
-                    for (int k = start; k <= end; k++) {
-                        map[k] = true;
-                    }
+                for (int k = start; k <= end; k++) {
+                    map[k] = true;
                 }
             }
+        }
         } catch (NumberFormatException ex) {
-            throw new EJBException("Invalid VLAN range format: " + ex.getMessage());
+            throw new InvalidVlanRangeExeption( " having invalid integer " + range);
         }
     }
 

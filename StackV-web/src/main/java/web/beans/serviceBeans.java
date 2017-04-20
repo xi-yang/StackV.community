@@ -61,9 +61,7 @@ public class serviceBeans {
 
     private final Logger logger = LogManager.getLogger("net.maxgigapop.mrs.rest.api.WebResource");
 
-    private final String kc_url = "https://k152.maxgigapop.net:8543/auth";
-    private final String kc_user = "admin";
-    private final String kc_pass = "MAX123!";
+    private final String kc_url = System.getProperty("kc_url");
     
     JSONParser parser = new JSONParser();
     
@@ -949,7 +947,7 @@ public class serviceBeans {
                             + "&lt;x-policy-annotation:data:conn-criteria&gt;\n"
                             + "    a            spa:PolicyData;\n"
                             + "    spa:type     \"JSON\";\n"
-                            + "    spa:value    \"\"\"" + connCriteriaValue.toString() + "\"\"\".\n\n";
+                            + "    spa:value    \"\"\"" + connCriteriaValue.toString().replace("\\", "") + "\"\"\".\n\n";
                 }
                 
                 if (!providesVolume.isEmpty()) {
@@ -1004,7 +1002,7 @@ public class serviceBeans {
                 }
             }
         }
-        
+   
         String deltaUuid = UUID.randomUUID().toString();
         String awsExportTo = "";
         String awsDxStitching = "";
@@ -1659,14 +1657,6 @@ public class serviceBeans {
                 + "    }\"\"\" .\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
-        
-        try {
-            PrintWriter out = new PrintWriter("/Users/rikenavadur/test.ttl");
-            out.println(svcDelta);
-            out.close();
-        } catch (FileNotFoundException ex) {
-            logger.catching(ex);
-        }
         orchestrateInstance(refUuid, svcDelta, deltaUuid, refresh);
         return 0;
     }
@@ -2212,7 +2202,7 @@ public class serviceBeans {
     
     public String refreshToken(String refresh) {
         try {
-            URL url = new URL("https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token");
+            URL url = new URL(kc_url + "/realms/StackV/protocol/openid-connect/token");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             
             // restapi

@@ -25,7 +25,6 @@ package net.maxgigapop.mrs.driver.opendaylight;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.List;
@@ -33,6 +32,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -40,9 +40,10 @@ import org.json.simple.parser.ParseException;
 
 public class OpenflowPush {
 
-    private static final Logger logger = Logger.getLogger(ModelUtil.class.getName());
+    private static final StackLogger logger = OpenflowRestconfDriver.logger;
 
     public String propagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
+        String method = "propagate";
         JSONObject jRequests = new JSONObject();
         try {
             OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
@@ -53,7 +54,7 @@ public class OpenflowPush {
             jRequests.put("delete", jDelete);
             jRequests.put("create", jCreate);
         } catch (Exception ex) {
-            throw new EJBException("OpenflowPush.propagate failed to parse delta into requests", ex);
+            throw logger.throwing(method, "failed to parse delta into requests", ex);
         }
         return jRequests.toJSONString();
 
@@ -131,19 +132,20 @@ public class OpenflowPush {
     }
 
     public void commit(String user, String password, String requests, String baseUrl) {
+        String method = "commit";
         JSONParser jsonParser = new JSONParser();
         JSONObject jRequests = null;
         try {
             jRequests = (JSONObject) jsonParser.parse(requests);
         } catch (ParseException ex) {
-            throw new EJBException("OpenflowPush.commit failed to parse requests" + requests, ex);
+            throw logger.throwing(method, "failed to parse  JSON requests=" + requests, ex);
         }
         RestconfConnector restconf = new RestconfConnector();
         JSONArray jDelete = (JSONArray) jRequests.get("delete");
         for (Object o1 : jDelete) {
             JSONObject jFlow = (JSONObject) o1;
             if (!jFlow.containsKey("node") || !jFlow.containsKey("table") || !jFlow.containsKey("id")) {
-                logger.warning("OpenflowPush.commit cannot delete invalid flow =" + jFlow.toJSONString());
+                logger.warning(method, "cannot delete invalid flow =" + jFlow.toJSONString());
                 continue;
             }
             restconf.pushDeleteFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString());
@@ -152,7 +154,7 @@ public class OpenflowPush {
         for (Object o1 : jCreate) {
             JSONObject jFlow = (JSONObject) o1;
             if (!jFlow.containsKey("node") || !jFlow.containsKey("table") || !jFlow.containsKey("id")) {
-                logger.warning("OpenflowPush.commit cannot create invalid flow=" + jFlow.toJSONString());
+                logger.warning(method, "cannot create invalid flow=" + jFlow.toJSONString());
                 continue;
             }
             restconf.pushModFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString(), (List) jFlow.get("match"), (List) jFlow.get("action"));
