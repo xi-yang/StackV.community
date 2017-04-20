@@ -112,6 +112,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
     //@Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        logger.cleanup();
         String method = "commitDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
@@ -167,6 +168,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
     @Asynchronous
     @SuppressWarnings("empty-statement")
     public Future<String> pullModel(Long driverInstanceId) {
+        logger.cleanup();
         String method = "pullModel";
         logger.targetid(driverInstanceId.toString());
         logger.trace_start(method);
