@@ -117,7 +117,7 @@ RUN cd ${JBOSS_HOME} \
  
 
 # Expose the ports we're interested in
-EXPOSE 8080 8443
+EXPOSE 8080 8443 9990 9993
 
 
 ENTRYPOINT ["/bin/bash", "/bin/entrypoint.sh"]
