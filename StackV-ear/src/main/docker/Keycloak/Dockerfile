@@ -36,6 +36,8 @@ ADD standalone.xml /opt/jboss/keycloak/standalone/configuration/standalone.xml
 
 ADD keycloak-selfsigned.jks /opt/jboss/keycloak.jks
 
+ADD StackV-realm.json /opt/jboss/StackV-realm.json
+
 ADD entrypoint.sh /opt/jboss/
 
 ENV JBOSS_HOME /opt/jboss/keycloak

@@ -20,7 +20,7 @@ fi
 # start service
 export LAUNCH_JBOSS_IN_BACKGROUND=true
 export JBOSS_PIDFILE=/opt/jboss/keycloak.pid
-/opt/jboss/keycloak/bin/standalone.sh -b 0.0.0.0  &
+/opt/jboss/keycloak/bin/standalone.sh -Dkeycloak.migration.action=import -Dkeycloak.migration.provider=singleFile -Dkeycloak.migration.file=/opt/jboss/StackV-realm.json -b 0.0.0.0   &
 
 # maintain main process
 /bin/bash -c "while true; do sleep 1; done"                    
