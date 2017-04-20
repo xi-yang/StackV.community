@@ -12,122 +12,69 @@
         <title>Dynamic Network Connection Service</title>
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
+        <link rel="stylesheet" href="/StackV-web/css/dnc.css">
     </head>
-
-    <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
-                       url="jdbc:mysql://localhost:3306/rainsdb"
-                       user="root"  password="root"/>
-
+    
     <body>
         <div id="nav">
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
-            <c:choose>
-                <c:when test="${empty param.ret}">  <!-- Display this section when no return value supplied -->
-                    <div id="service-specific">
-                        <div id="service-top">
-                            <div id="service-title">
-                                Dynamic Network Connection
-                            </div>
-                            <div id="service-menu">
-                                <c:if test="${not empty param.self}">
-                                    <button type="button" id="button-service-return">Cancel</button>
-                                </c:if>
-                                <table class="management-table">
-
-                                </table>
-                            </div>
-                        </div>
-                        <div id="service-bottom">
-                            <div id="service-fields">
-                                <table class="management-table" id="service-form" style="margin-bottom: 0px;">
-                                    <thead>
-                                        <tr>
-                                            <th>Templates</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>1 Link</td>
-                                            <td><button onclick="applyDNCTemplate(1)">Apply</button></td>
-                                        </tr>
-                                        <tr>
-                                            <td>2 Links</td>
-                                            <td><button onclick="applyDNCTemplate(2)">Apply</button></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <form id="custom-form" action="/StackV-web/ServiceServlet" method="post">
-                                    <input type="hidden" name="username" value="${user.getUsername()}"/>
-                                    <table class="management-table" id="net-custom-form">
-                                        <thead>
-                                            <tr>
-                                                <th>Service Alias</th>
-                                                <th>
-                                                    <input class="header-input" type="text" name="alias" required />
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="custom-fields">
-                                            <tr id="link1">
-                                                <td>Link 1</td>
-                                                <td>
-                                                    <div>
-                                                        <input type="text" name="linkUri1" size="60" placeholder="Link-URI">
-                                                    </div>
-                                                    <div>
-                                                        <input type="text" name="link1-src" size="60" placeholder="Source">
-                                                        <input type="text" name="link1-src-vlan" placeholder="Vlan-tag">
-                                                    </div>
-                                                    <div>
-                                                        <input type="text" name="link1-des" size="60" placeholder="Destination">
-                                                        <input type="text" name="link1-des-vlan" placeholder="Vlan-tag">
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td></td>
-                                                <td><input type="submit" name="custom" value="Submit" /><input class="button-register" type="button" value="Add Link" onclick="addLink()"></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <input type="hidden" name="dncCreate" value="true">
-                                </form>
-                            </div>
+            <form class="dncform">
+                <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
+                    <div>
+                        Dynamic Network Connection:
+                        <input type="text" placeholder="Service Alias" id="service-name">
+                    </div>                    
+                    <div>
+                        Description:
+                        <input type="text" placeholder="Description" id="new-profile-description">
+                    </div>
+                    <div id="spacer"></div>
+                    <div id="spacer"></div>
+                    <div id="table-div">
+                        <table id="input-table">
+                            <tbody id="link-body">
+                                <tr>
+                                    <td>Link 1</td>
+                                    <td style="width: 600px; text-align: center;">
+                                        <div>
+                                            <input type="text" id="linkUri1" placeholder="Link-Name">
+                                            <input type="text" id="linksrc1" placeholder="Source">
+                                            <input type="text" id="linksrc-vlan1" placeholder="Vlan-tag">
+                                            <input type="text" id="linkdes1" placeholder="Destination">
+                                            <input type="text" id="linkdes-vlan1" placeholder="Vlan-tag">
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr id="spacer"></tr>
+                            </tbody>
+                        </table>
+                        <div id="test">
+                            <p id="resss"></p>
+                            <button type="button" class="action-button" onclick="submitToBackend();">Submit</button>
+                            <button type="button" class="action-button" onclick="save();">Save</button>
+                            <button type="button" class="action-button" onclick="addLinkDNC();">Add Link</button>
                         </div>
                     </div>
-                </c:when>
-
-                <c:otherwise>                       <!-- Display this section when return value supplied -->
-                    <div class="form-result" id="service-result">
-                        <c:choose>
-                            <c:when test="${param.ret == '0'}">
-                                Installation Success!
-                            </c:when>
-                            <c:when test="${param.ret == '1'}">
-                                Error 1.
-                            </c:when>
-                            <c:when test="${param.ret == '2'}">
-                                Error 2.
-                            </c:when>
-                            <c:when test="${param.ret == '3'}">
-                                Error 3.
-                            </c:when>
-                        </c:choose>
-
-                        <br><a href="/StackV-web/ops/srvc/template.jsp?self=true">Repeat.</a>
-                        <br><a href="/StackV-web/ops/catalog.jsp">Return to Services.</a>
-                        <br><a href="/StackV-web/orch/graphTest.jsp">Return to Graphic Orchestration.</a>
-                    </div>
-                </c:otherwise>
-            </c:choose>
-        </div>
-
+                    
+                </fieldset>
+            </form>
+            <!--
+            <div>
+                <p style="color: white;">add:</p>
+                <textarea rows="10" cols="100" id="addfield"></textarea>
+                <p style="color: white;">Del:</p>
+                <input type="text" id="delfield">
+                <p id="ret_field" style="color: white;"></p>
+                <button type="button" class="action-button" onclick="test();">Add</button>
+                <button type="button" class="action-button" onclick="del();">Delete</button>
+            </div>
+        </div> -->
         <!-- TAG PANEL -->
         <div id="tag-panel">
         </div>
+        <script src="/StackV-web/js/svc/dnc.js"></script>
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
