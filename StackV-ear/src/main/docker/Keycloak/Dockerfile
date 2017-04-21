@@ -19,18 +19,23 @@ ENV JBOSS_PIDFILE /opt/jboss/keycloak.pid
 
 USER root
 
-RUN yum install -y epel-release && yum install -y jq && yum clean all
+RUN yum install -y epel-release && yum install -y jq ntp && yum clean all
 
 # Admin scripts
 ADD ./restart-keycloak.sh /bin/restart-keycloak.sh
 RUN \
     chown jboss:0 /bin/restart-keycloak.sh \
     && chmod 700 /bin/restart-keycloak.sh \
-    && ln -s /opt/jboss/keycloak/bin/add-user-keycloak.sh /bin/add-user.sh
+    && ln -s /opt/jboss/keycloak/bin/add-user-keycloak.sh /bin/add-user.sh \
+    && systemctl enable ntpd
 
 USER jboss
 
-RUN cd /opt/jboss/ && curl -L https://downloads.jboss.org/keycloak/$KEYCLOAK_VERSION/keycloak-$KEYCLOAK_VERSION.tar.gz | tar zx && mv /opt/jboss/keycloak-$KEYCLOAK_VERSION /opt/jboss/keycloak
+RUN cd /opt/jboss/ \
+    && curl -L https://downloads.jboss.org/keycloak/$KEYCLOAK_VERSION/keycloak-$KEYCLOAK_VERSION.tar.gz | tar zx \
+    && mv /opt/jboss/keycloak-$KEYCLOAK_VERSION /opt/jboss/keycloak \
+    && sed -i "s/-Xms64m -Xmx512m/-Xms1024m -Xmx4096m/g" /opt/jboss/keycloak/bin/standalone.conf
+    
 
 ADD standalone.xml /opt/jboss/keycloak/standalone/configuration/standalone.xml
 

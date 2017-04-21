@@ -29,7 +29,9 @@ RUN cd $HOME \
     && mv $HOME/wildfly-$WILDFLY_VERSION $JBOSS_HOME \
     && rm wildfly-$WILDFLY_VERSION.tar.gz \
     && chown -R jboss:0 ${JBOSS_HOME} \
-    && chmod -R g+rw ${JBOSS_HOME}
+    && chmod -R g+rw ${JBOSS_HOME} \
+    && sed -i "s/-Xms64m -Xmx512m/-Xms1024m -Xmx4096m/g" /opt/jboss/wildfly/bin/standalone.conf
+
   
 
 ADD ./StackV-ear/src/main/docker/standalone-full.xml /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
@@ -67,15 +69,15 @@ RUN \
 
 
 ## make jboss sudoer
-RUN yum install -y sudo wget killall
-RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe" > /etc/sudoers.d/jboss && \
-    chmod 0440 /etc/sudoers.d/jboss
+RUN yum install -y sudo wget killall ntp
+RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe" > /etc/sudoers.d/jboss \
+    && chmod 0440 /etc/sudoers.d/jboss \
+    && systemctl enable ntpd
 
 
 # Entrypoint script to start mysqld and wildfly 
 ADD ./StackV-ear/src/main/docker/entrypoint.sh /bin/entrypoint.sh
-RUN \
-    chown jboss:0 /bin/entrypoint.sh \
+RUN chown jboss:0 /bin/entrypoint.sh \
     && chmod 700 /bin/entrypoint.sh
 
 
