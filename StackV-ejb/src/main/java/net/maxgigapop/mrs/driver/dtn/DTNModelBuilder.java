@@ -24,9 +24,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.*;
 
 //TODO add the public ip address that an instance might have that is not an
@@ -42,6 +39,9 @@ import net.maxgigapop.mrs.common.*;
  * @author muzcategui
  */
 public class DTNModelBuilder {
+
+    private static final StackLogger logger = DTNDriver.logger;
+        
     private final String user_account;
     private String transferMap;
     private String performanceMap;
@@ -61,7 +61,7 @@ public class DTNModelBuilder {
     @SuppressWarnings("empty-statement")
     public OntModel createOntology(String user_account, String access_key, String proxy_server, String addresses, String topologyURI, 
             String endpoint) throws IOException {
-
+        String method = "createOntology";
         boolean auth_done = false;
         String cred_file="";
         if(!access_key.isEmpty()){
@@ -86,7 +86,7 @@ public class DTNModelBuilder {
         }
 
         if(!auth_done){
-            throw new EJBException(String.format("%s authentication fail", endpoint));
+            throw logger.error_throwing(method, String.format("%s authentication fail", endpoint));
         }
         
         //create model object
@@ -362,7 +362,7 @@ public class DTNModelBuilder {
                     String taskid = parts[3];
                     Resource TRANSFER = RdfOwl.createResource(model, CLUSTERSERVICE.getURI()+":transfer-"+taskid, dataTransfer);
                     model.add(model.createStatement(CLUSTERSERVICE, hasTransfer, TRANSFER));
-                    Property tag = Mrs.hasTag;
+                    Property tag = Mrs.tag;
                     Property src = Mrs.source;
                     Property dst = Mrs.destination;
                     model.addLiteral(TRANSFER, tag, ResourceFactory.createTypedLiteral(parts[0],XSDDatatype.XSDstring));
@@ -494,7 +494,7 @@ public class DTNModelBuilder {
             Date date = df.parse(utc);
             epoch = date.getTime();
         } catch (ParseException ex) {
-            Logger.getLogger(DTNModelBuilder.class.getName()).log(Level.INFO, ex.getMessage());
+            logger.catching("convertToEpoch", ex);
         }
         return epoch;
     }
@@ -553,7 +553,7 @@ public class DTNModelBuilder {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException ex) {
-            Logger.getLogger(DTNModelBuilder.class.getName()).log(Level.SEVERE, ex.getMessage());
+            logger.catching("runcommand", ex);
         }
         return exitVal;
     }

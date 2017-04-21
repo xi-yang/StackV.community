@@ -27,11 +27,8 @@ package net.maxgigapop.mrs.driver.opendaylight;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.util.UUID;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -44,39 +41,55 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 
 @Stateless
-public class OpenflowRestconfDriver implements IHandleDriverSystemCall{       
-    Logger logger = Logger.getLogger(OpenflowRestconfDriver.class.getName());
-    String fakeMap="";
-    //String requests="";
+public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
+    
+    public static final StackLogger logger = new StackLogger(OpenflowRestconfDriver.class.getName(), "OpenflowRestconfDriver");
+
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
 
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        String method = "propagateDelta";
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        if (driverInstance == null) {
+            throw logger.error_throwing(method, "DriverInstance == null");
+        }
         String modelBase = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();        
         String modelAdd = aDelta.getModelAddition().getTtlModel();
         String modelReduc = aDelta.getModelReduction().getTtlModel();
-        
         OpenflowPush push = new OpenflowPush();
         String requests = null;
         requests = push.propagate(modelBase, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
         DriverInstancePersistenceManager.merge(driverInstance);
-        Logger.getLogger(OpenflowRestconfDriver.class.getName()).log(Level.INFO, "ODL OpenflowRestconfDriver delta models succesfully propagated");
+        logger.end(method);
     }
 
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        logger.cleanup();
+        String method = "commitDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
-            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
+            throw logger.error_throwing(method, "DriverInstance == null");
         }
         String loginUser = driverInstance.getProperty("loginUser");
         String loginPass = driverInstance.getProperty("loginPass");
@@ -85,7 +98,7 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         //Searches for subsystemBaseUrl in Driver Instance
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null || loginUser == null || loginPass ==null || topologyURI == null) {
-            throw new EJBException(String.format("%s misses one of the property keys {subsystemBaseUrlm, loginUser, loginPass, topologyUri}", driverInstance));
+            throw logger.error_throwing(method, String.format("%s misses one of the property keys {subsystemBaseUrlm, loginUser, loginPass, topologyUri}", driverInstance));
         }
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         String requests = driverInstance.getProperty(requestId);
@@ -94,12 +107,11 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         try {
             push.commit(loginUser, loginPass, requests, subsystemBaseUrl);
         } catch (Exception ex) {
-            Logger.getLogger(OpenflowRestconfDriver.class.getName()).log(Level.SEVERE, null, ex);
-            throw(new EJBException(ex));
+            throw logger.throwing(method, ex);
         }
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
-        Logger.getLogger(OpenflowRestconfDriver.class.getName()).log(Level.INFO, "ODL OpenflowRestconfDriver delta models succesfully commited");
+        logger.end(method);
         return new AsyncResult<String>("SUCCESS");
     }
     
@@ -107,9 +119,13 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
     @Asynchronous
     @SuppressWarnings("empty-statement")
     public Future<String> pullModel(Long driverInstanceId) {
+        logger.cleanup();
+        String method = "pullModel";
+        logger.targetid(driverInstanceId.toString());
+        logger.trace_start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
-            throw new EJBException(String.format("pullModel cannot find driverInance(id=%d)", driverInstanceId));
+            throw logger.error_throwing(method, String.format("cannot find driverInance(id=%d)", driverInstanceId));
         }
         try {
             String loginUser = driverInstance.getProperty("loginUser");
@@ -118,7 +134,7 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
             String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
 
             if (subsystemBaseUrl == null) {
-                throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
+                throw logger.error_throwing(method, String.format("%s has no property key=subsystemBaseUrl", driverInstance));
             }
 
             String modelExtTtl = driverInstance.getProperty("modelExt");
@@ -126,10 +142,8 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
             if (modelExtTtl != null && !modelExtTtl.isEmpty()) {
                 modelExt = ModelUtil.unmarshalOntModel(modelExtTtl);
             }
-            
             // Creates an Ontology Model from ODL controller RESTConf
             OntModel ontModel = OpenflowModelBuilder.createOntology(topologyURI, subsystemBaseUrl, loginUser, loginPass, modelExt);
-
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);
@@ -143,14 +157,9 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
                 driverInstance.setHeadVersionItem(vi);
             }
         } catch (Exception ex) {
-            Logger.getLogger(OpenflowRestconfDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
-            if (ex instanceof EJBException) {
-                throw (EJBException)ex;
-            } else {
-                throw (new EJBException(ex));
-            }
+            throw logger.throwing(method, driverInstance + " failed pull model", ex);
         }
-
+        logger.trace_end(method);
         return new AsyncResult<>("SUCCESS");
     }
 

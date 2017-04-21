@@ -88,7 +88,7 @@ public class HandleSystemCallTest {
         }
         sleep(90000);
         VersionGroup expResult = null;
-        VersionGroup result = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
+        VersionGroup result = systemCallHandler.createHeadVersionGroup_API(UUID.randomUUID().toString());
         System.out.println("createHeadVersionGroup result=" + result);
         assertFalse("createHeadVersionGroup results in null VersionGroup", expResult == null);
     }

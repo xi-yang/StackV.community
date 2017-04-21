@@ -21,19 +21,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-//import javax.xml.bind.JAXBContext;
-//import javax.xml.bind.JAXBException;
-//import javax.xml.bind.Marshaller;
-//import javax.xml.bind.Unmarshaller;
-//import org.globusonline.transfer;
-//import java.io.InputStream;
-//import com.jcraft.jsch.Channel;
-//import com.jcraft.jsch.ChannelExec;
-//import com.jcraft.jsch.JSch;
-//import com.jcraft.jsch.Session;
-//import java.io.BufferedReader;
-//import java.io.InputStreamReader;
-//import org.globus.myproxy.MyProxy;
 
 /**
  *

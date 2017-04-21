@@ -51,7 +51,9 @@ import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.Sna;
 import static net.maxgigapop.mrs.service.compute.MCETools.evaluateStatement_AnyTrue;
 import java.lang.Math;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.onosystem.*;
+import net.maxgigapop.mrs.service.HandleServiceCall;
 
 /**
  *
@@ -60,7 +62,7 @@ import net.maxgigapop.mrs.driver.onosystem.*;
 @Stateless
 public class MCE_L2OpenflowPath implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_L2OpenflowPath.class.getName());
+    private static final StackLogger logger = new StackLogger(MCE_L2OpenflowPath.class.getName(), "MCE_L2OpenflowPath");
     /*
      ** Simple L2 connection will create new SwitchingSubnet on every transit switching node.
      */
@@ -68,15 +70,9 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
-        try {
-            log.log(Level.INFO, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Input=\n{0}", ModelUtil.marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()));
-            log.log(Level.INFO, "Entering L2OpenflowPath process!");
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
-                
+        String method = "process";
+        logger.refuuid(annotatedDelta.getReferenceUUID());
+        logger.start(method);
         String sparql = "SELECT ?link ?type ?value ?data ?policyData ?spaType ?spaValue WHERE {"
                 + "?link a spa:PolicyAction . "
                 + "?link spa:type ?type . "
@@ -123,8 +119,6 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Map<Resource, List> srrgMap = this.getSrrgInfo(systemModel.getOntModel());
 
         //test printout
-        log.log(Level.INFO, "There are {0} SRRG in the model", String.valueOf(srrgMap.size()));
-        log.log(Level.INFO, "There are {0} link request in the spaModel", String.valueOf(linkMap.size()));
         ServiceDelta outputDelta = annotatedDelta.clone();
         // compute a List<Model> of L2Openflow connections
         for (Resource resLink : linkMap.keySet()) {
@@ -161,7 +155,11 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             
             switch (protectionType) {
                 case "SRRG Path": {
+                try {
                     l2path = this.doSrrgPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), resLink, linkMap.get(resLink), srrgMap);
+                } catch (Exception ex) {
+                    Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
+                }
                     try {
                         //flow_model = generateFlowsPathModel(l2path, topologyURI, ETH_SRC_MAC, ETH_DST_MAC);
                         flow_model = generateFlowsPathModel_new(l2path, ETH_SRC_MAC, ETH_DST_MAC);
@@ -247,9 +245,9 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
 
         try {
-            log.log(Level.FINE, "\n>>>MCE_L2OpenflowPath--DeltaAddModel Output=\n{0}", ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
+            logger.trace("process", "\n>>>MCE_L2OpenflowPath--DeltaAddModel Output=\n{0}", ModelUtil.marshalModel(outputDelta.getModelAddition().getOntModel().getBaseModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_L2OpenflowPath.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace("process", "marshalModel(annotatedDelta.getModelAddition().getOntModel().getBaseModel()) failed -- "+ex);
         }
         
 //        System.out.println("\n\nDone with MCE");
@@ -369,7 +367,7 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         return macAddress;
     }
 
-    private MCETools.Path doSrrgPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData, Map<Resource, List> srrgMap) {
+    private MCETools.Path doSrrgPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData, Map<Resource, List> srrgMap) throws Exception {
 
         System.out.println("In doSrrgPathFinding");
         //return one shortest path with minimum SRRG probability
@@ -404,14 +402,14 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Resource nodeA = terminals.get(0);
         Resource nodeZ = terminals.get(1);
 
-        log.log(Level.INFO, "Link-src: {0}", nodeA.toString());
-        log.log(Level.INFO, "Link-dst: {0}", nodeZ.toString());
+        logger.trace("doSrrgPathFinding", "Link-src: " + nodeA.toString());
+        logger.trace("doSrrgPathFinding", "Link-dst:" + nodeZ.toString());
 
         Property[] filterProperties = {Nml.connectsTo};
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
         List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
 
-        log.log(Level.INFO, "Found {0} shortest path before verify", KSP.size());
+        logger.trace("doSrrgPathFinding", String.format("Found  %d shortest path before verify", KSP.size()));
         //MCETools.printKSP(KSP);
         if (KSP == null || KSP.isEmpty()) {
             throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", this.getClass().getName(), resLink));
@@ -422,7 +420,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             MCETools.Path candidatePath = itP.next();
 
             //verifyOpenflowPath: filter out useless ones
-            if (!MCETools.verifyOpenFlowPath(transformedModel, candidatePath)) {
+            boolean verified = false;
+            try {
+                verified = MCETools.verifyOpenFlowPath(transformedModel, candidatePath);
+            } catch (Exception ex) {
+                throw new Exception("doSrrgPathFinding cannot verifyOpenFlowPath", ex);
+            }
+            if (!verified) {
                 itP.remove();
             } else {
                 //generating connection subnets (statements added to candidatePath) while verifying VLAN availability
@@ -436,15 +440,14 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
 
         if (KSP.isEmpty()) {
-            log.log(Level.INFO, "Could not find any shortest path after verify");
-            throw new EJBException(String.format("%s::process doSrrgPathFinding cannot find any feasible path for <%s>", this.getClass().getName(), resLink));
+            throw logger.error_throwing("doSrrgPathFinding", "Could not find any shortest path after verify");
         } else {
-            log.log(Level.INFO, "Found {0} KSP after verify", KSP.size());
+            logger.trace("doSrrgPathFinding", String.format("Found %d KSP after verify", KSP.size()));
         }
 
         //MCETools.printKSP(KSP);
         MCETools.Path solution = getLeastSrrgCostPath(KSP, systemModel, srrgMap);
-        log.log(Level.INFO, "Successfully find path with fail prob: {0}", String.valueOf(solution.failureProb));
+        logger.trace("doSrrgPathFinding", "Successfully find path with fail prob: " + String.valueOf(solution.failureProb));
         MCETools.printMCEToolsPath(solution);
         return solution;
 
@@ -542,8 +545,8 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Resource nodeA = terminals.get(0);
         Resource nodeZ = terminals.get(1);
 
-        log.log(Level.INFO, "Link-src: {0}", nodeA.toString());
-        log.log(Level.INFO, "Link-dst: {0}", nodeZ.toString());
+        logger.trace("doSrrgPathFinding", "Link-src:" + nodeA.toString());
+        logger.trace("doSrrgPathFinding", "Link-dst:" + nodeZ.toString());
 
         Property[] filterProperties = {Nml.connectsTo};
         Filter<Statement> connFilters = new PredicatesFilter(filterProperties);
@@ -560,7 +563,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             MCETools.Path candidatePath = itP.next();
 
             //verifyOpenflowPath: filter out useless ones
-            if (!MCETools.verifyOpenFlowPath(transformedModel, candidatePath)) {
+            boolean verified = false;
+            try {
+                verified = MCETools.verifyOpenFlowPath(transformedModel, candidatePath);
+            } catch (Exception ex) {
+                throw logger.error_throwing("doSrrgPairPathFinding", "cannot verifyOpenFlowPath " + ex);
+            }
+            if (!verified) {
                 itP.remove();
             } else {
                 //generating connection subnets (statements added to candidatePath) while verifying VLAN availability
@@ -574,10 +583,9 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
 
         if (KSP.isEmpty()) {
-            log.log(Level.INFO, "Could not find any shortest path after verify");
-            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any working feasible path for <%s>", this.getClass().getName(), resLink));
+            throw logger.error_throwing("doSrrgPathFinding", "Could not find any shortest path after verify");
         } else {
-            log.log(Level.INFO, "Find {0} KSP (working) after verify", KSP.size());
+            logger.trace("doSrrgPathFinding", String.format("Find %d KSP (working) after verify", KSP.size()));
         }
 
         double jointProbability = 1.0;
@@ -615,14 +623,14 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         }
 
         if (flag == -1 || solutionBack == null) {
-            throw new EJBException(String.format("%s::process doSrrgPairPathFinding cannot find any backup feasible path for <%s>", this.getClass().getName(), resLink));
+            throw logger.error_throwing("doSrrgPairPathFinding", String.format("cannot find any backup feasible path for <%s>", resLink));
         }
 
         if (flag >= KSP.size()) {
-            throw new EJBException(String.format("%s::process doPathPairFinding encounter an error when finding backup paths <%s>", this.getClass().getName(), resLink));
+            throw logger.error_throwing("doSrrgPairPathFinding", String.format("encounter an error when finding backup paths <%s>", resLink));
         }
 
-        log.log(Level.INFO, "Successfully find path pair");
+        logger.trace("doSrrgPairPathFinding", "Successfully find path pair");
 
         solutionList.add(KSP.get(flag));
         solutionList.add(solutionBack);
@@ -667,9 +675,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Iterator<Statement> itS = primaryPath.iterator();
         while (itS.hasNext()) {
             Statement stmt = itS.next();
-            if (MCETools.evaluateStatement_AnyTrue(systemModel, stmt, isAliasConstraint)) {
-                //System.out.format("remove this stmt: \n%s\n", stmt.toString());
-                systemModel = (OntModel) systemModel.remove(stmt);
+            try {
+                if (MCETools.evaluateStatement_AnyTrue(systemModel, stmt, isAliasConstraint)) {
+                    //System.out.format("remove this stmt: \n%s\n", stmt.toString());
+                    systemModel = (OntModel) systemModel.remove(stmt);
+                }
+            } catch (Exception ex) {
+                throw logger.error_throwing("getLinkDisjointPath", ex.getMessage());
             }
         }
 
@@ -689,8 +701,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
         Iterator<MCETools.Path> itP = backupKSP.iterator();
         while (itP.hasNext()) {
             MCETools.Path candidatePath = itP.next();
-
-            if (!MCETools.verifyOpenFlowPath(systemModel, candidatePath)) {
+            boolean verified = false;
+            try {
+                verified = MCETools.verifyOpenFlowPath(systemModel, candidatePath);
+            } catch (Exception ex) {
+                throw logger.error_throwing("getLinkDisjointPath", "cannot verifyOpenFlowPath " + ex);
+            }
+            if (!verified) {
                 itP.remove();
             } else {
                 //generating connection subnets (statements added to candidatePath) while verifying VLAN availability
@@ -764,9 +781,10 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
     private MCETools.Path doPathFinding(OntModel systemModel, OntModel spaModel, Resource resLink, List<Map> connTerminalData) {
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
+        String method = "doPathFinding";
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
         try {
-            log.log(Level.FINE, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
+            logger.trace(method, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
             Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -819,7 +837,13 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
             flag = flag + 1;
 
             // verify path
-            if (!MCETools.verifyL2Path(transformedModel, candidatePath)) {
+            boolean verified = false;
+            try {
+                verified = MCETools.verifyL2Path(transformedModel, candidatePath);
+            } catch (Exception ex) {
+                throw logger.error_throwing(method, "cannot verifyL2Path " + ex);
+            }
+            if (!verified) {
                 System.out.println("Remove this one\n");
                 itP.remove();
             } else {
@@ -1308,9 +1332,9 @@ public class MCE_L2OpenflowPath implements IModelComputationElement {
                 wr.flush();
             }
         }
-        log.log(Level.INFO, "Sending {0} request to URL : {1}", new Object[]{method, url});
+        logger.trace("executeHttpMethod", String.format("Sending %s request to URL : %s", method, url));
         int responseCode = conn.getResponseCode();
-        log.log(Level.INFO, "Response Code : {0}", responseCode);
+        logger.trace("executeHttpMethod", "Response Code : " + responseCode);
 
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {

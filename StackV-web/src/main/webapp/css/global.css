@@ -23,7 +23,7 @@ a {
     height: 52px;
 }
 #select-logging-level {
-    margin: 15px 0px 15px 5px;
+    margin: 15px 5px;
 }
 
 a.hover {
@@ -88,4 +88,23 @@ div#main-pane {
 
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
+}
+div.sub-main#main-pane {
+    height: calc(100% - 104px);
+    top: 104px;
+}
+
+#sub-nav {
+    z-index: 98;
+    height: 52px;
+}
+#sub-nav nav {
+    border-radius: 0;
+}
+#sub-nav #refresh-timer {
+    margin: 15px 0px 15px 5px;
+}
+#sub-nav #refresh-button {
+    margin: 11px 0px 11px 5px;
+    color: white;
 }
