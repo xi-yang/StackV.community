@@ -19,17 +19,18 @@
         <div id="nav">
         </div>
         <!-- MAIN PANEL -->
+        <div id="info-panel" class="">
+            <div id="info-fields" style ="float: top;"></div>
+            <div id="info-option" style ="float: bottom;"></div>
+        </div>
+        <div id="overlay-black"></div>
         <div id="main-pane">
             <form class="dncform">
                 <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
                     <div>
-                        Dynamic Network Connection:
+                        <p style="float:left;">Alias:</p>
                         <input type="text" placeholder="Service Alias" id="service-name">
                     </div>                    
-                    <div>
-                        Description:
-                        <input type="text" placeholder="Description" id="new-profile-description">
-                    </div>
                     <div id="spacer"></div>
                     <div id="spacer"></div>
                     <div id="table-div">
@@ -53,7 +54,7 @@
                         <div id="test">
                             <p id="resss"></p>
                             <button type="button" class="action-button" onclick="submitToBackend();">Submit</button>
-                            <button type="button" class="action-button" onclick="save();">Save</button>
+                            <button type="button" class="action-button" onclick="openWindow();">Save</button>
                             <button type="button" class="action-button" onclick="addLinkDNC();">Add Link</button>
                         </div>
                     </div>
@@ -71,8 +72,9 @@
                 <button type="button" class="action-button" onclick="del();">Delete</button>
             </div>
         </div> -->
-        <!-- TAG PANEL -->
-        <div id="tag-panel">
+            <!-- TAG PANEL -->
+            <div id="tag-panel">
+            </div>
         </div>
         <script src="/StackV-web/js/svc/dnc.js"></script>
         <script src="/StackV-web/js/keycloak.js"></script>
