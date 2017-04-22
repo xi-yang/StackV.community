@@ -51,7 +51,7 @@ if [ $ADMIN_USER ] && [ $ADMIN_PASSWORD ]; then
 fi
 
 # Start ntpd
-/sbin/ntpd &
+/bin/sudo /sbin/ntpd &
 
 # Start mysqld
 /bin/sudo /bin/mysqld_safe &
