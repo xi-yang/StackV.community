@@ -50,6 +50,9 @@ if [ $ADMIN_USER ] && [ $ADMIN_PASSWORD ]; then
     /opt/jboss/wildfly/bin/add-user.sh -u $ADMIN_USER -p $ADMIN_PASSWORD >/dev/null
 fi
 
+# Start ntpd
+/sbin/ntpd &
+
 # Start mysqld
 /bin/sudo /bin/mysqld_safe &
 

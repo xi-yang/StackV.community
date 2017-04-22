@@ -17,6 +17,9 @@ if [ $ADMIN_USER ] && [ $ADMIN_PASSWORD ]; then
     /opt/jboss/keycloak/bin/add-user-keycloak.sh -u $ADMIN_USER -p $ADMIN_PASSWORD >/dev/null
 fi
 
+# Start ntpd
+/sbin/ntpd &
+
 # start service
 export LAUNCH_JBOSS_IN_BACKGROUND=true
 export JBOSS_PIDFILE=/opt/jboss/keycloak.pid

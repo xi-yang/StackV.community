@@ -47,8 +47,6 @@ RUN \
 ## install mariadb
 RUN yum install -y mariadb-server mariadb-client
 
-RUN systemctl enable mariadb
-
 ## init mysql databases (frontend and rainsdb), add users / pass
 ADD ./StackV-web/src/main/webapp/tools/localhost.sql /opt/jboss/localhost.sql
 
@@ -70,9 +68,8 @@ RUN \
 
 ## make jboss sudoer
 RUN yum install -y sudo wget killall ntp
-RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe" > /etc/sudoers.d/jboss \
-    && chmod 0440 /etc/sudoers.d/jboss \
-    && systemctl enable ntpd
+RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe, /sbin/ntpd" > /etc/sudoers.d/jboss \
+    && chmod 0440 /etc/sudoers.d/jboss 
 
 
 # Entrypoint script to start mysqld and wildfly 

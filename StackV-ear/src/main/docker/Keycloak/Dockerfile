@@ -19,15 +19,14 @@ ENV JBOSS_PIDFILE /opt/jboss/keycloak.pid
 
 USER root
 
-RUN yum install -y epel-release && yum install -y jq ntp && yum clean all
+RUN yum install -y epel-release && yum install -y jq && yum clean all
 
 # Admin scripts
 ADD ./restart-keycloak.sh /bin/restart-keycloak.sh
 RUN \
     chown jboss:0 /bin/restart-keycloak.sh \
     && chmod 700 /bin/restart-keycloak.sh \
-    && ln -s /opt/jboss/keycloak/bin/add-user-keycloak.sh /bin/add-user.sh \
-    && systemctl enable ntpd
+    && ln -s /opt/jboss/keycloak/bin/add-user-keycloak.sh /bin/add-user.sh 
 
 USER jboss
 
