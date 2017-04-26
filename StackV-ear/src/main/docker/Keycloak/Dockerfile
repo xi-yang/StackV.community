@@ -50,3 +50,5 @@ EXPOSE 8543
 
 ENTRYPOINT ["/bin/bash", "/opt/jboss/entrypoint.sh" ]
 
+
+## TODO: persist keycloak database

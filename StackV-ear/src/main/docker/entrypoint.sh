@@ -53,8 +53,34 @@ fi
 # Start ntpd
 /bin/sudo /sbin/ntpd &
 
-# Start mysqld
-/bin/sudo /bin/mysqld_safe &
+# Stage and start mysqld
+# if ${PERSISTED} and old DB  exists, call persist.sh
+if [ ! -z "${PERSISTED}" ]; then 
+  if [ -f /var/lib/mysql/frontend/service.frm ]; then
+    /bin/persist.sh
+    /bin/sudo /bin/mysqld_safe &
+  else
+    ## If persisted StackV DB do not exist, re-prepare DBs and use the 'drop-and-create' option!
+    sudo /bin/mysql_install_db --user=mysql --ldata=/var/lib/mysql/ 2>&1 > /dev/null 
+    echo "sudo /bin/mysqld_safe &" > /tmp/config && \
+    echo "mysqladmin --silent --wait=30 ping || exit 1" >> /tmp/config && \
+    echo "mysql -uroot -e 'CREATE USER \"login_view\"@\"localhost\" IDENTIFIED BY \"loginuser\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'CREATE USER \"front_view\"@\"localhost\" IDENTIFIED BY \"frontuser\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'GRANT ALL ON login.* TO \"login_view\"@\"localhost\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'GRANT ALL ON frontend.* TO \"front_view\"@\"localhost\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'CREATE DATABASE rainsdb;'" >> /tmp/config && \
+    echo "mysql -uroot < /opt/jboss/localhost.sql" >> /tmp/config && \
+    echo "mysql -uroot -e 'UPDATE mysql.user SET password=PASSWORD(\"root\") WHERE user=\"root\" and host=\"localhost\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'GRANT ALL PRIVILEGES ON *.* TO \"root\"@\"localhost\" WITH GRANT OPTION;'" >> /tmp/config && \
+    echo "mysql -uroot -e 'FLUSH PRIVILEGES;'" >> /tmp/config && \
+    bash /tmp/config && \
+    rm -f /tmp/config
+  fi
+else
+  /bin/sudo /bin/mysqld_safe &
+fi
+
+
 
 # Start wildfly
 export LAUNCH_JBOSS_IN_BACKGROUND=true

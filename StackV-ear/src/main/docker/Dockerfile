@@ -68,7 +68,7 @@ RUN \
 
 ## make jboss sudoer
 RUN yum install -y sudo wget killall ntp
-RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe, /sbin/ntpd" > /etc/sudoers.d/jboss \
+RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe, /bin/mysql_install_db, /sbin/ntpd" > /etc/sudoers.d/jboss \
     && chmod 0440 /etc/sudoers.d/jboss 
 
 
@@ -79,9 +79,12 @@ RUN chown jboss:0 /bin/entrypoint.sh \
 
 
 # Admin scripts
+ADD ./StackV-ear/src/main/docker/persist.sh /bin/persist.sh
 ADD ./StackV-ear/src/main/docker/restart-persist.sh /bin/restart-persist.sh
 RUN \
-    chown jboss:0 /bin/restart-persist.sh \
+    chown jboss:0 /bin/persist.sh \
+    && chmod 700 /bin/persist.sh \
+    && chown jboss:0 /bin/restart-persist.sh \
     && chmod 700 /bin/restart-persist.sh
 
 # Ensure signals are forwarded to the JVM process correctly for graceful shutdown
