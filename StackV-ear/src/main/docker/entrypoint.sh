@@ -27,10 +27,10 @@ rm -rf StackV-web-1.0-SNAPSHOT.war WEB-INF data
 # if ${KEYSTORE} exists, configure the keystore for https in standalone-full.xml
 if [ ! -z "${KEYSTORE}" ]; then 
   if [ -f ${KEYSTORE} ]; then
-    sed -i "s/\/opt\/jboss\/wildfly.jks/${KEYSTORE}/g" /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
+    sed -i "s/\/opt\/jboss\/wildfly.jks/${KEYSTORE//\//\\/}/g" /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
   else
     echo "Error: SSL Keystore file ${KEYSTORE} does not exist!"
-    echo " Hint: Use `docker run -v /host/config/path:/container/config/path`. Make sure your keystore file is in /host/config/path/. )"
+    echo " Hint: Use 'docker run -v /host/config/path:/container/config/path'. Make sure your keystore file is in /host/config/path/. )"
     exit 1
   fi
 fi
@@ -41,7 +41,7 @@ if [ ! -z "${TRUSTCERT}" ]; then
     cat ${TRUSTCERT} >> /etc/pki/tls/certs/ca-bundle.crt
   else
     echo "Error: CA Cert file ${TRUSTCERT} does not exist!"
-    echo "( Hint: Use `docker run -v /host/config/path:/container/config/path`. Make sure your trusted cert file is in /host/config/path/. )"
+    echo "( Hint: Use 'docker run -v /host/config/path:/container/config/path'. Make sure your trusted cert file is in /host/config/path/. )"
     exit 1
   fi
 fi
