@@ -572,6 +572,7 @@ public class HandleServiceCall {
 
     //By default, this only checks the last service delta. If multiPropagate==true, check all deltas.
     public String checkStatus(String serviceInstanceUuid) {
+        logger.cleanup();
         String method = "checkStatus";
         logger.refuuid(serviceInstanceUuid);
         logger.trace_start(method);

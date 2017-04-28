@@ -149,7 +149,7 @@ public class StackLogger {
         logger.error(errMsg);
         String refUUID = ThreadContext.get("refuuid");
         String targetID = ThreadContext.get("targetid");
-        return new EJBException(String.format("%s-%s-%s", moduleName, method, (refUUID == null ? "" : refUUID), errMsg, (targetID == null ? "" : ":"+targetID)));
+        return new EJBException(String.format("%s-%s %s %s %s", moduleName, method, (refUUID == null ? "" : "ref:"+refUUID), (targetID == null ? "" : "target:"+targetID), errMsg));
     }
 
     public EJBException error_throwing(String method, String message) {

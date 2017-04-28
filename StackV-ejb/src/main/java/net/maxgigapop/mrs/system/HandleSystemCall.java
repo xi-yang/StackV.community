@@ -298,11 +298,15 @@ public class HandleSystemCall {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         }
         logger.refuuid(systemInstance.getReferenceUUID());
-        if (systemInstance.getSystemDelta() != null
-                && systemInstance.getSystemDelta().getDriverSystemDeltas() != null
-                && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
-            logger.targetid(systemInstance.getSystemDelta().getId());
-            throw logger.error_throwing(method, "target:SystemDelta has already propagated.");
+        if (systemInstance.getSystemDelta() != null) {
+            if (systemInstance.getSystemDelta().getServiceDelta() != null && systemInstance.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+                logger.refuuid(systemInstance.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+            }
+            if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null
+                    && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
+                logger.targetid(systemInstance.getSystemDelta().getId());
+                throw logger.error_throwing(method, "target:SystemDelta has already propagated.");
+            }
         }
         if (sysDelta.getId() != null && !sysDelta.getId().isEmpty()) {
             sysDelta = (SystemDelta) DeltaPersistenceManager.findById(sysDelta.getId());
@@ -473,9 +477,14 @@ public class HandleSystemCall {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         }
         logger.refuuid(systemInstance.getReferenceUUID());
-        if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null
-                || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
-            throw logger.error_throwing(method, "as systemDelta == null or systemDelta.driverSystemDeltas is empty");
+        if (systemInstance.getSystemDelta() != null) {
+            if (systemInstance.getSystemDelta().getServiceDelta() != null && systemInstance.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+                logger.refuuid(systemInstance.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+            }
+            if (systemInstance.getSystemDelta().getDriverSystemDeltas() == null
+                    || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
+                throw logger.error_throwing(method, "as systemDelta == null or systemDelta.driverSystemDeltas is empty");
+            }
         }
         logger.targetid(systemInstance.getSystemDelta().getId());
         Context ejbCxt = null;
@@ -519,7 +528,7 @@ public class HandleSystemCall {
                 try {
                     String resultStatus = asyncResult.get();
                 } catch (InterruptedException | ExecutionException e) {
-                    throw logger.throwing(method, String.format("commiting %s at minute %d -exception- ", dsd, minute+1), e);
+                    throw logger.throwing(method, String.format("commiting %s at minute %d -exception- %s", dsd, minute+1, e), e);
                 } catch (EJBException ex) {
                     throw logger.throwing(method, ex);
                 }
@@ -540,7 +549,7 @@ public class HandleSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(String sysInstanceUUID, SystemDelta sysDelta, boolean useCachedVG, boolean refreshForced) {
         logger.cleanup();
-        String method = "commitDelta";
+        String method = "propagateDelta";
         logger.refuuid(sysInstanceUUID);
         logger.start(method);
         SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(sysInstanceUUID);
