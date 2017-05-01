@@ -323,7 +323,8 @@ function subloadLogging() {
 }
 
 function loadLogs() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
+    var uuid = sessionStorage.getItem("uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
     $.ajax({
         url: apiUrl,
         type: 'GET',

@@ -1517,7 +1517,7 @@ public class WebResource {
      * @apiParam
      *
      * @apiExample {curl} Example Call:
-     * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/logs/e4d3bfd6-c269-4063-b02b-44aaef71d5b6 -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/logs?refUUID=e4d3bfd6-c269-4063-b02b-44aaef71d5b6 -H "Authorization: bearer $KC_ACCESS_TOKEN"
      *
      * @apiSuccess {JSONArray} logs logs JSON
      * @apiSuccess {JSONObject} logs.log log JSON
