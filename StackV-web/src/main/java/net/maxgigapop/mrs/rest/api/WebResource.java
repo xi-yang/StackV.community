@@ -412,9 +412,6 @@ public class WebResource {
     @Produces("text/plain")
     @RolesAllowed("Drivers")
     public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         if (refresh != null) {
@@ -424,21 +421,29 @@ public class WebResource {
         Properties prop = new Properties();
         prop.put("user", front_db_user);
         prop.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 prop);
 
-        prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
         prep.setString(1, username);
         prep.setString(2, topuri);
-        ResultSet ret = prep.executeQuery();
+        ResultSet rs = prep.executeQuery();
 
-        ret.next();
-        Object obj = parser.parse(ret.getString("data"));
+        rs.next();
+        Object obj = parser.parse(rs.getString("data"));
         JSONObject JSONtemp = (JSONObject) obj;
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
 
-        String xmldata = JSONtoxml(JSONdata, ret.getString("drivertype"));
+        String xmldata = JSONtoxml(JSONdata, rs.getString("drivertype"));
+
+        try {
+            DbUtils.close(rs);
+            DbUtils.close(prep);
+            DbUtils.close(front_conn);
+        } catch (SQLException ex) {
+            logger.catching("DBUtils", ex);
+        }
 
         try {
             URL url = new URL(String.format("%s/driver", host));
@@ -543,19 +548,24 @@ public class WebResource {
     @Path("driver/{user}/edit/{topur}")
     @RolesAllowed("Drivers")
     public String editDriverProfile(@PathParam("user") String username, @PathParam("topuri") String uri) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        prep = front_conn.prepareStatement("SELECT * FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
         prep.setString(1, username);
         prep.setString(2, uri);
-        ResultSet ret = prep.executeQuery();
+        ResultSet rs = prep.executeQuery();
+
+        try {
+            DbUtils.close(rs);
+            DbUtils.close(prep);
+            DbUtils.close(front_conn);
+        } catch (SQLException ex) {
+            logger.catching("DBUtils", ex);
+        }
 
         return "Deleted";
     }
@@ -631,26 +641,31 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Drivers")
     public JSONObject getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         Properties prop = new Properties();
         prop.put("user", front_db_user);
         prop.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 prop);
 
-        prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
         prep.setString(1, username);
         prep.setString(2, topuri);
-        ResultSet ret = prep.executeQuery();
+        ResultSet rs = prep.executeQuery();
 
-        ret.next();
+        rs.next();
 
-        Object obj = parser.parse(ret.getString("data"));
+        Object obj = parser.parse(rs.getString("data"));
         JSONObject JSONtemp = (JSONObject) obj;
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
+
+        try {
+            DbUtils.close(rs);
+            DbUtils.close(prep);
+            DbUtils.close(front_conn);
+        } catch (SQLException ex) {
+            logger.catching("DBUtils", ex);
+        }
 
         return JSONdata;
     }
@@ -1752,14 +1767,17 @@ public class WebResource {
                 URL url = new URL(String.format("%s/service/property/%s/host", host, svcUUID));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String result = servBean.executeHttpMethod(url, conn, "GET", null, auth);
-                if (result.equals("ops")) {
-                    serviceType = "Virtual Cloud Network - OPS";
-                } else if (result.equals("aws")) {
-                    serviceType = "Virtual Cloud Network - AWS";
-                } else {
-                    throw new EJBException("cannot tell type of VCN service without 'host' property");
+                switch (result) {
+                    case "ops":
+                        serviceType = "Virtual Cloud Network - OPS";
+                        break;
+                    case "aws":
+                        serviceType = "Virtual Cloud Network - AWS";
+                        break;
+                    default:
+                        throw new EJBException("cannot tell type of VCN service without 'host' property");
                 }
-            } catch (Exception ex) {
+            } catch (IOException | EJBException ex) {
                 throw new EJBException("cannot tell type of VCN service without 'host' property", ex);
             }
         }
@@ -3016,19 +3034,16 @@ public class WebResource {
      * @return error code |
      */
     private int deleteInstance(String refUuid, String auth) throws SQLException, IOException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         String result = delete(refUuid, auth);
         if (result.equalsIgnoreCase("Successfully terminated")) {
 
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
+            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
             prep.setString(1, refUuid);
             prep.executeUpdate();
 
@@ -3036,6 +3051,12 @@ public class WebResource {
             prep.setString(1, refUuid);
             prep.executeUpdate();
 
+            try {
+                DbUtils.close(prep);
+                DbUtils.close(front_conn);
+            } catch (SQLException ex) {
+                logger.catching("DBUtils", ex);
+            }
             return 0;
         } else {
             return 1;
@@ -3614,7 +3635,7 @@ public class WebResource {
                     jsonTemplate);
             String result = servBean.executeHttpMethod(url, conn, "POST", data, auth);
             return result;
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             throw new EJBException("resolveManifest cannot fetch manifest for service uuid=" + refUuid, ex);
         }
     }

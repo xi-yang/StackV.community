@@ -27,12 +27,10 @@ package web.beans;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -50,10 +48,7 @@ import java.util.UUID;
 import javax.ejb.EJBException;
 import javax.net.ssl.HttpsURLConnection;
 import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.rest.api.WebResource;
 import org.apache.commons.dbutils.DbUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -141,7 +136,7 @@ public class serviceBeans {
             {
                 return 2;
             }
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             logger.catching("driverInstall", ex);
         }
 
@@ -166,7 +161,7 @@ public class serviceBeans {
             {
                 return 2;
             }
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             logger.catching("driverUninstall", ex);
         }
         return 0;
@@ -687,6 +682,8 @@ public class serviceBeans {
                                     }
 
                                     //Find sriov parameter from Gateways.
+                                    if (gateArr == null)
+                                        return -1;
                                     for (Object gwEle : gateArr) {
                                         JSONObject gwJSON = (JSONObject) gwEle;
                                         if (gwJSON.get("name").equals(sriov.get("gateway"))) {
@@ -1017,6 +1014,8 @@ public class serviceBeans {
                 }
             }
         }
+        if (vcnArr == null)
+            return -1;
 
         String deltaUuid = UUID.randomUUID().toString();
         String awsExportTo = "";
@@ -1040,7 +1039,7 @@ public class serviceBeans {
             vcnJson.remove("name");
 
             JSONArray subArr = (JSONArray) vcnJson.get("subnets");
-            ArrayList<JSONArray> vmList = new ArrayList<JSONArray>();
+            ArrayList<JSONArray> vmList = new ArrayList<>();
             for (int i = 0; i < subArr.size(); i++) {
                 JSONObject subObj = (JSONObject) subArr.get(i);
 
@@ -2121,21 +2120,19 @@ public class serviceBeans {
     }
 
     public boolean verify(String refUuid, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
-        int instanceID = getInstanceID(refUuid);
-        Connection front_conn = null;
-        PreparedStatement prep = null;
+        int instanceID = getInstanceID(refUuid);                
         ResultSet rs = null;
         String method = "verify";
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
-        front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
         ThreadContext.put("refUUID", refUuid);
         logger.start(method);
 
-        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
+        PreparedStatement prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
 
@@ -2234,13 +2231,11 @@ public class serviceBeans {
             conn.setDoInput(true);
             conn.setDoOutput(true);
             String data = "grant_type=refresh_token&refresh_token=" + refresh;
-            OutputStream os = conn.getOutputStream();
-            BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(os, "UTF-8"));
-            writer.write(data);
-            writer.flush();
-            writer.close();
-            os.close();
+            try (OutputStream os = conn.getOutputStream(); BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(os, "UTF-8"))) {
+                writer.write(data);
+                writer.flush();
+            }
 
             conn.connect();
             StringBuilder responseStr;
@@ -2251,7 +2246,6 @@ public class serviceBeans {
                     responseStr.append(inputLine);
                 }
             }
-            JSONParser parser = new JSONParser();
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
 
