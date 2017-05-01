@@ -137,7 +137,7 @@ public class SystemModelCoordinator {
             Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
             VersionItemPersistenceManager.cleanupAllBefore(before24h);
             bootStrapped = true;
-            logger.message(method, "done - bootStrapped changed to true");
+            logger.message(method, "Done! - bootStrapped changed to true");
         }
         logger.trace_end(method);
     }

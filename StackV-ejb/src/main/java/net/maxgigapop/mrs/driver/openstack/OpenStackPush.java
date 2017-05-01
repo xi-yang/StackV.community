@@ -41,6 +41,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.commons.net.util.SubnetUtils;
@@ -1593,6 +1594,12 @@ public class OpenStackPush {
                 o.put("request", "AssociateFloatingIpRequest");
                 o.put("server name", serverName);
                 o.put("port name", portName);
+                if (floatingIp.equalsIgnoreCase("any")) {
+                    floatingIp = checkoutFloatingIp(modelRef);
+                    if (floatingIp == null) {
+                        throw logger.error_throwing(method, "failed to assign 'any' floating IP to  port "+portName);
+                    }
+                }
                 o.put("floating ip", floatingIp);
                 requests.add(o);
             } else {
@@ -1608,6 +1615,24 @@ public class OpenStackPush {
         }
         return requests;
     }    
+    
+    // serving floating IP from available pool
+    private String checkoutFloatingIp(OntModel model) {
+        String sparql = "SELECT ?fip_alloc ?fip WHERE {"
+                + "?fip_alloc mrs:type \"ipv4-floatingip\". "
+                + "?fip_alloc mrs:value ?fip. "
+                + "FILTER NOT EXISTS {?any_assigned mrs:type \"floating-ip\". ?any_assigned mrs:value ?fip}"
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        while (r.hasNext()) {
+            QuerySolution solution = r.next();
+            Resource fipAlloc = solution.getResource("fip_alloc");
+            RDFNode fipAddress = solution.get("fip");
+            model.remove(fipAlloc, Mrs.value, fipAddress);
+            return fipAddress.toString();
+        }        
+        return null;
+    }
     
     /**
      * ****************************************************************

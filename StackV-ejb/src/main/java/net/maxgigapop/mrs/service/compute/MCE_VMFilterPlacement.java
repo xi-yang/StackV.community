@@ -121,7 +121,6 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         for (Resource res : policyMap.keySet()) {
             //1. compute placement based on filter/match criteria *policyData*
             // returned placementModel contains the VM as well as hosting Node/Topology and HypervisorService from systemModel
-            //$$ TODO: virtual node should be named and tagged using URI and/or polocy/criteria data in spaModel  
             OntModel placementModel = this.doPlacement(combinedModel, res, policyMap.get(res));
             if (placementModel == null) {
                 throw logger.error_throwing(method, "cannot apply policy to place VM=" + res);
@@ -129,22 +128,13 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
 
             //2. merge the placement satements into spaModel
             outputDelta.getModelAddition().getOntModel().add(placementModel.getBaseModel());
-            /*
-             try {
-             log.log(Level.FINE, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 2)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
-             } catch (Exception ex) {
-             Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
-             }
-             */
+
             //3. update policyData this action exportTo 
             this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), res);
 
             //4. remove policy and all related SPA statements receursively under the res from spaModel
             //   and also remove all statements that say dependOn this 'policy'
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), res);
-
-            //$$ TODO: change VM URI (and all other virtual resources) into a unique string either during compile or in stitching action
-            //$$ TODO: Add dependOn->Abstraction annotation to root level spaModel and add a generic Action to remvoe that abstract nml:Topology
         }
 
         try {
@@ -230,7 +220,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             return placeModel;
         }
         // place vm to topology or host node that has hypervisor
-        //@TODO: randomization for 'any'
+        //@TODO: handle palceToUri == 'any'
         sparqlString = "SELECT ?hosttopo ?hvservice WHERE {"
                 + "?hosttopo nml:hasService ?hvservice . "
                 + "?hvservice a mrs:HypervisorService . "
@@ -268,7 +258,6 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         return null;
     }
 
-    //@TODO: JSON export
     private void exportPolicyData(OntModel spaModel, Resource res) {
         String method = "exportPolicyData";
         // find Placement policy -> exportTo -> policyData
@@ -311,10 +300,4 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         }
     }
 
-    //@TODO: matchingNetwork (VPC or TenantNetwork)
-    //@TODO: matchingSunbet
-    //$$ regExURIFilter
-    //$$ hostCapabilityFilter(s)
-    //$$ placeMatchingRegExURI
-    //$$ placeWithMultiFilter
 }

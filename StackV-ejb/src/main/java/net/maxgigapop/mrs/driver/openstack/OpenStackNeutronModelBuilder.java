@@ -66,7 +66,7 @@ public class OpenStackNeutronModelBuilder {
     public static OntModel createOntology(String url, String NATServer, String topologyURI, String user_name, String password, String tenantName,
             String adminUsername, String adminPassword, String adminTenant, OntModel modelExt) throws IOException, Exception {
         String method = "createOntology";
-        ArrayList fip = new ArrayList();
+        ArrayList<String> fips = new ArrayList();
 
         //create model object
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -569,9 +569,11 @@ public class OpenStackNeutronModelBuilder {
         }
 
         for (NetFloatingIP f : openstackget.getFloatingIp()) {
-            fip.add(f.getFloatingIpAddress());
+            String ipAddr = f.getFloatingIpAddress();
+            if (!fips.contains(ipAddr)) {
+                fips.add(ipAddr);
+            }
         }
-        String FLOATING_IP_INUSE = fip.toString();
 
         //Right subnet part
         for (Network n : openstackget.getNetworks()) {
@@ -604,8 +606,8 @@ public class OpenStackNeutronModelBuilder {
                         Resource SUBNET_NETWORK_ADDRESS = null;
                         SUBNET_NETWORK_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId + ":subnetnetworkaddress", OpenstackPrefix.subnet_network_address, networkID, subnetId), networkAddress);
 
-                        Resource FLOATING_IP_INUSING
-                                = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId, OpenstackPrefix.floating_ip_in_using, networkID, subnetId), networkAddress);
+                        Resource FLOATING_IP_ALLOC
+                                = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId, OpenstackPrefix.floating_ip_alloc, networkID, subnetId), networkAddress);
                         Resource FLOATING_IP_POOL = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetId, OpenstackPrefix.floating_ip_pool, networkID, subnetId), networkAddress);
                         if (s.getGateway() != null) {
                             String gateway = s.getGateway();
@@ -614,9 +616,11 @@ public class OpenStackNeutronModelBuilder {
                             model.add(model.createStatement(GATEWAY, type, "gateway"));
                             model.add(model.createStatement(GATEWAY, value, gateway));
                         }
-                        model.add(model.createStatement(OpenstackTopology, hasNetworkAddress, FLOATING_IP_INUSING));
-                        model.add(model.createStatement(FLOATING_IP_INUSING, type, "ipv4-floatingip"));
-                        model.add(model.createStatement(FLOATING_IP_INUSING, value, FLOATING_IP_INUSE));//need to modify here
+                        model.add(model.createStatement(OpenstackTopology, hasNetworkAddress, FLOATING_IP_ALLOC));
+                        model.add(model.createStatement(FLOATING_IP_ALLOC, type, "ipv4-floatingip"));
+                        for (String fip: fips) {
+                            model.add(model.createStatement(FLOATING_IP_ALLOC, value, fip));
+                        }
                         model.add(model.createStatement(OpenstackTopology, hasNetworkAddress, FLOATING_IP_POOL));
                         model.add(model.createStatement(FLOATING_IP_POOL, type, "ipv4-floatingip-pool"));
                         model.add(model.createStatement(FLOATING_IP_POOL, value, START + "-" + END));
