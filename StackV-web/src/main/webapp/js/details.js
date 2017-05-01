@@ -297,7 +297,7 @@ function subloadInstance() {
                                 window.document.location = "/StackV-web/ops/catalog.jsp";
                             }, 250);
                         } else {
-                            reloadDetails();
+                            reloadData();
                         }
                     }
                 });
