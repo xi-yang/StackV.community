@@ -1306,7 +1306,7 @@ function reloadData(time) {
     }).success(function (refreshed) {
         switch (view) {
             case "left":
-                tweenLoggingPanel.reverse();
+                /*tweenLoggingPanel.reverse();*/
                 break;
             case "center":
                 tweenDetailsPanel.reverse();
