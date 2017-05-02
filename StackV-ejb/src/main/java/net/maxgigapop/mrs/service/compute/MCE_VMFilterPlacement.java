@@ -39,7 +39,9 @@ import java.io.StringWriter;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
@@ -172,27 +174,127 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                     throw logger.throwing(method, String.format("cannot parse json string %s", filterCriterion.get("value")), e);
                 }  
             } 
-            if (placeToUri == null || !model.contains(model.getResource(placeToUri), null)) {
+            if (placeToUri == null || (!placeToUri.startsWith("any") && !model.contains(model.getResource(placeToUri), null))) {
                 throw logger.error_throwing(method, "json input misses placeToUri");
             }
-            OntModel hostModel = filterTopologyNode(model, vm, placeToUri);
+            OntModel hostModel;
+            if (placeToUri.startsWith("any")) {
+                // place VM to any host (Topology / Node) that has more resources
+                hostModel = selectAnyPlace(model, vm);
+            } else {
+                // place VM to a specific subnet or host (Topology / Node) 
+                // or place intreface to a specific subnet
+                hostModel = filterAndPlace(model, vm, placeToUri);
+            }
             if (hostModel == null) {
                 throw logger.error_throwing(method, String.format("cannot place %s based on polocy %s", vm, filterCriterion.get("policy")));
             }
-            //$$ create VM resource and relation
-            //$$ assemble placementModel;
+            // assemble placementModel;
             if (placementModel == null) {
                 placementModel = hostModel;
             } else {
                 placementModel.add(hostModel.getBaseModel());
             }
-            // ? place to a specific Node ?
-            //$$ Other types of filter methods have yet to be implemented.
         }
         return placementModel;
     }
 
-    private OntModel filterTopologyNode(OntModel model, Resource resPlace, String placeToUri) {
+    private OntModel selectAnyPlace(OntModel model, Resource resPlace) {
+        String sparqlString = "SELECT ?hosttopo ?hvservice ?total_num_core ?total_memory_mb ?total_disk_gb "
+                + "?used_num_core ?used_memory_mb ?used_disk_gb WHERE {"
+                + "?hosttopo nml:hasService ?hvservice . "
+                + "?hvservice a mrs:HypervisorService . "
+                + "OPTIONAL { ?hosttopo mrs:num_core ?total_num_core . ?hvservice mrs:num_core ?used_num_core . } "
+                + "OPTIONAL { ?hosttopo mrs:memory_mb ?total_memory_mb . ?hvservice mrs:memory_mb ?used_memory_mb . } "
+                + "OPTIONAL { ?hosttopo mrs:disk_gb ?total_disk_gb . ?hvservice mrs:disk_gb ?used_disk_gb . } "
+                + String.format("<%s> a nml:Node .", resPlace.getURI())
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(model, sparqlString);
+        if (!r.hasNext()) {
+            return null;
+        }
+        List<Map> rankArray = new ArrayList();
+        while (r.hasNext()) {
+            QuerySolution querySolution = r.next();
+            Resource resHostTopology = querySolution.get("hosttopo").asResource();
+            Resource resHvService = querySolution.get("hvservice").asResource();
+            Map<String, Object> paramMap = new HashMap();
+            paramMap.put("host", resHostTopology);
+            paramMap.put("hypervisor", resHvService);
+            Integer numCore = 0;
+            if (querySolution.contains("total_num_core")) {
+                numCore = Integer.parseInt(querySolution.get("total_num_core").toString()) - Integer.parseInt(querySolution.get("used_num_core").toString());
+            }
+            paramMap.put("num_core", numCore);
+            Integer memoryMb =0;
+            if (querySolution.contains("total_memory_mb")) {
+                memoryMb = Integer.parseInt(querySolution.get("total_memory_mb").toString()) - Integer.parseInt(querySolution.get("used_memory_mb").toString());
+            }
+            paramMap.put("memory_mb", memoryMb);
+            Integer diskGb = 0;
+            if (querySolution.contains("total_disk_gb")) {
+                diskGb = Integer.parseInt(querySolution.get("total_disk_gb").toString()) - Integer.parseInt(querySolution.get("used_disk_gb").toString());
+            }
+            paramMap.put("disk_gb", diskGb);
+            rankArray.add(paramMap);
+        }
+        OntModel placeModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        // get top 3 #num_core 
+        List<Map> topArray = new ArrayList();
+        ListIterator<Map> itX = rankArray.listIterator(); 
+        while (itX.hasNext()) {
+            Map mapX = itX.next();
+            if (topArray.isEmpty()) {
+                topArray.add(mapX);
+            } else {
+                ListIterator<Map> itT = topArray.listIterator(topArray.size() > 3 ? 3 : topArray.size());
+                while (itT.hasPrevious()) {
+                    Map mapT = itT.previous();
+                    if ((Integer) mapX.get("num_core") > (Integer) mapT.get("num_core")) {
+                        itT.add(mapX);
+                        break;
+                    }
+                }
+            }
+        }
+        if (topArray.size() > 3) {
+            topArray.subList(3, topArray.size()).clear();
+        }
+        // get top 2 #memory_mb out the 3
+        if (topArray.size() == 3) {
+            Map map1 = topArray.get(0);
+            Map map2 = topArray.get(1);
+            Map map3 = topArray.get(2);
+            if ((Integer) map1.get("memory_mb") > (Integer) map2.get("memory_mb")) {
+                if ((Integer) map2.get("memory_mb") > (Integer) map3.get("memory_mb")) {
+                    topArray.remove(map3);
+                } else {
+                    topArray.remove(map2);
+                }
+            } else {
+                if ((Integer) map1.get("memory_mb") > (Integer) map3.get("memory_mb")) {
+                    topArray.remove(map3);
+                } else {
+                    topArray.remove(map1);
+                }
+            }
+        }
+        // get more #disk_gb out of the 2
+        if (topArray.size() == 2) {
+            Map map1 = topArray.get(0);
+            Map map2 = topArray.get(1);
+            if ((Integer) map1.get("disk_gb") > (Integer) map2.get("disk_gb")) {
+                    topArray.remove(map2);
+            } else {
+                    topArray.remove(map1);
+            }
+        }
+        placeModel.add((Resource)topArray.get(0).get("host"), Nml.hasNode, resPlace);
+        placeModel.add((Resource)topArray.get(0).get("hypervisor"), Mrs.providesVM, resPlace);
+        return placeModel;
+    }
+    
+    private OntModel filterAndPlace(OntModel model, Resource resPlace, String placeToUri) {
         OntModel placeModel = null;
         // place VM and subnet to AWS VPC - Subnet
         String sparqlString = "SELECT ?vpc ?hvservice ?subnet WHERE {"
@@ -220,7 +322,6 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             return placeModel;
         }
         // place vm to topology or host node that has hypervisor
-        //@TODO: handle palceToUri == 'any'
         sparqlString = "SELECT ?hosttopo ?hvservice WHERE {"
                 + "?hosttopo nml:hasService ?hvservice . "
                 + "?hvservice a mrs:HypervisorService . "
