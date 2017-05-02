@@ -62,7 +62,7 @@ public class OpenstackPrefix {
     
     public static String floating_ip  = prefix+":floatingip+%s";
 
-    public static String floating_ip_in_using  = prefix+":vpc+%s:subnet+%s:floatingip-inuse";
+    public static String floating_ip_alloc  = prefix+":vpc+%s:subnet+%s:floatingip-alloc";
     
     public static String floating_ip_pool  = prefix+":vpc+%s:subnet+%s:floatingip-pool";
     

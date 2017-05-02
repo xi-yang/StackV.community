@@ -1,9 +1,12 @@
 
-### Deployment Instructions ###
+#################
 
+### Deployment Instructions 
+
+### cd $STACKV_HOME
 ### mvn clean install -DskipTests  -Pdeploy-nuke
-### docker build -f Dockerfile -t stackv .
-### docker run -p 8080:8080 -d -t stackv
+### docker build -f ./StackV-ear/src/main/docker/Dockerfile -t stackv .
+### docker run -p8443:8443 -p 8080:8080 -d -t -e KEYCLOAK=k152.maxgigapop.net stackv
 
 #################
 
@@ -26,16 +29,23 @@ RUN cd $HOME \
     && mv $HOME/wildfly-$WILDFLY_VERSION $JBOSS_HOME \
     && rm wildfly-$WILDFLY_VERSION.tar.gz \
     && chown -R jboss:0 ${JBOSS_HOME} \
-    && chmod -R g+rw ${JBOSS_HOME}
+    && chmod -R g+rw ${JBOSS_HOME} \
+    && sed -i "s/-Xms64m -Xmx512m/-Xms1024m -Xmx4096m/g" /opt/jboss/wildfly/bin/standalone.conf
+
   
 
 ADD ./StackV-ear/src/main/docker/standalone-full.xml /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
 
+# Generate /opt/jboss/wildfly.jks for SSL and add keycloak-selfsigned.crt to server ssl ca-bundles
+ADD ./StackV-ear/src/main/docker/keycloak-selfsigned.crt /opt/jboss/keycloak-selfsigned.crt
+
+RUN \
+    keytool -genkey -keyalg RSA -dname "CN=Wildfly Server,OU=Unit,O=Organization,L=City,S=State,C=US" -keypass changeit -keystore /opt/jboss/wildfly.jks -storepass changeit  \
+    && cat /opt/jboss/keycloak-selfsigned.crt >> /etc/pki/tls/certs/ca-bundle.crt
+
 
 ## install mariadb
 RUN yum install -y mariadb-server mariadb-client
-
-RUN systemctl enable mariadb
 
 ## init mysql databases (frontend and rainsdb), add users / pass
 ADD ./StackV-web/src/main/webapp/tools/localhost.sql /opt/jboss/localhost.sql
@@ -57,10 +67,25 @@ RUN \
 
 
 ## make jboss sudoer
-RUN yum install -y sudo wget
-RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe" > /etc/sudoers.d/jboss && \
-    chmod 0440 /etc/sudoers.d/jboss
+RUN yum install -y sudo wget killall ntp
+RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe, /bin/mysql_install_db, /sbin/ntpd" > /etc/sudoers.d/jboss \
+    && chmod 0440 /etc/sudoers.d/jboss 
 
+
+# Entrypoint script to start mysqld and wildfly 
+ADD ./StackV-ear/src/main/docker/entrypoint.sh /bin/entrypoint.sh
+RUN chown jboss:0 /bin/entrypoint.sh \
+    && chmod 700 /bin/entrypoint.sh
+
+
+# Admin scripts
+ADD ./StackV-ear/src/main/docker/persist.sh /bin/persist.sh
+ADD ./StackV-ear/src/main/docker/restart-persist.sh /bin/restart-persist.sh
+RUN \
+    chown jboss:0 /bin/persist.sh \
+    && chmod 700 /bin/persist.sh \
+    && chown jboss:0 /bin/restart-persist.sh \
+    && chmod 700 /bin/restart-persist.sh
 
 # Ensure signals are forwarded to the JVM process correctly for graceful shutdown
 ENV LAUNCH_JBOSS_IN_BACKGROUND true
@@ -94,19 +119,8 @@ RUN cd ${JBOSS_HOME} \
  
 
 # Expose the ports we're interested in
-EXPOSE 8080 8443
+EXPOSE 8080 8443 9990 9993
 
-# Entrypoint script to start mysqld and wildfly 
-ADD ./StackV-ear/src/main/docker/entrypoint.sh /opt/jboss/entrypoint.sh
 
-ENTRYPOINT ["/bin/bash", "/opt/jboss/entrypoint.sh"]
-
-###############
-
-#?# TODO: customize standalone-full.xml with with environment variables
-#?# -e KEYCLOAK=https://k152.maxgigapop.net:8543/auth, then replace it in standalone-full.xml and in keycloak.json files in StackV ear
-#?# -e KEYSTORE=/keystore/wildfly.jks, then verify /keystore/widfly.jks exists (hint: 'docker run -v /host/keystore/path:/keystore ...')
-#?# and then add TrustStore and HTTPS configuration lines to standalone-full.xml. 
-
-#?# TODO: Add admin script (/bin/persist-rainsdb.sh) to stop wildfly, modify persistence.xml to disable drop-create, and then restart wildfly 
+ENTRYPOINT ["/bin/bash", "/bin/entrypoint.sh"]
 

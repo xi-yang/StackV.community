@@ -14,36 +14,33 @@
         <link rel="stylesheet" href="/StackV-web/css/style.css">
         <link rel="stylesheet" href="/StackV-web/css/dnc.css">
     </head>
-    
+
     <body>
         <div id="nav">
         </div>
         <!-- MAIN PANEL -->
+        <div id="info-panel" class="">
+            <div id="info-fields" style ="float: top;"></div>
+            <div id="info-option" style ="float: bottom;"></div>
+        </div>
+        <div id="overlay-black"></div>
         <div id="main-pane">
-            <form class="dncform">
+            <form class="stageform">
                 <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
-                    <div>
-                        Dynamic Network Connection:
-                        <input type="text" placeholder="Service Alias" id="service-name">
-                    </div>                    
-                    <div>
-                        Description:
-                        <input type="text" placeholder="Description" id="new-profile-description">
-                    </div>
-                    <div id="spacer"></div>
-                    <div id="spacer"></div>
                     <div id="table-div">
                         <table id="input-table">
                             <tbody id="link-body">
+                                <tr><td></td><td><input type="text" placeholder="Service Alias" id="service-name"></td></tr>
+                                <tr id="spacer"></tr>
                                 <tr>
                                     <td>Link 1</td>
-                                    <td style="width: 600px; text-align: center;">
+                                    <td style="text-align: center;">
                                         <div>
                                             <input type="text" id="linkUri1" placeholder="Link-Name">
                                             <input type="text" id="linksrc1" placeholder="Source">
-                                            <input type="text" id="linksrc-vlan1" placeholder="Vlan-tag">
+                                            <input type="text" id="linksrc-vlan1" placeholder="Vlan-tag" value="any">
                                             <input type="text" id="linkdes1" placeholder="Destination">
-                                            <input type="text" id="linkdes-vlan1" placeholder="Vlan-tag">
+                                            <input type="text" id="linkdes-vlan1" placeholder="Vlan-tag" value="any">
                                         </div>
                                     </td>
                                 </tr>
@@ -53,11 +50,11 @@
                         <div id="test">
                             <p id="resss"></p>
                             <button type="button" class="action-button" onclick="submitToBackend();">Submit</button>
-                            <button type="button" class="action-button" onclick="save();">Save</button>
+                            <button type="button" class="action-button" onclick="openWindow();">Save</button>
                             <button type="button" class="action-button" onclick="addLinkDNC();">Add Link</button>
                         </div>
                     </div>
-                    
+
                 </fieldset>
             </form>
             <!--
@@ -71,13 +68,18 @@
                 <button type="button" class="action-button" onclick="del();">Delete</button>
             </div>
         </div> -->
-        <!-- TAG PANEL -->
-        <div id="tag-panel">
+            <!-- TAG PANEL -->
+            <div id="tag-panel">
+            </div>
         </div>
-        <script src="/StackV-web/js/svc/dnc.js"></script>
+
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+
         <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/svc/dnc.js"></script>
+
     </body>
 </html>

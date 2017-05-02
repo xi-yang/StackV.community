@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="info" package="net.maxgigapop.mrs"  name="StackV-ejb">
+    <Appenders>
+        <Console name="RainsOut" target="SYSTEM_OUT">
+            <PatternLayout pattern="%msg ref[%X{refuuid}] target[%X{targetid}] -%X{severity}- %ex{2}%n" />
+        </Console>
+        
+        <JDBC name="MySQL" tableName="frontend.log">
+            <DataSource jndiName="java:jboss/datasources/LoggerDS" />
+            <Column name="marker" pattern="%marker" />
+            <Column name="timestamp" pattern="%d{DEFAULT}" />
+            <Column name="level" pattern="%level" />
+            <Column name="logger" pattern="%logger" />
+            <Column name="message" pattern="%message" />
+            <Column name="exception" pattern="%ex" />
+            <Column name="severity" pattern="%X{severity}" />                       
+            <Column name="module" pattern="%X{module}" />
+            <Column name="method" pattern="%X{method}" />
+            <Column name="referenceUUID" pattern="%X{refuuid}" />
+            <Column name="targetID" pattern="%X{targetid}" />
+        </JDBC>      
+    </Appenders>
+    <Loggers>
+        <AsyncLogger name="net.maxgigapop.mrs.service" level="debug" additivity="false">
+            <AppenderRef ref="RainsOut" />
+            <AppenderRef ref="MySQL" level="info" />
+        </AsyncLogger>
+        <AsyncLogger name="net.maxgigapop.mrs.system" level="debug" additivity="false">
+            <AppenderRef ref="RainsOut" />
+            <AppenderRef ref="MySQL" level="info" />
+        </AsyncLogger>
+        <AsyncLogger name="net.maxgigapop.mrs.driver" level="debug" additivity="false">
+            <AppenderRef ref="RainsOut" />
+            <AppenderRef ref="MySQL" level="info" />
+        </AsyncLogger>
+        <AsyncLogger name="net.maxgigapop.mrs.core" level="debug" additivity="false">
+            <AppenderRef ref="RainsOut" />
+            <AppenderRef ref="MySQL" level="info" />
+        </AsyncLogger>
+        <Root level="info">
+            <AppenderRef ref="RainsOut" />
+        </Root>
+    </Loggers>
+</Configuration>

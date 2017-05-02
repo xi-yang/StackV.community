@@ -36,7 +36,7 @@
     </extensions>
 
     <system-properties>
-        <property name="kc_url" value="https://localhost:8543/auth"/>
+        <property name="kc_url" value="https://k152.maxgigapop.net:8543/auth"/>
     </system-properties>
 
 
@@ -50,6 +50,11 @@
                 <authorization map-groups-to-roles="false">
                     <properties path="mgmt-groups.properties" relative-to="jboss.server.config.dir"/>
                 </authorization>
+                <server-identities>
+                    <ssl>
+                        <keystore path="/opt/jboss/wildfly.jks" keystore-password="changeit"/>
+                    </ssl>
+                </server-identities>
             </security-realm>
             <security-realm name="ApplicationRealm">
                 <authentication>
@@ -59,6 +64,13 @@
                 <authorization>
                     <properties path="application-roles.properties" relative-to="jboss.server.config.dir"/>
                 </authorization>
+            </security-realm>
+            <security-realm name="UndertowRealm">
+                <server-identities>
+                    <ssl>
+                        <keystore path="/opt/jboss/wildfly.jks" keystore-password="changeit"/>
+                    </ssl>
+                </server-identities>
             </security-realm>
         </security-realms>
         <audit-log>
@@ -77,6 +89,7 @@
         <management-interfaces>
             <http-interface security-realm="ManagementRealm" http-upgrade-enabled="true">
                 <socket-binding http="management-http"/>
+                <socket-binding https="management-https"/>
             </http-interface>
         </management-interfaces>
         <access-control provider="simple">
@@ -419,6 +432,7 @@
             <buffer-cache name="default"/>
             <server name="default-server">
                 <http-listener name="default" socket-binding="http" redirect-socket="https"/>
+                <https-listener name="https" security-realm="UndertowRealm" socket-binding="https"/>
                 <host name="default-host" alias="localhost">
                     <location name="/" handler="welcome-content"/>
                     <filter-ref name="server-header"/>

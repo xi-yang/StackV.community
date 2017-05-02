@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJBException;
@@ -59,8 +61,10 @@ import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import net.maxgigapop.mrs.service.HandleServiceCall;
 
 /**
  *
@@ -69,15 +73,25 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 @Stateless
 @LocalBean
 public class HandleSystemCall {
+    
+    private static final StackLogger logger = new StackLogger(HandleSystemCall.class.getName(), "HandleSystemCall");
 
+    public VersionGroup createHeadVersionGroup_API(String refUuid) {
+        logger.cleanup();
+        return createHeadVersionGroup(refUuid);
+    }
+    
     public VersionGroup createHeadVersionGroup(String refUuid) {
+        String method = "createHeadVersionGroup";
+        logger.refuuid(refUuid);
+        logger.start(method);
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null) {
             DriverInstancePersistenceManager.refreshAll();
             ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         }
         if (ditMap.isEmpty()) {
-            throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance in the system"));
+            throw logger.error_throwing(method, "encounters empty DriverInstancePersistenceManager.driverInstanceByTopologyMap");
         }
         VersionGroup vg = new VersionGroup();
         vg.setRefUuid(refUuid);
@@ -86,7 +100,7 @@ public class HandleSystemCall {
             synchronized (di) {
                 VersionItem vi = di.getHeadVersionItem();
                 if (vi == null) {
-                    throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
+                    throw logger.error_throwing(method, "encounters null head versionItem in " + di);
                 }
                 //$$ TODO: remove duplicate references
                 if (vi.getVersionGroups() == null || !vi.getVersionGroups().contains(vg)) {
@@ -98,28 +112,32 @@ public class HandleSystemCall {
             }
         }
         VersionGroupPersistenceManager.save(vg);
+        logger.end(method);
         return vg;
     }
 
     public VersionGroup createHeadVersionGroup(String refUuid, List<String> topoURIs) {
+        String method = "createHeadVersionGroup";
+        logger.refuuid(refUuid);
+        logger.start(method);
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null) {
             DriverInstancePersistenceManager.refreshAll();
             ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         }
         if (ditMap.isEmpty()) {
-            throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance in the system"));
+            throw logger.error_throwing(method, "encounters empty DriverInstancePersistenceManager.driverInstanceByTopologyMap");
         }
         VersionGroup vg = new VersionGroup();
         vg.setRefUuid(refUuid);
         for (String topoUri : topoURIs) {
             DriverInstance di = ditMap.get(topoUri);
             if (di == null) {
-                throw new EJBException(String.format("createHeadVersionGroup canont find driverInstance with topologyURI=%s", topoUri));
+                throw logger.error_throwing(method, "canont find driverInstance with topologyURI="+topoUri);
             }
             VersionItem vi = di.getHeadVersionItem();
             if (vi == null) {
-                throw new EJBException(String.format("createHeadVersionGroup encounters null head versionItem in %s", di));
+                    throw logger.error_throwing(method, "encounters null head versionItem in " + di);
             }
             //$$ TODO: remove duplicate references
             if (vi.getVersionGroups() == null || !vi.getVersionGroups().contains(vg)) {
@@ -130,37 +148,60 @@ public class HandleSystemCall {
             }
         }
         VersionGroupPersistenceManager.save(vg);
+        logger.end(method);
         return vg;
     }
 
+    public VersionGroup updateHeadVersionGroup_API(String refUuid) {
+        logger.cleanup();
+        return updateHeadVersionGroup(refUuid);
+    }
+    
     public VersionGroup updateHeadVersionGroup(String refUuid) {
+        String method = "updateHeadVersionGroup";
+        logger.refuuid(refUuid);
+        logger.trace_start(method);
         VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
-        return VersionGroupPersistenceManager.refreshToHead(vg, true);
+        vg = VersionGroupPersistenceManager.refreshToHead(vg, true);
+        logger.trace_end(method);
+        return vg;
     }
 
     public ModelBase retrieveVersionGroupModel(String refUuid) {
+        logger.cleanup();
+        String method = "retrieveVersionGroupModel";
+        logger.refuuid(refUuid);
+        logger.trace_start(method);
         if (refUuid.equals("default")) {
             try {
                 Context ejbCxt = new InitialContext();
                 SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
                 VersionGroup vg = systemModelCoordinator.getSystemVersionGroup();
-                return vg.getCachedModelBase();
+                ModelBase model = vg.getCachedModelBase();
+                logger.trace_end(method);
+                return model;
             } catch (Exception ex) {
-                throw new EJBException(this.getClass().getName() + ".retrieveVersionGroupModel('default') failed to lookup systemModelCoordinator", ex);
+                throw logger.throwing(method, ex);
             }
         } else {
             VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
             if (vg == null) {
-                throw new EJBException(String.format("retrieveVersionModel cannot find a VG with refUuid=%s", refUuid));
+                throw logger.error_throwing(method, "cannot find ref:VersionGroup");
             }
-            return vg.createUnionModel();
+            ModelBase model = vg.createUnionModel();
+            logger.trace_end(method);
+            return model;
         }
     }
 
     public OntModel queryModelView(String refUuid, List<ModelUtil.ModelViewFilter> mvfs) {
+        logger.cleanup();
+        String method = "queryModelView";
+        logger.refuuid(refUuid);
+        logger.start(method);
         VersionGroup vg = VersionGroupPersistenceManager.findByReferenceId(refUuid);
         if (vg == null) {
-            throw new EJBException(String.format("queryModelView cannot find a VG with refUuid=%s", refUuid));
+            throw logger.error_throwing(method, "cannot find ref:VersionGroup");
         }
         ModelBase vgModel = vg.createUnionModel();
         OntModel resultModel = null;
@@ -176,11 +217,11 @@ public class HandleSystemCall {
                     resultModel.add(filteredModel);
                 }
             } catch (Exception ex) {
-                throw new EJBException(String.format("queryModelView cannot queryViewFilter for VG=%s", refUuid), ex);
+                throw logger.throwing(method, ex);
             }
         }
         if (resultModel == null) {
-            throw new EJBException(String.format("queryModelView has no inclusive filters for VG=%s", refUuid));
+            throw logger.error_throwing(method, "has no inclusive filters for ref:VersionGroup");
         }
         for (ModelUtil.ModelViewFilter mvf : mvfs) {
             if (mvf.isInclusive()) {
@@ -190,24 +231,40 @@ public class HandleSystemCall {
                 OntModel filteredModel = ModelUtil.queryViewFilter(vgModel.getOntModel(), mvf);
                 resultModel.remove(filteredModel);
             } catch (Exception ex) {
-                throw new EJBException(String.format("queryModelView cannot queryViewFilter for VG=%s", refUuid), ex);
+                throw logger.throwing(method, ex);
             }
         }
+        logger.end(method);
         return resultModel;
     }
 
+    public SystemInstance createInstance_API() {
+        logger.cleanup();
+        return createInstance();
+    }
+    
     public SystemInstance createInstance() {
+        String method = "createInstance";
+        logger.start(method);
         SystemInstance systemInstance = new SystemInstance();
         systemInstance.setReferenceUUID(UUID.randomUUID().toString());
         SystemInstancePersistenceManager.save(systemInstance);
+        logger.end(method);
         return systemInstance;
     }
 
+    public void terminateInstance_API(String refUUID) {
+        terminateInstance(refUUID);
+    }
+    
     public void terminateInstance(String refUUID) {
+        String method = "terminateInstance";
+        logger.start(method);
         SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
         systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         if (systemInstance == null) {
-            throw new EJBException(String.format("terminateInstance cannot find the SystemInstance with referenceUUID=%s", refUUID));
+            logger.refuuid(refUUID);
+            throw logger.error_throwing(method, "cannot find ref:SystemInstance");
         }
         if (systemInstance.getSystemDelta() != null) {
             DeltaPersistenceManager.delete(systemInstance.getSystemDelta());
@@ -218,35 +275,47 @@ public class HandleSystemCall {
                     DriverInstance driverInstance = dsd.getDriverInstance();
                     driverInstance.getDriverSystemDeltas().remove(dsd);
                     DeltaPersistenceManager.delete(dsd);
+                    logger.trace(method, "deleted "+dsd);
                 }
             }
         }
         if (systemInstance.getSystemDelta() != null) {
             DeltaPersistenceManager.delete(systemInstance.getSystemDelta());
+            logger.trace(method, "deleted "+systemInstance.getSystemDelta());
         }
         SystemInstancePersistenceManager.delete(systemInstance);
+        logger.end(method);
     }
 
     // useCachedVG = true && useRefreshedVG = false : 'normal' or 'through' mode 
     // useCachedVG = false: 'forward' mode  |  useRefreshedVG = true: 'forced' mode
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(SystemInstance systemInstance, SystemDelta sysDelta, boolean useCachedVG, boolean refreshForced) {
+        String method = "propagateDelta";
+        logger.start(method);
         // refresh systemInstance into current persistence context
         if (systemInstance.getId() != 0) {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         }
-        if (systemInstance.getSystemDelta() != null
-                && systemInstance.getSystemDelta().getDriverSystemDeltas() != null
-                && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
-            throw new EJBException(String.format("Trying to propagateDelta for %s that has delta already progagated.", systemInstance));
+        logger.refuuid(systemInstance.getReferenceUUID());
+        if (systemInstance.getSystemDelta() != null) {
+            if (systemInstance.getSystemDelta().getServiceDelta() != null && systemInstance.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+                logger.refuuid(systemInstance.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+            }
+            if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null
+                    && !systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
+                logger.targetid(systemInstance.getSystemDelta().getId());
+                throw logger.error_throwing(method, "target:SystemDelta has already propagated.");
+            }
         }
         if (sysDelta.getId() != null && !sysDelta.getId().isEmpty()) {
             sysDelta = (SystemDelta) DeltaPersistenceManager.findById(sysDelta.getId());
         }
+        logger.targetid(sysDelta.getId());
         // Note 1: an initial VG (#1) must exist 
         VersionGroup referenceVG_cached = sysDelta.getReferenceVersionGroup();
         if (referenceVG_cached == null) {
-            throw new EJBException(String.format("%s has no reference versionGroup to work with", systemInstance));
+            throw logger.error_throwing(method, "has no reference VersionGroup to work with.");
         }
         // refresh VG into current persistence context
         VersionGroup referenceVG = VersionGroupPersistenceManager.findByReferenceId(referenceVG_cached.getRefUuid());
@@ -268,6 +337,7 @@ public class HandleSystemCall {
         // Under 'forced', delta apply to refreshed headVG. No need to compare to referenceVG as referenceModel is from headVG.
         // Under other conditions, do compare their models to see if the head VG is newer than the referenceVG.
         if (!refreshForced && headVG != null && !headVG.equals(referenceVG)) {
+            logger.trace(method, String.format("verify model change with refreshForced=false, headVG=%s, headVG != referenceVG", headVG.toString()));
             //          create headOntModel. get D12=headModel.diffFromModel(refeneceOntModel)
             ModelBase headSystemModel = headVG.createUnionModel();
             // Note: The head model has committed (driverDeltas) or propagated (driverSystemDeltas if available) to reduce contention.
@@ -277,32 +347,42 @@ public class HandleSystemCall {
             if (sysDelta.getModelReduction() != null && sysDelta.getModelReduction().getOntModel() != null) {
                 com.hp.hpl.jena.rdf.model.Model reductionConflict = D12.getModelAddition().getOntModel().intersection(sysDelta.getModelReduction().getOntModel());
                 if (!ModelUtil.isEmptyModel(reductionConflict)) {
-                    throw new EJBException(String.format("%s %s.modelReduction based on %s conflicts with current head %s", systemInstance, sysDelta, referenceVG, headVG));
+                    throw logger.error_throwing(method, String.format("target:SystemDelta(%s).modelReduction based on %s conflicts with current head %s", sysDelta, referenceVG, headVG));
                 }
             }
             //          verify D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddiction().getOntModel()) == empty
             if (sysDelta.getModelAddition() != null && sysDelta.getModelAddition().getOntModel() != null) {
                 com.hp.hpl.jena.rdf.model.Model additionConflict = D12.getModelReduction().getOntModel().intersection(sysDelta.getModelAddition().getOntModel());
                 if (!ModelUtil.isEmptyModel(additionConflict)) {
-                    throw new EJBException(String.format("%s %s.modelAddition based on %s conflicts with current head %s", systemInstance, sysDelta, referenceVG, headVG));
+                    throw logger.error_throwing(method, String.format("target:SystemDelta(%s).modelAddition based on %s conflicts with current head %s", sysDelta, referenceVG, headVG));
                 }
             }
             // Note: no need to update current VG to head as the targetDSD will be based the current VG and driverSystem will verify contention on its own.
         }
         //## Step 3. decompose sysDelta into driverSystemDeltas by <Topology>
         // 3.1. split targetOntModel to otain list of target driver topologies
-        Map<String, OntModel> targetDriverSystemModels = ModelUtil.splitOntModelByTopology(targetOntModel, sysDelta);
+        Map<String, OntModel> targetDriverSystemModels;
+        try {
+            targetDriverSystemModels = ModelUtil.splitOntModelByTopology(targetOntModel, sysDelta);
+        } catch (Exception ex) {
+            throw logger.error_throwing(method, "failed to split targetOntModel -- " + ex);
+        }
         // 3.2. split referenceOntModel to otain list of reference driver topologies 
-        Map<String, OntModel> referenceDriverSystemModels = ModelUtil.splitOntModelByTopology(referenceOntModel, sysDelta);
+        Map<String, OntModel> referenceDriverSystemModels;
+        try {
+            referenceDriverSystemModels = ModelUtil.splitOntModelByTopology(referenceOntModel, sysDelta);
+        } catch (Exception ex) {
+            throw logger.error_throwing(method, "failed to split referenceOntModel -- " + ex);
+        }
         // 3.3. create list of non-empty driverSystemDeltas by diff referenceOntModel components to targetOntModel
         List<DriverSystemDelta> targetDriverSystemDeltas = new ArrayList<>();
         for (String driverSystemTopoUri : targetDriverSystemModels.keySet()) {
             if (!referenceDriverSystemModels.containsKey(driverSystemTopoUri)) {
-                throw new EJBException(String.format("%s cannot decompose %s due to unexpected target topology [uri=%s]", systemInstance, sysDelta, driverSystemTopoUri));
+                throw logger.error_throwing(method, String.format("cannot decompose target:SystemDelta(%s) due to unexpected target topology [uri=%s]", sysDelta, driverSystemTopoUri));
             }
             DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(driverSystemTopoUri);
             if (driverInstance == null) {
-                throw new EJBException(String.format("%s cannot find driverInstance for target topology [uri=%s]", systemInstance, driverSystemTopoUri));
+                throw logger.error_throwing(method, String.format("cannot find driverInstance for target topology [uri=%s]", driverSystemTopoUri));
             }
             //get old versionItem for reference model
             VersionItem oldVI = referenceVG.getVersionItemByDriverInstance(driverInstance);
@@ -313,7 +393,7 @@ public class HandleSystemCall {
             // check diff from refrence model (tom) to target model (rom)
             DeltaBase delta = referenceDSM.diffToModel(tom);
             if (ModelUtil.isEmptyModel(delta.getModelAddition().getOntModel()) && ModelUtil.isEmptyModel(delta.getModelReduction().getOntModel())) {
-                // no diff, use existing verionItem
+                logger.trace(method, "no diff between reference and target models for target topology="+driverSystemTopoUri);
                 continue;
             }
             // create  targetDSD only if there is a change. 
@@ -325,7 +405,7 @@ public class HandleSystemCall {
             // target delta uses version reference ID of committed model that corresponds to a known version in driverSystem.
             targetDSD.setReferenceVersionItem(oldVI);
             if (driverInstance == null) {
-                throw new EJBException(String.format("%s cannot find a dirverInstance for topology: %s", systemInstance, driverSystemTopoUri));
+                throw logger.error_throwing(method, String.format("cannot find driverInstance for target topology [uri=%s]", driverSystemTopoUri));
             }
             // prepare to dispatch to driverInstance
             driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
@@ -336,6 +416,7 @@ public class HandleSystemCall {
             targetDSD.getModelReduction().setDelta(null);
             //ModelPersistenceManager.save(targetDSD.getModelAddition());
             //ModelPersistenceManager.save(targetDSD.getModelReduction());
+            logger.trace(method, "created driver delta for target topology="+driverSystemTopoUri);
         }
         // Save systemDelta
         sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
@@ -351,8 +432,10 @@ public class HandleSystemCall {
             targetDSD.getModelReduction().setDelta(targetDSD);
             ModelPersistenceManager.merge(targetDSD.getModelAddition());
             ModelPersistenceManager.merge(targetDSD.getModelReduction());
+            logger.trace(method, "start propagating targetDSD="+targetDSD);
             // push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
+            logger.trace(method, "targetDSD has driverInstance="+driverInstance);
             // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta
             if (driverInstance.getDriverSystemDeltas() != null) {
                 Iterator<DriverSystemDelta> itOtherDSD = driverInstance.getDriverSystemDeltas().iterator();
@@ -372,26 +455,38 @@ public class HandleSystemCall {
                 }
                 IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
                 driverSystemHandler.propagateDelta(driverInstance, targetDSD);
-            } catch (NamingException e) {
-                throw new EJBException(e);
+            } catch (NamingException ex) {
+                throw logger.throwing(method, ex);
+            } catch (EJBException ex) {
+                throw logger.throwing(method, ex);
             }
         }
         // save systemInstance
         systemInstance.setSystemDelta(sysDelta);
         SystemInstancePersistenceManager.save(systemInstance);
+        logger.end(method);
         //## End of propgation
     }
 
     @Asynchronous
     public Future<String> commitDelta(SystemInstance systemInstance) {
+        logger.cleanup();
+        String method = "commitDelta";
         // 1. refresh systemInstance
         if (systemInstance.getId() != 0) {
             systemInstance = SystemInstancePersistenceManager.findById(systemInstance.getId());
         }
-        if (systemInstance.getSystemDelta() == null || systemInstance.getSystemDelta().getDriverSystemDeltas() == null
-                || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
-            throw new EJBException(String.format("%s has no systemDelta or driverSystemDeltas to commit", systemInstance));
+        logger.refuuid(systemInstance.getReferenceUUID());
+        if (systemInstance.getSystemDelta() != null) {
+            if (systemInstance.getSystemDelta().getServiceDelta() != null && systemInstance.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+                logger.refuuid(systemInstance.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+            }
+            if (systemInstance.getSystemDelta().getDriverSystemDeltas() == null
+                    || systemInstance.getSystemDelta().getDriverSystemDeltas().isEmpty()) {
+                throw logger.error_throwing(method, "as systemDelta == null or systemDelta.driverSystemDeltas is empty");
+            }
         }
+        logger.targetid(systemInstance.getSystemDelta().getId());
         Context ejbCxt = null;
         // 2. dispatch commit to drivers
         Map<DriverSystemDelta, Future<String>> commitResultMap = new HashMap<>();
@@ -401,7 +496,7 @@ public class HandleSystemCall {
             }
             DriverInstance driverInstance = dsd.getDriverInstance();
             if (driverInstance == null) {
-                throw new EJBException(String.format("%s in %s has null driverInstance ", dsd, systemInstance));
+                throw logger.error_throwing(method, String.format("%s has null driverInstance ", dsd, systemInstance));
             }
             try {
                 if (ejbCxt == null) {
@@ -413,8 +508,8 @@ public class HandleSystemCall {
                 Future<String> result = driverSystemHandler.commitDelta(dsd);
                 // 4. add AsyncResult to resultMap
                 commitResultMap.put(dsd, result);
-            } catch (NamingException e) {
-                throw new EJBException(e);
+            } catch (NamingException ex) {
+                throw logger.throwing(method, ex);
             }
         }
         // 4. Qury for status in a loop bounded by timeout.
@@ -424,45 +519,57 @@ public class HandleSystemCall {
             boolean doneSucessful = true;
             for (DriverSystemDelta dsd : commitResultMap.keySet()) {
                 Future<String> asyncResult = commitResultMap.get(dsd);
+                logger.trace(method, String.format("polling commited %s at minute %d", dsd, minute+1));
                 if (!asyncResult.isDone()) {
                     doneSucessful = false;
+                    logger.trace(method, String.format("%s pending", dsd));
                     break;
                 }
                 try {
                     String resultStatus = asyncResult.get();
                 } catch (InterruptedException | ExecutionException e) {
-                    throw new EJBException(String.format("commitDelta for (SI=%s, DI=%s) raised exception: %s", systemInstance, dsd.getDriverInstance(), e));
+                    throw logger.throwing(method, String.format("commiting %s at minute %d -exception- %s", dsd, minute+1, e), e);
+                } catch (EJBException ex) {
+                    throw logger.throwing(method, ex);
                 }
             }
             if (doneSucessful) {
+                logger.trace(method, String.format("commit successful at minute %d", minute+1));
                 return new AsyncResult<>("SUCCESS");
             }
             try {
                 sleep(60000); // wait for 1 minute
             } catch (InterruptedException ex) {
-                //Logger.getLogger(HandleSystemPushCall.class.getName()).log(Level.SEVERE, null, ex);
-                throw new EJBException(String.format("commitDelta for %s is interrupted before timed out ", systemInstance));
+                throw logger.error_throwing(method, "commit polling got interrupted prematurely");
             }
         }
-        throw new EJBException(String.format("commitDelta for %s has timed out ", systemInstance));
+        throw logger.error_throwing(method, "commit polling timed out - commit unsuccessful");
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(String sysInstanceUUID, SystemDelta sysDelta, boolean useCachedVG, boolean refreshForced) {
+        logger.cleanup();
+        String method = "propagateDelta";
+        logger.refuuid(sysInstanceUUID);
+        logger.start(method);
         SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(sysInstanceUUID);
         if (systemInstance == null) {
-            throw new EJBException("propagateDelta encounters unknown systemInstance with referenceUUID=" + sysInstanceUUID);
+            logger.error_throwing(method, "encounters unknown ref:SystemInstance.");
         }
-
+        logger.message(method, String.format("call internal this.propagateDelta(%s, %s, useCachedVG=%b, useCachedVG=%b)",systemInstance, sysDelta, useCachedVG, refreshForced));
         this.propagateDelta(systemInstance, sysDelta, useCachedVG, refreshForced);
+        logger.end(method);
     }
     
     public void plugDriverInstance(Map<String, String> properties) {
+        logger.cleanup();
+        String method = "plugDriverInstance";
+        logger.start(method);
         if (!properties.containsKey("topologyUri") || !properties.containsKey("driverEjbPath")) {
-            throw new EJBException(String.format("plugDriverInstance must provide both topologyUri and driverEjbPath properties"));
+            throw logger.error_throwing(method, "missing either topologyUri or driverEjbPath in properties");
         }
         if (DriverInstancePersistenceManager.findByTopologyUri(properties.get("topologyUri")) != null) {
-            throw new EJBException(String.format("A driverInstance has existed for topologyUri=%s", properties.get("topologyUri")));
+            throw logger.error_throwing(method, String.format("DriverInstance with topologyURI='%s' has existed.", properties.get("topologyUri")));
         }
         DriverInstance newDI = new DriverInstance();
         newDI.setProperties(properties);
@@ -474,14 +581,19 @@ public class HandleSystemCall {
             SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
             systemModelCoordinator.setBootStrapped(false);
         } catch (Exception ex) {
-            throw new EJBException(this.getClass().getName() + " failed to re-bootstrap systemModelCoordinator", ex);
+            throw logger.throwing(method, ex);
         }
+        logger.message(method, "plugged " + newDI);
+        logger.end(method);
     }
 
     public void unplugDriverInstance(String topoUri) {
+        logger.cleanup();
+        String method = "unplugDriverInstance";
+        logger.start(method);
         DriverInstance di = DriverInstancePersistenceManager.findByTopologyUri(topoUri);
         if (di == null) {
-            throw new EJBException(String.format("unplugDriverInstance cannot find the driverInstance for topologyUri=%s", topoUri));
+            throw logger.error_throwing(method, String.format("canot find DriverInstance with topologyURI='%s'.", topoUri));
         }
         // remove all related versionItems
         VersionItemPersistenceManager.deleteByDriverInstance(di);
@@ -496,16 +608,21 @@ public class HandleSystemCall {
                 SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
                 systemModelCoordinator.setBootStrapped(false);
             } catch (Exception ex) {
-                throw new EJBException(this.getClass().getName() + " failed to re-bootstrap systemModelCoordinator", ex);
+            throw logger.throwing(method, ex);
             }
-        } 
+        }
+        logger.message(method, "unplugged " + di);
+        logger.end(method);
     }
 
     public DriverInstance retrieveDriverInstance(String topoUri) {
+        String method = "retrieveDriverInstance";
+        logger.start(method);
         DriverInstance di = DriverInstancePersistenceManager.findByTopologyUri(topoUri);
         if (di == null) {
-            throw new EJBException(String.format("retrieveDriverInstance cannot find the driverInstance for topologyUri=%s", topoUri));
+            throw logger.error_throwing(method, String.format("canot find DriverInstance with topologyURI='%s'.", topoUri));
         }
+        logger.end(method);
         return di;
     }
 

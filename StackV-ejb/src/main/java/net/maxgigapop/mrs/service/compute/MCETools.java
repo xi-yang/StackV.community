@@ -55,11 +55,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
@@ -68,10 +65,7 @@ import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
 import org.json.simple.JSONObject;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.JsonPathException;
-import java.util.LinkedHashMap;
-import net.maxgigapop.mrs.common.ResourceTool;
-import net.maxgigapop.mrs.driver.aws.AwsPrefix;
+import net.maxgigapop.mrs.common.StackLogger;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_action;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_flow;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_match;
@@ -82,7 +76,7 @@ import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_ma
  */
 public class MCETools {
 
-    private static final Logger log = Logger.getLogger(MCETools.class.getName());
+    private static final StackLogger logger = new StackLogger(MCETools.class.getName(), "MCETools");
 
     public static class Path extends com.hp.hpl.jena.ontology.OntTools.Path {
 
@@ -242,7 +236,7 @@ public class MCETools {
         return KSP;
     }
 
-    public static List<MCETools.Path> computeFeasibleL2KSP(OntModel transformedModel, Resource nodeA, Resource nodeZ, JSONObject jsonConnReq) {
+    public static List<MCETools.Path> computeFeasibleL2KSP(OntModel transformedModel, Resource nodeA, Resource nodeZ, JSONObject jsonConnReq) throws Exception {
             Property[] filterProperties = {Nml.connectsTo};
             Filter<Statement> connFilters = new OntTools.PredicatesFilter(filterProperties);
             List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, nodeA, nodeZ, MCETools.KSP_K_DEFAULT, connFilters);
@@ -254,7 +248,13 @@ public class MCETools {
             while (itP.hasNext()) {
                 MCETools.Path candidatePath = itP.next();
                 // verify path
-                if (!MCETools.verifyL2Path(transformedModel, candidatePath)) {
+                boolean verified = false;
+                try {
+                    verified = MCETools.verifyL2Path(transformedModel, candidatePath);
+                } catch (Exception ex) {
+                    throw new Exception("MCETools.computeFeasibleL2KSP cannot verifyL2Path", ex);
+                }
+                if (!verified) {
                     itP.remove();
                 } else {
                     // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
@@ -406,7 +406,7 @@ public class MCETools {
     private static String[] openflowPathBetweenPortConstraints = {
         "SELECT $s $p $o WHERE {$s a nml:BidirectionalPort. $o a nml:BidirectionalPort FILTER($s = <$$s> && $o = <$$o>)}",};
 
-    public static boolean verifyOpenFlowPath(Model model, Path path) {
+    public static boolean verifyOpenFlowPath(Model model, Path path) throws Exception {
 
         //frist stage must be IntroSwitch to start from a port
         String stage = "TakeOff";
@@ -556,7 +556,7 @@ public class MCETools {
         "SELECT $s $p $o WHERE {$s a nml:Node. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",
         "SELECT $s $p $o WHERE {$s a nml:Topology. $o a nml:Topology FILTER($s = <$$s> && $o = <$$o>)}",};
 
-    public static boolean verifyL2Path(Model model, Path path) {
+    public static boolean verifyL2Path(Model model, Path path) throws Exception {
         String stage = "TAKEOFF";
         Iterator<Statement> itS = path.iterator();
         while (itS.hasNext()) {
@@ -589,7 +589,7 @@ public class MCETools {
         return true;
     }
 
-    public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) {
+    public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) throws Exception {
         for (String sparql : constraints) {
             if (ModelUtil.evaluateStatement(model, stmt, sparql)) {
                 return true;
@@ -599,6 +599,7 @@ public class MCETools {
     }
 
     public static OntModel createL2PathVlanSubnets(Model model, Path path, JSONObject portTeMap) {
+        String method = "createL2PathVlanSubnets";
         HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
         ListIterator<Statement> itS = path.listIterator();
         boolean last = false;
@@ -636,7 +637,8 @@ public class MCETools {
                     lastPort = currentHop;
                 } catch (TagSet.NoneVlanExeption ex) {
                     ;
-                } catch (TagSet.EmptyTagSetExeption ex) {
+                } catch (TagSet.EmptyTagSetExeption | TagSet.InvalidVlanRangeExeption ex) {
+                    logger.trace(method, String.format("current hop = '%s' -- ", currentHop) + ex);
                     return null; // throw Exception ?
                 }
             }
@@ -655,9 +657,10 @@ public class MCETools {
                         lastPort = currentHop;
                     } catch (TagSet.NoneVlanExeption ex) {
                         ;
-                    } catch (TagSet.EmptyTagSetExeption ex) {
+                    } catch (TagSet.EmptyTagSetExeption | TagSet.InvalidVlanRangeExeption ex) {
+                        logger.trace(method, String.format("current hop = '%s' -- ", currentHop) + ex);
                         return null; // throw Exception ?
-                    }
+                    } 
                 }
             }
         }
@@ -704,7 +707,7 @@ public class MCETools {
 
     //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as params for currentHop
     private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, JSONObject portTeMap)
-            throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption {
+            throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption, TagSet.InvalidVlanRangeExeption {
         if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
             //@TODO: handling adaptation?
         }
@@ -790,7 +793,7 @@ public class MCETools {
             }
         }
         // vlan translation
-        TagSet lastVlanRange = TagSet.VlanRangeANY.clone();
+        TagSet lastVlanRange = TagSet.VlanRangeANY().clone();
         // no vlan translation
         if (!vlanTranslation && lastParamMap != null && lastParamMap.containsKey("vlanRange")) {
             lastVlanRange = (TagSet) lastParamMap.get("vlanRange");
@@ -816,6 +819,7 @@ public class MCETools {
     }
 
     private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap) {
+        String method = "createVlanSubnetOnHop";
         HashMap paramMap = (HashMap) portParamMap.get(currentHop);
         if (!paramMap.containsKey("vlanRange")) {
             return null;
@@ -889,7 +893,12 @@ public class MCETools {
             rs = ModelUtil.sparqlQuery(model, sparql);
             while (rs.hasNext()) {
                 QuerySolution solution = rs.next();
-                TagSet vlanSubRange = new TagSet(solution.getLiteral("range").toString());
+                TagSet vlanSubRange;
+                try {
+                    vlanSubRange = new TagSet(solution.getLiteral("range").toString());
+                } catch (TagSet.InvalidVlanRangeExeption ex) {
+                    throw logger.throwing(method, ex);
+                }
                 if (vlanSubRange.hasTag(suggestedVlan)) {
                     subPort = solution.getResource("sub_port");
                     currentHop = subPort;
@@ -1130,7 +1139,8 @@ public class MCETools {
     }
     
     // get VLAN range for the port plus all the available ranges in sub-ports (LabelGroup) and remove allocated vlans (Label)
-    private static TagSet getVlanRangeForPort(Model model, Resource port) {
+    private static TagSet getVlanRangeForPort(Model model, Resource port) 
+            throws TagSet.InvalidVlanRangeExeption {
         TagSet vlanRange = null;
         String sparql = String.format("SELECT ?range WHERE {"
                 + "<%s> nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
@@ -1186,8 +1196,9 @@ public class MCETools {
 
     // get VLAN range for the port plus all the available ranges in sub-ports (LabelGroup) and remove allocated vlans (Label)
     private static TagSet getVlanRangeForOpenFlowPort(Model model, Resource port) {
+        String method = "getVlanRangeForOpenFlowPort";
         String portName = getNameForPort(model, port);
-        TagSet vlanRange = TagSet.VlanRangeANY.clone();
+        TagSet vlanRange = TagSet.VlanRangeANY().clone();
         String sparql = String.format("SELECT ?vlan WHERE {{"
                 + "?flow mrs:flowMatch ?match_port. "
                 + "?match_port mrs:type \"in_port\". "
@@ -1212,8 +1223,8 @@ public class MCETools {
             try {
                 int vtag = Integer.parseInt(vlan);
                 vlanRange.removeTag(vtag);
-            } catch (NumberFormatException e) {
-                log.warning(String.format("MCETools::getVlanRangeForOpenFlowPort('%s') encountered invalid vlan tag '%s' in flows.", port, vlan));
+            } catch (NumberFormatException ex) {
+                logger.warning(method, String.format("port '%s' has invalid vlan tag '%s' in flows -- %s", port, vlan, ex));
             }
         }
         return vlanRange;
@@ -1250,7 +1261,7 @@ public class MCETools {
         //spaModel.remove(listStmtsToRemove);
     }
     
-    public static String formatJsonExport(String jsonExport, String formatOutput)  {
+    public static String formatJsonExport(String jsonExport, String formatOutput) throws Exception  {
         // get all format patterns
         Matcher m = Pattern.compile("\\%[^\\%]+\\%").matcher(formatOutput);
         List<String> jsonPathList = new ArrayList();
@@ -1272,7 +1283,7 @@ public class MCETools {
                 }
                 formatOutput = formatOutput.replace(jsonPath, jsonPattern);
             } catch (Exception ex) {
-                throw new EJBException(String.format("MCETools.formatJsonExport failed to export with JsonPath('%s') from:\n %s",
+                throw new Exception(String.format("MCETools.formatJsonExport failed to export with JsonPath('%s') from:\n %s",
                         jsonPath.substring(1, jsonPath.length() - 1), jsonExport));
             }
 

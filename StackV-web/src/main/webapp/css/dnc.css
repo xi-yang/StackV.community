@@ -23,8 +23,20 @@
 #spacer{
     height: 20px;
 }
+#overlay-black {
+    position   : absolute;
+    top        : 0;
+    left       : 0;
+    width      : 100%;
+    height     : 100%;
+    background : #000;
+    opacity    : 0.6;
+    filter     : alpha(opacity=60);
+    z-index    : 1;
+    display    : none;
+}
 #service-name{
-    width: 200px;
+    width: 600px;
 }
 #table-div{
     width: inherit;

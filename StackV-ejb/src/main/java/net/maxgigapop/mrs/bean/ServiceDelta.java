@@ -97,6 +97,7 @@ public class ServiceDelta extends DeltaBase {
         if (this.systemDelta != null) {
             cloned.systemDelta = this.systemDelta;
         }
+        cloned.referenceUUID = this.referenceUUID;
         return cloned;
     }
 

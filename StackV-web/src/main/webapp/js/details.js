@@ -20,96 +20,150 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2 */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
 // Tweens
-var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut, paused: true, top: "20px"});
-var tweenServiceDeltaTable = new TweenLite("#service-delta-table", .5, {ease: Power2.easeInOut, paused: true, top: 0});
-var tweenSystemDeltaTable = new TweenLite("#system-delta-table", .5, {ease: Power2.easeInOut, paused: true, top: 0});
+var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px"});
+var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
+var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
 
-$(function () {
-    setTimeout(function () {
-        setRefresh(60);
-    }, 1000);
+var view = "center";
+
+Mousetrap.bind({
+    'shift+left': function () {
+        window.location.href = "/StackV-web/ops/catalog.jsp";
+    },
+    'shift+right': function () {
+        window.location.href = "/StackV-web/ops/srvc/driver.jsp";
+    },
+    'left': function () {
+        viewShift("left");
+    },
+    'right': function () {
+        viewShift("right");
+    }
 });
-
-/* REFRESH */
-
-function timerChange(sel) {
-    clearInterval(refreshTimer);
-    clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
-        setRefresh(sel.value);
-    } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+function viewShift(dir) {
+    resetView();
+    switch (view) {
+        case "left":
+            if (dir === "right") {
+                newView("details");
+            }
+            break;
+        case "center":
+            switch (dir) {
+                case "left":
+                    newView("logging");
+                    break;
+                case "right":
+                    newView("visual");
+                    break;
+            }
+            view = dir;
+            break;
+        case "right":
+            if (dir === "left") {
+                newView("details");
+            }
+            break;
     }
 }
 
-function setRefresh(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadDetails(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
-}
-
-function reloadDetails(time) {
-    enableLoading();
-    keycloak.updateToken(90).error(function () {
-        console.log("Error updating token!");
-    }).success(function (refreshed) {
-        tweenDetailsPanel.reverse();
-        setTimeout(function () {
-            if (refreshed) {
-                sessionStorage.setItem("token", keycloak.token);
-                console.log("Token Refreshed by nexus!");
-            }
-
-            var timerSetting = $("#refresh-timer").val();
-            var uuid = getURLParameter("uuid");
-            var manual = false;
-            if (typeof time === "undefined") {
-                time = countdown;
-            }
-            if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-                manual = true;
-            }
-
-            $('#details-panel').load(document.URL + ' #instance-details-table', function () {
-                loadDetails();
-
-                $("#refresh-timer").val(timerSetting);
-                if (manual === false) {
-                    countdown = time;
-                    $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
-                } else {
-                    $("#refresh-button").html('Manually Refresh Now');
-                }
-
-                $(".delta-table-header").click(function () {
-                    $("#body-" + this.id).toggleClass("hide");
-                });
-            });
-        }, 750);
+$(function () {
+    $(".checkbox-level").change(function () {
+        if ($(this).is(":checked")) {
+            $("#log-div").removeClass("hide-" + this.name);
+        } else {
+            $("#log-div").addClass("hide-" + this.name);
+        }
     });
+    $("#filter-search-clear").click(function () {
+        $("#filter-search-input").val("");
+        loadLogs();
+    });
+});
+
+function loadDetailsNavbar() {
+    $("#sub-nav").load("/StackV-web/details_navbar.html", function () {
+        setRefresh(30);
+        switch (view) {
+            case "left":
+                $("#logging-tab").addClass("active");
+                break;
+            case "center":
+                $("#sub-details-tab").addClass("active");
+                break;
+            case "right":
+                $("#visual-tab").addClass("active");
+                break;
+        }
+
+        $("#logging-tab").click(function () {
+            resetView();
+            newView("logging");
+        });
+        $("#sub-details-tab").click(function () {
+            resetView();
+            newView("details");
+        });
+        $("#visual-tab").click(function () {
+            resetView();
+            newView("visual");
+        });
+    });
+}
+
+function resetView() {
+    switch (view) {
+        case "left":
+            $("#sub-nav .active").removeClass("active");
+            tweenLoggingPanel.reverse();
+            break;
+        case "center":
+            $("#sub-nav .active").removeClass("active");
+            tweenDetailsPanel.reverse();
+            break;
+        case "right":
+            $("#sub-nav .active").removeClass("active");
+            tweenVisualPanel.reverse();
+            break;
+    }
+}
+function newView(panel) {
+    switch (panel) {
+        case "logging":
+            tweenLoggingPanel.play();
+            $("#logging-tab").addClass("active");
+            view = "left";
+            break;
+        case "details":
+            tweenDetailsPanel.play();
+            $("#sub-details-tab").addClass("active");
+            view = "center";
+            break;
+        case "visual":
+            tweenVisualPanel.play();
+            $("#visual-tab").addClass("active");
+            view = "right";
+            break;
+    }
 }
 
 
 /* DETAILS */
 
 function loadDetails() {
-    // Subfunctions
+    // Subfunctions    
     subloadInstance();
 }
 
 function subloadInstance() {
     var uuid = sessionStorage.getItem("uuid");
+    if (!uuid) {
+        alert("No Service Instance Selected!");
+        window.location.replace('/StackV-web/ops/catalog.jsp');
+    }
+
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
     $.ajax({
         url: apiUrl,
@@ -125,9 +179,10 @@ function subloadInstance() {
              *      3 - creation_time
              *      4 - super_state     */
 
-            $("#details-panel").append("<div id='instance-verification' class='hide'>" + instance[0] + "</div>");
             var panel = document.getElementById("details-panel");
+            panel.innerHTML = "";
 
+            $("#details-panel").append("<div id='instance-verification' class='hide'>" + instance[0] + "</div>");
             var table = document.createElement("table");
 
             table.id = "instance-details-table";
@@ -139,17 +194,7 @@ function subloadInstance() {
             head.innerHTML = instance[1] + " Service Details";
             row.appendChild(head);
             head = document.createElement("th");
-            head.innerHTML = '<div id="refresh-panel" class="form-inline">'
-                    + '<label for="refresh-timer">Auto-Refresh Interval</label>'
-                    + '<select id="refresh-timer" onchange="timerChange(this)" class="form-control">'
-                    + '<option value="off">Off</option>'
-                    + '<option value="5">5 sec.</option>'
-                    + '<option value="10">10 sec.</option>'
-                    + '<option value="30">30 sec.</option>'
-                    + '<option value="60" selected>60 sec.</option>'
-                    + '</select>'
-                    + '</div>'
-                    + '<button class="button-header btn btn-sm" id="refresh-button" onclick="reloadDetails()">Refresh in    seconds</button>';
+            head.innerHTML = '';
             row.appendChild(head);
             thead.appendChild(row);
             table.appendChild(thead);
@@ -248,25 +293,111 @@ function subloadInstance() {
                     },
                     success: function () {
                         if (command === "delete" || command === "force_delete") {
-                            enableLoading();
                             setTimeout(function () {
                                 window.document.location = "/StackV-web/ops/catalog.jsp";
                             }, 250);
                         } else {
-                            reloadDetails();
+                            reloadData();
                         }
                     }
                 });
             });
 
-            tweenDetailsPanel.play();
-
             // Next steps
             loadStatus(uuid);
-            subloadVerification();
+            subloadLogging();
         }
     });
 }
+
+
+/* LOGGING */
+function subloadLogging() {
+    loadLogs();
+    setTimeout(function () {
+        if (view === "left") {
+            tweenLoggingPanel.play();
+        }
+    }, 1000);
+    subloadVerification();
+}
+
+function loadLogs() {
+    var uuid = sessionStorage.getItem("uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (logs) {
+            var div = document.getElementById("log-div");
+            div.innerHTML = "";
+            for (i = 0; i < logs.length; i++) {
+                var log = logs[i];
+                var detail = document.createElement("details");
+                detail.className = "level-" + log["level"];
+
+                /*  log mapping:
+                 *      referenceUUID
+                 *      marker
+                 *      timestamp
+                 *      level
+                 *      logger
+                 *      message
+                 *      exception     
+                 */
+
+                var summary = document.createElement("summary");
+                summary.innerHTML = log["timestamp"] + " - " + log["message"];
+                detail.appendChild(summary);
+                var data = document.createElement("p");
+                data.innerHTML = "UUID: " + log["referenceUUID"];
+                detail.appendChild(data);
+                var data = document.createElement("p");
+                data.innerHTML = "Level: " + log["level"];
+                detail.appendChild(data);
+                if (log["marker"]) {
+                    var data = document.createElement("p");
+                    data.innerHTML = "Marker: " + log["marker"];
+                    detail.appendChild(data);
+                }
+                var data = document.createElement("p");
+                data.innerHTML = "Logger: " + log["logger"];
+                detail.appendChild(data);
+                if (log["exception"]) {
+                    var data = document.createElement("p");
+                    data.innerHTML = "Exception: " + log["exception"];
+                    detail.appendChild(data);
+                }
+                div.appendChild(detail);
+            }
+
+            filterLogs();
+
+            $("#black-screen").click(function () {
+                $("#info-panel").removeClass("active");
+                closeCatalog();
+            });
+        }
+    });
+}
+
+function filterLogs() {
+    // Declare variables  
+    var input = document.getElementById("filter-search-input");
+    var filter = input.value.toUpperCase();
+    $('#log-div').children('details').each(function () {
+        if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
+            $(this).removeClass("hide");
+        } else {
+            $(this).addClass("hide");
+        }
+    });
+}
+
+
 
 function subloadVerification() {
     var uuid = sessionStorage.getItem("uuid");
@@ -460,7 +591,7 @@ function subloadDelta() {
 
             // Next step
             subloadACL();
-            loadVisualization();
+            // loadVisualization();
         }
     });
 }
@@ -558,6 +689,11 @@ function loadStatus(refUuid) {
             deltaModerate();
             instructionModerate();
             buttonModerate();
+
+            if (view === "center") {
+                tweenDetailsPanel.play();
+            }
+            loadVisualization();
         }
     });
 }
@@ -566,7 +702,7 @@ function buildDeltaTable(type) {
     var panel = document.getElementById("details-panel");
 
     var table = document.createElement("table");
-    table.className = "management-table details-table " +  type.toLowerCase() + "-delta-table";
+    table.className = "management-table details-table " + type.toLowerCase() + "-delta-table";
     table.id = type.toLowerCase() + "-delta-table";
 
     var thead = document.createElement("thead");
@@ -622,62 +758,335 @@ function buildDeltaTable(type) {
 
 function loadVisualization() {
     $("#details-viz").load("/StackV-web/details_viz.html", function () {
-        // Loading Verification visualization
-        $("#ver-add").append($("#va_viz_div"));
-        $("#ver-add").find("#va_viz_div").removeClass("hidden");
+        document.getElementById("visual-panel").innerHTML = "";
+        var State = document.getElementById("instance-substate").innerHTML;
+        // State = "READY";
+        var States = {
+            "INIT": 0,
+            "COMPILED": 1,
+            "COMMITTED": 2,
+            "FAILED": 3,
+            "READY": 4
+        };
 
-        $("#unver-add").append($("#ua_viz_div"));
-        $("#unver-add").find("#ua_viz_div").removeClass("hidden");
+        var tabs = [
+            {
+                "name": "Service",
+                "state": "INIT",
+                "createContent": createVizTab.bind(undefined, "Service")
+            },
+            {
+                "name": "System",
+                "state": "COMPILED",
+                "createContent": createVizTab.bind(undefined, "System")
+            },
+            {
+                "name": "Verification",
+                "state": "READY",
+                "createContent": createVizTab.bind(undefined, "Verification")
+            }
+        ];
 
-        $("#ver-red").append($("#vr_viz_div"));
-        $("#ver-red").find("#vr_viz_div").removeClass("hidden");
+        createTabs();
+        function createVizTab(viz_type) {
+            var div = document.createElement("div");
+            div.classList.add("viz");
+            div.id = "sd_" + viz_type;
+            div.appendChild(buildViz(viz_type + " Addition"));
+            div.appendChild(buildViz(viz_type + " Reduction"));
 
-        $("#unver-red").append($("#ur_viz_div"));
-        $("#unver-red").find("#ur_viz_div").removeClass("hidden");
+            div.classList.add("tab-pane");
+            div.classList.add("fade");
+            div.classList.add("in");
+            div.classList.add("viz-tab-content");
+            return div;
+        }
 
-        // Loading Service Delta visualization
-        $("#delta-Service").addClass("hide");
-        buildDeltaTable("Service");
-        buildDeltaTable("System");
+        function buildHeaderLink(id, text) {
+            var link = document.createElement("a");
+            ;
+            link.href = "#";
+            link.classList.add("viz-hdr");
+            link.classList.add("unexpanded");
+            link.id = id;
+            link.text = text;
+            return link;
+        }
 
-        tweenServiceDeltaTable.play();
+        function buildViz(viz_type) {
+            var table = document.createElement("table");
+            table.classList.add("management-table");
+            table.classList.add("viz-table");
+            var headerRow = document.createElement("tr");
+            var vizRow = document.createElement("tr");
+            var additionHeader = document.createElement("th");
+            var reductionHeader = document.createElement("th");
+            var additionCell = document.createElement("td");
+            additionCell.classList.add("viz-cell");
+            var reductionCell = document.createElement("td");
+            reductionCell.classList.add("viz-cell");
 
-        $("#serv-add").append($("#serva_viz_div"));
-        $("#serv-add").find("#serva_viz_div").removeClass("hidden");
+            switch (viz_type) {
 
-        $("#serv-red").append($("#servr_viz_div"));
-        $("#serv-red").find("#servr_viz_div").removeClass("hidden");
+                case "System Addition":
+                    table.id = "sd_System_Addition";
 
-        // Loading System Delta visualization
-        var subState = document.getElementById("instance-substate").innerHTML;
-        var verificationTime = document.getElementById("verification-time").innerHTML;
-        if ((subState !== 'READY' && subState === 'FAILED') || verificationTime === '') {
+                    var a = buildHeaderLink("sd_System_Addition_Link", "Addition");
+                    additionHeader.appendChild(a);
+                    additionCell.classList.add("viz-cell");
+                    additionCell.id = "sd_System_Addition_Viz";
+
+                    vizRow.appendChild(additionCell);
+
+                    if (!$("#sysa_viz_div").hasClass("emptyViz")) {
+                        var sysa_viz_div = document.getElementById("sysa_viz_div");
+                        additionCell.appendChild(sysa_viz_div);
+                        sysa_viz_div.classList.remove("hidden");
+                    }
+                    break;
+                case "System Reduction":
+                    table.id = "sd_System_Reduction";
+
+                    var a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
+                    reductionHeader.appendChild(a);
+                    reductionCell.classList.add("viz-cell");
+                    reductionCell.id = "sd_System_Reduction_Viz";
+
+                    vizRow.appendChild(reductionCell);
+
+                    if (!$("#sysr_viz_div").hasClass("emptyViz")) {
+                        //  $(".system-delta-table").removeClass("hide");
+                        var sysr_viz_div = document.getElementById("sysr_viz_div");
+                        reductionCell.appendChild(sysr_viz_div);
+                        sysr_viz_div.classList.remove("hidden");
+                    }
+
+                    break;
+                case "Service Addition":
+                    table.id = "sd_Service_Addition";
+
+                    var a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
+                    additionHeader.appendChild(a);
+                    additionCell.classList.add("viz-cell");
+                    additionCell.id = "sd_Service_Addition_Viz";
+
+                    vizRow.appendChild(additionCell);
+
+                    if (!$("#serva_viz_div").hasClass("emptyViz")) {
+                        // $(".service-delta-table").removeClass("hide");
+                        var serva_viz_div = document.getElementById("serva_viz_div");
+                        additionCell.appendChild(serva_viz_div);
+                        serva_viz_div.classList.remove("hidden");
+                    }
+
+                    break;
+                case "Service Reduction":
+                    table.id = "sd_Service_Reduction";
+
+                    var a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
+                    reductionHeader.appendChild(a);
+                    reductionCell.classList.add("viz-cell");
+                    reductionCell.id = "sd_Service_Addition_Viz";
+
+                    vizRow.appendChild(reductionCell);
+
+                    if (!$("#servr_viz_div").hasClass("emptyViz")) {
+                        var servr_viz_div = document.getElementById("servr_viz_div");
+                        reductionCell.appendChild(servr_viz_div);
+                        servr_viz_div.classList.remove("hidden");
+                    }
+                    break;
+                case "Verification Addition":
+                    var a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
+                    additionHeader.appendChild(a);
+                    additionCell.classList.add("viz-cell");
+                    additionCell.id = "sd_Unverified_Addition_Viz";
+
+                    vizRow.appendChild(additionCell);
+
+                    a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
+                    reductionHeader.appendChild(a);
+                    reductionCell.classList.add("viz-cell");
+                    reductionCell.id = "sd_Verified_Addition_Viz";
+
+                    vizRow.appendChild(reductionCell);
+
+
+                    if (!$("#va_viz_div").hasClass("emptyViz") || !$("#ua_viz_div").hasClass("emptyViz")) {
+                        var va_viz_div = document.getElementById("va_viz_div");
+                        var ua_viz_div = document.getElementById("ua_viz_div");
+
+                        additionCell.appendChild(ua_viz_div);
+                        reductionCell.appendChild(va_viz_div);
+
+                        ua_viz_div.classList.remove("hidden");
+                        va_viz_div.classList.remove("hidden");
+
+                    }
+
+                    break;
+                case "Verification Reduction":
+
+                    var a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
+                    additionHeader.appendChild(a);
+                    additionCell.classList.add("viz-cell");
+                    additionCell.id = "sd_Unverified_Reduction_Viz";
+
+                    vizRow.appendChild(additionCell);
+
+                    a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
+                    reductionHeader.appendChild(a);
+                    reductionCell.classList.add("viz-cell");
+                    reductionCell.id = "sd_Verified_Reduction_Viz";
+
+                    vizRow.appendChild(reductionCell);
+
+                    if (!$("#vr_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {
+                        var ur_viz_div = document.getElementById("ur_viz_div");
+                        var vr_viz_div = document.getElementById("vr_viz_div");
+
+                        additionCell.appendChild(ur_viz_div);
+                        reductionCell.appendChild(vr_viz_div);
+
+                        ur_viz_div.classList.remove("hidden");
+                        vr_viz_div.classList.remove("hidden");
+                    }
+                    break;
+            }
+            if (viz_type.includes("Verification")) {
+                headerRow.appendChild(additionHeader);
+                headerRow.appendChild(reductionHeader);
+            } else if (viz_type.includes("Addition")) {
+                headerRow.appendChild(additionHeader);
+            } else {
+                headerRow.appendChild(reductionHeader);
+            }
+            table.appendChild(headerRow);
+            table.appendChild(vizRow);
+
+            return table;
+        }
+
+
+
+        function createTabs() {
+            $(".verification-table").addClass("hide");
+            $(".system-delta-table").addClass("hide");
+            $(".service-delta-table").addClass("hide");
+            $("#delta-Service").addClass("hide");
             $("#delta-System").addClass("hide");
-            $("#delta-System").insertAfter("#system-delta-table");
 
-            tweenSystemDeltaTable.play();
 
-            // Toggle button should toggle  between system delta visualization and delta-System table
-            // if the verification failed
-            document.querySelector("#system-delta-table .details-model-toggle").onclick = function () {
-                toggleTextModel('#system-delta-table', '#delta-System');
-            };
+            var tabBar = document.createElement("ul");
+            tabBar.classList.add("nav");
+            tabBar.classList.add("nav-tabs");
 
-            $("#syst-red").append($("#sysr_viz_div"));
-            $("#syst-add").append($("#sysa_viz_div"));
+            var tabContent = document.createElement("div");
+            tabContent.classList.add("tab-content");
+            tabContent.classList.add("viz-tab-content");
 
-            $("#syst-red").find("#sysr_viz_div").removeClass("hidden");
-            $("#syst-add").find("#sysa_viz_div").removeClass("hidden");
-        } else {
-            // Toggle button should toggle between  verification visualization and delta-System table
-            // if the verification succeeded
-            $("#delta-System").insertAfter(".verification-table");
-            document.querySelector("#delta-System .details-model-toggle").onclick = function () {
-                toggleTextModel('.verification-table', '#delta-System');
-            };
+            for (var i = 0; i < tabs.length; i++) {
+                var tab = tabs[i];
+                if (States[tab.state] <= States[State]) {
+                    createTab(tab, tabBar);
+                    tabContent.appendChild(tab.createContent());
+                }
+            }
+            tabBar.lastChild.classList.add("active");
+            tabContent.lastChild.classList.add("active");
+
+            var visualization_panel = document.getElementById("visual-panel");
+            visualization_panel.appendChild(tabBar);
+            visualization_panel.appendChild(tabContent);
+
+            setEvent();
+        }
+
+        function make_tab_id(tab) {
+            var id = tab.name.replace(/\s+/g, '');
+            return "sd_" + id;
+        }
+        function createTab(tab, tabBar) {
+            var li = document.createElement("li");
+            var a = document.createElement("a");
+            a.href = "#" + make_tab_id(tab);
+            a.text = tab.name;
+            a.setAttribute("data-toggle", "tab");
+            li.appendChild(a);
+            tabBar.appendChild(li);
+        }
+
+        function setEvent(container) {
+            //$(".viz-hdr")
+            //$(".details-viz-button").click();
+
+            $(".viz-hdr").on("click", function () {
+                var tab = $(this).closest(".tab-pane");
+
+                var hdr = $(this).closest("th");
+                var cell = hdr.closest('table').find('td').eq(hdr.index());
+                var table = $(this).closest("table");
+                var viz = cell.children().eq(0);
+                var text_model = viz.children(".details-viz-text-model");
+                var text_model_pre = text_model.children("pre").eq(0);
+                ;
+
+                var text_model_pre_width = text_model_pre.width();
+                var text_model_pre_height = text_model_pre.height();
+
+                if (viz.hasClass("emptyViz"))
+                    return;
+
+                var button = viz.children(".details-viz-recenter-button");
+
+                if ($(this).hasClass("unexpanded")) {
+                    if (!$("#instance-details-table").hasClass("hide"))
+                        $("#instance-details-table").addClass("hide");
+
+                    tab.find(".viz-cell").not(cell).addClass("hide");
+                    tab.find(".viz-hdr").closest("th").not(hdr).addClass("hide");
+                    tab.find(".viz-table").not(table).addClass("hide");
+
+                    viz.addClass("expanded-viz-div");
+                    table.height("95%");
+                    $(this).removeClass("unexpanded");
+                    $(this).addClass("expanded");
+                    button.trigger("click", [viz.width(), viz.height()]);
+
+                    text_model_pre.width("inherit");
+                    text_model_pre.addClass("expanded");
+                    text_model_pre.height(viz.height() * 2);
+                } else {
+                    if ($("#instance-details-table").hasClass("hide") && !$(".viz-hdr.expanded").not(this).length) {
+                        $("#instance-details-table").removeClass("hide");
+                    }
+
+                    tab.find(".viz-cell").not(cell).removeClass("hide");
+                    tab.find(".viz-hdr").closest("th").not(hdr).removeClass("hide");
+                    tab.find(".viz-table").removeClass("hide");
+
+                    table.height("10%");
+                    viz.removeClass("expanded-viz-div");
+                    $(this).removeClass("expanded");
+                    $(this).addClass("unexpanded");
+                    button.trigger("click", [viz.width(), viz.height()]);
+
+                    text_model_pre.removeClass("expanded");
+                    text_model_pre.width("initial");
+                    text_model_pre.height(text_model_pre_height / 2.5);
+
+                }
+
+            });
+        }
+
+        if (view === "right") {
+            tweenVisualPanel.play();
         }
     });
+
 }
+
 
 function toggleTextModel(viz_table, text_table) {
     if (!$(viz_table.toLowerCase()).length) {
@@ -689,7 +1098,7 @@ function toggleTextModel(viz_table, text_table) {
         // delta-Service, service verification etc must always display before
         // everything else.
         if (text_table.toLowerCase().indexOf("service") > 0) {
-            $(text_table).insertAfter("#instance-details-table")
+            $(text_table).insertAfter("#instance-details-table");
         }
         $(text_table).toggleClass("hide");
 
@@ -890,3 +1299,73 @@ function buttonModerate() {
 }
 
 
+/* REFRESH */
+function reloadData(time) {
+    keycloak.updateToken(90).error(function () {
+        console.log("Error updating token!");
+    }).success(function (refreshed) {
+        switch (view) {
+            case "left":
+                /*tweenLoggingPanel.reverse();*/
+                break;
+            case "center":
+                tweenDetailsPanel.reverse();
+                break;
+            case "right":
+                tweenVisualPanel.reverse();
+                break;
+        }
+        setTimeout(function () {
+            // Refresh Operations                        
+            loadDetails();
+            $(".delta-table-header").click(function () {
+                $("#body-" + this.id).toggleClass("hide");
+            });
+            refreshSync(refreshed, time);
+        }, 1000);
+    });
+}
+
+function refreshSync(refreshed, time) {
+    if (refreshed) {
+        sessionStorage.setItem("token", keycloak.token);
+        console.log("Token Refreshed by nexus!");
+    }
+    var timerSetting = $("#refresh-timer").val();
+    var manual = false;
+    if (typeof time === "undefined") {
+        time = countdown;
+    }
+    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+        manual = true;
+    }
+    $("#refresh-timer").val(timerSetting);
+    if (manual === false) {
+        countdown = time;
+        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
+    } else {
+        $("#refresh-button").html('Manually Refresh Now');
+    }
+}
+function timerChange(sel) {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+    if (sel.value !== 'off') {
+        setRefresh(sel.value);
+    } else {
+        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+    }
+}
+function setRefresh(time) {
+    countdown = time;
+    refreshTimer = setInterval(function () {
+        reloadData(time);
+    }, (time * 1000));
+    countdownTimer = setInterval(function () {
+        refreshCountdown(time);
+    }, 1000);
+}
+function refreshCountdown() {
+    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
+    countdown--;
+}

@@ -30,6 +30,7 @@ import net.maxgigapop.mrs.bean.DeltaBase;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ServiceInstance;
 import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
@@ -37,6 +38,8 @@ import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
  */
 @SuppressWarnings("unchecked")
 public class ServiceDeltaPersistenceManager {
+
+    private static final StackLogger logger = new StackLogger(ServiceDeltaPersistenceManager.class.getName(), "ServiceDeltaPersistenceManager");
 
     public static ServiceDelta findById(Long id) {
         return PersistenceManager.find(ServiceDelta.class, id);
@@ -51,10 +54,12 @@ public class ServiceDeltaPersistenceManager {
             }
             return listSD.get(0);
         } catch (Exception e) {
+            logger.targetid(uuid);
             if (e.getMessage().contains("No entity found")) {
+                logger.warning("findByReferenceUUID", "target:ServiceDelta - no entity found");
                 return null;
             }
-            throw new EJBException(String.format("ServiceDeltaPersistenceManager::findByReferenceUUID raised exception: %s", e.getMessage()));
+            throw logger.error_throwing("findByReferenceUUID", e.getMessage());
         }
     }
 }
