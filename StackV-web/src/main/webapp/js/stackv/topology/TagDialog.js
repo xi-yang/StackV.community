@@ -162,7 +162,7 @@ define(["local/stackv/utils"], function (utils) {
                 $.ajax({
                     crossDomain: true,
                     type: "DELETE",
-                    url: "/StackV-web/restapi/app/label/" + userName + "/delete/" + identifier,
+                    url: "/StackV-web/restapi/app/label/" + that.username + "/delete/" + identifier,
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + token);
                     },

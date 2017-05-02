@@ -15,7 +15,7 @@ function loadLabels() {
     var userName;
 
     this.init = function () {
-        var userName = sessionStorage.getItem("username");
+        userName = sessionStorage.getItem("username");
         var token = sessionStorage.getItem("token");
         var loggedIn = sessionStorage.getItem("loggedIn");
         var baseUrl = window.location.origin;
