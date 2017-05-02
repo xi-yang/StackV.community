@@ -239,7 +239,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             rankArray.add(paramMap);
         }
         OntModel placeModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        // get top 3 #num_core 
+        // get top 3 after sorting #num_core 
         List<Map> topArray = new ArrayList();
         ListIterator<Map> itX = rankArray.listIterator(); 
         while (itX.hasNext()) {
@@ -247,20 +247,24 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
             if (topArray.isEmpty()) {
                 topArray.add(mapX);
             } else {
-                ListIterator<Map> itT = topArray.listIterator(topArray.size() > 3 ? 3 : topArray.size());
-                while (itT.hasPrevious()) {
-                    Map mapT = itT.previous();
+                ListIterator<Map> itT = topArray.listIterator();
+                while (itT.hasNext()) {
+                    Map mapT = itT.next();
                     if ((Integer) mapX.get("num_core") > (Integer) mapT.get("num_core")) {
+                        itT.previous();
                         itT.add(mapX);
                         break;
                     }
+                }
+                if (!itT.hasNext()) {
+                    itT.add(mapX);
                 }
             }
         }
         if (topArray.size() > 3) {
             topArray.subList(3, topArray.size()).clear();
         }
-        // get top 2 #memory_mb out the 3
+        // get best 2 out the 3 by #memory_mb
         if (topArray.size() == 3) {
             Map map1 = topArray.get(0);
             Map map2 = topArray.get(1);
@@ -279,7 +283,7 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 }
             }
         }
-        // get more #disk_gb out of the 2
+        // get the better out of the 2 by #disk_gb
         if (topArray.size() == 2) {
             Map map1 = topArray.get(0);
             Map map2 = topArray.get(1);
