@@ -58,7 +58,9 @@
                 $("#tag-panel").load("/StackV-web/tagPanel.jsp", function () {
 
                 });
-                $("#omm-panel").load("/StackV-web/ommPanel.html");
+                
+                // Hiding feature for May 2017 Release 
+                //$("#omm-panel").load("/StackV-web/ommPanel.html");
 
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("display-open");
@@ -140,10 +142,11 @@
                     "local/stackv/utils",
                     "local/stackv/topology/DropDownTree",
                     "local/stackv/topology/ContextMenu",
-                    "local/stackv/topology/TagDialog",
-                    "local/stackv/topology/OMMPanel"
+                    "local/stackv/topology/TagDialog"//,
+                    
+                    //"local/stackv/topology/OMMPanel" Hiding OMM for May 2017 release
                 ],
-                        function (m, l, r, d3_, utils_, tree, c, td, op) {
+                        function (m, l, r, d3_, utils_, tree, c, td){ //, op) {
                             var userId = sessionStorage.getItem("subject");
                             var username = sessionStorage.getItem("username");
                             var token = sessionStorage.getItem("token");
@@ -173,10 +176,11 @@
                                         TagDialog = td;
                                         tagDialog = new TagDialog(userId);
 
-                                        OMMPanel = op;
-                                        ommPanel = new OMMPanel(render.API);
-                                        ommPanel.init();
-                                        functionMap["AddToTrashcan"] = ommPanel;
+//                                        Hiding for May 2017 release            
+//                                        OMMPanel = op;
+//                                        ommPanel = new OMMPanel(render.API);
+//                                        ommPanel.init();
+//                                        functionMap["AddToTrashcan"] = ommPanel;
 
                                         tagDialog.init();
                                         functionMap['Tag'] = tagDialog;
@@ -1082,12 +1086,14 @@
             <li class="context-menu__item">
                 <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
             </li>
-            <li class="context-menu__item">
+<!--             Hiding for May 2017 release            -->
+
+<!--            <li class="context-menu__item">
                 <a href="#" class="context-menu__link" data-action="AddToTrashcan"><i class="fa  fa-trash"></i> Add To Trashcan</a>
             </li>
             <li class="context-menu__item">
                 <a href="#" class="context-menu__link" data-action="Delete"><i class="fa  fa-times"></i> Delete</a>
-            </li>
+            </li>-->
         </ul>
     </nav>
 

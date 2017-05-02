@@ -759,7 +759,8 @@ function loadVisualization() {
     $("#details-viz").load("/StackV-web/details_viz.html", function () {
         document.getElementById("visual-panel").innerHTML = "";
         var State = document.getElementById("instance-substate").innerHTML;
-        // State = "READY";
+        var verificationState = document.getElementById("instance-verification").innerHTML;
+        
         var States = {
             "INIT": 0,
             "COMPILED": 1,
@@ -767,7 +768,7 @@ function loadVisualization() {
             "FAILED": 3,
             "READY": 4
         };
-
+                
         var tabs = [
             {
                 "name": "Service",
@@ -781,7 +782,7 @@ function loadVisualization() {
             },
             {
                 "name": "Verification",
-                "state": "READY",
+                "state": "FAILED",
                 "createContent": createVizTab.bind(undefined, "Verification")
             }
         ];
@@ -986,6 +987,9 @@ function loadVisualization() {
 
             for (var i = 0; i < tabs.length; i++) {
                 var tab = tabs[i];
+                
+                if ((tab.name === "Verification") && (verificationState === null)) continue; 
+                
                 if (States[tab.state] <= States[State]) {
                     createTab(tab, tabBar);
                     tabContent.appendChild(tab.createContent());
