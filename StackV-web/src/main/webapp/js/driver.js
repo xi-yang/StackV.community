@@ -25,6 +25,7 @@
 var tweenInstalledPanel = new TweenLite("#installed-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px"});
 var tweenAddPanel = new TweenLite("#driver-add-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 var tweenTemplatePanel = new TweenLite("#driver-template-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
+var tweenContentPanel = new TweenLite("#driver-content-panel", 1, {ease: Power2.easeInOut, paused: true, bottom: "0px"});
 var view = "center";
 
 Mousetrap.bind({
@@ -39,10 +40,14 @@ Mousetrap.bind({
     },
     'right': function () {
         viewShift("right");
+    },
+    'space': function () {
+        if (view === "left") {
+            toggleContentPanel();
+        }
     }
 });
 function viewShift(dir) {
-    resetView();
     switch (view) {
         case "left":
             if (dir === "right") {
@@ -67,23 +72,8 @@ function viewShift(dir) {
             break;
     }
 }
-function resetView() {
-    switch (view) {
-        case "left":
-            $("#sub-nav .active").removeClass("active");
-            tweenAddPanel.reverse();
-            break;
-        case "center":
-            $("#sub-nav .active").removeClass("active");
-            tweenInstalledPanel.reverse();
-            break;
-        case "right":
-            $("#sub-nav .active").removeClass("active");
-            tweenTemplatePanel.reverse();
-            break;
-    }
-}
 function newView(panel) {
+    resetView();
     switch (panel) {
         case "add":
             tweenAddPanel.play();
@@ -102,6 +92,26 @@ function newView(panel) {
             break;
     }
 }
+function resetView() {
+    switch (view) {
+        case "left":
+            $("#sub-nav .active").removeClass("active");            
+            if ($("#driver-content-panel").hasClass("open")) {
+                tweenContentPanel.reverse();
+            } else {
+                tweenAddPanel.reverse(); 
+            }
+            break;
+        case "center":
+            $("#sub-nav .active").removeClass("active");
+            tweenInstalledPanel.reverse();
+            break;
+        case "right":
+            $("#sub-nav .active").removeClass("active");
+            tweenTemplatePanel.reverse();
+            break;
+    }
+}
 
 $(function () {
     $(".checkbox-level").change(function () {
@@ -116,6 +126,17 @@ $(function () {
         loadLogs();
     });
 });
+
+function toggleContentPanel() {
+    if ($("#driver-content-panel").hasClass("open")) {
+        tweenContentPanel.reverse();
+        tweenAddPanel.play();        
+    } else {
+        tweenAddPanel.reverse();
+        tweenContentPanel.play();
+    }
+    $("#driver-content-panel").toggleClass("open");
+}
 
 function loadDriverNavbar() {
     $("#sub-nav").load("/StackV-web/nav/driver_navbar.html", function () {

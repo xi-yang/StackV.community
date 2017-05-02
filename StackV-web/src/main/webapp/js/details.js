@@ -43,7 +43,6 @@ Mousetrap.bind({
     }
 });
 function viewShift(dir) {
-    resetView();
     switch (view) {
         case "left":
             if (dir === "right") {
@@ -68,23 +67,8 @@ function viewShift(dir) {
             break;
     }
 }
-function resetView() {
-    switch (view) {
-        case "left":
-            $("#sub-nav .active").removeClass("active");
-            tweenLoggingPanel.reverse();
-            break;
-        case "center":
-            $("#sub-nav .active").removeClass("active");
-            tweenDetailsPanel.reverse();
-            break;
-        case "right":
-            $("#sub-nav .active").removeClass("active");
-            tweenVisualPanel.reverse();
-            break;
-    }
-}
 function newView(panel) {
+    resetView();
     switch (panel) {
         case "logging":
             tweenLoggingPanel.play();
@@ -100,6 +84,22 @@ function newView(panel) {
             tweenVisualPanel.play();
             $("#visual-tab").addClass("active");
             view = "right";
+            break;
+    }
+}
+function resetView() {
+    switch (view) {
+        case "left":
+            $("#sub-nav .active").removeClass("active");
+            tweenLoggingPanel.reverse();
+            break;
+        case "center":
+            $("#sub-nav .active").removeClass("active");
+            tweenDetailsPanel.reverse();
+            break;
+        case "right":
+            $("#sub-nav .active").removeClass("active");
+            tweenVisualPanel.reverse();
             break;
     }
 }

@@ -129,11 +129,7 @@
             </div>
 
 
-            <div class="inactive" id="driver-panel-right" style="opacity: 0;">
-                <ul class="nav nav-tabs catalog-tabs">
-                    <li style="width: 100%;" id="side-tab"><a id="side-name">Details</a></li>
-                </ul>
-
+            <div id="driver-content-panel">
                 <div class="tab-content" id="catalog-tab-content">                                    
                     <div id="install-content" class="tab-pane fadeIn">
                         <div id='install-type'></div>

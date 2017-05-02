@@ -16,7 +16,13 @@ div#driver-add-panel {
 div#driver-template-panel {
     right: -100%;
 }
-
+#driver-content-panel {
+    bottom: -100%;
+    width: 50%;
+    height: 60%;
+    position: absolute;
+    margin: auto;
+}
 
 
 
