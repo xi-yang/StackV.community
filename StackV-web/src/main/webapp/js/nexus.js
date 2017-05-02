@@ -54,9 +54,11 @@ $(function () {
             loadAdminNavbar();
             loadAdmin();
         } else if (window.location.pathname === "/StackV-web/ops/acl.jsp") {
+            loadACLNavbar();
             loadACLPortal();
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
-            getAllDetails();
+            loadDriverNavbar();
+            loadDriverPortal();
         }
 
         if ($("#tag-panel").length) {
@@ -102,7 +104,7 @@ $(function () {
 });
 
 function loadNavbar() {
-    $("#nav").load("/StackV-web/navbar.html", function () {
+    $("#nav").load("/StackV-web/nav/navbar.html", function () {
         if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
             $(".nav-admin").hide();
         } else {

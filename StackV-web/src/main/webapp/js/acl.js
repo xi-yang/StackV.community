@@ -29,48 +29,91 @@ var tweenRoleRolesPanel = new TweenLite("#acl-role-role-div", .5, {ease: Power2.
 var tweenInstancePanel = new TweenLite("#acl-instance-panel", .5, {ease: Power2.easeInOut, paused: true, left: "5%"});
 var tweenInstanceACLPanel = new TweenLite("#acl-instance-acl", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
 
-Mousetrap.bind('left', function () {
-    tweenInstancePanel.reverse();
-    tweenRolePanel.play();
+var view = "center";
 
-    $(".left-tab").animate({left: "-45px"}, 500);
-    $(".right-tab").animate({right: "0px"}, 500);
+Mousetrap.bind({
+    'shift+left': function () {
+        window.location.href = "/StackV-web/ops/srvc/driver.jsp";
+    },
+    'left': function () {
+        viewShift("left");
+    },
+    'right': function () {
+        viewShift("right");
+    }
 });
-Mousetrap.bind('right', function () {
-    tweenInstancePanel.play();
-    tweenRolePanel.reverse();
+function viewShift(dir) {
+    resetView();
+    switch (view) {
+        case "left":
+            if (dir === "right") {
+                newView("instances");
+            }
+            break;
+        case "center":
+            if (dir === "left") {
+                newView("roles");
+            }
+            break;
+    }
+}
+function resetView() {
+    switch (view) {
+        case "left":
+            $("#sub-nav .active").removeClass("active");
+            tweenRolePanel.reverse();
+            break;
+        case "center":
+            $("#sub-nav .active").removeClass("active");
+            tweenInstancePanel.reverse();
+            break;        
+    }
+}
+function newView(panel) {
+    switch (panel) {
+        case "roles":
+            tweenRolePanel.play();
+            $("#roles-tab").addClass("active");
+            view = "left";
+            break;
+        case "instances":
+            tweenInstancePanel.play();
+            $("#instances-tab").addClass("active");
+            view = "center";
+            break;
+    }
+}
+function loadACLNavbar() {
+    $("#sub-nav").load("/StackV-web/nav/acl_navbar.html", function () {
+        switch (view) {
+            case "left":
+                $("#roles-tab").addClass("active");
+                break;
+            case "center":
+                $("#instances-tab").addClass("active");
+                break;
+        }
 
-    $(".right-tab").animate({right: "-45px"}, 500);
-    $(".left-tab").animate({left: "0px"}, 500);
-});
+        $("#roles-tab").click(function () {
+            resetView();
+            newView("roles");
+        });
+        $("#instances-tab").click(function () {
+            resetView();
+            newView("instances");
+        });
+    });
+}
+
 
 // ACL Load
 function loadACLPortal() {
-
     subloadRoleACLUsers();
     subloadRoleACLGroups();
     subloadRoleACLRoles();
 
     subloadInstanceACLInstances();
-    subloadInstanceACLUsers();
-
-    $(".left-tab").click(function (evt) {
-        tweenInstancePanel.reverse();
-        tweenRolePanel.play();
-
-        $(".left-tab").animate({left: "-45px"}, 500);
-        $(".right-tab").animate({right: "0px"}, 500);
-
-        evt.preventDefault();
-    });
-    $(".right-tab").click(function (evt) {
-        tweenInstancePanel.play();
-        tweenRolePanel.reverse();
-        $(".right-tab").animate({right: "-45px"}, 500);
-        $(".left-tab").animate({left: "0px"}, 500);
-
-        evt.preventDefault();
-    });
+    subloadInstanceACLUsers();    
 
     // Roles   
     $("#acl-group-add").click(function (evt) {
@@ -137,8 +180,6 @@ function loadACLPortal() {
         tweenInstanceACLPanel.reverse();
         evt.preventDefault();
     });
-
-    $(".left-tab").trigger("click");
 }
 
 // Roles

@@ -21,13 +21,13 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <div id="sub-nav">            
+        </div>
         <!-- TAG PANEL -->
         <div id="tag-panel">
         </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">
-            <div class="left-tab"></div>
-            <div class="right-tab"></div>
+        <div id="main-pane">           
             <div class="acl-panel" id="acl-role-panel">
                 <input type="hidden" id="acl-user">
                 <div id="acl-role-user-div">
@@ -147,6 +147,7 @@
         <script src="/StackV-web/js/bootstrap.js"></script>
         
         <script src="/StackV-web/js/mousetrap.js"></script>
+        <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>        
         <script src="/StackV-web/js/acl.js"></script>

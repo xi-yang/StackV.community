@@ -70,7 +70,7 @@ $(function () {
 
 function loadAdminNavbar() {
     setRefresh(10);
-    $("#sub-nav").load("/StackV-web/admin_navbar.html", function () {
+    $("#sub-nav").load("/StackV-web/nav/admin_navbar.html", function () {
         switch (view) {
             case "left":
                 $("#logging-tab").addClass("active");

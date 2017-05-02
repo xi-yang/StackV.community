@@ -1,7 +1,7 @@
 div.acl-panel {
     position: absolute;
-    top: 20px;
-    height: calc(100% - 20px);
+    top: 72px;
+    height: calc(100% - 72px);
     width: 90%;
     overflow: hidden;
     padding: 5px 5px;
