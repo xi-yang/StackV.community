@@ -68,51 +68,6 @@ function viewShift(dir) {
             break;
     }
 }
-
-$(function () {
-    $(".checkbox-level").change(function () {
-        if ($(this).is(":checked")) {
-            $("#log-div").removeClass("hide-" + this.name);
-        } else {
-            $("#log-div").addClass("hide-" + this.name);
-        }
-    });
-    $("#filter-search-clear").click(function () {
-        $("#filter-search-input").val("");
-        loadLogs();
-    });
-});
-
-function loadDetailsNavbar() {
-    $("#sub-nav").load("/StackV-web/details_navbar.html", function () {
-        setRefresh(30);
-        switch (view) {
-            case "left":
-                $("#logging-tab").addClass("active");
-                break;
-            case "center":
-                $("#sub-details-tab").addClass("active");
-                break;
-            case "right":
-                $("#visual-tab").addClass("active");
-                break;
-        }
-
-        $("#logging-tab").click(function () {
-            resetView();
-            newView("logging");
-        });
-        $("#sub-details-tab").click(function () {
-            resetView();
-            newView("details");
-        });
-        $("#visual-tab").click(function () {
-            resetView();
-            newView("visual");
-        });
-    });
-}
-
 function resetView() {
     switch (view) {
         case "left":
@@ -147,6 +102,50 @@ function newView(panel) {
             view = "right";
             break;
     }
+}
+
+$(function () {
+    $(".checkbox-level").change(function () {
+        if ($(this).is(":checked")) {
+            $("#log-div").removeClass("hide-" + this.name);
+        } else {
+            $("#log-div").addClass("hide-" + this.name);
+        }
+    });
+    $("#filter-search-clear").click(function () {
+        $("#filter-search-input").val("");
+        loadLogs();
+    });
+});
+
+function loadDetailsNavbar() {
+    $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
+        setRefresh(30);
+        switch (view) {
+            case "left":
+                $("#logging-tab").addClass("active");
+                break;
+            case "center":
+                $("#sub-details-tab").addClass("active");
+                break;
+            case "right":
+                $("#visual-tab").addClass("active");
+                break;
+        }
+
+        $("#logging-tab").click(function () {
+            resetView();
+            newView("logging");
+        });
+        $("#sub-details-tab").click(function () {
+            resetView();
+            newView("details");
+        });
+        $("#visual-tab").click(function () {
+            resetView();
+            newView("visual");
+        });
+    });
 }
 
 

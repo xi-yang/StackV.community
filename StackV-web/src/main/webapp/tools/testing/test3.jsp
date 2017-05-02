@@ -115,7 +115,7 @@
                         element.classList.remove("hide");
                     }
                 });
-                $("#nav").load("/StackV-web/navbar.html");
+                $("#nav").load("/StackV-web/nav/navbar.html");
             });
         </script>          
     </body>

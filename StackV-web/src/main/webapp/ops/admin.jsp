@@ -51,7 +51,6 @@
         </div>
         <div id="details-viz" ></div>
 
-
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>

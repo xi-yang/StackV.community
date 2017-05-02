@@ -10,146 +10,130 @@
     <head>   
         <meta charset="UTF-8">
         <title>Driver Management</title>
-        <script src="/StackV-web/js/keycloak.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
-        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-        
-        <script src="/StackV-web/js/nexus.js"></script>
-        <script src="/StackV-web/js/driver.js"></script>
-        
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
+
         <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
     </head>
-    
+
     <body>        
         <!-- NAV BAR -->
         <div id="nav">
+        </div>
+        <div id="sub-nav">            
         </div>
         <!-- SIDE BAR -->   
         <div id="sidebar">            
         </div>
         <!-- MAIN PANEL -->
         <div id="black-screen" class="off"></div>
-        <div id="main-pane">                                         
-            
+        <div class="sub-main" id="main-pane">                                         
+
             <div id="info-panel" class="">
                 <div id="info-fields" style ="float: top;"></div>
                 <div id="info-option" style ="float: bottom;"></div>
             </div>
-            
-            
-            
-            <div style="margin: 0 auto;" class="closed driver-panel no-side-tab" id="driver-panel-top">
-                <ul class="nav nav-tabs catalog-tabs">
-                    <li style="width:33%;" id="driver-nav-tab" onclick="driver_tab_fix();" class="active"><a>Create New</a></li>
-                    <li style="width:34%;" id="saved-nav-tab" onclick="saved_tab_fix(); updateDrivers();"><a>Saved Templates</a></li>
-                    <li style="width:33%;" id="installed-driver-tab" onclick="installed_tab_fix(); getAllDetails();"><a>Installed Drivers</a></li>
-                </ul>
-                
-                <div class="tab-content" id="catalog-tab-content">
-                    <div style="width:80%; margin: 0 auto;">
-                        <div style="width: 100%; height: 85%; overflow: auto; display: block;" id="driver-tab1" class="tab-pane fadeIn">
-                            <table class="management-table">
-                                <thead>
-                                    <tr>
-                                        <th>Driver Name</th>
-                                        <th>Description</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Stub</td>
-                                        <td>This is a placement description</td>
-                                        <td style="width: 180px;">
-                                            <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install' id='install-button'>Install</button>
-                                        </td>
-                                    </tr>
-                                    <tr>driver
-                                        <td>AWS</td>
-                                        <td>This is a placement description</td>
-                                        <td style="width: 180px;">
-                                            <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install' id='install-button'>Install</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Generic</td>
-                                        <td>This is a placement description</td>
-                                        <td style="width: 180px;">
-                                            <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install' id='install-button'>Install</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Openstack</td>
-                                        <td>This is a placement description</td>
-                                        <td  style="width: 180px;">
-                                            <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install' id='install-button'>Install</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>Stack</td>
-                                        <td>This is a placement description</td>
-                                        <td  style="width: 180px;">
-                                            <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install' id='install-button'>Install</button>
-                                        </td>
-                                    </tr> 
-                                    <tr>
-                                        <td>Raw</td>
-                                        <td>This is a placement description</td>
-                                        <td  style="width: 180px;">
-                                            <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install' id='install-button'>Install</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div style="width: 100%; height: 85%; overflow: auto; display:none;" id="saved-tab" class="tab-pane fadeIn">
-                            <table class="management-table">
-                                <thead>
-                                    <tr>
-                                        <th>Driver Name</th>
-                                        <th>Description</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="saved-table">
-                                    
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div style="display:none;" class="tab-content" id="installed-content">
-                            <div style="width: 100%; height: 85%; overflow: auto;" id="template-tab" class="tab-pane fadeIn active">
-                                <table  class="management-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Driver ID</th>
-                                            <th>Driver Type</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="installed-body">
-                                    <script></script>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+
+            <div id="driver-add-panel">
+                <div style="width: 100%; height: 85%; overflow: auto; display: block;" id="driver-tab1" class="tab-pane fadeIn">
+                    <table class="management-table">
+                        <thead>
+                            <tr>
+                                <th>Driver Name</th>
+                                <th>Description</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Stub</td>
+                                <td>This is a placement description</td>
+                                <td style="width: 180px;">
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install' id='install-button'>Install</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>AWS</td>
+                                <td>This is a placement description</td>
+                                <td style="width: 180px;">
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Generic</td>
+                                <td>This is a placement description</td>
+                                <td style="width: 180px;">
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install' id='install-button'>Install</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Openstack</td>
+                                <td>This is a placement description</td>
+                                <td  style="width: 180px;">
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Stack</td>
+                                <td>This is a placement description</td>
+                                <td  style="width: 180px;">
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td>Raw</td>
+                                <td>This is a placement description</td>
+                                <td  style="width: 180px;">
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install' id='install-button'>Install</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="installed-panel">
+                <div class="tab-content" id="installed-content">
+                    <div id="template-tab" class="tab-pane fadeIn active">
+                        <table  class="management-table">
+                            <thead>
+                                <tr>
+                                    <th>Driver ID</th>
+                                    <th>Driver Type</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="installed-body">
+                            <script></script>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>   
-            
+            </div>
+            <div id="driver-template-panel">
+                <div id="saved-tab" class="tab-pane fadeIn">
+                    <table class="management-table">
+                        <thead>
+                            <tr>
+                                <th>Driver Name</th>
+                                <th>Description</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="saved-table">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
             <div class="inactive" id="driver-panel-right" style="opacity: 0;">
                 <ul class="nav nav-tabs catalog-tabs">
                     <li style="width: 100%;" id="side-tab"><a id="side-name">Details</a></li>
                 </ul>
-                
+
                 <div class="tab-content" id="catalog-tab-content">                                    
                     <div id="install-content" class="tab-pane fadeIn">
                         <div id='install-type'></div>
@@ -158,12 +142,24 @@
                             <button onclick="clearPanel(); closeSide();">Close</button>
                         </div>
                     </div>
-                    
                 </div>
-                
-                <!-- LOADING PANEL -->
-                <div id="loading-panel"></div>
             </div>
+
+            <!-- LOADING PANEL -->
+            <div id="loading-panel"></div>
         </div>
+
+        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+
+        <script src="/StackV-web/js/mousetrap.js"></script>
+        <script src="/StackV-web/js/mousetrap-dict.js"></script>
+
+        <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/driver.js"></script>
     </body>
 </html>
