@@ -174,7 +174,7 @@
                                         DropDownTree = tree;
                                         ContextMenu = c;
                                         TagDialog = td;
-                                        tagDialog = new TagDialog(userId);
+                                        tagDialog = new TagDialog(username);
 
 //                                        Hiding for May 2017 release            
 //                                        OMMPanel = op;
