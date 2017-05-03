@@ -157,11 +157,7 @@ function loadDetails() {
 }
 
 function subloadInstance() {
-    var uuid = sessionStorage.getItem("uuid");
-    if (!uuid) {
-        alert("No Service Instance Selected!");
-        window.location.replace('/StackV-web/ops/catalog.jsp');
-    }
+    var uuid = sessionStorage.getItem("instance-uuid");
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
     $.ajax({
@@ -293,6 +289,7 @@ function subloadInstance() {
                     success: function () {
                         if (command === "delete" || command === "force_delete") {
                             setTimeout(function () {
+                                sessionStorage.removeItem("instance-uuid");
                                 window.document.location = "/StackV-web/ops/catalog.jsp";
                             }, 250);
                         } else {
@@ -322,7 +319,7 @@ function subloadLogging() {
 }
 
 function loadLogs() {
-    var uuid = sessionStorage.getItem("uuid");
+    var uuid = sessionStorage.getItem("instance-uuid");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
     $.ajax({
         url: apiUrl,
@@ -399,7 +396,7 @@ function filterLogs() {
 
 
 function subloadVerification() {
-    var uuid = sessionStorage.getItem("uuid");
+    var uuid = sessionStorage.getItem("instance-uuid");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/verification';
     $.ajax({
         url: apiUrl,
@@ -508,7 +505,7 @@ function subloadVerification() {
 }
 
 function subloadDelta() {
-    var uuid = sessionStorage.getItem("uuid");
+    var uuid = sessionStorage.getItem("instance-uuid");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/delta';
     $.ajax({
         url: apiUrl,
@@ -596,7 +593,7 @@ function subloadDelta() {
 }
 
 function subloadACL() {
-    var uuid = sessionStorage.getItem("uuid");
+    var uuid = sessionStorage.getItem("instance-uuid");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/acl';
     $.ajax({
         url: apiUrl,
@@ -1215,12 +1212,14 @@ function buttonModerate() {
         else if (subState === 'FAILED' && verificationState === '1') {
             $("#force_cancel").toggleClass("hide");
             $("#force_modify").toggleClass("hide");
+            $("#force_delete").toggleClass("hide");
         }
         // State 6 - Failed & Unverified
         else if (subState === 'FAILED' && verificationState === '-1') {
             $("#force_cancel").toggleClass("hide");
             $("#force_retry").toggleClass("hide");
             $("#reverify").toggleClass("hide");
+            $("#force_delete").toggleClass("hide");
         }
     } else if (superState === 'Cancel') {
         // State 0 - Stuck

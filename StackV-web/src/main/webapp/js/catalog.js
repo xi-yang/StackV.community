@@ -125,7 +125,7 @@ function loadInstances() {
             }
 
             $(".clickable-row").click(function () {
-                sessionStorage.setItem("uuid", $(this).data("href"));
+                sessionStorage.setItem("instance-uuid", $(this).data("href"));
                 window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
             });
 

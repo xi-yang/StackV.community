@@ -25,7 +25,8 @@
 var tweenInstalledPanel = new TweenLite("#installed-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px"});
 var tweenAddPanel = new TweenLite("#driver-add-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 var tweenTemplatePanel = new TweenLite("#driver-template-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
-var tweenContentPanel = new TweenLite("#driver-content-panel", 1, {ease: Power2.easeInOut, paused: true, bottom: "0px"});
+var tweenContentPanel = new TweenLite("#driver-content-panel", 1, {ease: Power2.easeInOut, paused: true, bottom: "10%"});
+var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 var view = "center";
 
 Mousetrap.bind({
@@ -41,9 +42,9 @@ Mousetrap.bind({
     'right': function () {
         viewShift("right");
     },
-    'space': function () {
+    'escape': function () {
         if (view === "left") {
-            toggleContentPanel();
+            closeContentPanel();
         }
     }
 });
@@ -95,12 +96,12 @@ function newView(panel) {
 function resetView() {
     switch (view) {
         case "left":
-            $("#sub-nav .active").removeClass("active");            
+            $("#sub-nav .active").removeClass("active");
             if ($("#driver-content-panel").hasClass("open")) {
                 tweenContentPanel.reverse();
-            } else {
-                tweenAddPanel.reverse(); 
+                tweenBlackScreen.reverse();
             }
+            tweenAddPanel.reverse();
             break;
         case "center":
             $("#sub-nav .active").removeClass("active");
@@ -127,15 +128,19 @@ $(function () {
     });
 });
 
-function toggleContentPanel() {
-    if ($("#driver-content-panel").hasClass("open")) {
-        tweenContentPanel.reverse();
-        tweenAddPanel.play();        
-    } else {
-        tweenAddPanel.reverse();
+function openContentPanel() {
+    if (!$("#driver-content-panel").hasClass("open")) {
+        tweenBlackScreen.play();
         tweenContentPanel.play();
+        $("#driver-content-panel").addClass("open");
     }
-    $("#driver-content-panel").toggleClass("open");
+}
+function closeContentPanel() {
+    if ($("#driver-content-panel").hasClass("open")) {
+        tweenBlackScreen.reverse();
+        tweenContentPanel.reverse();
+        $("#driver-content-panel").removeClass("open");
+    }
 }
 
 function loadDriverNavbar() {
@@ -170,6 +175,10 @@ function loadDriverNavbar() {
 
 function loadDriverPortal() {
     getAllDetails();
+
+    $(".install-button").click(function () {
+        openContentPanel();
+    });
 }
 
 
@@ -207,7 +216,6 @@ function activateSide() {
     $('#driver-panel-bot').removeClass('no-side-tab');
     $('#driver-panel-top').addClass('side-tab');
     $('#driver-panel-bot').addClass('side-tab');
-    document.getElementById("driver-panel-right").style.opacity = "1";
 }
 
 function closeSide() {
@@ -218,7 +226,6 @@ function closeSide() {
     $('#driver-panel-bot').removeClass('side-tab');
     $('#driver-panel-top').addClass('no-side-tab');
     $('#driver-panel-bot').addClass('no-side-tab');
-    document.getElementById("driver-panel-right").style.opacity = "0";
 
 }
 function installRaw() {
@@ -501,7 +508,7 @@ function clearPanel() {
     closeButton.innerHTML = "Close";
     closeButton.onclick = function () {
         clearPanel();
-        closeSide();
+        closeContentPanel();
     };
     document.getElementById('install-options').appendChild(closeButton);
 }
@@ -512,7 +519,6 @@ function clearText() {
 }
 function changeNameInst() {
     var saveButton = document.createElement("button");
-    document.getElementById('side-name').innerHTML = "Install";
     saveButton.innerHTML = "Save Driver";
     saveButton.onclick = function () {
         openWindow();
@@ -526,7 +532,6 @@ function changeNameInst() {
     document.getElementById('install-options').appendChild(instButton);
 }
 function changeNameInstRaw() {
-    document.getElementById('side-name').innerHTML = "Install";
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
     instButton.onclick = function () {
@@ -544,7 +549,6 @@ function openWindow() {
     var desc = document.createElement("input");
     var saveButton = document.createElement("button");
 
-    $('#black-screen').removeClass();
     $('#info-panel').addClass("active");
 
     drivername.innerHTML = "Driver Name:";
@@ -569,7 +573,6 @@ function openWindow() {
     document.getElementById("info-option").appendChild(saveButton);
 }
 function changeNameDet() {
-    document.getElementById('side-name').innerHTML = "Details";
 }
 function addDriver() {
     var userId = keycloak.tokenParsed.preferred_username;

@@ -48,8 +48,14 @@ $(function () {
         loadNavbar();
 
         if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
-            loadDetailsNavbar();
-            loadDetails();
+            var uuid = sessionStorage.getItem("instance-uuid");
+            if (!uuid) {
+                alert("No Service Instance Selected!");
+                window.location.replace('/StackV-web/ops/catalog.jsp');
+            } else {
+                loadDetailsNavbar();
+                loadDetails();
+            }
         } else if (window.location.pathname === "/StackV-web/ops/admin.jsp") {
             loadAdminNavbar();
             loadAdmin();

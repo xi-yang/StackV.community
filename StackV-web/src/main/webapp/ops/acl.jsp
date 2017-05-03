@@ -27,7 +27,7 @@
         <div id="tag-panel">
         </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">           
+        <div class="sub-main" id="main-pane">           
             <div class="acl-panel" id="acl-role-panel">
                 <input type="hidden" id="acl-user">
                 <div id="acl-role-user-div">

@@ -18,10 +18,11 @@ div#driver-template-panel {
 }
 #driver-content-panel {
     bottom: -100%;
-    width: 50%;
-    height: 60%;
+    width: 60%;
+    height: 80%;
     position: absolute;
-    margin: auto;
+    left: 20%;
+    z-index: 10;
 }
 
 

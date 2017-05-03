@@ -66,7 +66,7 @@ function resetView() {
         case "center":
             $("#sub-nav .active").removeClass("active");
             tweenInstancePanel.reverse();
-            break;        
+            break;
     }
 }
 function newView(panel) {
@@ -113,7 +113,7 @@ function loadACLPortal() {
     subloadRoleACLRoles();
 
     subloadInstanceACLInstances();
-    subloadInstanceACLUsers();    
+    subloadInstanceACLUsers();
 
     // Roles   
     $("#acl-group-add").click(function (evt) {
@@ -218,6 +218,10 @@ function subloadRoleACLUsers() {
 
                     $(this).addClass("acl-role-selected-row");
                 });
+                
+                if (view === "left") {
+                    newView("roles");
+                }
             }
         });
     }).error(function () {
@@ -451,6 +455,10 @@ function subloadInstanceACLInstances() {
 
                     $(this).addClass("acl-instance-selected-row");
                 });
+
+                if (view === "center") {
+                    newView("instances");
+                }
             }
         });
     }).error(function () {

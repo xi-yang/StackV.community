@@ -28,7 +28,7 @@
         <div id="sidebar">            
         </div>
         <!-- MAIN PANEL -->
-        <div id="black-screen" class="off"></div>
+        <div id="black-screen"></div>
         <div class="sub-main" id="main-pane">                                         
 
             <div id="info-panel" class="">
@@ -51,42 +51,42 @@
                                 <td>Stub</td>
                                 <td>This is a placement description</td>
                                 <td style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install' id='install-button'>Install</button>
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install install-button'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>AWS</td>
                                 <td>This is a placement description</td>
                                 <td style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install install-button'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Generic</td>
                                 <td>This is a placement description</td>
                                 <td style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install' id='install-button'>Install</button>
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install install-button'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Openstack</td>
                                 <td>This is a placement description</td>
                                 <td  style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install install-button'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Stack</td>
                                 <td>This is a placement description</td>
                                 <td  style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install' id='install-button'>Install</button>
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install install-button'>Install</button>
                                 </td>
                             </tr> 
                             <tr>
                                 <td>Raw</td>
                                 <td>This is a placement description</td>
                                 <td  style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install' id='install-button'>Install</button>
+                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install install-button'>Install</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -135,7 +135,7 @@
                         <div id='install-type'></div>
                         <div id='install-type-right'></div>
                         <div id='install-options'>
-                            <button onclick="clearPanel(); closeSide();">Close</button>
+                            <button onclick="clearPanel(); closeContentPanel();">Close</button>
                         </div>
                     </div>
                 </div>
