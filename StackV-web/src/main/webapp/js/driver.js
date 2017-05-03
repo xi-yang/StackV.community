@@ -43,9 +43,7 @@ Mousetrap.bind({
         viewShift("right");
     },
     'escape': function () {
-        if (view === "left") {
-            closeContentPanel();
-        }
+        closeContentPanel();
     }
 });
 function viewShift(dir) {
@@ -528,6 +526,8 @@ function changeNameInst() {
     instButton.innerHTML = "Install Driver";
     instButton.onclick = function () {
         installDriver();
+        reloadData();
+        closeContentPanel();
     };
     document.getElementById('install-options').appendChild(instButton);
 }
@@ -536,6 +536,8 @@ function changeNameInstRaw() {
     instButton.innerHTML = "Install Driver";
     instButton.onclick = function () {
         plugRaw();
+        reloadData();
+        closeContentPanel();
     };
     document.getElementById('install-options').appendChild(instButton);
 }
@@ -801,6 +803,7 @@ function getAllDetails() {
                     activateSide();
                     changeNameDet();
                     getDetails(this.id);
+                    openContentPanel();
                 };
                 detButton.style.width = "50px";
                 detButton.id = result[i];
@@ -808,6 +811,7 @@ function getAllDetails() {
                 delButton.innerHTML = "Delete";
                 delButton.onclick = function () {
                     removeDriver(this.id);
+                    reloadData();
                 };
                 delButton.style.width = "50px";
                 delButton.id = result[i + 2];
@@ -843,8 +847,7 @@ function removeDriver(clickID) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        success: function () {
-            getAllDetails();
+        success: function () {            
         }
     });
 }
