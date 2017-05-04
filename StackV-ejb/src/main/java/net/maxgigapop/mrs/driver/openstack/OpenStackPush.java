@@ -1617,6 +1617,7 @@ public class OpenStackPush {
     }    
     
     // serving floating IP from available pool
+    //@TODO: get list of possible addresses and choose a random one to avoid collision with concurrent requests
     private String checkoutFloatingIp(OntModel model) {
         String sparql = "SELECT ?fip_alloc ?fip WHERE {"
                 + "?fip_alloc mrs:type \"ipv4-floatingip\". "

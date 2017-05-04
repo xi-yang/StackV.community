@@ -1242,6 +1242,9 @@ public class serviceBeans {
                         String vmName = (String) vmJson.get("name");
                         String vmType = (String) vmJson.get("type");
                         String vmHost = (String) vmJson.get("host");
+                        if (!vmHost.startsWith("any") && !vmHost.startsWith("urn:")) {
+                            vmHost = topoUri + ":host+" + vmHost;
+                        }
                         String nodeHasVolume = "";
                         if (vmJson.containsKey("ceph_rbd")) {
                             JSONArray cephArr = (JSONArray) vmJson.get("ceph_rbd");
@@ -1354,7 +1357,7 @@ public class serviceBeans {
                                 + "    a            spa:PolicyData;\n"
                                 + "    spa:type     \"JSON\";\n"
                                 + "    spa:value    \"\"\"{\n"
-                                + "       \"place_into\": \"" + topoUri + ":host+" + vmHost + "\"\n"
+                                + "       \"place_into\": \"" + vmHost + "\"\n"
                                 + "    }\"\"\" .\n\n"
                                 + "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":eth0&gt;\n"
                                 + "    a            nml:BidirectionalPort ;\n"
@@ -1600,25 +1603,30 @@ public class serviceBeans {
                                     + "     a   mrs:RoutingTable;\n"
                                     + "     mrs:type   \"linux\";\n"
                                     + "     mrs:hasRoute    \n";
-                            int routeCt = 0;
+                            String vmRoutes = "";
+                            int routeCt = 1;
                             for (Object r : vmRouteArr) {
                                 JSONObject route = (JSONObject) r;
-                                if (routeCt > 0) {
+                                if (routeCt > 1) {
                                     svcDelta += ",\n";
                                 }
-                                svcDelta += "      [";
+                                svcDelta += "            &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":routingservice:routingtable+linux:route+" + routeCt + "&gt;\n";
+                                vmRoutes += "&lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":routingservice:routingtable+linux:route+" + routeCt + "&gt;\n"
+                                        + "      a  mrs:Route;\n";
                                 if (route.containsKey("to")) {
-                                    svcDelta += "      mrs:routeTo " + networkAddressFromJson((JSONObject) route.get("to")) + ";";
+                                    vmRoutes += "      mrs:routeTo " + networkAddressFromJson((JSONObject) route.get("to")) + ";";
                                 }
                                 if (route.containsKey("from")) {
-                                    svcDelta += "      mrs:routeFrom " + networkAddressFromJson((JSONObject) route.get("from")) + ";";
+                                    vmRoutes += "      mrs:routeFrom " + networkAddressFromJson((JSONObject) route.get("from")) + ";";
                                 }
                                 if (route.containsKey("next_hop")) {
-                                    svcDelta += "      mrs:nextHop " + networkAddressFromJson((JSONObject) route.get("next_hop")) + ";";
+                                    vmRoutes += "      mrs:nextHop " + networkAddressFromJson((JSONObject) route.get("next_hop")) + ";";
                                 }
-                                svcDelta += "      ]";
+                                vmRoutes = vmRoutes.trim();
+                                vmRoutes += ".\n\n";
+                                routeCt++;
                             }
-                            svcDelta += ". \n\n";
+                            svcDelta += ". \n\n" + vmRoutes;
                         }
                     }
                 }

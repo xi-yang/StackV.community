@@ -70,7 +70,7 @@ public class SystemModelCoordinator {
     
     @Lock(LockType.WRITE)
     public void setBootStrapped(boolean bl) {
-        logger.message("setBootStrapped", String.format("from %b into %b", bootStrapped, bl));
+        logger.message("setBootStrapped", String.format("Status reset from %b into %b", bootStrapped, bl));
         bootStrapped = bl;
         if (bootStrapped == false) {
             systemVersionGroup = null;
