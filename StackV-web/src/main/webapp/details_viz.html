@@ -460,7 +460,7 @@
         //viz_table.find("th:nth-child(" + index + ")").css( "color", "#ccc");
     }
     function showManifest() {
-        var uuid =  sessionStorage.getItem("uuid");
+        var uuid =  sessionStorage.getItem("instance-uuid");
         window.open('/StackV-web/ops/details/manifestPortal.jsp?uuid=' + uuid, 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
     }
     function createTextToggle(prefix, textModel) {
@@ -500,7 +500,7 @@
     }
 
     function renderModels() {
-        var UUID = sessionStorage.getItem("uuid");
+        var UUID = sessionStorage.getItem("instance-uuid");
         var token = sessionStorage.getItem("token");
         $.ajax({
             crossDomain: true,
@@ -510,7 +510,7 @@
                 xhr.setRequestHeader("Authorization", "bearer " + token);
             },
             dataType: "json",
-            success: function (data, textStatus, jqXHR) {            
+            success: function (data, textStatus, jqXHR) {     
                 $('.details_viz_div').bind('emptyViz', function() {
                     var id = $(this).attr("id");
                     if (id.includes("ser") || id.includes("sys"))
