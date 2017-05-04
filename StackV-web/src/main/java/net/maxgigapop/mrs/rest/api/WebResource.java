@@ -3010,7 +3010,7 @@ public class WebResource {
 
                 return result;
             } else {
-                return "{verified_addition: \"{ }\",verified_reduction: \"{ }\",unverified_addition: \"{ }\",unverified_reduction: \"{ }\"}";
+                return "{\"verified_addition\": \"{ }\",\"verified_reduction\": \"{ }\",\"unverified_addition\": \"{ }\",\"unverified_reduction\": \"{ }\"}";
             }
         } catch (IOException | SQLException ex) {
             logger.catching("getDeltaBacked", ex);
