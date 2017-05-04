@@ -355,7 +355,7 @@ function installOpenstack() {
 
     divContent.style = "float: left;margin-left:15%";
     divContentRight.style = "float: right;margin-right:15%";
-    document.getElementById("install-options").style = "position: absolute; bottom: 300px; right: 285px";
+    document.getElementById("install-options").style = "position: absolute; bottom: 10%; right: 35%";
 
     type.innerHTML = "OpenStackDriver";
     type.style.color = "white";
