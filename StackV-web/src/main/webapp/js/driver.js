@@ -353,8 +353,8 @@ function installOpenstack() {
     var ext = document.createElement("textarea");
     var content = [];
 
-    divContent.style = "float: left;";
-    divContentRight.style = "float: right;";
+    divContent.style = "float: left;margin-left:15%";
+    divContentRight.style = "float: right;margin-right:15%";
     document.getElementById("install-options").style = "position: absolute; bottom: 300px; right: 285px";
 
     type.innerHTML = "OpenStackDriver";

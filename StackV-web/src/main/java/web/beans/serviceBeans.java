@@ -682,8 +682,9 @@ public class serviceBeans {
                                     }
 
                                     //Find sriov parameter from Gateways.
-                                    if (gateArr == null)
+                                    if (gateArr == null) {
                                         return -1;
+                                    }
                                     for (Object gwEle : gateArr) {
                                         JSONObject gwJSON = (JSONObject) gwEle;
                                         if (gwJSON.get("name").equals(sriov.get("gateway"))) {
@@ -1014,8 +1015,9 @@ public class serviceBeans {
                 }
             }
         }
-        if (vcnArr == null)
+        if (vcnArr == null) {
             return -1;
+        }
 
         String deltaUuid = UUID.randomUUID().toString();
         String awsExportTo = "";
@@ -2022,13 +2024,16 @@ public class serviceBeans {
     }
 
     private void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, String refresh) {
+        String method = "orchestrateInstance";
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         String result;
+        logger.trace_start(method);
         try {
             String token = refreshToken(refresh);
             result = initInstance(refUuid, svcDelta, token);
+            logger.trace(method, "Initialized");
 
             // Cache serviceDelta.
             int[] results = cacheServiceDelta(refUuid, svcDelta, deltaUUID);
@@ -2038,11 +2043,14 @@ public class serviceBeans {
 
             token = refreshToken(refresh);
             propagateInstance(refUuid, svcDelta, token);
+            logger.trace(method, "Propagated");
 
             token = refreshToken(refresh);
             result = commitInstance(refUuid, svcDelta, token);
+            logger.trace(method, "Committed");
 
             verifyInstance(refUuid, result, refresh);
+            logger.trace_end(method);
         } catch (EJBException | IOException | InterruptedException | SQLException ex) {
             try {
                 Properties front_connectionProps = new Properties();
@@ -2054,9 +2062,9 @@ public class serviceBeans {
                 prep.setString(1, refUuid);
                 prep.executeUpdate();
             } catch (SQLException ex2) {
-                logger.catching("orchestrateInstance", ex2);
+                logger.catching(method, ex2);
             }
-            logger.catching("orchestrateInstance", ex);
+            logger.catching(method, ex);
         } finally {
             try {
                 DbUtils.close(rs);
@@ -2099,10 +2107,13 @@ public class serviceBeans {
     }
 
     private void verifyInstance(String refUuid, String result, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
+        String method = "verifyInstance";
+        logger.trace_start(method);
         String token = refreshToken(refresh);
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
         int i = 1;
         while (!result.equals("READY") && !result.equals("FAILED")) {
+            logger.trace(method, "Waiting on instance: " + result);
             if (i == 10) {
                 token = refreshToken(refresh);
                 i = 1;
@@ -2115,12 +2126,12 @@ public class serviceBeans {
             throw new EJBException("Ready Check Failed!");
             }*/
         }
-        String _method = "";
         verify(refUuid, refresh);
+        logger.trace_end(method);
     }
 
     public boolean verify(String refUuid, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
-        int instanceID = getInstanceID(refUuid);                
+        int instanceID = getInstanceID(refUuid);
         ResultSet rs = null;
         String method = "verify";
         Properties front_connectionProps = new Properties();
