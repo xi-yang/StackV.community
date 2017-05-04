@@ -194,7 +194,7 @@ div#info-panel {
     background-color: white;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
     border-radius: 5px;
-    z-index: 4;
+    z-index: 15;
     font-size: .9em;
 
     transition: all .5s ease-out;

@@ -292,6 +292,11 @@ function installAWS() {
     var option3 = document.createElement("option");
     var option4 = document.createElement("option");
     var option5 = document.createElement("option");
+    var option6 = document.createElement("option");
+    var option7 = document.createElement("option");
+    var option8 = document.createElement("option");
+    var option9 = document.createElement("option");
+    var option10 = document.createElement("option");
     var divContent = document.getElementById("install-type");
 
     type.innerHTML = "AwsDriver";
@@ -321,18 +326,27 @@ function installAWS() {
     seventh.innerHTML = "Region";
     seventh.style.color = "white";
 
-
-    option1.text = "option1";
-    option2.text = "option2";
-    option3.text = "option3";
-    option4.text = "option4";
-    option5.text = "option5";
+    option1.text = "us-east-1";
+    option2.text = "us-east-2";
+    option3.text = "us-west-1";
+    option4.text = "us-west-2";
+    option5.text = "eu-west-1";
+    option6.text = "eu-central-1";
+    option7.text = "ap-southeast-1";
+    option8.text = "ap-southeast-2";
+    option9.text = "ap-northeast-1";
+    option10.text = "sa-east-1";
 
     eighth.add(option1);
     eighth.add(option2);
     eighth.add(option3);
     eighth.add(option4);
     eighth.add(option5);
+    eighth.add(option6);
+    eighth.add(option7);
+    eighth.add(option8);
+    eighth.add(option9);
+    eighth.add(option10);
     eighth.id = "region";
 
     divContent.appendChild(first);
@@ -588,6 +602,7 @@ function addDriver() {
 
     $('#black-screen').addClass("off");
     $('#info-panel').removeClass();
+    closeContentPanel();
 
     for (var temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
@@ -931,9 +946,14 @@ function installDriver() {
             tempData[temp.id] = temp.value;
         }
     }
-
     for (var temp of document.getElementsByTagName("textarea")) {
         if (temp.value !== '')
+            tempData[temp.id] = temp.value;
+    }
+    for (var temp of document.getElementsByTagName("select")) {
+        if (temp !== document.getElementById("select-logging-level") 
+                && temp !== document.getElementById("refresh-timer") 
+                && temp.value !== '')
             tempData[temp.id] = temp.value;
     }
 
