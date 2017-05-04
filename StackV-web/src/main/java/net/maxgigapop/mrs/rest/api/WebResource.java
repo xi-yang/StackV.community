@@ -164,13 +164,7 @@ public class WebResource {
         } catch (SQLException ex) {
             logger.catching("addACLEntry", ex);
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -219,13 +213,7 @@ public class WebResource {
         } catch (SQLException ex) {
             logger.catching("removeACLEntry", ex);
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -280,13 +268,7 @@ public class WebResource {
             } catch (SQLException ex) {
                 logger.catching("getACLwithInfo", ex);
             } finally {
-                try {
-                    DbUtils.close(rs);
-                    DbUtils.close(prep);
-                    DbUtils.close(front_conn);
-                } catch (SQLException ex) {
-                    logger.catching("DBUtils", ex);
-                }
+                commonsClose(front_conn, prep, rs);
             }
 
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -437,13 +419,7 @@ public class WebResource {
 
         String xmldata = JSONtoxml(JSONdata, rs.getString("drivertype"));
 
-        try {
-            DbUtils.close(rs);
-            DbUtils.close(prep);
-            DbUtils.close(front_conn);
-        } catch (SQLException ex) {
-            logger.catching("DBUtils", ex);
-        }
+        commonsClose(front_conn, prep, rs);
 
         try {
             URL url = new URL(String.format("%s/driver", host));
@@ -534,13 +510,7 @@ public class WebResource {
         } catch (SQLException ex) {
             logger.catching("addDriver", ex);
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -559,13 +529,7 @@ public class WebResource {
         prep.setString(2, uri);
         ResultSet rs = prep.executeQuery();
 
-        try {
-            DbUtils.close(rs);
-            DbUtils.close(prep);
-            DbUtils.close(front_conn);
-        } catch (SQLException ex) {
-            logger.catching("DBUtils", ex);
-        }
+        commonsClose(front_conn, prep, rs);
 
         return "Deleted";
     }
@@ -610,13 +574,7 @@ public class WebResource {
             logger.catching("deleteDriverProfile", ex);
             return "Failed";
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -659,13 +617,7 @@ public class WebResource {
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
 
-        try {
-            DbUtils.close(rs);
-            DbUtils.close(prep);
-            DbUtils.close(front_conn);
-        } catch (SQLException ex) {
-            logger.catching("DBUtils", ex);
-        }
+        commonsClose(front_conn, prep, rs);
 
         return JSONdata;
     }
@@ -719,13 +671,7 @@ public class WebResource {
             logger.catching("getDriver", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -1385,13 +1331,7 @@ public class WebResource {
             logger.catching("getLabels", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -1455,13 +1395,7 @@ public class WebResource {
             logger.catching("label", ex);
             return "Failed";
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -1508,13 +1442,7 @@ public class WebResource {
             logger.catching("deleteLabel", ex);
             return "Failed";
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -1559,13 +1487,7 @@ public class WebResource {
             logger.catching("clearLabels", ex);
             return "Failed";
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -1725,13 +1647,7 @@ public class WebResource {
             logger.catching("getLogs", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+           commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -1891,13 +1807,7 @@ public class WebResource {
             logger.catching("loadInstances", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -1950,13 +1860,7 @@ public class WebResource {
             logger.catching("loadWizard", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2003,13 +1907,7 @@ public class WebResource {
             logger.catching("loadEditor", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2042,13 +1940,7 @@ public class WebResource {
             logger.catching("loadObjectACL", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2085,13 +1977,7 @@ public class WebResource {
             logger.catching("loadObjectACL", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2132,13 +2018,7 @@ public class WebResource {
             logger.catching("loadInstanceDetails", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2180,13 +2060,7 @@ public class WebResource {
             logger.catching("loadInstanceDelta", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2227,13 +2101,7 @@ public class WebResource {
             logger.catching("loadInstanceVerification", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2267,13 +2135,7 @@ public class WebResource {
             logger.catching("loadInstanceACL", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2314,13 +2176,7 @@ public class WebResource {
             logger.catching("getVerificationResults", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2378,13 +2234,7 @@ public class WebResource {
             logger.catching("getVerificationResultsUnion", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2435,13 +2285,7 @@ public class WebResource {
             logger.catching("getProfile", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2485,13 +2329,7 @@ public class WebResource {
         } catch (SQLException ex) {
             logger.catching("editProfile", ex);
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2552,13 +2390,7 @@ public class WebResource {
             logger.catching("newProfile", ex);
             return ex.toString();
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2598,13 +2430,7 @@ public class WebResource {
         } catch (SQLException ex) {
             logger.catching("deleteProfile", ex);
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2889,13 +2715,7 @@ public class WebResource {
             logger.catching("doCreateService", ex);
             return "<<<CREATION ERROR: " + ex.getMessage();
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2972,13 +2792,7 @@ public class WebResource {
             logger.catching("doOperate", ex);
             return "<<<OPERATION ERROR - " + action + ": " + ex.getMessage() + "\r\n";
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -3016,13 +2830,7 @@ public class WebResource {
             logger.catching("getDeltaBacked", ex);
             return null;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -3034,29 +2842,24 @@ public class WebResource {
      * @return error code |
      */
     private int deleteInstance(String refUuid, String auth) throws SQLException, IOException {
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
+        prep.setString(1, refUuid);
+        prep.executeUpdate();
+
+        prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE `acl`.`object` = ?");
+        prep.setString(1, refUuid);
+        prep.executeUpdate();
+
+        commonsClose(front_conn, prep, null);
+
         String result = delete(refUuid, auth);
         if (result.equalsIgnoreCase("Successfully terminated")) {
-
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
-            prep.setString(1, refUuid);
-            prep.executeUpdate();
-
-            prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE `acl`.`object` = ?");
-            prep.setString(1, refUuid);
-            prep.executeUpdate();
-
-            try {
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
             return 0;
         } else {
             return 1;
@@ -3436,13 +3239,7 @@ public class WebResource {
         } catch (SQLException ex) {
             logger.catching("setSupereState", ex);
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -3542,13 +3339,7 @@ public class WebResource {
             logger.catching("clearVerification", ex);
             return false;
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -3576,13 +3367,7 @@ public class WebResource {
             logger.catching("superStatus", ex);
             return "ERROR";
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -3615,13 +3400,7 @@ public class WebResource {
         } catch (SQLException ex) {
             //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-            try {
-                DbUtils.close(rs);
-                DbUtils.close(prep);
-                DbUtils.close(front_conn);
-            } catch (SQLException ex) {
-                logger.catching("DBUtils", ex);
-            }
+            commonsClose(front_conn, prep, rs);
         }
         throw new EJBException("getServiceType failed to find service type for service uuid=" + refUuid);
     }
@@ -3679,5 +3458,21 @@ public class WebResource {
         }
 
         return roleSet.contains(role);
+    }
+
+    private void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs) {
+        try {
+            if (rs != null) {
+                DbUtils.close(rs);
+            }
+            if (prep != null) {
+                DbUtils.close(prep);
+            }
+            if (front_conn != null) {
+                DbUtils.close(front_conn);
+            }
+        } catch (SQLException ex) {
+            logger.catching("DBUtils", ex);
+        }
     }
 }
