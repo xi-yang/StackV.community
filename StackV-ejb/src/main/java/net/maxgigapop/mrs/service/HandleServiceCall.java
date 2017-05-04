@@ -337,10 +337,10 @@ public class HandleServiceCall {
                 && !serviceInstance.getStatus().equals("COMMITTED-PARTIAL")) {
             throw logger.error_throwing(method, "ref:ServiceInstance must have status=PROPAGATED or PROPAGATED-PARTIAL or COMMITTED-PARTIAL while the actual status=" + serviceInstance.getStatus());
         }
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
-        if (!itSD.hasNext()) {
+        if (serviceInstance.getServiceDeltas() == null || serviceInstance.getServiceDeltas().isEmpty()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to commit.");
         }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         // By default commit a delta if it is the first with propagated status in queue or there is only commited ones before.
         // Also commit only one delta at a time.
         boolean canMultiCommit = false;
@@ -689,10 +689,10 @@ public class HandleServiceCall {
         } 
         */
         logger.status(method, serviceInstance.getStatus());
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
-        if (!itSD.hasNext()) {
+        if (serviceInstance.getServiceDeltas() == null || serviceInstance.getServiceDeltas().isEmpty()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to retry.");
         }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         boolean canMultiPropagate = false;
         String multiPropagate = serviceInstance.getProperty("multiPropagate");
         if (multiPropagate != null && multiPropagate.equalsIgnoreCase("true")) {
