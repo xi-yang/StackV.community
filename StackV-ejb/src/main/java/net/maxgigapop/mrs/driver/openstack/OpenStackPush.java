@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
@@ -1616,8 +1617,7 @@ public class OpenStackPush {
         return requests;
     }    
     
-    // serving floating IP from available pool
-    //@TODO: get list of possible addresses and choose a random one to avoid collision with concurrent requests
+    // serving floating IP from available pool (randomized)
     private String checkoutFloatingIp(OntModel model) {
         String sparql = "SELECT ?fip_alloc ?fip WHERE {"
                 + "?fip_alloc mrs:type \"ipv4-floatingip\". "
@@ -1625,14 +1625,23 @@ public class OpenStackPush {
                 + "FILTER NOT EXISTS {?any_assigned mrs:type \"floating-ip\". ?any_assigned mrs:value ?fip}"
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        Resource fipAlloc = null;
+        List<RDFNode> fipList = new ArrayList();
         while (r.hasNext()) {
             QuerySolution solution = r.next();
-            Resource fipAlloc = solution.getResource("fip_alloc");
-            RDFNode fipAddress = solution.get("fip");
-            model.remove(fipAlloc, Mrs.value, fipAddress);
-            return fipAddress.toString();
-        }        
-        return null;
+            if (fipAlloc == null) {
+                fipAlloc = solution.getResource("fip_alloc");
+            }
+            
+            fipList.add(solution.get("fip"));
+        }
+        if (fipAlloc == null) {
+            return null;
+        }
+        Random rand = new Random();
+        RDFNode fipAddress = fipList.get(rand.nextInt(fipList.size()));
+        model.remove(fipAlloc, Mrs.value, fipAddress);
+        return fipAddress.toString();
     }
     
     /**

@@ -842,6 +842,10 @@ public class HandleServiceCall {
         if (rs.hasNext()) {
             allEssentialVerified = false;
             unverifiedModel.add(residualModel);
+            while (rs.hasNext()) {
+                String uri = rs.next().get("res").toString();
+                logger.trace("verifyModelAddition", "cannot verify: " + uri);
+            }
         }
         // add verified statements to verifiedModel
         verifiedModel.add(deltaModel);
@@ -897,9 +901,11 @@ public class HandleServiceCall {
             if (unverifiableList.contains(res)) {
                 continue;
             }
-            allEssentialVerified = false;
-            unverifiedModel.add(residualModel);
-            break;
+            logger.trace("verifyModelReduction", "cannot verify: " + res.toString());
+            if (allEssentialVerified) {
+                unverifiedModel.add(residualModel);
+                allEssentialVerified = false;
+            }
         }
         return allEssentialVerified;
     }

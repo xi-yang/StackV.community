@@ -1340,7 +1340,7 @@ public class serviceBeans {
                         JSONArray vmRouteArr = null;
                         if (vmJson.containsKey("routes")) {
                             vmRouteArr = (JSONArray) vmJson.get("routes");
-                            svcDelta += "    mrs:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":routingservice&gt; ;\n";
+                            svcDelta += "    nml:hasService  &lt;urn:ogf:network:service+" + refUuid + ":resource+virtual_machines:tag+" + vmName + ":routingservice&gt; ;\n";
                         }
                         svcDelta += "    spa:dependOn &lt;x-policy-annotation:action:create-" + vmName + "&gt;.\n\n"
                                 + "&lt;x-policy-annotation:action:create-" + vmName + "&gt;\n"
