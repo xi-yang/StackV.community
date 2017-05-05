@@ -38,8 +38,8 @@ html{
 #displayPanel{
     float:right;
     background-color: #d0d0d0;    
-    height: calc(100% - 37px);
-    top: 37px;
+    height: calc(100% - 52px);
+    top: 52px;
     width: 25%;
     position: fixed;
     right: -25%;
@@ -66,10 +66,11 @@ html{
 #displayPanel-tab {    
     position: absolute;
     right: 0px;
-    height: 100%;
+    height: calc(100% - 52px);
     width: 10px;
     background-color: #555;
     z-index: 5;
+    top: 52px;   
     
     -webkit-transition: right 0.5s ease-in-out;
     transition: right 0.5s ease-in-out;
@@ -106,9 +107,9 @@ html{
 #viz {
     background: rgba(100,100,100,1);
     width: 100%;
-    height: calc(100% - 37px);
+    height: calc(100% - 52px);
     position: absolute;
-    top: 37px;
+    top: 52px;
     left: 0px;
     
     -webkit-transition: opacity 2s ease-in;
@@ -135,9 +136,9 @@ html{
     
     position: absolute;
     width: calc(100% - 225px);
-    height: calc(100% - 37px);
+    height: calc(100% - 52px);
     left: 225px;
-    top: 37px;
+    top: 52px;
     border-left: 5px solid rgba(0, 0, 0, .05);
 }
 
@@ -193,7 +194,7 @@ body{
 #filterPanel {
     display: none;
     position: relative;
-    top: 37px;
+    top: 52px;
     left: 0px;
     z-index: 2;
 }

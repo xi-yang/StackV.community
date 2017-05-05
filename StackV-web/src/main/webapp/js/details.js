@@ -120,7 +120,7 @@ $(function () {
 
 function loadDetailsNavbar() {
     $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
-        setRefresh(30);
+        setRefresh($("#refresh-timer").val());
         switch (view) {
             case "left":
                 $("#logging-tab").addClass("active");
@@ -757,7 +757,7 @@ function loadVisualization() {
         document.getElementById("visual-panel").innerHTML = "";
         var State = document.getElementById("instance-substate").innerHTML;
         var verificationState = document.getElementById("instance-verification").innerHTML;
-        
+
         var States = {
             "INIT": 0,
             "COMPILED": 1,
@@ -765,7 +765,7 @@ function loadVisualization() {
             "FAILED": 3,
             "READY": 4
         };
-                
+
         var tabs = [
             {
                 "name": "Service",
@@ -984,9 +984,10 @@ function loadVisualization() {
 
             for (var i = 0; i < tabs.length; i++) {
                 var tab = tabs[i];
-                
-                if ((tab.name === "Verification") && (verificationState === null)) continue; 
-                
+
+                if ((tab.name === "Verification") && (verificationState === null))
+                    continue;
+
                 if (States[tab.state] <= States[State]) {
                     createTab(tab, tabBar);
                     tabContent.appendChild(tab.createContent());
@@ -1302,72 +1303,37 @@ function buttonModerate() {
 
 
 /* REFRESH */
-function reloadData(time) {
+function reloadData() {
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        switch (view) {
-            case "left":
-                /*tweenLoggingPanel.reverse();*/
-                break;
-            case "center":
-                tweenDetailsPanel.reverse();
-                break;
-            case "right":
-                tweenVisualPanel.reverse();
-                break;
-        }
-        setTimeout(function () {
-            // Refresh Operations                        
+        var timerSetting = $("#refresh-timer").val();
+        if (timerSetting > 15) {
+            switch (view) {
+                case "left":
+                    /*tweenLoggingPanel.reverse();*/
+                    break;
+                case "center":
+                    tweenDetailsPanel.reverse();
+                    break;
+                case "right":
+                    tweenVisualPanel.reverse();
+                    break;
+            }
+            setTimeout(function () {
+                // Refresh Operations                        
+                loadDetails();
+                $(".delta-table-header").click(function () {
+                    $("#body-" + this.id).toggleClass("hide");
+                });
+                refreshSync(refreshed, timerSetting);
+            }, 1000);
+        } else {
             loadDetails();
             $(".delta-table-header").click(function () {
                 $("#body-" + this.id).toggleClass("hide");
             });
-            refreshSync(refreshed, time);
-        }, 1000);
+            refreshSync(refreshed, timerSetting);
+        }
     });
-}
-
-function refreshSync(refreshed, time) {
-    if (refreshed) {
-        sessionStorage.setItem("token", keycloak.token);
-        console.log("Token Refreshed by nexus!");
-    }
-    var timerSetting = $("#refresh-timer").val();
-    var manual = false;
-    if (typeof time === "undefined") {
-        time = countdown;
-    }
-    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-        manual = true;
-    }
-    $("#refresh-timer").val(timerSetting);
-    if (manual === false) {
-        countdown = time;
-        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
-    } else {
-        $("#refresh-button").html('Manually Refresh Now');
-    }
-}
-function timerChange(sel) {
-    clearInterval(refreshTimer);
-    clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
-        setRefresh(sel.value);
-    } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-    }
-}
-function setRefresh(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadData(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
 }

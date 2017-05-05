@@ -69,7 +69,7 @@ $(function () {
 });
 
 function loadAdminNavbar() {
-    setRefresh(10);
+    setRefresh($("#refresh-timer").val());
     $("#sub-nav").load("/StackV-web/nav/admin_navbar.html", function () {
         switch (view) {
             case "left":
@@ -210,58 +210,14 @@ function filterLogs() {
 
 
 /* REFRESH */
-
-function reloadData(time) {
+function reloadData() {
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        refreshSync(refreshed, time);
+        var timerSetting = $("#refresh-timer").val();
+        refreshSync(refreshed, timerSetting);
 
         // Refresh Operations
         loadLogs();
     });
-}
-
-function refreshSync(refreshed, time) {
-    if (refreshed) {
-        sessionStorage.setItem("token", keycloak.token);
-        console.log("Token Refreshed by nexus!");
-    }
-    var timerSetting = $("#refresh-timer").val();
-    var manual = false;
-    if (typeof time === "undefined") {
-        time = countdown;
-    }
-    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-        manual = true;
-    }
-    $("#refresh-timer").val(timerSetting);
-    if (manual === false) {
-        countdown = time;
-        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
-    } else {
-        $("#refresh-button").html('Manually Refresh Now');
-    }
-}
-function timerChange(sel) {
-    clearInterval(refreshTimer);
-    clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
-        setRefresh(sel.value);
-    } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-    }
-}
-function setRefresh(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadData(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
 }

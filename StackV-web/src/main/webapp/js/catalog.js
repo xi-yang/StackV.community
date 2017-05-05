@@ -50,9 +50,22 @@ Mousetrap.bind({
     }
 });
 
-$(function () {
-    setTimeout(catalogLoad, 750);
-    setRefresh(60);
+
+function openCatalog() {
+    tweenCatalogPanel.play();
+    tweenBlackScreen.play();
+    $("#catalog-panel").removeClass("closed");
+}
+function closeCatalog() {
+    tweenCatalogPanel.reverse();
+    tweenBlackScreen.reverse();
+    $("#catalog-panel").addClass("closed");
+}
+
+function loadCatalog() {
+    loadInstances();
+    loadWizard();
+    loadEditor();
 
     $("#black-screen").click(function () {
         $("#info-panel").removeClass("active");
@@ -66,31 +79,17 @@ $(function () {
             closeCatalog();
         }
     });
-
-    //$("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
-});
-
-function openCatalog() {
-    tweenCatalogPanel.play();
-    tweenBlackScreen.play();
-    $("#catalog-panel").removeClass("closed");
 }
-function closeCatalog() {
-    tweenCatalogPanel.reverse();
-    tweenBlackScreen.reverse();
-    $("#catalog-panel").addClass("closed");
-}
-
-function catalogLoad() {
-    loadInstances();
-    loadWizard();
-    loadEditor();
+function loadCatalogNavbar() {
+    $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
+        setRefresh($("#refresh-timer").val());
+    });
 }
 
 function loadInstances() {
-
     var userId = keycloak.subject;
     var tbody = document.getElementById("status-body");
+    tbody.innerHTML = "";
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
     $.ajax({
@@ -367,67 +366,26 @@ function loadEditor() {
     });
 }
 
+function getURLParameter(name) {
+    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+}
+
+
 /* REFRESH */
-function timerChange(sel) {
-    clearInterval(refreshTimer);
-    clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
-        setRefresh(sel.value);
-    } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-    }
-}
-
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
-}
-
-function setRefresh(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadCatalog(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-
-function reloadCatalog(time) {
+function reloadData() {
     keycloak.updateToken(60).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        tweenInstancePanel.reverse();
-        setTimeout(function () {
-            if (refreshed) {
-                sessionStorage.setItem("token", keycloak.token);
-                console.log("Token Refreshed by nexus!");
-            }
-
-            var timerSetting = $("#refresh-timer").val();
-            var manual = false;
-            if (typeof time === "undefined") {
-                time = countdown;
-            }
-            if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-                manual = true;
-            }
-
-            $('#instance-panel').load(document.URL + ' #status-table', function () {
+        var timerSetting = $("#refresh-timer").val();
+        if (timerSetting > 15) {
+            tweenInstancePanel.reverse();
+            setTimeout(function () {
                 loadInstances();
-
-                $("#refresh-timer").val(timerSetting);
-                if (manual === false) {
-                    countdown = time;
-                    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-                } else {
-                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-                }
-            });
-        }, 750);
+                refreshSync(refreshed, timerSetting);
+            }, 750);
+        } else {
+            loadInstances();
+            refreshSync(refreshed, timerSetting);
+        }
     });
-}
-
-function getURLParameter(name) {
-    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
 }

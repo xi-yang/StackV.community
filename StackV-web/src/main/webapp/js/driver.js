@@ -143,7 +143,7 @@ function closeContentPanel() {
 
 function loadDriverNavbar() {
     $("#sub-nav").load("/StackV-web/nav/driver_navbar.html", function () {
-        setRefresh(60);
+        setRefresh($("#refresh-timer").val());
         switch (view) {
             case "left":
                 $("#driver-add-tab").addClass("active");
@@ -862,7 +862,7 @@ function removeDriver(clickID) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        success: function () {            
+        success: function () {
         }
     });
 }
@@ -951,8 +951,8 @@ function installDriver() {
             tempData[temp.id] = temp.value;
     }
     for (var temp of document.getElementsByTagName("select")) {
-        if (temp !== document.getElementById("select-logging-level") 
-                && temp !== document.getElementById("refresh-timer") 
+        if (temp !== document.getElementById("select-logging-level")
+                && temp !== document.getElementById("refresh-timer")
                 && temp.value !== '')
             tempData[temp.id] = temp.value;
     }
@@ -1004,64 +1004,23 @@ function plugRaw() {
 
 
 /* REFRESH */
-function reloadData(time) {
+function reloadData() {
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        if (view === "center") {
-            tweenInstalledPanel.reverse();
-        }
-        setTimeout(function () {
-            // Refresh Operations                        
+        var timerSetting = $("#refresh-timer").val();
+        if (timerSetting > 15) {
+            if (view === "center") {
+                tweenInstalledPanel.reverse();
+            }
+            setTimeout(function () {
+                // Refresh Operations                        
+                loadDriverPortal();
+                refreshSync(refreshed, timerSetting);
+            }, 1000);
+        } else {
             loadDriverPortal();
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-            refreshSync(refreshed, time);
-        }, 1000);
+            refreshSync(refreshed, timerSetting);
+        }
     });
-}
-
-function refreshSync(refreshed, time) {
-    if (refreshed) {
-        sessionStorage.setItem("token", keycloak.token);
-        console.log("Token Refreshed by nexus!");
-    }
-    var timerSetting = $("#refresh-timer").val();
-    var manual = false;
-    if (typeof time === "undefined") {
-        time = countdown;
-    }
-    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-        manual = true;
-    }
-    $("#refresh-timer").val(timerSetting);
-    if (manual === false) {
-        countdown = time;
-        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
-    } else {
-        $("#refresh-button").html('Manually Refresh Now');
-    }
-}
-function timerChange(sel) {
-    clearInterval(refreshTimer);
-    clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
-        setRefresh(sel.value);
-    } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-    }
-}
-function setRefresh(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadData(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
 }
