@@ -143,7 +143,7 @@ function closeContentPanel() {
 
 function loadDriverNavbar() {
     $("#sub-nav").load("/StackV-web/nav/driver_navbar.html", function () {
-        setRefresh(60);
+        setRefresh($("#refresh-timer").val());
         switch (view) {
             case "left":
                 $("#driver-add-tab").addClass("active");

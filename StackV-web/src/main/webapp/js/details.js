@@ -120,7 +120,7 @@ $(function () {
 
 function loadDetailsNavbar() {
     $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
-        setRefresh(30);
+        setRefresh($("#refresh-timer").val());
         switch (view) {
             case "left":
                 $("#logging-tab").addClass("active");

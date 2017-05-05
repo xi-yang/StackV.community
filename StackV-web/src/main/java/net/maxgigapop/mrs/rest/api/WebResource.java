@@ -2902,6 +2902,7 @@ public class WebResource {
             }
 
             while (true) {
+                logger.trace("cancelInstance", "Verification priming check");
                 auth = servBean.refreshToken(refresh);
 
                 instanceState = status(refUuid, auth);

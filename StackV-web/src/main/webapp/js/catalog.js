@@ -50,11 +50,6 @@ Mousetrap.bind({
     }
 });
 
-function loadCatalogNavbar() {
-    $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
-        setRefresh(5);
-    });
-}
 
 function openCatalog() {
     tweenCatalogPanel.play();
@@ -85,7 +80,11 @@ function loadCatalog() {
         }
     });
 }
-
+function loadCatalogNavbar() {
+    $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
+        setRefresh($("#refresh-timer").val());
+    });
+}
 
 function loadInstances() {
     var userId = keycloak.subject;

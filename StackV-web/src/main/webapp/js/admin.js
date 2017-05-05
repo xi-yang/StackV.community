@@ -69,7 +69,7 @@ $(function () {
 });
 
 function loadAdminNavbar() {
-    setRefresh(10);
+    setRefresh($("#refresh-timer").val());
     $("#sub-nav").load("/StackV-web/nav/admin_navbar.html", function () {
         switch (view) {
             case "left":
@@ -210,12 +210,12 @@ function filterLogs() {
 
 
 /* REFRESH */
-
-function reloadData(time) {
+function reloadData() {
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        refreshSync(refreshed, time);
+        var timerSetting = $("#refresh-timer").val();
+        refreshSync(refreshed, timerSetting);
 
         // Refresh Operations
         loadLogs();
