@@ -47,7 +47,10 @@ $(function () {
     keycloak.onAuthSuccess = function () {
         loadNavbar();
 
-        if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
+        if (window.location.pathname === "/StackV-web/ops/catalog.jsp") {
+            loadCatalogNavbar();
+            loadCatalog();
+        } else if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
             var uuid = sessionStorage.getItem("instance-uuid");
             if (!uuid) {
                 alert("No Service Instance Selected!");
@@ -998,4 +1001,54 @@ function initTagPanel() {
             });
         }
     });
+}
+
+/* REFRESH */
+function refreshSync(refreshed, time) {
+    if (refreshed) {
+        sessionStorage.setItem("token", keycloak.token);
+        console.log("Token Refreshed by nexus!");
+    }
+    var manual = false;
+    if (typeof time === "undefined") {
+        time = countdown;
+    }
+    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+        manual = true;
+    }
+    if (manual === false) {
+        countdown = time;
+        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
+    } else {
+        $("#refresh-button").html('Manually Refresh Now');
+    }
+}
+function timerChange(sel) {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+    if (sel.value !== 'off') {
+        setRefresh(sel.value);
+    } else {
+        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+    }
+}
+function setRefresh(time) {
+    countdown = time;
+    refreshTimer = setInterval(function () {
+        reloadData();
+    }, (time * 1000));
+    countdownTimer = setInterval(function () {
+        refreshCountdown(time);
+    }, 1000);
+}
+function refreshCountdown() {
+    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + (countdown - 1) + ' seconds';
+    countdown--;
+}
+function reloadDataManual() {
+    var sel = document.getElementById("refresh-timer");
+    if (sel.value !== 'off') {
+        timerChange(sel);
+    }
+    reloadData();
 }
