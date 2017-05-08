@@ -115,8 +115,9 @@ define([], function () {
             var windowHeight = window.innerHeight;
 
             element.style.left = clickCoordsX + 20 + "px";
-            element.style.top = clickCoordsY - elemHeight + "px";
-            
+            if (clickCoordsY - elemHeight >= 0)
+             element.style.top = clickCoordsY - elemHeight + "px";
+
         }   
         
         function getHeight(elementName) {
