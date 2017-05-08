@@ -171,32 +171,36 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         Integer count = 0;
         try {
             // remove all VGs that has no dependency (by systemDelta)
-            Query q = createQuery(String.format("FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
-            List<VersionGroup> listVG = (List<VersionGroup>) q.getResultList();
-            if (listVG != null) {
-                Iterator<VersionGroup> it = listVG.iterator();
+            Query q = createQuery(String.format("SELECT vg.id FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
+            List listVGID = q.getResultList();
+            if (listVGID != null) {
+                Iterator<Long> it = listVGID.iterator();
                 while (it.hasNext()) {
-                    VersionGroup vg = it.next();
+                    Long vgid = it.next();
+                    VersionGroup vg = VersionGroupPersistenceManager.findById(vgid);
                     if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
                         continue;
                     }
                     VersionGroupPersistenceManager.delete(vg);
                     count++;
-                    logger.trace("cleanupAndUpdateAll", vg + " deleted.");
+                    logger.trace("cleanupAndUpdateAll", vg + " deleted (no longer used).");
                 }
             }
             // remove all empty VGs and update the non-empty
-            q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
-            listVG = (List<VersionGroup>) q.getResultList();
-            if (listVG == null) {
+            q = createQuery(String.format("SELECT id FROM %s", VersionGroup.class.getSimpleName()));
+            listVGID = q.getResultList();
+            if (listVGID == null) {
                 return;
             }
-            Iterator<VersionGroup> it = listVG.iterator();
+            Iterator it = listVGID.iterator();
             while (it.hasNext()) {
-                VersionGroup vg = it.next();
+                Long vgid = (Long) it.next();
+                VersionGroup vg = VersionGroupPersistenceManager.findById(vgid);
                 if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
                     //@TODO: probe -> exception here (deletion may not be needed any way)
-                    //VersionGroupPersistenceManager.delete(vg);
+                    VersionGroupPersistenceManager.delete(vg);
+                    count++;
+                    logger.trace("cleanupAndUpdateAll", vg + " deleted (empty VI list).");
                 } else {
                     //@TODO: probe further: the update may create empty VGs
                     VersionGroupPersistenceManager.refreshToHead(vg, true);
