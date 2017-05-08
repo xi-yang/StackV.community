@@ -175,6 +175,9 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                     throw logger.throwing(method, String.format("cannot parse json string %s", filterCriterion.get("value")), e);
                 }  
             } 
+            if (placeToUri.endsWith("+any")) {
+                placeToUri = "any";
+            }
             if (placeToUri == null || (!placeToUri.startsWith("any") && !model.contains(model.getResource(placeToUri), null))) {
                 throw logger.error_throwing(method, "json input misses placeToUri");
             }

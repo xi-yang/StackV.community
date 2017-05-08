@@ -36,7 +36,6 @@ Mousetrap.bind({
     }
 });
 function viewShift(dir) {
-    resetView();
     switch (view) {
         case "left":
             if (dir === "right") {
@@ -44,12 +43,10 @@ function viewShift(dir) {
             }
             break;
         case "center":
-            switch (dir) {
-                case "left":
-                    newView("logging");
-                    break;
+            if (dir === "left") {
+                newView("logging");
+                view = dir;
             }
-            view = dir;
             break;
     }
 }
@@ -69,8 +66,8 @@ $(function () {
 });
 
 function loadAdminNavbar() {
-    setRefresh($("#refresh-timer").val());
     $("#sub-nav").load("/StackV-web/nav/admin_navbar.html", function () {
+        setRefresh($("#refresh-timer").val());
         switch (view) {
             case "left":
                 $("#logging-tab").addClass("active");
@@ -104,6 +101,7 @@ function resetView() {
     }
 }
 function newView(panel) {
+    resetView();
     switch (panel) {
         case "logging":
             tweenLoggingPanel.play();
@@ -119,21 +117,12 @@ function newView(panel) {
 }
 
 function loadAdmin() {
-    // Subfunctions
-    subloadAdmin();
-}
-
-function subloadAdmin() {
-    subloadLogging();
-}
-
-function subloadLogging() {
     loadLogs();
     setTimeout(function () {
         if (view === "left") {
             tweenLoggingPanel.play();
         }
-    }, 1000);
+    }, 500);
 }
 
 
@@ -189,8 +178,6 @@ function loadLogs() {
                 }
                 div.appendChild(detail);
             }
-
-            filterLogs();
         }
     });
 }
@@ -219,6 +206,7 @@ function reloadData() {
             refreshSync(refreshed, timerSetting);
 
             // Refresh Operations
+            $("#filter-search-input").val("");
             loadLogs();
         }, 500);
     });

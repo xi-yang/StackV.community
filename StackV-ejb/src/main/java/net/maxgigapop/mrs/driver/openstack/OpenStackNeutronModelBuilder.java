@@ -517,19 +517,19 @@ public class OpenStackNeutronModelBuilder {
                     if (!userName.isEmpty()) {
                         Resource resNA = RdfOwl.createResource(model, endpointUri+":username", Mrs.NetworkAddress);
                         model.add(model.createStatement(resNA, Mrs.type, "globus:username"));
-                        model.add(model.createStatement(resNA, Mrs.type, userName));
+                        model.add(model.createStatement(resNA, Mrs.value, userName));
                         model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
                     }
                     if (!defautDir.isEmpty()) {
                         Resource resNA = RdfOwl.createResource(model, endpointUri+":directory", Mrs.NetworkAddress);
                         model.add(model.createStatement(resNA, Mrs.type, "globus:directory"));
-                        model.add(model.createStatement(resNA, Mrs.type, defautDir));
+                        model.add(model.createStatement(resNA, Mrs.value, defautDir));
                         model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
                     }
                     if (!dataInterface.isEmpty()) {
                         Resource resNA = RdfOwl.createResource(model, endpointUri+":interface", Mrs.NetworkAddress);
                         model.add(model.createStatement(resNA, Mrs.type, "globus:interface"));
-                        model.add(model.createStatement(resNA, Mrs.type, dataInterface));
+                        model.add(model.createStatement(resNA, Mrs.value, dataInterface));
                         model.add(model.createStatement(resGlobus, Mrs.hasNetworkAddress, resNA));
                     }
                 } catch (ParseException e) {

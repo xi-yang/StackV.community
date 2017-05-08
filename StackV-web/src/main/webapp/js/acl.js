@@ -42,8 +42,7 @@ Mousetrap.bind({
         viewShift("right");
     }
 });
-function viewShift(dir) {
-    resetView();
+function viewShift(dir) {    
     switch (view) {
         case "left":
             if (dir === "right") {
@@ -70,6 +69,7 @@ function resetView() {
     }
 }
 function newView(panel) {
+    resetView();
     switch (panel) {
         case "roles":
             tweenRolePanel.play();
