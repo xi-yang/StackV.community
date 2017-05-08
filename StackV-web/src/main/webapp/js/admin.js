@@ -44,12 +44,10 @@ function viewShift(dir) {
             }
             break;
         case "center":
-            switch (dir) {
-                case "left":
-                    newView("logging");
-                    break;
+            if (dir === "left") {
+                newView("logging");
+                view = dir;
             }
-            view = dir;
             break;
     }
 }
@@ -68,7 +66,7 @@ $(function () {
     });
 });
 
-function loadAdminNavbar() {    
+function loadAdminNavbar() {
     $("#sub-nav").load("/StackV-web/nav/admin_navbar.html", function () {
         setRefresh($("#refresh-timer").val());
         switch (view) {
@@ -209,7 +207,7 @@ function reloadData() {
 
             // Refresh Operations
             $("#filter-search-input").val("");
-            loadLogs();            
+            loadLogs();
         }, 500);
     });
 }
