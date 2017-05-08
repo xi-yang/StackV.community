@@ -113,10 +113,15 @@ define([], function () {
 
             var windowWidth = window.innerWidth;
             var windowHeight = window.innerHeight;
+            
+            var fallback_browser_pos = 58; // heuristic 
+            var default_browser_pos = clickCoordsY - elemHeight;
 
-            element.style.left = clickCoordsX + 20 + "px";
-            if (clickCoordsY - elemHeight >= 0)
-             element.style.top = clickCoordsY - elemHeight + "px";
+             element.style.left = clickCoordsX + 20 + "px";
+            if (default_browser_pos <  0 || default_browser_pos < fallback_browser_pos)
+                element.style.top = fallback_browser_pos + "px";
+            else 
+                element.style.top = default_browser_pos + "px";
 
         }   
         
