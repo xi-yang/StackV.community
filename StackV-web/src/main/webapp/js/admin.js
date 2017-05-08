@@ -214,10 +214,12 @@ function reloadData() {
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        var timerSetting = $("#refresh-timer").val();
-        refreshSync(refreshed, timerSetting);
+        setTimeout(function () {
+            var timerSetting = $("#refresh-timer").val();
+            refreshSync(refreshed, timerSetting);
 
-        // Refresh Operations
-        loadLogs();
+            // Refresh Operations
+            loadLogs();
+        }, 500);
     });
 }

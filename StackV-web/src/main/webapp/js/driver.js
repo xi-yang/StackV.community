@@ -1019,8 +1019,10 @@ function reloadData() {
                 refreshSync(refreshed, timerSetting);
             }, 1000);
         } else {
-            loadDriverPortal();
-            refreshSync(refreshed, timerSetting);
+            setTimeout(function () {
+                loadDriverPortal();
+                refreshSync(refreshed, timerSetting);
+            }, 500);
         }
     });
 }
