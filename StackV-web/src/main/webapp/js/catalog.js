@@ -373,7 +373,7 @@ function getURLParameter(name) {
 
 /* REFRESH */
 function reloadData() {
-    keycloak.updateToken(60).error(function () {
+    keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
         var timerSetting = $("#refresh-timer").val();
@@ -384,8 +384,10 @@ function reloadData() {
                 refreshSync(refreshed, timerSetting);
             }, 750);
         } else {
-            loadInstances();
-            refreshSync(refreshed, timerSetting);
+            setTimeout(function () {
+                loadInstances();
+                refreshSync(refreshed, timerSetting);
+            }, 500);
         }
     });
 }

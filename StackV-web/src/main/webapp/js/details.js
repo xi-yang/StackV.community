@@ -1329,11 +1329,13 @@ function reloadData() {
                 refreshSync(refreshed, timerSetting);
             }, 1000);
         } else {
-            loadDetails();
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-            refreshSync(refreshed, timerSetting);
+            setTimeout(function () {
+                loadDetails();
+                $(".delta-table-header").click(function () {
+                    $("#body-" + this.id).toggleClass("hide");
+                });
+                refreshSync(refreshed, timerSetting);
+            }, 500);
         }
     });
 }
