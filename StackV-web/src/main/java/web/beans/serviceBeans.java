@@ -34,6 +34,8 @@ import java.io.OutputStreamWriter;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -45,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.net.ssl.HttpsURLConnection;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -2039,7 +2043,7 @@ public class serviceBeans {
         String result;
         logger.trace_start(method);
         try {
-            String token = refreshToken(refresh);
+            String token = refreshToken(refresh, 0);
             result = initInstance(refUuid, svcDelta, token);
             logger.trace(method, "Initialized");
 
@@ -2049,11 +2053,11 @@ public class serviceBeans {
             int historyID = results[1];
             cacheSystemDelta(instanceID, historyID, result);
 
-            token = refreshToken(refresh);
+            token = refreshToken(refresh, 0);
             propagateInstance(refUuid, svcDelta, token);
             logger.trace(method, "Propagated");
 
-            token = refreshToken(refresh);
+            token = refreshToken(refresh, 0);
             result = commitInstance(refUuid, svcDelta, token);
             logger.trace(method, "Committed");
 
@@ -2117,13 +2121,13 @@ public class serviceBeans {
     private void verifyInstance(String refUuid, String result, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
         String method = "verifyInstance";
         logger.trace_start(method);
-        String token = refreshToken(refresh);
+        String token = refreshToken(refresh, 0);
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
         int i = 1;
         while (!result.equals("READY") && !result.equals("FAILED")) {
             logger.trace(method, "Waiting on instance: " + result);
             if (i == 10) {
-                token = refreshToken(refresh);
+                token = refreshToken(refresh, 0);
                 i = 1;
             }
             sleep(5000);//wait for 5 seconds and check again later
@@ -2157,7 +2161,7 @@ public class serviceBeans {
 
         for (int i = 1; i <= 5; i++) {
             logger.trace(method, "Start verification Run " + i + "/5");
-            String auth = refreshToken(refresh);
+            String auth = refreshToken(refresh, 0);
 
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
@@ -2232,9 +2236,15 @@ public class serviceBeans {
         return false;
     }
 
-    public String refreshToken(String refresh) {
+    public String refreshToken(String refresh, int recur) {
+        String method = "refreshToken";
+        if (recur == 10) {
+            logger.error(method, "Keycloak refresh connection failure!");
+            return null;
+        }
+        
         try {
-            logger.trace_start("refreshToken");
+            logger.trace_start(method);
             URL url = new URL(kc_url + "/realms/StackV/protocol/openid-connect/token");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
 
@@ -2268,11 +2278,21 @@ public class serviceBeans {
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
 
-            logger.trace_end("refreshToken");
+            logger.trace_end(method);
             return "bearer " + (String) result.get("access_token");
+        } catch (SocketTimeoutException ex) {
+            // Keycloak connection timeout
+            try {
+                recur++;
+                logger.warning(method, "Keycloak refresh timeout #" + recur);
+                Thread.sleep(2000);
+                refreshToken(refresh, recur);
+            } catch (InterruptedException ex1) {
+                logger.catching(method, ex);
+            }
         } catch (ParseException | IOException ex) {
-            logger.catching("refreshToken", ex);
+            logger.catching(method, ex);
         }
-        return null;
+        return null;        
     }
 }
