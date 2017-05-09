@@ -102,27 +102,10 @@ define([], function () {
           //console.log("in positionMenu: menu.style.left: " + menu.style.left + " , menu.style.top: " + menu.style.top);
     }
          function positionDisplayPanel(elementID, e) {
-            var clickCoords = getElementPosition(e);
-            var clickCoordsX = clickCoords.x;
-            var clickCoordsY = clickCoords.y;
-
-            var element = document.querySelector("#" + elementID);
-
-            var elemWidth = element.offsetWidth + 4;
-            var elemHeight = getHeight("#" + elementID) + 4; //element.offsetHeight + 4;
-
-            var windowWidth = window.innerWidth;
-            var windowHeight = window.innerHeight;
-            
-            var fallback_browser_pos = 58; // heuristic 
-            var default_browser_pos = clickCoordsY - elemHeight;
-
-             element.style.left = clickCoordsX + 20 + "px";
-            if (default_browser_pos <  0 || default_browser_pos < fallback_browser_pos)
-                element.style.top = fallback_browser_pos + "px";
-            else 
-                element.style.top = default_browser_pos + "px";
-
+            $("#" + elementID).css({
+                'top': e.pageY, //- screen.height*.1,
+                'left': e.pageX + screen.width*.01
+            });
         }   
         
         function getHeight(elementName) {

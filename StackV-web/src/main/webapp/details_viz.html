@@ -72,7 +72,7 @@
         width:25%;
         /*  height:30%;*/
         display:none;
-        position:absolute;
+        position:fixed;
         top: 30%;
         left: 30%;
         margin-top: -50px;
@@ -316,7 +316,7 @@
     }
 
     function make_display_panel(div_id, prefix) {
-        var display_panel = "<div class=\"displayPanel\" id=\"" + prefix + "_displayPanel\"> " +
+        var display_panel =  "<div class=\"displayPanel\" id=\"" + prefix + "_displayPanel\"> " +
                 "<div class=\"displayPanelBar\">" +
                 "<div class=\"displayPanelCloserBar\"> " +
                 "<i id=\"displayPanelCloser\" class=\"fa fa-times displayPanelCloser\" aria-hidden=\"true\"></i>" +
