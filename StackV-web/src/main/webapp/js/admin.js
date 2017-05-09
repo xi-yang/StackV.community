@@ -178,6 +178,8 @@ function loadLogs() {
                 }
                 div.appendChild(detail);
             }
+
+            filterLogs();
         }
     });
 }
@@ -186,13 +188,15 @@ function filterLogs() {
     // Declare variables  
     var input = document.getElementById("filter-search-input");
     var filter = input.value.toUpperCase();
-    $('#log-div').children('details').each(function () {
-        if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
-            $(this).removeClass("hide");
-        } else {
-            $(this).addClass("hide");
-        }
-    });
+    if (filter !== "") {
+        $('#log-div').children('details').each(function () {
+            if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                $(this).removeClass("hide");
+            } else {
+                $(this).addClass("hide");
+            }
+        });
+    }
 }
 
 
@@ -206,7 +210,6 @@ function reloadData() {
             refreshSync(refreshed, timerSetting);
 
             // Refresh Operations
-            $("#filter-search-input").val("");
             loadLogs();
         }, 500);
     });
