@@ -234,7 +234,7 @@ function loadWizard() {
                     }
                 });
                 // reload top table and hide modal
-                reloadCatalog();
+                reloadData();
                 $("div#profile-modal").modal("hide");
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");

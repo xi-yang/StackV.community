@@ -456,7 +456,8 @@ public class HandleServiceCall {
         }
         ServiceDelta reverseSvcDelta = new ServiceDelta();
         reverseSvcDelta.setServiceInstance(serviceInstance);
-        reverseSvcDelta.setReferenceUUID(UUID.randomUUID().toString());
+        //reverseSvcDelta.setReferenceUUID(UUID.randomUUID().toString());
+        reverseSvcDelta.setReferenceUUID(serviceInstanceUuid);
         reverseSvcDelta.setStatus("INIT");
         DeltaModel dmAddition = new DeltaModel();
         dmAddition.setCommitted(false);
@@ -567,7 +568,7 @@ public class HandleServiceCall {
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
-        return reverseSvcDelta.getReferenceUUID();
+        return reverseSvcDelta.getId();
     }
 
     //By default, this only checks the last service delta. If multiPropagate==true, check all deltas.

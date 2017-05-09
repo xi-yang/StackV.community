@@ -25,7 +25,7 @@
     <Loggers>
         <AsyncLogger name="net.maxgigapop.mrs.rest.api.WebResource" level="info" additivity="false">
             <AppenderRef ref="APIOut" />
-            <AppenderRef ref="MySQL" level="info" />
+            <AppenderRef ref="MySQL"/>
         </AsyncLogger>
         <AsyncLogger name="net.maxgigapop.mrs.rest.api.SecurityInterceptor" level="info" additivity="false">
             <AppenderRef ref="InterceptorOut" />
