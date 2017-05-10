@@ -45,7 +45,24 @@
                     </div>
                 </div>
                 <div id="logging-body-div">
-                    <div id="log-div"></div>
+                    <table id="example" class="display" cellspacing="0" width="100%">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Reference UUID</th>
+                                <th>Logger</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Reference UUID</th>
+                                <th>Logger</th>
+                                <th>Message</th>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
         </div>
@@ -65,35 +82,35 @@
         <script src="/StackV-web/js/admin.js"></script>
 
         <script>
-            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-            dojoConfig = {
-                has: {
-                    "dojo-firebug": true,
-                    "dojo-debug-messages": true
-                },
-                async: true,
-                parseOnLoad: true,
-                packages: [
-                    {
-                        name: "d3",
-                        location: "//d3js.org/",
-                        main: "d3.v3"
-                    },
-                    {
-                        name: "local",
-                        location: "/StackV-web/js/"
-                    }
-                ]
-            };
+                            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+                            dojoConfig = {
+                                has: {
+                                    "dojo-firebug": true,
+                                    "dojo-debug-messages": true
+                                },
+                                async: true,
+                                parseOnLoad: true,
+                                packages: [
+                                    {
+                                        name: "d3",
+                                        location: "//d3js.org/",
+                                        main: "d3.v3"
+                                    },
+                                    {
+                                        name: "local",
+                                        location: "/StackV-web/js/"
+                                    }
+                                ]
+                            };
 
-            $(function () {
-                $("#dialog_policyAction").dialog({
-                    autoOpen: false
-                });
-                $("#dialog_policyData").dialog({
-                    autoOpen: false
-                });
-            });
+                            $(function () {
+                                $("#dialog_policyAction").dialog({
+                                    autoOpen: false
+                                });
+                                $("#dialog_policyData").dialog({
+                                    autoOpen: false
+                                });
+                            });
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
     </body>

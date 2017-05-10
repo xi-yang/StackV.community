@@ -127,6 +127,48 @@ function loadAdmin() {
 
 
 /* LOGGING */
+function loadDataTable() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
+    var table = $('#example').DataTable({
+        "ajax": {
+            url: apiUrl,
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            }
+        },
+        "columns": [
+            {
+                "className": 'details-control',
+                "orderable": false,
+                "data": null,
+                "defaultContent": ''
+            },
+            {"data": "timestamp"},
+            {"data": "referenceUUID"},
+            {"data": "logger"},
+            {"data": "message"}
+        ],
+        "order": [[1, 'asc']]
+    });
+
+    // Add event listener for opening and closing details
+    $('#example tbody').on('click', 'td.details-control', function () {
+        var tr = $(this).closest('tr');
+        var row = table.row(tr);
+
+        if (row.child.isShown()) {
+            // This row is already open - close it
+            row.child.hide();
+            tr.removeClass('shown');
+        } else {
+            // Open this row
+            row.child(format(row.data())).show();
+            tr.addClass('shown');
+        }
+    });
+}
+
 
 function loadLogs() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
