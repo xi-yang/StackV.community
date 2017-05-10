@@ -986,7 +986,7 @@ function loadVisualization() {
             for (var i = 0; i < tabs.length; i++) {
                 var tab = tabs[i];
 
-                if ((tab.name === "Verification") && (verificationState === null || verificationState === -1))
+                if ((tab.name === "Verification") && (verificationState === null || verificationState === "-1"))
                     continue;
 
                 if (States[tab.state] <= States[State]) {
