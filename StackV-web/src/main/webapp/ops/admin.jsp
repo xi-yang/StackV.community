@@ -45,21 +45,23 @@
                     </div>
                 </div>
                 <div id="logging-body-div">
-                    <table id="example" class="display" cellspacing="0" width="100%">
+                    <table id="loggingData" class="table table-striped table-bordered display nowrap" cellspacing="0" width="100%">
                         <thead>
                             <tr>
+                                <th></th>
                                 <th>Timestamp</th>
                                 <th>Reference UUID</th>
-                                <th>Logger</th>
                                 <th>Message</th>
+                                <th>Logger</th>                                
                             </tr>
                         </thead>
                         <tfoot>
                             <tr>
+                                <th></th>
                                 <th>Timestamp</th>
                                 <th>Reference UUID</th>
-                                <th>Logger</th>
                                 <th>Message</th>
+                                <th>Logger</th>                                
                             </tr>
                         </tfoot>
                     </table>
@@ -77,6 +79,10 @@
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
+
+        <script src="/StackV-web/js/datatables/jquery.dataTables.min.js"></script>
+        <script src="/StackV-web/js/datatables/dataTables.scroller.min.js"></script>
+        <script src="/StackV-web/js/datatables/dataTables.fixedColumns.min.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/admin.js"></script>

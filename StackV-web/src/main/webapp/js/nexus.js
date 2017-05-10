@@ -1023,6 +1023,11 @@ function refreshSync(refreshed, time) {
         $("#refresh-button").html('Manually Refresh Now');
     }
 }
+function pauseRefresh(time) {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('refresh-button').innerHTML = 'Paused';
+}
 function timerChange(sel) {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);

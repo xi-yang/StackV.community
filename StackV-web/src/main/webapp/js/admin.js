@@ -26,6 +26,7 @@ var tweenAdminPanel = new TweenLite("#admin-panel", 1, {ease: Power2.easeInOut, 
 var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 
 var view = "left";
+var dataTable = null;
 
 Mousetrap.bind({
     'left': function () {
@@ -117,19 +118,27 @@ function newView(panel) {
 }
 
 function loadAdmin() {
-    loadLogs();
+    loadDataTable();
     setTimeout(function () {
         if (view === "left") {
             tweenLoggingPanel.play();
         }
     }, 500);
+    loadLogs();
 }
 
 
 /* LOGGING */
+function loadLogs() {
+    if (dataTable) {
+        var state = $(".dataTables_scrollBody").scrollTop();
+        dataTable.ajax.reload();
+        $(".dataTables_scrollBody").scrollTop(state);
+    }
+}
 function loadDataTable() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
-    var table = $('#example').DataTable({
+    dataTable = $('#loggingData').DataTable({
         "ajax": {
             url: apiUrl,
             type: 'GET',
@@ -144,103 +153,129 @@ function loadDataTable() {
                 "data": null,
                 "defaultContent": ''
             },
-            {"data": "timestamp"},
-            {"data": "referenceUUID"},
-            {"data": "logger"},
-            {"data": "message"}
+            {"data": "timestamp", "width": "180px"},
+            {"data": "referenceUUID", "width": "280px"},
+            {"data": "message"},
+            {"data": "logger"}
         ],
-        "order": [[1, 'asc']]
+        "deferRender": true,
+        "order": [[1, 'asc']],
+        "ordering": false,
+        "scroller": {
+            displayBuffer: 10
+        },
+        "scrollX": true,
+        "scrollY": "65vh"
+
     });
+    new $.fn.dataTable.FixedColumns(dataTable);
 
     // Add event listener for opening and closing details
-    $('#example tbody').on('click', 'td.details-control', function () {
+    $('#loggingData tbody').on('click', 'td.details-control', function () {
         var tr = $(this).closest('tr');
-        var row = table.row(tr);
-
+        var row = dataTable.row(tr);
         if (row.child.isShown()) {
             // This row is already open - close it
             row.child.hide();
             tr.removeClass('shown');
+            setRefresh($("#refresh-timer").val());
         } else {
             // Open this row
-            row.child(format(row.data())).show();
+            row.child(formatChild(row.data())).show();
             tr.addClass('shown');
+            pauseRefresh();
         }
     });
 }
-
-
-function loadLogs() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (logs) {
-            var div = document.getElementById("log-div");
-            div.innerHTML = "";
-            for (i = 0; i < logs.length; i++) {
-                var log = logs[i];
-                var detail = document.createElement("details");
-                detail.className = "level-" + log["level"];
-
-                /*  log mapping:
-                 *      referenceUUID
-                 *      marker
-                 *      timestamp
-                 *      level
-                 *      logger
-                 *      message
-                 *      exception     
-                 */
-
-                var summary = document.createElement("summary");
-                summary.innerHTML = log["timestamp"] + " - " + log["message"];
-                detail.appendChild(summary);
-                var data = document.createElement("p");
-                data.innerHTML = "UUID: " + log["referenceUUID"];
-                detail.appendChild(data);
-                var data = document.createElement("p");
-                data.innerHTML = "Level: " + log["level"];
-                detail.appendChild(data);
-                if (log["marker"]) {
-                    var data = document.createElement("p");
-                    data.innerHTML = "Marker: " + log["marker"];
-                    detail.appendChild(data);
-                }
-                var data = document.createElement("p");
-                data.innerHTML = "Logger: " + log["logger"];
-                detail.appendChild(data);
-                if (log["exception"]) {
-                    var data = document.createElement("p");
-                    data.innerHTML = "Exception: " + log["exception"];
-                    detail.appendChild(data);
-                }
-                div.appendChild(detail);
-            }
-
-            filterLogs();
-        }
-    });
+function formatChild(d) {
+    // `d` is the original data object for the row
+    return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">' +
+            '<tr>' +
+            '<td>Level:</td>' +
+            '<td>' + d.level + '</td>' +
+            '</tr>' +
+            '<tr>' +
+            '<td>Exception:</td>' +
+            '<td>' + d.exception + '</td>' +
+            '</tr>' +
+            '<tr>' +
+            '<td>Full Message:</td>' +
+            '<td>' + d.message + '</td>' +
+            '</tr>' +
+            '</table>';
 }
 
-function filterLogs() {
-    // Declare variables  
-    var input = document.getElementById("filter-search-input");
-    var filter = input.value.toUpperCase();
-    if (filter !== "") {
-        $('#log-div').children('details').each(function () {
-            if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
-                $(this).removeClass("hide");
-            } else {
-                $(this).addClass("hide");
-            }
-        });
-    }
-}
-
+/*
+ function loadLogs() {
+ var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
+ $.ajax({
+ url: apiUrl,
+ type: 'GET',
+ beforeSend: function (xhr) {
+ xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+ },
+ success: function (logs) {
+ var div = document.getElementById("log-div");
+ div.innerHTML = "";
+ for (i = 0; i < logs.length; i++) {
+ var log = logs[i];
+ var detail = document.createElement("details");
+ detail.className = "level-" + log["level"];
+ 
+ //  log mapping:
+ //     referenceUUID
+ //     marker
+ //     timestamp
+ //     level
+ //     logger
+ //     message
+ //     exception     
+ 
+ var summary = document.createElement("summary");
+ summary.innerHTML = log["timestamp"] + " - " + log["message"];
+ detail.appendChild(summary);
+ var data = document.createElement("p");
+ data.innerHTML = "UUID: " + log["referenceUUID"];
+ detail.appendChild(data);
+ var data = document.createElement("p");
+ data.innerHTML = "Level: " + log["level"];
+ detail.appendChild(data);
+ if (log["marker"]) {
+ var data = document.createElement("p");
+ data.innerHTML = "Marker: " + log["marker"];
+ detail.appendChild(data);
+ }
+ var data = document.createElement("p");
+ data.innerHTML = "Logger: " + log["logger"];
+ detail.appendChild(data);
+ if (log["exception"]) {
+ var data = document.createElement("p");
+ data.innerHTML = "Exception: " + log["exception"];
+ detail.appendChild(data);
+ }
+ div.appendChild(detail);
+ }
+ 
+ filterLogs();
+ }
+ });
+ }
+ 
+ function filterLogs() {
+ // Declare variables  
+ var input = document.getElementById("filter-search-input");
+ var filter = input.value.toUpperCase();
+ if (filter !== "") {
+ $('#log-div').children('details').each(function () {
+ if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
+ $(this).removeClass("hide");
+ } else {
+ $(this).addClass("hide");
+ }
+ });
+ }
+ }
+ */
 
 /* REFRESH */
 function reloadData() {
