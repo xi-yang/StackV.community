@@ -132,8 +132,10 @@ function loadAdmin() {
 function loadLogs() {
     if (dataTable) {
         var state = $(".dataTables_scrollBody").scrollTop();
-        dataTable.ajax.reload();
-        $(".dataTables_scrollBody").scrollTop(state);
+        dataTable.ajax.reload(function () {
+            if (state < 8000)
+                $(".dataTables_scrollBody").scrollTop(state);
+        });
     }
 }
 function loadDataTable() {
