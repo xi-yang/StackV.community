@@ -41,6 +41,7 @@ import javax.persistence.JoinTable;
 import javax.persistence.Lob;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
@@ -70,10 +71,12 @@ public class DriverInstance extends PersistentEntity implements Serializable {
 
     // incoming from subsystems
     @OneToMany(mappedBy = "driverInstance", cascade = {CascadeType.ALL})
+    @OrderColumn(name = "index_column")
     private List<DriverModel> driverModels;
 
     // outgoing to subsystems
     @OneToMany(mappedBy = "driverInstance", cascade = {CascadeType.ALL})
+    @OrderColumn(name = "index_column")
     private List<DriverSystemDelta> driverSystemDeltas;
 
     @ElementCollection

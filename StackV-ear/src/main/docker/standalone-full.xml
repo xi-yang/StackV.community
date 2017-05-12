@@ -161,6 +161,8 @@
                     <driver>mysql</driver>
                     <transaction-isolation>TRANSACTION_READ_COMMITTED</transaction-isolation>
                     <pool>
+                        <min-pool-size>30</min-pool-size>
+                        <max-pool-size>150</max-pool-size>
                         <prefill>true</prefill>
                         <use-strict-min>false</use-strict-min>
                         <flush-strategy>FailingConnectionOnly</flush-strategy>

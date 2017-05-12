@@ -32,6 +32,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.OrderColumn;
 
 /**
  *
@@ -46,6 +47,7 @@ public class SystemDelta extends DeltaBase {
     protected VersionGroup referenceVersionGroup;
 
     @OneToMany(mappedBy = "systemDelta", cascade = {CascadeType.ALL})
+    @OrderColumn(name = "index_column")
     protected List<DriverSystemDelta> driverSystemDeltas = null;
 
     @OneToOne

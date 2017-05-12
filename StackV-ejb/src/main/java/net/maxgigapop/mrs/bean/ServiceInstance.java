@@ -40,6 +40,7 @@ import javax.persistence.JoinTable;
 import javax.persistence.Lob;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
@@ -60,6 +61,7 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     private String referenceUUID;
 
     @OneToMany(mappedBy = "serviceInstance", cascade = {CascadeType.ALL})
+    @OrderColumn(name = "index_column")
     protected List<ServiceDelta> serviceDeltas = null;
 
     @ElementCollection

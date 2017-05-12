@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -54,6 +55,9 @@ public class DeltaBase extends PersistentEntity implements Serializable {
     @GeneratedValue(generator = "system-uuid")
     @GenericGenerator(name = "system-uuid", strategy = "uuid2")
     protected String id;
+
+    @Column(name = "index_column", nullable = false)
+    Integer index = 0;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelAdditionId")

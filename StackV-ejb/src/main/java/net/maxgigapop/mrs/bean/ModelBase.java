@@ -31,6 +31,7 @@ import java.io.StringWriter;
 import java.util.Date;
 import java.util.UUID;
 import javax.ejb.EJBException;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -62,6 +63,8 @@ public class ModelBase extends PersistentEntity implements Serializable {
     @GenericGenerator(name = "system-uuid", strategy = "uuid2")
     protected String id;
 
+    @Column(name = "index_column", nullable = false)
+    Integer index = 0;
     
     protected Date creationTime;
     protected Long cxtVersion = 0L;
