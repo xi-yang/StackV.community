@@ -70,6 +70,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.ws.rs.QueryParam;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.common.TokenHandler;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.logging.log4j.Level;
 import org.jboss.resteasy.spi.HttpRequest;
@@ -86,9 +87,7 @@ import org.apache.logging.log4j.core.config.Configurator;
  */
 @Path("app")
 public class WebResource {
-
     private final StackLogger logger = new StackLogger(WebResource.class.getName(), "WebResource");
-
     private static final Marker SERVICE_MARKER = MarkerManager.getMarker("SQL");
 
     private final String front_db_user = "front_view";
@@ -1647,7 +1646,7 @@ public class WebResource {
             logger.catching("getLogs", ex);
             return null;
         } finally {
-           commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs);
         }
     }
 
@@ -2528,8 +2527,8 @@ public class WebResource {
             final AsyncResponse asyncResponse, final String inputString) {
         try {
             logger.start("createService");
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+            final TokenHandler token = new TokenHandler(refresh);
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
             String serviceType = (String) inputJSON.get("type");
@@ -2548,7 +2547,7 @@ public class WebResource {
                 executorService.execute(new Runnable() {
                     @Override
                     public void run() {
-                        asyncResponse.resume(doCreateService(inputJSON, auth, refresh));
+                        asyncResponse.resume(doCreateService(inputJSON, token));
                     }
                 });
             } else {
@@ -2580,25 +2579,23 @@ public class WebResource {
             final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
             final String refUuid, @PathParam(value = "action")
             final String action) {
-        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
 
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                asyncResponse.resume(doOperate(refUuid, action, auth, refresh));
+                asyncResponse.resume(doOperate(refUuid, action, token));
             }
         });
     }
 
     // Async Methods -----------------------------------------------------------
-    private String doCreateService(JSONObject inputJSON, String auth, String refresh) {
+    private String doCreateService(JSONObject inputJSON, TokenHandler token) {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        auth = servBean.refreshToken(refresh, 0);
         try {
-            long startTime = System.currentTimeMillis();
             logger.start("doCreateService");
 
             String serviceType = (String) inputJSON.get("type");
@@ -2624,8 +2621,7 @@ public class WebResource {
             // Instance Creation
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestProperty("Authorization", auth);
-            String refUUID = servBean.executeHttpMethod(url, connection, "GET", null, auth);
+            String refUUID = servBean.executeHttpMethod(url, connection, "GET", null, token.auth());
             logger.refuuid(refUUID);
 
             // Create Parameter Map
@@ -2669,6 +2665,8 @@ public class WebResource {
             prep.setString(5, alias);
             prep.setInt(6, 1);
             prep.executeUpdate();
+            
+            System.out.println("First Point!");
 
             int instanceID = servBean.getInstanceID(refUUID);
 
@@ -2693,21 +2691,20 @@ public class WebResource {
             // Execute service creation.
             switch (serviceType) {
                 case "netcreate":
-                    servBean.createNetwork(paraMap, auth, refresh);
+                    servBean.createNetwork(paraMap, token);
                     break;
                 case "hybridcloud":
-                    servBean.createHybridCloud(paraMap, auth, refresh);
+                    servBean.createHybridCloud(paraMap, token);
                     break;
                 case "omm":
-                    servBean.createOperationModelModification(paraMap, auth);
+                    servBean.createOperationModelModification(paraMap, token);
                     break;
                 case "dnc":
-                    servBean.createDNC(dataJSON, auth, refresh, refUUID);
+                    servBean.createDNC(dataJSON, token, refUUID);
                     break;
                 default:
             }
 
-            long endTime = System.currentTimeMillis();
             // Return instance UUID
             logger.end("doCreateService");
             return refUUID;
@@ -2720,49 +2717,48 @@ public class WebResource {
         }
     }
 
-    private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, String auth, String refresh) {
+    private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, TokenHandler token) {        
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
 
         logger.refuuid(refUUID);
-        logger.start("doOperate:" + action);
-        auth = servBean.refreshToken(refresh, 0);
+        logger.start("doOperate:" + action);        
         try {
             clearVerification(refUUID);
             switch (action) {
                 case "cancel":
                     setSuperState(refUUID, 2);
-                    cancelInstance(refUUID, auth, refresh);
+                    cancelInstance(refUUID, token);
                     break;
                 case "force_cancel":
                     setSuperState(refUUID, 2);
-                    forceCancelInstance(refUUID, auth, refresh);
+                    forceCancelInstance(refUUID, token);
                     break;
 
                 case "reinstate":
                     setSuperState(refUUID, 4);
-                    cancelInstance(refUUID, auth, refresh);
+                    cancelInstance(refUUID, token);
                     break;
                 case "force_reinstate":
                     setSuperState(refUUID, 4);
-                    forceCancelInstance(refUUID, auth, refresh);
+                    forceCancelInstance(refUUID, token);
                     break;
 
                 case "force_retry":
-                    forceRetryInstance(refUUID, auth, refresh);
+                    forceRetryInstance(refUUID, token);
                     break;
 
                 case "delete":
                 case "force_delete":
-                    deleteInstance(refUUID, auth);
+                    deleteInstance(refUUID, token);
 
                     logger.end("doOperate:" + action);
                     return "Deletion Complete.\r\n";
 
                 case "verify":
                 case "reverify":
-                    servBean.verify(refUUID, refresh);
+                    servBean.verify(refUUID, token);
 
                     logger.end("doOperate:" + action);
                     return "Verification Complete.\r\n";
@@ -2771,8 +2767,7 @@ public class WebResource {
                     logger.warning("doOperate", "Invalid action: " + action);
             }
 
-            auth = servBean.refreshToken(refresh, 0);
-            String retString = superStatus(refUUID) + " - " + status(refUUID, auth) + "\r\n";
+            String retString = superStatus(refUUID) + " - " + status(refUUID, token.auth()) + "\r\n";
 
             logger.end("doOperate:" + action, retString);
             return retString;
@@ -2843,7 +2838,7 @@ public class WebResource {
      * @param refUuid instance UUID
      * @return error code |
      */
-    private int deleteInstance(String refUuid, String auth) throws SQLException, IOException {
+    private int deleteInstance(String refUuid, TokenHandler token) throws SQLException, IOException {
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
@@ -2860,7 +2855,7 @@ public class WebResource {
 
         commonsClose(front_conn, prep, null);
 
-        String result = delete(refUuid, auth);
+        String result = delete(refUuid, token.auth());
         if (result.equalsIgnoreCase("Successfully terminated")) {
             return 0;
         } else {
@@ -2877,39 +2872,35 @@ public class WebResource {
      * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
      * error (Failed result check).
      */
-    private int cancelInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
+    private int cancelInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
-        String instanceState = status(refUuid, auth);
+        String instanceState = status(refUuid, token.auth());
         try {
             if (!instanceState.equalsIgnoreCase("READY")) {
                 return 1;
             }
 
-            auth = servBean.refreshToken(refresh, 0);
-            result = revert(refUuid, auth);
+            result = revert(refUuid, token.auth());
             if (!result) {
                 return 2;
             }
 
-            auth = servBean.refreshToken(refresh, 0);
-            result = propagate(refUuid, auth);
+            result = propagate(refUuid, token.auth());
             if (!result) {
                 return 3;
             }
 
-            auth = servBean.refreshToken(refresh, 0);
-            result = commit(refUuid, auth);
+            result = commit(refUuid, token.auth());
             if (!result) {
                 return 4;
             }
 
             while (true) {
                 logger.trace("cancelInstance", "Verification priming check");
-                auth = servBean.refreshToken(refresh, 0);
 
-                instanceState = status(refUuid, auth);
+                instanceState = status(refUuid, token.auth());
                 if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
-                    servBean.verify(refUuid, refresh);
+                    servBean.verify(refUuid, token);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED"))) {
@@ -2924,22 +2915,16 @@ public class WebResource {
         }
     }
 
-    private int forceCancelInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
+    private int forceCancelInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
         try {
-            forceRevert(refUuid, auth);
-
-            auth = servBean.refreshToken(refresh, 0);
-            forcePropagate(refUuid, auth);
-
-            auth = servBean.refreshToken(refresh, 0);
-            forceCommit(refUuid, auth);
-
-            for (int i = 0; i < 20; i++) {
-                auth = servBean.refreshToken(refresh, 0);
-                String instanceState = status(refUuid, auth);
+            forceRevert(refUuid, token.auth());            
+            forcePropagate(refUuid, token.auth());
+            forceCommit(refUuid, token.auth());
+            for (int i = 0; i < 20; i++) {                
+                String instanceState = status(refUuid, token.auth());
                 if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
-                    servBean.verify(refUuid, refresh);
+                    servBean.verify(refUuid, token);
 
                     return 0;
                 } else if (!(instanceState.equals("COMMITTED"))) {
@@ -2954,21 +2939,17 @@ public class WebResource {
         }
     }
 
-    private int forceRetryInstance(String refUuid, String auth, String refresh) throws SQLException, IOException, MalformedURLException, InterruptedException {
+    private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
-        forcePropagate(refUuid, auth);
-
-        auth = servBean.refreshToken(refresh, 0);
-        forceCommit(refUuid, auth);
-
-        for (int i = 0; i < 20; i++) {
-            auth = servBean.refreshToken(refresh, 0);
-            String instanceState = status(refUuid, auth);
-            if (instanceState.equals("READY")) {
-                servBean.verify(refUuid, refresh);
+        forcePropagate(refUuid, token.auth());
+        forceCommit(refUuid, token.auth());
+        for (int i = 0; i < 20; i++) {            
+            String instanceState = status(refUuid, token.auth());
+            if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
+                servBean.verify(refUuid, token);
 
                 return 0;
-            } else if (!(instanceState.equals("COMMITTED") || instanceState.equals("FAILED"))) {
+            } else if (!(instanceState.equals("COMMITTED"))) {
                 return 5;
             }
             Thread.sleep(5000);

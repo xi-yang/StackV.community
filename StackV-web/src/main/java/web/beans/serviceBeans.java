@@ -34,7 +34,6 @@ import java.io.OutputStreamWriter;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.sql.Connection;
@@ -47,11 +46,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import javax.net.ssl.HttpsURLConnection;
 import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.common.TokenHandler;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.logging.log4j.ThreadContext;
 import org.json.simple.JSONArray;
@@ -315,7 +313,7 @@ public class serviceBeans {
         return retString + "}";
     }
 
-    public int createDNC(JSONObject JSONinput, String auth, String refresh, String refUuid) {
+    public int createDNC(JSONObject JSONinput, TokenHandler token, String refUuid) {
 
         String deltaJSON = getLinks(JSONinput);
 
@@ -348,11 +346,11 @@ public class serviceBeans {
                 + "&lt;x-policy-annotation:data:conn-criteriaexport&gt;\n"
                 + "\ta            spa:PolicyData.</modelAddition></serviceDelta>";
 
-        orchestrateInstance(refUuid, svcDelta, refUuid, refresh);
+        orchestrateInstance(refUuid, svcDelta, refUuid, token);
         return 0;
     }
 
-    public int createNetwork(Map<String, String> paraMap, String auth, String refresh) {
+    public int createNetwork(Map<String, String> paraMap, TokenHandler token) {
         Connection rains_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -435,7 +433,7 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/service/property/%s/host/", host, refUuid));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            executeHttpMethod(url, connection, "POST", driverType, auth);
+            executeHttpMethod(url, connection, "POST", driverType, token.auth());
         } catch (IOException ex) {
             logger.catching(method, ex);
         }
@@ -993,11 +991,11 @@ public class serviceBeans {
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
 
-        orchestrateInstance(refUuid, svcDelta, refUuid, refresh);
+        orchestrateInstance(refUuid, svcDelta, refUuid, token);
         return 0;
     }
 
-    public int createHybridCloud(Map<String, String> paraMap, String auth, String refresh) {
+    public int createHybridCloud(Map<String, String> paraMap, TokenHandler token) {
         Connection rains_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -1692,11 +1690,11 @@ public class serviceBeans {
                 + "    }\"\"\" .\n\n"
                 + "</modelAddition>\n\n"
                 + "</serviceDelta>";
-        orchestrateInstance(refUuid, svcDelta, deltaUuid, refresh);
+        orchestrateInstance(refUuid, svcDelta, deltaUuid, token);
         return 0;
     }
 
-    public int createOperationModelModification(Map<String, String> paraMap, String auth) {
+    public int createOperationModelModification(Map<String, String> paraMap, TokenHandler token) {
         String method = "createOperationModelModification";
         String refUuid = paraMap.get("instanceUUID");
         String deltaUUID = UUID.randomUUID().toString();
@@ -1738,7 +1736,7 @@ public class serviceBeans {
         try {
             URL url = new URL(String.format("%s/service/%s", host, refUuid));
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, compile, "POST", delta, auth);
+            result = this.executeHttpMethod(url, compile, "POST", delta, token.auth());
             if (!result.contains("referenceVersion")) {
                 return 2;//Error occurs when interacting with back-end system
             }
@@ -1748,13 +1746,13 @@ public class serviceBeans {
 
             url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, propagate, "PUT", null, auth);
+            result = this.executeHttpMethod(url, propagate, "PUT", null, token.auth());
             if (!result.equals("PROPAGATED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
             url = new URL(String.format("%s/service/%s/commit", host, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, commit, "PUT", null, auth);
+            result = this.executeHttpMethod(url, commit, "PUT", null, token.auth());
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
@@ -1762,7 +1760,7 @@ public class serviceBeans {
             while (!result.equals("READY")) {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = this.executeHttpMethod(url, status, "GET", null, auth);
+                result = this.executeHttpMethod(url, status, "GET", null, token.auth());
                 if (!result.equals("COMMITTED")) {
                     return 3;//Fail to create network
                 }
@@ -2035,7 +2033,7 @@ public class serviceBeans {
         return String.format("[a    mrs:NetworkAddress; mrs:type    \"%s\"; mrs:value   \"%s\"]", type, jsonAddr.get("value").toString());
     }
 
-    private void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, String refresh) {
+    private void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, TokenHandler token) {
         String method = "orchestrateInstance";
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -2043,8 +2041,7 @@ public class serviceBeans {
         String result;
         logger.trace_start(method);
         try {
-            String token = refreshToken(refresh, 0);
-            result = initInstance(refUuid, svcDelta, token);
+            result = initInstance(refUuid, svcDelta, token.auth());
             logger.trace(method, "Initialized");
 
             // Cache serviceDelta.
@@ -2053,15 +2050,13 @@ public class serviceBeans {
             int historyID = results[1];
             cacheSystemDelta(instanceID, historyID, result);
 
-            token = refreshToken(refresh, 0);
-            propagateInstance(refUuid, svcDelta, token);
+            propagateInstance(refUuid, svcDelta, token.auth());
             logger.trace(method, "Propagated");
 
-            token = refreshToken(refresh, 0);
-            result = commitInstance(refUuid, svcDelta, token);
+            result = commitInstance(refUuid, svcDelta, token.auth());
             logger.trace(method, "Committed");
 
-            verifyInstance(refUuid, result, refresh);
+            verifyInstance(refUuid, result, token);
             logger.trace_end(method);
         } catch (EJBException | IOException | InterruptedException | SQLException ex) {
             try {
@@ -2118,31 +2113,26 @@ public class serviceBeans {
         return result;
     }
 
-    private void verifyInstance(String refUuid, String result, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
+    private void verifyInstance(String refUuid, String result, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
         String method = "verifyInstance";
         logger.trace_start(method);
-        String token = refreshToken(refresh, 0);
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
         int i = 1;
         while (!result.equals("READY") && !result.equals("FAILED")) {
             logger.trace(method, "Waiting on instance: " + result);
-            if (i == 10) {
-                token = refreshToken(refresh, 0);
-                i = 1;
-            }
             sleep(5000);//wait for 5 seconds and check again later
             i++;
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
-            result = this.executeHttpMethod(url, status, "GET", null, token);
+            result = this.executeHttpMethod(url, status, "GET", null, token.auth());
             /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
             throw new EJBException("Ready Check Failed!");
             }*/
         }
-        verify(refUuid, refresh);
+        verify(refUuid, token);
         logger.trace_end(method);
     }
 
-    public boolean verify(String refUuid, String refresh) throws MalformedURLException, IOException, InterruptedException, SQLException {
+    public boolean verify(String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
         int instanceID = getInstanceID(refUuid);
         ResultSet rs = null;
         String method = "verify";
@@ -2160,13 +2150,12 @@ public class serviceBeans {
         prep.executeUpdate();
 
         for (int i = 1; i <= 5; i++) {
-            logger.trace(method, "Start verification Run " + i + "/5");
-            String auth = refreshToken(refresh, 0);
+            logger.trace(method, "Start verification Run " + i + "/5");            
 
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            String result = executeHttpMethod(url, conn, "GET", null, auth);
+            String result = executeHttpMethod(url, conn, "GET", null, token.auth());
 
             // Pull data from JSON.
             JSONObject verifyJSON = new JSONObject();
@@ -2241,7 +2230,7 @@ public class serviceBeans {
         if (recur == 10) {
             logger.error(method, "Keycloak refresh connection failure!");
             return null;
-        }
+        }      
         
         try {
             logger.trace_start(method);
