@@ -137,7 +137,7 @@ public class DriverInstance extends PersistentEntity implements Serializable {
         }
         if (!hasDriverSystemDelta(aDelta)) {
             if (!this.driverSystemDeltas.isEmpty()) {
-                aDelta.setOrder(this.driverSystemDeltas.get(this.driverSystemDeltas.size() - 1).getOrder() + 1);
+                aDelta.setOrderInt(this.driverSystemDeltas.get(this.driverSystemDeltas.size() - 1).getOrderInt() + 1);
             }
             try {
                 ModelPersistenceManager.save(aDelta);
@@ -160,7 +160,7 @@ public class DriverInstance extends PersistentEntity implements Serializable {
             @Override
             public int compare(DeltaBase delta1, DeltaBase delta2) {
                 // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
-                return delta1.order < delta2.order ? -1 : (delta1.order > delta2.order) ? 1 : 0;
+                return delta1.getOrderInt() < delta2.getOrderInt() ? -1 : (delta1.getOrderInt() > delta2.getOrderInt()) ? 1 : 0;
             }
         });
     }

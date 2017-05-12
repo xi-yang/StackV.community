@@ -57,7 +57,7 @@ public class DeltaBase extends PersistentEntity implements Serializable {
     @GenericGenerator(name = "system-uuid", strategy = "uuid2")
     protected String id;
 
-    Integer order = 0;
+    protected Integer orderInt = 0;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelAdditionId")
@@ -75,12 +75,12 @@ public class DeltaBase extends PersistentEntity implements Serializable {
         this.id = id;
     }
 
-    public Integer getOrder() {
-        return order;
+    public Integer getOrderInt() {
+        return orderInt;
     }
 
-    public void setOrder(Integer order) {
-        this.order = order;
+    public void setOrderInt(Integer orderInt) {
+        this.orderInt = orderInt;
     }
 
     @Override

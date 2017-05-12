@@ -101,7 +101,7 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
 
     public void addServiceDeltaWithoutSave(ServiceDelta delta) {
         if (!this.serviceDeltas.isEmpty()) {
-            delta.setOrder(this.serviceDeltas.get(this.serviceDeltas.size()-1).getOrder()+1);
+            delta.setOrderInt(this.serviceDeltas.get(this.serviceDeltas.size()-1).getOrderInt()+1);
         }
         this.serviceDeltas.add(delta);
     }
@@ -116,7 +116,7 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
         Collections.sort(serviceDeltas, new Comparator<DeltaBase>() {
             @Override
             public int compare(DeltaBase delta1, DeltaBase delta2) {
-                return delta1.order < delta2.order ? -1 : (delta1.order > delta2.order) ? 1 : 0;
+                return delta1.getOrderInt() < delta2.getOrderInt() ? -1 : (delta1.getOrderInt() > delta2.getOrderInt()) ? 1 : 0;
             }
         });
     }
