@@ -2596,6 +2596,7 @@ public class WebResource {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
+        auth = servBean.refreshToken(refresh, 0);
         try {
             long startTime = System.currentTimeMillis();
             logger.start("doCreateService");
@@ -2726,6 +2727,7 @@ public class WebResource {
 
         logger.refuuid(refUUID);
         logger.start("doOperate:" + action);
+        auth = servBean.refreshToken(refresh, 0);
         try {
             clearVerification(refUUID);
             switch (action) {
