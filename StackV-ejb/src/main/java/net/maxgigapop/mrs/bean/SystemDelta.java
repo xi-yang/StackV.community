@@ -47,7 +47,6 @@ public class SystemDelta extends DeltaBase {
     protected VersionGroup referenceVersionGroup;
 
     @OneToMany(mappedBy = "systemDelta", cascade = {CascadeType.ALL})
-    @OrderColumn(name = "index_column")
     protected List<DriverSystemDelta> driverSystemDeltas = null;
 
     @OneToOne

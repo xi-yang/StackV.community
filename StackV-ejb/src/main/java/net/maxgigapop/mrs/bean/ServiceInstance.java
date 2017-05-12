@@ -61,7 +61,7 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     private String referenceUUID;
 
     @OneToMany(mappedBy = "serviceInstance", cascade = {CascadeType.ALL})
-    @OrderColumn(name = "index_column")
+    @OrderColumn(name = "index_sei")
     protected List<ServiceDelta> serviceDeltas = null;
 
     @ElementCollection

@@ -63,9 +63,6 @@ public class ModelBase extends PersistentEntity implements Serializable {
     @GenericGenerator(name = "system-uuid", strategy = "uuid2")
     protected String id;
 
-    @Column(name = "index_column", nullable = false)
-    Integer index = 0;
-    
     protected Date creationTime;
     protected Long cxtVersion = 0L;
     protected String cxtVersionTag = "";

@@ -71,12 +71,11 @@ public class DriverInstance extends PersistentEntity implements Serializable {
 
     // incoming from subsystems
     @OneToMany(mappedBy = "driverInstance", cascade = {CascadeType.ALL})
-    @OrderColumn(name = "index_column")
     private List<DriverModel> driverModels;
 
     // outgoing to subsystems
     @OneToMany(mappedBy = "driverInstance", cascade = {CascadeType.ALL})
-    @OrderColumn(name = "index_column")
+    @OrderColumn(name = "index_dri")
     private List<DriverSystemDelta> driverSystemDeltas;
 
     @ElementCollection

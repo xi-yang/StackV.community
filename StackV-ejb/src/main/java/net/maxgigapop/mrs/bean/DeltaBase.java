@@ -56,8 +56,11 @@ public class DeltaBase extends PersistentEntity implements Serializable {
     @GenericGenerator(name = "system-uuid", strategy = "uuid2")
     protected String id;
 
-    @Column(name = "index_column", nullable = false)
-    Integer index = 0;
+    @Column(name = "index_dri")
+    Integer index_dri = 0;
+
+    @Column(name = "index_sei")
+    Integer index_sei = 0;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelAdditionId")
