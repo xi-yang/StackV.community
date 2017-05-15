@@ -198,7 +198,7 @@ public class HandleServiceCall {
         if (serviceInstance.getServiceDeltas() == null) {
             serviceInstance.setServiceDeltas(new ArrayList<ServiceDelta>());
         }
-        serviceInstance.getServiceDeltas().add(spaDelta);
+        serviceInstance.addServiceDeltaWithoutSave(spaDelta);
         spaDelta.setServiceInstance(serviceInstance);
         DeltaPersistenceManager.save(spaDelta);
         //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
@@ -558,7 +558,7 @@ public class HandleServiceCall {
                 }
             }
         }
-        serviceInstance.getServiceDeltas().add(reverseSvcDelta);
+        serviceInstance.addServiceDeltaWithoutSave(reverseSvcDelta);
         DeltaPersistenceManager.save(reverseSvcDelta);
         //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         if (serviceInstance.getStatus().equals("PROPAGATED")) {

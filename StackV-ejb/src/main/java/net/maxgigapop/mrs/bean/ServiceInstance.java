@@ -24,6 +24,8 @@
 package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,7 @@ import javax.persistence.Lob;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderColumn;
+import javax.persistence.PostLoad;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
@@ -61,7 +64,6 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
     private String referenceUUID;
 
     @OneToMany(mappedBy = "serviceInstance", cascade = {CascadeType.ALL})
-    @OrderColumn(name = "index_sei")
     protected List<ServiceDelta> serviceDeltas = null;
 
     @ElementCollection
@@ -95,6 +97,28 @@ public class ServiceInstance extends PersistentEntity implements Serializable {
 
     public void setServiceDeltas(List<ServiceDelta> serviceDeltas) {
         this.serviceDeltas = serviceDeltas;
+    }
+
+    public void addServiceDeltaWithoutSave(ServiceDelta delta) {
+        if (!this.serviceDeltas.isEmpty()) {
+            delta.setOrderInt(this.serviceDeltas.get(this.serviceDeltas.size()-1).getOrderInt()+1);
+        }
+        this.serviceDeltas.add(delta);
+    }
+
+    @SuppressWarnings("unused")
+    @PostLoad
+    public void postLoad() {
+        if (serviceDeltas == null || serviceDeltas.size() < 2) {
+            return;
+        }
+        // sort serviceDeltas by ascending order
+        Collections.sort(serviceDeltas, new Comparator<DeltaBase>() {
+            @Override
+            public int compare(DeltaBase delta1, DeltaBase delta2) {
+                return delta1.getOrderInt() < delta2.getOrderInt() ? -1 : (delta1.getOrderInt() > delta2.getOrderInt()) ? 1 : 0;
+            }
+        });
     }
 
     public String getStatus() {
