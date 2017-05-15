@@ -569,7 +569,7 @@ public class serviceBeans {
                             for (Object obj : interfaceArr) {
                                 JSONObject interfaceJSON = (JSONObject) obj;
                                 String typeString = (String) interfaceJSON.get("type");
-                                if (typeString.equalsIgnoreCase("Ethernet")) {
+                                if (typeString.equalsIgnoreCase("Ethernet") && interfaceJSON.containsKey("address")) {
                                     addressString = (String) interfaceJSON.get("address");
                                     addressString = addressString.contains("ipv") ? addressString.substring(addressString.indexOf("ipv") + 5) : addressString;
                                     addressString = addressString.contains("/") ? addressString.substring(0, addressString.indexOf("/")) : addressString;
