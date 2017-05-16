@@ -1637,6 +1637,7 @@ public class WebResource {
                 logJSON.put("level", rs.getString("level"));
                 logJSON.put("logger", rs.getString("logger"));
                 logJSON.put("message", rs.getString("message"));
+                logJSON.put("event", rs.getString("event"));
                 logJSON.put("exception", rs.getString("exception"));
 
                 logArr.add(logJSON);

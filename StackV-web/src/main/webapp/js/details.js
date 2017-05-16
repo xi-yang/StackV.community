@@ -154,6 +154,21 @@ function loadDetailsNavbar() {
 function loadDetails() {
     // Subfunctions    
     subloadInstance();
+    subloadLogging();
+}
+
+/* LOGGING */
+function subloadLogging() {
+    var uuid = sessionStorage.getItem("instance-uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
+    loadDataTable(apiUrl);
+    setTimeout(function () {
+        if (view === "left") {
+            tweenLoggingPanel.play();
+            $('div.dataTables_filter input').focus();
+        }
+    }, 1000);
+    reloadLogs();
 }
 
 function subloadInstance() {
@@ -301,100 +316,9 @@ function subloadInstance() {
 
             // Next steps
             loadStatus(uuid);
-            subloadLogging();
         }
     });
 }
-
-
-/* LOGGING */
-function subloadLogging() {
-    loadLogs();
-    setTimeout(function () {
-        if (view === "left") {
-            tweenLoggingPanel.play();
-        }
-    }, 1000);
-    subloadVerification();
-}
-
-function loadLogs() {
-    var uuid = sessionStorage.getItem("instance-uuid");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (logs) {
-            var div = document.getElementById("log-div");
-            div.innerHTML = "";
-            for (i = 0; i < logs.length; i++) {
-                var log = logs[i];
-                var detail = document.createElement("details");
-                detail.className = "level-" + log["level"];
-
-                /*  log mapping:
-                 *      referenceUUID
-                 *      marker
-                 *      timestamp
-                 *      level
-                 *      logger
-                 *      message
-                 *      exception     
-                 */
-
-                var summary = document.createElement("summary");
-                summary.innerHTML = log["timestamp"] + " - " + log["message"];
-                detail.appendChild(summary);
-                var data = document.createElement("p");
-                data.innerHTML = "UUID: " + log["referenceUUID"];
-                detail.appendChild(data);
-                var data = document.createElement("p");
-                data.innerHTML = "Level: " + log["level"];
-                detail.appendChild(data);
-                if (log["marker"]) {
-                    var data = document.createElement("p");
-                    data.innerHTML = "Marker: " + log["marker"];
-                    detail.appendChild(data);
-                }
-                var data = document.createElement("p");
-                data.innerHTML = "Logger: " + log["logger"];
-                detail.appendChild(data);
-                if (log["exception"]) {
-                    var data = document.createElement("p");
-                    data.innerHTML = "Exception: " + log["exception"];
-                    detail.appendChild(data);
-                }
-                div.appendChild(detail);
-            }
-
-            filterLogs();
-            $("#black-screen").click(function () {
-                $("#info-panel").removeClass("active");
-                closeCatalog();
-            });
-        }
-    });
-}
-
-function filterLogs() {
-    // Declare variables  
-    var input = document.getElementById("filter-search-input");
-    var filter = input.value.toUpperCase();
-    if (filter !== "") {
-        $('#log-div').children('details').each(function () {
-            if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
-                $(this).removeClass("hide");
-            } else {
-                $(this).addClass("hide");
-            }
-        });
-    }
-}
-
-
 
 function subloadVerification() {
     var uuid = sessionStorage.getItem("instance-uuid");
@@ -1322,8 +1246,8 @@ function reloadData() {
                     break;
             }
             setTimeout(function () {
-                // Refresh Operations                        
-                loadDetails();
+                subloadInstance();
+                reloadLogs();
                 $(".delta-table-header").click(function () {
                     $("#body-" + this.id).toggleClass("hide");
                 });
@@ -1331,7 +1255,8 @@ function reloadData() {
             }, 1000);
         } else {
             setTimeout(function () {
-                loadDetails();
+                subloadInstance();
+                reloadLogs();
                 $(".delta-table-header").click(function () {
                     $("#body-" + this.id).toggleClass("hide");
                 });
