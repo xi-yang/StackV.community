@@ -2921,7 +2921,9 @@ public class WebResource {
             forceRevert(refUuid, token.auth());            
             forcePropagate(refUuid, token.auth());
             forceCommit(refUuid, token.auth());
-            for (int i = 0; i < 20; i++) {                
+            while (true) {             
+                logger.trace("forceCancelInstance", "Verification priming check");
+                
                 String instanceState = status(refUuid, token.auth());
                 if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
                     servBean.verify(refUuid, token);
@@ -2932,7 +2934,6 @@ public class WebResource {
                 }
                 Thread.sleep(5000);
             }
-            return -1;
         } catch (EJBException ex) {
             logger.catching("forceCancelInstance", ex);
             return -1;
@@ -2943,7 +2944,9 @@ public class WebResource {
         boolean result;
         forcePropagate(refUuid, token.auth());
         forceCommit(refUuid, token.auth());
-        for (int i = 0; i < 20; i++) {            
+        while (true) {           
+            logger.trace("forceRetryInstance", "Verification priming check");
+            
             String instanceState = status(refUuid, token.auth());
             if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
                 servBean.verify(refUuid, token);
@@ -2954,7 +2957,6 @@ public class WebResource {
             }
             Thread.sleep(5000);
         }
-        return -1;
     }
 
     // Parsing Methods ---------------------------------------------------------
