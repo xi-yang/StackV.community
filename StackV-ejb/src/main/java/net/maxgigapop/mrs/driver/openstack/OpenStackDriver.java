@@ -108,6 +108,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String requestId = driverInstance.getId().toString() + aDelta.getId();
         String requests = driverInstance.getProperty(requestId);
         if (requests == null) {

@@ -104,6 +104,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
         String r = driverInstance.getProperty("region");
