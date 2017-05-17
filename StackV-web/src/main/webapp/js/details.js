@@ -316,6 +316,7 @@ function subloadInstance() {
 
             // Next steps
             loadStatus(uuid);
+            subloadVerification();
         }
     });
 }

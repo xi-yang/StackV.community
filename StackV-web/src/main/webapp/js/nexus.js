@@ -1118,20 +1118,26 @@ function loadDataTable(apiUrl) {
 }
 function formatChild(d) {
     // `d` is the original data object for the row
-    return '<table cellpadding="5" cellspacing="0" border="0">' +
-            '<tr>' +
+    var retString = '<table cellpadding="5" cellspacing="0" border="0">';
+    if (!d.message === "{}") {
+        retString += '<tr>' +
             '<td style="width:10%">Message:</td>' +
             '<td style="white-space: normal">' + d.message + '</td>' +
-            '</tr>' +
-            '<tr>' +
+            '</tr>';
+    }
+    if (!d.message === "{}") {
+        retString += '<tr>' +
+            '<td>Exception:</td>' +
+            '<td>' + d.exception + '</td>' +
+            '</tr>';
+    }
+    retString += '<tr>' +
             '<td>Logger:</td>' +
             '<td>' + d.logger + '</td>' +
             '</tr>' +
-            '<tr>' +
-            '<td>Exception:</td>' +
-            '<td>' + d.exception + '</td>' +
-            '</tr>' +
             '</table>';
+                
+    return retString;
 }
 function reloadLogs() {
     if (dataTable) {
