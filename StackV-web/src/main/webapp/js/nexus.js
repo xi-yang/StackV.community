@@ -24,6 +24,8 @@
 // Service JavaScript Library
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
+var refreshTimer;
+var countdownTimer;
 
 // Page Load Function
 
@@ -1023,6 +1025,11 @@ function refreshSync(refreshed, time) {
         $("#refresh-button").html('Manually Refresh Now');
     }
 }
+function pauseRefresh(time) {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('refresh-button').innerHTML = 'Paused';
+}
 function timerChange(sel) {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
@@ -1052,3 +1059,83 @@ function reloadDataManual() {
     }
     reloadData();
 }
+
+
+/* LOGGING */
+function loadDataTable(apiUrl) {    
+    dataTable = $('#loggingData').DataTable({
+        "ajax": {
+            url: apiUrl,
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            }
+        },
+        "columns": [
+            {
+                "className": 'details-control',
+                "orderable": false,
+                "data": null,
+                "defaultContent": '',
+                "width": ""
+            },
+            {"data": "timestamp", "width": "180px"},
+            {"data": "event"},
+            {"data": "referenceUUID", "width": "280px"},
+            {"data": "level"}
+        ],
+        "createdRow": function (row, data, dataIndex) {
+            $(row).addClass("row-" + data.level.toLowerCase());
+        },
+        "deferRender": true,
+        "order": [[1, 'asc']],
+        "ordering": false,
+        "scroller": {
+            displayBuffer: 10
+        },
+        "scrollX": true,
+        "scrollY": "calc(60vh - 130px)"
+    });
+    new $.fn.dataTable.FixedColumns(dataTable);
+
+    // Add event listener for opening and closing details
+    $('#loggingData tbody').on('click', 'td.details-control', function () {
+        var tr = $(this).closest('tr');
+        var row = dataTable.row(tr);
+        if (row.child.isShown()) {
+            // This row is already open - close it
+            row.child.hide();
+            tr.removeClass('shown');
+            $("#refresh-timer").val();
+            setRefresh($("#refresh-timer").val());
+        } else {
+            // Open this row
+            row.child(formatChild(row.data())).show();
+            tr.addClass('shown');
+            pauseRefresh();
+        }
+    });
+}
+function formatChild(d) {
+    // `d` is the original data object for the row
+    return '<table cellpadding="5" cellspacing="0" border="0">' +
+            '<tr>' +
+            '<td style="width:10%">Message:</td>' +
+            '<td style="white-space: normal">' + d.message + '</td>' +
+            '</tr>' +
+            '<tr>' +
+            '<td>Logger:</td>' +
+            '<td>' + d.logger + '</td>' +
+            '</tr>' +
+            '<tr>' +
+            '<td>Exception:</td>' +
+            '<td>' + d.exception + '</td>' +
+            '</tr>' +
+            '</table>';
+}
+function reloadLogs() {
+    if (dataTable) {
+        dataTable.ajax.reload(null, false);
+    }
+}
+

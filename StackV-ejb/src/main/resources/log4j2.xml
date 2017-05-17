@@ -2,7 +2,7 @@
 <Configuration status="info" package="net.maxgigapop.mrs"  name="StackV-ejb">
     <Appenders>
         <Console name="RainsOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="%msg ref[%X{refuuid}] target[%X{targetid}] -%X{severity}- %ex{2}%n" />
+            <PatternLayout pattern="%X{event} : %msg ref[%X{refuuid}] target[%X{targetid}] -%X{severity}- %ex{2}%n" />
         </Console>
         
         <JDBC name="MySQL" tableName="frontend.log">
@@ -11,6 +11,7 @@
             <Column name="timestamp" pattern="%d{DEFAULT}" />
             <Column name="level" pattern="%level" />
             <Column name="logger" pattern="%logger" />
+            <Column name="event" pattern="%X{event}" />
             <Column name="message" pattern="%message" />
             <Column name="exception" pattern="%ex" />
             <Column name="severity" pattern="%X{severity}" />                       

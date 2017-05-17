@@ -1625,23 +1625,26 @@ public class WebResource {
             }
 
             rs = prep.executeQuery();
+            JSONObject retJSON = new JSONObject();
             JSONArray logArr = new JSONArray();
             while (rs.next()) {
-                JSONObject logJSON = new JSONObject();
-
+                JSONObject logJSON = new JSONObject();                
+                
                 logJSON.put("referenceUUID", rs.getString("referenceUUID"));
                 logJSON.put("marker", rs.getString("marker"));
                 logJSON.put("timestamp", rs.getString("timestamp"));
                 logJSON.put("level", rs.getString("level"));
                 logJSON.put("logger", rs.getString("logger"));
                 logJSON.put("message", rs.getString("message"));
+                logJSON.put("event", rs.getString("event"));
                 logJSON.put("exception", rs.getString("exception"));
 
                 logArr.add(logJSON);
             }
+            retJSON.put("data", logArr);
 
-            logger.trace_end(method);
-            return logArr.toJSONString();
+            logger.trace_end(method);           
+            return retJSON.toJSONString();
         } catch (SQLException ex) {
             logger.catching("getLogs", ex);
             return null;
@@ -2921,7 +2924,9 @@ public class WebResource {
             forceRevert(refUuid, token.auth());            
             forcePropagate(refUuid, token.auth());
             forceCommit(refUuid, token.auth());
-            for (int i = 0; i < 20; i++) {                
+            while (true) {             
+                logger.trace("forceCancelInstance", "Verification priming check");
+                
                 String instanceState = status(refUuid, token.auth());
                 if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
                     servBean.verify(refUuid, token);
@@ -2932,7 +2937,6 @@ public class WebResource {
                 }
                 Thread.sleep(5000);
             }
-            return -1;
         } catch (EJBException ex) {
             logger.catching("forceCancelInstance", ex);
             return -1;
@@ -2943,7 +2947,9 @@ public class WebResource {
         boolean result;
         forcePropagate(refUuid, token.auth());
         forceCommit(refUuid, token.auth());
-        for (int i = 0; i < 20; i++) {            
+        while (true) {           
+            logger.trace("forceRetryInstance", "Verification priming check");
+            
             String instanceState = status(refUuid, token.auth());
             if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
                 servBean.verify(refUuid, token);
@@ -2954,7 +2960,6 @@ public class WebResource {
             }
             Thread.sleep(5000);
         }
-        return -1;
     }
 
     // Parsing Methods ---------------------------------------------------------
