@@ -26,6 +26,7 @@ var tweenAdminPanel = new TweenLite("#admin-panel", 1, {ease: Power2.easeInOut, 
 var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 
 var view = "left";
+var dataTable = null;
 
 Mousetrap.bind({
     'left': function () {
@@ -117,86 +118,15 @@ function newView(panel) {
 }
 
 function loadAdmin() {
-    loadLogs();
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
+    loadDataTable(apiUrl);
     setTimeout(function () {
         if (view === "left") {
             tweenLoggingPanel.play();
+            $('div.dataTables_filter input').focus();
         }
     }, 500);
-}
-
-
-/* LOGGING */
-
-function loadLogs() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (logs) {
-            var div = document.getElementById("log-div");
-            div.innerHTML = "";
-            for (i = 0; i < logs.length; i++) {
-                var log = logs[i];
-                var detail = document.createElement("details");
-                detail.className = "level-" + log["level"];
-
-                /*  log mapping:
-                 *      referenceUUID
-                 *      marker
-                 *      timestamp
-                 *      level
-                 *      logger
-                 *      message
-                 *      exception     
-                 */
-
-                var summary = document.createElement("summary");
-                summary.innerHTML = log["timestamp"] + " - " + log["message"];
-                detail.appendChild(summary);
-                var data = document.createElement("p");
-                data.innerHTML = "UUID: " + log["referenceUUID"];
-                detail.appendChild(data);
-                var data = document.createElement("p");
-                data.innerHTML = "Level: " + log["level"];
-                detail.appendChild(data);
-                if (log["marker"]) {
-                    var data = document.createElement("p");
-                    data.innerHTML = "Marker: " + log["marker"];
-                    detail.appendChild(data);
-                }
-                var data = document.createElement("p");
-                data.innerHTML = "Logger: " + log["logger"];
-                detail.appendChild(data);
-                if (log["exception"]) {
-                    var data = document.createElement("p");
-                    data.innerHTML = "Exception: " + log["exception"];
-                    detail.appendChild(data);
-                }
-                div.appendChild(detail);
-            }
-
-            filterLogs();
-        }
-    });
-}
-
-function filterLogs() {
-    // Declare variables  
-    var input = document.getElementById("filter-search-input");
-    var filter = input.value.toUpperCase();
-    if (filter !== "") {
-        $('#log-div').children('details').each(function () {
-            if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
-                $(this).removeClass("hide");
-            } else {
-                $(this).addClass("hide");
-            }
-        });
-    }
+    reloadLogs();    
 }
 
 
@@ -210,7 +140,7 @@ function reloadData() {
             refreshSync(refreshed, timerSetting);
 
             // Refresh Operations
-            loadLogs();
+            reloadLogs();
         }, 500);
     });
 }

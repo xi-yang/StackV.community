@@ -458,3 +458,23 @@ ul#progressbar li.disabled:before {
 ul.vcn-progress li, ul.hc-progress li {
     width: 14.2%;
 }
+
+/* DataTables */
+.row-trace.even {
+    background-color: #e4ffd1 !important;
+}
+.row-trace.odd {
+    background-color: #f0ffe5 !important;
+}
+.row-warn.even {
+    background-color: #ffdfb3 !important;
+}
+.row-warn.odd {
+    background-color: #ffe5c2 !important;
+}
+.row-error.even {
+    background-color: #ffcccc !important;
+}
+.row-error.odd {
+    background-color: #ffdbdb !important;
+}

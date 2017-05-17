@@ -1625,23 +1625,26 @@ public class WebResource {
             }
 
             rs = prep.executeQuery();
+            JSONObject retJSON = new JSONObject();
             JSONArray logArr = new JSONArray();
             while (rs.next()) {
-                JSONObject logJSON = new JSONObject();
-
+                JSONObject logJSON = new JSONObject();                
+                
                 logJSON.put("referenceUUID", rs.getString("referenceUUID"));
                 logJSON.put("marker", rs.getString("marker"));
                 logJSON.put("timestamp", rs.getString("timestamp"));
                 logJSON.put("level", rs.getString("level"));
                 logJSON.put("logger", rs.getString("logger"));
                 logJSON.put("message", rs.getString("message"));
+                logJSON.put("event", rs.getString("event"));
                 logJSON.put("exception", rs.getString("exception"));
 
                 logArr.add(logJSON);
             }
+            retJSON.put("data", logArr);
 
-            logger.trace_end(method);
-            return logArr.toJSONString();
+            logger.trace_end(method);           
+            return retJSON.toJSONString();
         } catch (SQLException ex) {
             logger.catching("getLogs", ex);
             return null;
