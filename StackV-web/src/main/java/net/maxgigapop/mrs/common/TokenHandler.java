@@ -107,7 +107,7 @@ public class TokenHandler {
 
             logger.trace_end(method);
             return (String) result.get("access_token");
-        } catch (SocketTimeoutException ex) {
+        } catch (SocketTimeoutException | java.net.ConnectException ex) {
             // Keycloak connection timeout
             try {
                 recur++;

@@ -999,7 +999,7 @@ public class HandleServiceCall {
                 refModel = systemModelCoordinator.getLatestOntModel();
                 break;
             } catch (EJBException ex) {
-                if (ex.getMessage().contains("concurrent access timeout ")) {
+                if (ex.getMessage() != null && ex.getMessage().contains("concurrent access timeout ")) {
                     try {
                         sleep(10000L);
                     } catch (InterruptedException ex1) {
