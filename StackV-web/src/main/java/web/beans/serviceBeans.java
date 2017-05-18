@@ -1803,10 +1803,8 @@ public class serviceBeans {
                 wr.flush();
             }
         }
-
-        logger.trace("executeHttpMethod", "Sending " + method + " request to URL: " + url);
+        
         int responseCode = conn.getResponseCode();
-        logger.trace("executeHttpMethod", "Response Code: " + responseCode);
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             String inputLine;
@@ -1821,7 +1819,7 @@ public class serviceBeans {
             retStr += "...";
         }
 
-        logger.trace("executeHttpMethod", "Response: " + retStr);
+        logger.trace("executeHttpMethod", "Sent " + method + " request to URL: " + url + " / Response: " + responseCode + ":" +retStr);
         return responseStr.toString();
     }
 

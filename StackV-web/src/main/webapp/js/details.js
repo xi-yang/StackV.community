@@ -291,7 +291,10 @@ function subloadInstance() {
                 $("#body-" + this.id).toggleClass("hide");
             });
 
-            $(".instance-command").click(function () {
+            $(document).on('click', '.instance-command', function () {
+                $(".instance-command").attr('disabled', true);
+                pauseRefresh();
+
                 var command = this.id;
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
                 $.ajax({
@@ -302,6 +305,8 @@ function subloadInstance() {
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function () {
+                        $(".instance-command").attr('disabled', false);
+                        resumeRefresh();
                         if (command === "delete" || command === "force_delete") {
                             setTimeout(function () {
                                 sessionStorage.removeItem("instance-uuid");
@@ -312,6 +317,13 @@ function subloadInstance() {
                         }
                     }
                 });
+                if (!(command === "delete") && !(command === "force_delete")) {
+                    setTimeout(function () {
+                        $(".instance-command").attr('disabled', false);
+                        resumeRefresh();
+                        reloadData();
+                    }, 250);
+                }
             });
 
             // Next steps
@@ -911,7 +923,7 @@ function loadVisualization() {
             for (var i = 0; i < tabs.length; i++) {
                 var tab = tabs[i];
 
-                if ((tab.name === "Verification") &&  (verificationState === null)) 
+                if ((tab.name === "Verification") && (verificationState === null))
                     continue;
 
                 if (States[tab.state] <= States[State]) {
@@ -1255,14 +1267,12 @@ function reloadData() {
                 refreshSync(refreshed, timerSetting);
             }, 1000);
         } else {
-            setTimeout(function () {
-                subloadInstance();
-                reloadLogs();
-                $(".delta-table-header").click(function () {
-                    $("#body-" + this.id).toggleClass("hide");
-                });
-                refreshSync(refreshed, timerSetting);
-            }, 100);
+            subloadInstance();
+            reloadLogs();
+            $(".delta-table-header").click(function () {
+                $("#body-" + this.id).toggleClass("hide");
+            });
+            refreshSync(refreshed, timerSetting);
         }
     });
 }

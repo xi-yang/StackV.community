@@ -2526,8 +2526,9 @@ public class WebResource {
     @RolesAllowed("Services")
     public void createService(@Suspended
             final AsyncResponse asyncResponse, final String inputString) {
+        String method = "createService";
         try {
-            logger.start("createService");
+            logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
             Object obj = parser.parse(inputString);
@@ -2552,12 +2553,13 @@ public class WebResource {
                     }
                 });
             } else {
-                logger.warning("createService", "User not allowed access to " + serviceType);
+                logger.warning(method, "User not allowed access to " + serviceType);
             }
 
         } catch (ParseException ex) {
-            logger.catching("createService", ex);
+            logger.catching(method, ex);
         }
+        logger.end(method);
     }
 
     /**
@@ -2582,13 +2584,15 @@ public class WebResource {
             final String action) {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
-
+        String method = "operate";
+        logger.trace_start(method, "Thread:" + Thread.currentThread());
         executorService.execute(new Runnable() {
             @Override
             public void run() {
                 asyncResponse.resume(doOperate(refUuid, action, token));
             }
         });
+        logger.trace_end(method);
     }
 
     // Async Methods -----------------------------------------------------------
@@ -2597,7 +2601,7 @@ public class WebResource {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            logger.start("doCreateService");
+            logger.start("doCreateService/Thread:" + Thread.currentThread());
 
             String serviceType = (String) inputJSON.get("type");
             String alias = (String) inputJSON.get("alias");
@@ -2724,7 +2728,7 @@ public class WebResource {
         ResultSet rs = null;
 
         logger.refuuid(refUUID);
-        logger.start("doOperate:" + action);        
+        logger.start("doOperate:" + action + "/Thread:" + Thread.currentThread());
         try {
             clearVerification(refUUID);
             switch (action) {

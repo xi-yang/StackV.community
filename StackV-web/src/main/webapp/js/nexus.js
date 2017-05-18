@@ -1033,8 +1033,10 @@ function pauseRefresh() {
 }
 function resumeRefresh() {   
     var timer = $("#refresh-timer");
-    timer.attr('disabled', false);
-    setRefresh(timer.val());
+    if (timer.attr('disabled')) {    
+        timer.attr('disabled', false);
+        setRefresh(timer.val());
+    }
 }
 function timerChange(sel) {
     clearInterval(refreshTimer);
