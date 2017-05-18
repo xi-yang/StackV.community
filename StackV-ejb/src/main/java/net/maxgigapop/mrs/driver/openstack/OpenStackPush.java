@@ -98,11 +98,13 @@ public class OpenStackPush {
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String topologyUri;
     private String defaultImage;
-
     private String defaultFlavor;
+    private String defaultKeyPair;
+    private String defaultSecGroup;
 
     public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, 
-        String adminUsername, String adminPassword, String adminTenant, String topologyUri, String defaultImage, String defaultFlavor) {
+        String adminUsername, String adminPassword, String adminTenant, String topologyUri, 
+        String defaultImage, String defaultFlavor, String defaultKeyPair, String defaultSecGroup) {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
         osClient = client.getClient();
         adminClient = new OpenStackGet(url, NATServer, adminUsername, adminPassword, adminTenant);
@@ -112,6 +114,8 @@ public class OpenStackPush {
         this.adminTenant = adminTenant;
         this.defaultImage = defaultImage;
         this.defaultFlavor = defaultFlavor;
+        this.defaultKeyPair = defaultKeyPair;
+        this.defaultSecGroup = defaultSecGroup;
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
         topologyUri = topologyUri.replaceAll("[^A-Za-z0-9()_-]", "_");
@@ -1817,12 +1821,29 @@ public class OpenStackPush {
                 } else {
                     o.put("flavor", flavorID);
                 }
+                
+                if (keypairName == null) {
+                    if (defaultKeyPair == null) {
+                        logger.warning(method, String.format("Cannot determine server key pair."));
+                    } else {
+                        keypairName = defaultKeyPair;
+                    }
+                }
                 if (keypairName != null && !keypairName.isEmpty())  {
                     o.put("keypair", keypairName);
+                }
+
+                if (secgroupName == null) {
+                    if (defaultSecGroup == null) {
+                        logger.warning(method, String.format("Cannot determine server security group."));
+                    } else {
+                        secgroupName = defaultSecGroup;
+                    }
                 }
                 if (secgroupName != null && !secgroupName.isEmpty()) {
                     o.put("secgroup", secgroupName);
                 }
+                
                 if (hostName != null && !hostName.isEmpty()) {
                     o.put("host name", hostName);
                 }

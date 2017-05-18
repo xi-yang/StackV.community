@@ -79,12 +79,15 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String NATServer = driverInstance.getProperty("NATServer");
         String defaultImage = driverInstance.getProperty("defaultImage");
         String defaultFlavor = driverInstance.getProperty("defaultFlavor");
+        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
+        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
 
         OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, topologyURI, defaultImage, defaultFlavor);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, 
+                topologyURI, defaultImage, defaultFlavor, defaultKeyPair, defaultSecGroup);
         List<JSONObject> requests = null;
         requests = push.propagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
@@ -128,8 +131,11 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String NATServer = driverInstance.getProperty("NATServer");
         String defaultImage = driverInstance.getProperty("defaultImage");
         String defaultFlavor = driverInstance.getProperty("defaultFlavor");
+        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
+        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, topologyURI, defaultImage, defaultFlavor);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, 
+                topologyURI, defaultImage, defaultFlavor, defaultKeyPair, defaultSecGroup);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {
