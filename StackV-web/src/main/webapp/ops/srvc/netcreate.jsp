@@ -10,7 +10,7 @@
     <head>
         <meta charset="UTF-8">
         <title>Virtual Cloud Network Service</title>
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
 

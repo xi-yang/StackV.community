@@ -59,7 +59,7 @@ import org.json.simple.parser.ParseException;
 
 public class serviceBeans {
 
-    private final StackLogger logger = new StackLogger(serviceBeans.class.getName(), "serviceBeans");
+    private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "serviceBeans");
 
     private final String kc_url = System.getProperty("kc_url");
 
@@ -1899,9 +1899,12 @@ public class serviceBeans {
     }
 
     public int[] cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
+        String method = "cache Service Delta";
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
+        
+        logger.trace_start(method);
         // Cache serviceDelta.
         int instanceID = -1;
         int historyID = -1;
@@ -1925,6 +1928,8 @@ public class serviceBeans {
             String formatDelta = svcDelta.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
+                        logger.trace(method, "historyID:"+historyID);
+            
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
                     + "(`service_instance_id`, `service_history_id`, `type`, `referenceUUID`, `delta`) "
                     + "VALUES (?, ?, 'Service', ?, ?)");
@@ -1932,8 +1937,7 @@ public class serviceBeans {
             prep.setInt(2, historyID);
             prep.setString(3, deltaUUID);
             prep.setString(4, formatDelta);
-            prep.executeUpdate();
-
+            prep.executeUpdate();           
         } catch (SQLException ex) {
             logger.catching("cacheServiceDelta", ex);
         } finally {
@@ -1946,6 +1950,7 @@ public class serviceBeans {
             }
         }
 
+        logger.end(method);
         return new int[]{instanceID, historyID};
     }
 
@@ -2039,15 +2044,15 @@ public class serviceBeans {
         PreparedStatement prep = null;
         ResultSet rs = null;
         String result;
-        logger.trace_start(method);
+        logger.start(method);
         try {
-            result = initInstance(refUuid, svcDelta, token.auth());
-            logger.trace(method, "Initialized");
-
             // Cache serviceDelta.
             int[] results = cacheServiceDelta(refUuid, svcDelta, deltaUUID);
             int instanceID = results[0];
             int historyID = results[1];
+            
+            result = initInstance(refUuid, svcDelta, token.auth());
+            logger.trace(method, "Initialized");
             cacheSystemDelta(instanceID, historyID, result);
 
             propagateInstance(refUuid, svcDelta, token.auth());
@@ -2057,7 +2062,7 @@ public class serviceBeans {
             logger.trace(method, "Committed");
 
             verifyInstance(refUuid, result, token);
-            logger.trace_end(method);
+            logger.end(method);
         } catch (EJBException | IOException | InterruptedException | SQLException ex) {
             try {
                 Properties front_connectionProps = new Properties();

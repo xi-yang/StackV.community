@@ -1600,7 +1600,6 @@ public class WebResource {
         ResultSet rs = null;
         String method = "getLogs";
         try {
-            logger.trace_start(method);
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -1643,7 +1642,6 @@ public class WebResource {
             }
             retJSON.put("data", logArr);
 
-            logger.trace_end(method);           
             return retJSON.toJSONString();
         } catch (SQLException ex) {
             logger.catching("getLogs", ex);

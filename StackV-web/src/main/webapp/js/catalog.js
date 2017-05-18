@@ -355,8 +355,7 @@ function loadEditor() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-
-            $(".button-service-select").click(function (evt) {
+            $(document).on('click', '.button-service-select', function ( evt ) {          
                 var ref = "/StackV-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
                 window.location.href = ref;
 

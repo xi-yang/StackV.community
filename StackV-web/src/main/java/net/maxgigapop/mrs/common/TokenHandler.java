@@ -42,7 +42,7 @@ import org.json.simple.parser.ParseException;
 public class TokenHandler {
 
     private final String kc_url = System.getProperty("kc_url");
-    private final StackLogger logger = new StackLogger(TokenHandler.class.getName(), "TokenHandler");
+    private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TokenHandler");
     JSONParser parser = new JSONParser();
     String accessToken = null;
     String refreshToken = null;
