@@ -1125,7 +1125,7 @@ function formatChild(d) {
             '<td style="white-space: normal">' + d.message + '</td>' +
             '</tr>';
     }
-    if (!(d.message === "{}")) {
+    if (!(d.exception === "")) {
         retString += '<tr>' +
             '<td>Exception:</td>' +
             '<td>' + d.exception + '</td>' +
