@@ -1025,10 +1025,16 @@ function refreshSync(refreshed, time) {
         $("#refresh-button").html('Manually Refresh Now');
     }
 }
-function pauseRefresh(time) {
+function pauseRefresh() {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
     document.getElementById('refresh-button').innerHTML = 'Paused';
+    $("#refresh-timer").attr('disabled', true);
+}
+function resumeRefresh() {   
+    var timer = $("#refresh-timer");
+    timer.attr('disabled', false);
+    setRefresh(timer.val());
 }
 function timerChange(sel) {
     clearInterval(refreshTimer);
@@ -1106,8 +1112,7 @@ function loadDataTable(apiUrl) {
             // This row is already open - close it
             row.child.hide();
             tr.removeClass('shown');
-            $("#refresh-timer").val();
-            setRefresh($("#refresh-timer").val());
+            resumeRefresh();
         } else {
             // Open this row
             row.child(formatChild(row.data())).show();
