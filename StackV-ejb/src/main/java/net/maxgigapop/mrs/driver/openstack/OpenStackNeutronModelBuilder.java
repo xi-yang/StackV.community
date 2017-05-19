@@ -54,6 +54,7 @@ import org.openstack4j.model.network.Port;
 import org.openstack4j.model.network.Router;
 import org.openstack4j.model.network.Subnet;
 import org.openstack4j.model.storage.block.Volume;
+import org.openstack4j.openstack.compute.domain.NovaFloatingIP;
 
 /**
  *
@@ -568,7 +569,7 @@ public class OpenStackNeutronModelBuilder {
             }
         }
 
-        for (NetFloatingIP f : openstackget.getFloatingIp()) {
+        for (NovaFloatingIP f : openstackget.getNovaFloatingIP()) {
             String ipAddr = f.getFloatingIpAddress();
             if (!fips.contains(ipAddr)) {
                 fips.add(ipAddr);
