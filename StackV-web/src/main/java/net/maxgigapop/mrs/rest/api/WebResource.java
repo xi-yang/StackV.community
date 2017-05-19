@@ -345,8 +345,9 @@ public class WebResource {
     public String installDriver(final String dataInput) throws SQLException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
         if (refresh != null) {
-            auth = servBean.refreshToken(refresh, 0);
+            auth = token.auth();
         }
 
         Object obj = parser.parse(dataInput);
@@ -395,8 +396,9 @@ public class WebResource {
     public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
         if (refresh != null) {
-            auth = servBean.refreshToken(refresh, 0);
+            auth = token.auth();
         }
 
         Properties prop = new Properties();
@@ -1565,7 +1567,8 @@ public class WebResource {
      * @apiDescription Get logs according to filters.
      * @apiGroup Logging
      * @apiUse AuthHeader
-     * @apiParam
+     * @apiParam {String} username Optional - username
+     * @apiParam {String} username Optional - username
      *
      * @apiExample {curl} Example Call:
      * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/logs?refUUID=e4d3bfd6-c269-4063-b02b-44aaef71d5b6 -H "Authorization: bearer $KC_ACCESS_TOKEN"
@@ -2458,14 +2461,14 @@ public class WebResource {
         logger.refuuid(svcInstanceUUID);
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
         if (refresh != null) {
-            auth = servBean.refreshToken(refresh, 0);
+            auth = token.auth();
         }
 
         try {
-            Thread.sleep(300);
             return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID, auth) + "\n";
-        } catch (IOException | InterruptedException ex) {
+        } catch (IOException ex) {
             logger.catching("checkStatus", ex);
             return null;
         }
@@ -2494,14 +2497,14 @@ public class WebResource {
         logger.refuuid(svcInstanceUUID);
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
         if (refresh != null) {
-            auth = servBean.refreshToken(refresh, 0);
+            auth = token.auth();
         }
 
         try {
-            Thread.sleep(300);
             return status(svcInstanceUUID, auth);
-        } catch (IOException | InterruptedException ex) {
+        } catch (IOException ex) {
             logger.catching("subStatus", ex);
         }
         return null;

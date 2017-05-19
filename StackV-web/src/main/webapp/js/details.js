@@ -104,20 +104,6 @@ function resetView() {
     }
 }
 
-$(function () {
-    $(".checkbox-level").change(function () {
-        if ($(this).is(":checked")) {
-            $("#log-div").removeClass("hide-" + this.name);
-        } else {
-            $("#log-div").addClass("hide-" + this.name);
-        }
-    });
-    $("#filter-search-clear").click(function () {
-        $("#filter-search-input").val("");
-        loadLogs();
-    });
-});
-
 function loadDetailsNavbar() {
     $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
         setRefresh($("#refresh-timer").val());
@@ -152,14 +138,10 @@ function loadDetailsNavbar() {
 /* DETAILS */
 
 function loadDetails() {
-    // Subfunctions    
-    subloadInstance();
-    subloadLogging();
-}
-
-/* LOGGING */
-function subloadLogging() {
     var uuid = sessionStorage.getItem("instance-uuid");
+    $("#instance-uuid").html(uuid);
+    subloadDetails();
+
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
     loadDataTable(apiUrl);
     setTimeout(function () {
@@ -169,9 +151,49 @@ function subloadLogging() {
         }
     }, 1000);
     reloadLogs();
+
+    $(".delta-table-header").click(function () {
+        $("#body-" + this.id).toggleClass("hide");
+    });
+
+    $(document).on('click', '.instance-command', function () {
+        $(".instance-command").attr('disabled', true);
+        pauseRefresh();
+
+        var command = this.id;
+        var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
+        $.ajax({
+            url: apiUrl,
+            type: 'PUT',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function () {
+                $(".instance-command").attr('disabled', false);
+                resumeRefresh();
+                if (command === "delete" || command === "force_delete") {
+                    setTimeout(function () {
+                        sessionStorage.removeItem("instance-uuid");
+                        window.document.location = "/StackV-web/ops/catalog.jsp";
+                    }, 250);
+                } else {
+                    reloadData();
+                }
+            }
+        });
+        if (!(command === "delete") && !(command === "force_delete")) {
+            setTimeout(function () {
+                $(".instance-command").attr('disabled', false);
+                resumeRefresh();
+                reloadData();
+            }, 250);
+        }
+    });
+
 }
 
-function subloadInstance() {
+function subloadDetails() {
     var uuid = sessionStorage.getItem("instance-uuid");
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
@@ -189,150 +211,38 @@ function subloadInstance() {
              *      3 - creation_time
              *      4 - super_state     */
 
-            var panel = document.getElementById("details-panel");
-            panel.innerHTML = "";
+            $("#instance-verification").html(instance[0]);
+            $("#instance-alias").html(instance[2]);
+            $("#instance-creation-time").html(instance[3]);
+            $("#instance-superstate").html(instance[4]);
 
-            $("#details-panel").append("<div id='instance-verification' class='hide'>" + instance[0] + "</div>");
-            var table = document.createElement("table");
-
-            table.id = "instance-details-table";
-            table.className = "management-table";
-
-            var thead = document.createElement("thead");
-            var row = document.createElement("tr");
-            var head = document.createElement("th");
-            head.innerHTML = instance[1] + " Service Details";
-            row.appendChild(head);
-            head = document.createElement("th");
-            head.innerHTML = '';
-            row.appendChild(head);
-            thead.appendChild(row);
-            table.appendChild(thead);
-
-            var tbody = document.createElement("tbody");
-            var row = document.createElement("tr");
-            var cell = document.createElement("td");
-            cell.innerHTML = "Instance Alias";
-            row.appendChild(cell);
-            cell = document.createElement("td");
-            cell.innerHTML = instance[2];
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            cell = document.createElement("td");
-            cell.innerHTML = "Reference UUID";
-            row.appendChild(cell);
-            cell = document.createElement("td");
-            cell.innerHTML = uuid;
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            cell = document.createElement("td");
-            cell.innerHTML = "Creation Time";
-            row.appendChild(cell);
-            cell = document.createElement("td");
-            cell.id = "instance-creation-time";
-            cell.innerHTML = instance[3];
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            cell = document.createElement("td");
-            cell.innerHTML = "Instance State";
-            row.appendChild(cell);
-            cell = document.createElement("td");
-            cell.id = "instance-superstate";
-            cell.innerHTML = instance[4];
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            cell = document.createElement("td");
-            cell.innerHTML = "Operation Status";
-            row.appendChild(cell);
-            cell = document.createElement("td");
-            cell.id = "instance-substate";
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            row.className = "instruction-row";
-            cell = document.createElement("td");
-            cell.innerHTML = '<div id="instruction-block"></div>';
-            cell.colSpan = "2";
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            row.className = "button-row";
-            cell = document.createElement("td");
-            cell.innerHTML = '<div class="service-instance-panel">'
-                    + '<button class="btn btn-default hide instance-command" id="reinstate">Reinstate</button>'
-                    + '<button class="btn btn-default hide instance-command" id="force_reinstate">Force Reinstate</button>'
-                    + '<button class="btn btn-default hide instance-command" id="cancel">Cancel</button>'
-                    + '<button class="btn btn-default hide instance-command" id="force_cancel">Force Cancel</button>'
-                    + '<button class="btn btn-default hide instance-command" id="force_retry">Force Retry</button>'
-                    + '<button class="btn btn-default hide instance-command" id="modify">Modify</button>'
-                    + '<button class="btn btn-default hide instance-command" id="force_modify">Force Modify</button>'
-                    + '<button class="btn btn-default hide instance-command" id="reverify">Re-Verify</button>'
-                    + '<button class="btn btn-default hide instance-command" id="delete">Delete</button>'
-                    + '<button class="btn btn-default hide instance-command" id="force_delete">Force Delete</button>'
-                    + '</div>';
-            cell.colSpan = "2";
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            table.appendChild(tbody);
-            panel.insertBefore(table, panel.firstChild);
-
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-
-            $(document).on('click', '.instance-command', function () {
-                $(".instance-command").attr('disabled', true);
-                pauseRefresh();
-
-                var command = this.id;
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
-                $.ajax({
-                    url: apiUrl,
-                    type: 'PUT',
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function () {
-                        $(".instance-command").attr('disabled', false);
-                        resumeRefresh();
-                        if (command === "delete" || command === "force_delete") {
-                            setTimeout(function () {
-                                sessionStorage.removeItem("instance-uuid");
-                                window.document.location = "/StackV-web/ops/catalog.jsp";
-                            }, 250);
-                        } else {
-                            reloadData();
-                        }
-                    }
-                });
-                if (!(command === "delete") && !(command === "force_delete")) {
-                    setTimeout(function () {
-                        $(".instance-command").attr('disabled', false);
-                        resumeRefresh();
-                        reloadData();
-                    }, 250);
-                }
-            });
 
             // Next steps
-            loadStatus(uuid);
+            subloadStatus(uuid);
+        }
+    });
+}
+function subloadStatus(refUuid) {
+    var ele = document.getElementById("instance-substate");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + refUuid + '/substatus';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            ele.innerHTML = result;
+
+            if (view === "center") {
+                tweenDetailsPanel.play();
+            }
+            loadVisualization();
             subloadVerification();
         }
     });
 }
-
 function subloadVerification() {
     var uuid = sessionStorage.getItem("instance-uuid");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/verification';
@@ -349,183 +259,13 @@ function subloadVerification() {
              *      2 - addition
              *      3 - reduction
              *      4 - service_instance_id */
-            var panel = document.getElementById("details-panel");
+            $("#verification-run").html(verification[0]);
+            $("#verification-time").html(verification[1]);
+            $("#verification-addition").html(verification[2]);
+            $("#verification-reduction").html(verification[3]);
 
-            var div = document.createElement("div");
-            div.className = "hide";
-            div.id = "verification-run";
-            div.innerHTML = verification[0];
-            panel.appendChild(div);
-            div = document.createElement("div");
-            div.className = "hide";
-            div.id = "verification-time";
-            div.innerHTML = verification[1];
-            panel.appendChild(div);
-            div = document.createElement("div");
-            div.className = "hide";
-            div.id = "verification-addition";
-            div.innerHTML = verification[2];
-            panel.appendChild(div);
-            div = document.createElement("div");
-            div.className = "hide";
-            div.id = "verification-reduction";
-            div.innerHTML = verification[3];
-            panel.appendChild(div);
-
-            var table = document.createElement("table");
-            table.className = "management-table hide verification-table";
-
-
-            var thead = document.createElement("thead");
-            thead.className = "delta-table-header";
-            thead.id = "delta-" + verification[4];
-            var row = document.createElement("tr");
-            var head = document.createElement("th");
-            row.appendChild(head);
-            head = document.createElement("th");
-            head.innerHTML = "Verified";
-            row.appendChild(head);
-            head = document.createElement("th");
-            head.innerHTML = "Unverified";
-            row.appendChild(head);
-
-            thead.appendChild(row);
-            table.appendChild(thead);
-
-            var tbody = document.createElement("tbody");
-            tbody.className = "delta-table-body";
-            tbody.id = "body-delta-" + verification[4];
-
-            row = document.createElement("tr");
-            row.id = "verification-addition-row";
-            var cell = document.createElement("td");
-            cell.innerHTML = "Addition";
-            row.appendChild(cell);
-            cell = document.createElement("td");
-            cell.id = "ver-add";
-            row.appendChild(cell);
-            cell = document.createElement("td");
-            cell.id = "unver-add";
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            row.id = "verification-reduction-row";
-            cell = document.createElement("td");
-            cell.innerHTML = "Reduction";
-            row.appendChild(cell);
-            cell = document.createElement("td");
-            cell.id = "ver-red";
-            row.appendChild(cell);
-            cell = document.createElement("td");
-            cell.id = "unver-red";
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            cell = document.createElement("td");
-            cell.colSpan = "3";
-            cell.innerHTML = '<button class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.verification-table', '#delta-System\');">Toggle Text Model</button>';
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            table.appendChild(tbody);
-            panel.appendChild(table);
-
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-
-            // Next step
-            subloadDelta();
-        }
-    });
-}
-
-function subloadDelta() {
-    var uuid = sessionStorage.getItem("instance-uuid");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/delta';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            for (i = 0; i < result.length; i++) {
-                /*  delta mapping:
-                 *      0 - type
-                 *      1 - service_delta_id
-                 *      2 - super_state
-                 *      3 - delta   */
-                var delta = result[i];
-
-                var table = document.createElement("table");
-                table.className = "management-table delta-table";
-                table.id = "delta-" + delta[0];
-
-                var thead = document.createElement("thead");
-                thead.className = "delta-table-header";
-                thead.id = "delta-" + delta[1];
-                var row = document.createElement("tr");
-                var head = document.createElement("th");
-                head.innerHTML = "Delta Details";
-                row.appendChild(head);
-                head = document.createElement("th");
-                row.appendChild(head);
-                thead.appendChild(row);
-                table.appendChild(thead);
-
-                var tbody = document.createElement("tbody");
-                tbody.className = "delta-table-body";
-                tbody.id = "body-delta-" + delta[1];
-
-                row = document.createElement("tr");
-                var cell = document.createElement("td");
-                cell.innerHTML = "Delta State";
-                row.appendChild(cell);
-                cell = document.createElement("td");
-                cell.innerHTML = delta[2];
-                row.appendChild(cell);
-                tbody.appendChild(row);
-
-                row = document.createElement("tr");
-                cell = document.createElement("td");
-                cell.innerHTML = "Delta Type";
-                row.appendChild(cell);
-                cell = document.createElement("td");
-                cell.innerHTML = delta[0];
-                row.appendChild(cell);
-                tbody.appendChild(row);
-
-                row = document.createElement("tr");
-                cell = document.createElement("td");
-                row.appendChild(cell);
-                cell = document.createElement("td");
-                cell.id = '';
-                cell.innerHTML = delta[3];
-                row.appendChild(cell);
-                tbody.appendChild(row);
-
-                row = document.createElement("tr");
-                cell = document.createElement("td");
-                cell.colSpan = "2";
-                cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'
-                        + delta[0] + '-delta-table\', \'#delta-' + delta[0] + '\');">Toggle Text Model</button>';
-                row.appendChild(cell);
-                tbody.appendChild(row);
-
-                table.appendChild(tbody);
-                document.getElementById("details-panel").appendChild(table);
-
-                $(".delta-table-header").click(function () {
-                    $("#body-" + this.id).toggleClass("hide");
-                });
-            }
-
-            // Next step
-            subloadACL();
-            // loadVisualization();
+            instructionModerate();
+            buttonModerate();
         }
     });
 }
@@ -603,31 +343,6 @@ function loadACL() {
             for (i = 0; i < result.length; i++) {
                 select.append("<option>" + result[i] + "</option>");
             }
-        }
-    });
-}
-
-function loadStatus(refUuid) {
-    var ele = document.getElementById("instance-substate");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + refUuid + '/substatus';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        success: function (result) {
-            ele.innerHTML = result;
-
-            deltaModerate();
-            instructionModerate();
-            buttonModerate();
-
-            if (view === "center") {
-                tweenDetailsPanel.play();
-            }
-            loadVisualization();
         }
     });
 }
@@ -1045,33 +760,6 @@ function toggleTextModel(viz_table, text_table) {
 }
 
 // Moderation Functions
-
-function deltaModerate() {
-    if (document.getElementById("verification-time") !== null) {
-        var subState = document.getElementById("instance-substate").innerHTML;
-        var verificationTime = document.getElementById("verification-time").innerHTML;
-        var verificationAddition = document.getElementById("verification-addition").innerHTML;
-        var verificationReduction = document.getElementById("verification-reduction").innerHTML;
-
-        var verAdd = document.getElementById("ver-add").innerHTML;
-        var unverAdd = document.getElementById("unver-add").innerHTML;
-        var verRed = document.getElementById("ver-red").innerHTML;
-        var unverRed = document.getElementById("unver-red").innerHTML;
-
-        if ((subState === 'READY' || subState !== 'FAILED') && verificationTime !== '') {
-            $("#delta-System").addClass("hide");
-            $(".verification-table").removeClass("hide");
-
-            if (verificationAddition === '' || (verAdd === '{ }' && unverAdd === '{ }')) {
-                $("#verification-addition-row").addClass("hide");
-            }
-            if (verificationReduction === '' || (verRed === '{ }' && unverRed === '{ }')) {
-                $("#verification-reduction-row").addClass("hide");
-            }
-        }
-    }
-}
-
 function instructionModerate() {
     if (document.getElementById("verification-run") !== null) {
         var subState = document.getElementById("instance-substate").innerHTML;
@@ -1121,6 +809,7 @@ function buttonModerate() {
     var subState = document.getElementById("instance-substate").innerHTML;
     var verificationState = document.getElementById("instance-verification").innerHTML;
 
+    $(".instance-command").addClass("hide");
     if (superState === 'Create') {
         // State 0 - Stuck
         if (verificationState === "" || verificationState === "null" || subState === "INIT") {
@@ -1259,16 +948,14 @@ function reloadData() {
                     break;
             }
             setTimeout(function () {
-                subloadInstance();
-                reloadLogs();
+                subloadDetails();
                 $(".delta-table-header").click(function () {
                     $("#body-" + this.id).toggleClass("hide");
                 });
                 refreshSync(refreshed, timerSetting);
             }, 1000);
         } else {
-            subloadInstance();
-            reloadLogs();
+            subloadDetails();
             $(".delta-table-header").click(function () {
                 $("#body-" + this.id).toggleClass("hide");
             });

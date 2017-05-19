@@ -24,7 +24,7 @@
         </JDBC>      
     </Appenders>
     <Loggers>
-        <AsyncLogger name="net.maxgigapop.mrs.rest.api.WebResource" level="trace" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.rest.api.WebResource" level="info" additivity="false">
             <AppenderRef ref="APIOut" />
             <AppenderRef ref="MySQL"/>
         </AsyncLogger>

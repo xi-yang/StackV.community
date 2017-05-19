@@ -45,17 +45,21 @@ public class TokenHandler {
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TokenHandler");
     JSONParser parser = new JSONParser();
     String accessToken = null;
+    long accessCreationTime;
     String refreshToken = null;
     int recur = 0;
 
     public TokenHandler(String refresh) {
         refreshToken = refresh;
         accessToken = refreshTokenSub(0);
-
+        accessCreationTime = System.nanoTime();
     }
 
     public void refreshToken() {
-        accessToken = refreshTokenSub(0);
+        long elapsed = (System.nanoTime() - accessCreationTime) / 1000000;        
+        if (elapsed > 45000) {                   
+            accessToken = refreshTokenSub(0);
+        }
     }
 
     public String auth() {
