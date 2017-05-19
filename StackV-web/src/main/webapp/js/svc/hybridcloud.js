@@ -232,7 +232,7 @@ function applyTemplate(mode) {
         next_div = $('#2-1');
         nextStage(template_div, next_div);
     }
-    
+        //changes made here
         // Basic Hybrid Cloud Template
         if (mode === 1) {
             current_div = $("#0-1");

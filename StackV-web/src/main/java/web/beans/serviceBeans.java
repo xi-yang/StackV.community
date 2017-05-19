@@ -356,6 +356,7 @@ public class serviceBeans {
     }
     
     public int createNetwork(Map<String, String> paraMap, String auth, String refresh) {
+        System.out.println("HERE");
         String topoUri = null;
         String driverType = null;
         String netCidr = null;
@@ -501,6 +502,8 @@ public class serviceBeans {
                 + "    a                         nml:Topology ;\n";
         
         String exportTo = "";
+        //Andrew Testing Code
+        System.out.println("AWSAWSAWSAWSAWSAWSAWSAWS");
         if (driverType.equals("aws") && directConn != null) {
             String dest = directConn.contains("?vlan") ? directConn.substring(0, directConn.indexOf("?vlan")) : directConn;
             String vlan = directConn.contains("?vlan") ? directConn.substring(directConn.indexOf("?vlan") + 6) : "any";

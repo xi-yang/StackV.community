@@ -2866,6 +2866,7 @@ public class WebResource {
     }
     
     private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
+        
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
         
@@ -3030,6 +3031,9 @@ public class WebResource {
             JSONArray gatewayArr = (JSONArray) vcnJSON.get("gateways");
             paraMap.put("gateways", gatewayArr.toString());
         }
+        
+        
+        
         
         return paraMap;
     }
