@@ -2995,6 +2995,7 @@ public class WebResource {
     }
 
     private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
+        
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
 
