@@ -118,6 +118,8 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
         }
         if (requests.isEmpty()) {
+            driverInstance.getProperties().remove(requestId);
+            DriverInstancePersistenceManager.merge(driverInstance);
             throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
         }        
         String username = driverInstance.getProperty("username");
@@ -133,6 +135,8 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String defaultFlavor = driverInstance.getProperty("defaultFlavor");
         String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
         String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
+        driverInstance.getProperties().remove(requestId);
+        DriverInstancePersistenceManager.merge(driverInstance);
 
         OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, 
                 topologyURI, defaultImage, defaultFlavor, defaultKeyPair, defaultSecGroup);
@@ -149,8 +153,6 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             throw logger.throwing(method, ex);
         }
 
-        driverInstance.getProperties().remove(requestId);
-        DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);
         return new AsyncResult<String>("SUCCESS");
     }

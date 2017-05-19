@@ -73,14 +73,18 @@ public class AwsDriver implements IHandleDriverSystemCall {
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
         String r = driverInstance.getProperty("region");
-        String topologyURI = driverInstance.getProperty("topologyUri");
         Regions region = Regions.fromName(r);
+        String topologyURI = driverInstance.getProperty("topologyUri");
+        String defaultImage = driverInstance.getProperty("defaultImage");
+        String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
+        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
+        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
 
         String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
         String modelAdd = aDelta.getModelAddition().getTtlModel();
         String modelReduc = aDelta.getModelReduction().getTtlModel();
 
-        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
+        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
         String requests = null;
         requests = push.pushPropagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
@@ -105,27 +109,33 @@ public class AwsDriver implements IHandleDriverSystemCall {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requests = driverInstance.getProperty(requestId);
+        if (requests == null) {
+            throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
+        }
+        if (requests.isEmpty()) {
+            driverInstance.getProperties().remove(requestId);
+            DriverInstancePersistenceManager.merge(driverInstance);
+            throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
+        }        
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
         String r = driverInstance.getProperty("region");
-        String topologyURI = driverInstance.getProperty("topologyUri");
         Regions region = Regions.fromName(r);
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
-        String requests = driverInstance.getProperty(requestId);
-        if (requests == null || requests.isEmpty()) {
-            logger.message(method, driverInstance + "encounters empty requests data - no change to commit");
-            logger.end(method);
-            return new AsyncResult<String>("SUCCESS");
-        }
-        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
+        String topologyURI = driverInstance.getProperty("topologyUri");
+        String defaultImage = driverInstance.getProperty("defaultImage");
+        String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
+        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
+        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
+        driverInstance.getProperties().remove(requestId);
+        DriverInstancePersistenceManager.merge(driverInstance);
+        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
         try {
             push.pushCommit(requests);
         } catch (com.amazonaws.AmazonServiceException ex) {
             throw logger.throwing(method, ex);
         }
-        driverInstance.getProperties().remove(requestId);
-        DriverInstancePersistenceManager.merge(driverInstance);
-
         logger.end(method);
         return new AsyncResult<String>("SUCCESS");
     }
