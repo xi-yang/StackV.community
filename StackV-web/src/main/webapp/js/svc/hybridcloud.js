@@ -217,10 +217,7 @@ function previousStage(current_fs, incoming_fs) {
 
 function applyTemplate(mode) {
     var form = document.getElementById('msform');
-    console.log("Checking if form is found correctly")
-    for(var i = 0; i < form.elements.length;i++){
-        console.log(form.elements[i]);
-    }
+    
     
     $("#black-screen").addClass("off");
     if (animating)
@@ -525,7 +522,7 @@ function setVMs(input) {
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
 
-        var selectString = '<select name="' + type + 'vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option selected disabled>Select the subnet host</option>';
+        var selectString = '<select name="' + type + 'vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option >any</option>';
         for (j = 1; j <= subnetCount; j++) {
             var subnetTag = document.getElementById(type + "subnet" + j + "-tag");
 
