@@ -570,7 +570,7 @@ function setVMs(input) {
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
 
-        var selectString = '<select name="vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option selected disabled>Select the subnet host</option>';
+        var selectString = '<select name="vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option>any</option>';
         for (j = 1; j <= subnetCount; j++) {
             var subnetTag = document.getElementById("subnet" + j + "-tag");
 
