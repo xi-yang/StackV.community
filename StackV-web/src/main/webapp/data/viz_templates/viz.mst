@@ -1,0 +1,39 @@
+{{#details_viz}}
+<div id="{{name}}_div" class="hidden"> 
+{{/details_viz}}
+
+
+    <div class="hover_div" id="hoverdiv_{{name}}"></div>
+    
+    {{#details_viz}}
+    <svg class ="details_viz" id="{{name}}"> 
+    {{/details_viz}}
+    {{#fullpage_viz}}
+    <svg class="loading" id="{{name}}">
+        {{> svg_defs}}
+    {{/fullpage_viz}}
+
+        <defs>  
+          <marker id="marker_arrow_{{name}}" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">' 
+              <path d="M0,0 L0,6 L9,3 z" fill="black" />' 
+          </marker>
+        </defs> 
+
+        <g id="transform_{{name}}"> 
+        <g id="topology_{{name}}"/> 
+        <g id="edge1_{{name}}"/> 
+        <g id="anchor_{{name}}"/> 
+        <g id="node_{{name}}"/> 
+        <g id="dialogBox_{{name}}"/> 
+        <g id="volumeDialogBox_{{name}}"/> 
+        <g id="switchPopup_{{name}}"/> 
+        <g id="parentPort_{{name}}"/> 
+        <g id="edge2_{{name}}" />
+        <g id="port_{{name}}"/>
+        <g id="volume_{{name}}"/></g>
+    </svg>
+
+{{#details_viz}}
+</div>    
+{{/details_viz}}
+

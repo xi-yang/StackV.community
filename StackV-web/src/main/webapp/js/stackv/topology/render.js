@@ -149,11 +149,51 @@ define([
     var lastMouse;
     var switchPopup = {};
     var topLevelTopologies = [];
+    
+    
+    
+    
+    
+    function subscribeToMediatior() {
+        if (window.PubSub !== undefined) {
+            PubSub.subscribe('Renderer_DoRender', function(data) {
+            });
+
+            PubSub.subscribe('Renderer_SetHighlight', function(data) {
+            });
+            
+            PubSub.subscribe('Renderer_Highlight', function(data) {
+            });
+            
+            /*
+             * Interface: 
+             *     [elements]
+             *     "highlight_name"
+             */
+            
+            PubSub.subscribe('Renderer_AddHighlight', function(data) {
+                setHighlights(data.elements, data.highlight_name);
+                highlightElements(data.highlight_name);                        
+            });
+           
+            /*
+             * Interface: 
+             *     "hightlight_name"
+             */
+            PubSub.subscribe('Renderer_RemoveHighlight', function(data) {
+                setHighlights([], data.highlight_name);
+                highlightElements(data.highlight_name);                        
+            });
+        }
+    }
+    
+    subscribeToMediatior();
+    
     /**@param {outputApi} outputApi
      * @param {Model} model
      * @param (fullSize) boolean
      **/
-    function doRender(outputApi, model, fullSize, modelMap, outputApiMap) {
+    function doRender(outputApi, model, fullSize, modelMap, outputApiMap, _Mediator) {
         // default parameter
         var fullSize = typeof fullSize !== 'undefined' ?  fullSize : true;
         var modelMap = typeof modelMap !== 'undefined' ?  modelMap : null;
@@ -281,13 +321,16 @@ define([
                     }
                     n.svgNode = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("image")
                             .attr("xlink:href", n.getIconPath())
+                            .attr("class", "model_object")
+                            .attr("id", n.getName())
                             .on("click", onNodeClick.bind(undefined, n))
                             .on("dblclick", onNodeDblClick.bind(undefined, n))
                             .on("mousemove", onNodeMouseMove.bind(undefined, n))
                             .on("mouseleave", onNodeMouseLeave.bind(undefined, n));                    
-                    if (outputApi.contextMenu) {
-                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
-                    } 
+//                    if (outputApi.contextMenu) {
+//                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
+//                    } 
+                    
                     if (n.detailsReference) {
                         n.svgNode.style("opacity", .4);
                     }
@@ -302,13 +345,18 @@ define([
         function drawPolicy(p) {
             p.svgNode = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("image")
                     .attr("xlink:href", p.getIconPath())
+                    .attr("class", "model_object")
+                    .attr("id", p.getName())
+
                     .on("click", onPolicyClick.bind(undefined, p))
                     .on("dblclick", onPolicyDblClick.bind(undefined, p))
                     .on("mousemove", onPolicyMouseMove.bind(undefined, p))
                     .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));        
-            if (outputApi.contextMenu) {
-                p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));    
-            } 
+//            if (outputApi.contextMenu) {
+//                p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));    
+//            } 
+
+
             if (p.detailsReference) {
                 p.svgNode.style("opacity", .4);
             }
@@ -341,26 +389,34 @@ define([
                     .style("stroke-linejoin", "round")
                     .style("opacity", settings.HULL_OPACITY)
                     .attr("d", topologyPathToString(path))
+                    .attr("class", "model_object")
+                    .attr("id", n.getName())
                     .on("click", onNodeClick.bind(undefined, n))
                     .on("dblclick", onNodeDblClick.bind(undefined, n))
                     .on("mousemove", onNodeMouseMove.bind(undefined, n))
                     .on("mouseleave", onNodeMouseLeave.bind(undefined, n));
-                if (outputApi.contextMenu) {
-                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
-                }
+//                if (outputApi.contextMenu) {
+//                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
+//                }
+
+
                 n.svgNode.call(makeDragBehaviour(n));
                 
                 n.svgNodeAnchor = svgContainer.select("#anchor" + "_" + outputApi.svgContainerName).append("rect")
                         .style("fill", "white")
                         .style("stroke", "black")
                         .style("stroke-width", settings.TOPOLOGY_ANCHOR_STROKE)
+                        .attr("class", "model_object")
+                        .attr("id", n.getName())
+
                         .on("click", onNodeClick.bind(undefined, n))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, n))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, n));  
-                if (outputApi.contextMenu) {
-                    n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
-                }
+//                if (outputApi.contextMenu) {
+//                    n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
+//                }
+
                 if (n.detailsReference) {
                     n.svgNode.style("opacity", .4);
                 }
@@ -392,14 +448,17 @@ define([
                         //contrast, the mousMove event is for the popup, and
                         //we may want to display different info when we
                         //hover over a service
+                        .attr("class", "model_object")
+                        .attr("id", n.getName())
                         .on("click", onServiceClick.bind(undefined, service))
                         .on("dblclick", onNodeDblClick.bind(undefined, n))
                         .on("mousemove", onNodeMouseMove.bind(undefined, service))
                         .on("mouseleave", onNodeMouseLeave.bind(undefined, service));
 
-                if (outputApi.contextMenu) {
-                    service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
-                }    
+//                if (outputApi.contextMenu) {
+//                    service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
+//                }    
+
                 if (service.detailsReference) {
                     service.svgNode.style("opacity", .4);
                 }
@@ -838,25 +897,33 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (o.getDisplayTree()) {
-                o.setDisplayName(n.getName());
-                /**@type {DropDownTree} displayTree**/
-                var displayTree = o.getDisplayTree();
-                displayTree.clear();
-                var e = m.elementMap[n.getName()];
-                e.populateProperties(displayTree);
             
-                if (e.misc_elements.length > 0 )
-                    displayTree.addChild("", "Separator", null);
-
-                e.populateTreeMenu(displayTree);
-                displayTree.addToHistory(e.getName(), "Policy");
-                displayTree.draw();
-                displayTree.topViewShown = false;    
-                if (fullSize) {
-                    displayTree.open();
-                }
-            }
+//            if (o.getDisplayTree()) {
+//                o.setDisplayName(n.getName());
+//                /**@type {DropDownTree} displayTree**/
+//                var displayTree = o.getDisplayTree();
+//                displayTree.clear();
+//                var e = m.elementMap[n.getName()];
+//                e.populateProperties(displayTree);
+//            
+//                if (e.misc_elements.length > 0 )
+//                    displayTree.addChild("", "Separator", null);
+//
+//                e.populateTreeMenu(displayTree);
+//                displayTree.addToHistory(e.getName(), "Policy");
+//                displayTree.draw();
+//                displayTree.topViewShown = false;    
+//                if (fullSize) {
+//                    displayTree.open();
+//                }
+//            
+//            }
+            _Mediator.publish("DisplayPanel_redraw", {
+                name: n.getName(),
+                element:  m.elementMap[n.getName()],
+                fullSize: fullSize
+            });
+            
             highlightElements("serviceHighlighting"); // show stuff that was highlighting when it has an svg node 
 
             map_(edgeList, updateSvgChoordsEdge);
@@ -961,25 +1028,31 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (o.getDisplayTree()) {
-                o.setDisplayName(n.getName());
-                /**@type {DropDownTree} displayTree**/
-                var displayTree = o.getDisplayTree();
-                displayTree.clear();
-                var e = m.elementMap[n.getName()];
-                e.populateProperties(displayTree);
+//            if (o.getDisplayTree()) {
+//                o.setDisplayName(n.getName());
+//                /**@type {DropDownTree} displayTree**/
+//                var displayTree = o.getDisplayTree();
+//                displayTree.clear();
+//                var e = m.elementMap[n.getName()];
+//                e.populateProperties(displayTree);
+//            
+//                if (e.misc_elements.length > 0 )
+//                    displayTree.addChild("", "Separator", null);
+//
+//                e.populateTreeMenu(displayTree);
+//                displayTree.addToHistory(e.getName(), "Node");
+//                displayTree.draw();
+//                displayTree.topViewShown = false;    
+//                if (fullSize) {
+//                    displayTree.open();
+//                }                
+//            }
+            _Mediator.publish("DisplayPanel_redraw", {
+                name: n.getName(),
+                element:  m.elementMap[n.getName()],
+                fullSize: fullSize
+            });
             
-                if (e.misc_elements.length > 0 )
-                    displayTree.addChild("", "Separator", null);
-
-                e.populateTreeMenu(displayTree);
-                displayTree.addToHistory(e.getName(), "Node");
-                displayTree.draw();
-                displayTree.topViewShown = false;    
-                if (fullSize) {
-                    displayTree.open();
-                }                
-            }
             // Only show these popups if there are acutally ports and volumes 
             if (n.ports.length !== 0) 
                 n.portPopup.toggleVisible();
@@ -1028,24 +1101,30 @@ define([
             }
             highlightedNode = n;
             drawHighlight();
-            if (o.getDisplayTree()) {
-                o.setDisplayName(n.getName());
-                var displayTree = o.getDisplayTree();
-                displayTree.clear();
-                var e = m.elementMap[n.getName()];
-                e.populateProperties(displayTree);
+//            if (o.getDisplayTree()) {
+//                o.setDisplayName(n.getName());
+//                var displayTree = o.getDisplayTree();
+//                displayTree.clear();
+//                var e = m.elementMap[n.getName()];
+//                e.populateProperties(displayTree);
+//
+//                if (e.misc_elements.length > 0 )
+//                 displayTree.addChild("", "Separator", null);
+//
+//                e.populateTreeMenu(displayTree);
+//                displayTree.addToHistory(e.getName(), "Service");
+//                displayTree.draw();
+//                displayTree.topViewShown = false;
+//                if (fullSize) {
+//                    displayTree.open();
+//                }                
+//            }
+            _Mediator.publish("DisplayPanel_redraw", {
+                name: n.getName(),
+                element:  m.elementMap[n.getName()],
+                fullSize: fullSize
+            });
 
-                if (e.misc_elements.length > 0 )
-                 displayTree.addChild("", "Separator", null);
-
-                e.populateTreeMenu(displayTree);
-                displayTree.addToHistory(e.getName(), "Service");
-                displayTree.draw();
-                displayTree.topViewShown = false;
-                if (fullSize) {
-                    displayTree.open();
-                }                
-            }
             if (n.getTypeBrief() === "SwitchingService") {
 
                 if (switchPopup[o.svgContainerName].hostNode === n) {
@@ -1148,55 +1227,66 @@ define([
               var o = outputApi;
             }
             
-            if (outputApi.getDisplayTree()) {
+          //  if (outputApi.getDisplayTree()) {
                 if (!elem) {
                     //deselect element
-                    o.setDisplayName("Topologies");
-                    var displayTree = o.getDisplayTree();
-                    o.getDisplayTree().clear();
+//                    o.setDisplayName("Topologies");
+//                    var displayTree = o.getDisplayTree();
+//                    o.getDisplayTree().clear();
+//                    
+//                    if (topLevelTopologies.length === 0) {
+//                        for (var key in m.elementMap) {
+//                             var e = m.elementMap[key];
+//                             if (e.getType() === "Topology" && e.topLevel) {
+//                                 topLevelTopologies.push(e);                                
+//                                 var child = displayTree.addChild(e.getName(), "Element", e);
+//                                 e.populateTreeMenu(child);
+//                             }
+//                        }
+//                        // if still no top level topoligies  
+//                        if (topLevelTopologies.length === 0) {
+//                            displayTree.addChild("No top level topologies.", "Title", "No top level topologies.");
+//                        }
+//                    } else {
+//                        for (var i in topLevelTopologies) {
+//                            var topology = topLevelTopologies[i];
+//                            var child = displayTree.addChild(topology.getName(), "Element", e);
+//                            topology.populateTreeMenu(child);                        
+//                        }
+//                    }
+//                    
+//                    displayTree.draw();
                     
-                    if (topLevelTopologies.length === 0) {
-                        for (var key in m.elementMap) {
-                             var e = m.elementMap[key];
-                             if (e.getType() === "Topology" && e.topLevel) {
-                                 topLevelTopologies.push(e);                                
-                                 var child = displayTree.addChild(e.getName(), "Element", e);
-                                 e.populateTreeMenu(child);
-                             }
-                        }
-                        // if still no top level topoligies  
-                        if (topLevelTopologies.length === 0) {
-                            displayTree.addChild("No top level topologies.", "Title", "No top level topologies.");
-                        }
-                    } else {
-                        for (var i in topLevelTopologies) {
-                            var topology = topLevelTopologies[i];
-                            var child = displayTree.addChild(topology.getName(), "Element", e);
-                            topology.populateTreeMenu(child);                        
-                        }
-                    }
+                    _Mediator.publish("DisplayPanel_drawTopLevel", {
+                        topLevelTopologies: topLevelTopologies,
+                        model: m
+                    });
                     
-                    displayTree.draw();
                 } else {
-                    o.setDisplayName(elem.getName());
-                    /**@type {DropDownTree} displayTree**/
-                    var displayTree = o.getDisplayTree();
-                    displayTree.clear();
-                    var e = m.elementMap[elem.getName()];
-                    e.populateProperties(displayTree);
-
-                    if (e.misc_elements.length > 0 )
-                        displayTree.addChild("", "Separator", null);
-
-                    e.populateTreeMenu(displayTree);
-                    e.showRelationships(displayTree);
-                    displayTree.draw();
-                    if (fullSize) {
-                        displayTree.open();
-                    }                
+//                    o.setDisplayName(elem.getName());
+//                    /**@type {DropDownTree} displayTree**/
+//                    var displayTree = o.getDisplayTree();
+//                    displayTree.clear();
+//                    var e = m.elementMap[elem.getName()];
+//                    e.populateProperties(displayTree);
+//
+//                    if (e.misc_elements.length > 0 )
+//                        displayTree.addChild("", "Separator", null);
+//
+//                    e.populateTreeMenu(displayTree);
+//                    e.showRelationships(displayTree);
+//                    displayTree.draw();
+//                    if (fullSize) {
+//                        displayTree.open();
+//                    }                
+                    _Mediator.publish("DisplayPanel_redraw", {
+                        name: elem.getName(),
+                        element:  m.elementMap[elem.getName()],
+                        fullSize: fullSize
+                    });
 
                 }
-            }
+            //}
             highlightedNode = elem;
             drawHighlight();
             selectedNode = elem;
