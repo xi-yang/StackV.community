@@ -55,17 +55,6 @@
             <div id="loading-panel"></div>
             <!-- TAG PANEL -->
             <div id="tag-panel"></div>
-            <script> 
-
-                require(["local/stackv/topology/TagPanel"],
-                  function (TagPanel) {
-                     var tagPanel =  TagPanel();
-                     tagPanel.init();
-                  }
-                );
-
-             </script>
-
         </div>
         <div id="catalog-panel" class="closed">
             <ul class="nav nav-tabs catalog-tabs">

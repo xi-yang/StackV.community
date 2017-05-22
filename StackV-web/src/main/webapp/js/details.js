@@ -948,6 +948,7 @@ function reloadData() {
                     break;
             }
             setTimeout(function () {
+                reloadLogs();
                 subloadDetails();
                 $(".delta-table-header").click(function () {
                     $("#body-" + this.id).toggleClass("hide");
@@ -955,6 +956,7 @@ function reloadData() {
                 refreshSync(refreshed, timerSetting);
             }, 1000);
         } else {
+            reloadLogs();
             subloadDetails();
             $(".delta-table-header").click(function () {
                 $("#body-" + this.id).toggleClass("hide");

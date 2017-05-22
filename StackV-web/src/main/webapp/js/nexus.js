@@ -1030,10 +1030,12 @@ function pauseRefresh() {
     clearInterval(countdownTimer);
     document.getElementById('refresh-button').innerHTML = 'Paused';
     $("#refresh-timer").attr('disabled', true);
+    $("#refresh-button").attr('disabled', true);
 }
-function resumeRefresh() {   
+function resumeRefresh() {
     var timer = $("#refresh-timer");
-    if (timer.attr('disabled')) {    
+    if (timer.attr('disabled')) {
+        $("#refresh-button").attr('disabled', false);
         timer.attr('disabled', false);
         setRefresh(timer.val());
     }
@@ -1047,7 +1049,7 @@ function timerChange(sel) {
         document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
     }
 }
-function setRefresh(time) {
+function setRefresh(time) {    
     countdown = time;
     refreshTimer = setInterval(function () {
         reloadData();
@@ -1070,7 +1072,8 @@ function reloadDataManual() {
 
 
 /* LOGGING */
-function loadDataTable(apiUrl) {    
+var openLogDetails = 0;
+function loadDataTable(apiUrl) {
     dataTable = $('#loggingData').DataTable({
         "ajax": {
             url: apiUrl,
@@ -1111,11 +1114,16 @@ function loadDataTable(apiUrl) {
         var tr = $(this).closest('tr');
         var row = dataTable.row(tr);
         if (row.child.isShown()) {
+            openLogDetails--;
             // This row is already open - close it
             row.child.hide();
             tr.removeClass('shown');
-            resumeRefresh();
+            if (openLogDetails === 0) {
+                resumeRefresh();
+            }
         } else {
+            openLogDetails++;
+
             // Open this row
             row.child(formatChild(row.data())).show();
             tr.addClass('shown');
@@ -1128,22 +1136,22 @@ function formatChild(d) {
     var retString = '<table cellpadding="5" cellspacing="0" border="0">';
     if (!(d.message === "{}")) {
         retString += '<tr>' +
-            '<td style="width:10%">Message:</td>' +
-            '<td style="white-space: normal">' + d.message + '</td>' +
-            '</tr>';
+                '<td style="width:10%">Message:</td>' +
+                '<td style="white-space: normal">' + d.message + '</td>' +
+                '</tr>';
     }
     if (!(d.exception === "")) {
         retString += '<tr>' +
-            '<td>Exception:</td>' +
-            '<td>' + d.exception + '</td>' +
-            '</tr>';
+                '<td>Exception:</td>' +
+                '<td>' + d.exception + '</td>' +
+                '</tr>';
     }
     retString += '<tr>' +
             '<td>Logger:</td>' +
             '<td>' + d.logger + '</td>' +
             '</tr>' +
             '</table>';
-                
+
     return retString;
 }
 function reloadLogs() {

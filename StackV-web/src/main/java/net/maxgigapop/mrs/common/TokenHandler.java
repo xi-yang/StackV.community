@@ -109,14 +109,18 @@ public class TokenHandler {
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
 
-            logger.trace_end(method);
+            if (recur == 0) {
+                logger.trace_end(method);
+            } else {
+                logger.status(method, "Refresh achieved after " + recur + " retry");
+            }
             return (String) result.get("access_token");
         } catch (SocketTimeoutException | java.net.ConnectException ex) {
             // Keycloak connection timeout
             try {
                 recur++;
                 logger.warning(method, "Keycloak refresh timeout #" + recur);
-                Thread.sleep(2000);
+                Thread.sleep(3000);
                 return refreshTokenSub(recur);
             } catch (InterruptedException ex1) {
                 logger.catching(method, ex);
