@@ -23,19 +23,8 @@
 
 package net.maxgigapop.mrs.rest.api;
 
-import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import static java.lang.Thread.sleep;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import javax.ejb.EJB;
-import javax.ejb.EJBException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -49,17 +38,8 @@ import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ServiceApiDelta;
 import net.maxgigapop.mrs.service.HandleServiceCall;
-import java.util.logging.Logger;
-import javax.ws.rs.ProcessingException;
 import javax.ws.rs.PUT;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlRootElement;
-import net.maxgigapop.mrs.bean.ServiceInstance;
-import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
-import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaRetrieval;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaVerification;
@@ -74,7 +54,7 @@ import org.json.simple.JSONObject;
 @Path("service")
 public class ServiceResource {
 
-    private static final Logger log = Logger.getLogger(ServiceResource.class.getName());
+    private final StackLogger logger = new StackLogger(ModelResource.class.getName(), "ModelResource");
 
     @Context
     private UriInfo context;
@@ -109,21 +89,19 @@ public class ServiceResource {
     @DELETE
     @Path("/{uuid}")
     public String terminate(@PathParam("uuid") String siUuid) {
-        try {
-            serviceCallHandler.terminateInstance(siUuid);
-            return "Successfully terminated";
-        } catch (EJBException e) {
-            return (e.getMessage());
-        }
+        serviceCallHandler.terminateInstance(siUuid);
+        return "Successfully terminated";
     }
 
     //GET instance property
     @GET
     @Path("/property/{siUUID}/{property}")
     public String getProperty(@PathParam("siUUID") String svcInstanceUUID, @PathParam("property") String property) {
+        String method = "getProperty";
+        logger.refuuid(svcInstanceUUID);
         String value = serviceCallHandler.getInstanceProperty(svcInstanceUUID, property);
         if (value == null) {
-            throw new EJBException("Unknown property=" + property);
+            throw logger.error_throwing(method, "Unknown property=" + property);
         }
         return value;
     }
@@ -159,10 +137,14 @@ public class ServiceResource {
     @Produces("application/xml")
     @Path("/{siUUID}")
     public ApiDeltaBase compile(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta svcApiDelta) throws Exception {
+        String method = "compile";
+        logger.refuuid(svcInstanceUUID);
+        logger.targetid(svcApiDelta.getUuid());
+        logger.trace_start(method);
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
         if (sysDelta == null) {
-            throw new EJBException("Failed to compile service delta");
+            throw logger.error_throwing(method, "failed to compile target:ServiceDelta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
@@ -183,6 +165,7 @@ public class ServiceResource {
             }
             apiSysDelta.setModelReduction(modelReduction);
         }
+        logger.trace_end(method);
         return apiSysDelta;
     }
 
@@ -191,10 +174,14 @@ public class ServiceResource {
     @Produces("application/json")
     @Path("/{siUUID}")
     public ApiDeltaBase compileJson(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta svcApiDelta) throws Exception {
+        String method = "compileJson";
+        logger.refuuid(svcInstanceUUID);
+        logger.targetid(svcApiDelta.getUuid());
+        logger.trace_start(method);
         String workerClassPath = svcApiDelta.getWorkerClassPath();
         SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
         if (sysDelta == null) {
-            throw new EJBException("Failed to compile service delta");
+            throw logger.error_throwing(method, "failed to compile target:ServiceDelta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
         apiSysDelta.setId(sysDelta.getId().toString());
@@ -215,6 +202,7 @@ public class ServiceResource {
             }
             apiSysDelta.setModelReduction(modelReduction);
         }
+        logger.trace_end(method);
         return apiSysDelta;
     }
 
@@ -225,7 +213,8 @@ public class ServiceResource {
     // propagate_forced: refresh VG and apply delta to refreshed only
     //      forced only work after FAILED status
     //Commit:
-    // Async - status update later
+    // sync - failed at service level
+    // async - failed at system level -> status update later
     //      forced: only work after FAILED status
     //Revert: 
     // revert forced: after FAILED status
@@ -233,72 +222,106 @@ public class ServiceResource {
     @PUT
     @Path("/{siUUID}/{action}")
     public String push(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
+        String method = "push";
+        logger.refuuid(svcInstanceUUID);
+        logger.trace_start(method);
         if (action.equalsIgnoreCase("propagate")
                 || action.equalsIgnoreCase("propagate_through")) {
             try {
-                return serviceCallHandler.propagateDeltas(svcInstanceUUID, true, false);
-            } catch (EJBException ejbEx) {
+                String ret = serviceCallHandler.propagateDeltas(svcInstanceUUID, true, false);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
                 serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                throw ejbEx;
+                throw logger.throwing(method, ex);
             }
         } else if (action.equalsIgnoreCase("propagate_forward")) {
             try {
-                return serviceCallHandler.propagateDeltas(svcInstanceUUID, false, false);
-            } catch (EJBException ejbEx) {
+                String ret = serviceCallHandler.propagateDeltas(svcInstanceUUID, false, false);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
                 serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                throw ejbEx;
+                throw logger.throwing(method, ex);
             }
         } else if (action.equalsIgnoreCase("propagate_forced")) {
             try {
-                return serviceCallHandler.propagateDeltas(svcInstanceUUID, false, true);
-            } catch (EJBException ejbEx) {
+                String ret = serviceCallHandler.propagateDeltas(svcInstanceUUID, false, true);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
                 serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                throw ejbEx;
+                throw logger.throwing(method, ex);
             }
         } else if (action.equalsIgnoreCase("propagate_retry")) {
             try {
-                return serviceCallHandler.propagateRetry(svcInstanceUUID, true, false);
-            } catch (EJBException ejbEx) {
+                String ret = serviceCallHandler.propagateRetry(svcInstanceUUID, true, false);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
                 serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                throw ejbEx;
+                throw logger.throwing(method, ex);
             }
         } else if (action.equalsIgnoreCase("propagate_forwardretry")) {
             try {
-                return serviceCallHandler.propagateRetry(svcInstanceUUID, false, false);
-            } catch (EJBException ejbEx) {
+                String ret = serviceCallHandler.propagateRetry(svcInstanceUUID, false, false);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
                 serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                throw ejbEx;
+                throw logger.throwing(method, ex);
             }
         } else if (action.equalsIgnoreCase("propagate_forcedretry")) {
             try {
-                return serviceCallHandler.propagateRetry(svcInstanceUUID, false, true);
-            } catch (EJBException ejbEx) {
+                String ret = serviceCallHandler.propagateRetry(svcInstanceUUID, false, true);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
                 serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                throw ejbEx;
+                throw logger.throwing(method, ex);
             }
         } else if (action.equalsIgnoreCase("commit")) {
-            return serviceCallHandler.commitDeltas(svcInstanceUUID, false);
+            try {
+                String ret = serviceCallHandler.commitDeltas(svcInstanceUUID, false);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw logger.throwing(method, ex);
+            }
         } else if (action.equalsIgnoreCase("commit_forced")) {
-            return serviceCallHandler.commitDeltas(svcInstanceUUID, true);
+            try {
+                String ret = serviceCallHandler.commitDeltas(svcInstanceUUID, true);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw logger.throwing(method, ex);
+            }
         } else if (action.equalsIgnoreCase("revert")) {
             try {
-                return serviceCallHandler.revertDeltas(svcInstanceUUID, false);
-            } catch (EJBException ejbEx) {
+                String ret = serviceCallHandler.revertDeltas(svcInstanceUUID, false);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
                 serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                throw ejbEx;
+                throw logger.throwing(method, ex);
             }
         } else if (action.equalsIgnoreCase("revert_forced")) {
             try {
-                return serviceCallHandler.revertDeltas(svcInstanceUUID, true);
-            } catch (EJBException ejbEx) {
+                String ret = serviceCallHandler.revertDeltas(svcInstanceUUID, true);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
                 serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
-                throw ejbEx;
+                throw logger.throwing(method, ex);
             }
         } else if (action.equalsIgnoreCase("refresh")) {
             serviceCallHandler.refreshVersionGroup(svcInstanceUUID);
+            logger.trace_end(method, "REFRESHED");
             return "REFRESHED";
         } else {
-            throw new EJBException("Unrecognized action=" + action);
+            throw logger.error_throwing(method, "Unrecognized action=" + action);
         }
     }
 
@@ -306,23 +329,31 @@ public class ServiceResource {
     @GET
     @Path("/{siUUID}/{action}")
     public String check(@PathParam("siUUID") String svcInstanceUUID, @PathParam("action") String action) {
+        String method = "check";
+        logger.refuuid(svcInstanceUUID);
+        logger.trace_start(method);
         if (action.equalsIgnoreCase("status")) {
-            return serviceCallHandler.checkStatus(svcInstanceUUID);
+            String ret = serviceCallHandler.checkStatus(svcInstanceUUID);
+                logger.trace_end(method);
+                return ret;
         } else {
-            throw new EJBException("Unrecognized action=" + action);
+            throw logger.error_throwing(method, "Unrecognized action=" + action);
         }
     }
 
     @GET
     @Produces("application/json")
-    @Path("/verify/{sdUUID}")
-    public ApiDeltaVerification verifyJson(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
+    @Path("/verify/{siUUID}")
+    public ApiDeltaVerification verifyJson(@PathParam("siUUID") String svcUUID) throws Exception {
+        String method = "verifyJson";
+        logger.refuuid(svcUUID);
+        logger.trace_start(method);        
         ApiDeltaVerification apiDeltaVerification = new ApiDeltaVerification();
         java.util.Date now = new java.util.Date();
         apiDeltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
-        apiDeltaVerification.setReferenceUUID(svcDeltaUUID);
+        apiDeltaVerification.setReferenceUUID(svcUUID);
         ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
-        serviceCallHandler.verifyDelta(svcDeltaUUID, deltaVerification, true);
+        serviceCallHandler.verifyDelta(svcUUID, deltaVerification, true);
         if (deltaVerification.getModelAdditionVerified() != null) {
             apiDeltaVerification.setVerifiedModelAddition(deltaVerification.getModelAdditionVerified());
         }
@@ -341,19 +372,23 @@ public class ServiceResource {
         if (deltaVerification.getReductionVerified() != null) {
             apiDeltaVerification.setReductionVerified(deltaVerification.getReductionVerified() ? "true" : "false");
         }
+        logger.trace_end(method);        
         return apiDeltaVerification;
     }
     
     @GET
     @Produces("application/xml")
-    @Path("/verify/{sdUUID}")
-    public ApiDeltaVerification verify(@PathParam("sdUUID") String svcDeltaUUID) throws Exception {
+    @Path("/verify/{siUUID}")
+    public ApiDeltaVerification verify(@PathParam("siUUID") String svcUUID) throws Exception {
+        String method = "verify";
+        logger.refuuid(svcUUID);
+        logger.trace_start(method);        
         ApiDeltaVerification apiDeltaVerification = new ApiDeltaVerification();
         java.util.Date now = new java.util.Date();
-        apiDeltaVerification.setCreationTime(new java.sql.Date(now.getTime()).toString());
-        apiDeltaVerification.setReferenceUUID(svcDeltaUUID);
+        apiDeltaVerification.setCreationTime(now.toString());
+        apiDeltaVerification.setReferenceUUID(svcUUID);
         ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
-        serviceCallHandler.verifyDelta(svcDeltaUUID, deltaVerification, false);
+        serviceCallHandler.verifyDelta(svcUUID, deltaVerification, false);
         if (deltaVerification.getModelAdditionVerified() != null) {
             apiDeltaVerification.setVerifiedModelAddition(deltaVerification.getModelAdditionVerified());
         }
@@ -372,13 +407,17 @@ public class ServiceResource {
         if (deltaVerification.getReductionVerified() != null) {
             apiDeltaVerification.setReductionVerified(deltaVerification.getReductionVerified() ? "true" : "false");
         }
+        logger.trace_end(method);
         return apiDeltaVerification;
     }
     
     @GET
     @Produces("application/json")
     @Path("/delta/{svcUUID}")
-    public ApiDeltaRetrieval retrieveDeltaJson(@PathParam("svcUUID") String svcUUID) throws Exception {
+    public ApiDeltaRetrieval retrieveDeltaJson(@PathParam("svcUUID") String svcUUID) {
+        String method = "retrieveDeltaJson";
+        logger.refuuid(svcUUID);
+        logger.trace_start(method);        
         ApiDeltaRetrieval apiDeltaRetrieval = new ApiDeltaRetrieval();
         ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
         serviceCallHandler.retrieveDelta(svcUUID, deltaRetrieval, true);
@@ -387,21 +426,7 @@ public class ServiceResource {
         apiDeltaRetrieval.setServiceModelReduction(deltaRetrieval.getModelReductionSvc());
         apiDeltaRetrieval.setSystemModelAddition(deltaRetrieval.getModelAdditionSys());
         apiDeltaRetrieval.setSystemModelReduction(deltaRetrieval.getModelReductionSys());
-        return apiDeltaRetrieval;
-    }
-    
-    @GET
-    @Produces("application/xml")
-    @Path("/delta/{svcUUID}")
-    public ApiDeltaRetrieval retrieveDelta(@PathParam("svcUUID") String svcUUID) throws Exception {
-        ApiDeltaRetrieval apiDeltaRetrieval = new ApiDeltaRetrieval();
-        ModelUtil.DeltaRetrieval deltaRetrieval = new ModelUtil.DeltaRetrieval();
-        serviceCallHandler.retrieveDelta(svcUUID, deltaRetrieval, false);
-        apiDeltaRetrieval.setReferenceUUID(deltaRetrieval.getReferenceModelUUID());
-        apiDeltaRetrieval.setServiceModelAddition(deltaRetrieval.getModelAdditionSvc());
-        apiDeltaRetrieval.setServiceModelReduction(deltaRetrieval.getModelReductionSvc());
-        apiDeltaRetrieval.setSystemModelAddition(deltaRetrieval.getModelAdditionSys());
-        apiDeltaRetrieval.setSystemModelReduction(deltaRetrieval.getModelReductionSys());
+        logger.end(method);
         return apiDeltaRetrieval;
     }
     
@@ -410,14 +435,20 @@ public class ServiceResource {
     @Consumes({"application/json","application/xml"})
     @Produces("application/json")
     public ServiceApiManifest resolveManifest(ServiceApiManifest manifest) {
+        String method = "resolveManifest";
+        logger.refuuid(manifest.getServiceUUID());
+        logger.trace_start(method);        
         // if manifest.getJsonModel() == null, get serviceDelta.modelAddition into manifest.jsonTemplate
         String jsonModel = manifest.getJsonModel();
         if (jsonModel == null) {
-            return resolveServiceManifest(manifest.getServiceUUID(), manifest);
+            manifest = resolveServiceManifest(manifest.getServiceUUID(), manifest);
+            logger.trace_end(method);        
+            return manifest;
         }
         JSONObject joManifest = ServiceManifest.resolveManifestJsonTemplate(manifest.getJsonTemplate(), jsonModel);
         manifest.setJsonTemplate(joManifest.toJSONString());
         manifest.setJsonModel(null);
+        logger.trace_end(method);        
         return manifest;
     }
     
@@ -426,17 +457,21 @@ public class ServiceResource {
     @Consumes({"application/json","application/xml"})
     @Produces("application/json")
     public ServiceApiManifest resolveServiceManifest(@PathParam("svcUUID") String svcUUID, ServiceApiManifest manifest) {
+        String method = "resolveServiceManifest";
+        logger.refuuid(svcUUID);
+        logger.trace_start(method);        
         // if manifest.getJsonModel() == null, get serviceDelta.modelAddition into manifest.jsonTemplate
         manifest.setServiceUUID(svcUUID);
         ModelUtil.DeltaVerification deltaVerification = new ModelUtil.DeltaVerification();
         serviceCallHandler.verifyDelta(manifest.getServiceUUID(), deltaVerification, true);
         String jsonModel = deltaVerification.getModelAdditionVerified();
         if (jsonModel == null) {
-            throw new EJBException("resolveServiceManifest cannot get verified modelAddition for service UUID="+manifest.getServiceUUID());
+            throw logger.error_throwing(method, "cannot get verified modelAddition for ref:ServiceInstance");
         }
         JSONObject joManifest = ServiceManifest.resolveManifestJsonTemplate(manifest.getJsonTemplate(), jsonModel);
         manifest.setJsonTemplate(joManifest.toJSONString());
         manifest.setJsonModel(null);
+        logger.trace_end(method);        
         return manifest;
     }
 

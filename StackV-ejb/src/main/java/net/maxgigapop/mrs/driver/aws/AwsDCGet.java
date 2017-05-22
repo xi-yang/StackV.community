@@ -23,15 +23,15 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
-import com.amazonaws.AmazonServiceException;
-import net.maxgigapop.mrs.driver.aws.AwsAuthenticateService;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
+import com.amazonaws.services.directconnect.AmazonDirectConnectAsyncClient;
 import com.amazonaws.services.directconnect.model.*;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  *
@@ -39,14 +39,14 @@ import java.util.List;
  */
 public class AwsDCGet {
 
-    private AmazonDirectConnectClient client = null;
+    private AmazonDirectConnectAsyncClient client = null;
     private List<VirtualGateway> virtualGateways = null;
     private List<VirtualInterface> virtualInterfaces = null;
     private List<Connection> connections = null;
 
     public AwsDCGet(String access_key_id, String secret_access_key, Regions region) {
         AwsAuthenticateService authenticate = new AwsAuthenticateService(access_key_id, secret_access_key);
-        this.client = authenticate.AwsAuthenticateDCService(Region.getRegion(region));
+        this.client = authenticate.AwsAuthenticateDCServiceAsync(Region.getRegion(region));
 
         //get all the privateGateways gateways under the account
         DescribeVirtualGatewaysResult virtualGatewaysResult = this.client.describeVirtualGateways();
@@ -114,7 +114,7 @@ public class AwsDCGet {
     }
 
     //get the client  for AWS DC
-    public AmazonDirectConnectClient getClient() {
+    public AmazonDirectConnectAsyncClient getClient() {
         return client;
     }
 
@@ -133,31 +133,27 @@ public class AwsDCGet {
      * function to wait for directconnect virtual interface deletion
      * ****************************************************************
      */
-    public void dxvifDeletionCheck(String id) {
-        DescribeVirtualInterfacesRequest request = new DescribeVirtualInterfacesRequest();
-        request.withVirtualInterfaceId(id);
-        long delay = 8000L;
-        long delayMax = 256000L;
+    //@TODO: use async check
+    public void dxvifDeletionCheck(Future<DeleteVirtualInterfaceResult> asyncResult) throws ExecutionException {
+        long delay = 1000L;
         while (true) {
-            delay *= 2;
-            try {
-                VirtualInterface resource = client.describeVirtualInterfaces(request).getVirtualInterfaces().get(0);
-                if (resource.getVirtualInterfaceState().equals(VirtualInterfaceState.Deleted.toString())) {
-                    break;
-                }
-            } catch (com.amazonaws.AmazonServiceException ex) {
-                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay <= delayMax) {
-                    try {
-                        sleep(delay);
-                    } catch (InterruptedException ex1) {
-                        ;
+            if (asyncResult.isDone()) {
+                try {
+                    DeleteVirtualInterfaceResult result = asyncResult.get();
+                    if (!result.getVirtualInterfaceState().equalsIgnoreCase("deleted")) {
+                        throw new ExecutionException(null);
                     }
+                    break;
+                } catch (InterruptedException ex) {
+                    AwsDriver.logger.catching("dxvifDeletionCheck", ex);
                 }
-                break;
-            } catch (NullPointerException ex2) {
-                break;
+            }
+            try {
+                sleep(delay);
+            } catch (InterruptedException ex1) {
+                ;
             }
         }
     }
-  
+
 }

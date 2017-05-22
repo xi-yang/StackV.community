@@ -27,7 +27,6 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.io.StringWriter;
 import java.util.UUID;
 import javax.ejb.EJB;
-import javax.ejb.EJBException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.PathParam;
@@ -39,15 +38,13 @@ import javax.ws.rs.PUT;
 import javax.enterprise.context.RequestScoped;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
-import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
-import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.rest.api.model.ApiModelViewRequest;
 
 /**
@@ -58,6 +55,8 @@ import net.maxgigapop.mrs.rest.api.model.ApiModelViewRequest;
 @Path("model")
 @RequestScoped
 public class ModelResource {
+
+    private final StackLogger logger = new StackLogger(ModelResource.class.getName(), "ModelResource");
 
     @Context
     private UriInfo context;
@@ -81,6 +80,9 @@ public class ModelResource {
     @Produces("application/xml")
     @Path("/{refUUID}")
     public ApiModelBase pullXml(@PathParam("refUUID") String refUUID) throws Exception {
+        String method = "pullXml";
+        logger.refuuid(refUUID);
+        logger.trace_start(method);
         ModelBase modelBase = systemCallHandler.retrieveVersionGroupModel(refUUID);
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
@@ -88,6 +90,7 @@ public class ModelResource {
         apiModelBase.setCreationTime(ModelUtil.modelDateToString(modelBase.getCreationTime()));
         //apiModelBase.setStatus("");
         apiModelBase.setTtlModel(ModelUtil.marshalOntModel(modelBase.getOntModel()));
+        logger.trace_end(method);
         return apiModelBase;
     }
 
@@ -95,6 +98,9 @@ public class ModelResource {
     @Produces("application/json")
     @Path("/{refUUID}")
     public ApiModelBase pull(@PathParam("refUUID") String refUUID) throws Exception {
+        String method = "pull";
+        logger.refuuid(refUUID);
+        logger.trace_start(method);
         ModelBase modelBase = systemCallHandler.retrieveVersionGroupModel(refUUID);
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setId(modelBase.getId());
@@ -102,6 +108,7 @@ public class ModelResource {
         apiModelBase.setCreationTime(ModelUtil.modelDateToString(modelBase.getCreationTime()));
         //apiModelBase.setStatus("");
         apiModelBase.setTtlModel(ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
+        logger.trace_end(method);
         return apiModelBase;
     }
 
@@ -115,35 +122,55 @@ public class ModelResource {
     @Produces({"application/xml", "application/json"})
     @Path("/{refUUID}")
     public ApiModelBase update(@PathParam("refUUID") String refUUID) throws Exception {
-        systemCallHandler.updateHeadVersionGroup(refUUID);
-        return this.pull(refUUID);
+        String method = "update";
+        logger.refuuid(refUUID);
+        logger.trace_start(method);
+        systemCallHandler.updateHeadVersionGroup_API(refUUID);
+        ApiModelBase apiData = this.pull(refUUID);
+        logger.trace_end(method);
+        return apiData;
     }
 
     @GET
     @Produces({"application/xml"})
     public ApiModelBase creatHeadVersionGroup() throws Exception {
-        VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
-        return this.pullXml(vg.getRefUuid());
+        String method = "creatHeadVersionGroup";
+        logger.trace_start(method);
+        VersionGroup vg = systemCallHandler.createHeadVersionGroup_API(UUID.randomUUID().toString());
+        ApiModelBase apiData = this.pullXml(vg.getRefUuid());
+        logger.trace_end(method);
+        return apiData;
     }
 
     @GET
     @Produces({"application/json"})
     public ApiModelBase creatHeadVersionGroupJson() throws Exception {
-        VersionGroup vg = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
-        return this.pull(vg.getRefUuid());
+        String method = "creatHeadVersionGroupJson";
+        logger.trace_start(method);
+        VersionGroup vg = systemCallHandler.createHeadVersionGroup_API(UUID.randomUUID().toString());
+        ApiModelBase apiData = this.pull(vg.getRefUuid());
+        logger.trace_end(method);
+        return apiData;
     }
 
     @GET
     @Path("/systeminstance")
     @Produces({"application/xml", "application/json"})
     public String push() {
-        return systemCallHandler.createInstance().getReferenceUUID();
+        String method = "push";
+        logger.trace_start(method);
+        String ret = systemCallHandler.createInstance_API().getReferenceUUID();
+        logger.trace_end(method);
+        return ret;
     }
 
     @DELETE
     @Path("/systeminstance/{refUUID}")
     public String terminate(@PathParam("refUUID") String refUUID) {
-        systemCallHandler.terminateInstance(refUUID);
+        String method = "terminate";
+        logger.refuuid(refUUID);
+        systemCallHandler.terminateInstance_API(refUUID);
+        logger.trace_end(method);
         return "Successfully terminated";
     }
 
@@ -152,15 +179,18 @@ public class ModelResource {
     @Produces("application/xml")
     @Path("/view/{refUUID}")
     public ApiModelBase queryView(@PathParam("refUUID") String refUUID, ApiModelViewRequest viewRequest) throws Exception {
+        String method = "queryView";
+        logger.refuuid(refUUID);
         OntModel ontModel = systemCallHandler.queryModelView(refUUID, viewRequest.getFilters());
         if (ontModel == null) {
-            throw new EJBException("systemCallHandler.queryModelView return null model.");
+            throw logger.error_throwing(method, "systemCallHandler.queryModelView return null model.");
         }
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setVersion(refUUID);
         java.util.Date now = new java.util.Date();
         apiModelBase.setCreationTime(ModelUtil.modelDateToString(new java.sql.Date(now.getTime())));
         apiModelBase.setTtlModel(ModelUtil.marshalOntModel(ontModel));
+        logger.trace_end(method);
         return apiModelBase;
     }
 
@@ -169,15 +199,18 @@ public class ModelResource {
     @Produces({"application/json"})
     @Path("/view/{refUUID}")
     public ApiModelBase queryViewJson(@PathParam("refUUID") String refUUID, ApiModelViewRequest viewRequest) throws Exception {
+        String method = "queryViewJson";
+        logger.refuuid(refUUID);
         OntModel ontModel = systemCallHandler.queryModelView(refUUID, viewRequest.getFilters());
         if (ontModel == null) {
-            throw new EJBException("systemCallHandler.queryModelView return null model.");
+            throw logger.error_throwing(method, "systemCallHandler.queryModelView return null model.");
         }
         ApiModelBase apiModelBase = new ApiModelBase();
         apiModelBase.setVersion(refUUID);
         java.util.Date now = new java.util.Date();
         apiModelBase.setCreationTime(ModelUtil.modelDateToString(new java.sql.Date(now.getTime())));
         apiModelBase.setTtlModel(ModelUtil.marshalOntModelJson(ontModel));
+        logger.trace_end(method);
         return apiModelBase;
     }
 }

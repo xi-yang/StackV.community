@@ -43,9 +43,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -57,15 +54,17 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
-import net.maxgigapop.mrs.service.compute.TestMCE;
 import net.maxgigapop.mrs.common.Spa;
-import net.maxgigapop.mrs.service.compute.MCE_MPVlanConnection;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
  * @author xyang
  */
 public class ActionBase {
+
+    private static final StackLogger logger = new StackLogger(ActionBase.class.getName(), "ActionBase");
+
     protected Resource policy = null;
     protected String name = "";
     protected String mceBeanPath = "";
@@ -75,7 +74,6 @@ public class ActionBase {
     protected ServiceDelta outputDelta = null;
     protected List<ActionBase> dependencies = new ArrayList<>();
     protected List<ActionBase> uppers = new ArrayList<>();
-    private static final Logger log = Logger.getLogger(ActionBase.class.getName());
 
     private ActionBase() {
     }
@@ -221,23 +219,26 @@ public class ActionBase {
     }
 
     public Future<ServiceDelta> execute() {
+        String method = "execute";
         try {
             Context ejbCxt = new InitialContext();
             IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(this.mceBeanPath);
             this.state = ActionState.PROCESSING;
             Future<ServiceDelta> asyncResult = ejbMce.process(policy, referenceModel, inputDelta);
-            log.info("@Processing => "+policy);
+            logger.message(method, String.format("@Processing=>%s", policy));
             //# not FINISHED yet
             return asyncResult;
         } catch (NamingException ex) {
             this.state = ActionState.FAILED;
-            throw new EJBException(this + " failed to invoke MCE bean");
+            throw logger.throwing(method, ex);
         }
     }
 
     public void mergeResult(ServiceDelta childDelta) {
+        String method = "mergeResult";
         if (inputDelta == null) {
             inputDelta = childDelta;
+            logger.trace(method, "inputDelta == null, then inputDelta <= childDelta" );
             return;
         }
         // if outputDelta is null (action not executed) merge to inputDelta
@@ -245,7 +246,9 @@ public class ActionBase {
         if (outputDelta != null) // otherwise, merge to outputDelta
         {
             targetDelta = outputDelta;
+            logger.trace(method, "outputDelta != null, then targetDelta <= outputDelta" );
         }
+        logger.trace(method, "merging from " + childDelta + " into " + targetDelta);
         // merging models A (childDelta) into B (this.inputDelta)
         // merge addition 
         if (childDelta.getModelAddition() != null && childDelta.getModelAddition().getOntModel() != null
@@ -305,6 +308,7 @@ public class ActionBase {
     }
 
     public void sanitizeOutputDelta(ServiceDelta spaDelta) {
+        String method = "sanitizeSpaModel";
         if (this.outputDelta != null) {
             if (this.outputDelta.getModelAddition() != null && this.outputDelta.getModelAddition().getOntModel() != null) {
                 sanitizeSpaModel(this.outputDelta.getModelAddition().getOntModel(), spaDelta.getModelAddition().getOntModel());
@@ -315,13 +319,14 @@ public class ActionBase {
                 } else if (spaDelta.getModelAddition() != null && spaDelta.getModelAddition().getOntModel() != null) {
                     sanitizeSpaModel(this.outputDelta.getModelReduction().getOntModel(), spaDelta.getModelAddition().getOntModel());
                 } else {
-                    throw new EJBException(this + ".sanitizeOutputDelta() failed to clean up outputDelta.modelReduction");
+                    throw logger.error_throwing(method, "failed to clean up outputDelta.modelReduction");
                 }
             }
         }
     }
 
     private void sanitizeSpaModel(OntModel spaModel, OntModel spaModelOrig) {
+        String method = "sanitizeSpaModel";
         // Firstly add back all non-SPA statements in case some are missing in decomposition.
         String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
@@ -337,9 +342,9 @@ public class ActionBase {
         Model spaModelBase = qexec.execConstruct();
         spaModel.add(spaModelBase);
         try {
-            log.log(Level.FINE, "\n>>>sanitizeSpaModel spaModelBase=\n" + ModelUtil.marshalModel(spaModelBase));
+            logger.trace(method, "spaModelBase=\n" + ModelUtil.marshalModel(spaModelBase));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalModel(spaModelBase) -exception- "+ex);
         }
         
         // Then remove all SPA policy annotations.
@@ -417,8 +422,8 @@ public class ActionBase {
             QuerySolution solution = rs.next();
             String s = solution.getResource("s").toString();
             String p = solution.getResource("p").toString();
-            String o = solution.getResource("p").toString();
-            throw new EJBException(this + String.format(".sanitizeSpaModel() failed to clean up policy annotation: (%s, %s, %s)", s, p, o));
+            String o = solution.getResource("o").toString();
+            throw logger.error_throwing(method, String.format("failed to clean up policy annotation: (%s, %s, %s)", s, p, o));
         }
     }
 

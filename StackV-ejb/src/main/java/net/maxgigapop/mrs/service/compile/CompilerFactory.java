@@ -23,7 +23,7 @@
 
 package net.maxgigapop.mrs.service.compile;
 
-import javax.ejb.EJBException;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
@@ -31,6 +31,8 @@ import javax.ejb.EJBException;
  */
 public class CompilerFactory {
 
+    private static final StackLogger logger = new StackLogger(CompilerFactory.class.getName(), "CompilerFactory");
+    
     static public CompilerBase createCompiler(String compilerClassStr) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         CompilerBase compiler = null;
@@ -38,7 +40,7 @@ public class CompilerFactory {
             Class<?> aClass = cl.loadClass(compilerClassStr);
             compiler = (CompilerBase) aClass.newInstance();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
-            throw new EJBException("CompilerFactory failed to create " + compilerClassStr, ex);
+            throw logger.throwing("createCompiler", "failed to create compiler=" + compilerClassStr, ex);
         }
         return compiler;
     }

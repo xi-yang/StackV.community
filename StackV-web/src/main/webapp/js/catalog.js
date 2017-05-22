@@ -1,50 +1,95 @@
-/* 
+/*
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak */
+/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap */
+// Tweens
+var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.easeInOut, paused: true, top: "30px"});
+var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
+var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 
-$(function () {
-    setTimeout(catalogLoad, 750);
-    setRefresh(60);
-
-    //$("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
+Mousetrap.bind('space', function () {
+    if ($("#catalog-panel").hasClass("closed")) {
+        openCatalog();
+    } else {
+        closeCatalog();
+    }
+});
+Mousetrap.bind({
+    'shift+left': function () {
+        window.location.href = "/StackV-web/orch/graphTest.jsp";
+    },
+    'shift+right': function () {
+        window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
+    },
+    'space': function () {
+        if ($("#catalog-panel").hasClass("closed")) {
+            openCatalog();
+        } else {
+            closeCatalog();
+        }
+    }
 });
 
-function catalogLoad() {
+
+function openCatalog() {
+    tweenCatalogPanel.play();
+    tweenBlackScreen.play();
+    $("#catalog-panel").removeClass("closed");
+}
+function closeCatalog() {
+    tweenCatalogPanel.reverse();
+    tweenBlackScreen.reverse();
+    $("#catalog-panel").addClass("closed");
+}
+
+function loadCatalog() {
     loadInstances();
     loadWizard();
     loadEditor();
 
-    setTimeout(function (){ 
-        $("#instance-panel").removeClass("closed");
-        $("#catalog-panel").removeClass("closed");
-    }, 250);    
+    $("#black-screen").click(function () {
+        $("#info-panel").removeClass("active");
+        closeCatalog();
+    });
+
+    $(".nav-tabs li").click(function () {
+        if ($("#catalog-panel").hasClass("closed")) {
+            openCatalog();
+        } else if (this.className === 'active') {
+            closeCatalog();
+        }
+    });
+}
+function loadCatalogNavbar() {
+    $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
+        setRefresh($("#refresh-timer").val());
+    });
 }
 
 function loadInstances() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("status-body");
-    $("#status-body").empty();
+    tbody.innerHTML = "";
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
     $.ajax({
@@ -54,12 +99,14 @@ function loadInstances() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
+            $("#status-body").empty();
+
             for (i = 0; i < result.length; i++) {
                 var instance = result[i];
 
                 var row = document.createElement("tr");
                 row.className = "clickable-row";
-                row.setAttribute("data-href", '/StackV-web/ops/details/templateDetails.jsp?uuid=' + instance[1]);
+                row.setAttribute("data-href", instance[1]);
 
                 var cell1_1 = document.createElement("td");
                 cell1_1.innerHTML = instance[3];
@@ -77,16 +124,20 @@ function loadInstances() {
             }
 
             $(".clickable-row").click(function () {
-                window.document.location = $(this).data("href");
+                sessionStorage.setItem("instance-uuid", $(this).data("href"));
+                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
             });
+
+            tweenInstancePanel.play();
         }
     });
+
 }
 
 function loadWizard() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("wizard-body");
-    $("#wizard-body").empty();
+    $("tbody#wizard-body").find("tr").remove();
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/wizard';
     $.ajax({
@@ -96,6 +147,8 @@ function loadWizard() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
+            // unbind all click functions!
+            $("button").off("click");
             for (i = 0; i < result.length; i++) {
                 var profile = result[i];
 
@@ -105,15 +158,17 @@ function loadWizard() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-profile-select' id='" + profile[2] + "'>Select</button><button class='button-profile-delete' id='" + profile[2] + "'>Delete</button>";
+                cell1_3.innerHTML = "<button class='button-profile-select btn btn-default' id='" + profile[2] + "'>Select</button><button class='button-profile-delete btn btn' id='" + profile[2] + "'>Delete</button>";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
 
-            $(".button-profile-select").click(function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
+            $(".button-profile-select").on("click", function (evt) {
+                var resultID = this.id,
+                        apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
+
                 $.ajax({
                     url: apiUrl,
                     type: 'GET',
@@ -122,9 +177,12 @@ function loadWizard() {
                     },
                     success: function (result) {
                         $("#black-screen").removeClass("off");
-                        $("#info-panel").addClass("active");
+                        $("#profile-modal").modal("show");
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(JSON.stringify(result));
+                        $(".button-profile-save").attr('id', resultID);
+                        $(".button-profile-save-as").attr('id', resultID);
+                        $(".button-profile-submit").attr('id', resultID);
                         prettyPrintInfo();
                     },
                     error: function (textStatus, errorThrown) {
@@ -136,7 +194,7 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-delete").click(function (evt) {
+            $(".button-profile-delete").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
                 $.ajax({
                     url: apiUrl,
@@ -145,7 +203,7 @@ function loadWizard() {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
                     success: function (result) {
-                        wizardLoad();
+                        loadWizard();
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
@@ -156,7 +214,7 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
-            $(".button-profile-submit").click(function (evt) {
+            $(".button-profile-submit").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
                 $.ajax({
                     url: apiUrl,
@@ -166,15 +224,102 @@ function loadWizard() {
                     dataType: "json",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
-
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
                         console.log(errorThrown);
                     }
                 });
+                // reload top table and hide modal
+                reloadData();
+                $("div#profile-modal").modal("hide");
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+
+            // Hide the regular buttons and reveal the save as box
+            $("button.button-profile-save-as").on("click", function (evt) {
+                $("div.info-panel-regular-buttons").css("display", "none");
+                $("div.info-panel-save-as-description").css("display", "block");
+            });
+
+            // Reveal the regular buttons and hide the save as boxes
+            $("button.button-profile-save-as-cancel").on("click", function (evt) {
+                $("div.info-panel-save-as-description").css("display", "none");
+                $("div.info-panel-regular-buttons").css("display", "block");
+            });
+
+
+            // After the user has put a new name and description for the new profile
+            $(".button-profile-save-as-confirm").on("click", function (evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                var data = {
+                    name: $("#new-profile-name").val(),
+                    userID: keycloak.subject,
+                    description: $("#new-profile-description").val(),
+                    data: $("#info-panel-text-area").val()
+                };
+
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: JSON.stringify(data), //stringify to get escaped JSON in backend
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        // revert to regular buttons and close modal
+                        $("input#new-profile-name").val("");
+                        $("input#new-profile-description").val("");
+                        $("div.info-panel-save-as-description").css("display", "none");
+                        $("div.info-panel-regular-buttons").css("display", "block");
+                        $("div#profile-modal").modal("hide");
+                        // reload table
+                        loadWizard();
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
+                // reload the bottom panel
+                $("#black-screen").addClass("off");
+                $("#info-panel").removeClass("active");
+                evt.preventDefault();
+            });
+
+            $(".button-profile-save").on("click", function (evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
+
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: $("#info-panel-text-area").val(),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        // reload the bottom panel
+                        loadWizard();
+                        $("#profile-modal").modal("hide");
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
+                    }
+                });
+
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
                 evt.preventDefault();
@@ -204,14 +349,13 @@ function loadEditor() {
                 var cell1_2 = document.createElement("td");
                 cell1_2.innerHTML = profile[1];
                 var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-service-select' id='" + profile[2] + "'>Select</button";
+                cell1_3.innerHTML = "<button class='button-service-select btn btn-default' id='" + profile[2] + "'>Select</button";
                 row.appendChild(cell1_1);
                 row.appendChild(cell1_2);
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-
-            $(".button-service-select").click(function (evt) {
+            $(document).on('click', '.button-service-select', function ( evt ) {          
                 var ref = "/StackV-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
                 window.location.href = ref;
 
@@ -221,62 +365,28 @@ function loadEditor() {
     });
 }
 
-function timerChange(sel) {
-    clearInterval(refreshTimer);
-    clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
-        setRefresh(sel.value);
-    } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-    }
-}
-
-function setRefresh(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadTracker(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-
-function reloadTracker(time) {
-    enableLoading();
-
-    var manual = false;
-    if (typeof time === "undefined") {
-        time = countdown;
-    }
-    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-        manual = true;
-    }
-
-    $('#instance-panel').load(document.URL + ' #status-table', function () {
-        loadInstances();
-        
-        $(".clickable-row").click(function () {
-            window.document.location = $(this).data("href");
-        });
-
-        if (manual === false) {
-            countdown = time;
-            document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-        } else {
-            document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-        }
-
-        setTimeout(function () {
-            disableLoading();
-        }, 750);
-    });
-}
-
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
-}
-
 function getURLParameter(name) {
-  return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+}
+
+
+/* REFRESH */
+function reloadData() {
+    keycloak.updateToken(90).error(function () {
+        console.log("Error updating token!");
+    }).success(function (refreshed) {
+        var timerSetting = $("#refresh-timer").val();
+        if (timerSetting > 15) {
+            tweenInstancePanel.reverse();
+            setTimeout(function () {
+                loadInstances();
+                refreshSync(refreshed, timerSetting);
+            }, 750);
+        } else {
+            setTimeout(function () {
+                loadInstances();
+                refreshSync(refreshed, timerSetting);
+            }, 500);
+        }
+    });
 }

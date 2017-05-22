@@ -76,12 +76,15 @@ $(function () {
         $("#black-screen").addClass("off");
         $(this).removeClass("active");
     });
-    
-    $("#profile-save-label").click(function () {
-        if ($("#profile-save-check").is(':checked')) {
-            $("#profile-save-body").removeClass("fade-hide");
+
+    $(".profile-save-label").click(function () {
+        // determine what service it's for - use [1] b/c first entry is empty string
+        var id = $(this).attr('id').match(/profile-save-label-(\w+)/)[1];
+
+        if ($("#profile-save-check-"+id).is(':checked')) {
+            $("#profile-save-body-"+id).removeClass("fade-hide");
         } else {
-            $("#profile-save-body").addClass("fade-hide");
+            $("#profile-save-body-"+id).addClass("fade-hide");
         }
     });
 
@@ -154,6 +157,7 @@ function configureForm(type) {
 
     if (type === 'aws') {
         $("#msform").addClass("aws");
+        $("input[name=netHost]").val("aws");
 
         $("#progressbar li").eq(4).addClass("disabled");
         $("#progressbar li").eq(5).addClass("disabled");
@@ -168,6 +172,7 @@ function configureForm(type) {
         tbody.appendChild(arow2);
     } else {
         $("#msform").addClass("ops");
+        $("input[name=netHost]").val("ops");
     }
 }
 
@@ -386,7 +391,7 @@ function applyTemplate(mode) {
             form.elements['vm1-route1-to'].value = '192.168.1.0/24';
             form.elements['vm1-route1-next'].value = '192.168.1.1';
 
-            // Gateways    
+            // Gateways
             var gatewayCounter = document.getElementById('opsStage5-gateway');
             gatewayCounter.value = 2;
             setGateways(gatewayCounter);
@@ -565,7 +570,7 @@ function setVMs(input) {
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
 
-        var selectString = '<select name="vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option selected disabled>Select the subnet host</option>';
+        var selectString = '<select name="vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option>any</option>';
         for (j = 1; j <= subnetCount; j++) {
             var subnetTag = document.getElementById("subnet" + j + "-tag");
 
@@ -851,11 +856,13 @@ function validateVCN() {
 
     // Stage 7
     if ($("input[name='profile-save']").is(':checked')) {
-        if ($("input[name='profile-name']").val() === "") {
+        var id = type.split(" ")[1];
+
+        if ($("input#profile-name-"+id).val() === "") {
             invalidArr.push("Profiles require a name in order to be saved.\n");
 
             $("#progressbar li").eq(6).addClass("invalid");
-            $("input[name='profile-name']").addClass("invalid");
+            $("input#profile-name-"+id).addClass("invalid");
         }
     }
 

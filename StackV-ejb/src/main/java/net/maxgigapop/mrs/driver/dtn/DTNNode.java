@@ -24,6 +24,7 @@ public class DTNNode implements Serializable {
     private List<NIC> nics;
     private String tcp_rbuff;
     private String tcp_wbuff;
+    private String traffic;
 
     public DTNNode(String ip, String hostname) {
         this.ip = ip;
@@ -49,6 +50,10 @@ public class DTNNode implements Serializable {
 
     public void setTCPWriteBuffer(String tcp_wbuff) {
         this.tcp_wbuff = tcp_wbuff;
+    }
+
+    public void setTraffic(String traffic) {
+        this.traffic = traffic;
     }
 
     public String getIP() {
@@ -77,6 +82,10 @@ public class DTNNode implements Serializable {
 
     public String getTCPWriteBuffer() {
         return this.tcp_wbuff;
+    }
+    
+    public String gettTraffic() {
+        return this.traffic;
     }
 
     @Override
