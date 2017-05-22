@@ -1,0 +1,114 @@
+/*
+ * Filename: global.css
+ * Created by: Andrew Gu 2017
+ * Purpose: Contains styling that pertain to the app as a whole.
+*/
+
+/*Miscellaenous global styles*/
+::-webkit-scrollbar {
+    display:none;
+}
+.hide {
+    opacity: 0;
+    display: none;
+}
+
+html {
+    height: 100%;
+}
+
+a {
+    color: white;
+    text-decoration:none;
+}
+
+#nav {
+    z-index: 99;
+    height: 52px;
+}
+#select-logging-level {
+    margin: 15px 5px;
+}
+
+a.hover {
+    color: #B20000;
+}
+
+.opaque {
+    opacity: 0;
+}
+
+body {
+    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/StackV-web/img/background.png');
+    background-attachment: fixed;
+    font-family: 'Roboto', sans-serif;
+    text-align: center;
+    margin: 0px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+}
+
+.error {
+    font-family: "Roboto";
+    font-size: 14px;
+    color: #364454;
+}
+
+/*Looks like just a class to fade item out*/
+.fade-hide {
+    display: none;
+
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+/*Form elements styling*/
+select {
+    color: #000;
+}
+
+/*Black Screen styles*/
+div#black-screen {
+    position: absolute;
+    height: calc(100% - 52px);
+    width: 100%;
+    top: 52px;
+    z-index: 5;
+    background-color: rgba(0,0,0,0.4);
+    visibility: hidden;
+    opacity: 0;
+}
+
+/*Main Pane Styles */
+div#main-pane {
+    position: absolute;    
+    height: calc(100% - 52px);
+    width: 100%;
+    padding: 30px;
+    padding-top: 0;
+    overflow-x: hidden;
+    top: 52px;
+
+    -webkit-transition: all 400ms ease-in-out;
+    transition: all 400ms ease-in-out;
+}
+div.sub-main#main-pane {
+    height: calc(100% - 104px);
+    top: 104px;
+}
+
+#sub-nav {
+    z-index: 98;
+    height: 52px;
+}
+#sub-nav nav {
+    border-radius: 0;
+}
+#sub-nav #refresh-timer {
+    margin: 15px 0px 15px 5px;
+}
+#sub-nav #refresh-button {
+    margin: 11px 0px 11px 5px;
+    color: white;
+}

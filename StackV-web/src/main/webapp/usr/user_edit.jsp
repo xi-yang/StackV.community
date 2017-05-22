@@ -4,7 +4,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
@@ -12,8 +12,8 @@
     <c:redirect url="user_edit.jsp?user_id=${user.id}" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
         <title>User Details</title>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
@@ -21,7 +21,7 @@
 
         <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
         <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
 
@@ -34,15 +34,12 @@
                        url="jdbc:mysql://localhost:3306/frontend"
                        user="front_view"  password="frontuser"/>
 
-    <body>        
+    <body>
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        <!-- SIDE BAR -->
-        <div id="sidebar">            
-        </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">                        
+        <div id="main-pane">
             <div id="tables">
                 <div id="user-overview">
                     <c:choose>
@@ -62,7 +59,7 @@
                                                 <th>Editing</th>
                                             </tr>
                                         </thead>
-                                        <tbody>                    
+                                        <tbody>
                                             <tr>
                                                 <td><b>Username</b></td>
                                                 <td>${edit_user.username}</td>
@@ -88,7 +85,7 @@
                                                 <td><input placeholder='********' type='password' id="password2" size="40" maxlength="20" /></td>
                                             </tr>
                                             <tr>
-                                                <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title FROM usergroup G, user_belongs B 
+                                                <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title FROM usergroup G, user_belongs B
                                                            WHERE G.usergroup_id = B.usergroup_id AND B.user_id = ?" var="ugroups">
                                                     <sql:param value="${param.user_id}" />
                                                 </sql:query>
@@ -111,7 +108,7 @@
                                             <tr>
                                                 <td></td>
                                                 <td><input class="button-register" name="change" type="submit" value="Submit Changes" /></td>
-                                            </tr>                            
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </form>
@@ -124,7 +121,7 @@
                         </c:choose>
                 </div>
             </div>
-        </div>        
-        <!-- JS -->     
+        </div>
+        <!-- JS -->
     </body>
 </html>

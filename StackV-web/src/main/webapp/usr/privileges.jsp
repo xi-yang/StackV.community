@@ -4,13 +4,13 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
         <title>ACL Management</title>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
@@ -19,28 +19,25 @@
 
         <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
         <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
-        <link rel="stylesheet" href="/StackV-web/css/style.css">     
+        <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
 
     <sql:setDataSource var="front_conn" driver="com.mysql.jdbc.Driver"
                        url="jdbc:mysql://localhost:3306/frontend"
                        user="front_view"  password="frontuser"/>
 
-    <body>        
+    <body>
         <!-- NAV BAR -->
         <div id="nav">
         </div>
-        <!-- SIDE BAR -->
-        <div id="sidebar">            
-        </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane"> 
+        <div id="main-pane">
             <sql:query dataSource="${front_conn}" sql="SELECT acl_id FROM acl WHERE service_id = ?" var="acllist">
                 <sql:param value="${param.id}"/>
             </sql:query>
-            <c:if test="${not empty param.add_usergroup_id}">            
+            <c:if test="${not empty param.add_usergroup_id}">
                 <c:forEach var="acl" items="${acllist.rows}">
                     <sql:update dataSource="${front_conn}" sql="INSERT INTO acl_entry_group VALUES (?, ?)" var="count">
                         <sql:param value="${acl.acl_id}" />
@@ -56,7 +53,7 @@
                     </sql:update>
                 </c:forEach>
             </c:if>
-            <c:if test="${not empty param.add_user_id}">            
+            <c:if test="${not empty param.add_user_id}">
                 <c:forEach var="acl" items="${acllist.rows}">
                     <sql:update dataSource="${front_conn}" sql="INSERT INTO acl_entry_user VALUES (?, ?)" var="count">
                         <sql:param value="${acl.acl_id}" />
@@ -90,15 +87,15 @@
                 </select>
             </form>
             <div id="acl-tables">
-                <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title, COUNT(I.user_id) ucount 
-                           FROM usergroup G, user_info I, acl A, acl_entry_group E 
-                           WHERE G.usergroup_id = E.usergroup_id AND G.usergroup_id = I.active_usergroup AND E.acl_id = A.acl_id AND A.service_id = ? 
+                <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title, COUNT(I.user_id) ucount
+                           FROM usergroup G, user_info I, acl A, acl_entry_group E
+                           WHERE G.usergroup_id = E.usergroup_id AND G.usergroup_id = I.active_usergroup AND E.acl_id = A.acl_id AND A.service_id = ?
                            GROUP BY G.title" var="ugrouplist">
                     <sql:param value="${param.id}"/>
                 </sql:query>
 
-                <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, I.active_usergroup, G.title 
-                           FROM user_info I, acl A, acl_entry_user U, usergroup G 
+                <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, I.active_usergroup, G.title
+                           FROM user_info I, acl A, acl_entry_user U, usergroup G
                            WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND I.active_usergroup = G.usergroup_id AND A.service_id = ?" var="userlist">
                     <sql:param value="${param.id}"/>
                 </sql:query>
@@ -119,13 +116,13 @@
                                 <td><div class="float-right inline">
                                         <form action="privileges.jsp?id=${param.id}" method="POST">
                                             <input type="hidden" name="remove_usergroup_id" value="${group.usergroup_id}"/>
-                                            <input type="submit" value="Remove" />  
+                                            <input type="submit" value="Remove" />
                                         </form>
                                     </div>
                                     <div class="float-right inline">
                                         <form action="user_groups.jsp" method="GET">
                                             <input type="hidden" name="id" value="${group.usergroup_id}"/>
-                                            <input type="submit" value="Edit" />    
+                                            <input type="submit" value="Edit" />
                                         </form>
                                     </div></td>
                             </tr>
@@ -133,10 +130,10 @@
                     </tbody>
                 </table>
                 <c:if test="${not empty param.id}">
-                    <form id="button-add-groups" action="privileges.jsp?id=${param.id}" method="post">                    
-                        <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title 
-                                   FROM usergroup G WHERE G.usergroup_id NOT IN 
-                                   (SELECT G.usergroup_id FROM usergroup G, acl A, acl_entry_group E 
+                    <form id="button-add-groups" action="privileges.jsp?id=${param.id}" method="post">
+                        <sql:query dataSource="${front_conn}" sql="SELECT G.usergroup_id, G.title
+                                   FROM usergroup G WHERE G.usergroup_id NOT IN
+                                   (SELECT G.usergroup_id FROM usergroup G, acl A, acl_entry_group E
                                    WHERE G.usergroup_id = E.usergroup_id AND E.acl_id = A.acl_id AND A.service_id = ?)
                                    GROUP BY G.title" var="ugrouplist">
                             <sql:param value="${param.id}"/>
@@ -146,7 +143,7 @@
                                 <option value="${group.usergroup_id}">${group.title}</option>
                             </c:forEach>
                         </select>
-                        <input type="submit" value="Add" /> 
+                        <input type="submit" value="Add" />
                     </form>
                 </c:if>
                 <table class="management-table" id="service-user-table">
@@ -167,7 +164,7 @@
                                 <div class="float-right inline">
                                     <form action="privileges.jsp?id=${param.id}" method="POST">
                                         <input type="hidden" name="remove_user_id" value="${usr.user_id}"/>
-                                        <input type="submit" value="Remove" />  
+                                        <input type="submit" value="Remove" />
                                     </form>
                                 </div>
                                 <div class="float-right inline">
@@ -175,17 +172,17 @@
                                         <input type="hidden" name="user_id" value="${usr.user_id}"/>
                                         <input type="hidden" name="return" value="groups"/>
                                         <input type="hidden" name="group_id" value="${usr.usergroup_id}"/>
-                                        <input type="submit" value="Edit" />    
+                                        <input type="submit" value="Edit" />
                                     </form>
-                                </div>                                
+                                </div>
                             </td>
                         </tr>
                     </c:forEach>
                 </table>
                 <c:if test="${not empty param.id}">
-                    <form id="button-add-users" action="privileges.jsp?id=${param.id}" method="post">                    
+                    <form id="button-add-users" action="privileges.jsp?id=${param.id}" method="post">
                         <sql:query dataSource="${front_conn}" sql="SELECT I.user_id, I.username, I.first_name, I.last_name, G.title
-                                   FROM user_info I, usergroup G WHERE I.user_id NOT IN (SELECT I.user_id FROM user_info I, acl A, acl_entry_user U 
+                                   FROM user_info I, usergroup G WHERE I.user_id NOT IN (SELECT I.user_id FROM user_info I, acl A, acl_entry_user U
                                    WHERE I.user_id = U.user_id AND U.acl_id = A.acl_id AND A.service_id = ?) AND I.active_usergroup = G.usergroup_id" var="users">
                             <sql:param value="${param.id}" />
                         </sql:query>
@@ -195,10 +192,10 @@
                                 <option value="${usr.user_id}">${usr.username} (${usr.first_name} ${usr.last_name}) [${usr.title}]</option>
                             </c:forEach>
                         </select>
-                        <input type="submit" value="Add" /> 
+                        <input type="submit" value="Add" />
                     </form>
                 </c:if>
             </div>
-        </div>        
+        </div>
     </body>
 </html>

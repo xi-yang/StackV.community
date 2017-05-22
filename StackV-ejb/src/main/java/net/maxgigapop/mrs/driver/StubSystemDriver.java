@@ -26,11 +26,8 @@ package net.maxgigapop.mrs.driver;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.util.UUID;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -41,11 +38,10 @@ import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
-import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
 
-import net.maxgigapop.mrs.common.Nml;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
@@ -54,19 +50,28 @@ import net.maxgigapop.mrs.common.Nml;
 //use properties: stubModelTtl
 @Stateless
 public class StubSystemDriver implements IHandleDriverSystemCall {
+    
+    private static final StackLogger logger = new StackLogger(StubSystemDriver.class.getName(), "StubSystemDriver");
 
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
+        String method = "propagateDelta";
+        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String ttlModel = driverInstance.getProperty("stubModelTtl");
         if (ttlModel == null) {
-            throw new EJBException(String.format("%s has no property key=stubModelTtl", driverInstance));
+            throw logger.error_throwing(method, driverInstance +" has no property key=stubModelTtl");
         }
         String ttlModelNew = driverInstance.getProperty("stubModelTtl_new");
         if (ttlModelNew != null && !ttlModelNew.isEmpty()) {
-            throw new EJBException(String.format("%s has propagated but uncommitted change.", driverInstance));
+            throw logger.error_throwing(method, driverInstance +" has propagated but uncommitted change");
         }
         try {
             OntModel ontModel = ModelUtil.unmarshalOntModel(ttlModel);
@@ -78,20 +83,27 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             driverInstance.putProperty("stubModelTtl_new", "new:" + ttlModel);
             DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception ex) {
-            throw new EJBException(String.format("propagateDelta for %s with %s raised exception(%s)", driverInstance, aDelta, ex.getMessage()));
+            throw logger.throwing(method, driverInstance + " failed to propagate", ex);
         }
     }
 
     @Override
     @Asynchronous
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        logger.cleanup();
+        String method = "commitDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
-            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
+            throw logger.error_throwing(method, "DriverInstance == null");
         }
         String ttlModelNew = driverInstance.getProperty("stubModelTtl_new");
         if (ttlModelNew == null || ttlModelNew.isEmpty() || !ttlModelNew.startsWith("new:")) {
-            throw new EJBException(String.format("commitDelta sees nothing new (null or empty stubModelTtl_new)"));
+            throw logger.error_throwing(method, driverInstance +"sees nothing new (null or empty stubModelTtl_new)");
         }
         ttlModelNew = ttlModelNew.replaceFirst("new:", "");
         try {
@@ -106,7 +118,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             }
             DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception ex) {
-            throw new EJBException(String.format("commitDelta for %s with %s raised exception(%s)", driverInstance, aDelta, ex.getMessage()));
+            throw logger.throwing(method, driverInstance + " failed to commit", ex);
         }
         return new AsyncResult<String>("SUCCESS");
     }
@@ -114,13 +126,17 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
     @Override
     @Asynchronous
     public Future<String> pullModel(Long driverInstanceId) {
+        logger.cleanup();
+        String method = "pullModel";
+        logger.targetid(driverInstanceId.toString());
+        logger.trace_start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
-            throw new EJBException(String.format("pullModel cannot find driverInance(id=%d)", driverInstanceId));
+            throw logger.error_throwing(method, "pullModel cannot find target:driverInance");
         }
         String ttlModel = driverInstance.getProperty("stubModelTtl");
         if (ttlModel == null) {
-            throw new EJBException(String.format("%s has no stubModelTtl property configured", driverInstance));
+            throw logger.error_throwing(method, driverInstance +"has no property key=stubModelTtl");
         }
         String ttlModelNew = driverInstance.getProperty("stubModelTtl_new");
         // The first time model is pulled, add an empty stubModelTtl_new property.
@@ -147,8 +163,9 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             driverInstance.putProperty("stubModelTtl_new", "");
             DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception e) {
-            throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
+            throw logger.throwing(method, driverInstance + " failed to pull model ", e);
         }
+        logger.trace_end(method);
         return new AsyncResult<String>("SUCCESS");
     }
 

@@ -4,7 +4,7 @@
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />  
 <!DOCTYPE html>
-<html >
+<html>
     <head>
         <meta charset="UTF-8">
         <title>Registration</title>
@@ -13,7 +13,7 @@
         <!-- <link rel="stylesheet" href="css/reset.css"> -->
         <link rel="stylesheet" href="Testing/css/animate.min.css">
         <link rel="stylesheet" href="Testing/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
     </head>
 
     <body>

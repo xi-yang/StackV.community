@@ -1,0 +1,87 @@
+div#driver-add-panel, div#installed-panel, div#driver-template-panel {
+    padding: 30px 10% 30px 10%;
+    height: calc(100% - 52px);
+    width: 100%;
+    position: absolute;
+    overflow-y: hidden;
+}
+div#installed-panel {
+    top: -100%;
+    left: 0;
+}
+div#driver-add-panel {
+    left: -100%;
+    text-align: left;
+}
+div#driver-template-panel {
+    right: -100%;
+}
+#driver-content-panel {
+    bottom: -100%;
+    width: 60%;
+    height: 80%;
+    position: absolute;
+    left: 20%;
+    z-index: 10;
+}
+
+
+
+.driver-panel {
+    padding: 10px 10px 0 10px;
+    left: 65px;
+    height: 70%;
+    position: absolute;
+}
+.no-side-tab {
+    width: 88%;
+}
+.side-tab{
+    width: 55%;
+}
+#driver-panel-top {
+    top: 50px;
+}
+#driver-panel-bot {
+    bottom: 0;
+}
+#driver-panel-right {
+    padding: 10px 10px 0 10px;
+    top: 50px;
+    right: 0;
+    height: 93%;
+    position: absolute;
+}
+.inactive{
+    width: 0%;
+}
+.active-detail{
+    width: 40%;
+}
+
+.driver-tab-table {
+    float: left;
+    width: calc(100% - 40px);
+    margin: 20px;
+    max-height: 100%;
+}
+.divider{
+    width:25px;
+    height:auto;
+    display:inline-block;
+}
+.button-head {
+    width: 160px
+}
+#overlay-black {
+    position   : absolute;
+    top        : 0;
+    left       : 0;
+    width      : 100%;
+    height     : 100%;
+    background : #000;
+    opacity    : 0.6;
+    filter     : alpha(opacity=60);
+    z-index    : 1;
+    display    : none;
+}

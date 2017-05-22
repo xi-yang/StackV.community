@@ -35,13 +35,14 @@ html{
     border: 1px solid #999;
     padding: 7px;
 }
+
 /* Edit loading transition timer below */
 #viz {
     background: rgba(100,100,100,1);
     width: 100%;
-    height: calc(100% - 37px);
+    height: calc(100% - 52px);
     position: absolute;
-    top: 37px;
+    top: 52px;
     left: 0px;
     
     -webkit-transition: opacity 2s ease-in;
@@ -68,9 +69,9 @@ html{
     
     position: absolute;
     width: calc(100% - 225px);
-    height: calc(100% - 37px);
+    height: calc(100% - 52px);
     left: 225px;
-    top: 37px;
+    top: 52px;
     border-left: 5px solid rgba(0, 0, 0, .05);
 }
 
@@ -97,7 +98,7 @@ body{
 #filterPanel {
     display: none;
     position: relative;
-    top: 37px;
+    top: 52px;
     left: 0px;
     z-index: 2;
 }

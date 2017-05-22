@@ -2,13 +2,13 @@
 <%@page errorPage = "/StackV-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
         <title>Overview</title>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
@@ -16,28 +16,25 @@
 
         <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
         <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
 
-    <body>        
+    <body>
         <!-- NAV BAR -->
         <div id="nav">
-        </div>
-        <!-- SIDE BAR -->
-        <div id="sidebar">            
         </div>
         <!-- MAIN PANEL -->
         <div id="main-pane">
             <br><br>
             Welcome ${user.firstName} ${user.lastName}.<br>
-            
-            
+
+
             <c:redirect url="/ops/catalog.jsp" />
-            
-            
-        </div>        
+
+
+        </div>
         <!-- JS -->
         <script>
             $(function () {
@@ -59,8 +56,8 @@
                         element.classList.remove("hide");
                     }
                 });
-                $("#nav").load("/StackV-web/navbar.html");
+                $("#nav").load("/StackV-web/nav/navbar.html");
             });
-        </script>        
+        </script>
     </body>
 </html>

@@ -23,15 +23,13 @@
 
 package net.maxgigapop.mrs.driver.opendaylight;
 
-import net.maxgigapop.mrs.driver.onosystem.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import net.maxgigapop.mrs.common.DriverUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONArray;
 
 /**
@@ -39,86 +37,91 @@ import org.json.simple.JSONArray;
  * @author diogo
  */
 public class RestconfConnector {
-    private static final Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
+    public static final StackLogger logger = OpenflowRestconfDriver.logger;
 
     //pull network topology
     public JSONObject getNetworkTopology(String subsystemBaseUrl, String username, String password) {
+        String method = "getNetworkTopology";
         try  {
             URL url = new URL(subsystemBaseUrl + "/operational/network-topology:network-topology"); 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String[] response = DriverUtil.executeHttpMethod(username, password, conn, "GET", null);
             if (!response[1].equals("200")) {
-                throw new EJBException("RestconfConnector:getNetworkTopology failed with HTTP return code:"+response[1]);
+                throw logger.error_throwing(method, "failed with HTTP return code:"+response[1]);
             }
             JSONParser jsonParser = new JSONParser();
             JSONObject jsonObject = (JSONObject) jsonParser.parse(response[0]);
             return jsonObject;
         } catch (Exception ex) {
-            throw new EJBException("RestconfConnector:getNetworkTopology failed.", ex);
+            throw logger.throwing(method, ex);
         }
     }
     
     //pull configured flows
     public JSONObject getConfigFlows(String subsystemBaseUrl, String username, String password) {
+        String method = "getConfigFlows";
         try  {
             URL url = new URL(subsystemBaseUrl + "/config/opendaylight-inventory:nodes"); 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String[] response = DriverUtil.executeHttpMethod(username, password, conn, "GET", null);
             if (!response[1].equals("200")) {
-                throw new EJBException("RestconfConnector:getNetworkTopology failed with HTTP return code:"+response[1]);
+                throw logger.error_throwing(method, "failed with HTTP return code:"+response[1]);
             }
             JSONParser jsonParser = new JSONParser();
             JSONObject jsonObject = (JSONObject) jsonParser.parse(response[0]);
             return jsonObject;
         } catch (Exception ex) {
-            throw new EJBException("RestconfConnector:getConfigFlows failed.", ex);
+            throw logger.throwing(method, ex);
         }
     }
     
     //push to add flow
     public void pushAddFlow(String subsystemBaseUrl, String username, String password, String nodeId, String tableId, String flowId, List<String> matches, List<String> actions) {
+        String method = "pushAddFlow";
         try  {
             URL url = new URL(subsystemBaseUrl + "/config/opendaylight-inventory:nodes/node/"+nodeId+"/flow-node-inventory:table/"+tableId); 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = this.makeFlowData(flowId, tableId, matches, actions);
             String[] response = DriverUtil.executeHttpMethod(username, password, conn, "POST", data);
             if (!response[1].equals("200") && !response[1].equals("204")) {
-                throw new EJBException("RestconfConnector:pushAddFlow failed with HTTP return code:"+response[1]);
+                throw logger.error_throwing(method, "failed with HTTP return code:"+response[1]);
             }
         } catch (Exception ex) {
-            throw new EJBException("RestconfConnector:pushAddFlow failed.", ex);
+            throw logger.throwing(method, ex);
         }
     }
 
     //push to modify flow
     public void pushModFlow(String subsystemBaseUrl, String username, String password, String nodeId, String tableId, String flowId, List<String> matches, List<String> actions) {
+        String method = "pushModFlow";
         try  {
             URL url = new URL(subsystemBaseUrl + "/config/opendaylight-inventory:nodes/node/"+nodeId+"/flow-node-inventory:table/"+tableId+"/flow/"+flowId); 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = this.makeFlowData(flowId, tableId, matches, actions);
             String[] response = DriverUtil.executeHttpMethod(username, password, conn, "PUT", data);
             if (!response[1].equals("200")) {
-                throw new EJBException("RestconfConnector:pushModFlow failed with HTTP return code:"+response[1]);
+                throw logger.error_throwing(method, "failed with HTTP return code:"+response[1]);
             }
         } catch (Exception ex) {
-            throw new EJBException("RestconfConnector:pushModFlow failed.", ex);
+            throw logger.throwing(method, ex);
         }
     }
     
     //push to delete flow
     public void pushDeleteFlow(String subsystemBaseUrl, String username, String password, String nodeId, String tableId, String flowId) {
+        String method = "pushDeleteFlow";
         try  {
             URL url = new URL(subsystemBaseUrl + "/config/opendaylight-inventory:nodes/node/"+nodeId+"/flow-node-inventory:table/"+tableId+"/flow/"+flowId); 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String[] response = DriverUtil.executeHttpMethod(username, password, conn, "DELETE", null);
             if (response[1].equals("404")) {
-                logger.warning("RestconfConnector:pushDeleteFlow with unfound flow: "+flowId);
+                logger.warning(method, "failed with unfound flow: "+flowId);
             }
             if (!response[1].equals("200")) {
-                throw new EJBException("RestconfConnector:pushDeleteFlow failed with HTTP return code:"+response[1]);
+                throw logger.error_throwing(method, "failed with HTTP return code:"+response[1]);
             }
         } catch (Exception ex) {
-            throw new EJBException("RestconfConnector:pushDeleteFlow failed.", ex);
+            throw logger.throwing(method, ex);
         }
     }
 

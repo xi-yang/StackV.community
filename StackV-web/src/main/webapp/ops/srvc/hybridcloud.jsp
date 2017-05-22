@@ -4,26 +4,14 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+<jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
         <title>Hybrid Cloud Service</title>
-        <script src="/StackV-web/js/keycloak.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
-        <script src="/StackV-web/js/svc/hybridcloud.js"></script>
-        <!-- jQuery easing plugin -->
-        <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
-
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
@@ -33,23 +21,24 @@
     <body>
         <!-- NAV BAR -->
         <div id="nav"></div>
-        <!-- SIDE BAR -->
-        <div id="sidebar"></div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
-        <div id="main-pane">           
+        <div id="main-pane">
             <!-- Multistep form -->
-            <form action="/StackV-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateHybrid()">                
+            <form action="/StackV-web/ServiceServlet" method="post" class="stageform" id="msform" onsubmit="return validateHybrid()">
                 <input type="hidden" name="username" value="${sessionStorage.username}"/>
                 <input type="hidden" name="hybridCloud" value="true"/>
                 <!-- Progress Bar -->
                 <ul class="hc-progress" id="progressbar">
                     <li class="disabled active">Hybrid Clouds</li>
                     <li>Network</li>
-                    <li>Subnets</li>                    
+                    <li>Subnets</li>
                     <li>Gateways</li>
                     <li>VMs</li>
-                    <li>SRIOV</li>                    
+                    <li>SRIOV</li>
                     <li>Summary</li>
                 </ul>
 
@@ -59,14 +48,14 @@
                     <div><button type="button" class="action-button" onclick="applyTemplate(1)">Basic Hybrid Cloud</button></div>
                 </fieldset>
 
-                <!-- Stage 1: Hybrid Clouds --> 
-                <fieldset id='1-base-1'>                   
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                <!-- Stage 1: Hybrid Clouds -->
+                <fieldset id='1-base-1'>
+                    <input type="button" name="next" class="next action-button" value="Next" />
                 </fieldset>
 
                 <!-- Stage 2: Network -->
                 <fieldset id='2-1'>
-                    <h2 class="fs-title">Instance Information</h2>                    
+                    <h2 class="fs-title">Instance Information</h2>
                     <table class="fs-table">
                         <tr>
                             <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
@@ -90,9 +79,9 @@
                                     <c:forEach var="driver" items="${driverlist.rows}">
                                         <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                     </c:forEach>
-                                </select>        
+                                </select>
                             </td>
-                        </tr> 
+                        </tr>
                         <tbody id="awsStage2-network">
                             <tr>
                                 <td><input type="text" name="aws-netCidr" placeholder="Network CIDR" /></td>
@@ -112,7 +101,7 @@
                                     <c:forEach var="driver" items="${driverlist.rows}">
                                         <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                     </c:forEach>
-                                </select>        
+                                </select>
                             </td>
                         </tr>
                         <tbody id="opsStage2-network">
@@ -123,12 +112,12 @@
                     </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                    <input type="button" name="next" class="next action-button" value="Next" />
                 </fieldset>
 
 
 
-                <!-- Stage 3: Subnets -->                    
+                <!-- Stage 3: Subnets -->
                 <fieldset id="3-1">
                     <h2 class="fs-title">AWS Subnets</h2>
                     <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage3-subnet" onfocus="this.oldvalue = this.value;" onchange="setSubnets(this)"/></h3>
@@ -143,8 +132,8 @@
                     </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
-                </fieldset>                                                             
+                    <input type="button" name="next" class="next action-button" value="Next" />
+                </fieldset>
 
 
                 <fieldset id="3-2">
@@ -157,7 +146,7 @@
                     </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                    <input type="button" name="next" class="next action-button" value="Next" />
                 </fieldset>
 
                 <!-- Stage 4: Gateways -->
@@ -166,20 +155,20 @@
                     <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage4-gateway" onfocus="this.oldvalue = this.value;" onchange="setGateways(this)"/></h3>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
-                </fieldset>  
+                    <input type="button" name="next" class="next action-button" value="Next" />
+                </fieldset>
 
 
                 <fieldset id="4-2">
                     <fieldset class="subfs" id="opsStage4-gateway-fs">
 
-                    </fieldset>        
+                    </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                    <input type="button" name="next" class="next action-button" value="Next" />
                 </fieldset>
 
-                <!-- Stage 5: VMs --> 
+                <!-- Stage 5: VMs -->
                 <fieldset id="5-1">
                     <h2 class="fs-title">AWS Virtual Machines</h2>
                     <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage5-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
@@ -194,7 +183,7 @@
                     </table>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                    <input type="button" name="next" class="next action-button" value="Next" />
                 </fieldset>
                 <fieldset id="5-2">
                     <fieldset class="subfs" id="awsStage5-vm-fs">
@@ -206,17 +195,17 @@
                     </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                    <input type="button" name="next" class="next action-button" value="Next" />
                 </fieldset>
 
-                <!-- Stage 6: SRIOV -->                
+                <!-- Stage 6: SRIOV -->
                 <fieldset id="6-1">
                     <fieldset class="subfs" id="opsStage6-sriov-fs">
 
                     </fieldset>
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
-                    <input type="button" name="next" class="next action-button" value="Next" />                    
+                    <input type="button" name="next" class="next action-button" value="Next" />
                 </fieldset>
 
                 <!-- Stage 7: Summary -->
@@ -240,9 +229,9 @@
 
                     <input type="button" name="previous" class="previous action-button" value="Previous" />
                     <input type="submit" name="save" class="profile-save-button action-button" value="Save" />
-                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>  
+                    <button type="submit" name="submit" class="action-button" value="submit">Submit</button>
                 </fieldset>
-            </form>      
+            </form>
             <div id="info-panel">
                 <h3 class="fs-subtitle" id="info-panel-title"></h3>
                 <div id="info-panel-div">
@@ -250,14 +239,21 @@
                 </div>
             </div>
         </div>
-        <!-- TAG PANEL -->       
-        <div id="tag-panel"> 
-        </div>        
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- JS -->
+        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/svc/hybridcloud.js"></script>
+        <!-- jQuery easing plugin -->
+        <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
         <script>
-            $(function () {
-                $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
-            });
-        </script>        
+                        $(function () {
+                            $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
+                        });
+        </script>
     </body>
 </html>

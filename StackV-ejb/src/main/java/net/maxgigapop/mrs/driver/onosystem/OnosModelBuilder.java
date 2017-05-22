@@ -73,7 +73,6 @@ public class OnosModelBuilder {
         Property hasTopology = Nml.hasTopology;
         Property targetDevice = model.createProperty(model.getNsPrefixURI("mrs") + "target_device");
         Property hasRoute = Mrs.hasRoute;
-        Property hasTag = Mrs.hasTag;
         Property hasNetworkAddress = Mrs.hasNetworkAddress;
         Property providesRoutingTable = model.createProperty(model.getNsPrefixURI("mrs") + "providesRoutingTable");
         Property hasFlow = Mrs.hasFlow;

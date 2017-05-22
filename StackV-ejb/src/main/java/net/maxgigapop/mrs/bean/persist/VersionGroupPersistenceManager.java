@@ -34,6 +34,8 @@ import javax.persistence.Query;
 import net.maxgigapop.mrs.bean.*;
 import net.maxgigapop.mrs.bean.SystemInstance;
 import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
+import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.service.HandleServiceCall;
 
 /**
  *
@@ -41,7 +43,7 @@ import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
  */
 @SuppressWarnings("unchecked")
 public class VersionGroupPersistenceManager extends PersistenceManager {
-    private static final Logger log = Logger.getLogger(VersionGroupPersistenceManager.class.getName());
+    private static final StackLogger logger = new StackLogger(VersionGroupPersistenceManager.class.getName(), "VersionGroupPersistenceManager");
 
     public static VersionGroup findById(Long id) {
         return PersistenceManager.find(VersionGroup.class, id);
@@ -65,14 +67,17 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             DriverInstancePersistenceManager.refreshAll();
             ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         }
+        logger.targetid(vg.getRefUuid());
         if (ditMap.isEmpty()) {
-            throw new EJBException(String.format("VersionGroupPersistenceManager::refreshToHead canont find driverInstance in the system"));
+            throw logger.error_throwing("refreshToHead", "target:VersionGroup canont find driverInstance in the system");
         }
         vg = findByReferenceId(vg.getRefUuid());
+        List<VersionItem> listVI = new ArrayList();
+        listVI.addAll(vg.getVersionItems());
         vg.getVersionItems().clear();
         boolean needToUpdate = false;
         List<DriverInstance> listDI = new ArrayList<>();
-        for (VersionItem vi : vg.getVersionItems()) {
+        for (VersionItem vi : listVI) {
             DriverInstance di = vi.getDriverInstance();
             if (di != null) {
                 if (listDI.contains(di)) {
@@ -94,7 +99,8 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                 synchronized (di) {
                     VersionItem newVi = di.getHeadVersionItem();
                     if (newVi == null) {
-                        throw new EJBException(String.format("refreshToHead encounters null head versionItem in %s", di));
+                        logger.targetid(di.getId().toString());
+                        throw logger.error_throwing("refreshToHead", "target:VersionGroup encounters null head versionItem in "+di);
                     }
                     if (!newVi.getVersionGroups().contains(vg)) {
                         newVi.addVersionGroup(vg);
@@ -103,19 +109,26 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                         vg.addVersionItem(newVi);
                     }
                 }
+                needToUpdate = true;
             }
+        }
+        if (needToUpdate) {
+            logger.message("refreshToHead", "ref:VersionGroup updated");
+            vg.setUpdateTime(new java.util.Date());
         }
         if (!doUpdatePersist) {
             return vg;
         }
         if (needToUpdate) {
-            vg.setUpdateTime(new java.util.Date());
             VersionGroupPersistenceManager.save(vg);
+            logger.message("refreshToHead", "ref:VersionGroup persisted");
         }
         return vg;
     }
 
     public static void cleanupAll(VersionGroup butVG) {
+        logger.start("cleanupAll");
+        Integer count = 0;
         try {
             // remove all VGs that has no dependency (by systemDelta)
             Query q = createQuery(String.format("FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
@@ -128,6 +141,8 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                         continue;
                     }
                     VersionGroupPersistenceManager.delete(vg);
+                    count++;
+                    logger.trace("cleanupAll", vg + " deleted.");
                 }
             }
             // remove all empty VGs
@@ -139,50 +154,65 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     VersionGroup vg = it.next();
                     if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
                         VersionGroupPersistenceManager.delete(vg);
+                        count++;
+                        logger.trace("cleanupAll", vg + " deleted.");
                     }
                 }
             }
         } catch (Exception e) {
-            log.warning("VersionGroupPersistenceManager::cleanupAll raised exception: " + e);
+            logger.warning("cleanupAll",  "exception raised and ignored: " + e);
         }
+        logger.message("cleanupAll", count + " version groups have been deleted");
+        logger.end("cleanupAll");
     }
     
     public static void cleanupAndUpdateAll(VersionGroup butVG) {
+        logger.start("cleanupAndUpdateAll");
+        Integer count = 0;
         try {
             // remove all VGs that has no dependency (by systemDelta)
-            Query q = createQuery(String.format("FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
-            List<VersionGroup> listVG = (List<VersionGroup>) q.getResultList();
-            if (listVG != null) {
-                Iterator<VersionGroup> it = listVG.iterator();
+            Query q = createQuery(String.format("SELECT vg.id FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
+            List listVGID = q.getResultList();
+            if (listVGID != null) {
+                Iterator<Long> it = listVGID.iterator();
                 while (it.hasNext()) {
-                    VersionGroup vg = it.next();
+                    Long vgid = it.next();
+                    VersionGroup vg = VersionGroupPersistenceManager.findById(vgid);
                     if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
                         continue;
                     }
                     VersionGroupPersistenceManager.delete(vg);
+                    count++;
+                    logger.trace("cleanupAndUpdateAll", vg + " deleted (no longer used).");
                 }
             }
             // remove all empty VGs and update the non-empty
-            q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
-            listVG = (List<VersionGroup>) q.getResultList();
-            if (listVG == null) {
+            q = createQuery(String.format("SELECT id FROM %s", VersionGroup.class.getSimpleName()));
+            listVGID = q.getResultList();
+            if (listVGID == null) {
                 return;
             }
-            Iterator<VersionGroup> it = listVG.iterator();
+            Iterator it = listVGID.iterator();
             while (it.hasNext()) {
-                VersionGroup vg = it.next();
+                Long vgid = (Long) it.next();
+                VersionGroup vg = VersionGroupPersistenceManager.findById(vgid);
                 if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
                     //@TODO: probe -> exception here (deletion may not be needed any way)
-                    //VersionGroupPersistenceManager.delete(vg);
+                    VersionGroupPersistenceManager.delete(vg);
+                    count++;
+                    logger.trace("cleanupAndUpdateAll", vg + " deleted (empty VI list).");
                 } else {
                     //@TODO: probe further: the update may create empty VGs
                     VersionGroupPersistenceManager.refreshToHead(vg, true);
+                    logger.trace("cleanupAndUpdateAll", vg + " refreshed.");
                 }
                 
             }
         } catch (Exception e) {
-            log.warning("VersionGroupPersistenceManager::cleanupAndUpdateAll raised exception: " + e);
+            logger.warning("cleanupAndUpdateAll", "exception raised and ignored: " + e);
         }
+        logger.message("cleanupAndUpdateAll", count + " version groups have been deleted");
+        logger.end("cleanupAndUpdateAll");
     }
 
 }

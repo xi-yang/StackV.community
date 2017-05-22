@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
 import javax.ejb.EJB;
-import javax.ejb.EJBException;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -44,6 +43,7 @@ import net.maxgigapop.mrs.bean.SystemInstance;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.rest.api.model.ApiDeltaBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
@@ -53,6 +53,9 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Path("delta")
 public class DeltaResource {
+    
+    private final StackLogger logger = new StackLogger(DeltaResource.class.getName(), "DeltaResource");
+
     @Context
     private UriInfo context;
 
@@ -66,52 +69,66 @@ public class DeltaResource {
     @PUT
     @Path("/{refUUID}/{action}")
     public String commit(@PathParam("refUUID") String refUUID, @PathParam("action") String action) throws ExecutionException, InterruptedException {
+        String method = "commit";
+        logger.refuuid(refUUID);
+        logger.trace_start(method);
         if (!action.toLowerCase().equals("commit")) {
             throw new BadRequestException("Invalid action: " + action);
         }
         SystemInstance systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
         if (systemInstance == null) {
-            throw new EJBException("commitDelta encounters unknown systemInstance with referenceUUID=" + refUUID);
+            throw logger.error_throwing(method, "commitDelta encounters unknown ref:SystemInstance");
         }
         if (systemInstance.getCommitStatus() != null) {
-            throw new EJBException("commitDelta has already been done once with systemInstance with referenceUUID=" + refUUID);
+            throw logger.error_throwing(method, "commitDelta has already been done once with ref:SystemInstance");
         }
         try {
             Future<String> result = systemCallHandler.commitDelta(systemInstance);
             systemInstance.setCommitStatus(result);
             if (!result.isDone()) {
+                logger.trace_end(method);
                 return "PROCESSING";
             }
+            logger.trace_end(method);
             return result.get();
-        } catch (EJBException ex) {
+        } catch (Exception ex) {
             systemInstance.setCommitStatus(new AsyncResult<>(ex.getMessage()));
-            return ex.getMessage();
+            throw logger.throwing(method, ex);
         }
     }
 
     @GET
     @Path("/{refUUID}/{action}")
     public String checkStatus(@PathParam("refUUID") String refUUID, @PathParam("action") String action) throws InterruptedException, ExecutionException {
+        String method = "commit";
+        logger.refuuid(refUUID);
+        logger.trace_start(method);
         if (!action.toLowerCase().equals("checkstatus")) {
+            logger.error(method, "Invalid action: "+action);
             throw new BadRequestException("Invalid action: "+action);
         }
         SystemInstance siCache = SystemInstancePersistenceManager.findByReferenceUUID(refUUID);
         if (siCache == null) {
-            throw new EJBException ("checkStatus encounters unknown systemInstance with referenceUUID="+ refUUID);
+            throw logger.error_throwing(method, "checkStatus encounters unknown ref:SystemInstance");
         }
         SystemInstance siDb = SystemInstancePersistenceManager.findById(siCache.getId());
-        if(siDb.getSystemDelta() == null)
-            return "System Instance has not yet propagated";
-        if(siCache.getCommitStatus() == null)
-            return "System Instance has not yet committed";
-        if(siCache.getCommitStatus() != null && !siCache.getCommitStatus().isDone())
-            return "PROCESSING";
-        String result = "";
-        try{
-            result = siCache.getCommitStatus().get();
-        }catch(InterruptedException | ExecutionException ex){
-            return "System Instance with referenceUUID="+ refUUID + "throws exception when committing: " + ex;
+        if( siDb.getSystemDelta() == null) {
+            throw logger.error_throwing(method, "System Instance has not yet propagated");
         }
+        if (siCache.getCommitStatus() == null){
+            throw logger.error_throwing(method, "System Instance has not yet committed");
+        }
+        if (siCache.getCommitStatus() != null && !siCache.getCommitStatus().isDone()) {
+            logger.trace_end(method, "PROCESSING");
+            return "PROCESSING";
+        }
+        String result = "";
+        try {
+            result = siCache.getCommitStatus().get();
+        } catch(InterruptedException | ExecutionException ex){
+            throw logger.throwing(method, ex);
+        }
+        logger.trace_end(method);
         return result;
     }
     
@@ -119,7 +136,11 @@ public class DeltaResource {
     @Consumes({"application/xml","application/json"})
     @Path("/{refUUID}/{action}")
     public String push(@PathParam("refUUID")String SysInstanceRefUUID, ApiDeltaBase deltabase, @PathParam("action") String action) throws Exception{
+        String method = "commit";
+        logger.refuuid(SysInstanceRefUUID);
+        logger.trace_start(method);
         if (!action.toLowerCase().startsWith("propagate")) {
+            logger.error(method, "Invalid action: "+action);
             throw new BadRequestException("Invalid action: "+action);
         }
         
@@ -152,8 +173,9 @@ public class DeltaResource {
                 systemCallHandler.propagateDelta(SysInstanceRefUUID, systemDelta, false, true);
             }
         } catch (Exception e) {
-            return e.getMessage();
+            throw logger.throwing(method, e);
         }
+        logger.trace_end(method);
         return "propagate successfully";
     }
     
