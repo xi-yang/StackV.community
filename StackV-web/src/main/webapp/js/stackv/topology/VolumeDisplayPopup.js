@@ -204,7 +204,7 @@ define(["local/d3", "local/stackv/utils"],
                                         renderApi.drawHighlight();
                                         renderApi.layoutEdges(that.outputApi);
                                     })
-                                  //  .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, volume))                                    
+                                    .on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, volume))                                    
                                     .call(dragBehaviour);
                         })();
                     }
