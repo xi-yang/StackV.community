@@ -606,8 +606,8 @@ function setVMs(input) {
             var row5 = document.createElement("tr");
             var cell5_1 = document.createElement("td");
             var cell5_2 = document.createElement("td");
-            cell5_1.innerHTML = '<input type="text" name="vm' + i + '-host" placeholder="Host(Default Value = \'any\')">';
-            cell5_2.innerHTML = '<input type="text" name="vm' + i + '-floating" placeholder="Floating IP(Default Value = \'any\')">';
+            cell5_1.innerHTML = '<input type="text" name="vm' + i + '-host" placeholder="Host(\'any\')">';
+            cell5_2.innerHTML = '<input type="text" name="vm' + i + '-floating" placeholder="Floating IP(\'any\')">';
             row5.appendChild(cell5_1);
             row5.appendChild(cell5_2);
             tbody1.appendChild(row5);
