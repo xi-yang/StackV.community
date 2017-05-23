@@ -16,7 +16,7 @@
 
         <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
         <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
         <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
@@ -56,7 +56,7 @@
                         element.classList.remove("hide");
                     }
                 });
-                $("#nav").load("/StackV-web/navbar.html");
+                $("#nav").load("/StackV-web/nav/navbar.html");
             });
         </script>
     </body>

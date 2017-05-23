@@ -66,6 +66,35 @@ define([
         //Associates a name with the corresponding backing
         var map = {};
         var that = this;
+        
+        
+        function subscribeToMediatior() {
+            if (window.PubSub !== undefined) {
+                
+                /*
+                 * Takes a map as input and returns a set of mapped objects 
+                 * with no defined relationships. 
+                 * Interface: 
+                 *     map
+                 */
+                PubSub.subscribe('Model_BuildGenericModel', function(data) {
+                   return that.makeSubModel(data.map);
+                });
+                
+                /**
+                 *  Return all of the model's mapped elements into 
+                 *  a single array. 
+                 *  Interface: 
+                 *     model
+                 */
+                PubSub.subscribe('Model_Explode', function(data) {
+                    return that.getModelMapValues(data.model);
+                });
+            }
+        }
+        
+       subscribeToMediatior();
+     
         /**
          * Initialize the model. This asyncronasly loads and parsed the model from the backend.
          * @returns {undefined}
@@ -782,155 +811,152 @@ define([
             }
         };
                 
-        this.makeSubModel = function(mapList) { 
+        this.makeSubModel = function(map) { 
 
             var nodeMap = {};
             var portMap = {};
             var serviceMap = {};
             var subnetMap = {};
             var volumeMap = {};
-            for (var i in mapList) {
-                if (mapList[i] === undefined || mapList[i] === {}) continue;
 
-                for (var key in mapList[i]) {
-                    //var val = mapList[i][key];
-                    //val.name = key;
-                    //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
-                    var map = mapList[i];
-                    //alert(key);
-                    var val = map[key];
-                    val.name = key;
-                    //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));                    
-                    var types = val[values.type];
-                    if (!types) {
-                        var hostURN = that.getHostNodeURN(key);
-                        var obj = that.getOrigin(key);
-                        if (hostURN) nodeMap[hostURN] = that.nodeMap[hostURN];
+            for (var key in map) {
+                //var val = mapList[i][key];
+                //val.name = key;
+                //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));
+                var map = map;
+                //alert(key);
+                var val = map[key];
+                val.name = key;
+                //console.log("JSON.stringify(element, null, 2): " + JSON.stringify(val, null, 2));                    
+                var types = val[values.type];
+                if (!types) {
+                    var hostURN = that.getHostNodeURN(key);
+                    var obj = that.getOrigin(key);
+                    if (hostURN) nodeMap[hostURN] = that.nodeMap[hostURN];
 
-                        if (obj) {
-                            switch(obj.getType()){
-                             case "Topology":
-                             case "Node":
-                                  nodeMap[key] = obj;
-                                  break;
-                             case "SwitchingService":
-                             case "HypervisorService":
-                             case "RoutingService":
-                             case "VirtualCloudService":
-                             case "BlockStorageService":
-                             case "ObjectStorageService":
-                             case "VirtualSwitchService":
-                             case "HypervisorBypassInterfaceService":
-                             case "StorageService":
-                             case "IOPerformanceMeasurementService":
-                             case "DataTransferService":
-                             case "DataTransferClusterService":
-                             case "NetworkObject":
-                             case "Service":
-                                 serviceMap[key] = obj;
-                                 break;
-                             case "Port":
-                             case "BidirectionalPort":
-                                 portMap[key] = obj;
-                                 break;
-                             case "Volume":
-                                 volumeMap[key] = obj;
-                                 break;
-                            }
+                    if (obj) {
+                        switch(obj.getType()){
+                         case "Topology":
+                         case "Node":
+                              nodeMap[key] = obj;
+                              break;
+                         case "SwitchingService":
+                         case "HypervisorService":
+                         case "RoutingService":
+                         case "VirtualCloudService":
+                         case "BlockStorageService":
+                         case "ObjectStorageService":
+                         case "VirtualSwitchService":
+                         case "HypervisorBypassInterfaceService":
+                         case "StorageService":
+                         case "IOPerformanceMeasurementService":
+                         case "DataTransferService":
+                         case "DataTransferClusterService":
+                         case "NetworkObject":
+                         case "Service":
+                             serviceMap[key] = obj;
+                             break;
+                         case "Port":
+                         case "BidirectionalPort":
+                             portMap[key] = obj;
+                             break;
+                         case "Volume":
+                             volumeMap[key] = obj;
+                             break;
                         }
-                       //console.log("Types empty!\n\nVal: " + val + "\nName: " + val.name);
-                    } else {
-                        map_(types, function (type) {
-                            type = type.value;
-
-                            switch (type) {
-                                // Fallthrough group 
-                                case values.topology:
-                                case values.node:
-                                    console.log("type: " + type);
-                                    var toAdd;
-                                    if (that.nodeMap[key]) {
-                                        toAdd = that.nodeMap[key];
-                                        nodeMap[key] = toAdd;
-                                    }
-                                    break;
-
-                                case values.bidirectionalPort:
-                                    var toAdd;
-                                    if (that.portMap[key]) {
-                                        toAdd = that.portMap[key];
-                                        portMap[key] = toAdd;
-                                    } 
-                                    break;
-
-                                    // Fallthrough group     
-                                case values.switchingService:
-                                case values.topopolgySwitchingService:
-                                case values.hypervisorService:
-                                case values.routingService:
-                                case values.virtualCloudService:
-                                case values.blockStorageService:
-                                    var toAdd;
-                                    if (that.serviceMap[key]) {
-                                        toAdd = that.serviceMap[key];
-                                        serviceMap[key] = toAdd;
-                                    } 
-                                    break;
-
-                                    // Fallthrough group 
-                                case values.objectStorageService:
-                                case values.virtualSwitchingService:
-                                case values.hypervisorBypassInterfaceService:
-                                case values.storageService:
-                                case values.IOPerformanceMeasurementService:
-                                case values.DataTransferService:
-                                case values.DataTransferClusterService:
-                                case values.NetworkObject:
-                                    var toAdd;
-                                    if (that.serviceMap[key]) {
-                                        toAdd = that.serviceMap[key];
-                                        serviceMap[key] = toAdd;
-                                    } 
-                                    break;
-
-                                case values.switchingSubnet:
-                                    var toAdd;
-                                    if (that.subnetMap[key]) {
-                                        toAdd = that.subnetMap[key];
-                                        subnetMap[key] = toAdd;
-                                    }
-                                    break;
-                                case values.namedIndividual://All elements have this
-                                    break;
-
-                                //fallthrough group x 
-                                case values.labelGroup:
-                                case values.label:
-                                case values.networkAdress:
-                                case values.bucket:
-                                case values.tag:
-                                case values.route:
-                                    break;
-                                case values.volume:
-                                    var toAdd;
-                                    if (that.volumeMap[key]) {
-                                        toAdd = that.volumeMap[key];
-                                        volumeMap[key] = toAdd;
-                                    }
-                                    break;
-
-                                // fallthrough group x 
-                                case values.routingTable:
-                                case values.ontology:
-                                case values.POSIX_IOBenchmark:
-                                case values.address:
-                                    break;
-                                default:
-                                    console.log("Unknown type: " + type);
-                                    break;
-                            }
-                        });                                                
                     }
+                   //console.log("Types empty!\n\nVal: " + val + "\nName: " + val.name);
+                } else {
+                    map_(types, function (type) {
+                        type = type.value;
+
+                        switch (type) {
+                            // Fallthrough group 
+                            case values.topology:
+                            case values.node:
+                                console.log("type: " + type);
+                                var toAdd;
+                                if (that.nodeMap[key]) {
+                                    toAdd = that.nodeMap[key];
+                                    nodeMap[key] = toAdd;
+                                }
+                                break;
+
+                            case values.bidirectionalPort:
+                                var toAdd;
+                                if (that.portMap[key]) {
+                                    toAdd = that.portMap[key];
+                                    portMap[key] = toAdd;
+                                } 
+                                break;
+
+                                // Fallthrough group     
+                            case values.switchingService:
+                            case values.topopolgySwitchingService:
+                            case values.hypervisorService:
+                            case values.routingService:
+                            case values.virtualCloudService:
+                            case values.blockStorageService:
+                                var toAdd;
+                                if (that.serviceMap[key]) {
+                                    toAdd = that.serviceMap[key];
+                                    serviceMap[key] = toAdd;
+                                } 
+                                break;
+
+                                // Fallthrough group 
+                            case values.objectStorageService:
+                            case values.virtualSwitchingService:
+                            case values.hypervisorBypassInterfaceService:
+                            case values.storageService:
+                            case values.IOPerformanceMeasurementService:
+                            case values.DataTransferService:
+                            case values.DataTransferClusterService:
+                            case values.NetworkObject:
+                                var toAdd;
+                                if (that.serviceMap[key]) {
+                                    toAdd = that.serviceMap[key];
+                                    serviceMap[key] = toAdd;
+                                } 
+                                break;
+
+                            case values.switchingSubnet:
+                                var toAdd;
+                                if (that.subnetMap[key]) {
+                                    toAdd = that.subnetMap[key];
+                                    subnetMap[key] = toAdd;
+                                }
+                                break;
+                            case values.namedIndividual://All elements have this
+                                break;
+
+                            //fallthrough group x 
+                            case values.labelGroup:
+                            case values.label:
+                            case values.networkAdress:
+                            case values.bucket:
+                            case values.tag:
+                            case values.route:
+                                break;
+                            case values.volume:
+                                var toAdd;
+                                if (that.volumeMap[key]) {
+                                    toAdd = that.volumeMap[key];
+                                    volumeMap[key] = toAdd;
+                                }
+                                break;
+
+                            // fallthrough group x 
+                            case values.routingTable:
+                            case values.ontology:
+                            case values.POSIX_IOBenchmark:
+                            case values.address:
+                                break;
+                            default:
+                                console.log("Unknown type: " + type);
+                                break;
+                        }
+                    });                                                
                 }
             }
             return {

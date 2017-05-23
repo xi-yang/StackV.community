@@ -6,13 +6,9 @@
 package net.maxgigapop.mrs.common;
 
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.ThreadContext;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.net.Severity;
 
 /**
@@ -51,7 +47,6 @@ public class StackLogger {
         }
         // targetID may change, refuuid also serve to clean it up
         ThreadContext.remove("targetid");
-        ThreadContext.remove("targetid"); // clean up targetID with new refUUID
     }
     
     public void targetid(String targetid) {
@@ -62,27 +57,31 @@ public class StackLogger {
     public void init() {
         ThreadContext.put("module", moduleName);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.info(String.format("{\"event\":\"%s.initiate\"}", moduleName));
+        ThreadContext.put("event", String.format("%s.initiate", moduleName));
+        logger.info("{}");
     }
 
     public void init(Object entity) {
         ThreadContext.put("module", moduleName);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.info(String.format("{\"event\":\"%s.%s.initiate\"}", entity, moduleName));
+        ThreadContext.put("event", String.format("%s.%s.initiate", entity, moduleName));
+        logger.info("{}");
     }
 
     public void start(String method) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.info(String.format("{\"event\":\"%s.%s.start\"}", moduleName, method));        
+        ThreadContext.put("event", String.format("%s.%s.start", moduleName, method));
+        logger.info("{}");
     }
     
     public void start(String method, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.info(String.format("{\"event\":\"%s.%s.start\", \"status\":\"%s\"}", moduleName, method, status));
+        ThreadContext.put("event", String.format("%s.%s.start", moduleName, method));
+        logger.info(String.format("{\"status\":\"%s\"}", status));
     }
     
     public void end(String method) {
@@ -91,7 +90,8 @@ public class StackLogger {
         ThreadContext.remove("severity"); // cleanup severity
         String targetid = ThreadContext.pop();
         ThreadContext.put("targetid", targetid);
-        logger.info(String.format("{\"event\":\"%s.%s.end\"}", moduleName, method));        
+        ThreadContext.put("event", String.format("%s.%s.end", moduleName, method));
+        logger.info("{}");
     }
 
     public void end(String method, String status) {
@@ -100,35 +100,40 @@ public class StackLogger {
         ThreadContext.remove("severity"); // cleanup severity
         String targetid = ThreadContext.pop();
         ThreadContext.put("targetid", targetid);
-        logger.info(String.format("{\"event\":\"%s.%s.end\", \"status\":\"%s\"}", moduleName, method, status));
+        ThreadContext.put("event", String.format("%s.%s.end", moduleName, method));
+        logger.info(String.format("{\"status\":\"%s\"}", status));
     }
     
     public void status(String method, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.info(String.format("{\"event\":\"%s.%s.status\", \"status\":\"%s\"}", moduleName, method, status));
+        ThreadContext.put("event", String.format("%s.%s.status", moduleName, method));
+        logger.info(String.format("{\"status\":\"%s\"}", status));
     }
     
     public void message(String method, String message) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.info(String.format("{\"event\":\"%s.%s.message\", \"message\":\"%s\"}", moduleName, method, message));
+        ThreadContext.put("event", String.format("%s.%s.message", moduleName, method));
+        logger.info(String.format("{\"message\":\"%s\"}", message));
     }
     
     public void warning(String method, String message) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.put("severity", Severity.WARNING.name());
-        logger.warn(String.format("{\"event\":\"%s.%s.warning\", \"message\":\"%s\"}", moduleName, method, message));        
+        ThreadContext.put("event", String.format("%s.%s.warning", moduleName, method));
+        logger.warn(String.format("{\"message\":\"%s\"}", message));        
     }
 
     public void error(String method, String message, Severity severity) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.put("severity", severity.name());
-        logger.error(String.format("{\"event\":\"%s.%s.error\", \"message\":\"%s\", \"severity\":\"%s\"}", moduleName, method, message, severity.name()));        
+        ThreadContext.put("event", String.format("%s.%s.error", moduleName, method));
+        logger.error(String.format("{\"message\":\"%s\", \"severity\":\"%s\"}", message, severity.name()));        
     }
     
     public void error(String method, String message) {
@@ -151,7 +156,8 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.put("severity", severity.name());
-        String errMsg = String.format("{\"event\":\"%s.%s.error\", \"message\":\"%s\", \"severity\":\"%s\"}", moduleName, method, message, severity.name());
+        ThreadContext.put("event", String.format("%s.%s.error", moduleName, method));
+        String errMsg = String.format("{\"message\":\"%s\", \"severity\":\"%s\"}", message, severity.name());
         logger.error(errMsg);
         String refUUID = ThreadContext.get("refuuid");
         String targetID = ThreadContext.get("targetid");
@@ -197,61 +203,16 @@ public class StackLogger {
     public EJBException throwing(String method, Exception ex) {
         return throwing(method, ex, Severity.ERROR);
     }
-
-    public void debug(String method, String message, String status) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.remove("severity"); // cleanup severity
-        if (status == null || status.isEmpty()) {
-            logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"status\":\"%s\"}", moduleName, method, message));               
-        } else {
-            logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"message\":\"%s\", \"status\":\"%s\"}", moduleName, method, message, status));   
-        }
-    }
-    
-    public void debug(String method, String status) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.remove("severity"); // cleanup severity
-        logger.debug(String.format("{\"event\":\"%s.%s.debug\", \"status\":\"%s\"}", moduleName, method, status));      
-    }
-
-    public void debug_start(String method) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.remove("severity"); // cleanup severity
-        logger.debug(String.format("{\"event\":\"%s.%s.start\"}", moduleName, method));
-    }
-
-    public void debug_start(String method, String status) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.remove("severity"); // cleanup severity
-        logger.debug(String.format("{\"event\":\"%s.%s.start\", \"status\":\"%s\"}", moduleName, method, status));
-    }
-
-    public void debug_end(String method) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.remove("severity"); // cleanup severity
-        logger.debug(String.format("{\"event\":\"%s.%s.end\"}", moduleName, method));
-    }
-
-    public void debug_end(String method, String status) {
-        ThreadContext.put("module", moduleName);
-        ThreadContext.put("method", method);
-        ThreadContext.remove("severity"); // cleanup severity
-        logger.debug(String.format("{\"event\":\"%s.%s.end\", \"status\":\"%s\"}", moduleName, method, status));
-    }
     
     public void trace(String method, String message, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
+        ThreadContext.put("event", String.format("%s.%s.trace", moduleName, method));
         if (status == null || status.isEmpty()) {
-            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\":\"%s\"}", moduleName, method, message));               
+            logger.trace(String.format("{\"status\":\"%s\"}", message));
         } else {
-            logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"message\":\"%s\", \"status\":\"%s\"}", moduleName, method, message, status));   
+            logger.trace(String.format("{\"message\":\"%s\", \"status\":\"%s\"}", message, status));   
         }
     }
     
@@ -259,35 +220,40 @@ public class StackLogger {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.trace(String.format("{\"event\":\"%s.%s.trace\", \"status\":\"%s\"}", moduleName, method, status));      
+        ThreadContext.put("event", String.format("%s.%s.trace", moduleName, method));
+        logger.trace(String.format("{\"status\":\"%s\"}", status));      
     }
 
     public void trace_start(String method) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.trace(String.format("{\"event\":\"%s.%s.start\"}", moduleName, method));
+        ThreadContext.put("event", String.format("%s.%s.start", moduleName, method));
+        logger.trace("{}");
     }
 
     public void trace_start(String method, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.trace(String.format("{\"event\":\"%s.%s.start\", \"status\":\"%s\"}", moduleName, method, status));
+        ThreadContext.put("event", String.format("%s.%s.start", moduleName, method));
+        logger.trace(String.format("{\"status\":\"%s\"}", status));
     }
 
     public void trace_end(String method) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.trace(String.format("{\"event\":\"%s.%s.end\"}", moduleName, method));
+        ThreadContext.put("event", String.format("%s.%s.end", moduleName, method));
+        logger.trace("{}");
     }
 
     public void trace_end(String method, String status) {
         ThreadContext.put("module", moduleName);
         ThreadContext.put("method", method);
         ThreadContext.remove("severity"); // cleanup severity
-        logger.trace(String.format("{\"event\":\"%s.%s.end\", \"status\":\"%s\"}", moduleName, method, status));
+        ThreadContext.put("event", String.format("%s.%s.end", moduleName, method));
+        logger.trace(String.format("{\"status\":\"%s\"}", status));
     }
 
     public void cleanup() {

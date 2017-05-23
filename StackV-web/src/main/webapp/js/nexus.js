@@ -24,6 +24,8 @@
 // Service JavaScript Library
 baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
+var refreshTimer;
+var countdownTimer;
 
 // Page Load Function
 
@@ -47,16 +49,27 @@ $(function () {
     keycloak.onAuthSuccess = function () {
         loadNavbar();
 
-        if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
-            loadDetailsNavbar();
-            loadDetails();
+        if (window.location.pathname === "/StackV-web/ops/catalog.jsp") {
+            loadCatalogNavbar();
+            loadCatalog();
+        } else if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
+            var uuid = sessionStorage.getItem("instance-uuid");
+            if (!uuid) {
+                alert("No Service Instance Selected!");
+                window.location.replace('/StackV-web/ops/catalog.jsp');
+            } else {
+                loadDetailsNavbar();
+                loadDetails();
+            }
         } else if (window.location.pathname === "/StackV-web/ops/admin.jsp") {
             loadAdminNavbar();
             loadAdmin();
         } else if (window.location.pathname === "/StackV-web/ops/acl.jsp") {
+            loadACLNavbar();
             loadACLPortal();
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
-            getAllDetails();
+            loadDriverNavbar();
+            loadDriverPortal();
         }
 
         if ($("#tag-panel").length) {
@@ -102,7 +115,7 @@ $(function () {
 });
 
 function loadNavbar() {
-    $("#nav").load("/StackV-web/navbar.html", function () {
+    $("#nav").load("/StackV-web/nav/navbar.html", function () {
         if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
             $(".nav-admin").hide();
         } else {
@@ -991,3 +1004,159 @@ function initTagPanel() {
         }
     });
 }
+
+/* REFRESH */
+function refreshSync(refreshed, time) {
+    if (refreshed) {
+        sessionStorage.setItem("token", keycloak.token);
+        console.log("Token Refreshed by nexus!");
+    }
+    var manual = false;
+    if (typeof time === "undefined") {
+        time = countdown;
+    }
+    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+        manual = true;
+    }
+    if (manual === false) {
+        countdown = time;
+        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
+    } else {
+        $("#refresh-button").html('Manually Refresh Now');
+    }
+}
+function pauseRefresh() {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('refresh-button').innerHTML = 'Paused';
+    $("#refresh-timer").attr('disabled', true);
+    $("#refresh-button").attr('disabled', true);
+}
+function resumeRefresh() {
+    var timer = $("#refresh-timer");
+    if (timer.attr('disabled')) {
+        $("#refresh-button").attr('disabled', false);
+        timer.attr('disabled', false);
+        setRefresh(timer.val());
+    }
+}
+function timerChange(sel) {
+    clearInterval(refreshTimer);
+    clearInterval(countdownTimer);
+    if (sel.value !== 'off') {
+        setRefresh(sel.value);
+    } else {
+        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+    }
+}
+function setRefresh(time) {    
+    countdown = time;
+    refreshTimer = setInterval(function () {
+        reloadData();
+    }, (time * 1000));
+    countdownTimer = setInterval(function () {
+        refreshCountdown(time);
+    }, 1000);
+}
+function refreshCountdown() {
+    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + (countdown - 1) + ' seconds';
+    countdown--;
+}
+function reloadDataManual() {
+    var sel = document.getElementById("refresh-timer");
+    if (sel.value !== 'off') {
+        timerChange(sel);
+    }
+    reloadData();
+}
+
+
+/* LOGGING */
+var openLogDetails = 0;
+function loadDataTable(apiUrl) {
+    dataTable = $('#loggingData').DataTable({
+        "ajax": {
+            url: apiUrl,
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            }
+        },
+        "columns": [
+            {
+                "className": 'details-control',
+                "orderable": false,
+                "data": null,
+                "defaultContent": '',
+                "width": ""
+            },
+            {"data": "timestamp", "width": "180px"},
+            {"data": "event"},
+            {"data": "referenceUUID", "width": "280px"},
+            {"data": "level"}
+        ],
+        "createdRow": function (row, data, dataIndex) {
+            $(row).addClass("row-" + data.level.toLowerCase());
+        },
+        "deferRender": true,
+        "order": [[1, 'asc']],
+        "ordering": false,
+        "scroller": {
+            displayBuffer: 10
+        },
+        "scrollX": true,
+        "scrollY": "calc(60vh - 130px)"
+    });
+    new $.fn.dataTable.FixedColumns(dataTable);
+
+    // Add event listener for opening and closing details
+    $('#loggingData tbody').on('click', 'td.details-control', function () {
+        var tr = $(this).closest('tr');
+        var row = dataTable.row(tr);
+        if (row.child.isShown()) {
+            openLogDetails--;
+            // This row is already open - close it
+            row.child.hide();
+            tr.removeClass('shown');
+            if (openLogDetails === 0) {
+                resumeRefresh();
+            }
+        } else {
+            openLogDetails++;
+
+            // Open this row
+            row.child(formatChild(row.data())).show();
+            tr.addClass('shown');
+            pauseRefresh();
+        }
+    });
+}
+function formatChild(d) {
+    // `d` is the original data object for the row
+    var retString = '<table cellpadding="5" cellspacing="0" border="0">';
+    if (!(d.message === "{}")) {
+        retString += '<tr>' +
+                '<td style="width:10%">Message:</td>' +
+                '<td style="white-space: normal">' + d.message + '</td>' +
+                '</tr>';
+    }
+    if (!(d.exception === "")) {
+        retString += '<tr>' +
+                '<td>Exception:</td>' +
+                '<td>' + d.exception + '</td>' +
+                '</tr>';
+    }
+    retString += '<tr>' +
+            '<td>Logger:</td>' +
+            '<td>' + d.logger + '</td>' +
+            '</tr>' +
+            '</table>';
+
+    return retString;
+}
+function reloadLogs() {
+    if (dataTable) {
+        dataTable.ajax.reload(null, false);
+    }
+}
+

@@ -26,6 +26,7 @@ var tweenAdminPanel = new TweenLite("#admin-panel", 1, {ease: Power2.easeInOut, 
 var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 
 var view = "left";
+var dataTable = null;
 
 Mousetrap.bind({
     'left': function () {
@@ -36,7 +37,6 @@ Mousetrap.bind({
     }
 });
 function viewShift(dir) {
-    resetView();
     switch (view) {
         case "left":
             if (dir === "right") {
@@ -44,12 +44,10 @@ function viewShift(dir) {
             }
             break;
         case "center":
-            switch (dir) {
-                case "left":
-                    newView("logging");
-                    break;
+            if (dir === "left") {
+                newView("logging");
+                view = dir;
             }
-            view = dir;
             break;
     }
 }
@@ -69,8 +67,8 @@ $(function () {
 });
 
 function loadAdminNavbar() {
-    setRefresh(10);
-    $("#sub-nav").load("/StackV-web/admin_navbar.html", function () {
+    $("#sub-nav").load("/StackV-web/nav/admin_navbar.html", function () {
+        setRefresh($("#refresh-timer").val());
         switch (view) {
             case "left":
                 $("#logging-tab").addClass("active");
@@ -104,6 +102,7 @@ function resetView() {
     }
 }
 function newView(panel) {
+    resetView();
     switch (panel) {
         case "logging":
             tweenLoggingPanel.play();
@@ -119,149 +118,29 @@ function newView(panel) {
 }
 
 function loadAdmin() {
-    // Subfunctions
-    subloadAdmin();
-}
-
-function subloadAdmin() {
-    subloadLogging();
-}
-
-function subloadLogging() {
-    loadLogs();
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
+    loadDataTable(apiUrl);
     setTimeout(function () {
         if (view === "left") {
             tweenLoggingPanel.play();
+            $('div.dataTables_filter input').focus();
         }
-    }, 1000);
-}
-
-
-/* LOGGING */
-
-function loadLogs() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (logs) {
-            var div = document.getElementById("log-div");
-            div.innerHTML = "";
-            for (i = 0; i < logs.length; i++) {
-                var log = logs[i];
-                var detail = document.createElement("details");
-                detail.className = "level-" + log["level"];
-
-                /*  log mapping:
-                 *      referenceUUID
-                 *      marker
-                 *      timestamp
-                 *      level
-                 *      logger
-                 *      message
-                 *      exception     
-                 */
-
-                var summary = document.createElement("summary");
-                summary.innerHTML = log["timestamp"] + " - " + log["message"];
-                detail.appendChild(summary);
-                var data = document.createElement("p");
-                data.innerHTML = "UUID: " + log["referenceUUID"];
-                detail.appendChild(data);
-                var data = document.createElement("p");
-                data.innerHTML = "Level: " + log["level"];
-                detail.appendChild(data);
-                if (log["marker"]) {
-                    var data = document.createElement("p");
-                    data.innerHTML = "Marker: " + log["marker"];
-                    detail.appendChild(data);
-                }
-                var data = document.createElement("p");
-                data.innerHTML = "Logger: " + log["logger"];
-                detail.appendChild(data);
-                if (log["exception"]) {
-                    var data = document.createElement("p");
-                    data.innerHTML = "Exception: " + log["exception"];
-                    detail.appendChild(data);
-                }
-                div.appendChild(detail);
-            }
-
-            filterLogs();
-        }
-    });
-}
-
-function filterLogs() {
-    // Declare variables  
-    var input = document.getElementById("filter-search-input");
-    var filter = input.value.toUpperCase();
-    $('#log-div').children('details').each(function () {
-        if (this.innerHTML.toUpperCase().indexOf(filter) > -1) {
-            $(this).removeClass("hide");
-        } else {
-            $(this).addClass("hide");
-        }
-    });
+    }, 500);
+    reloadLogs();    
 }
 
 
 /* REFRESH */
-
-function reloadData(time) {
+function reloadData() {
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        refreshSync(refreshed, time);
+        setTimeout(function () {
+            var timerSetting = $("#refresh-timer").val();
+            refreshSync(refreshed, timerSetting);
 
-        // Refresh Operations
-        loadLogs();
+            // Refresh Operations
+            reloadLogs();
+        }, 500);
     });
-}
-
-function refreshSync(refreshed, time) {
-    if (refreshed) {
-        sessionStorage.setItem("token", keycloak.token);
-        console.log("Token Refreshed by nexus!");
-    }
-    var timerSetting = $("#refresh-timer").val();
-    var manual = false;
-    if (typeof time === "undefined") {
-        time = countdown;
-    }
-    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-        manual = true;
-    }
-    $("#refresh-timer").val(timerSetting);
-    if (manual === false) {
-        countdown = time;
-        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
-    } else {
-        $("#refresh-button").html('Manually Refresh Now');
-    }
-}
-function timerChange(sel) {
-    clearInterval(refreshTimer);
-    clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
-        setRefresh(sel.value);
-    } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-    }
-}
-function setRefresh(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadData(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
 }

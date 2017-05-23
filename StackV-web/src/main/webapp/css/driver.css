@@ -1,3 +1,32 @@
+div#driver-add-panel, div#installed-panel, div#driver-template-panel {
+    padding: 30px 10% 30px 10%;
+    height: calc(100% - 52px);
+    width: 100%;
+    position: absolute;
+    overflow-y: hidden;
+}
+div#installed-panel {
+    top: -100%;
+    left: 0;
+}
+div#driver-add-panel {
+    left: -100%;
+    text-align: left;
+}
+div#driver-template-panel {
+    right: -100%;
+}
+#driver-content-panel {
+    bottom: -100%;
+    width: 60%;
+    height: 80%;
+    position: absolute;
+    left: 20%;
+    z-index: 10;
+}
+
+
+
 .driver-panel {
     padding: 10px 10px 0 10px;
     left: 65px;

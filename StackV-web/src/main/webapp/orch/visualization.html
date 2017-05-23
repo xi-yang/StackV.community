@@ -1,0 +1,310 @@
+<!--
+ * Copyright (c) 2013-2016 University of Maryland
+ * Modified by: Antonio Heard 2016
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
+!-->
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Graphical View</title>
+        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script> 
+               <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
+        <script src="/StackV-web/js/pubsub.js"></script>
+        <script src="/StackV-web/js/mustache.js"></script>
+        <script src="/StackV-web/js/contextMenu.min.js"></script>
+        
+        <link rel="stylesheet" type="text/css" href="contextMenu.css" media="screen" />
+        <link rel="stylesheet" type="text/css" href="contextMenu.less" media="screen" />
+        <link rel="stylesheet" type="text/css" href="/StackV-web/css/graphTest.css">
+        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
+        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">                
+        <link rel="stylesheet" href="/StackV-web/css/style.css">       
+        <link rel="stylesheet" href="/StackV-web/css/contextMenu.css">   
+        <!-- font awesome icons won't show up otherwise --->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
+
+        <script>
+            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+            dojoConfig = {
+                has: {
+                    "dojo-firebug": true,
+                    "dojo-debug-messages": true
+                },
+                async: true,
+                parseOnLoad: true,
+                packages: [
+                    {
+                        name: "d3",
+                        location: "//d3js.org/",
+                        main: "d3.v3"
+                    },
+                    {
+                        name: "local",
+                        location: "/StackV-web/js/"
+                    }
+                ]
+            };
+        </script>
+
+        <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
+    </head>
+
+    <body>
+        <!-- NAV BAR -->
+        <div id="nav">
+        </div>
+        <!-- SIDE BAR -->
+        <div id="sidebar">            
+        </div>
+
+        <div id="loadingPanel"></div>
+
+<!--        <svg class="loading" id="viz">
+        <defs>
+        When we highlight topologies without specifiyng a width and length, the get clipped
+        The x,y offset are so we avoid clipping the top and left edges.
+        I simply added zeroes until this worked in all cases I tested (the extreme case being a vertical or horizontal topology
+        We could highlight the element entirly with this filter by using feBlend instead of feComposite,
+        However, then (in the case of topologies) the outline would be stuck with the same opacity as the entire element, which is not desireable
+        Instead, we will simply duplicate the selected element, and show its outline as an overlay
+        
+    <filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+        https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx
+        <feMorphology operator="dilate" radius="1"/>
+        <feColorMatrix result="a" type="matrix"
+                       values="0 0 0 0 .7
+                       0 0 0 0 1
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite operator="out" in="a" in2="SourceGraphic"/>
+    </filter>
+
+
+    <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+        <feFlood flood-color="#66ff66" result="base" />
+        <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+        <feColorMatrix result="mask" in="bigger" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite result="drop" in="base" in2="mask" operator="in" />
+        <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+    </filter>
+    <filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+        <feFlood flood-color="#B3F131" result="base" />
+        <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+        <feColorMatrix result="mask" in="bigger" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite result="drop" in="base" in2="mask" operator="in" />
+        <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+    </filter>
+    <filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+        <feFlood flood-color="#23ABA6" result="base" />
+        <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+        <feColorMatrix result="mask" in="bigger" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite result="drop" in="base" in2="mask" operator="in" />
+        <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+    </filter>
+    <filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+        <feFlood flood-color="#FD3338" result="base" />
+        <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+        <feColorMatrix result="mask" in="bigger" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite result="drop" in="base" in2="mask" operator="in" />
+        <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+    </filter>    
+    <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+        https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx
+        <feMorphology operator="dilate" radius="1"/>
+        <feColorMatrix result="a" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 .8
+                       0 0 0 0 .3
+                       0 0 0 1 0" />
+        <feComposite operator="out" in="a" in2="SourceGraphic"/>
+    </filter>
+    <filter id="outlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+        https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx
+        <feMorphology operator="dilate" radius="1"/>
+        <feColorMatrix result="a" type="matrix"
+                       values="0 0 0 0 .7
+                       0 0 0 0 1
+                       0 0 0 0 0
+                       0 0 0 1 0" />
+        <feComposite operator="out" in="a" in2="SourceGraphic"/>
+    </filter>       
+    <filter id="subnetHighlightFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+        https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx
+        <feMorphology operator="dilate" radius="1"/>
+        <feColorMatrix result="a" type="matrix"
+                       values="0 0 0 0 0
+                       0 0 0 0 .8
+                       0 0 0 0 .3
+                       0 0 0 1 0" />
+        <feComposite operator="out" in="a" in2="SourceGraphic"/>
+    </filter>    
+    <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+        <feColorMatrix type="saturate" values=".2"/>
+    </filter>
+    
+    <filter id="trashcanHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
+   <feFlood flood-color="#d11b1e" result="base" />
+   <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
+   <feColorMatrix result="mask" in="bigger" type="matrix"
+      values="0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 0 0
+              0 0 0 1 0" />
+   <feComposite result="drop" in="base" in2="mask" operator="in" />
+   <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+</filter>
+    
+     <marker id="marker_arrow_viz" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="black" />
+    </marker>
+
+    </defs>
+    We nest a g in here because the svg tag itself cannot do transforms
+        we separate topologies, edges, and nodes to create an explicit z-order
+    
+    <g id="transform_viz">
+    <g id="topology_viz"/>
+    <g id="edge1_viz"/>
+    <g id="anchor_viz"/>
+    <g id="node_viz"/>
+    <g id="dialogBox_viz"/>
+    <g id="volumeDialogBox_viz"/>
+    <g id="switchPopup_viz"/>
+    <g id="parentPort_viz"/>
+    <g id="edge2_viz" />
+    <g id="port_viz"/>
+    <g id="volume_viz"/>
+
+    </g>
+    </svg>
+    <div class="hide" id="hoverdiv_viz"></div>        -->
+    
+    <!-- TAG DIALOG -->
+    
+
+    <div id="dialog_policyAction" title="Policy Action">
+    </div>
+    <div id="dialog_policyData" title="Policy Data">
+    </div>
+
+    <div id="dialog_modelView" title="Model View">
+    </div>
+    
+    <!-- OMM PANEL -->
+    <div id="omm-panel"> 
+    </div>
+    
+    <!-- TAG PANEL -->
+    <div id="tag-panel"> 
+    </div>
+    <script> 
+        function onload() { 
+            
+          require(["local/stackv/topology/Visualization"],
+                function (Visualization) {
+                   var Viz = new Visualization({
+                    settings: 
+                            {
+                             fullpage_viz: true,
+                             name: "viz"
+                           },
+                      id: "viz",
+                      data_array: [
+                        {
+                            module_path : "local/stackv/topology/ContextMenu",
+                            uses_properties: false,  
+                            initArgs : [
+                                "CM1",
+                                {}, 
+                                    [{
+                                        name: 'Add Tag',
+                                        img: 'images/create.png',
+                                        title: 'add tag',
+                                        fun: function (data,event) {
+                                            _Mediator.publish("TagDialog_open", {identifier: data.trigger.id});
+                                        }
+                                    }]
+                            ],
+                            initReqs : ["rendered"]
+                        }, 
+                        {
+                            module_path : "local/stackv/topology/TagPanel",
+                            uses_properties: false,  
+                            initArgs : ["TP1" ,{}],
+                            initReqs : ["CM1"]
+                        },
+                        {
+                            module_path : "local/stackv/topology/ServicePanel",
+                            uses_properties: true,  
+                            initArgs : ["SP1" ,{}],
+                            initReqs : ["rendered"]
+                        },
+                        {
+                            module_path : "local/stackv/topology/DisplayPanel",
+                            uses_properties: true,  
+                            initArgs : ["DP1" ,{}],
+                            initReqs : []
+                        },
+                        {
+                            module_path : "local/stackv/topology/VizPersistence",
+                            uses_properties: true,  
+                            initArgs : ["VP" ,{}],
+                            initReqs : []
+                        }
+
+                    ]                      
+                   });
+                   Viz.init();
+                }
+            );
+           
+        }
+        onload();
+     </script>
+
+</body>
+</html>

@@ -213,7 +213,8 @@ public class ServiceResource {
     // propagate_forced: refresh VG and apply delta to refreshed only
     //      forced only work after FAILED status
     //Commit:
-    // Async - status update later
+    // sync - failed at service level
+    // async - failed at system level -> status update later
     //      forced: only work after FAILED status
     //Revert: 
     // revert forced: after FAILED status
@@ -280,13 +281,23 @@ public class ServiceResource {
                 throw logger.throwing(method, ex);
             }
         } else if (action.equalsIgnoreCase("commit")) {
-            String ret = serviceCallHandler.commitDeltas(svcInstanceUUID, false);
-            logger.trace_end(method);
-            return ret;
+            try {
+                String ret = serviceCallHandler.commitDeltas(svcInstanceUUID, false);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw logger.throwing(method, ex);
+            }
         } else if (action.equalsIgnoreCase("commit_forced")) {
-            String ret = serviceCallHandler.commitDeltas(svcInstanceUUID, true);
-            logger.trace_end(method);
-            return ret;
+            try {
+                String ret = serviceCallHandler.commitDeltas(svcInstanceUUID, true);
+                logger.trace_end(method);
+                return ret;
+            } catch (Exception ex) {
+                serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+                throw logger.throwing(method, ex);
+            }
         } else if (action.equalsIgnoreCase("revert")) {
             try {
                 String ret = serviceCallHandler.revertDeltas(svcInstanceUUID, false);

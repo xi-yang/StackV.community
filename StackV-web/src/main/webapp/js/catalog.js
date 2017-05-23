@@ -50,9 +50,22 @@ Mousetrap.bind({
     }
 });
 
-$(function () {
-    setTimeout(catalogLoad, 750);
-    setRefresh(60);
+
+function openCatalog() {
+    tweenCatalogPanel.play();
+    tweenBlackScreen.play();
+    $("#catalog-panel").removeClass("closed");
+}
+function closeCatalog() {
+    tweenCatalogPanel.reverse();
+    tweenBlackScreen.reverse();
+    $("#catalog-panel").addClass("closed");
+}
+
+function loadCatalog() {
+    loadInstances();
+    loadWizard();
+    loadEditor();
 
     $("#black-screen").click(function () {
         $("#info-panel").removeClass("active");
@@ -66,31 +79,17 @@ $(function () {
             closeCatalog();
         }
     });
-
-    //$("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
-});
-
-function openCatalog() {
-    tweenCatalogPanel.play();
-    tweenBlackScreen.play();
-    $("#catalog-panel").removeClass("closed");
 }
-function closeCatalog() {
-    tweenCatalogPanel.reverse();
-    tweenBlackScreen.reverse();
-    $("#catalog-panel").addClass("closed");
-}
-
-function catalogLoad() {
-    loadInstances();
-    loadWizard();
-    loadEditor();
+function loadCatalogNavbar() {
+    $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
+        setRefresh($("#refresh-timer").val());
+    });
 }
 
 function loadInstances() {
-
     var userId = keycloak.subject;
     var tbody = document.getElementById("status-body");
+    tbody.innerHTML = "";
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
     $.ajax({
@@ -125,7 +124,7 @@ function loadInstances() {
             }
 
             $(".clickable-row").click(function () {
-                sessionStorage.setItem("uuid", $(this).data("href"));
+                sessionStorage.setItem("instance-uuid", $(this).data("href"));
                 window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
             });
 
@@ -235,7 +234,7 @@ function loadWizard() {
                     }
                 });
                 // reload top table and hide modal
-                reloadCatalog();
+                reloadData();
                 $("div#profile-modal").modal("hide");
                 $("#black-screen").addClass("off");
                 $("#info-panel").removeClass("active");
@@ -356,8 +355,7 @@ function loadEditor() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-
-            $(".button-service-select").click(function (evt) {
+            $(document).on('click', '.button-service-select', function ( evt ) {          
                 var ref = "/StackV-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
                 window.location.href = ref;
 
@@ -367,67 +365,28 @@ function loadEditor() {
     });
 }
 
-/* REFRESH */
-function timerChange(sel) {
-    clearInterval(refreshTimer);
-    clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
-        setRefresh(sel.value);
-    } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-    }
-}
-
-function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-    countdown--;
-}
-
-function setRefresh(time) {
-    countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadCatalog(time);
-    }, (time * 1000));
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-}
-
-function reloadCatalog(time) {
-    keycloak.updateToken(60).error(function () {
-        console.log("Error updating token!");
-    }).success(function (refreshed) {
-        tweenInstancePanel.reverse();
-        setTimeout(function () {
-            if (refreshed) {
-                sessionStorage.setItem("token", keycloak.token);
-                console.log("Token Refreshed by nexus!");
-            }
-
-            var timerSetting = $("#refresh-timer").val();
-            var manual = false;
-            if (typeof time === "undefined") {
-                time = countdown;
-            }
-            if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
-                manual = true;
-            }
-
-            $('#instance-panel').load(document.URL + ' #status-table', function () {
-                loadInstances();
-
-                $("#refresh-timer").val(timerSetting);
-                if (manual === false) {
-                    countdown = time;
-                    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + countdown + ' seconds';
-                } else {
-                    document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
-                }
-            });
-        }, 750);
-    });
-}
-
 function getURLParameter(name) {
     return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+}
+
+
+/* REFRESH */
+function reloadData() {
+    keycloak.updateToken(90).error(function () {
+        console.log("Error updating token!");
+    }).success(function (refreshed) {
+        var timerSetting = $("#refresh-timer").val();
+        if (timerSetting > 15) {
+            tweenInstancePanel.reverse();
+            setTimeout(function () {
+                loadInstances();
+                refreshSync(refreshed, timerSetting);
+            }, 750);
+        } else {
+            setTimeout(function () {
+                loadInstances();
+                refreshSync(refreshed, timerSetting);
+            }, 500);
+        }
+    });
 }

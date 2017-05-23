@@ -10,11 +10,11 @@
     <head>
         <meta charset="UTF-8">
         <title>Dynamic Network Connection Service</title>
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
         <link rel="stylesheet" href="/StackV-web/css/dnc.css">
     </head>
-    
+
     <body>
         <div id="nav">
         </div>
@@ -25,26 +25,22 @@
         </div>
         <div id="overlay-black"></div>
         <div id="main-pane">
-            <form class="dncform">
+            <form class="stageform">
                 <fieldset class="active-fs" id="0-template-select" style="z-index: 4;">
-                    <div>
-                        <p style="float:left;">Alias:</p>
-                        <input type="text" placeholder="Service Alias" id="service-name">
-                    </div>                    
-                    <div id="spacer"></div>
-                    <div id="spacer"></div>
                     <div id="table-div">
                         <table id="input-table">
                             <tbody id="link-body">
+                                <tr><td></td><td><input type="text" placeholder="Service Alias" id="service-name"></td></tr>
+                                <tr id="spacer"></tr>
                                 <tr>
                                     <td>Link 1</td>
-                                    <td style="width: 600px; text-align: center;">
+                                    <td style="text-align: center;">
                                         <div>
                                             <input type="text" id="linkUri1" placeholder="Link-Name">
                                             <input type="text" id="linksrc1" placeholder="Source">
-                                            <input type="text" id="linksrc-vlan1" placeholder="Vlan-tag">
+                                            <input type="text" id="linksrc-vlan1" placeholder="Vlan-tag" value="any">
                                             <input type="text" id="linkdes1" placeholder="Destination">
-                                            <input type="text" id="linkdes-vlan1" placeholder="Vlan-tag">
+                                            <input type="text" id="linkdes-vlan1" placeholder="Vlan-tag" value="any">
                                         </div>
                                     </td>
                                 </tr>
@@ -58,7 +54,7 @@
                             <button type="button" class="action-button" onclick="addLinkDNC();">Add Link</button>
                         </div>
                     </div>
-                    
+
                 </fieldset>
             </form>
             <!--
@@ -76,10 +72,14 @@
             <div id="tag-panel">
             </div>
         </div>
-        <script src="/StackV-web/js/svc/dnc.js"></script>
+
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+
         <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/svc/dnc.js"></script>
+
     </body>
 </html>

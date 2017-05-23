@@ -1,5 +1,5 @@
 div#details-panel, div#logging-panel, div#visual-panel {
-    padding: 30px 10% 30px 10%;
+    padding: 30px 7% 30px 7%;
     height: calc(100% - 52px);
     width: 100%;
     position: absolute;

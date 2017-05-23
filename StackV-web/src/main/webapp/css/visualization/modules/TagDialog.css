@@ -1,0 +1,43 @@
+/*****for tag dialog *******/
+#tagDialogBar {
+    width:100%;
+}
+#tagDialogCloser{
+  color:grey;
+  cursor:pointer;
+}
+
+#tagDialogCloserBar{
+  padding-left:80%;    
+}
+#tagDialogContent {
+  margin:auto;
+  margin-top:10px;
+}
+#tagDialog {
+  text-align:center;
+  z-index:1;
+}
+#tagDialogButtonContainer {margin-top:18px;}
+#tagDialogColorSelectionTab{
+  margin-bottom:5px;
+  margin-left: 33%;
+}
+.colorBox {
+  margin-right: 0px; 
+  float:left;
+  width:15px;
+  height:15px;
+}
+
+#boxRed {background-color:red;}
+#boxOrange {background-color:orange;}
+#boxYellow {background-color:yellow;}
+#boxGreen {background-color:green;}
+#boxBlue {background-color:blue;}
+#boxPurple {background-color:purple;}
+#tagDialog.tagDialog-active {display:block;}
+.colorBox-highlighted {    border: 2px solid black;}
+
+
+

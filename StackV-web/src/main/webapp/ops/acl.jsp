@@ -10,7 +10,7 @@
         <meta charset="UTF-8">
         <title>ACL Management</title>
 
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
@@ -21,13 +21,13 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <div id="sub-nav">            
+        </div>
         <!-- TAG PANEL -->
         <div id="tag-panel">
         </div>
         <!-- MAIN PANEL -->
-        <div id="main-pane">
-            <div class="left-tab"></div>
-            <div class="right-tab"></div>
+        <div class="sub-main" id="main-pane">           
             <div class="acl-panel" id="acl-role-panel">
                 <input type="hidden" id="acl-user">
                 <div id="acl-role-user-div">
@@ -147,6 +147,7 @@
         <script src="/StackV-web/js/bootstrap.js"></script>
         
         <script src="/StackV-web/js/mousetrap.js"></script>
+        <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>        
         <script src="/StackV-web/js/acl.js"></script>

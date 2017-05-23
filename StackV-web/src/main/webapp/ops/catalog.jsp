@@ -11,7 +11,7 @@
         <meta charset="UTF-8">
         <title>Service Catalog</title>
 
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
     </head>
 
@@ -19,33 +19,28 @@
         <!-- NAV BAR -->
         <div id="nav">
         </div>
+        <div id="sub-nav">
+        </div>
         <!-- TAG PANEL -->
         <div id="tag-panel">
         </div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
-        <div id="main-pane">
+        <div class="sub-main" id="main-pane">
             <div id="instance-panel">
                 <table class="management-table" id="status-table">
+                    <colgroup>
+                        <col style="width:25%">
+                        <col style="width:10%">
+                        <col style="width:35%">
+                        <col style="width:30%">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>Instance Alias</th>
                             <th>Service Type</th>
                             <th>Instance UUID</th>
-                            <th>
-                                <span>Instance Status</span>
-                                <div id="refresh-panel" class="form-inline">
-                                    <label for="refresh-timer">Auto-Refresh Interval</label>
-                                    <select id="refresh-timer" onchange="timerChange(this)" class="form-control">
-                                        <option value="off">Off</option>
-                                        <option value="5">5 sec.</option>
-                                        <option value="10">10 sec.</option>
-                                        <option value="30">30 sec.</option>
-                                        <option value="60" selected>60 sec.</option>
-                                    </select>
-                                    <button class="button-header btn btn-sm" id="refresh-button" onclick="reloadCatalog()">Manually Refresh Now</button>
-                                </div>
-                            </th>
+                            <th>Instance Status</th>
                         </tr>
                     </thead>
                     <tbody id="status-body">
@@ -138,17 +133,16 @@
         </div>
 
         <script src="/StackV-web/js/keycloak.js"></script>
-        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
-        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
-        
+
+        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
-        
+
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/catalog.js"></script>
-
     </body>
 </html>

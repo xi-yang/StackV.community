@@ -40,7 +40,9 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.commons.net.util.SubnetUtils;
@@ -96,11 +98,13 @@ public class OpenStackPush {
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     private String topologyUri;
     private String defaultImage;
-
     private String defaultFlavor;
+    private String defaultKeyPair;
+    private String defaultSecGroup;
 
     public OpenStackPush(String url, String NATServer, String username, String password, String tenantName, 
-        String adminUsername, String adminPassword, String adminTenant, String topologyUri, String defaultImage, String defaultFlavor) {
+        String adminUsername, String adminPassword, String adminTenant, String topologyUri, 
+        String defaultImage, String defaultFlavor, String defaultKeyPair, String defaultSecGroup) {
         client = new OpenStackGet(url, NATServer, username, password, tenantName);
         osClient = client.getClient();
         adminClient = new OpenStackGet(url, NATServer, adminUsername, adminPassword, adminTenant);
@@ -110,6 +114,8 @@ public class OpenStackPush {
         this.adminTenant = adminTenant;
         this.defaultImage = defaultImage;
         this.defaultFlavor = defaultFlavor;
+        this.defaultKeyPair = defaultKeyPair;
+        this.defaultSecGroup = defaultSecGroup;
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
         topologyUri = topologyUri.replaceAll("[^A-Za-z0-9()_-]", "_");
@@ -1593,6 +1599,12 @@ public class OpenStackPush {
                 o.put("request", "AssociateFloatingIpRequest");
                 o.put("server name", serverName);
                 o.put("port name", portName);
+                if (floatingIp.equalsIgnoreCase("any")) {
+                    floatingIp = checkoutFloatingIp(modelRef);
+                    if (floatingIp == null) {
+                        throw logger.error_throwing(method, "failed to assign 'any' floating IP to  port "+portName);
+                    }
+                }
                 o.put("floating ip", floatingIp);
                 requests.add(o);
             } else {
@@ -1608,6 +1620,33 @@ public class OpenStackPush {
         }
         return requests;
     }    
+    
+    // serving floating IP from available pool (randomized)
+    private String checkoutFloatingIp(OntModel model) {
+        String sparql = "SELECT ?fip_alloc ?fip WHERE {"
+                + "?fip_alloc mrs:type \"ipv4-floatingip\". "
+                + "?fip_alloc mrs:value ?fip. "
+                + "FILTER NOT EXISTS {?any_assigned mrs:type \"floating-ip\". ?any_assigned mrs:value ?fip}"
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        Resource fipAlloc = null;
+        List<RDFNode> fipList = new ArrayList();
+        while (r.hasNext()) {
+            QuerySolution solution = r.next();
+            if (fipAlloc == null) {
+                fipAlloc = solution.getResource("fip_alloc");
+            }
+            
+            fipList.add(solution.get("fip"));
+        }
+        if (fipAlloc == null) {
+            return null;
+        }
+        Random rand = new Random();
+        RDFNode fipAddress = fipList.get(rand.nextInt(fipList.size()));
+        model.remove(fipAlloc, Mrs.value, fipAddress);
+        return fipAddress.toString();
+    }
     
     /**
      * ****************************************************************
@@ -1782,12 +1821,29 @@ public class OpenStackPush {
                 } else {
                     o.put("flavor", flavorID);
                 }
+                
+                if (keypairName == null) {
+                    if (defaultKeyPair == null) {
+                        logger.warning(method, String.format("Cannot determine server key pair."));
+                    } else {
+                        keypairName = defaultKeyPair;
+                    }
+                }
                 if (keypairName != null && !keypairName.isEmpty())  {
                     o.put("keypair", keypairName);
+                }
+
+                if (secgroupName == null) {
+                    if (defaultSecGroup == null) {
+                        logger.warning(method, String.format("Cannot determine server security group."));
+                    } else {
+                        secgroupName = defaultSecGroup;
+                    }
                 }
                 if (secgroupName != null && !secgroupName.isEmpty()) {
                     o.put("secgroup", secgroupName);
                 }
+                
                 if (hostName != null && !hostName.isEmpty()) {
                     o.put("host name", hostName);
                 }

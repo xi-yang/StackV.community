@@ -78,10 +78,15 @@ public class AwsPush {
     private AwsDCGet dcClient = null;
     private String topologyUri = null;
     private Regions region = null;
+    String defaultImage = null;
+    String defaultInstanceType = null;
+    String defaultKeyPair = null;
+    String defaultSecGroup = null;
     private AwsBatchResourcesTool batchTool = new AwsBatchResourcesTool();
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-    public AwsPush(String access_key_id, String secret_access_key, Regions region, String topologyUri) {
+    public AwsPush(String access_key_id, String secret_access_key, Regions region, String topologyUri, 
+            String defaultImage, String defaultInstanceType, String defaultKeyPair, String defaultSecGroup) {
         //have all the information regarding the topology
         ec2Client = new AwsEC2Get(access_key_id, secret_access_key, region);
         dcClient = new AwsDCGet(access_key_id, secret_access_key, region);
@@ -90,6 +95,10 @@ public class AwsPush {
         this.region = region;
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
+        this.defaultImage = defaultImage;
+        this.defaultInstanceType = defaultInstanceType;
+        this.defaultKeyPair = defaultKeyPair;
+        this.defaultSecGroup = defaultSecGroup;
         //create prefix util
         awsPrefix = new AwsPrefix(topologyUri);
     }
@@ -2845,10 +2854,10 @@ public class AwsPush {
                 //get instance type, image, secgroup and keypair names
                 query = "SELECT ?type WHERE {<" + node.asResource() + "> mrs:type ?type}";
                 ResultSet r5 = executeQuery(query, model, modelAdd);
-                String flavorID = "t2.micro";
-                String imageID = "ami-146e2a7c";
-                String keypairName = "driver_key";
-                String secgroupName = "default";
+                String flavorID = (defaultInstanceType == null ? "t2.micro" : defaultInstanceType);
+                String imageID = (defaultImage == null ? null : defaultImage);
+                String keypairName = (defaultKeyPair == null ? null : defaultKeyPair);
+                String secgroupName = (defaultSecGroup == null ? "default" : defaultSecGroup);
                 String instanceTypes = null;
                 while (r5.hasNext()) {
                     QuerySolution q2 = r5.next();
@@ -2878,6 +2887,12 @@ public class AwsPush {
                             secgroupName = value;
                         }
                     }
+                }
+                if (imageID == null) {
+                    throw logger.error_throwing(method, "Image ID is unknown - cannot build instance: " + nodeIdTagValue);
+                }
+                if (keypairName == null) {
+                    throw logger.error_throwing(method, "Key Pair is unknown - cannot build instance: " + nodeIdTagValue);
                 }
                 //put request for new instance
                 requests += String.format("RunInstancesRequest %s %s %s %s %s ", imageID, flavorID, keypairName, secgroupName, nodeIdTagValue);

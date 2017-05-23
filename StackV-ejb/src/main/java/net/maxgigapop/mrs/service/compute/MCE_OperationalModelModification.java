@@ -51,6 +51,7 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+        logger.cleanup();
         String method = "process";
         logger.refuuid(annotatedDelta.getReferenceUUID());
         logger.start(method);

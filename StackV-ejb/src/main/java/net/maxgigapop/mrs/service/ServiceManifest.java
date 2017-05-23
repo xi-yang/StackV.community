@@ -349,7 +349,9 @@ public class ServiceManifest {
 
     static private String replaceTemplateVars(String text, JSONObject varMap) {
         for (Object var : varMap.keySet()) {
-            text = text.replaceAll("\\?" + var + "\\?", (String) varMap.get(var));
+            String varMapped = (String) varMap.get(var);
+            varMapped = varMapped.replaceAll("\"", "'");
+            text = text.replaceAll("\\?" + var + "\\?", varMapped);
         }
         return text;
     }

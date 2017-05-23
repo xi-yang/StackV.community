@@ -24,163 +24,145 @@
 "use strict";
 define(["local/stackv/utils"], function (utils) {
     var bsShowFadingMessage = utils.bsShowFadingMessage;
-    
-    function TagDialog (userName) {
-        this.currentColor = null;
-        this.label = null;
-        this.sentData = null;
-        this.currentCMObj = null;
-        this.username = userName;
-        this.selectedColorBox = null;
+    var loadCSS = utils.loadCSS;
+    var renderTemplate = utils.renderTemplate;
+    var getAuthentication = utils.getAuthentication;
+    var loadSettings = utils.loadSettings;
 
-        var that = this;
-        that.dialog = document.querySelector("#tagDialog");
-                
-        var colorBoxes = document.getElementsByClassName("colorBox");
+    function TagDialog (Settings) {
+        var currentColor = null;
+        var label = null;
+        var identifier = null;
+        var username;
+        var selectedColorBox = null;
         
-        this.init = function() {
+        
+        var defaults = {
+           parent_container: "tag-panel",
+           root_container: "tagDialog",
+           input_label: "tagDialogLabelInput",
+           color_box_class: "colorBox",
+           color_box_highlighted_class: "colorBox-highlighted",         
+           template_root: "/StackV-web/data/viz_templates/",
+           template_filename: "TagDialog.html",
+           css_root: "/StackV-web/css/visualization/modules/", 
+           css_filename: "TagDialog.css"
+        };
+        var settings;
+        
+        var dialog;
+        
+        var colorBoxes;
+        
+        function init(Settings) {
+             settings = loadSettings(Settings, defaults);
+             renderTemplate(settings, buildDialog.bind(undefined));
+             subscribeToMediatior();
+        };
+        
+        
+        function buildDialog() {
+             colorBoxes = document.getElementsByClassName(settings.color_box_class);
+             dialog = $( "#" + settings.root_container ).dialog({
+              autoOpen: false,
+              buttons: {
+                "OK": createLabel,
+                Cancel: function() {
+                  $( "#" + settings.root_container ).dialog( "close" );
+                }
+              },
+              close: function() {
+              }
+            });
+            
             for (var i = 0; i < colorBoxes.length;  i++) {
                 colorBoxes[i].onclick = function() {
-                    if (that.selectedColorBox) {
-                         that.selectedColorBox.classList.remove("colorBox-highlighted");
-                     }
-                    that.selectedColorBox = this;
-                    that.selectedColorBox.classList.add( "colorBox-highlighted");
-                    that.currentColor = that.selectedColorBox.id.split("box")[1];
-                 };
-            }
-            
-            document.getElementById("tagDialogCloser").onclick = function() {
-                that.closeDialog();
-            };
-            document.getElementById("tagDialogCancel").onclick = function() { 
-                that.closeDialog();
-            };
-            
-
-            document.getElementById("tagDialogOK").onclick = function() {
-                that.label = document.getElementById("tagDialogLabelInput").value;
-                
-                if (that.username === ""){
-                    alert("Error: Please log in to submit tags. ");
-                    that.closeDialog();
-                }
-                
-                
-                var serializedData = JSON.stringify({
-                        user:  that.username,
-                        identifier: that.label,
-                        label: that.sentData,
-                        color: that.currentColor.toLowerCase()
-                });
-                var token = sessionStorage.getItem("token");
-
-                $.ajax({
-                    crossDomain: true,
-                    type: "PUT",
-                    url: "/StackV-web/restapi/app/label",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + token);
-                    },
-                    data: serializedData,
-                    contentType: "application/json", 
-                    
-                    success: function(data,  textStatus,  jqXHR ) {
-                        //alert("Success\n" + data + "\n" + textStatus);
-                        var tagList = document.querySelector("#labelList1");
-                        var tag = document.createElement("li");
-                        tag.classList.add("tagPanel-labelItem");
-                        tag.classList.add("label-color-" + that.currentColor.toLowerCase());
-                        
-                        var x = document.createElement("i");
-                        x.classList.add("fa");
-                        x.classList.add("fa-times");
-                        x.classList.add("tagDeletionIcon");      
-                        x.onclick = that.deleteTag.bind(undefined, that.label, tag, tagList);
-                        
-                        tag.innerHTML = that.label;
-                        tag.setAttribute('data-sentData', that.sentData);
-                        tag.appendChild(x);
-
-                        tag.onclick = function(e) {
-                             // Don't fire for events triggered by children. 
-                            if (e.target !== this)
-                                return;
-
-                            var textField = document.createElement('textarea');
-                            textField.innerText = that.getSentData();
-                            document.body.appendChild(textField);
-                            textField.select();
-                            document.execCommand('copy');
-                            $(textField).remove();     
-                            
-                            bsShowFadingMessage("#tagPanel", "Data copied to clipboard.", "top", 1000);
-
-                        };
-                        tagList.appendChild(tag);
-                        that.closeDialog();
-                        
-                        bsShowFadingMessage("#tagPanel", "Tag added.", "top", 1000);
-
-                    },
-                    error: function(jqXHR, textStatus, errorThrown ) {
-                       //alert(errorThrown + "\n"+textStatus);
-                       alert("Error adding tag.");
-                       that.closeDialog();
+                    if (selectedColorBox) {
+                         selectedColorBox.classList.remove(settings.color_box_highlighted_class);
                     }
-                    
-                });
-                    var labelInput = document.getElementById("tagDialogLabelInput");
-                    $('#tagDialogLabelInput').val("");
-
-                    labelInput.vallue = ""; 
-           };            
-        };
-
-        this.closeDialog = function() {
-            $('#tagDialogLabelInput').removeAttr('value');
-            that.dialog.classList.remove( "tagDialog-active");
-        };
+                    selectedColorBox = this;
+                    selectedColorBox.classList.add(settings.color_box_highlighted_class);
+                    currentColor = selectedColorBox.id.split("box")[1];
+                 };
+            }            
+        }
         
-        this.openDialog = function(o) {
-            that.dialog.classList.add( "tagDialog-active");
-            that.currentCMObj = o;
-            if (typeof that.currentCMObj.getName === 'function') {
-                that.sentData = that.currentCMObj.getName();
-            } else {
-                that.sentData = that.currentCMObj;
+        function createLabel() {
+            label = document.getElementById(settings.input_label).value;
+            
+            var auth = getAuthentication();
+            username = auth.username;
+            var token = auth.token;
+            
+            if (username === ""){
+                alert("Error: Please log in to submit tags. ");
+                closeDialog();
             }
-        };
-        this.getSentData = function() {
-            //alert(that.sentData);
-            return that.sentData;
+
+
+            var serializedData = JSON.stringify({
+                    user:  username,
+                    identifier: label,
+                    label: identifier,
+                    color: currentColor.toLowerCase()
+            });
+           
+            $.ajax({
+                crossDomain: true,
+                type: "PUT",
+                url: "/StackV-web/restapi/app/label",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + token);
+                },
+                data: serializedData,
+                contentType: "application/json", 
+
+                success: function(data,  textStatus,  jqXHR ) {
+                    PubSub.publish("TagPanel_createTag", {
+                        identifier: identifier,
+                        label: label,
+                        color: currentColor.toLowerCase()
+                    });
+                    closeDialog();
+                },
+                error: function(jqXHR, textStatus, errorThrown ) {
+                   //alert(errorThrown + "\n"+textStatus);
+                   alert("Error adding tag.");
+                   closeDialog();
+                }
+
+            });
+            var labelInput = document.getElementById(settings.input_label);
+            $('#' + settings.input_label).val("");
+
+            labelInput.vallue = ""; 
+        }
+
+        function closeDialog() {
+            $('#' + settings.input_label).removeAttr('value');
+            $("#" + settings.root_container ).dialog( "close" );
         };
         
-        this.deleteTag = function (identifier, htmlElement, list) {
-                var token = sessionStorage.getItem("token");
-
-                $.ajax({
-                    crossDomain: true,
-                    type: "DELETE",
-                    url: "/StackV-web/restapi/app/label/" + userName + "/delete/" + identifier,
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + token);
-                    },
-
-                    success: function(data,  textStatus,  jqXHR ) {
-                       bsShowFadingMessage("#tagPanel", "Tag deleted.", "top", 1000);
-                       list.removeChild(htmlElement);
-                    },
-
-                    error: function(jqXHR, textStatus, errorThrown ) {
-                       bsShowFadingMessage("#tagPanel", "Error deleting tag.", "top", 1000);
-
-                       //alert(errorThrown + "\n"+textStatus);
-                       //alert("Error deleting tag.");
-                    }                  
-                });                
+        function subscribeToMediatior() {
+            if (window.PubSub !== undefined) {
+               /*
+                * initerface: 
+                *    identifier
+                */
+               PubSub.subscribe('TagDialog_open', function(data) {
+                   identifier = data.identifier;
+                   $("#" + settings.root_container).dialog( "open" );
+               });     
+               
+               PubSub.subscribe('TagDialog_close', function() {
+                   closeDialog();   
+               });
+            }
+        }
+    
+        return {
+          init: init  
         };
-        
     }
     return TagDialog;
 });

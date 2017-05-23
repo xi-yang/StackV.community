@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -36,6 +37,7 @@ import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.PostLoad;
 import javax.persistence.Table;
 import net.maxgigapop.mrs.bean.persist.PersistentEntity;
 import org.hibernate.annotations.GenericGenerator;
@@ -55,6 +57,8 @@ public class DeltaBase extends PersistentEntity implements Serializable {
     @GenericGenerator(name = "system-uuid", strategy = "uuid2")
     protected String id;
 
+    protected Integer orderInt = 0;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "modelAdditionId")
     protected DeltaModel modelAddition = null;
@@ -69,6 +73,14 @@ public class DeltaBase extends PersistentEntity implements Serializable {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public Integer getOrderInt() {
+        return orderInt;
+    }
+
+    public void setOrderInt(Integer orderInt) {
+        this.orderInt = orderInt;
     }
 
     @Override

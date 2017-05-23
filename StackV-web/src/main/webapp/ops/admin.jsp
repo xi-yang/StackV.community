@@ -10,7 +10,7 @@
         <meta charset="UTF-8">
         <title>Administrator's Panel</title>
 
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
@@ -33,34 +33,46 @@
             <div id="logging-panel">
                 <div id="logging-header-div">
                     Logs                  
-                    <div id="filter-search-div" style="display:inline;">
-                        <input id="filter-search-input" onkeyup="filterLogs(this)" type="search" class="form-control">
-                        <span id="filter-search-clear" class="glyphicon glyphicon-remove-circle"></span>
-                    </div>
-                    <div id="filter-level-div">
-                        <label><input class="checkbox-level" type="checkbox" name="trace" checked>Trace</label>
-                        <label><input class="checkbox-level" type="checkbox" name="info" checked>Info</label>
-                        <label><input class="checkbox-level" type="checkbox" name="warn" checked>Warn</label>
-                        <label><input class="checkbox-level" type="checkbox" name="error" checked>Error</label>                        
-                    </div>
                 </div>
                 <div id="logging-body-div">
-                    <div id="log-div"></div>
+                    <table id="loggingData" class="table table-striped table-bordered display nowrap" cellspacing="0" width="100%">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Timestamp</th>
+                                <th>Event</th>
+                                <th>Reference UUID</th>
+                                <th>Level</th>                                
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr>
+                                <th></th>
+                                <th>Timestamp</th>
+                                <th>Event</th>
+                                <th>Reference UUID</th>
+                                <th>Level</th>                                
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
         </div>
         <div id="details-viz" ></div>
 
-
         <script src="/StackV-web/js/keycloak.js"></script>
-        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
-        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
 
+        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
+
+        <script src="/StackV-web/js/datatables/jquery.dataTables.min.js"></script>
+        <script src="/StackV-web/js/datatables/dataTables.scroller.min.js"></script>
+        <script src="/StackV-web/js/datatables/dataTables.fixedColumns.min.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/admin.js"></script>

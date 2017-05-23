@@ -29,7 +29,9 @@ RUN cd $HOME \
     && mv $HOME/wildfly-$WILDFLY_VERSION $JBOSS_HOME \
     && rm wildfly-$WILDFLY_VERSION.tar.gz \
     && chown -R jboss:0 ${JBOSS_HOME} \
-    && chmod -R g+rw ${JBOSS_HOME}
+    && chmod -R g+rw ${JBOSS_HOME} \
+    && sed -i "s/-Xms64m -Xmx512m/-Xms1024m -Xmx4096m/g" /opt/jboss/wildfly/bin/standalone.conf
+
   
 
 ADD ./StackV-ear/src/main/docker/standalone-full.xml /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
@@ -44,8 +46,6 @@ RUN \
 
 ## install mariadb
 RUN yum install -y mariadb-server mariadb-client
-
-RUN systemctl enable mariadb
 
 ## init mysql databases (frontend and rainsdb), add users / pass
 ADD ./StackV-web/src/main/webapp/tools/localhost.sql /opt/jboss/localhost.sql
@@ -67,22 +67,24 @@ RUN \
 
 
 ## make jboss sudoer
-RUN yum install -y sudo wget killall
-RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe" > /etc/sudoers.d/jboss && \
-    chmod 0440 /etc/sudoers.d/jboss
+RUN yum install -y sudo wget killall ntp
+RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe, /bin/mysql_install_db, /sbin/ntpd" > /etc/sudoers.d/jboss \
+    && chmod 0440 /etc/sudoers.d/jboss 
 
 
 # Entrypoint script to start mysqld and wildfly 
 ADD ./StackV-ear/src/main/docker/entrypoint.sh /bin/entrypoint.sh
-RUN \
-    chown jboss:0 /bin/entrypoint.sh \
+RUN chown jboss:0 /bin/entrypoint.sh \
     && chmod 700 /bin/entrypoint.sh
 
 
 # Admin scripts
+ADD ./StackV-ear/src/main/docker/persist.sh /bin/persist.sh
 ADD ./StackV-ear/src/main/docker/restart-persist.sh /bin/restart-persist.sh
 RUN \
-    chown jboss:0 /bin/restart-persist.sh \
+    chown jboss:0 /bin/persist.sh \
+    && chmod 700 /bin/persist.sh \
+    && chown jboss:0 /bin/restart-persist.sh \
     && chmod 700 /bin/restart-persist.sh
 
 # Ensure signals are forwarded to the JVM process correctly for graceful shutdown

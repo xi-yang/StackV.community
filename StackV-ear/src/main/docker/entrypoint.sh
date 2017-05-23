@@ -27,10 +27,10 @@ rm -rf StackV-web-1.0-SNAPSHOT.war WEB-INF data
 # if ${KEYSTORE} exists, configure the keystore for https in standalone-full.xml
 if [ ! -z "${KEYSTORE}" ]; then 
   if [ -f ${KEYSTORE} ]; then
-    sed -i "s/\/opt\/jboss\/wildfly.jks/${KEYSTORE}/g" /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
+    sed -i "s/\/opt\/jboss\/wildfly.jks/${KEYSTORE//\//\\/}/g" /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
   else
     echo "Error: SSL Keystore file ${KEYSTORE} does not exist!"
-    echo " Hint: Use `docker run -v /host/config/path:/container/config/path`. Make sure your keystore file is in /host/config/path/. )"
+    echo " Hint: Use 'docker run -v /host/config/path:/container/config/path'. Make sure your keystore file is in /host/config/path/. )"
     exit 1
   fi
 fi
@@ -41,7 +41,7 @@ if [ ! -z "${TRUSTCERT}" ]; then
     cat ${TRUSTCERT} >> /etc/pki/tls/certs/ca-bundle.crt
   else
     echo "Error: CA Cert file ${TRUSTCERT} does not exist!"
-    echo "( Hint: Use `docker run -v /host/config/path:/container/config/path`. Make sure your trusted cert file is in /host/config/path/. )"
+    echo "( Hint: Use 'docker run -v /host/config/path:/container/config/path'. Make sure your trusted cert file is in /host/config/path/. )"
     exit 1
   fi
 fi
@@ -50,8 +50,37 @@ if [ $ADMIN_USER ] && [ $ADMIN_PASSWORD ]; then
     /opt/jboss/wildfly/bin/add-user.sh -u $ADMIN_USER -p $ADMIN_PASSWORD >/dev/null
 fi
 
-# Start mysqld
-/bin/sudo /bin/mysqld_safe &
+# Start ntpd
+/bin/sudo /sbin/ntpd &
+
+# Stage and start mysqld
+# if ${PERSISTED} and old DB  exists, call persist.sh
+if [ ! -z "${PERSISTED}" ]; then 
+  if [ -f /var/lib/mysql/frontend/service.frm ]; then
+    /bin/persist.sh
+    /bin/sudo /bin/mysqld_safe &
+  else
+    ## If persisted StackV DB do not exist, re-prepare DBs and use the 'drop-and-create' option!
+    sudo /bin/mysql_install_db --user=mysql --ldata=/var/lib/mysql/ 2>&1 > /dev/null 
+    echo "sudo /bin/mysqld_safe &" > /tmp/config && \
+    echo "mysqladmin --silent --wait=30 ping || exit 1" >> /tmp/config && \
+    echo "mysql -uroot -e 'CREATE USER \"login_view\"@\"localhost\" IDENTIFIED BY \"loginuser\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'CREATE USER \"front_view\"@\"localhost\" IDENTIFIED BY \"frontuser\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'GRANT ALL ON login.* TO \"login_view\"@\"localhost\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'GRANT ALL ON frontend.* TO \"front_view\"@\"localhost\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'CREATE DATABASE rainsdb;'" >> /tmp/config && \
+    echo "mysql -uroot < /opt/jboss/localhost.sql" >> /tmp/config && \
+    echo "mysql -uroot -e 'UPDATE mysql.user SET password=PASSWORD(\"root\") WHERE user=\"root\" and host=\"localhost\";'" >> /tmp/config && \
+    echo "mysql -uroot -e 'GRANT ALL PRIVILEGES ON *.* TO \"root\"@\"localhost\" WITH GRANT OPTION;'" >> /tmp/config && \
+    echo "mysql -uroot -e 'FLUSH PRIVILEGES;'" >> /tmp/config && \
+    bash /tmp/config && \
+    rm -f /tmp/config
+  fi
+else
+  /bin/sudo /bin/mysqld_safe &
+fi
+
+
 
 # Start wildfly
 export LAUNCH_JBOSS_IN_BACKGROUND=true

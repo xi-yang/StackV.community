@@ -8,6 +8,10 @@
 ::-webkit-scrollbar {
     display:none;
 }
+.hide {
+    opacity: 0;
+    display: none;
+}
 
 html {
     height: 100%;

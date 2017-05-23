@@ -79,12 +79,15 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String NATServer = driverInstance.getProperty("NATServer");
         String defaultImage = driverInstance.getProperty("defaultImage");
         String defaultFlavor = driverInstance.getProperty("defaultFlavor");
+        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
+        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
 
         OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, topologyURI, defaultImage, defaultFlavor);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, 
+                topologyURI, defaultImage, defaultFlavor, defaultKeyPair, defaultSecGroup);
         List<JSONObject> requests = null;
         requests = push.propagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
@@ -108,12 +111,15 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String requestId = driverInstance.getId().toString() + aDelta.getId();
         String requests = driverInstance.getProperty(requestId);
         if (requests == null) {
             throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
         }
         if (requests.isEmpty()) {
+            driverInstance.getProperties().remove(requestId);
+            DriverInstancePersistenceManager.merge(driverInstance);
             throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
         }        
         String username = driverInstance.getProperty("username");
@@ -127,8 +133,13 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         String NATServer = driverInstance.getProperty("NATServer");
         String defaultImage = driverInstance.getProperty("defaultImage");
         String defaultFlavor = driverInstance.getProperty("defaultFlavor");
+        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
+        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
+        driverInstance.getProperties().remove(requestId);
+        DriverInstancePersistenceManager.merge(driverInstance);
 
-        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, topologyURI, defaultImage, defaultFlavor);
+        OpenStackPush push = new OpenStackPush(url,NATServer, username, password, tenant, adminUsername, adminPassword, adminTenant, 
+                topologyURI, defaultImage, defaultFlavor, defaultKeyPair, defaultSecGroup);
         ObjectMapper mapper = new ObjectMapper();
         List<JSONObject> r = new ArrayList();
         try {
@@ -142,8 +153,6 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
             throw logger.throwing(method, ex);
         }
 
-        driverInstance.getProperties().remove(requestId);
-        DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);
         return new AsyncResult<String>("SUCCESS");
     }

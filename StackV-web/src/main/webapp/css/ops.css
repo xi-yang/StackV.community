@@ -194,7 +194,7 @@ div#info-panel {
     background-color: white;
     box-shadow: 0 0 15px 1px rgba(0, 0, 0, 0.4);
     border-radius: 5px;
-    z-index: 4;
+    z-index: 15;
     font-size: .9em;
 
     transition: all .5s ease-out;
@@ -245,7 +245,7 @@ div#mode-panel .action-button:hover, div#mode-panel .action-button:focus {
 
 form.stageform {
     bottom: 0%;
-    width: 600px;
+    width: 700px;
     margin: 50px auto;
     text-align: center;
     position: relative;
@@ -457,4 +457,24 @@ ul#progressbar li.disabled:before {
 }
 ul.vcn-progress li, ul.hc-progress li {
     width: 14.2%;
+}
+
+/* DataTables */
+.row-trace.even {
+    background-color: #e4ffd1 !important;
+}
+.row-trace.odd {
+    background-color: #f0ffe5 !important;
+}
+.row-warn.even {
+    background-color: #ffdfb3 !important;
+}
+.row-warn.odd {
+    background-color: #ffe5c2 !important;
+}
+.row-error.even {
+    background-color: #ffcccc !important;
+}
+.row-error.odd {
+    background-color: #ffdbdb !important;
 }

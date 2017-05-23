@@ -43,7 +43,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.sql.PreparedStatement;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
@@ -174,17 +173,15 @@ public class ServiceServlet extends HttpServlet {
             String ttlFilename = "stub_driver_stubModelTtl";
             try {
                 FileReader fr = new FileReader(testingPath + ttlFilename);
-                BufferedReader br = new BufferedReader(fr);
-                while ((nextLine = br.readLine()) != null) {
-                    stubModelTTL += nextLine;
+                try (BufferedReader br = new BufferedReader(fr)) {
+                    while ((nextLine = br.readLine()) != null) {
+                        stubModelTTL += nextLine;
+                    }
                 }
-                br.close();
             } catch (FileNotFoundException ex) {
                 System.out.println(ttlFilename + " not found.");
-                ex.printStackTrace();
             } catch (IOException ex) {
                 System.out.println("Error reading " + ttlFilename + ".");
-                ex.printStackTrace();
             }
 
             paraMap.put("stubModelTtl", stubModelTTL);

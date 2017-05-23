@@ -4,10 +4,10 @@
 # if ${KEYSTORE} exists, configure the keystore for https in standalone.xml
 if [ ! -z "${KEYSTORE}" ]; then
   if [ -f ${KEYSTORE} ]; then
-    sed -i "s/\/opt\/jboss\/keycloak.jks/${KEYSTORE}/g" standalone.xml
+    sed -i "s/\/opt\/jboss\/keycloak.jks/${KEYSTORE//\//\\/}/g" /opt/jboss/keycloak/standalone/configuration/standalone.xml
   else
     echo "Error: SSL Keystore file ${KEYSTORE} does not exist!"
-    echo " Hint: Use `docker run -v /host/config/path:/container/config/path`. Make sure your keystore file is in /host/config/path/. )"
+    echo " Hint: Use 'docker run -v /host/config/path:/container/config/path'. Make sure your keystore file is in /host/config/path/. )"
     exit 1
   fi
 fi
@@ -16,6 +16,9 @@ fi
 if [ $ADMIN_USER ] && [ $ADMIN_PASSWORD ]; then
     /opt/jboss/keycloak/bin/add-user-keycloak.sh -u $ADMIN_USER -p $ADMIN_PASSWORD >/dev/null
 fi
+
+# Start ntpd
+/sbin/ntpd &
 
 # start service
 export LAUNCH_JBOSS_IN_BACKGROUND=true

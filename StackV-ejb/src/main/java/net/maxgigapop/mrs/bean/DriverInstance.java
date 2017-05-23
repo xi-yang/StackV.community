@@ -25,6 +25,8 @@ package net.maxgigapop.mrs.bean;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,8 @@ import javax.persistence.JoinTable;
 import javax.persistence.Lob;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
+import javax.persistence.PostLoad;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
@@ -132,6 +136,9 @@ public class DriverInstance extends PersistentEntity implements Serializable {
             driverSystemDeltas = new ArrayList<>();
         }
         if (!hasDriverSystemDelta(aDelta)) {
+            if (!this.driverSystemDeltas.isEmpty()) {
+                aDelta.setOrderInt(this.driverSystemDeltas.get(this.driverSystemDeltas.size() - 1).getOrderInt() + 1);
+            }
             try {
                 ModelPersistenceManager.save(aDelta);
             } catch (Exception e) {
@@ -139,6 +146,23 @@ public class DriverInstance extends PersistentEntity implements Serializable {
             }
             driverSystemDeltas.add(aDelta);
         }
+    }
+
+
+    @SuppressWarnings("unused")
+    @PostLoad
+    public void postLoad() {
+        if (driverSystemDeltas == null || driverSystemDeltas.size() < 2) {
+            return;
+        }
+        // sort driverSystemDeltas by ascending order
+        Collections.sort(driverSystemDeltas, new Comparator<DeltaBase>() {
+            @Override
+            public int compare(DeltaBase delta1, DeltaBase delta2) {
+                // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
+                return delta1.getOrderInt() < delta2.getOrderInt() ? -1 : (delta1.getOrderInt() > delta2.getOrderInt()) ? 1 : 0;
+            }
+        });
     }
 
     public String getDriverEjbPath() {

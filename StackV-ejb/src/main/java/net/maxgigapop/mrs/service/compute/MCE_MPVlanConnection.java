@@ -62,6 +62,7 @@ public class MCE_MPVlanConnection implements IModelComputationElement {
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+        logger.cleanup();
         String method = "process";
         logger.refuuid(annotatedDelta.getReferenceUUID());
         logger.start(method);

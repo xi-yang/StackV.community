@@ -198,7 +198,7 @@ public class HandleServiceCall {
         if (serviceInstance.getServiceDeltas() == null) {
             serviceInstance.setServiceDeltas(new ArrayList<ServiceDelta>());
         }
-        serviceInstance.getServiceDeltas().add(spaDelta);
+        serviceInstance.addServiceDeltaWithoutSave(spaDelta);
         spaDelta.setServiceInstance(serviceInstance);
         DeltaPersistenceManager.save(spaDelta);
         //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
@@ -337,10 +337,10 @@ public class HandleServiceCall {
                 && !serviceInstance.getStatus().equals("COMMITTED-PARTIAL")) {
             throw logger.error_throwing(method, "ref:ServiceInstance must have status=PROPAGATED or PROPAGATED-PARTIAL or COMMITTED-PARTIAL while the actual status=" + serviceInstance.getStatus());
         }
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
-        if (!itSD.hasNext()) {
+        if (serviceInstance.getServiceDeltas() == null || serviceInstance.getServiceDeltas().isEmpty()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to commit.");
         }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         // By default commit a delta if it is the first with propagated status in queue or there is only commited ones before.
         // Also commit only one delta at a time.
         boolean canMultiCommit = false;
@@ -456,7 +456,8 @@ public class HandleServiceCall {
         }
         ServiceDelta reverseSvcDelta = new ServiceDelta();
         reverseSvcDelta.setServiceInstance(serviceInstance);
-        reverseSvcDelta.setReferenceUUID(UUID.randomUUID().toString());
+        //reverseSvcDelta.setReferenceUUID(UUID.randomUUID().toString());
+        reverseSvcDelta.setReferenceUUID(serviceInstanceUuid);
         reverseSvcDelta.setStatus("INIT");
         DeltaModel dmAddition = new DeltaModel();
         dmAddition.setCommitted(false);
@@ -557,7 +558,7 @@ public class HandleServiceCall {
                 }
             }
         }
-        serviceInstance.getServiceDeltas().add(reverseSvcDelta);
+        serviceInstance.addServiceDeltaWithoutSave(reverseSvcDelta);
         DeltaPersistenceManager.save(reverseSvcDelta);
         //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         if (serviceInstance.getStatus().equals("PROPAGATED")) {
@@ -567,11 +568,12 @@ public class HandleServiceCall {
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
-        return reverseSvcDelta.getReferenceUUID();
+        return reverseSvcDelta.getId();
     }
 
     //By default, this only checks the last service delta. If multiPropagate==true, check all deltas.
     public String checkStatus(String serviceInstanceUuid) {
+        logger.cleanup();
         String method = "checkStatus";
         logger.refuuid(serviceInstanceUuid);
         logger.trace_start(method);
@@ -688,10 +690,10 @@ public class HandleServiceCall {
         } 
         */
         logger.status(method, serviceInstance.getStatus());
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
-        if (!itSD.hasNext()) {
+        if (serviceInstance.getServiceDeltas() == null || serviceInstance.getServiceDeltas().isEmpty()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to retry.");
         }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         boolean canMultiPropagate = false;
         String multiPropagate = serviceInstance.getProperty("multiPropagate");
         if (multiPropagate != null && multiPropagate.equalsIgnoreCase("true")) {
@@ -841,6 +843,10 @@ public class HandleServiceCall {
         if (rs.hasNext()) {
             allEssentialVerified = false;
             unverifiedModel.add(residualModel);
+            while (rs.hasNext()) {
+                String uri = rs.next().get("res").toString();
+                logger.trace("verifyModelAddition", "cannot verify: " + uri);
+            }
         }
         // add verified statements to verifiedModel
         verifiedModel.add(deltaModel);
@@ -896,9 +902,11 @@ public class HandleServiceCall {
             if (unverifiableList.contains(res)) {
                 continue;
             }
-            allEssentialVerified = false;
-            unverifiedModel.add(residualModel);
-            break;
+            logger.trace("verifyModelReduction", "cannot verify: " + res.toString());
+            if (allEssentialVerified) {
+                unverifiedModel.add(residualModel);
+                allEssentialVerified = false;
+            }
         }
         return allEssentialVerified;
     }
@@ -991,7 +999,7 @@ public class HandleServiceCall {
                 refModel = systemModelCoordinator.getLatestOntModel();
                 break;
             } catch (EJBException ex) {
-                if (ex.getMessage().contains("concurrent access timeout ")) {
+                if (ex.getMessage() != null && ex.getMessage().contains("concurrent access timeout ")) {
                     try {
                         sleep(10000L);
                     } catch (InterruptedException ex1) {

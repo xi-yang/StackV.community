@@ -638,7 +638,7 @@ public class MCETools {
                 } catch (TagSet.NoneVlanExeption ex) {
                     ;
                 } catch (TagSet.EmptyTagSetExeption | TagSet.InvalidVlanRangeExeption ex) {
-                    logger.error(method, String.format("current hop = '%s'", currentHop) + ex);
+                    logger.trace(method, String.format("current hop = '%s' -- ", currentHop) + ex);
                     return null; // throw Exception ?
                 }
             }
@@ -658,7 +658,7 @@ public class MCETools {
                     } catch (TagSet.NoneVlanExeption ex) {
                         ;
                     } catch (TagSet.EmptyTagSetExeption | TagSet.InvalidVlanRangeExeption ex) {
-                        logger.error(method, String.format("current hop = '%s'", currentHop) + ex);
+                        logger.trace(method, String.format("current hop = '%s' -- ", currentHop) + ex);
                         return null; // throw Exception ?
                     } 
                 }
