@@ -167,6 +167,7 @@ function generateJSON() {
 
 function submitToBackend() {
     if (validateDNC()) {
+        console.log("arrived");
         var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
 
         var sentData = {
@@ -187,9 +188,12 @@ function submitToBackend() {
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                window.location.href = "/StackV-web/ops/catalog.jsp";
+                
             }
         });
+        console.log("success");
+        window.location.href = "/StackV-web/ops/catalog.jsp";
+        
     } else {
         window.alert("Invalid Inputs!");
     }
