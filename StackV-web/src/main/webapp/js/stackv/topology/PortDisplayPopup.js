@@ -224,7 +224,7 @@ define(["local/d3", "local/stackv/utils"],
                                     renderApi.layoutEdges(that.outputApi);
                                 });
                             if (that.outputApi.contextMenu){
-                                //port.svgNode.on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port));                      
+                                port.svgNode.on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port));                      
                             } 
                             port.svgNode.call(dragBehaviour);
                         })();
