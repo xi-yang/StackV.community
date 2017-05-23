@@ -570,7 +570,7 @@ function setVMs(input) {
         var cell2_1 = document.createElement("td");
         var cell2_2 = document.createElement("td");
 
-        var selectString = '<select name="vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option>any</option>';
+        var selectString = '<select name="vm' + i + '-subnet" id="vm' + i + '-subnet-select"><option selected disabled>Select the subnet host</option>';
         for (j = 1; j <= subnetCount; j++) {
             var subnetTag = document.getElementById("subnet" + j + "-tag");
 
@@ -606,8 +606,8 @@ function setVMs(input) {
             var row5 = document.createElement("tr");
             var cell5_1 = document.createElement("td");
             var cell5_2 = document.createElement("td");
-            cell5_1.innerHTML = '<input type="text" name="vm' + i + '-host" placeholder="Host">';
-            cell5_2.innerHTML = '<input type="text" name="vm' + i + '-floating" placeholder="Floating IP">';
+            cell5_1.innerHTML = '<input type="text" name="vm' + i + '-host" placeholder="Host(Default Value = \'any\')">';
+            cell5_2.innerHTML = '<input type="text" name="vm' + i + '-floating" placeholder="Floating IP(Default Value = \'any\')">';
             row5.appendChild(cell5_1);
             row5.appendChild(cell5_2);
             tbody1.appendChild(row5);
