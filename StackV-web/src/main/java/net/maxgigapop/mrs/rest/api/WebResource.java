@@ -2604,7 +2604,8 @@ public class WebResource {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            logger.start("doCreateService/Thread:" + Thread.currentThread());
+            logger.start("doCreateService");
+            logger.trace("doCreateService", "Thread:" + Thread.currentThread(), null);
 
             String serviceType = (String) inputJSON.get("type");
             String alias = (String) inputJSON.get("alias");
@@ -2731,7 +2732,8 @@ public class WebResource {
         ResultSet rs = null;
 
         logger.refuuid(refUUID);
-        logger.start("doOperate:" + action + "/Thread:" + Thread.currentThread());
+        logger.start("doOperate:" + action);
+        logger.trace("doOperate", "Action:" + action +"/Thread:" + Thread.currentThread(), null);
         try {
             clearVerification(refUUID);
             switch (action) {
