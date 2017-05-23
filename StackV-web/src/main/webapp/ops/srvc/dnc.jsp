@@ -30,13 +30,13 @@
                     <div id="table-div">
                         <table id="input-table">
                             <tbody id="link-body">
-                                <tr><td></td><td><input type="text" placeholder="Service Alias" id="service-name"></td></tr>
+                                <input type="text" placeholder="Service Alias" id="service-name">
                                 <tr id="spacer"></tr>
                                 <tr>
                                     <td>Link 1</td>
                                     <td style="text-align: center;">
                                         <div>
-                                            <input type="text" id="linkUri1" placeholder="Link-Name">
+                                            <input type="text" id="linkUri1" placeholder="Connection-Name">
                                             <input type="text" id="linksrc1" placeholder="Source">
                                             <input type="text" id="linksrc-vlan1" placeholder="Vlan-tag" value="any">
                                             <input type="text" id="linkdes1" placeholder="Destination">
