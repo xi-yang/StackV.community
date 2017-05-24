@@ -717,7 +717,7 @@ function loadVisualization() {
 
                     tab.find(".viz-cell").not(cell).removeClass("hide");
                     tab.find(".viz-hdr").closest("th").not(hdr).removeClass("hide");
-                    tab.find(".viz-table").removeClass("hide");
+                    tab.find(".viz-table").not(".emptyVizTable").removeClass("hide");
 
                     table.height("10%");
                     viz.removeClass("expanded-viz-div");

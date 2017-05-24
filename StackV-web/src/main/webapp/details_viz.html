@@ -707,8 +707,10 @@
     function removeIfEmpty(viz) {
           var viz =  $("#" + viz);
           var table = viz.closest("table");
-          if (viz.hasClass("emptyViz"))
+          if (viz.hasClass("emptyViz")){
             table.addClass("hide");
+            table.addClass("emptyVizTable");
+          }
     }
     
     function outputApi_(renderAPI, contextMenu, svg) {
