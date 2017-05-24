@@ -81,10 +81,10 @@ $(function () {
         // determine what service it's for - use [1] b/c first entry is empty string
         var id = $(this).attr('id').match(/profile-save-label-(\w+)/)[1];
 
-        if ($("#profile-save-check-"+id).is(':checked')) {
-            $("#profile-save-body-"+id).removeClass("fade-hide");
+        if ($("#profile-save-check-" + id).is(':checked')) {
+            $("#profile-save-body-" + id).removeClass("fade-hide");
         } else {
-            $("#profile-save-body-"+id).addClass("fade-hide");
+            $("#profile-save-body-" + id).addClass("fade-hide");
         }
     });
 
@@ -221,9 +221,7 @@ function nextStage(current_fs, incoming_fs) {
         complete: function () {
             current_fs.hide();
             animating = false;
-        },
-        //this comes from the custom easing plugin
-        easing: 'easeInOutBack'
+        }
     });
 }
 
@@ -252,9 +250,7 @@ function previousStage(current_fs, incoming_fs) {
         complete: function () {
             current_fs.hide();
             animating = false;
-        },
-        //this comes from the custom easing plugin
-        easing: 'easeInOutBack'
+        }
     });
 }
 
@@ -858,11 +854,11 @@ function validateVCN() {
     if ($("input[name='profile-save']").is(':checked')) {
         var id = type.split(" ")[1];
 
-        if ($("input#profile-name-"+id).val() === "") {
+        if ($("input#profile-name-" + id).val() === "") {
             invalidArr.push("Profiles require a name in order to be saved.\n");
 
             $("#progressbar li").eq(6).addClass("invalid");
-            $("input#profile-name-"+id).addClass("invalid");
+            $("input#profile-name-" + id).addClass("invalid");
         }
     }
 
@@ -871,6 +867,10 @@ function validateVCN() {
         $('<input />').attr('type', 'hidden')
                 .attr('name', "authToken")
                 .attr('value', keycloak.token)
+                .appendTo('#msform');
+        $('<input />').attr('type', 'hidden')
+                .attr('name', "refreshToken")
+                .attr('value', keycloak.refreshToken)
                 .appendTo('#msform');
 
         return true;

@@ -30,6 +30,10 @@ var countdownTimer;
 // Page Load Function
 
 $(function () {
+    $.ajaxSetup({
+        cache: false        
+    });
+
     keycloak.init().success(function (authenticated) {
         if (authenticated) {
             var test = keycloak.isTokenExpired();
@@ -1049,7 +1053,7 @@ function timerChange(sel) {
         document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
     }
 }
-function setRefresh(time) {    
+function setRefresh(time) {
     countdown = time;
     refreshTimer = setInterval(function () {
         reloadData();
