@@ -208,6 +208,31 @@ function validateDNC() {
 
         $("input[id='service-name']").addClass("invalid");
     }
+    if ($("input[id='linkUri1']").val() === "") {
+        invalidArr.push("Link URI field is empty.\n");
+
+        $("input[id='linkUri1']").addClass("invalid");
+    }
+    if ($("input[id='linksrc1']").val() === "") {
+        invalidArr.push("Link Source field is empty.\n");
+
+        $("input[id='linksrc1']").addClass("invalid");
+    }
+    if ($("input[id='linksrc-vlan1']").val() === "") {
+        invalidArr.push("Src VLAN field is empty.\n");
+
+        $("input[id='linksrc-vlan1']").addClass("invalid");
+    }
+    if ($("input[id='linkdes1']").val() === "") {
+        invalidArr.push("Link Destination field is empty.\n");
+
+        $("input[id='linkdes1']").addClass("invalid");
+    }
+    if ($("input[id='linkdes-vlan1']").val() === "") {
+        invalidArr.push("Destination VLAN field is empty.\n");
+
+        $("input[id='linkdes-vlan1']").addClass("invalid");
+    }
     // Results
     if (invalidArr.length === 0) {
         return true;
