@@ -98,6 +98,7 @@ function resetView() {
             tweenDetailsPanel.reverse();
             break;
         case "right":
+            closeVisTabs();
             $("#sub-nav .active").removeClass("active");
             tweenVisualPanel.reverse();
             break;
@@ -743,7 +744,9 @@ function loadVisualization() {
     });
 
 }
-
+function closeVisTabs() {
+    $(".viz-hdr.expanded").click();
+}
 
 function toggleTextModel(viz_table, text_table) {
     if (!$(viz_table.toLowerCase()).length) {
