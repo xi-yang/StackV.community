@@ -828,6 +828,7 @@ function updateGatewayNames(input) {
 }
 
 function validateVCN() {
+    
     var invalidArr = new Array();
     var type = $("#msform").attr('class');
     var mode = $("input[name='netHost']").val();
@@ -856,9 +857,26 @@ function validateVCN() {
     }
 
     // Stage 3
-
+    
+    //populating the values for floating ip and host
 
     // Stage 4
+    var vmNum = $("input[id='opsStage4-vm']").val();
+    for (var i = 1;i <= vmNum; i++){
+        var float = "vm"+i+"-floating";
+        var host = "vm"+i+"-host";
+        
+        if($("input[name='"+float+"']").val() === ""){
+            
+           $("input[name='"+float+"']").val("any");
+        }
+        if($("input[name='"+host+"']").val() === ""){
+            
+           $("input[name='"+host+"']").val("any");
+        }
+    }
+    
+
 
 
     // Stage 5
@@ -888,7 +906,7 @@ function validateVCN() {
                 .attr('name', "refreshToken")
                 .attr('value', keycloak.refreshToken)
                 .appendTo('#msform');
-
+        console.log("It was true");
         return true;
     } else {
         infoAlert("Invalid Inputs", invalidArr);
