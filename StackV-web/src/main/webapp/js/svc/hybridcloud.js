@@ -864,6 +864,19 @@ function validateHybrid() {
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='aws-conn-vlan']").addClass("invalid");
     }
+    if ($("select[name='aws-topoUri']").val() === null) {
+        invalidArr.push("AWS Topology field is empty.\n");
+
+        $("#progressbar li").eq(1).addClass("invalid");
+        $("select[name='aws-topoUri']").addClass("invalid");
+    }
+    if ($("select[name='ops-topoUri']").val() === null) {
+        invalidArr.push("Openstack Topology field is empty.\n");
+
+        $("#progressbar li").eq(1).addClass("invalid");
+        $("select[name='ops-topoUri']").addClass("invalid");
+    }
+    
 
     // Stage 3
 

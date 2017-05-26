@@ -830,6 +830,7 @@ function updateGatewayNames(input) {
 function validateVCN() {
     var invalidArr = new Array();
     var type = $("#msform").attr('class');
+    var mode = $("input[name='netHost']").val();
 
     // Stage 2
     if ($("input[name='alias']").val() === "") {
@@ -837,6 +838,21 @@ function validateVCN() {
 
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='alias']").addClass("invalid");
+    }
+    if (mode === "aws") {
+        if ($("#2-aws-1 select[name='topoUri']").val() === null) {
+            invalidArr.push("Topology field is empty.\n");
+
+            $("#progressbar li").eq(1).addClass("invalid");
+            $("#2-aws-1 select[name='topoUri']").addClass("invalid");
+        }
+    } else {
+        if ($("#2-ops-1 select[name='topoUri']").val() === null) {
+            invalidArr.push("Topology field is empty.\n");
+
+            $("#progressbar li").eq(1).addClass("invalid");
+            $("#2-ops-1 select[name='topoUri']").addClass("invalid");
+        }
     }
 
     // Stage 3
