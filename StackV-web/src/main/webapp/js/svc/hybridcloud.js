@@ -868,7 +868,22 @@ function validateHybrid() {
     // Stage 3
 
 
+    // set empty null values to 'any'
     // Stage 4
+    var vmNum = $("input[id='opsStage5-vm']").val();
+    for (var i = 1;i <= vmNum; i++){
+        var float = "ops-vm"+i+"-floating";
+        var host = "ops-vm"+i+"-host";
+        
+        if($("input[name='"+float+"']").val() === ""){
+            
+           $("input[name='"+float+"']").val("any");
+        }
+        if($("input[name='"+host+"']").val() === ""){
+            
+           $("input[name='"+host+"']").val("any");
+        }
+    }
 
 
     // Stage 5

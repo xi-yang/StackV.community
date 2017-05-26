@@ -828,6 +828,7 @@ function updateGatewayNames(input) {
 }
 
 function validateVCN() {
+    
     var invalidArr = new Array();
     var type = $("#msform").attr('class');
 
@@ -838,11 +839,38 @@ function validateVCN() {
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='alias']").addClass("invalid");
     }
+    
+    
+    //need to correctly find the selector option
+//    alert($("select[name='topoUri']").val());
+//    if(!($("select[name='topoUri']").val())){
+//        invalidArr.push("Uri field is empty.\n");
+//
+//        $("#progressbar li").eq(1).addClass("invalid");
+//        $("input[name='topoUri']").addClass("invalid");
+//    }  
 
     // Stage 3
-
+    
+    //populating the values for floating ip and host
 
     // Stage 4
+    var vmNum = $("input[id='opsStage4-vm']").val();
+    for (var i = 1;i <= vmNum; i++){
+        var float = "vm"+i+"-floating";
+        var host = "vm"+i+"-host";
+        
+        if($("input[name='"+float+"']").val() === ""){
+            
+           $("input[name='"+float+"']").val("any");
+        }
+        if($("input[name='"+host+"']").val() === ""){
+            
+           $("input[name='"+host+"']").val("any");
+        }
+    }
+    
+
 
 
     // Stage 5
@@ -872,7 +900,7 @@ function validateVCN() {
                 .attr('name', "refreshToken")
                 .attr('value', keycloak.refreshToken)
                 .appendTo('#msform');
-
+        console.log("It was true");
         return true;
     } else {
         infoAlert("Invalid Inputs", invalidArr);
