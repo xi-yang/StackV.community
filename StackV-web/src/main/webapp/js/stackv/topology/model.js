@@ -1789,6 +1789,11 @@ define([
             });
             return ans;
         };
+        this.listElements = function() {
+            var elements = [];
+            for (var key in that.elementMap) ports.push(that.portMap[key]);
+            return elements;
+        };
 
         this.listPolicies = function() {
             var policies = [];

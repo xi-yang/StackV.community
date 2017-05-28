@@ -34,7 +34,17 @@
         color: #404040;
         border: 1px solid #999;
         padding: 7px;
+        /* stop unintentional highlighting */ 
+        -webkit-user-select: none;
+         -moz-user-select: none;
+          -ms-user-select: none;
+              user-select: none;
+
     }
+    .hover_div::selection {
+                background: none;
+
+    } 
 
     .details_viz {
         width:100%;
@@ -162,6 +172,21 @@
     .jSonDialog{
         text-align:left;
     }
+    
+    svg text {
+        -webkit-user-select: none;
+           -moz-user-select: none;
+            -ms-user-select: none;
+                user-select: none;
+    }
+    svg text::selection {
+        background: none;
+    }
+/*     .details_viz_div text {
+      font: 13px bold sans-serif; stroke-linejoin: round;
+      text-anchor: middle; fill: gray; stroke: black;
+    }*/
+   
 </style>
 
 <script type="text/javascript">
@@ -382,12 +407,27 @@
             height = $("#" + o.svgContainerName).closest("td").height();
         }
         layout.stop();
+        
+         if(o.svgContainerName.includes("serv")) {
+            width = $(window).width() * .85;; //$("#" + viz_id).width();
+            height =  $(window).height() * .1; //$("#" + viz_id).height();
+
+            buildTreeViz(model.dept_trees,model.resources, model, width, height, o.svgContainerName);
+
+            layout.doTreeLayout(model, null, width, height);
+            layout.doTreeLayout(model, null, width, height);      
+        } else {
+            layout.doLayout(model, null, width, height);
+            layout.doLayout(model, null, width, height);
+            o.setZoom(.8);
+        }
+
         //layout.force().gravity(1).charge(-900).start();
-        layout.doLayout(model, null, width, height);
-        layout.doLayout(model, null, width, height);
+//        layout.doLayout(model, null, width, height);
+//        layout.doLayout(model, null, width, height);
 
         o.resetZoom();
-        render.doRender(o, model, false, modelMap);
+        render.doRender(o, model, false, modelMap, outputApiMap);
     }
 
     function displayError(error, d3_obj) {
@@ -415,10 +455,19 @@
         var tdID =  $("#" + outputApi.svgContainerName).closest("td").attr("id");
  //TODO, figure out why we need to call this twice
         //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-        layout.doLayout(model2, null, width, height);
-        layout.doLayout(model2, null, width, height);
-        outputApi.setZoom(.8);
-        render.doRender(outputApi, model2, false, modelMap, outputApiMap);
+        if(outputApi.svgContainerName.includes("serv")) {
+            buildTreeViz(model2.dept_trees,model2.resources, model2, width, height, outputApi.svgContainerName);
+            layout.doTreeLayout(model2, null, width, height);
+            layout.doTreeLayout(model2, null, width, height);
+            outputApi.setZoom(.8);
+            render.doRender(outputApi, model2, false, modelMap, outputApiMap);
+      
+        } else {
+            layout.doLayout(model2, null, width, height);
+            layout.doLayout(model2, null, width, height);
+            outputApi.setZoom(.8);
+            render.doRender(outputApi, model2, false, modelMap, outputApiMap);
+        }
 //                animStart(30);
     }
     function displayError(error, d3_obj, viz_id, offset) {
@@ -449,6 +498,23 @@
                 .text(error);
     }
 
+    function displayText(text, d3_obj, viz_id, x, y, text_id) {     
+        var currentText = document.getElementById(text_id);
+        if (currentText !== null) {
+            currentText.innerHTML = text;
+            currentText.setAttribute("x", x);
+            currentText.setAttribute("y", y);
+        } else {
+            d3_obj.select("#" + viz_id).append("text")
+                    .attr("x", x)
+                    .attr("y", y)
+                    .attr("fill", "black")
+                    .attr("font-size", "25px")
+                    .attr("opacity", .4)
+                    .attr("id", text_id)
+                    .text(text);
+        }
+    }
     function showDiactivatedViz(viz_id) {
         var viz_container = $("#" + viz_id + "_div");
         //viz_container.addClass("inactive_details_viz");
@@ -521,6 +587,7 @@
                     var servAObj = JSON.parse(data.serviceModelAddition);
                     var servAModel = new ModelConstructor();
                     servAModel.makeServiceDtlModel(servAObj, model);
+                    buildTreeLayout(servAModel);
                     modelMap["serva_viz"] = servAModel;
                     var outputApi = new outputApi_(render.API, contextMenu, "serva_viz");
                     outputApiMap["serva_viz"] = outputApi;
@@ -539,6 +606,7 @@
                     var servRObj = JSON.parse(data.serviceModelReduction);
                     var servRModel = new ModelConstructor();
                     servRModel.makeServiceDtlModel(servRObj, model);
+                    buildTreeLayout(servRModel);
                     modelMap["servr_viz"] = servRModel;
                     var outputApi2 = new outputApi_(render.API, contextMenu, "servr_viz");
                     outputApiMap["servr_viz"] = outputApi2;
@@ -898,6 +966,228 @@
 
         $(".displayPanel").draggable({handle: ".displayPanelBar"});
     }
+    
+
+function getPolicyActions(model)  {
+    policyActions = [];
+    
+    for (var i in model.elementMap) {
+            if (model.elementMap[i].getType() === "PolicyAction") {
+                policyActions.push(model.elementMap[i]);
+            }
+    }
+    return policyActions;
+}
+
+function getDepth(policyAction, model) {
+       var misc = policyAction.relationship_to; 
+       var max = 0; 
+       for (var elem in misc) {
+           if (misc[elem] !== "dependOn") continue;
+           var depth = getDepth(model.elementMap[elem], model);
+           if (depth > max) max = depth; 
+       }
+       return 1 + max;
+}
+
+function getTallestPolicy(policyActions, model) {
+    var maxVal = -1; 
+    var max; 
+    for (var i = 0; i < policyActions.length; i++) {
+            var depth = getDepth(policyActions[i], model);
+            if (depth > maxVal) {
+                maxVal = depth;
+                max = policyActions[i];
+            } 
+    }
+    return max; 
+}
+
+function containsElement(array, element) {
+    for (var i = 0; i < array.length; i++) {
+        if (array[i].getName() === element.getName()) return true;
+    }
+    return false; 
+}
+
+function buildTree(root, level, visited,  model) {
+       var misc = root.misc_elements; 
+       var res = [];
+       console.log(visited.length);
+       console.log(Object.keys(model.policyMap).length);
+       if  (root === undefined || containsElement(visited,root) || visited.length ===  Object.keys(model.policyMap).length) 
+           return res;
+       
+       visited.push(root);
+
+       root.level = level;
+
+       ++level;
+
+       for (var i = 0; i < misc.length; i++) {
+           if (!containsElement(visited,(misc[i]))) {
+               if (misc[i].relationship_to[root.getName()] === "exportTo" || 
+                   misc[i].relationship_to[root.getName()] ==="importFrom" ) {
+
+                   if (misc[i].getType().includes("Policy")) {
+                      misc[i].level = level;
+                      res =  res.concat(buildTree(misc[i], level, visited, model));
+                  }
+                  
+              } 
+           }
+       }
+
+       var rel = root.relationship_to; 
+       for (var elem in rel) {
+           if (!containsElement(visited, model.elementMap[elem]) ) {
+
+               if (model.elementMap[elem].getType().includes("Policy")) {
+                 res =  res.concat(buildTree(model.elementMap[elem], level, visited,  model));
+               } 
+               
+           } 
+       }
+
+       return [root].concat(res);
+}
+
+function buildTreeLayout(model) {
+    var policyActions = [];
+    var resources = [];
+
+    policyActions = getPolicyActions(model);
+
+    var max = getTallestPolicy(policyActions, model);
+    var noDep = getRoots(policyActions);
+
+    var tree = buildTree(max, 0, [], model);
+    
+    tree = tree.filter(function(elem, index, self) {
+        return index === self.indexOf(elem);
+    });
+    
+    for (var i in model.elementMap) {
+        if (!model.elementMap[i].getType().includes("Policy") )
+            resources.push(model.elementMap[i]);
+    }
+    model.dept_trees = getMultipleTrees(noDep, tree, model);
+    model.resources = resources;
+}
+
+function getRoots(policyActions) {
+    var roots = [];
+    for (var i = 0; i < policyActions.length; i++) {
+        var elems = policyActions[i].misc_elements;
+        var isRoot = true; 
+        for (var j = 0; j < elems.length; j++) {
+            for (var k in elems[j].relationship_to) {
+                if (k === policyActions[i].getName() && elems[j].relationship_to[k] === "dependOn" ){
+                    isRoot = false; 
+                }
+            }
+        }
+        if (isRoot) roots.push(policyActions[i]);
+    }
+    return roots; 
+}
+    function getMultipleTrees(roots, first_tree, model) {
+        var new_trees = [first_tree];
+        for (var i = 0; i < roots.length; i++) {
+            for (var j = 0; j < new_trees.length; j++) {
+                if (isIsolatedTree(new_trees, roots[i])) {
+                    var tree = buildTree(roots[i], 0, [],  model);
+                    new_trees.push(tree);
+                }
+            }
+        }
+        return new_trees;
+    }
+    function isIsolatedTree(trees, root) {
+        for(var i = 0; i < trees.length; i++) {
+            if (containsElement(trees[i], root))
+                return false;
+        }
+        return true;
+    }
+    function buildTreeViz(trees, resources, model, width, height, viz_id) {
+        var horiz_constant = 1 / trees.length;
+        var horiz_offset = 0; 
+        for(var treeIndx = 0; treeIndx < trees.length; treeIndx++) {
+            var treeElems = trees[treeIndx];
+            var startX = (width / 2) - (horiz_offset); 
+            var startY = height*Math.log2(treeElems.length)*1.25;
+            var curLevel =  treeElems[0].level;
+            var prevLevel = -1; 
+            var ind = 0; 
+            var e = [[]];
+
+            for (var i = 0; i < treeElems.length; i ++) {
+                var elem = treeElems[i];
+                var policy; 
+                var type = elem.getType();
+                if (type.includes("Policy")) {
+                   policy = model.policyMap[elem.getName()];
+                } else  {
+                   policy = model.nodeMap[elem.getName()];
+                }
+
+                if (e[elem.level] !== undefined) {
+                    e[elem.level].push(policy);
+                } else {
+                    while (e[elem.level] === undefined) {
+                        e.push([]);
+                    }
+                    e[elem.level].push(policy);
+                }
+            }
+
+
+            e[0][0].x = startX;
+            e[0][0].y = startY;
+
+            for (var i = 1; i < e.length; i++) {
+                var lastStart = e[i-1][0];
+                var lastEnd = e[i-1][e[i-1].length-1];
+
+                var policies = e[i];
+                var xOffset = ((lastEnd.x - lastStart.x) / policies.length) + screen.width*.04;
+                xOffset = xOffset*horiz_constant;
+                var yOffset  = e[i-1][0].y - screen.height*.05;
+
+                for (var j = 0; j < policies.length; j++) {
+                     if (j === 0) {
+                         policies[j].x = lastStart.x - (screen.width*.05 * horiz_constant);
+                     } else if (j === policies.length-1 && e[i-1].length  <= e[i].length) {
+                         policies[j].x = lastEnd.x + (screen.width*.05 * horiz_constant);
+                     } else {
+                         policies[j].x = policies[j-1].x + xOffset;
+                     }        
+                     policies[j].y = yOffset;
+                }
+
+            }  
+
+            var resStartX = e[e.length-1][0].x;
+            var resStartY = e[e.length-1][0].y - screen.height*.09; 
+
+            for (var i = 0; i < resources.length; i++) {
+                var elem = model.nodeMap[resources[i].getName()];
+                elem.x = resStartX;
+                elem.y = resStartY;
+                resStartX += (screen.width*.04*horiz_constant);
+            }
+            
+            horiz_offset += startX - resStartX;
+        }
+//        displayText("Resources", d3, viz_id, e[e.length-1][0].x-"Resources".length*12, e[e.length-1][0].y, viz_id + "_res_label");          
+//
+//        displayText("Dependency Tree", d3, viz_id, e[e.length-1][0].x-"Dependency Tree".length*12,
+//                        startY + (e[e.length-1][0].y - startY)/2, viz_id + "_dep_label");          
+
+
+    }
+
 </script>
 <!-- MAIN PANEL -->
 <div id="pane">

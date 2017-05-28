@@ -35,6 +35,7 @@ define(["local/stackv/topology/modelConstants",
         this.topLevel = true;
         this.elementMap = elementMap;
         this.misc_elements = [];
+        this.level = -1;
         
         this.relationship_to = []; // relationship with owner 
         var that = this;
