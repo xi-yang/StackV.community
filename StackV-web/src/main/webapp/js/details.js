@@ -98,6 +98,7 @@ function resetView() {
             tweenDetailsPanel.reverse();
             break;
         case "right":
+            closeVisTabs();
             $("#sub-nav .active").removeClass("active");
             tweenVisualPanel.reverse();
             break;
@@ -710,6 +711,8 @@ function loadVisualization() {
                     text_model_pre.width("inherit");
                     text_model_pre.addClass("expanded");
                     text_model_pre.height(viz.height() * 2);
+                                        
+                    pauseRefresh();
                 } else {
                     if ($("#instance-details-table").hasClass("hide") && !$(".viz-hdr.expanded").not(this).length) {
                         $("#instance-details-table").removeClass("hide");
@@ -729,6 +732,7 @@ function loadVisualization() {
                     text_model_pre.width("initial");
                     text_model_pre.height(text_model_pre_height / 2.5);
 
+                    resumeRefresh();
                 }
 
             });
@@ -740,7 +744,9 @@ function loadVisualization() {
     });
 
 }
-
+function closeVisTabs() {
+    $(".viz-hdr.expanded").click();
+}
 
 function toggleTextModel(viz_table, text_table) {
     if (!$(viz_table.toLowerCase()).length) {

@@ -864,11 +864,39 @@ function validateHybrid() {
         $("#progressbar li").eq(1).addClass("invalid");
         $("input[name='aws-conn-vlan']").addClass("invalid");
     }
+    if ($("select[name='aws-topoUri']").val() === null) {
+        invalidArr.push("AWS Topology field is empty.\n");
+
+        $("#progressbar li").eq(1).addClass("invalid");
+        $("select[name='aws-topoUri']").addClass("invalid");
+    }
+    if ($("select[name='ops-topoUri']").val() === null) {
+        invalidArr.push("Openstack Topology field is empty.\n");
+
+        $("#progressbar li").eq(1).addClass("invalid");
+        $("select[name='ops-topoUri']").addClass("invalid");
+    }
+    
 
     // Stage 3
 
 
+    // set empty null values to 'any'
     // Stage 4
+    var vmNum = $("input[id='opsStage5-vm']").val();
+    for (var i = 1;i <= vmNum; i++){
+        var float = "ops-vm"+i+"-floating";
+        var host = "ops-vm"+i+"-host";
+        
+        if($("input[name='"+float+"']").val() === ""){
+            
+           $("input[name='"+float+"']").val("any");
+        }
+        if($("input[name='"+host+"']").val() === ""){
+            
+           $("input[name='"+host+"']").val("any");
+        }
+    }
 
 
     // Stage 5

@@ -292,7 +292,7 @@ form.stageform input, form.stageform textarea {
     color: #2C3E50;
 }
 
-form.stageform input.invalid {
+form.stageform input.invalid, form.stageform select.invalid {
     border: 1px solid red;
     color: red;
 }
