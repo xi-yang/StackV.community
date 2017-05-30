@@ -4,6 +4,9 @@
     "bearer-only": true,
     "auth-server-url": "https://k152.maxgigapop.net:8543/auth",
     "ssl-required": "external",
-    "resource": "restapi",
-    "enable-cors": true
+    "resource": "StackV",
+    "enable-cors": true,
+    "credentials": {
+        "secret": "ae53fbea-8812-4c13-918f-0065a1550b7c"
+    }
 }
