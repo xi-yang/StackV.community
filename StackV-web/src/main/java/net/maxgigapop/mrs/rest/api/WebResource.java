@@ -112,6 +112,16 @@ public class WebResource {
     public WebResource() {
     }
 
+    static {
+        HttpsURLConnection.setDefaultHostnameVerifier(
+                new javax.net.ssl.HostnameVerifier() {
+            public boolean verify(String hostname, javax.net.ssl.SSLSession sslSession) {
+                return true;
+            }
+        });
+
+    }
+
     /**
      * @apiDefine AuthHeader
      * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
