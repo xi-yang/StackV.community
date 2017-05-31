@@ -22,6 +22,9 @@
  */
 /* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
 // Tweens
+baseUrl = window.location.origin;
+var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
+
 var tweenAdminPanel = new TweenLite("#admin-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px"});
 var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 
@@ -143,4 +146,26 @@ function reloadData() {
             reloadLogs();
         }, 500);
     });
+}
+
+function executeRequest(){
+    
+    var apiUrl = baseUrl + 'StackV-web/restapi/app/'+"option" + document.getElementById("URL").value;
+    var type = "GET";
+
+    $.ajax({
+        url: apiUrl,
+        type: type,
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            document.getElementById("api_result").innerHTML = result;
+        },
+        error: function () {
+            document.getElementById("api_result").innerHTML = "failure";
+        }
+    });
+    
 }
