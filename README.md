@@ -8,4 +8,4 @@ https://github.com/MAX-UMD/StackV.community/wiki#linux-deployment
 #### Minimal Steps
 https://github.com/MAX-UMD/StackV.community/wiki/Deploy-StackV-Wildfly-and-Keycloak-with-Docker-Containers-:--Minimal-Steps
 #### Complete Guide
-https://github.com/MAX-UMD/StackV.community/wiki/Build-and-Deploy-StackV-KeyCloak-Containers-:--Complete-Guide
+https://github.com/MAX-UMD/StackV.community/wiki/Build-and-Deploy-StackV-Containers-:--Complete-Guide
