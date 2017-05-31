@@ -88,7 +88,7 @@ public class SystemModelCoordinator {
         String method = "autoUpdate";
         logger.trace_start(method);
         if (!bootStrapped) {
-            logger.message(method, "bootstrapping - bootStrapped==false");
+            logger.trace(method, "bootstrapping - bootStrapped==false");
         }
         //check driverInstances (catch: if someone unplug and plug a driver within a minute, we will have problem)
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
@@ -96,7 +96,7 @@ public class SystemModelCoordinator {
             bootStrapped = false;
             systemVersionGroup = null;
             logger.warning(method, "ditMap == null or ditMap.isEmpty");
-            logger.end(method);
+            logger.trace_end(method);
             return;
         }
         for (DriverInstance di : ditMap.values()) {
@@ -105,7 +105,7 @@ public class SystemModelCoordinator {
                     bootStrapped = false;
                     systemVersionGroup = null;
                     logger.warning(method, di + "has null headVersionItem");
-                    logger.end(method);
+                    logger.trace_end(method);
                     return;
                 }
             }
