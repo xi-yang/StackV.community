@@ -169,7 +169,7 @@ function executeRequest(){
         success: function (result) {
             
             var resultArr = String(result).split(",");
-            if(url_selected[0] === "keycloak"){
+            
                 var jsonStr = "[";
                 
                 var index = 0;
@@ -186,15 +186,7 @@ function executeRequest(){
                 var jsonFormat = JSON.parse(jsonStr);
                 alert(JSON.stringify(jsonFormat));
                 document.getElementById("api_result").innerHTML = JSON.stringify(jsonFormat,null,2);
-            
-            } else {
-                document.getElementById("api_result").innerHTML = result;
-            }
-            
-            
-            
-            
-            
+
         },
         error: function () {
             alert("failed");
