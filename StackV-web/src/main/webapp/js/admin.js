@@ -150,9 +150,15 @@ function reloadData() {
 
 function executeRequest(){
     
-    var apiUrl = baseUrl + 'StackV-web/restapi/app/'+"option" + document.getElementById("URL").value;
-    var type = "GET";
-
+    var url_request = $("#API-request").val();
+    var url = document.getElementById("URL").value;
+    //var apiUrl = baseUrl + '/StackV-web/restapi/app/'+"option" + document.getElementById("URL").value;
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/"+ url;
+    var type = url_request;
+    
+    var url_selected = String(url).split("/");
+    
+    
     $.ajax({
         url: apiUrl,
         type: type,
@@ -161,9 +167,37 @@ function executeRequest(){
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            document.getElementById("api_result").innerHTML = result;
+            
+            var resultArr = String(result).split(",");
+            if(url_selected[0] === "keycloak"){
+                var jsonStr = "[";
+                
+                var index = 0;
+                
+                for(index = 0;index < resultArr.length;index+=2){
+                    if(index+2 == resultArr.length){
+                        jsonStr += "["+"\""+resultArr[index+1]+"\""+" , "+"\""+resultArr[index]+"\""+"]";
+                    } else {
+                        jsonStr += "["+"\""+resultArr[index+1]+"\""+" , "+"\""+resultArr[index]+"\""+"],";
+                    }
+                }
+                
+                jsonStr += "]";
+                var jsonFormat = JSON.parse(jsonStr);
+                alert(JSON.stringify(jsonFormat));
+                document.getElementById("api_result").innerHTML = JSON.stringify(jsonFormat,null,2);
+            
+            } else {
+                document.getElementById("api_result").innerHTML = result;
+            }
+            
+            
+            
+            
+            
         },
         error: function () {
+            alert("failed");
             document.getElementById("api_result").innerHTML = "failure";
         }
     });

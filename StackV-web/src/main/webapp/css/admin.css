@@ -82,3 +82,8 @@ td.details-control {
 tr.shown td.details-control {
     background: url('../img/dataTables/details_close.png') no-repeat center center;
 }
+
+#api_result {
+    width: 75%;
+    min-height: 300px;
+}

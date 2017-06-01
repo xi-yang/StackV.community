@@ -33,26 +33,18 @@
                 <div id = "API-panel">
                     <div id ="API-header-div">API Module</div>
                     <div id="logging-body-div">
-                        <select>
+                        <select id = "API-request">
                             <option value="GET">Get</option>
                             <option value="PUT">Put</option>
                             <option value="POST">Post</option>
                             <option value="DELETE">Delete</option>
                         </select>
-                        <select>
-                            <option value="acl">ACL</option>
-                            <option value="driver">Driver</option>
-                            <option value="keycloak">Keycloak</option>
-                            <option value="label">Label</option>
-                            <option value="logging">Logging</option>
-                            <option value="manifest">Manifest</option>
-                            <option value="profile">Profile</option>
-                            <option value="service">Service</option>
-                        </select>
                         <input type="text" placeholder="URL" id="URL">
-                        <button type="button" class="action-button" onclick="executeRequest();">Submit</button>
+                        <button type="button" class="action-button" onclick="executeRequest();">Send</button>
                     </div>
-                    <div id="api_result"></div>
+                    <div id="logging-body-div">
+                        <textarea id="api_result" style="color: black;"></textarea>
+                    </div>
                 </div>
             </div>
             <div id="logging-panel">
