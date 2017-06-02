@@ -28,7 +28,7 @@ RUN cd $HOME \
     && tar xf wildfly-$WILDFLY_VERSION.tar.gz \
     && mv $HOME/wildfly-$WILDFLY_VERSION $JBOSS_HOME \
     && rm wildfly-$WILDFLY_VERSION.tar.gz \
-    && chown -R jboss:0 ${JBOSS_HOME} \
+    && chown -R jboss:jboss ${JBOSS_HOME} \
     && chmod -R g+rw ${JBOSS_HOME} \
     && sed -i "s/-Xms64m -Xmx512m/-Xms1024m -Xmx4096m/g" /opt/jboss/wildfly/bin/standalone.conf
 
@@ -99,7 +99,8 @@ ADD ./StackV-ear/target/StackV-ear-1.0-SNAPSHOT.ear /opt/jboss/wildfly/standalon
 RUN cd ${JBOSS_HOME} \
     && wget https://downloads.jboss.org/keycloak/3.0.0.Final/adapters/keycloak-oidc/keycloak-wildfly-adapter-dist-3.0.0.Final.tar.gz \
     && tar zxf keycloak-wildfly-adapter-dist-3.0.0.Final.tar.gz \
-    && ./bin/jboss-cli.sh --file=./bin/adapter-install-offline.cli
+    && ./bin/jboss-cli.sh --file=./bin/adapter-install-offline.cli \
+    && rm -rf ./standalone/configuration/standalone_xml_history/current
 
 # Install mysql driver to wildfly
 RUN cd ${JBOSS_HOME} \

@@ -29,7 +29,24 @@
         </div>       
         <!-- MAIN PANEL -->
         <div class="sub-main" id="main-pane">
-            <div id="admin-panel"></div>
+            <div id="admin-panel">
+                <div id = "API-panel">
+                    <div id ="API-header-div">API Module</div>
+                    <div id="logging-body-div">
+                        <select id = "API-request">
+                            <option value="GET">Get</option>
+                            <option value="PUT">Put</option>
+                            <option value="POST">Post</option>
+                            <option value="DELETE">Delete</option>
+                        </select>
+                        <input type="text" placeholder="URL" id="URL">
+                        <button type="button" class="action-button" onclick="executeRequest();">Send</button>
+                    </div>
+                    <div id="logging-body-div">
+                        <textarea id="api_result" style="color: black;"></textarea>
+                    </div>
+                </div>
+            </div>
             <div id="logging-panel">
                 <div id="logging-header-div">
                     Logs                  

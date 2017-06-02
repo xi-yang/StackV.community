@@ -1,17 +1,25 @@
-div#details-panel, div#logging-panel, div#visual-panel {
+div#details-panel, div#visual-panel {
     padding: 30px 7% 30px 7%;
     height: calc(100% - 52px);
     width: 100%;
     position: absolute;
     overflow-y: hidden;
+    opacity: 0;
+    display: none;
 }
 div#details-panel {
     top: -100%;
     left: 0;
 }
 div#logging-panel {
-    left: -100%;
+    left: -150%;
     text-align: left;
+    padding: 30px 7% 30px 7%;
+    height: calc(100% - 52px);
+    width: 100%;
+    position: absolute;
+    overflow-y: hidden;
+    opacity: 0;    
 }
 div#visual-panel {
     right: -100%;
