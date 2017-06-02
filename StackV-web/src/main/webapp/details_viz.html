@@ -582,7 +582,6 @@
                     if (id.includes("ser") || id.includes("sys"))
                         removeIfEmpty(id);
                  });
-
                 if (data.serviceModelAddition && data.serviceModelAddition !== "{ }") {
                     var servAObj = JSON.parse(data.serviceModelAddition);
                     var servAModel = new ModelConstructor();
@@ -1013,8 +1012,6 @@ function containsElement(array, element) {
 function buildTree(root, level, visited,  model) {
        var misc = root.misc_elements; 
        var res = [];
-       console.log(visited.length);
-       console.log(Object.keys(model.policyMap).length);
        if  (root === undefined || containsElement(visited,root) || visited.length ===  Object.keys(model.policyMap).length) 
            return res;
        
@@ -1110,11 +1107,52 @@ function getRoots(policyActions) {
         }
         return true;
     }
+    
+    function getResourcesForTree(tree, model) {
+        var resources  = [];
+        for (var i = 0; i < tree.length; i++) {
+            var elems = tree[i].relationship_to; 
+            for (var name in elems) {
+                if (name.startsWith("urn")) {
+                    resources.push(model.nodeMap[name]);
+                    var misc_elems = model.elementMap[name].misc_elements;
+                    for (var j = 0; j < misc_elems.length; j++) {
+                        var misc = misc_elems[j];
+                        var misc_name = misc.getName(); 
+                        if (misc_name.startsWith("urn") && !containsElement (resources, misc)) {
+                           resources.push(model.nodeMap[misc_name]);
+                        }
+                    }
+                }
+            }
+        }
+        return resources;
+    }
+
+    function getAllResourcse(model) {
+        var elems = model.elementMap;
+        var resources = [];
+        for (var elem in elems) {
+            if (elem.startsWith("urn"))
+                resources.push(model.nodeMap[elem]);
+        }
+        return resources;
+    }
     function buildTreeViz(trees, resources, model, width, height, viz_id) {
-        var horiz_constant = 1 / trees.length;
+        var horiz_constant = (1 / trees.length);
+        horiz_constant += horiz_constant * horiz_constant;
         var horiz_offset = 0; 
+        var multitree_layout = (trees.length > 1);
+        
         for(var treeIndx = 0; treeIndx < trees.length; treeIndx++) {
             var treeElems = trees[treeIndx];
+            var treeResources = []; 
+            if (multitree_layout) {
+                treeResources = getResourcesForTree(treeElems, model);
+            } else {
+                treeResources = getAllResourcse(model); 
+            }
+            
             var startX = (width / 2) - (horiz_offset); 
             var startY = height*Math.log2(treeElems.length)*1.25;
             var curLevel =  treeElems[0].level;
@@ -1170,22 +1208,17 @@ function getRoots(policyActions) {
 
             var resStartX = e[e.length-1][0].x;
             var resStartY = e[e.length-1][0].y - screen.height*.09; 
-
-            for (var i = 0; i < resources.length; i++) {
-                var elem = model.nodeMap[resources[i].getName()];
+            
+            for (var i = 0; i < treeResources.length; i++) {
+                var elem = treeResources[i];
                 elem.x = resStartX;
                 elem.y = resStartY;
                 resStartX += (screen.width*.04*horiz_constant);
             }
             
-            horiz_offset += startX - resStartX;
+
+            horiz_offset += (e[e.length-1][0].x - startX) ;
         }
-//        displayText("Resources", d3, viz_id, e[e.length-1][0].x-"Resources".length*12, e[e.length-1][0].y, viz_id + "_res_label");          
-//
-//        displayText("Dependency Tree", d3, viz_id, e[e.length-1][0].x-"Dependency Tree".length*12,
-//                        startY + (e[e.length-1][0].y - startY)/2, viz_id + "_dep_label");          
-
-
     }
 
 </script>
