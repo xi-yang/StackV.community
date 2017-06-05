@@ -33,7 +33,17 @@
 								"sparql": "SELECT ?vol ?rbd_svc WHERE { ?vm mrs:hasVolume ?vol. ?rbd_svc mrs:providesVolume ?vol. }",
 								"sparql-ext": "SELECT ?vol_gb ?vol_mount WHERE { ?rbd_svc a mrs:BlockStorageService. ?rbd_svc mrs:type \"ceph-rbd\". ?vol mrs:disk_gb ?vol_gb. ?vol mrs:mount_point ?vol_mount. }",
 								"required": "false"
-							}]
+							}],
+                                                        "Service EndPoints": [{
+                                                                "Name": "?ep_name?",
+                                                                "sparql": "SELECT ?ep ?ep_type ?ep_name WHERE { ?vm nml:hasService ?ep. ?ep mrs:type ?ep_type. OPTIONAL {?ep nml:name ?ep_name.} }",
+                                                                "required": "false",
+                                                                "?ep_type?": [{
+                                                                        "?ep_param_type?": "?ep_param_value?",
+                                                                        "sparql": "SELECT ?ep_param_type ?ep_param_value WHERE { ?ep mrs:hasNetworkAddress ?ep_param. ?ep_param mrs:type ?ep_param_type. ?ep_param mrs:value ?ep_param_value. }",
+                                                                        "required": "false"
+                                                                }]
+                                                        }]
 						}
 					],
 					"Instruction": "",

@@ -47,7 +47,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.ServiceDelta;
@@ -57,6 +56,7 @@ import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -69,19 +69,22 @@ import org.json.simple.parser.ParseException;
 @Stateless
 public class MCE_VirtualNetworkCreation implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_VirtualNetworkCreation.class.getName());
+    private static final StackLogger logger = new StackLogger(MCE_VirtualNetworkCreation.class.getName(), "MCE_VirtualNetworkCreation");
 
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
-        // $$ MCE_VMFilterPlacement deals with add model only for now.
+        logger.cleanup();
+        String method = "process";
+        logger.refuuid(annotatedDelta.getReferenceUUID());
+        logger.start(method);
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
-            throw new EJBException(String.format("%s::process ", this.getClass().getName()));
+            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
         }
         try {
-            log.log(Level.FINE, "\n>>>MCE_NetworkPlacement--DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_MPVlanConnection.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
         }
         // importPolicyData
         String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
@@ -129,18 +132,12 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             // returned placementModel contains the VM as well as hosting Node/Topology and HypervisorService from systemModel
             OntModel placementModel = this.doCreation(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), network, networkPolicyMap.get(network));
             if (placementModel == null) {
-                throw new EJBException(String.format("%s::process cannot resolve any policy to place %s", this.getClass().getName(), network));
+                throw logger.error_throwing(method, "cannot apply policy to create network=" + network);
             }
 
             //2. merge the placement satements into spaModel
             outputDelta.getModelAddition().getOntModel().add(placementModel.getBaseModel());
-            /*
-             try {
-             log.log(Level.FINE, "\n>>>MCE_VMFilterPlacement--outputDelta(stage 2)=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
-             } catch (Exception ex) {
-             Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
-             }
-             */
+
             //3. update policyData this action exportTo 
             this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), network);
 
@@ -152,16 +149,18 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             //$$ TODO: Add dependOn->Abstraction annotation to root level spaModel and add a generic Action to remvoe that abstract nml:Topology
         }
         try {
-            log.log(Level.FINE, "\n>>>MCE_NetworkPlacement--outputDelta Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+            logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_VMFilterPlacement.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
         }
+        logger.end(method);
         return new AsyncResult(outputDelta);
     }
 
     //?? Use current containing abstract Topology ?
     // ignore if dependOn 'Abstraction'
     private OntModel doCreation(OntModel systemModel, OntModel spaModel, Resource resNetwork, List<Map> placementCriteria) {
+        String method = "doCreation";
         OntModel placementModel = null;
         for (Map filterCriterion : placementCriteria) {
             if (!filterCriterion.containsKey("data") || !filterCriterion.containsKey("type") || !filterCriterion.containsKey("value")) {
@@ -169,7 +168,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             }
             OntModel hostModel = this.modelNetwork(systemModel, spaModel, resNetwork, filterCriterion.get("value").toString());
             if (hostModel == null) {
-                throw new EJBException(String.format("%s::process cannot place %s based on polocy %s", this.getClass().getName(), resNetwork, filterCriterion.get("policy")));
+                throw logger.error_throwing(method, String.format("cannot create network=%s based on polocy=%s", resNetwork, filterCriterion.get("policy")));
             }
             //$$ create VM resource and relation
             //$$ assemble placementModel;
@@ -184,13 +183,14 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
     }
 
     private OntModel modelNetwork(OntModel systemModel, OntModel spaModel, Resource resNetwork, String value) {
+        String method = "modelNetwork";
         //the String value will be a JSON Object 
         JSONParser parser = new JSONParser();
         Object obj = new Object();
         try {
             obj = parser.parse(value);
         } catch (ParseException e) {
-            throw new EJBException(String.format("%s::process  cannot parse json string %s", this.getClass().getName(), value));
+            throw logger.throwing(method, String.format("cannot parse json string %s", value), e);
         }
         JSONObject topoDescription = (JSONObject) obj;
 
@@ -220,7 +220,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             networkCIDR = "10.0.0.0/16";
         }
         if (topologyUri == null) {
-            throw new EJBException(String.format("%s::process network %s does not have a parent topology", this.getClass().getName(), value));
+            throw logger.error_throwing(method, String.format("network %s does not have a parent topology", this.getClass().getName(), value));
         }
 
         //2.3 check if it is openstack or AWS
@@ -262,6 +262,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
      ****************************************
      */
     private OntModel modelDefaultNetwork(OntModel systemModel, OntModel spaModel, boolean ops, Resource resNetwork, String type, String networkCIDR, String topologyUri, JSONArray routes) {
+        String method = "modelDefaultNetwork";
         String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                 + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
@@ -275,8 +276,8 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         QueryExecution qexec = QueryExecutionFactory.create(query, systemModel);
         ResultSet r = (ResultSet) qexec.execSelect();
         if (!r.hasNext()) {
-            throw new EJBException(String.format("%s::could not find a virtual cloud service in the "
-                    + "system model associated with  %s", this.getClass().getName(), topologyUri));
+            throw logger.error_throwing(method, String.format("could not find a virtual cloud service in the "
+                    + "system model associated with  %s", topologyUri));
         }
         QuerySolution querySolution = r.next();
         Resource resTopology = querySolution.get("topology").asResource();
@@ -377,6 +378,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
      * @param vm *******************************************************
      */
     private OntModel modelAwsSubnets(OntModel systemModel, OntModel spaModel, Resource resNetwork, String networkCIDR, String networkType, String topologyUri, JSONArray subnets) {
+        String method = "modelAwsSubnets";
         //return if no subnets specified
         if (subnets == null) {
             return spaModel;
@@ -391,7 +393,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         while (subnetsIt.hasNext()) {
             JSONObject o = (JSONObject) subnetsIt.next();
             if (!o.containsKey("cidr")) {
-                throw new EJBException(String.format("%s::process JSON subnet does not have key cidr", this.getClass().getName()));
+                throw logger.error_throwing(method, "JSON subnet does not have key cidr");
             }
             String subnetCIDR = (String) o.get("cidr");
 
@@ -432,8 +434,8 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                 while (routesIt.hasNext()) {
                     JSONObject routeObj = (JSONObject) routesIt.next();
                     if (!routeObj.containsKey("to") || !routeObj.containsKey("nextHop")) {
-                        throw new EJBException(String.format("%s::process JSON subnet %s does not have proper routes "
-                                + "formed", this.getClass().getName(), subnet));
+                        throw logger.error_throwing(method, String.format("JSON subnet %s does not have proper routes "
+                                + "formed", subnet));
                     }
                     String to = (String) routeObj.get("to");
                     String next = (String) routeObj.get("nextHop");
@@ -498,6 +500,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
      * @param vm *******************************************************
      */
     private OntModel modelOpsSubnets(OntModel systemModel, OntModel spaModel, Resource resNetwork, String networkCIDR, String networkType, String topologyUri, JSONArray subnets) {
+        String method = "modelOpsSubnets";
         //return if no subnets specified
         if (subnets == null) {
             return spaModel;
@@ -512,7 +515,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         while (subnetsIt.hasNext()) {
             JSONObject o = (JSONObject) subnetsIt.next();
             if (!o.containsKey("cidr")) {
-                throw new EJBException(String.format("%s::process JSON subnet does not have key cidr", this.getClass().getName()));
+                throw logger.error_throwing(method, "JSON subnet does not have key cidr");
             }
             String subnetCIDR = (String) o.get("cidr");
 
@@ -546,8 +549,8 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                 while (routesIt.hasNext()) {
                     JSONObject routeObj = (JSONObject) routesIt.next();
                     if (!routeObj.containsKey("to") || !routeObj.containsKey("nextHop")) {
-                        throw new EJBException(String.format("%s::process JSON subnet %s does not have proper routes "
-                                + "formed", this.getClass().getName(), subnet));
+                        throw logger.error_throwing(method, String.format("JSON subnet %s does not have proper routes "
+                                + "formed", subnet));
                     }
                     String to = (String) routeObj.get("to");
                     String next = (String) routeObj.get("nextHop");
@@ -568,7 +571,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                         QueryExecution qexec = QueryExecutionFactory.create(query, systemModel);
                         ResultSet r = (ResultSet) qexec.execSelect();
                         if (!r.hasNext()) {
-                            throw new EJBException(String.format("%s::main topology %s does not have a routing service ", this.getClass().getName(), topologyUri));
+                            throw logger.error_throwing(method, String.format("main topology %s does not have a routing service", topologyUri));
                         }
                         routingService = r.next().getResource("service").asResource();
                         routingTable = spaModel.createResource(resNetwork + ":routingtable-" + "subnet" + Integer.toString(i));
@@ -624,7 +627,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
 
                         r = executeQuery(sparqlString, systemModel, spaModel);
                         if (!r.hasNext()) {
-                            throw new EJBException(String.format("%s::main topology %s does not have a public subnet to route to the internet ", this.getClass().getName(), topologyUri));
+                            throw logger.error_throwing(method, String.format("main topology %s does not have a public subnet to route to the internet", topologyUri));
                         }
                         Resource publicSubnet = r.next().getResource("subnet").asResource();
                         String publicSubnetUri = ResourceTool.getResourceUri(topologyUri,publicSubnet.toString());
@@ -657,6 +660,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
      * @param vm *******************************************************
      */
     private OntModel modelGateways(OntModel systemModel, OntModel spaModel, Resource resNetwork, JSONArray gateways, String topoUri) {
+        String method = "modelGateways";
         //return if no gateways specified
         if (gateways == null) {
             return spaModel;
@@ -666,7 +670,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         while (gatewaysIt.hasNext()) {
             JSONObject o = (JSONObject) gatewaysIt.next();
             if (!o.containsKey("type")) {
-                throw new EJBException(String.format("%s::process JSON gateway does not have key type", this.getClass().getName()));
+                throw logger.error_throwing(method, "JSON gateway does not have key type");
             }
             String value = (String) o.get("type");
             if (value.equalsIgnoreCase("internet")) {
@@ -683,6 +687,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
     }
 
     private void exportPolicyData(OntModel spaModel, Resource resNetwork) {
+        String method = "exportPolicyData";
         // find Placement policy -> exportTo -> policyData for vpc
         String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
@@ -749,15 +754,14 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             String exportValue = output.toJSONString();
             if (querySolution.contains("format")) {
                 String exportFormat = querySolution.get("format").toString();
-                exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+                try {
+                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
+                } catch (Exception ex) {
+                    logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
+                    continue;
+                }
             }
             spaModel.add(resData, Spa.value, exportValue);
-        }
-        try {
-            String ttl = ModelUtil.marshalOntModel(spaModel);
-            System.out.println();
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_VirtualNetworkCreation.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 

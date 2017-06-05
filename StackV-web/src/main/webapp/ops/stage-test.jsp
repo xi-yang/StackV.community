@@ -4,31 +4,20 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+<jsp:setProperty name="serv" property="*" />
 <c:if test="${user.loggedIn == false}">
     <c:redirect url="/index.jsp" />
 </c:if>
 <!DOCTYPE html>
-<html >    
-    <head>   
+<html>
+    <head>
         <meta charset="UTF-8">
         <title>Staging Test</title>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
-        <script src="/StackV-web/js/svc/netcreate.js"></script>
 
-        <!-- jQuery easing plugin -->
-        <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
-
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
 
     <sql:setDataSource var="rains_conn" driver="com.mysql.jdbc.Driver"
@@ -38,13 +27,11 @@
     <body>
         <!-- NAV BAR -->
         <div id="nav"></div>
-        <!-- SIDE BAR -->
-        <div id="sidebar"></div>
         <!-- MAIN PANEL -->
         <div id="black-screen"></div>
-        <div id="main-pane">                
+        <div id="main-pane">
             <fieldset id="mode-select" style="z-index: 4;">
-                <div><button type="button" class="action-button" onclick="startEditor(0)">Start Wizard</button></div>               
+                <div><button type="button" class="action-button" onclick="startEditor(0)">Start Wizard</button></div>
                 <div><button type="button" class="action-button" onclick="startEditor(1)">Start from Scratch</button></div>
             </fieldset>
 
@@ -60,7 +47,7 @@
                         <li class="disabled">Subnets</li>
                         <li class="disabled">VMs</li>
                         <li class="disabled">Gateways</li>
-                        <li class="disabled">SRIOV</li>                    
+                        <li class="disabled">SRIOV</li>
                         <li class="disabled">Summary</li>
                     </ul>
 
@@ -72,7 +59,7 @@
                         <div><button type="button" class="action-button" onclick="applyTemplate(3)">Basic OpenStack</button></div>
                     </fieldset>
 
-                    <!-- Stage 1: Host --> 
+                    <!-- Stage 1: Host -->
                     <fieldset id='1-base-1'>
                         <h2 class="fs-title">Select your Host</h2>
                         <h3 class="fs-subtitle"></h3>
@@ -87,7 +74,7 @@
                         <h3 class="fs-subtitle">Basic Network Details</h3>
                         <table class="fs-table" id="awsStage2-table">
                             <thead>
-                                <tr>                            
+                                <tr>
                                     <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
                                 </tr>
                                 <tr>
@@ -98,7 +85,7 @@
                                             <c:forEach var="driver" items="${driverlist.rows}">
                                                 <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                             </c:forEach>
-                                        </select>        
+                                        </select>
                                     </td>
                                 </tr>
                             </thead>
@@ -110,7 +97,7 @@
                         <input type="button" name="next" class="next action-button" value="Next" />
                     </fieldset>
 
-                    <!-- Stage 3: Subnets -->                    
+                    <!-- Stage 3: Subnets -->
                     <fieldset id="3-aws-1">
                         <h2 class="fs-title">Subnets</h2>
                         <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage3-subnet" onfocus="this.oldvalue = this.value;" onchange="setSubnets(this)"/></h3>
@@ -118,18 +105,18 @@
 
                         </table>
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" id="awsStage3" class="next action-button" value="Next" /> 
-                    </fieldset>                                                             
+                        <input type="button" name="next" id="awsStage3" class="next action-button" value="Next" />
+                    </fieldset>
                     <fieldset id="3-aws-2">
                         <fieldset class="subfs" id="awsStage3-subnet-fs">
 
                         </fieldset>
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" class="next action-button" value="Next" />                    
+                        <input type="button" name="next" class="next action-button" value="Next" />
                     </fieldset>
 
-                    <!-- Stage 4: VMs -->                    
+                    <!-- Stage 4: VMs -->
                     <fieldset id="4-aws-1">
                         <h2 class="fs-title">Virtual Machines</h2>
                         <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="awsStage4-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
@@ -139,14 +126,14 @@
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
                         <input type="button" name="next" id="awsStage4" class="next action-button" value="Next" />
-                    </fieldset>                                                             
+                    </fieldset>
                     <fieldset id="4-aws-2">
                         <fieldset class="subfs" id="awsStage4-vm-fs">
 
                         </fieldset>
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" class="next action-button" value="Next" />                    
+                        <input type="button" name="next" class="next action-button" value="Next" />
                     </fieldset>
 
                     <!-- Stage 7: Summary -->
@@ -155,7 +142,7 @@
                         <h3 class="fs-subtitle">(Summary Module still in development)</h3>
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <button type="submit" name="submit" class="action-button" value="aws">Submit</button>                    
+                        <button type="submit" name="submit" class="action-button" value="aws">Submit</button>
                     </fieldset>
 
                     <!-- Openstack -->
@@ -165,7 +152,7 @@
                         <h3 class="fs-subtitle">Basic Network Details</h3>
                         <table class="fs-table" id="opsStage2-table">
                             <thead>
-                                <tr>                            
+                                <tr>
                                     <td><input type="text" name="alias" placeholder="Instance Alias" /></td>
                                 </tr>
                                 <tr>
@@ -176,7 +163,7 @@
                                             <c:forEach var="driver" items="${driverlist.rows}">
                                                 <option value="${driver.topologyUri}">${driver.topologyUri}</option>
                                             </c:forEach>
-                                        </select>        
+                                        </select>
                                     </td>
                                 </tr>
                             </thead>
@@ -188,7 +175,7 @@
                         <input type="button" name="next" class="next action-button" value="Next" />
                     </fieldset>
 
-                    <!-- Stage 3: Subnets -->                    
+                    <!-- Stage 3: Subnets -->
                     <fieldset id="3-ops-1">
                         <h2 class="fs-title">Subnets</h2>
                         <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage3-subnet" onfocus="this.oldvalue = this.value;" onchange="setSubnets(this)"/></h3>
@@ -196,18 +183,18 @@
 
                         </table>
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" id="opsStage3" class="next action-button" value="Next" /> 
-                    </fieldset>                                                             
+                        <input type="button" name="next" id="opsStage3" class="next action-button" value="Next" />
+                    </fieldset>
                     <fieldset id="3-ops-2">
                         <fieldset class="subfs" id="opsStage3-subnet-fs">
 
                         </fieldset>
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" class="next action-button" value="Next" />                    
+                        <input type="button" name="next" class="next action-button" value="Next" />
                     </fieldset>
 
-                    <!-- Stage 4: VMs -->                    
+                    <!-- Stage 4: VMs -->
                     <fieldset id="4-ops-1">
                         <h2 class="fs-title">Virtual Machines</h2>
                         <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage4-vm" onfocus="this.oldvalue = this.value;" onchange="setVMs(this)"/></h3>
@@ -217,14 +204,14 @@
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
                         <input type="button" name="next" id="opsStage4" class="next action-button" value="Next" />
-                    </fieldset>                                                             
+                    </fieldset>
                     <fieldset id="4-ops-2">
                         <fieldset class="subfs" id="opsStage4-vm-fs">
 
                         </fieldset>
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" class="next action-button" value="Next" />                    
+                        <input type="button" name="next" class="next action-button" value="Next" />
                     </fieldset>
 
                     <!-- Stage 5: Gateways -->
@@ -233,15 +220,15 @@
                         <h3 class="fs-subtitle">How many do you wish to include?<input type="number" class="small-counter" id="opsStage5-gateway" onfocus="this.oldvalue = this.value;" onchange="setGateways(this)"/></h3>
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" id="opsStage5" class="next action-button" value="Next" /> 
-                    </fieldset>                                                             
+                        <input type="button" name="next" id="opsStage5" class="next action-button" value="Next" />
+                    </fieldset>
                     <fieldset id="5-ops-2">
                         <fieldset class="subfs" id="opsStage5-gateway-fs">
 
                         </fieldset>
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" class="next action-button" value="Next" />                    
+                        <input type="button" name="next" class="next action-button" value="Next" />
                     </fieldset>
 
                     <!-- Stage 6: SRIOV -->
@@ -252,16 +239,16 @@
 
                         </table>
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" id="opsStage6" class="next action-button" value="Next" /> 
-                    </fieldset>                                                             
+                        <input type="button" name="next" id="opsStage6" class="next action-button" value="Next" />
+                    </fieldset>
                     <fieldset id="6-ops-2">
                         <fieldset class="subfs" id="opsStage6-sriov-fs">
 
                         </fieldset>
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <input type="button" name="next" class="next action-button" value="Next" />                    
-                    </fieldset>                                
+                        <input type="button" name="next" class="next action-button" value="Next" />
+                    </fieldset>
 
                     <!-- Stage 7: Summary -->
                     <fieldset id="7-ops-1">
@@ -269,20 +256,27 @@
                         <h3 class="fs-subtitle">(Summary Module still in development)</h3>
 
                         <input type="button" name="previous" class="previous action-button" value="Previous" />
-                        <button type="submit" name="submit" class="action-button" value="ops">Submit</button>                    
+                        <button type="submit" name="submit" class="action-button" value="ops">Submit</button>
                     </fieldset>
                 </form>
             </div>
 
         </div>
-        <!-- TAG PANEL -->       
-        <div id="tag-panel"> 
-        </div>        
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
         <!-- JS -->
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/svc/netcreate.js"></script>
+        <!-- jQuery easing plugin -->
+        <script src="http://thecodeplayer.com/uploads/js/jquery.easing.min.js" type="text/javascript"></script>
+
         <script>
             $(function () {
                 $("#tag-panel").load("/StackV-web/tagPanel.jsp", null);
             });
-        </script>        
+        </script>
     </body>
 </html>

@@ -305,7 +305,22 @@ define([
                     .on("click", onPolicyClick.bind(undefined, p))
                     .on("dblclick", onPolicyDblClick.bind(undefined, p))
                     .on("mousemove", onPolicyMouseMove.bind(undefined, p))
-                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));        
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));      
+          
+          var shortName = p.getName().split(":");
+          shortName = shortName[shortName.length-1];
+            
+         p.nameText = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("text")
+                .attr("dx", p.x)
+                .attr("dy", p.y+(screen.height*.03)) // reposition
+                .text(shortName  )
+                .attr("font-family", "sans-serif")
+                .attr("font-size", "15px")
+        	.attr("text-overflow", "ellipsis")
+        	.style("text-anchor", "middle");
+
+
+
             if (outputApi.contextMenu) {
                 p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));    
             } 
@@ -572,6 +587,10 @@ define([
                     svgSubnet.attr("d", topologyPathToString(path));
                 }
             }
+            
+            n.nameText.attr("dx", n.x);
+            n.nameText.attr("dy", n.y + screen.height*.03);
+
             var svgAchor = n.svgNodeAnchor;
             if (svgAchor) {
                 var choords = n.getCenterOfMass();
@@ -952,7 +971,7 @@ define([
                 n.svgNode.style("filter", n.isGhost ? "url(#ghost)" : "none");
                 return;
             }
-            if (d3.event.shiftKey) {
+            if (d3.event && d3.event.shiftKey) {
                 if (highlightedNodesMap["trashcan"] === undefined) {
                     highlightedNodesMap["trashcan"] = [];
                 }
@@ -1019,7 +1038,7 @@ define([
                 n.svgNode.style("filter", n.isGhost ? "url(#ghost)" : "none");
                 return;
             }
-            if (d3.event.shiftKey) {
+            if (d3.event && d3.event.shiftKey) {
                 if (highlightedNodesMap["trashcan"] === undefined) {
                     highlightedNodesMap["trashcan"] = [];
                 }
@@ -1480,7 +1499,7 @@ define([
         API["setHighlights"] = setHighlights;
         API["removeHighlights"] = removeHighlights;
         API["multipleHighlighted"] = function () {
-            return highlightedNodesMap["trashcan"].length > 0;
+            return highlightedNodesMap["trashcan"] !== undefined && highlightedNodesMap["trashcan"].length > 0;
         };
         API["getTrashcan"] = function () {
             return highlightedNodesMap["trashcan"];

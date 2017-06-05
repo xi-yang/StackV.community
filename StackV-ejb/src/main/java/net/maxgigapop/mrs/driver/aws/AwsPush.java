@@ -28,11 +28,13 @@ import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
 import net.maxgigapop.mrs.driver.aws.AwsPush;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.directconnect.AmazonDirectConnectAsyncClient;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
 import com.amazonaws.services.directconnect.model.ConfirmPrivateVirtualInterfaceRequest;
 import com.amazonaws.services.directconnect.model.ConfirmPrivateVirtualInterfaceResult;
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceRequest;
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceResult;
+import com.amazonaws.services.ec2.AmazonEC2AsyncClient;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.*;
 import com.hp.hpl.jena.ontology.OntModel;
@@ -50,13 +52,11 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.common.Mrs;
-import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
@@ -68,18 +68,25 @@ import net.maxgigapop.mrs.common.ResourceTool;
 //elastic IPs are not linked in any way to the root topology, find a way to do this
 //in the model to make the two methods work.
 public class AwsPush {
+    
+    public static final StackLogger logger = AwsDriver.logger;
+
     private AwsPrefix awsPrefix = null;
-    private AmazonEC2Client ec2 = null;
-    private AmazonDirectConnectClient dc = null;
+    private AmazonEC2AsyncClient ec2 = null;
+    private AmazonDirectConnectAsyncClient dc = null;
     private AwsEC2Get ec2Client = null;
     private AwsDCGet dcClient = null;
     private String topologyUri = null;
     private Regions region = null;
+    String defaultImage = null;
+    String defaultInstanceType = null;
+    String defaultKeyPair = null;
+    String defaultSecGroup = null;
     private AwsBatchResourcesTool batchTool = new AwsBatchResourcesTool();
-    static final Logger logger = Logger.getLogger(AwsPush.class.getName());
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-    public AwsPush(String access_key_id, String secret_access_key, Regions region, String topologyUri) {
+    public AwsPush(String access_key_id, String secret_access_key, Regions region, String topologyUri, 
+            String defaultImage, String defaultInstanceType, String defaultKeyPair, String defaultSecGroup) {
         //have all the information regarding the topology
         ec2Client = new AwsEC2Get(access_key_id, secret_access_key, region);
         dcClient = new AwsDCGet(access_key_id, secret_access_key, region);
@@ -88,6 +95,10 @@ public class AwsPush {
         this.region = region;
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
+        this.defaultImage = defaultImage;
+        this.defaultInstanceType = defaultInstanceType;
+        this.defaultKeyPair = defaultKeyPair;
+        this.defaultSecGroup = defaultSecGroup;
         //create prefix util
         awsPrefix = new AwsPrefix(topologyUri);
     }
@@ -98,6 +109,7 @@ public class AwsPush {
      * ************************************************
      */
     public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
+        String method = "pushPropagate";
         String requests = "";
 
         OntModel modelRef;
@@ -113,7 +125,7 @@ public class AwsPush {
             modelAdd = batchTool.expandBatchAbstraction(modelAdd);
             modelReduct = batchTool.expandBatchAbstraction(modelReduct);
         } catch (Exception ex) {
-            throw new EJBException(ex);
+            throw logger.throwing(method, ex);
         }
 
         //deatch volumes that need to be detached
@@ -209,9 +221,11 @@ public class AwsPush {
      * **********************************************************************
      */
     public void pushCommit(String r) {
+        String method = "pushCommit";
+        logger.start(method);
         String[] requests = r.split("[\\n]");
-
         for (String request : requests) {
+            logger.trace_start(method+"."+request);
             if (request.contains("TerminateInstancesRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -368,13 +382,26 @@ public class AwsPush {
                     virtualInterfaceId = dcClient.getVirtualInterfaceByVlan(virtualInterfaceId);
                 }
                 if (virtualInterfaceId == null || !virtualInterfaceId.startsWith("dxvif")) {
-                    throw new EJBException(String.format("unrecognized virtualInterface ID or VLAN %s", parameters[1])); 
+                    throw logger.error_throwing(method, String.format("unrecognized virtualInterface ID or VLAN %s", parameters[1])); 
                 }
                 DeleteVirtualInterfaceRequest interfaceRequest = new DeleteVirtualInterfaceRequest();
                 interfaceRequest.withVirtualInterfaceId(virtualInterfaceId);
 
-                DeleteVirtualInterfaceResult interfaceResult = dc.deleteVirtualInterface(interfaceRequest);
-                dcClient.dxvifDeletionCheck(interfaceRequest.getVirtualInterfaceId());                
+                // delete virtual interface in an error-retry loop for up to 10 minutes
+                for (int i = 0; i < 10; i++) {
+                    try {
+                        Future<DeleteVirtualInterfaceResult> asyncResult = dc.deleteVirtualInterfaceAsync(interfaceRequest);
+                        dcClient.dxvifDeletionCheck(asyncResult);
+                        break;
+                    } catch (ExecutionException e) {
+                        try {
+                            Thread.sleep(60000L); // sleep 60 secs
+                        } catch (InterruptedException ex) {
+                            ; //@TODO if i == 9 (final) ==> error report
+                        }
+                        continue;
+                    }
+                }
             } else if (request.contains("DeleteVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -411,24 +438,22 @@ public class AwsPush {
                 gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
                         .withVpcId(v.getVpcId());
                 
-                // Somehow VGW may disappear from the API for a while after deleting dxvif. Trick is to detach a few more times.
-                boolean detachExecuted = false;
+                // Somehow VGW may disappear from the API for a while after deleting dxvif. 
+                // Retry in an error-retry loop for up to 5 minutes
+
                 for (int i = 0; i < 10; i++) {
                     try {
-                        ec2.detachVpnGateway(gwRequest);
-                        detachExecuted = true;
+                        Future<Void> asyncResult = ec2.detachVpnGatewayAsync(gwRequest);
+                        ec2Client.vpnGatewayDetachmentCheck(asyncResult);
                         break;
-                    } catch (AmazonServiceException | NullPointerException e) {
+                    } catch (ExecutionException e) {
                         try {
                             Thread.sleep(30000L); // sleep 30 secs
                         } catch (InterruptedException ex) {
-                            ;
+                            ; //@TODO if i == 9 (final) ==> error report
                         }
                         continue;
                     }
-                }
-                if (detachExecuted) {
-                    ec2Client.vpnGatewayDetachmentCheck(gateway.getVpnGatewayId(), v.getVpcId());
                 }
             } else if (request.contains("DisassociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -472,8 +497,11 @@ public class AwsPush {
                     try {
                         Thread.sleep(10000L);
                     } catch (InterruptedException ex) {
-                        ;
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
                     }
+                }
+                if (mainTable == null) {
+                    throw logger.error_throwing(method, String.format("failed for CreateVpcRequest (%s) - null main routing table ", parameters[3]));
                 }
                 ec2Client.getRoutingTables().add(mainTable);
                 //create the tag for the vpc
@@ -522,7 +550,7 @@ public class AwsPush {
                     try {
                         Thread.sleep(10000L);
                     } catch (InterruptedException ex) {
-                        ;
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
                     }
                 }
                 AssociateRouteTableRequest associateRequest = new AssociateRouteTableRequest();
@@ -556,7 +584,7 @@ public class AwsPush {
                         try {
                             sleep(20000L); // pause for 20 seconds and retry
                         } catch (InterruptedException ex) {
-                            ;
+                            logger.warning(method, request + " -exception- " + ex.getMessage());
                         }
                     }
                 }
@@ -591,7 +619,7 @@ public class AwsPush {
                         try {
                             sleep(20000L); // pause for 20 seconds and retry
                         } catch (InterruptedException ex) {
-                            ;
+                            logger.warning(method, request + " -exception- " + ex.getMessage());
                         }
                     }
                 }
@@ -614,7 +642,7 @@ public class AwsPush {
                     virtualInterfaceId = dcClient.getVirtualInterfaceByVlan(virtualInterfaceId);
                 }
                 if (virtualInterfaceId == null || !virtualInterfaceId.startsWith("dxvif")) {
-                    throw new EJBException(String.format("unrecognized virtualInterface ID or VLAN %s", parameters[1])); 
+                    throw logger.error_throwing(method, String.format("unrecognized virtualInterface ID or VLAN %s", parameters[1])); 
                 }
                 ConfirmPrivateVirtualInterfaceRequest interfaceRequest = new ConfirmPrivateVirtualInterfaceRequest();
                 interfaceRequest.withVirtualInterfaceId(virtualInterfaceId)
@@ -711,7 +739,7 @@ public class AwsPush {
                     ec2.associateAddress(associateAddressRequest);
                 } catch (com.amazonaws.AmazonServiceException ex) {
                     if (ex.getErrorCode().startsWith("InvalidAddress")) {
-                        logger.warning("Invalid Elastic IP address " + parameters[2] + " - not assocaited to Instance " + parameters[2]);
+                        logger.warning(method, "Invalid Elastic IP address " + parameters[2] + " - not assocaited to Instance " + parameters[2]);
                     } // also drop other exception quietly
                 }
 
@@ -887,7 +915,9 @@ public class AwsPush {
                         .withPublicIp(parameters[2].split("/")[0]);
                 ec2.associateAddress(elasticIpRequest);
             } 
+            logger.trace_end(method+"."+request);
         }
+        logger.end(method);
     }
 
     /**
@@ -945,6 +975,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String detachVolumeRequests(OntModel model, OntModel modelReduct) {
+        String method = "detachVolumeRequests";
         String requests = "";
 
         //check fornew association between intsnce and volume
@@ -962,7 +993,7 @@ public class AwsPush {
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
             ResultSet r2 = executeQuery(query, model, modelReduct);
             if (!r2.hasNext()) {
-                throw new EJBException(String.format("volume device name is not specified for volume %s", volume));
+                throw logger.error_throwing(method, String.format("volume device name is not specified for volume %s", volume));
             }
 
             QuerySolution querySolution2 = r2.next();
@@ -976,10 +1007,10 @@ public class AwsPush {
                 Instance ins = ec2Client.getInstance(nodeId);
                 Volume vol = ec2Client.getVolume(volumeId);
                 if (vol == null) {
-                    throw new EJBException(String.format("The volume %s to be deleted does not exist", volume));
+                    throw logger.error_throwing(method, String.format("The volume %s to be deleted does not exist", volume));
                 }
                 if (ins == null) {
-                    throw new EJBException(String.format("The node %s where the volume %s "
+                    throw logger.error_throwing(method, String.format("The node %s where the volume %s "
                             + "wiil be deattached does not exist", node, volume));
                 }
                 if (!vol.getAttachments().isEmpty()) {
@@ -996,6 +1027,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String disassociateAddressRequest(OntModel model, OntModel modelReduct) {
+        String method = "disassociateAddressRequest";
         //to get the public ip address of the network interface if any
         String requests = "";
         String query = "SELECT  ?port ?address WHERE {?port  mrs:hasNetworkAddress ?address}";
@@ -1011,7 +1043,7 @@ public class AwsPush {
                 query = "SELECT ?value WHERE {<" + address.asResource() + ">  mrs:value  ?value}";
                 r2 = executeQuery(query, model, modelReduct);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("model additions network addres  %s for port $s"
+                    throw logger.error_throwing(method, String.format("model additions network addres  %s for port $s"
                             + "is not found in the reference mode", address, port));
                 }
                 QuerySolution querySolution2 = r2.next();
@@ -1030,6 +1062,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String deletePortsRequests(OntModel model, OntModel modelReduct) {
+        String method = "deletePortsRequests";
         String requests = "";
         String query;
 
@@ -1045,7 +1078,7 @@ public class AwsPush {
             NetworkInterface p = ec2Client.getNetworkInterface(portId);
             if (p == null) //network interface does not exist, need to create a network interface
             {
-                throw new EJBException(String.format("The port %s to be deleted"
+                throw logger.error_throwing(method, String.format("The port %s to be deleted"
                         + "does not exists", port));
             } else {
                 //check to see the network interface has no attachments before
@@ -1055,14 +1088,14 @@ public class AwsPush {
                         + "?node a nml:Node}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
                 if (p.getAttachment() != null && !r1.hasNext() && p.getAttachment().getDeviceIndex() == 0) {
-                    throw new EJBException(String.format("The port %s to be deleted"
+                    throw logger.error_throwing(method, String.format("The port %s to be deleted"
                             + " has attachments, delete dependant resource first", port));
                 }
                 //find the subnet that has the port previously found
                 query = "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
                 r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model Reduction does not specify network subnet of port: %s", port));
+                    throw logger.error_throwing(method, String.format("model Reduction does not specify network subnet of port: %s", port));
                 }
                 String subnetId = null;
                 while (r1.hasNext()) {
@@ -1078,7 +1111,7 @@ public class AwsPush {
                     }
                 }
                 if (subnetId == null) {
-                    throw new EJBException(String.format("model additions subnet for port %s"
+                    throw logger.error_throwing(method, String.format("model additions subnet for port %s"
                             + "is not found in the reference model", subnetId));
                 }
                 //create the network interface 
@@ -1094,6 +1127,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String deleteInstancesRequests(OntModel model, OntModel modelReduct) {
+        String method = "deleteInstancesRequests";
         String requests = "";
         String query = "SELECT ?node WHERE {?node a nml:Node}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
@@ -1106,7 +1140,7 @@ public class AwsPush {
              + "<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
              ResultSet r1 = executeQuery(query, model, modelReduct);
              if (!r1.hasNext()) {
-             throw new EJBException(String.format("model reduction is malformed for node: %s", node));
+             throw logger.error_throwing(method, String.format("model reduction is malformed for node: %s", node));
              }
              QuerySolution querySolution1 = r1.next();
 
@@ -1114,20 +1148,20 @@ public class AwsPush {
              RDFNode volume = querySolution1.get("volume");
              RDFNode port = querySolution1.get("port");
              if (service == null) {
-             throw new EJBException(String.format("node to delete does not specify service for node: %s", node));
+             throw logger.error_throwing(method, String.format("node to delete does not specify service for node: %s", node));
              }
              if (volume == null) {
-             throw new EJBException(String.format("node to delete does not specify volume for node: %s", node));
+             throw logger.error_throwing(method, String.format("node to delete does not specify volume for node: %s", node));
              }
              if (port == null) {
-             throw new EJBException(String.format("node to delete does not specify port for node: %s", node));
+             throw logger.error_throwing(method, String.format("node to delete does not specify port for node: %s", node));
              }
              //check that one of the volumes is the main device 
              query = "SELECT ?volume ?deviceName WHERE {<" + node.asResource() + "> mrs:hasVolume ?volume ."
              + "?volume mrs:target_device ?deviceName}";
              r1 = executeQuery(query, model, modelReduct);
              if (!r1.hasNext()) {
-             throw new EJBException(String.format("model reduction does not specify root device name for volume"
+             throw logger.error_throwing(method, String.format("model reduction does not specify root device name for volume"
              + " attached to instance: %s", node));
              }
              boolean found = false;
@@ -1139,20 +1173,20 @@ public class AwsPush {
              }
              }
              if (found == false) {
-             throw new EJBException(String.format("model reduction does not specify root volume"
+             throw logger.error_throwing(method, String.format("model reduction does not specify root volume"
              + " attached to instance: %s", node));
              }
              */
             query = "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() + ">}";
             ResultSet r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("model reduction does not specify vpc of node to be deleted: %s", node));
+                throw logger.error_throwing(method, String.format("model reduction does not specify vpc of node to be deleted: %s", node));
             }
 
             query = "SELECT ?service WHERE {?service  mrs:providesVM <" + node.asResource() + ">}";
             r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("model reduction does not specify service of node: %s", node));
+                throw logger.error_throwing(method, String.format("model reduction does not specify service of node: %s", node));
             }
 
             String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(), awsPrefix.instance());
@@ -1161,7 +1195,7 @@ public class AwsPush {
             Instance instance = ec2Client.getInstance(nodeId);
             if (instance == null) //instance does not exists
             {
-                throw new EJBException(String.format("Node to delete: %s does not exist", node));
+                throw logger.error_throwing(method, String.format("Node to delete: %s does not exist", node));
             } else {
                 requests += String.format("TerminateInstancesRequest %s \n", nodeId);
             }
@@ -1175,6 +1209,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String detachPortRequest(OntModel model, OntModel modelReduct) {
+        String method = "detachPortRequest";
         String requests = "";
         String query = "";
 
@@ -1201,7 +1236,7 @@ public class AwsPush {
                         + "FILTER (NOT EXISTS {<" + port.asResource() + "> mrs:type ?type})} ";
                 ResultSet r2 = executeQuery(query, model, modelReduct);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be detaches is not a  network-interface", port));
+                    throw logger.error_throwing(method, String.format("bidirectional port %s to be detaches is not a  network-interface", port));
                 }
 
                 String attachmentId = "";
@@ -1214,7 +1249,7 @@ public class AwsPush {
 
                 }
                 if (attachmentId.equals("")) {
-                    throw new EJBException(String.format("bidirectional port %s to be detached has no attachments", port));
+                    throw logger.error_throwing(method, String.format("bidirectional port %s to be detached has no attachments", port));
                 }
 
                 requests += String.format("DetachNetworkInterfaceRequest %s %s\n", attachmentId, ec2Client.getResourceId(portIdTag));
@@ -1230,6 +1265,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String deleteVolumesRequests(OntModel model, OntModel modelReduct) {
+        String method = "deleteVolumesRequests";
         String requests = "";
         String query;
 
@@ -1244,27 +1280,27 @@ public class AwsPush {
             Volume v = ec2Client.getVolume(volumeId);
 
             if (v == null) {
-                throw new EJBException(String.format("volume does not exist: %s", volume));
+                throw logger.error_throwing(method, String.format("volume does not exist: %s", volume));
             } else //volume exists so it has to be deleted
             {
                 //check what service is providing the volume
                 query = "SELECT ?type WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model reduction does not specify service that provides volume: %s", volume));
+                    throw logger.error_throwing(method, String.format("model reduction does not specify service that provides volume: %s", volume));
                 }
 
                 //find out the type of the volume
                 query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:value ?type}";
                 r1 = executeQuery(query, emptyModel, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model reduction does not specify new type of volume: %s", volume));
+                    throw logger.error_throwing(method, String.format("model reduction does not specify new type of volume: %s", volume));
                 }
                 //find out the size of the volume
                 query = "SELECT ?size WHERE {<" + volume.asResource() + "> mrs:disk_gb ?size}";
                 r1 = executeQuery(query, emptyModel, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model reduction does not specify new size of volume: %s", volume));
+                    throw logger.error_throwing(method, String.format("model reduction does not specify new size of volume: %s", volume));
                 }
                 //dont create the volumes with no target device and that are attached to an instance
                 //since this volumes are the root devices
@@ -1292,6 +1328,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String deleteRouteRequests(OntModel model, OntModel modelReduct) {
+        String method = "deleteRouteRequests";
         String requests = "";
         String tempRequest = "";
         String query = "";
@@ -1315,13 +1352,13 @@ public class AwsPush {
                 QuerySolution q1 = r2.next();
                 service = q1.get("service");
             } else {
-                throw new EJBException(String.format("No service provides the routing"
+                throw logger.error_throwing(method, String.format("No service provides the routing"
                         + " table %s", table.asResource()));
             }
             query = "SELECT ?service WHERE {<" + service.asResource() + "> a  mrs:RoutingService}";
             r2 = executeQuery(query, model, modelReduct);
             if (!r2.hasNext()) {
-                throw new EJBException(String.format("Service %s is not a "
+                throw logger.error_throwing(method, String.format("Service %s is not a "
                         + "routing service", service));
             }
 
@@ -1334,14 +1371,14 @@ public class AwsPush {
                 RDFNode val = q1.get("value");
                 vpcAddress = val.asLiteral().toString();
             } else {
-                throw new EJBException(String.format("Network address for Vpc of routing"
+                throw logger.error_throwing(method, String.format("Network address for Vpc of routing"
                         + "table %s could not be found ", table.asResource()));
             }
             query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeTo ?routeTo ."
                     + "?routeTo mrs:value ?value}";
             r2 = executeQuery(query, model, modelReduct);
             if (!r2.hasNext()) {
-                throw new EJBException(String.format("RouteTo statement is not defined"
+                throw logger.error_throwing(method, String.format("RouteTo statement is not defined"
                         + "for route %s", route.asResource()));
             } else {
                 QuerySolution q1 = r2.next();
@@ -1376,7 +1413,7 @@ public class AwsPush {
                 ResultSet r3 = executeQuery(query, emptyModel, modelReduct);
                 if (!r3.hasNext()) {
                     skipRoute = true;
-                    //throw new EJBException(String.format("new route %s does not contain all the subnet"
+                    //throw logger.error_throwing(method, String.format("new route %s does not contain all the subnet"
                     //        + " associations of the route table", route.asResource()));
                 }
             }
@@ -1390,7 +1427,7 @@ public class AwsPush {
                 ResultSet r3 = executeQuery(query, emptyModel, modelReduct);
                 if (!r3.hasNext()) {
                     skipRoute = true;
-                    //throw new EJBException(String.format("new route %s does not contain all the subnet"
+                    //throw logger.error_throwing(method, String.format("new route %s does not contain all the subnet"
                     //        + "associations of the route table", route.asResource()));
                 }
             }
@@ -1420,7 +1457,7 @@ public class AwsPush {
                     query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort}", nextHopResource);
                     ResultSet r3 = executeQuery(query, model, modelReduct);
                     if (!r3.hasNext()) {
-                        throw new EJBException(String.format("next hop %s does not exist in delta "
+                        throw logger.error_throwing(method, String.format("next hop %s does not exist in delta "
                                 + "or system model", target));
                     }
                     gatewayId = ec2Client.getResourceId(target);
@@ -1449,6 +1486,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String disassociateTableRequests(OntModel model, OntModel modelReduct) {
+        String method = "disassociateTableRequests";
         String requests = "";
         String tempRequests = "";
         String query;
@@ -1474,7 +1512,7 @@ public class AwsPush {
                     + "?service mrs:providesRoute <" + route.asResource() + ">}";
             r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Route  %s"
+                throw logger.error_throwing(method, String.format("Route  %s"
                         + " does not exist in a route table or is not being provided "
                         + "by a routing service", route));
             }
@@ -1486,13 +1524,13 @@ public class AwsPush {
             String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), awsPrefix.routingTable());
 
             if (ec2Client.getSubnet(subnetId) == null) {
-                throw new EJBException(String.format("subnet %s to disassociate from"
+                throw logger.error_throwing(method, String.format("subnet %s to disassociate from"
                         + "route table %s does not exist", subnetIdTag, tableIdTag));
             }
 
             RouteTable rt = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
             if (rt == null) {
-                throw new EJBException(String.format("Route table %s to disassociate"
+                throw logger.error_throwing(method, String.format("Route table %s to disassociate"
                         + " does not exist", tableIdTag));
             } else {
                 for (RouteTableAssociation as : rt.getAssociations()) {
@@ -1539,7 +1577,7 @@ public class AwsPush {
                     {
                         continue;
                     } else {
-                        throw new EJBException(String.format("The route table association id for subnet %s"
+                        throw logger.error_throwing(method, String.format("The route table association id for subnet %s"
                                 + " in route tabe %s does not exist", subnetIdTag, tableIdTag));
                     }
                 }
@@ -1559,6 +1597,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String deleteGatewayRequests(OntModel model, OntModel modelReduct) {
+        String method = "deleteGatewayRequests";
         String requests = "";
         String query;
 
@@ -1584,7 +1623,7 @@ public class AwsPush {
             r1 = executeQuery(query, emptyModel, modelReduct);
             if (!r1.hasNext()) {
                 continue; // the gateway might be detached, skip
-                //throw new EJBException(String.format("Gateway %s does not specify topology", igw));
+                //throw logger.error_throwing(method, String.format("Gateway %s does not specify topology", igw));
             }
             q = r1.next();
             RDFNode vpc = q.get("vpc");
@@ -1594,7 +1633,7 @@ public class AwsPush {
             query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
             r1 = executeQuery(query, model, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("VPC %s for gateway %s is not "
+                throw logger.error_throwing(method, String.format("VPC %s for gateway %s is not "
                         + "of type topology", vpc, igw));
             }
             if (type.equals("internet-gateway")) {
@@ -1602,22 +1641,22 @@ public class AwsPush {
                 //check that the topology for the internet gateway is not the main topology
                 //as the internet gateway should be attached to a VPC not the main topology
                 if (vpcIdTag.contains(topologyUri.replace(":", ""))) {
-                    throw new EJBException(String.format("Internet gateway %s"
+                    throw logger.error_throwing(method, String.format("Internet gateway %s"
                             + " cannot be detached from root topology", igw));
                 }
                 if (ec2Client.getInternetGateway(ec2Client.getResourceId(idTag)) == null) {
-                    throw new EJBException(String.format("Internet gateway %s  does not exists", idTag));
+                    throw logger.error_throwing(method, String.format("Internet gateway %s  does not exists", idTag));
                 } else {
                     requests += String.format("DeleteInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
             } else if (type.equals("vpn-gateway")) {
                 if (ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(idTag)) == null) {
-                    throw new EJBException(String.format("VPN gateway %s does not exists", idTag));
+                    throw logger.error_throwing(method, String.format("VPN gateway %s does not exists", idTag));
                 } else {
                     requests += String.format("DeleteVpnGatewayRequest %s \n", idTag);
                 }
             } else {
-                throw new EJBException(String.format("Gateway %s has an invalid type", igw));
+                throw logger.error_throwing(method, String.format("Gateway %s has an invalid type", igw));
             }
         }
         return requests;
@@ -1629,6 +1668,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String detachVPNGatewayRequests(OntModel model, OntModel modelReduct) {
+        String method = "detachVPNGatewayRequests";
         String requests = "";
         String query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort ?port}";
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
@@ -1660,6 +1700,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String deleteRouteTableRequests(OntModel model, OntModel modelReduct) {
+        String method = "deleteRouteTableRequests";
         String requests = "";
         String query = "";
 
@@ -1676,7 +1717,7 @@ public class AwsPush {
                 query = "SELECT ?type WHERE{<" + table.asResource() + "> mrs:type ?type}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model Reduction for route table %s"
+                    throw logger.error_throwing(method, String.format("model Reduction for route table %s"
                             + " is not well specified", table));
                 }
                 QuerySolution querySolution1 = r1.next();
@@ -1686,7 +1727,7 @@ public class AwsPush {
                 query = "SELECT ?service WHERE {?service   mrs:providesRoutingTable <" + table.asResource() + ">}";
                 r1 = executeQuery(query, emptyModel, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Route table to be deleted %s is not provided by any service", table));
+                    throw logger.error_throwing(method, String.format("Route table to be deleted %s is not provided by any service", table));
                 }
                 querySolution1 = r1.next();
                 RDFNode service = querySolution1.get("service");
@@ -1697,7 +1738,7 @@ public class AwsPush {
                         + "?networkAddress mrs:value ?address}";
                 r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("vpc of route table %s in model reduction "
+                    throw logger.error_throwing(method, String.format("vpc of route table %s in model reduction "
                             + "has no network address", table));
                 }
                 querySolution1 = r1.next();
@@ -1716,7 +1757,7 @@ public class AwsPush {
                             + "?to mrs:value ?routeTo}";
                     r1 = executeQuery(query, emptyModel, modelReduct);
                     if (!r1.hasNext()) {
-                        throw new EJBException(String.format("model reduction for route table %s"
+                        throw logger.error_throwing(method, String.format("model reduction for route table %s"
                                 + " does not have any main  route", table));
                     }
                     while (r1.hasNext()) {
@@ -1728,7 +1769,7 @@ public class AwsPush {
                         }
                     }
                     if (found == false) {
-                        throw new EJBException(String.format("route table %s"
+                        throw logger.error_throwing(method, String.format("route table %s"
                                 + " does not have the main route", table));
                     }
                 }
@@ -1744,6 +1785,7 @@ public class AwsPush {
      * /*****************************************************************
      */
     private String deleteVpcsRequests(OntModel model, OntModel modelReduct) {
+        String method = "deleteVpcsRequests";
         String requests = "";
         String query;
 
@@ -1760,19 +1802,19 @@ public class AwsPush {
             Vpc v = ec2Client.getVpc(vpcId);
             if (v == null) // vpc does not exist, has to be created
             {
-                throw new EJBException(String.format("vpc to be deleted $s does not exist", vpc));
+                throw logger.error_throwing(method, String.format("vpc to be deleted $s does not exist", vpc));
             } else {
                 query = "SELECT ?cloud WHERE {?cloud nml:hasTopology <" + vpc.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model reduction does not specify the aws-cloud that"
+                    throw logger.error_throwing(method, String.format("model reduction does not specify the aws-cloud that"
                             + "provides VPC : %s", vpc));
                 }
 
                 query = "SELECT ?address WHERE {<" + vpc.asResource() + "> mrs:hasNetworkAddress ?address}";
                 r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model reduction does not specify the "
+                    throw logger.error_throwing(method, String.format("model reduction does not specify the "
                             + "newtowk address of vpc: %s", vpc));
                 }
                 QuerySolution querySolution1 = r1.next();
@@ -1782,7 +1824,7 @@ public class AwsPush {
                         + "<" + address.asResource() + "> mrs:value ?value}";
                 r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model reduction does not specify the "
+                    throw logger.error_throwing(method, String.format("model reduction does not specify the "
                             + "type or value of network address: %s", address));
                 }
                 querySolution1 = r1.next();
@@ -1794,13 +1836,13 @@ public class AwsPush {
                         + "?service a  mrs:SwitchingService}";
                 r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Vpc %s does not speicfy Switching Service in the model reduction", vpc));
+                    throw logger.error_throwing(method, String.format("Vpc %s does not speicfy Switching Service in the model reduction", vpc));
                 }
                 query = "SELECT ?service  WHERE {<" + vpc.asResource() + "> nml:hasService  ?service ."
                         + "?service a mrs:RoutingService}";
                 r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Vpc %s does not speicfy Routing Service in the "
+                    throw logger.error_throwing(method, String.format("Vpc %s does not speicfy Routing Service in the "
                             + "model reduction", vpc));
                 }
                 querySolution1 = r1.next();
@@ -1811,7 +1853,7 @@ public class AwsPush {
                         + "?routingTable mrs:type  \"main\"}";
                 r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Routing service  %s does not speicfy main Routing table in the model "
+                    throw logger.error_throwing(method, String.format("Routing service  %s does not speicfy main Routing table in the model "
                             + "reduction", routingService));
                 }
 
@@ -1831,7 +1873,7 @@ public class AwsPush {
                         + "?to mrs:value " + cidrBlock + "}";
                 r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Routing service has no route for main table in the model"
+                    throw logger.error_throwing(method, String.format("Routing service has no route for main table in the model"
                             + " reduction", routingService));
                 }
                 requests += String.format("DeleteVpcRequest %s \n", vpcId);
@@ -1846,6 +1888,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String deleteSubnetsRequests(OntModel model, OntModel modelReduct) {
+        String method = "deleteSubnetsRequests";
         String requests = "";
         String query;
 
@@ -1861,12 +1904,12 @@ public class AwsPush {
 
             if (s == null) //subnet does not exist, need to create subnet
             {
-                throw new EJBException(String.format("subnet %s to be deleted does not exist ", subnet));
+                throw logger.error_throwing(method, String.format("subnet %s to be deleted does not exist ", subnet));
             } else {
                 query = "SELECT ?service {?service mrs:providesSubnet <" + subnet.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, model, modelReduct);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("No service has subnet %s", subnet));
+                    throw logger.error_throwing(method, String.format("No service has subnet %s", subnet));
                 }
                 QuerySolution querySolution1 = r1.next();
                 RDFNode service = querySolution1.get("service");
@@ -1877,7 +1920,7 @@ public class AwsPush {
                     r1 = executeQuery(query, model, model);
                 }
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Subnet %s does not have a vpc in the model reduction", subnet));
+                    throw logger.error_throwing(method, String.format("Subnet %s does not have a vpc in the model reduction", subnet));
                 }
                 querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
@@ -1904,6 +1947,7 @@ public class AwsPush {
      * /*****************************************************************
      */
     private String createVpcsRequests(OntModel model, OntModel modelAdd) {
+        String method = "createVpcsRequests";
         String requests = "";
         String query;
 
@@ -1920,19 +1964,19 @@ public class AwsPush {
             Vpc v = ec2Client.getVpc(vpcId);
             if (v != null) // vpc  exists, has to be created
             {
-                throw new EJBException(String.format("VPC %s already exists", vpcIdTagValue));
+                throw logger.error_throwing(method, String.format("VPC %s already exists", vpcIdTagValue));
             } else {
                 query = "SELECT ?cloud WHERE {?cloud nml:hasTopology <" + vpc.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify the aws-cloud that"
+                    throw logger.error_throwing(method, String.format("model addition does not specify the aws-cloud that"
                             + "provides VPC : %s", vpc));
                 }
 
                 query = "SELECT ?address WHERE {<" + vpc.asResource() + "> mrs:hasNetworkAddress ?address}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify the "
+                    throw logger.error_throwing(method, String.format("model addition does not specify the "
                             + "newtowk address of vpc: %s", vpc));
                 }
                 QuerySolution querySolution1 = r1.next();
@@ -1942,7 +1986,7 @@ public class AwsPush {
                         + "<" + address.asResource() + "> mrs:value ?value}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify the "
+                    throw logger.error_throwing(method, String.format("model addition does not specify the "
                             + "type or value of network address: %s", address));
                 }
                 querySolution1 = r1.next();
@@ -1954,14 +1998,14 @@ public class AwsPush {
                         + "?service a  mrs:SwitchingService}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("New Vpc %s does not speicfy Switching Service", vpc));
+                    throw logger.error_throwing(method, String.format("New Vpc %s does not speicfy Switching Service", vpc));
                 }
 
                 query = "SELECT ?service  WHERE {<" + vpc.asResource() + "> nml:hasService  ?service ."
                         + "?service a mrs:RoutingService}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("New Vpc %s does not speicfy Routing Service", vpc));
+                    throw logger.error_throwing(method, String.format("New Vpc %s does not speicfy Routing Service", vpc));
                 }
                 querySolution1 = r1.next();
                 RDFNode routingService = querySolution1.get("service");
@@ -1971,7 +2015,7 @@ public class AwsPush {
                         + "?routingTable mrs:type  \"main\"}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Routing service  %s does not speicfy main Routing table in the model addition", routingService));
+                    throw logger.error_throwing(method, String.format("Routing service  %s does not speicfy main Routing table in the model addition", routingService));
                 }
 
                 querySolution1 = r1.next();
@@ -1989,7 +2033,7 @@ public class AwsPush {
                         + "?to mrs:value " + cidrBlock + "}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Routing service has no route for main table in the model"
+                    throw logger.error_throwing(method, String.format("Routing service has no route for main table in the model"
                             + " addition", routingService));
                 }
                 requests += String.format("CreateVpcRequest %s %s %s \n", vpcIp, vpcIdTagValue, routeTableIdTagValue);
@@ -2004,6 +2048,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String createSubnetsRequests(OntModel model, OntModel modelAdd) {
+        String method = "createSubnetsRequests";
         String requests = "";
         String query;
 
@@ -2019,12 +2064,12 @@ public class AwsPush {
 
             if (s != null) //subnet  exists,does not need to create one
             {
-                throw new EJBException(String.format("Subnet %s already exists", subnetIdTagValue));
+                throw logger.error_throwing(method, String.format("Subnet %s already exists", subnetIdTagValue));
             } else {
                 query = "SELECT ?service {?service mrs:providesSubnet <" + subnet.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("No service has subnet %s", subnet));
+                    throw logger.error_throwing(method, String.format("No service has subnet %s", subnet));
                 }
                 QuerySolution querySolution1 = r1.next();
                 RDFNode service = querySolution1.get("service");
@@ -2035,7 +2080,7 @@ public class AwsPush {
                     r1 = executeQuery(query, model, model);
                 }
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Subnet %s does not have a vpc", subnet));
+                    throw logger.error_throwing(method, String.format("Subnet %s does not have a vpc", subnet));
                 }
                 querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
@@ -2054,7 +2099,7 @@ public class AwsPush {
                         + "}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Subnet %s does not have a valid CIDR", subnetIdTagValue));
+                    throw logger.error_throwing(method, String.format("Subnet %s does not have a valid CIDR", subnetIdTagValue));
                 }
                 querySolution1 = r1.next();
                 RDFNode value = querySolution1.get("value");
@@ -2072,6 +2117,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String createRouteTableRequests(OntModel model, OntModel modelAdd) {
+        String method = "createRouteTableRequests";
         String requests = "";
         String query = "";
 
@@ -2085,14 +2131,14 @@ public class AwsPush {
             String tableId = ec2Client.getTableId(tableIdTagValue);
             if (ec2Client.getRoutingTable(tableId) != null) //routing table already exists
             {
-                throw new EJBException(String.format("Routing Table %s already exists, does not need"
+                throw logger.error_throwing(method, String.format("Routing Table %s already exists, does not need"
                         + "to create one", tableIdTagValue));
             } else {
                 //check route table is modeled 
                 query = "SELECT ?type WHERE{<" + table.asResource() + "> mrs:type ?type}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition for route table %s"
+                    throw logger.error_throwing(method, String.format("model addition for route table %s"
                             + " is not well specified", table));
                 }
                 QuerySolution querySolution1 = r1.next();
@@ -2102,7 +2148,7 @@ public class AwsPush {
                 query = "SELECT ?service WHERE {?service   mrs:providesRoutingTable <" + table.asResource() + ">}";
                 r1 = executeQuery(query, emptyModel, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("Route table %s is not provided by any service in the model addition", table));
+                    throw logger.error_throwing(method, String.format("Route table %s is not provided by any service in the model addition", table));
                 }
                 querySolution1 = r1.next();
                 RDFNode service = querySolution1.get("service");
@@ -2113,7 +2159,7 @@ public class AwsPush {
                         + "?networkAddress mrs:value ?address}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("vpc of route table %s has no network address", table));
+                    throw logger.error_throwing(method, String.format("vpc of route table %s has no network address", table));
                 }
                 querySolution1 = r1.next();
                 RDFNode address = querySolution1.get("address");
@@ -2131,7 +2177,7 @@ public class AwsPush {
                             + "?to mrs:value ?routeTo}";
                     r1 = executeQuery(query, emptyModel, modelAdd);
                     if (!r1.hasNext()) {
-                        throw new EJBException(String.format("model addition for route table %s"
+                        throw logger.error_throwing(method, String.format("model addition for route table %s"
                                 + "does not have any routes", table));
                     }
                     while (r1.hasNext()) {
@@ -2143,7 +2189,7 @@ public class AwsPush {
                         }
                     }
                     if (found == false) {
-                        throw new EJBException(String.format("route table %s"
+                        throw logger.error_throwing(method, String.format("route table %s"
                                 + "does not specify the main route in the model addition", table));
                     }
                 }
@@ -2159,6 +2205,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String associateTableRequest(OntModel model, OntModel modelAdd) {
+        String method = "associateTableRequest";
         String requests = "";
         String tempRequests = "";
         String query;
@@ -2183,7 +2230,7 @@ public class AwsPush {
                     + "?service mrs:providesRoute <" + route.asResource() + ">}";
             r1 = executeQuery(query, model, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Route  %s"
+                throw logger.error_throwing(method, String.format("Route  %s"
                         + "does not have a route table or is not"
                         + "being provided by a routing service in the model addition", route));
             }
@@ -2215,7 +2262,7 @@ public class AwsPush {
                     query = "SELECT ?routeFrom WHERE {<" + routeFrom.asResource() + "> a mrs:SwitchingSubnet}";
                     ResultSet r3 = executeQuery(query, model, modelAdd);
                     if (!r3.hasNext()) {
-                        throw new EJBException(String.format("Route  %s does state"
+                        throw logger.error_throwing(method, String.format("Route  %s does state"
                                 + "new association with subnet %s in the model addition", ro, subnetIdTag));
                     }
                 }
@@ -2235,6 +2282,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String createGatewayRequests(OntModel model, OntModel modelAdd) {
+        String method = "createGatewayRequests";
         String requests = "";
         String query;
 
@@ -2259,7 +2307,7 @@ public class AwsPush {
             query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort <" + igw + ">}";
             r1 = executeQuery(query, emptyModel, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Gateway %s does not specify vpc", igw));
+                throw logger.error_throwing(method, String.format("Gateway %s does not specify vpc", igw));
             }
             q = r1.next();
             RDFNode vpc = q.get("vpc");
@@ -2269,7 +2317,7 @@ public class AwsPush {
             query = "SELECT ?vpc WHERE {<" + vpc.asResource() + "> a nml:Topology}";
             r1 = executeQuery(query, model, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("VPC %s for gateway %s is not "
+                throw logger.error_throwing(method, String.format("VPC %s for gateway %s is not "
                         + "of type topology", vpc, igw));
             }
             if (type.equals("internet-gateway")) {
@@ -2278,22 +2326,22 @@ public class AwsPush {
                 //as the internet gateway should be attached to a VPC not the main topology
                 String topology = topologyUri;
                 if (vpcIdTag.contains(topology.replace(":", ""))) {
-                    throw new EJBException(String.format("Internet gateway %s"
+                    throw logger.error_throwing(method, String.format("Internet gateway %s"
                             + " cannot be attached to root topology", igw));
                 }
                 if (ec2Client.getInternetGateway(ec2Client.getResourceId(idTag)) != null) {
-                    throw new EJBException(String.format("Internet gateway %s already exists", idTag));
+                    throw logger.error_throwing(method, String.format("Internet gateway %s already exists", idTag));
                 } else {
                     requests += String.format("CreateInternetGatewayRequest %s %s \n", idTag, vpcIdTag);
                 }
             } else if (type.equals("vpn-gateway")) {
                 if (ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(idTag)) != null) {
-                    throw new EJBException(String.format("VPN gateway %s already exists", idTag));
+                    throw logger.error_throwing(method, String.format("VPN gateway %s already exists", idTag));
                 } else {
                     requests += String.format("CreateVpnGatewayRequest %s \n", idTag);
                 }
             } else {
-                throw new EJBException(String.format("Gateway %s has an invalid type", igw));
+                throw logger.error_throwing(method, String.format("Gateway %s has an invalid type", igw));
             }
         }
         return requests;
@@ -2305,6 +2353,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String attachVPNGatewayRequests(OntModel model, OntModel modelAdd) {
+        String method = "attachVPNGatewayRequests";
         String requests = "";
         String query = "SELECT ?vpc ?port  WHERE {?vpc nml:hasBidirectionalPort ?port}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
@@ -2337,6 +2386,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String createRouteRequests(OntModel model, OntModel modelAdd) {
+        String method = "createRouteRequests";
         String requests = "";
         String tempRequest = "";
         String query = "";
@@ -2360,13 +2410,13 @@ public class AwsPush {
                 QuerySolution q1 = r2.next();
                 service = q1.get("service");
             } else {
-                throw new EJBException(String.format("No service provides the routing"
+                throw logger.error_throwing(method, String.format("No service provides the routing"
                         + " table %s", table.asResource()));
             }
             query = "SELECT ?service WHERE {<" + service.asResource() + "> a  mrs:RoutingService}";
             r2 = executeQuery(query, model, modelAdd);
             if (!r2.hasNext()) {
-                throw new EJBException(String.format("Service %s is not a "
+                throw logger.error_throwing(method, String.format("Service %s is not a "
                         + "routing service", service));
             }
 
@@ -2379,14 +2429,14 @@ public class AwsPush {
                 RDFNode val = q1.get("value");
                 vpcAddress = val.asLiteral().toString();
             } else {
-                throw new EJBException(String.format("Network address for Vpc of routing"
+                throw logger.error_throwing(method, String.format("Network address for Vpc of routing"
                         + "table %s could not be found ", table.asResource()));
             }
             query = "SELECT ?value WHERE {<" + route.asResource() + "> mrs:routeTo ?routeTo ."
                     + "?routeTo mrs:value ?value}";
             r2 = executeQuery(query, model, modelAdd);
             if (!r2.hasNext()) {
-                throw new EJBException(String.format("RouteTo statement is not defined"
+                throw logger.error_throwing(method, String.format("RouteTo statement is not defined"
                         + "for route %s", route.asResource()));
             } else {
                 QuerySolution q1 = r2.next();
@@ -2436,7 +2486,7 @@ public class AwsPush {
                             + String.format("FILTER (?routeFrom = <%s>)}", routeFrom);
                     r3 = executeQuery(query, emptyModel, modelAdd);
                     if (!r3.hasNext()) {
-                        throw new EJBException(String.format("new route %s does not contain all the subnet"
+                        throw logger.error_throwing(method, String.format("new route %s does not contain all the subnet"
                                 + "associations od the route table", route.asResource()));
                     }
                 }
@@ -2449,7 +2499,7 @@ public class AwsPush {
                             + String.format("FILTER (?routeFrom = <%s>)}", routeFrom);
                     r3 = executeQuery(query, emptyModel, modelAdd);
                     if (!r3.hasNext()) {
-                        throw new EJBException(String.format("new route %s does not contain all the subnet"
+                        throw logger.error_throwing(method, String.format("new route %s does not contain all the subnet"
                                 + " associations of the route table", route.asResource()));
                     }
                 }
@@ -2482,7 +2532,7 @@ public class AwsPush {
                     query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort}", targetResource);
                     r3 = executeQuery(query, model, modelAdd);
                     if (!r3.hasNext()) {
-                        throw new EJBException(String.format("next hop %s does not exist in delta "
+                        throw logger.error_throwing(method, String.format("next hop %s does not exist in delta "
                                 + "or system model", targetResource));
                     }
                     query = String.format("SELECT ?gateway WHERE{<%s> a nml:BidirectionalPort .", targetResource)
@@ -2509,6 +2559,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String createVolumesRequests(OntModel model, OntModel modelAdd) {
+        String method = "createVolumesRequests";
         String requests = "";
         String query;
 
@@ -2524,13 +2575,13 @@ public class AwsPush {
 
             if (v != null) //volume exists, no need to create a volume
             {
-                throw new EJBException(String.format("Volume %s already exists", volumeIdTagValue));
+                throw logger.error_throwing(method, String.format("Volume %s already exists", volumeIdTagValue));
             } else {
                 //check what service is providing the volume
                 query = "SELECT ?type WHERE {?service mrs:providesVolume <" + volume.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, emptyModel, modelAdd);
                 if (!r1.hasNext()) {
-                    logger.warning(String.format("model addition does not specify service that provides volume: %s", volume));
+                    logger.warning(method, String.format("model addition does not specify service that provides volume: %s", volume));
                     continue;
                 }
 
@@ -2538,7 +2589,7 @@ public class AwsPush {
                 query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:value ?type}";
                 r1 = executeQuery(query, emptyModel, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify new type of volume: %s", volume));
+                    throw logger.error_throwing(method, String.format("model addition does not specify new type of volume: %s", volume));
                 }
                 QuerySolution querySolution1 = r1.next();
                 RDFNode type = querySolution1.get("type");
@@ -2547,7 +2598,7 @@ public class AwsPush {
                 query = "SELECT ?size WHERE {<" + volume.asResource() + "> mrs:disk_gb ?size}";
                 r1 = executeQuery(query, emptyModel, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify new size of volume: %s", volume));
+                    throw logger.error_throwing(method, String.format("model addition does not specify new size of volume: %s", volume));
                 }
                 querySolution1 = r1.next();
                 RDFNode size = querySolution1.get("size");
@@ -2580,6 +2631,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String createPortsRequests(OntModel model, OntModel modelAdd) {
+        String method = "createPortsRequests";
         String requests = "";
         String query;
 
@@ -2597,7 +2649,7 @@ public class AwsPush {
 
             if (p != null) //network interface  exists, no need to create a network interface
             {
-                throw new EJBException(String.format("Network interface %s already exists", portIdTagValue));
+                throw logger.error_throwing(method, String.format("Network interface %s already exists", portIdTagValue));
             } else {
                 //to get the private ip of the network interface
                 query = "SELECT ?address ?value WHERE {<" + port.asResource() + ">  mrs:hasNetworkAddress  ?address ."
@@ -2615,7 +2667,7 @@ public class AwsPush {
                 query = "SELECT ?subnet WHERE {?subnet  nml:hasBidirectionalPort <" + port.asResource() + ">}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify network interface subnet of port: %s", port));
+                    throw logger.error_throwing(method, String.format("model addition does not specify network interface subnet of port: %s", port));
                 }
                 String subnetId = null;
                 while (r1.hasNext()) {
@@ -2631,7 +2683,7 @@ public class AwsPush {
                     }
                 }
                 if (subnetId == null) {
-                    throw new EJBException(String.format("model additions subnet for port %s"
+                    throw logger.error_throwing(method, String.format("model additions subnet for port %s"
                             + "is not found in the reference model", subnetId));
                 }
                 //create the network interface 
@@ -2647,6 +2699,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String associateAddressRequest(OntModel model, OntModel modelAdd) {
+        String method = "associateAddressRequest";
         //to get the public ip address of the network interface if any
         String requests = "";
         String query = "SELECT  ?port ?address WHERE {?port  mrs:hasNetworkAddress ?address}";
@@ -2662,7 +2715,7 @@ public class AwsPush {
                 query = "SELECT ?value WHERE {<" + address.asResource() + ">  mrs:value  ?value}";
                 r2 = executeQuery(query, model, modelAdd);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("model additions network addres  %s for port $s"
+                    throw logger.error_throwing(method, String.format("model additions network addres  %s for port $s"
                             + "is not found in the reference mode", address, port));
                 }
                 QuerySolution querySolution2 = r2.next();
@@ -2681,6 +2734,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String attachPortRequest(OntModel model, OntModel modelAdd) {
+        String method = "attachPortRequest";
         String requests = "";
         String query = "";
 
@@ -2708,14 +2762,14 @@ public class AwsPush {
                         + "FILTER (NOT EXISTS {<" + port.asResource() + ">  mrs:type ?type})}";
                 ResultSet r2 = executeQuery(query, model, modelAdd);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("bidirectional port %s to be attached to intsnace does not specify a network interface type", port));
+                    throw logger.error_throwing(method, String.format("bidirectional port %s to be attached to intsnace does not specify a network interface type", port));
                 }
 
                 //see if the network interface is already atatched
                 NetworkInterface eni = ec2Client.getNetworkInterface(ec2Client.getResourceId(portIdTag));
                 if (eni != null) {
                     if (eni.getAttachment() != null) {
-                        throw new EJBException(String.format("bidirectional port %s to be attached to instance is already"
+                        throw logger.error_throwing(method, String.format("bidirectional port %s to be attached to instance is already"
                                 + " attached to an instance", port));
                     }
                 }
@@ -2733,6 +2787,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String createInstancesRequests(OntModel model, OntModel modelAdd) {
+        String method = "createInstancesRequests";
         String requests = "";
         String query;
 
@@ -2748,20 +2803,20 @@ public class AwsPush {
             List<Instance> i = ec2Client.getEc2Instances();
             if (instance != null) //instance does not be to be created
             {
-                throw new EJBException(String.format("Instance %s already exists", nodeIdTagValue));
+                throw logger.error_throwing(method, String.format("Instance %s already exists", nodeIdTagValue));
             } else {
                 //check what service is providing the instance
                 query = "SELECT ?service WHERE {?service mrs:providesVM <" + node.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify service that provides Instance: %s", node));
+                    throw logger.error_throwing(method, String.format("model addition does not specify service that provides Instance: %s", node));
                 }
 
                 //find the Vpc that the node will be in
                 query = "SELECT ?vpc WHERE {?vpc nml:hasNode <" + node.asResource() + ">}";
                 r1 = executeQuery(query, model, modelAdd);
                 if (!r1.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify the Vpc of the node: %s", node));
+                    throw logger.error_throwing(method, String.format("model addition does not specify the Vpc of the node: %s", node));
                 }
                 QuerySolution querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
@@ -2771,7 +2826,7 @@ public class AwsPush {
                 query = "SELECT ?port WHERE {<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
                 ResultSet r2 = executeQuery(query, model, modelAdd);
                 if (!r2.hasNext()) {
-                    throw new EJBException(String.format("model addition does not specify the subnet that the node is: %s", node));
+                    throw logger.error_throwing(method, String.format("model addition does not specify the subnet that the node is: %s", node));
                 }
                 List<String> portsId = new ArrayList();
                 RDFNode lastPort = null;
@@ -2799,10 +2854,10 @@ public class AwsPush {
                 //get instance type, image, secgroup and keypair names
                 query = "SELECT ?type WHERE {<" + node.asResource() + "> mrs:type ?type}";
                 ResultSet r5 = executeQuery(query, model, modelAdd);
-                String flavorID = "t2.micro";
-                String imageID = "ami-146e2a7c";
-                String keypairName = "driver_key";
-                String secgroupName = "default";
+                String flavorID = (defaultInstanceType == null ? "t2.micro" : defaultInstanceType);
+                String imageID = (defaultImage == null ? null : defaultImage);
+                String keypairName = (defaultKeyPair == null ? null : defaultKeyPair);
+                String secgroupName = (defaultSecGroup == null ? "default" : defaultSecGroup);
                 String instanceTypes = null;
                 while (r5.hasNext()) {
                     QuerySolution q2 = r5.next();
@@ -2832,6 +2887,12 @@ public class AwsPush {
                             secgroupName = value;
                         }
                     }
+                }
+                if (imageID == null) {
+                    throw logger.error_throwing(method, "Image ID is unknown - cannot build instance: " + nodeIdTagValue);
+                }
+                if (keypairName == null) {
+                    throw logger.error_throwing(method, "Key Pair is unknown - cannot build instance: " + nodeIdTagValue);
                 }
                 //put request for new instance
                 requests += String.format("RunInstancesRequest %s %s %s %s %s ", imageID, flavorID, keypairName, secgroupName, nodeIdTagValue);
@@ -2878,6 +2939,7 @@ public class AwsPush {
      * ****************************************************************
      */
     private String attachVolumeRequests(OntModel model, OntModel modelAdd) {
+        String method = "attachVolumeRequests";
         String requests = "";
 
         //check fornew association between intsnce and volume
@@ -2895,7 +2957,7 @@ public class AwsPush {
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
             ResultSet r2 = executeQuery(query, model, modelAdd);
             if (!r2.hasNext()) {
-                throw new EJBException(String.format("volume device name is not specified for volume %s in the model addition", volume));
+                throw logger.error_throwing(method, String.format("volume device name is not specified for volume %s in the model addition", volume));
             }
 
             QuerySolution querySolution2 = r2.next();
@@ -2912,7 +2974,7 @@ public class AwsPush {
                     query = "SELECT ?deviceName ?size ?type WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName}";
                     r2 = executeQuery(query, model, modelAdd);
                     if (!r2.hasNext()) {
-                        throw new EJBException(String.format("volume %s is not well specified in volume addition", volume));
+                        throw logger.error_throwing(method, String.format("volume %s is not well specified in volume addition", volume));
                     }
                 }
                 if (ins != null) {
@@ -2946,6 +3008,7 @@ public class AwsPush {
      * ****************************************************************
      */
     public String acceptRejectVirtualInterfaceRequests(OntModel model, OntModel modelAdd) {
+        String method = "acceptRejectVirtualInterfaceRequests";
         String requests = "";
 
         //@TODO: public VLAN with hasLabel in delta model will be intepreted as "Accept" request
@@ -2989,14 +3052,14 @@ public class AwsPush {
             query = "SELECT  ?a  WHERE {<" + y.asResource() + ">  nml:isAlias  <" + x.asResource() + ">}";
             r1 = executeQuery(query, emptyModel, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("%s is aliased to %s but %s is not aliased to %s ", x, y, y, x));
+                throw logger.error_throwing(method, String.format("%s is aliased to %s but %s is not aliased to %s ", x, y, y, x));
             }
 
             //make sure that the gateway is a virtual private gateway
             query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:type \"vpn-gateway\"}";
             r1 = executeQueryUnion(query, model, modelAdd);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Gateway %s is not a vpn gateway", gateway));
+                throw logger.error_throwing(method, String.format("Gateway %s is not a vpn gateway", gateway));
             }
 
             //make sure the virtual private gateway has not been associated with other dx virtual interface
@@ -3009,7 +3072,7 @@ public class AwsPush {
             r1 = executeQuery(query, emptyModel, model);
             if (r1.hasNext()) {
                 Resource otherDxvif = r1.next().getResource("other");
-                throw new EJBException(String.format("Trying to accociate VGW %s with %s but it is already associated with %s",  gateway, vInterface, otherDxvif));
+                throw logger.error_throwing(method, String.format("Trying to accociate VGW %s with %s but it is already associated with %s",  gateway, vInterface, otherDxvif));
             }
             
             String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), awsPrefix.gateway());
@@ -3043,6 +3106,7 @@ public class AwsPush {
      * ****************************************************************
      */
     public String deleteVirtualInterfaceRequests(OntModel model, OntModel modelReduct) {
+        String method = "deleteVirtualInterfaceRequests";
         String requests = "";
 
         //@TODO: public VLAN with hasLabel in delta model will be intepreted as "Delete" request
@@ -3085,14 +3149,14 @@ public class AwsPush {
             query = "SELECT  ?a  WHERE {<" + y.asResource() + ">  nml:isAlias  <" + x.asResource() + ">}";
             r1 = executeQuery(query, emptyModel, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("%s is aliased to %s but %s is not aliased to %s ", x, y, y, x));
+                throw logger.error_throwing(method, String.format("%s is aliased to %s but %s is not aliased to %s ", x, y, y, x));
             }
 
             //make sure that the gateway is a virtual private gateway
             query = "SELECT ?tag WHERE {<" + gateway.asResource() + "> mrs:type \"vpn-gateway\"}";
             r1 = executeQueryUnion(query, model, modelReduct);
             if (!r1.hasNext()) {
-                throw new EJBException(String.format("Gateway %s is not a vpn gateway", gateway));
+                throw logger.error_throwing(method, String.format("Gateway %s is not a vpn gateway", gateway));
             }
 
             String gatewayIdTag = ResourceTool.getResourceName(gateway.asResource().toString(), awsPrefix.gateway());
@@ -3122,6 +3186,7 @@ public class AwsPush {
     }
 
     public String associateElasticIpRequests(OntModel model, OntModel modelAdd) {
+        String method = "associateElasticIpRequests";
         String requests = "";
 
         // check if node/port has floating-ip or elastic-ip annotion 

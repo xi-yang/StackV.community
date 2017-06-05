@@ -23,12 +23,7 @@
 
 package net.maxgigapop.mrs.service.orchestrate;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
-import net.maxgigapop.mrs.bean.DeltaModel;
-import net.maxgigapop.mrs.bean.ServiceDelta;
-import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.service.compile.CompilerBase;
 import net.maxgigapop.mrs.service.compile.CompilerFactory;
 import net.maxgigapop.mrs.service.compute.MCE_AwsDxStitching;
@@ -39,21 +34,22 @@ import net.maxgigapop.mrs.service.compute.MCE_AwsDxStitching;
  */
 public class SimpleWorker extends WorkerBase {
 
-    private static final Logger log = Logger.getLogger(SimpleWorker.class.getName());
+    private static final StackLogger logger = new StackLogger(SimpleWorker.class.getName(), "SimpleWorker");
 
     @Override
     public void run() {
+        // annoatedModel and rootActions should have been instantiated by caller
+        if (annoatedModelDelta == null) {
+            throw logger.error_throwing("run", "Workerflow cannot run with null annoatedModel");
+        }
         retrieveSystemModel();
         try {
             CompilerBase simpleCompiler = CompilerFactory.createCompiler("net.maxgigapop.mrs.service.compile.SimpleCompiler");
-            if (this.annoatedModelDelta == null) {
-                throw new EJBException(SimpleWorker.class.getName() + " encounters null annoatedModelDelta");
-            }
             simpleCompiler.setSpaDelta(this.annoatedModelDelta);
             simpleCompiler.compile(this);
             this.runWorkflow();
         } catch (Exception ex) {
-            throw new EJBException(SimpleWorker.class.getName() + " caught exception: " + ex);
+            throw logger.throwing("run", ex);
         }
     }
 }

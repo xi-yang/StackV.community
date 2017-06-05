@@ -122,6 +122,9 @@ public class OpenStackGet {
         }
         for (Server server : servers) {
             Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+            if (data == null) {
+                continue;
+            }
             if (metadata == null && !data.isEmpty()) {
                 metadata = new HashMap<>();
             }
@@ -379,15 +382,17 @@ public class OpenStackGet {
         return floatingIps;
     }
 
-    //get a floating ip  by its id
-    public NetFloatingIP getFloatingIp(String id) {
-        for (NetFloatingIP ip : floatingIps) {
-            if (ip.getId().equals(id)) {
-                return ip;
+    //get a floating ip  by its floatingIP address
+    public NetFloatingIP findFloatingIp(String ip) {
+            List<? extends NetFloatingIP> fips = client.networking().floatingip().list();
+        for (NetFloatingIP fip : fips) {
+            if (fip.getFloatingIpAddress().equals(ip)) {
+                return fip;
             }
         }
         return null;
     }
+    
    public List<NovaFloatingIP> getNovaFloatingIP(){
        return novafloatingIps;
    }

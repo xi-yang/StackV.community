@@ -118,8 +118,8 @@ define([
                     }
     //            map=data;
                     that.modelString = JSON.stringify(map, null, '\t');
-                    console.log("\n\nmap from request \n\n");
-                    console.log(that.modelString);
+//                    console.log("\n\nmap from request \n\n");
+//                    console.log(that.modelString);
 
                     /*
                      * We begin by extracting all nodes/topologies
@@ -164,7 +164,7 @@ define([
                                     // Fallthrough group 
                                     case values.topology:
                                     case values.node:
-                                        console.log("type: " + type);
+                                        //console.log("type: " + type);
                                         var toAdd;
                                         if (oldModel && oldModel.nodeMap[key]) {
                                             toAdd = oldModel.nodeMap[key];
@@ -484,7 +484,7 @@ define([
                         var node = that.nodeMap[key];
                         var node_ = node._backing;
                         for (var key in node_) {
-                            console.log("key: " + key);
+                            //console.log("key: " + key);
                             switch (key) {
                                 case values.hasBidirectionalPort:
                                     var ports = node_[key];
@@ -1019,7 +1019,10 @@ define([
                           that.policyMap[key] = toAdd;
                           break;                                        
                       default:
-                          console.log("Unknown type: " + type);
+                          var toAdd;
+                          toAdd = new Node(val, map);
+                          toAdd.isTopology = type === values.topology;
+                          that.nodeMap[key] = toAdd;
                           break;
                     }
                 });     
@@ -1085,7 +1088,7 @@ define([
                var node = that.nodeMap[key];
                var node_ = node._backing;
                for (var key in node_) {
-                   console.log("key: " + key);
+                   //console.log("key: " + key);
                    switch (key) {
                        case values.providesVolume:
                        case values.providesRoutingTable:
@@ -1538,7 +1541,7 @@ define([
                         var node = that.nodeMap[key];
                         var node_ = node._backing;
                         for (var key in node_) {
-                            console.log("key: " + key);
+                            //console.log("key: " + key);
                             switch (key) {
                                 case values.hasBidirectionalPort:
                                     var ports = node_[key];
@@ -1785,6 +1788,11 @@ define([
                 });
             });
             return ans;
+        };
+        this.listElements = function() {
+            var elements = [];
+            for (var key in that.elementMap) ports.push(that.portMap[key]);
+            return elements;
         };
 
         this.listPolicies = function() {

@@ -23,24 +23,19 @@
 
 package net.maxgigapop.mrs.driver.opendaylight;
 
-import net.maxgigapop.mrs.driver.onosystem.*;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.rdf.model.Resource;
 import net.maxgigapop.mrs.common.*;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
 import com.jayway.jsonpath.JsonPath;
-import javax.ejb.EJBException;
-
-//TODO Escape \:
+import net.maxgigapop.mrs.common.StackLogger;
 
 
 public class OpenflowModelBuilder {
-    private static final Logger logger = Logger.getLogger(OnosRESTDriver.class.getName());
-    
+    private static final StackLogger logger = OpenflowRestconfDriver.logger;
+            
     public static String URI_node(String prefix, String id) {
         return prefix+":node="+id;
     }
@@ -82,7 +77,8 @@ public class OpenflowModelBuilder {
         return prefix+":flow="+flow+":action="+id;
     }
     
-    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String username, String password) {
+    public static OntModel createOntology(String topologyURI, String subsystemBaseUrl, String username, String password, OntModel modelExt) {
+        String method = "createOntology";
         //create model object
         OntModel model = ModelUtil.newMrsOntModel(topologyURI);
         Resource resTopo = RdfOwl.createResource(model, topologyURI, Nml.Topology);
@@ -143,10 +139,10 @@ public class OpenflowModelBuilder {
                     }
                 }
             } else {
-                throw new EJBException(String.format("OpenflowModelBuilder.createOntology failed to retrieve topology nodes from jsonTopology."));
+                throw logger.error_throwing(method, String.format("failed to retrieve topology nodes from jsonTopology."));
             }
         } catch (Exception ex) {
-            throw new EJBException(String.format("OpenflowModelBuilder.createOntology failed to parse the jsonTopology for nodes.", ex));
+            throw logger.throwing(method, ex);
         }
         try {
             Object r = JsonPath.parse(jsonTopology).read("$.network-topology..link");
@@ -166,14 +162,14 @@ public class OpenflowModelBuilder {
                     model.add(model.createStatement(resSrc, Nml.isAlias, resDst));
                 }
             } else {
-                logger.warning("OpenflowModelBuilder.createOntology failed to retrieve topology links from jsonTopology.");
+                logger.warning(method, "failed to retrieve topology links from jsonTopology.");
             }
         } catch (Exception ex) {
-            logger.warning(String.format("OpenflowModelBuilder.createOntology failed to parse the jsonTopology for links.", ex));
+            logger.warning(method, "failed to parse the jsonTopology for links -exception- " + ex);
         }
 
-        JSONObject jsonFlows = restconf.getConfigFlows(subsystemBaseUrl, username, password);
         try {
+            JSONObject jsonFlows = restconf.getConfigFlows(subsystemBaseUrl, username, password);
             Object r = JsonPath.parse(jsonFlows).read("$.nodes.node");
             for (Object o1: (JSONArray)r) {
                 JSONObject j1 = (JSONObject)o1;
@@ -411,7 +407,12 @@ public class OpenflowModelBuilder {
                 }
             }
         } catch (Exception ex) {
-            logger.warning(String.format("OpenflowModelBuilder.createOntology failed to parse the jsonFlows for links.", ex));
+            logger.warning(method, "failed to retrieve or parse configured Flows -exception- " + ex);
+        }
+        
+        // combine extra model (static injection)
+        if (modelExt != null) {
+            model.add(modelExt.getBaseModel());
         }
         return model;
     }

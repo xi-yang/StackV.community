@@ -47,18 +47,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.common.*;
+import net.maxgigapop.mrs.bean.DeltaBase;
 
 /**
  *
  * @author xyang
  */
 public class ModelUtil {
-
-    private static final Logger logger = Logger.getLogger(ModelUtil.class.getName());
 
     static public OntModel unmarshalOntModel(String ttl) throws Exception {
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -173,6 +169,22 @@ public class ModelUtil {
         return true;
     }
 
+    static public Model getOddModel(Model model) {
+        Model odd = ModelFactory.createDefaultModel();
+        if (model == null) {
+            return odd;
+        }
+        StmtIterator stmts = model.listStatements();
+        while (stmts.hasNext()) {
+            Statement stmt = stmts.next();
+            // check subject will be enough
+            if (stmt.getSubject().isResource() && stmt.getPredicate().toString().contains("ogf")) {
+                odd.add(stmt);
+            }
+        }
+        return odd;
+    }
+    
     static public OntModel newMrsOntModel(String topoUri) {
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         String ttl = String.format("@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n"
@@ -190,11 +202,11 @@ public class ModelUtil {
         return model;
     }
 
-    static public void logDumpModel(String prompt, Model model) {
+    static public void logDumpModel(StackLogger logger, Model model) {
         try {
-            logger.info(prompt + " >> logDumpModel: " + ModelUtil.marshalModel(model));
+            logger.trace("logDumpModel", ModelUtil.marshalModel(model));
         } catch (Exception ex) {
-            Logger.getLogger(ModelUtil.class.getName()).log(Level.SEVERE, null, ex);
+            logger.catching("logDumpModel", ex);
         }
     }
 
@@ -256,14 +268,14 @@ public class ModelUtil {
         return r;
     }    
     
-    public static boolean evaluateStatement(Model model, Statement stmt, String sparql) {
+    public static boolean evaluateStatement(Model model, Statement stmt, String sparql) throws Exception {
         // static bindings stmt->subject => $$s; stmt->predicate => $$p; $stmt->object => $$o
         // sparql example "SELECT $s $p $o WHERE $s a nml:Topology; $o a nml:Node FILTER ($p = <http://schemas.ogf.org/nml/2013/03/base#hasNode>)"
         sparql = sparql.replace("$$s", stmt.getSubject().getURI());
         sparql = sparql.replace("$$p", stmt.getPredicate().getURI());
         sparql = sparql.replace("$$o", stmt.getObject().toString());
         if (sparql.contains("$$")) {
-            throw new EJBException(String.format("ModelUtl.evaluateStatementBySparql('%s', '%s'): Binding incomplete", stmt, sparql));
+            throw new Exception(String.format("ModelUtl.evaluateStatementBySparql('%s', '%s'): Binding incomplete", stmt, sparql));
         }
         ResultSet r = ModelUtil.sparqlQuery(model, sparql);
         return r.hasNext();
@@ -284,11 +296,11 @@ public class ModelUtil {
         return ontModel;
     }
 
-    static public Map<String, OntModel> splitOntModelByTopology(OntModel model) {
+    static public Map<String, OntModel> splitOntModelByTopology(OntModel model, DeltaBase delta) throws Exception {
         Map<String, OntModel> topoModelMap = new HashMap<String, OntModel>();
         List<RDFNode> listTopo = getTopologyList(model);
         if (listTopo == null) {
-            throw new EJBException("ModelUtil.splitOntModelByTopology getTopologyList returns on " + model);
+            throw new Exception("ModelUtil.splitOntModelByTopology getTopologyList returns on " + model);
         }
         for (RDFNode topoNode : listTopo) {
             OntModel modelTopology = getTopology(model, topoNode);
@@ -301,9 +313,33 @@ public class ModelUtil {
         //verify full decomposition (no nml: mrs: namespace objects left, otherwise thrown exception)
         if (!isEmptyModel(model.getBaseModel())) {
             StringWriter writer1 = new StringWriter();
-            model.getBaseModel().write(writer1, "TURTLE");
-            logger.info("Non empty model after splitOntModelByTopology: " + writer1.getBuffer().toString());
-            throw new EJBException("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects in " + model);
+            if (delta != null) {
+                // with delta present, ignore statements which is not in delta
+                // throw exception if having odd statement that is also in delta
+                if (delta.getModelAddition() != null && delta.getModelAddition().getOntModel() != null) {
+                    Model odd = getOddModel(model);
+                    if (!odd.isEmpty()) {
+                        odd = delta.getModelAddition().getOntModel().intersection(odd);
+                    }
+                    if (!odd.isEmpty()) {
+                        odd.write(writer1, "TURTLE");  
+                    }
+                }
+                if (delta.getModelReduction() != null && delta.getModelReduction().getOntModel() != null ){
+                    Model odd = getOddModel(model);
+                    if (!odd.isEmpty()) {
+                        odd = delta.getModelReduction().getOntModel().intersection(odd);
+                    }
+                    if (!odd.isEmpty()) {
+                        odd.write(writer1, "TURTLE");  
+                    }
+                }
+            } else {
+                model.getBaseModel().write(writer1, "TURTLE");                
+            }
+            if (!writer1.getBuffer().toString().isEmpty()) {
+                throw new Exception("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects - " + (delta == null ? "" : delta));
+            }
         }
         return topoModelMap;
     }
@@ -547,14 +583,12 @@ public class ModelUtil {
                 node = model.getResource(node.toString());
                 rdfDFS(model, node, visited, subModel, includeMatches, excludeMatches, excludeEssentials);
                 modelConstructed.add(subModel);
-                ModelUtil.logDumpModel("queryViewFilter add subtreeModel", subModel);
             }
             visited.clear();
             if (mvf.isSuptreeRecursive()) {
                 Model subModel = ModelFactory.createDefaultModel();
                 rdfDFSReverse(model, node, visited, subModel, includeMatches, excludeMatches);
                 modelConstructed.add(subModel);
-                ModelUtil.logDumpModel("queryViewFilter add suptreeModel", subModel);
             }
         }
         OntModel ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);

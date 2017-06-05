@@ -31,11 +31,8 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -47,7 +44,7 @@ import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
-import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 /**
@@ -61,59 +58,85 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 @Stateless
 public class AwsDriver implements IHandleDriverSystemCall {
 
-    Logger log = Logger.getLogger(AwsDriver.class.getName());
+    public static final StackLogger logger = new StackLogger(AwsDriver.class.getName(), "AwsDriver");
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
-
+        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
+        String method = "propagateDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getId());
+        logger.start(method);
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
         String r = driverInstance.getProperty("region");
-        String topologyURI = driverInstance.getProperty("topologyUri");
         Regions region = Regions.fromName(r);
+        String topologyURI = driverInstance.getProperty("topologyUri");
+        String defaultImage = driverInstance.getProperty("defaultImage");
+        String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
+        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
+        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
 
         String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
         String modelAdd = aDelta.getModelAddition().getTtlModel();
         String modelReduc = aDelta.getModelReduction().getTtlModel();
 
-        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
+        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
         String requests = null;
         requests = push.pushPropagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
         driverInstance.putProperty(requestId, requests);
         DriverInstancePersistenceManager.merge(driverInstance);
-        Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully propagated");
+        logger.end(method);
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     @Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
-        DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
-        if (driverInstance == null) {
-            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
+        logger.cleanup();
+        String method = "commitDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-
+        logger.targetid(aDelta.getId());
+        logger.start(method);
+        DriverInstance driverInstance = aDelta.getDriverInstance();
+        if (driverInstance == null) {
+            throw logger.error_throwing(method, "DriverInstance == null");
+        }
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requests = driverInstance.getProperty(requestId);
+        if (requests == null) {
+            throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
+        }
+        if (requests.isEmpty()) {
+            driverInstance.getProperties().remove(requestId);
+            DriverInstancePersistenceManager.merge(driverInstance);
+            throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
+        }        
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
         String r = driverInstance.getProperty("region");
-        String topologyURI = driverInstance.getProperty("topologyUri");
         Regions region = Regions.fromName(r);
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
-        String requests = driverInstance.getProperty(requestId);
-        if (requests == null || requests.isEmpty()) {
-            log.warning(String.format("commitDelta encounters empty requests data for %s", driverInstance));
-            return new AsyncResult<String>("SUCCESS");
-        }
-        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI);
-        push.pushCommit(requests);
+        String topologyURI = driverInstance.getProperty("topologyUri");
+        String defaultImage = driverInstance.getProperty("defaultImage");
+        String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
+        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
+        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
-
-        Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver delta models succesfully commited");
+        AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
+        try {
+            push.pushCommit(requests);
+        } catch (com.amazonaws.AmazonServiceException ex) {
+            throw logger.throwing(method, ex);
+        }
+        logger.end(method);
         return new AsyncResult<String>("SUCCESS");
     }
 
@@ -121,10 +144,13 @@ public class AwsDriver implements IHandleDriverSystemCall {
     @Asynchronous
     @Override
     public Future<String> pullModel(Long driverInstanceId) {
-
+        logger.cleanup();
+        String method = "pullModel";
+        logger.targetid(driverInstanceId.toString());
+        logger.trace_start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
-            throw new EJBException(String.format("pullModel cannot find driverInstance(id=%d)", driverInstanceId));
+            throw logger.error_throwing(method, "DriverInstance == null");
         }
 
         try {
@@ -150,12 +176,11 @@ public class AwsDriver implements IHandleDriverSystemCall {
             }
 
         } catch (IOException e) {
-            throw new EJBException(String.format("pullModel on %s raised exception[%s]", driverInstance, e.getMessage()));
+            throw logger.throwing(method, driverInstance + " failed AwsModelBuilder.createOntology", e);
         } catch (Exception ex) {
-            Logger.getLogger(AwsDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            throw logger.throwing(method, driverInstance + " failed pull model", ex);
         }
-
-        //Logger.getLogger(AwsDriver.class.getName()).log(Level.INFO, "AWS driver ontology model succesfully pulled");
+        logger.trace_end(method);
         return new AsyncResult<>("SUCCESS");
     }
 

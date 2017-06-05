@@ -240,6 +240,50 @@ define([
     
     };
     
+    function doTreeLayout(model, lockNodes, width, height) {
+        var nodes = model.listNodes();
+        var edges = model.listEdges();
+        nodes = [];
+        // lay out policies as nodes ...
+        var policies = model.listPolicies();
+        for (var i in policies) nodes.push(policies[i]);
+        
+        // same with policy edges
+        var polEdges = model.policyEdges;
+        for (var i in polEdges) {
+            polEdges[i]._isProper();
+            if (polEdges[i]) {
+                edges.push(polEdges[i]);
+            }
+        } 
+                
+        if (lockNodes) {
+            map_(lockNodes, function (node) {
+                if (node.isLeaf()) {
+                    node.fixed = true;
+                    node.px = node.x;
+                    node.py = node.y;
+                }
+            });
+        }
+
+        //To encourage topologies to clump, we add edges between topolgies and 
+        //their children
+        map_(nodes, /**@param {Node} n**/function (n) {
+            map_(n.children, function (child) {
+                edges.push({source: n, target: child});
+            });
+        });
+        force = d3.layout.force()
+                .nodes(nodes)
+                .links(edges)
+                .start();
+        force.stop();
+        forceGlobal = force;
+
+    
+    };
+
         /** PUBLIC INTERFACE **/
     return {
         doLayout: doLayout,
@@ -250,7 +294,9 @@ define([
             return force;
         },
         testLayout: testLayout,
-        doPersistLayout: doPersistLayout
+        doPersistLayout: doPersistLayout, 
+        doTreeLayout : doTreeLayout
     };
+
     /** END PUBLIC INTERFACE **/
 });

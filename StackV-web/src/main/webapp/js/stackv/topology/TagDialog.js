@@ -73,10 +73,15 @@ define(["local/stackv/utils"], function (utils) {
                         label: that.sentData,
                         color: that.currentColor.toLowerCase()
                 });
+                var token = sessionStorage.getItem("token");
+
                 $.ajax({
                     crossDomain: true,
                     type: "PUT",
                     url: "/StackV-web/restapi/app/label",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + token);
+                    },
                     data: serializedData,
                     contentType: "application/json", 
                     
@@ -152,10 +157,15 @@ define(["local/stackv/utils"], function (utils) {
         };
         
         this.deleteTag = function (identifier, htmlElement, list) {
+                var token = sessionStorage.getItem("token");
+
                 $.ajax({
                     crossDomain: true,
                     type: "DELETE",
-                    url: "/StackV-web/restapi/app/label/" + userName + "/delete/" + identifier,
+                    url: "/StackV-web/restapi/app/label/" + that.username + "/delete/" + identifier,
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + token);
+                    },
 
                     success: function(data,  textStatus,  jqXHR ) {
                        bsShowFadingMessage("#tagPanel", "Tag deleted.", "top", 1000);

@@ -43,7 +43,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.sql.PreparedStatement;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.servlet.AsyncContext;
 import javax.servlet.annotation.WebServlet;
@@ -174,17 +173,15 @@ public class ServiceServlet extends HttpServlet {
             String ttlFilename = "stub_driver_stubModelTtl";
             try {
                 FileReader fr = new FileReader(testingPath + ttlFilename);
-                BufferedReader br = new BufferedReader(fr);
-                while ((nextLine = br.readLine()) != null) {
-                    stubModelTTL += nextLine;
+                try (BufferedReader br = new BufferedReader(fr)) {
+                    while ((nextLine = br.readLine()) != null) {
+                        stubModelTTL += nextLine;
+                    }
                 }
-                br.close();
             } catch (FileNotFoundException ex) {
                 System.out.println(ttlFilename + " not found.");
-                ex.printStackTrace();
             } catch (IOException ex) {
                 System.out.println("Error reading " + ttlFilename + ".");
-                ex.printStackTrace();
             }
 
             paraMap.put("stubModelTtl", stubModelTTL);
@@ -237,6 +234,7 @@ public class ServiceServlet extends HttpServlet {
         }
 
         String token = paraMap.get("authToken");
+        String refresh = paraMap.get("refreshToken");
         String username = paraMap.get("username");
 
         JSONObject inputJSON = new JSONObject();
@@ -389,8 +387,11 @@ public class ServiceServlet extends HttpServlet {
                 JSONArray vmArr = new JSONArray();
                 for (int j = 1; j <= 10; j++) {
                     if (paraMap.containsKey("vm" + j + "-subnet") && (Integer.parseInt(paraMap.get("vm" + j + "-subnet")) == i)) {
+                        
+                        System.out.println("Entering VMs");
+                        
                         JSONObject vmJSON = new JSONObject();
-                        if (paraMap.get("submit").equalsIgnoreCase("aws")) {
+                        if (paraMap.get("netHost").equalsIgnoreCase("aws")) {
                             vmJSON.put("name", paraMap.get("vm" + j + "-name"));
 
                             // Parse Types.
@@ -427,7 +428,7 @@ public class ServiceServlet extends HttpServlet {
 
                                 interfaceArr.add(interfaceJSON);
                             }
-                        } else if (paraMap.get("submit").equalsIgnoreCase("ops")) {
+                        } else if (paraMap.get("netHost").equalsIgnoreCase("ops")) {
                             vmJSON.put("name", paraMap.get("vm" + j + "-name"));
                             vmJSON.put("host", paraMap.get("vm" + j + "-host"));
 
@@ -576,7 +577,7 @@ public class ServiceServlet extends HttpServlet {
             asyncCtx.setTimeout(300000);
 
             ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-            executor.execute(new APIRunner(inputJSON, token));
+            executor.execute(new APIRunner(inputJSON, token, refresh));
         }
 
         return ("/StackV-web/ops/catalog.jsp");
@@ -590,6 +591,7 @@ public class ServiceServlet extends HttpServlet {
         }
 
         String token = paraMap.get("authToken");
+        String refresh = paraMap.get("refreshToken");
         String username = paraMap.get("username");
 
         JSONObject inputJSON = new JSONObject();
@@ -982,7 +984,7 @@ public class ServiceServlet extends HttpServlet {
             asyncCtx.setTimeout(300000);
 
             ThreadPoolExecutor executor = (ThreadPoolExecutor) request.getServletContext().getAttribute("executor");
-            executor.execute(new APIRunner(inputJSON, token));
+            executor.execute(new APIRunner(inputJSON, token, refresh));
         }
 
         return ("/StackV-web/ops/catalog.jsp");
@@ -1097,6 +1099,7 @@ class APIRunner implements Runnable {
 
     JSONObject inputJSON;
     String authToken;
+    String refreshToken;
     serviceBeans servBean = new serviceBeans();
     String host = "http://localhost:8080/StackV-web/restapi";
 
@@ -1104,9 +1107,10 @@ class APIRunner implements Runnable {
         inputJSON = input;
     }
 
-    public APIRunner(JSONObject input, String token) {
+    public APIRunner(JSONObject input, String token, String refresh) {
         inputJSON = input;
         authToken = token;
+        refreshToken = refresh;
     }
 
     @Override
@@ -1118,6 +1122,7 @@ class APIRunner implements Runnable {
             if (authToken != null && !authToken.isEmpty()) {
                 String authHeader = "bearer " + authToken;
                 create.setRequestProperty("Authorization", authHeader);
+                create.setRequestProperty("Refresh", refreshToken);
             }
 
             String result = servBean.executeHttpMethod(url, create, "POST", inputJSON.toJSONString(), null);

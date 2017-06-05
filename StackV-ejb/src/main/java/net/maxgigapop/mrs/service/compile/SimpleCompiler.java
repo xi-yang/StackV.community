@@ -35,9 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -50,6 +47,7 @@ import net.maxgigapop.mrs.service.orchestrate.ActionBase;
 import net.maxgigapop.mrs.service.orchestrate.SimpleWorker;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.service.compute.IModelComputationElement;
 
 /**
@@ -58,85 +56,101 @@ import net.maxgigapop.mrs.service.compute.IModelComputationElement;
  */
 public class SimpleCompiler extends CompilerBase {
 
-    private static final Logger log = Logger.getLogger(SimpleCompiler.class.getName());
+    private static final StackLogger logger = new StackLogger(CompilerBase.class.getName(), "CompilerBase");
 
     @Override
     public void compile(WorkerBase worker) {
+        String method = "compile";
+        logger.start(method);
         OntModel spaOntModelReduction = this.spaDelta.getModelReduction() == null ? null : this.spaDelta.getModelReduction().getOntModel();
         OntModel spaOntModelAddition = this.spaDelta.getModelAddition() == null ? null : this.spaDelta.getModelAddition().getOntModel();
+        // assemble workflow parts for reduction
         if (spaOntModelReduction != null && !ModelUtil.isEmptyModel(spaOntModelReduction)) {
-            Map<Resource, OntModel> reduceParts = this.decomposeByPolicyActions(spaOntModelReduction);
+            logger.trace(method, "compiling reduction model");
+            compileModel(worker, spaOntModelReduction);
         }
         // assemble workflow parts for addition
         if (spaOntModelAddition != null && !ModelUtil.isEmptyModel(spaOntModelAddition)) {
-            Queue<Resource> policyQueue = new LinkedBlockingQueue<>();
-            // start with leaf policies
-            Map<Resource, OntModel> addParts = this.decomposeByPolicyActions(spaOntModelAddition);
-            if (addParts == null) {
-                throw new EJBException(SimpleCompiler.class.getName() + " found none terminal / leaf policy action.");
+            logger.trace(method, "compiling addition model");
+            compileModel(worker, spaOntModelAddition);
+        }
+        logger.end(method);
+    }
+
+    private void compileModel(WorkerBase worker, OntModel spaModel) {
+        String method = "compileModel";
+        logger.start(method);
+        Queue<Resource> policyQueue = new LinkedBlockingQueue<>();
+        // start with leaf policies
+        Map<Resource, OntModel> modelParts = this.decomposeByPolicyActions(spaModel);
+        if (modelParts == null) {
+            throw logger.error_throwing(method, "Found none terminal / leaf policy action.");
+        }
+        // start queue terminal / leaf policy actions
+        for (Resource policy : modelParts.keySet()) {
+            // enqueue child policy
+            policyQueue.add(policy);
+        }
+        Map<Resource, List<ActionBase>> parentPolicyChildActionMap = new HashMap<>();
+        while (!policyQueue.isEmpty()) {
+            // dequeue policy
+            Resource policy = policyQueue.poll();
+            // create Action and assign delta part
+            ActionBase action = this.createAction(spaModel, policy);
+            OntModel ontModel = modelParts.get(policy);
+            if (ontModel != null) {
+                DeltaModel model = new DeltaModel();
+                model.setOntModel(modelParts.get(policy));
+                ServiceDelta inputDelta = action.getInputDelta();
+                if (inputDelta == null) {
+                    inputDelta = new ServiceDelta();
+                    inputDelta.setReferenceUUID(this.spaDelta.getReferenceUUID());
+                }
+                inputDelta.setModelAddition(model);
+                action.setInputDelta(inputDelta);
             }
-            // start queue terminal / leaf policy actions
-            for (Resource policy : addParts.keySet()) {
-                // enqueue child policy
-                policyQueue.add(policy);
+            // lookup dependency 
+            if (parentPolicyChildActionMap.containsKey(policy)) {
+                List<ActionBase> childActions = parentPolicyChildActionMap.get(policy);
+                for (ActionBase child : childActions) {
+                    worker.addDependency(action, child);
+                }
+                // check if the parent (action) has got all dependencies (children)
+                List<Resource> childPolicies = this.listChildPolicies(spaModel, policy);
+                // If not, re-enqueue
+                if (childPolicies.size() > childActions.size()) {
+                    policyQueue.add(policy);
+                    // skip now, retry this policy in queue later
+                    continue;
+                }
             }
-            Map<Resource, List<ActionBase>> parentPolicyChildActionMap = new HashMap<>();
-            while (!policyQueue.isEmpty()) {
-                // dequeue policy
-                Resource policy = policyQueue.poll();
-                // create Action and assign delta part
-                ActionBase action = this.createAction(spaOntModelAddition, policy);
-                OntModel addOntModel = addParts.get(policy);
-                if (addOntModel != null) {
-                    DeltaModel addModel = new DeltaModel();
-                    addModel.setOntModel(addParts.get(policy));
-                    ServiceDelta inputDelta = action.getInputDelta();
-                    if (inputDelta == null) {
-                        inputDelta = new ServiceDelta();
+            // traverse upwards to get parent actions
+            List<Resource> parentPolicies = this.listParentPolicies(spaModel, policy);
+            if (parentPolicies != null) {
+                for (Resource parent : parentPolicies) {
+                    // enqueue parent policy
+                    if (!policyQueue.contains(parent)) {
+                        policyQueue.add(parent);
                     }
-                    inputDelta.setModelAddition(addModel);
-                    action.setInputDelta(inputDelta);
+                    // map action as dependency of the parent policy for lookup at dequeue
+                    List<ActionBase> childActions = parentPolicyChildActionMap.get(parent);
+                    if (childActions == null) {
+                        childActions = new ArrayList<>();
+                        parentPolicyChildActionMap.put(parent, childActions);
+                    }
+                    childActions.add(action);
                 }
-                // lookup dependency 
-                if (parentPolicyChildActionMap.containsKey(policy)) {
-                    List<ActionBase> childActions = parentPolicyChildActionMap.get(policy);
-                    for (ActionBase child : childActions) {
-                        worker.addDependency(action, child);
-                    }
-                    // check if the parent (action) has got all dependencies (children)
-                    List<Resource> childPolicies = this.listChildPolicies(spaOntModelAddition, policy);
-                    // If not, re-enqueue
-                    if (childPolicies.size() > childActions.size()) {
-                        policyQueue.add(policy);
-                        // skip now, retry this policy in queue later
-                        continue;
-                    }
-                }
-                // traverse upwards to get parent actions
-                List<Resource> parentPolicies = this.listParentPolicies(spaOntModelAddition, policy);
-                if (parentPolicies != null) {
-                    for (Resource parent : parentPolicies) {
-                        // enqueue parent policy
-                        if (!policyQueue.contains(parent)) {
-                            policyQueue.add(parent);
-                        }
-                        // map action as dependency of the parent policy for lookup at dequeue
-                        List<ActionBase> childActions = parentPolicyChildActionMap.get(parent);
-                        if (childActions == null) {
-                            childActions = new ArrayList<>();
-                            parentPolicyChildActionMap.put(parent, childActions);
-                        }
-                        childActions.add(action);
-                    }
-                } else {
-                    // action without parent policy is a root action
-                    worker.addRooAction(action);
-                }
+            } else {
+                // action without parent policy is a root action
+                worker.addRooAction(action);
             }
         }
+        logger.end(method);
     }
 
     private ActionBase createAction(OntModel spaModel, Resource policy) {
+        String method = "createAction";
+        logger.trace(method, "policy="+policy);
         String policyActionType = null;
 
         String sparql = "SELECT ?policyAction ?actionType WHERE {"
@@ -157,14 +171,14 @@ public class SimpleCompiler extends CompilerBase {
                 Context ejbCxt = new InitialContext();
                 IModelComputationElement ejbMce = (IModelComputationElement) ejbCxt.lookup(policyAction.getMceBeanPath());
                 if (ejbMce == null) {
-                    throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not support policy action type: " + policyActionType);
+                    throw logger.error_throwing(method, " does not support policy action type: " + policyActionType);
                 }
             } catch (NamingException ex) {
-                throw new EJBException(SimpleCompiler.class.getName() + ":createAction does not support policy action type: " + policyActionType);
+                throw logger.throwing(method, ex);
             }
             return policyAction;
         } else {
-            throw new EJBException(SimpleCompiler.class.getName() + ":createAction encounters malformed policy action: " + policy.getLocalName());
+            throw logger.error_throwing(method, " encounters malformed policy action: " + policy.getLocalName());
         }
     }
 }

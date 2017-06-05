@@ -36,6 +36,7 @@ import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.VersionItem;
 import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /*
  *
@@ -43,6 +44,8 @@ import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
  */
 @SuppressWarnings("unchecked")
 public class VersionItemPersistenceManager extends PersistenceManager {
+    
+    private static final StackLogger logger = new StackLogger(VersionItemPersistenceManager.class.getName(), "VersionItemPersistenceManager");
 
     public static VersionItem findById(Long id) {
         return PersistenceManager.find(VersionItem.class, id);
@@ -57,10 +60,12 @@ public class VersionItemPersistenceManager extends PersistenceManager {
             }
             return listVI.get(0);
         } catch (Exception e) {
+            logger.targetid(uuid);
             if (e.getMessage().contains("No entity found")) {
+                logger.warning("findByReferenceUUID", "target:VersionItem - no entity found");
                 return null;
             }
-            throw new EJBException(String.format("VersionItemPersistenceManager::findByReferenceId raised exception: %s", e.getMessage()));
+            throw logger.error_throwing("findByReferenceUUID", e.getMessage());
         }
     }
 
@@ -72,19 +77,21 @@ public class VersionItemPersistenceManager extends PersistenceManager {
             return (VersionItem) viObj;
         } catch (Exception e) {
             if (e.getMessage().contains("No entity found")) {
+                logger.warning("getHeadByDriverInstance", "target:VersionItem - no entity found");
                 return null;
             }
-            throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByDriverInstance raised exception: %s", e.getMessage()));
+            throw logger.error_throwing("getHeadByDriverInstance", e.getMessage());
         }
     }
 
     public static VersionItem getHeadByVersionItem(VersionItem vi) {
         if (vi == null) {
-            throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByVersionItem encounters null VG"));
+            throw logger.error_throwing("getHeadByVersionItem", "input vi is null");
         }
         DriverInstance di = vi.getDriverInstance();
         if (di == null) {
-            throw new EJBException(String.format("VersionItemPersistenceManager::getHeadByVersionItem has null dirverInstance in %s", vi));
+            logger.targetid(vi.getReferenceUUID());
+            throw logger.error_throwing("getHeadByVersionItem", "ref:VersionItem has null driverInstance");
         }
         return getHeadByDriverInstance(di);
     }
@@ -100,29 +107,38 @@ public class VersionItemPersistenceManager extends PersistenceManager {
                 VersionItemPersistenceManager.delete(vi);
             }
         } catch (Exception e) {
-            throw new EJBException(String.format("VersionItemPersistenceManager::deleteByDriverInstance raised exception: %s", e.getMessage()));
+            logger.targetid(di.getId().toString());
+            throw logger.error_throwing("deleteByDriverInstance", "target:DriverInstance "+e.getMessage());
         }
     }
-    
+
     public static void cleanupAllBefore(Date before) {
-        try {
-            Query q = createQuery(String.format("FROM %s vi WHERE vi.modelRef.creationTime < :before AND "
-                    + "NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionItem = vi)", 
-                    VersionItem.class.getSimpleName(), DriverSystemDelta.class.getSimpleName()));
-            q.setParameter("before", before, TemporalType.TIMESTAMP);
-            List<VersionItem> listVI = (List<VersionItem>) q.getResultList();
-            if (listVI == null) {
-                return;
-            }
-            Iterator<VersionItem> it = listVI.iterator();
-            while (it.hasNext()) {
-                VersionItem vi = it.next();
-                if (vi.getVersionGroups() == null || vi.getVersionGroups().isEmpty()) {
+        logger.start("cleanupAllBefore");
+        Query q = createQuery(String.format("SELECT vi.id FROM %s vi WHERE vi.modelRef.creationTime < :before AND "
+                + "NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionItem = vi)",
+                VersionItem.class.getSimpleName(), DriverSystemDelta.class.getSimpleName()));
+        q.setParameter("before", before, TemporalType.TIMESTAMP);
+        List listVID = q.getResultList();
+        if (listVID == null) {
+            return;
+        }
+        Iterator<Long> it = listVID.iterator();
+        Integer count = 0;
+        while (it.hasNext()) {
+            Long vid = it.next();
+            VersionItem vi = VersionItemPersistenceManager.findById(vid);
+            if (vi.getVersionGroups() == null || vi.getVersionGroups().isEmpty()) {
+                try {
                     VersionItemPersistenceManager.delete(vi);
+                    count++;
+                    logger.trace("cleanupAllBefore", vi + " deleted");
+                } catch (Exception e) {
+                    logger.targetid(vi.getReferenceUUID());
+                    logger.warning("cleanupAllBefore", "target:VersionGroup deleting exception raised and ignored: "+e);
                 }
             }
-        } catch (Exception e) {
-            throw new EJBException(String.format("VersionItemPersistenceManager::cleanupAllBefore raised exception: %s", e.getMessage()));
         }
+        logger.message("cleanupAllBefore", count + " version items have been deleted");
+        logger.end("cleanupAllBefore");
     }
 }

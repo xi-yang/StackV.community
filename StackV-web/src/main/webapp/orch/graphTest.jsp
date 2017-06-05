@@ -2,34 +2,32 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Modified by: Antonio Heard 2016
 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in 
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
- !-->
-
+!-->
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/StackV-web/errorPage.jsp" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%> 
+<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
-<jsp:setProperty name="user" property="*" />  
+<jsp:setProperty name="user" property="*" />
 <jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+<jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
 <html>
     <head>
@@ -38,19 +36,19 @@
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/nexus.js"></script>
+       <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/StackV-web/css/graphTest.css">
-        <link rel="stylesheet" href="/StackV-web/css/animate.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css">
-        <link rel='stylesheet prefetch' href='http://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
-        <link rel="stylesheet" href="/StackV-web/css/bootstrap.css">
+        <%-- <link rel="stylesheet" href="/StackV-web/css/animate.min.css"> --%>
+        <%-- <link rel="stylesheet" href="/StackV-web/css/font-awesome.min.css"> --%>
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <%-- <link rel="stylesheet" href="/StackV-web/css/bootstrap.css"> --%>
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
-        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">                
-        <link rel="stylesheet" href="/StackV-web/css/style.css">       
-        <link rel="stylesheet" href="/StackV-web/css/contextMenu.css">   
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
+        <link rel="stylesheet" href="/StackV-web/css/style.css">
+        <link rel="stylesheet" href="/StackV-web/css/contextMenu.css">
         <!-- font awesome icons won't show up otherwise --->
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
@@ -60,15 +58,17 @@
                 $("#tag-panel").load("/StackV-web/tagPanel.jsp", function () {
 
                 });
-                $("#omm-panel").load("/StackV-web/ommPanel.html");
                 
+                // Hiding feature for May 2017 Release 
+                //$("#omm-panel").load("/StackV-web/ommPanel.html");
+
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("display-open");
                     $("#displayPanel-tab").toggleClass("display-open");
 
                     evt.preventDefault();
                 });
-                
+
                   $(function() {
                      $( "#dialog_policyAction" ).dialog({
                          autoOpen: false
@@ -78,19 +78,19 @@
                          maxHeight: 500,
                          minHeight: 175,
                          width: "auto",
-                         //maxWidth: 500,  jquery ui bug, this doens't work 
+                         //maxWidth: 500,  jquery ui bug, this doens't work
                          create: function (event, ui) {
                              $( "#dialog_policyData" ).css("maxWidth",  "400px" );
-                         }, 
+                         },
                          open: function( event, ui ) {
                              $( "#dialog_policyData" ).dialog( "option", "height", "auto" );
                          }
-                     });         
-                     
+                     });
+
                 });
 
             });
-        </script> 
+        </script>
 
         <script>
             //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
@@ -131,10 +131,9 @@
             var d3;
             var utils;
             var DropDownTree;
-            var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc 
+            var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc
 
             var outputApi;
-
             function onload() {
                 require(["local/stackv/topology/model",
                     "local/stackv/topology/layout",
@@ -143,16 +142,26 @@
                     "local/stackv/utils",
                     "local/stackv/topology/DropDownTree",
                     "local/stackv/topology/ContextMenu",
-                    "local/stackv/topology/TagDialog"
+                    "local/stackv/topology/TagDialog"//,
+                    
+                    //"local/stackv/topology/OMMPanel" Hiding OMM for May 2017 release
                 ],
-                        function (m, l, r, d3_, utils_, tree, c, td) {
+                        function (m, l, r, d3_, utils_, tree, c, td){ //, op) {
+                            var userId = sessionStorage.getItem("subject");
+                            var username = sessionStorage.getItem("username");
+                            var token = sessionStorage.getItem("token");
+
                             $.ajax({
                                 crossDomain: true,
                                 type: "GET",
                                 url: "/StackV-web/restapi/service/ready",
+                                beforeSend: function (xhr) {
+                                    xhr.setRequestHeader("Authorization", "bearer " + token);
+                                },
                                 dataType: "text",
 
                                 success: function (data, textStatus, jqXHR) {
+                                    console.log(data);
                                     if (data === "true") {
                                         //alert(textStatus);
                                         $('#servicePanel-contents').removeClass("hide");
@@ -165,46 +174,46 @@
                                         DropDownTree = tree;
                                         ContextMenu = c;
                                         TagDialog = td;
-                                        tagDialog = new TagDialog("${sessionStorage.username}");
+                                        tagDialog = new TagDialog(username);
+
+//                                        Hiding for May 2017 release            
+//                                        OMMPanel = op;
+//                                        ommPanel = new OMMPanel(render.API);
+//                                        ommPanel.init();
+//                                        functionMap["AddToTrashcan"] = ommPanel;
 
                                         tagDialog.init();
                                         functionMap['Tag'] = tagDialog;
-                                        // possibly pass in map here later for all possible dialogs 
+                                        // possibly pass in map here later for all possible dialogs
                                         contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
                                         contextMenu.init();
 
-                                            ModelConstructor = m;
-                                            model = new ModelConstructor();
-                                            model.init(1, drawGraph.bind(undefined, outputApi, model), null);    
-                                            
-                                            $("#tagDialog").draggable();
-                                            
-                                            window.onbeforeunload = function(){ 
-                                                persistVisualization();
-                                            };
-                                            
-                                            persistant_data = localStorage.getItem("viz-data");
-                          
+                                        ModelConstructor = m;
+                                        model = new ModelConstructor();
+                                        outputApi = new outputApi_(render.API, contextMenu, "viz");
+                                        model.init(1, drawGraph.bind(undefined, outputApi, model), null);
+                                        //console.log("I'm outputApu" + outputApi);
+                                        $("#tagDialog").draggable();
+
+                                        window.onbeforeunload = function(){
+                                            persistVisualization();
+                                        };
+
+                                        persistant_data = localStorage.getItem("viz-data");
+
                                        } else {
                                            displayError("Visualization Unavailable", d3_);
                                        }
                                    },
-
-                                        ModelConstructor = m;
-                                        model = new ModelConstructor();
-                                        model.init(1, drawGraph.bind(undefined, outputApi, model), null);
-
-                                        $("#tagDialog").draggable();
-                                    } else {
-                                        displayError("Visualization Unavailable", d3_);
-                                    }
-                                },
 
                                 error: function (jqXHR, textStatus, errorThrown) {
                                     console.log("Debugging: timeout at start..");
                                     displayError("Visualization Unavailable", d3_);
                                 }
                             });
+
+                            buildServicePanel(userId, token);
+
                         });
 
                 $("#loadingPanel").addClass("hide");
@@ -226,18 +235,18 @@
                 $('#servicePanel-contents').removeClass("hide");
                 $('#servicePanel-contents').html("Service instances unavailable.").addClass('service-unready-message');
             }
-            
+
             function allNodesMatch(nodePositions, nodes){
-                // may want to include intersect here 
+                // may want to include intersect here
                 for (var node in nodePositions) {
                     if (nodePositions[node].name !== nodes[node].getName())
                         return false;
                 }
                 return true;
             }
-            // if they dont all match, we want to find the one that doesn't. 
-            
-           function removeOldFromPersist(nodePositions, nodeNames){   
+            // if they dont all match, we want to find the one that doesn't.
+
+           function removeOldFromPersist(nodePositions, nodeNames){
                 var pos = nodePositions;
                 for (var i = 0; i < pos.length; i++) {
                     if (!nodeNames.includes(pos[i].name)) {
@@ -246,29 +255,29 @@
                     }
                 }
                 return pos;
-            }     
-            
+            }
+
             function getNewNodes(nodePositions, nodeNames) {
                 var totalNodes = [];
                 var newNodes = [];
-                
+
                 for (var i = 0; i < nodePositions.length; i++) {
                     totalNodes.push(nodePositions[i].name);
-                }    
-                
+                }
+
                 for (var i = 0; i < nodeNames.length; i++) {
                     if (!totalNodes.includes(nodeNames[i])) {
                         newNodes.push(nodeNames[i]);
                     }
                 }
-                
+
                 return newNodes;
             }
-            
+
             function AddNewToPersist(nodePositions, nodeNames, width, height, nodeSize) {
                 var newNodes = getNewNodes(nodePositions, nodeNames);
                 var newTopLevelTopologies = [];
-                
+
                 for (var i = 0; i < newNodes.length; i++) {
                     var node = model.nodeMap[newNodes[i]];
                     if (node.isTopology && node._parent === null) {
@@ -276,8 +285,8 @@
                         newNodes.splice(i, 1);
                     }
                 }
-                
-                // position new topologies 
+
+                // position new topologies
                 var top_offset = 0;
                 for (var i = 0; i< newTopLevelTopologies.length; i++) {
                     var pos = {};
@@ -287,13 +296,13 @@
                     pos.y = height/2 + top_offset;
                     pos.dx = 0;
                     pos.dy = 0;
-                    
+
                     var node = model.nodeMap[newTopLevelTopologies[i]];
                     var children = node.children;
                     var maxSize = children.length * nodeSize;
                     for (var j = 0; j < children.length; j++) {
                         var randX = (Math.random() * (maxSize/2)) + pos.x;
-                        var randY = (Math.random() * (maxSize/2)) + pos.y;   
+                        var randY = (Math.random() * (maxSize/2)) + pos.y;
                         var childPos = {};
                         childPos.x = randX;
                         childPos.y = randY;
@@ -310,34 +319,34 @@
                     pos.size = maxSize / 4;
                     model.nodeMap[pos.name].setPos(pos);
                 }
-                
+
                 for (var i = 0; i< newNodes.length; i++) {
                     var node = model.nodeMap[newNodes[i]];
                     var maxSize = (node._parent.children.length * nodeSize) /3;
                     var randX = (Math.random() * maxSize) + node._parent.x;
-                    var randY = (Math.random() * maxSize) + node._parent.y; 
-                    
+                    var randY = (Math.random() * maxSize) + node._parent.y;
+
                     var pos = {};
                     pos.x = randX;
                     pos.y = randY;
                     pos.dx = 0;
                     pos.dy = 0;
                     pos.size = nodeSize;
-                    pos.name = newNodes[i];                           
+                    pos.name = newNodes[i];
                     nodePositions.push(pos);
                     model.nodeMap[pos.name].setPos(pos);
                 }
-                
-                //return nodePositions;                        
+
+                //return nodePositions;
             }
-            
-            
+
+
             function loadPersistedVisualization(outputApi, model, width, height) {
                 if (persistant_data !== undefined && persistant_data !== "undefined") {
                     var viz_data = JSON.parse(persistant_data);
-                    if (viz_data !== null) {                    
+                    if (viz_data !== null) {
                         var nodePositions = JSON.parse(viz_data['nodes']);
-                        
+
                         var nodes = model.listNodes();
                         var sameNodes = !(nodePositions.length !== nodes.length || !allNodesMatch(nodePositions, nodes));
                         width = width / parseFloat(viz_data.zoom);
@@ -349,26 +358,26 @@
                             }
                             layout.doPersistLayout(model, null, width, height);
                             layout.doPersistLayout(model, null, width, height);
-                            outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
+                            outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY));
                             render.doRender(outputApi, model);
                             outputApi.setZoom(parseFloat(viz_data.zoom));
 
                         } else {
                             var nodeNames = model.listNodeNames();
-                            
+
                             nodePositions = removeOldFromPersist(nodePositions, nodeNames);
                             AddNewToPersist(nodePositions, nodeNames, width, height, 21);
-                            
+
                             for (var i = 0; i < nodePositions.length; i++) {
                                var name = nodePositions[i].name;
                                model.nodeMap[name].setPos(nodePositions[i]);
                             }
                             layout.doPersistLayout(model, null, width, height);
                             layout.doPersistLayout(model, null, width, height);
-                            outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY)); 
+                            outputApi.setOffsets(parseFloat(viz_data.offsetX), parseFloat(viz_data.offsetY));
                             render.doRender(outputApi, model);
                             outputApi.setZoom(parseFloat(viz_data.zoom));
-      
+
                             //return false;
                         }
                     } else {
@@ -379,13 +388,13 @@
                 }
                 return true;
             }
-            
+
             function persistVisualization() {
                 var nodePositions = [];
                 var nodes = model.listNodes();
-                
-                // doing this for security purposes, dont want to persist model 
-                // data on client, just positions 
+
+                // doing this for security purposes, dont want to persist model
+                // data on client, just positions
                 for (var i = 0; i < nodes.length; i++) {
                     var nodePos = nodes[i].getRenderedObj();
                     nodePos.name = nodes[i].getName();
@@ -405,23 +414,23 @@
                     localStorage.setItem("viz-data", JSON.stringify(viz_data));
                 } catch (err) {
                     console.log(err);
-                }                
+                }
             }
-            
+
             function drawGraph(outputApi, model) {
                 var width = document.documentElement.clientWidth / settings.INIT_ZOOM;
                 var height = document.documentElement.clientHeight / settings.INIT_ZOOM;
                 //TODO, figure out why we need to call this twice
                 //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-                 
-                if (!loadPersistedVisualization(outputApi, model, width, height)) {       
+
+                if (!loadPersistedVisualization(outputApi, model, width, height)) {
                     layout.doLayout(model, null, width, height);
                     layout.doLayout(model, null, width, height);
                     render.doRender(outputApi, model);
                 }
                 //  animStart(30);
             }
-            
+
             function reload() {
                 $("#loadingPanel").removeClass("hide");
                 $("#hoverdiv").addClass("hide");
@@ -441,7 +450,7 @@
                     //layout.force().gravity(1).charge(-900).start();
                     //commented this out for demo 0421106
 //                    layout.testLayout(model, null, width, height);  //@
-//                    layout.testLayout(model, null, width, height);                    
+//                    layout.testLayout(model, null, width, height);
                     render.doRender(outputApi, model);
                     outputApi.renderApi.selectElement(null);
                 }, null);
@@ -467,7 +476,7 @@
 
                     outputApi.resetZoom();
                     render.doRender(outputApi, model);
-                    
+
                     evt.preventDefault();
                 });
 
@@ -476,7 +485,7 @@
 
                     // We detach DOM children and append them back to the model view
                     // dialog after it's been opened to save time when opening dialogs
-                    // that have large amounts of text 
+                    // that have large amounts of text
                     // Reference: http://johnculviner.com/a-jquery-ui-dialog-open-performance-issue-and-how-to-fix-it/
                     var detached = $("#dialog_modelView").children().detach();
 
@@ -493,7 +502,7 @@
                     $("#dialog_modelView").dialog("open");
 
                     // JQuery UI automatically focuses on the first dialog, we remove all
-                    // focus by using the blur method. 
+                    // focus by using the blur method.
                     $('.ui-dialog :button').blur();
                 });
                 $("#resetButton").click(function(evt) {
@@ -502,16 +511,16 @@
                     outputApi.resetZoom();
                     drawGraph(outputApi, model);
                 });
-                
+
                 $("#displayPanel-tab").click(function (evt) {
                     $("#displayPanel").toggleClass("closed");
 
                     evt.preventDefault();
                 });
 
-                // Brings tagPanel or tagDialog to the foreground if one is 
-                // clicked and behind the other. Will probably need to be 
-                // generalized soon. 
+                // Brings tagPanel or tagDialog to the foreground if one is
+                // clicked and behind the other. Will probably need to be
+                // generalized soon.
                 function bringToForeground(current) {
                     var tagDialogElement = document.querySelector("#tagDialog");
                     var tagPanelElement = document.querySelector("#tagPanel");
@@ -598,19 +607,19 @@
                 this.zoom = function (amount, mouseX, mouseY) {
                     /*
                      * There seems to be some error (rounding?) when we zoom far out
-                     * 
+                     *
                      * In addition to zooming, we also translate the image so that the point under the cursor appears stationary.
                      * To understand this conversion, there are two coordinate systems to consdier:
                      *      the svg coordinate system (in which all svg objects are stationary throughout the translation), and
                      *      the mouse coordinate system, that corresponds to what we see
-                     *      
+                     *
                      *       The conversion (along a single axis) between these two systems is given by:
                      *       X_mouse=zoomFactor*(X_svg + offsetX)
                      *       To find the new offset, after increasing zoomFactor by zoomDelta, we solve:
                      *         zoomFactor*(X_svg + offsetX)=(zoomFactor+zoomDelta)*(X_svg + (offsetX+doX))
                      *        for doX.
                      *        the new offset is now offsetX+doX
-                     *        
+                     *
                      */
                     var zoomFactorNew = zoomFactor * (1 + amount);
                     var zoomDelta = zoomFactorNew - zoomFactor;
@@ -740,7 +749,7 @@
                     isPanning = true;
                 });
                 svg.addEventListener("mousemove", function (e) {
-                    // && (e.which ==== 1) stops d3 bug of dragging to enable on context menu 
+                    // && (e.which ==== 1) stops d3 bug of dragging to enable on context menu
                     if (isPanning && panningEnabled && (e.which === 1)) {
                         moved = true;
                         that.scroll(e.movementX, e.movementY);
@@ -761,8 +770,8 @@
         <div id="nav">
         </div>
         <!-- SIDE BAR -->
-        <div id="sidebar">            
-        </div>
+        <%-- <div id="sidebar">
+        </div> --%>
 
         <div id="filterPanel">
             <div id="filterPanel-contents">
@@ -784,57 +793,92 @@
                 <table id="service-instance-table">
                     <thead>
                         <tr>
-                            <th>Alias Name</th>                            
+                            <th>Alias Name</th>
                             <th>Service</th>
                             <th>Instance Status</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="servicePanel-body">
+                    <script>
+                        function buildServicePanel(userId, token) {
+                            var tbody = document.getElementById("servicePanel-body");
+                            var baseUrl = window.location.origin;
 
-                        <c:forEach var="instance" items="${serv.instanceStatusCheck()}">
-                            <tr class="service-instance-item" id="${instance[1]}">
-                                <td>${instance[3]}</td>        
-                                <td>${instance[0]}</td>
-                                <td>${instance[2]}</td>
-                            </tr>
-                        </c:forEach>
+                            var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
+                            $.ajax({
+                                url: apiUrl,
+                                type: 'GET',
+                                beforeSend: function (xhr) {
+                                    xhr.setRequestHeader("Authorization", "bearer " + token);
+                                },
+                                success: function (result) {
+                                    for (i = 0; i < result.length; i++) {
+                                        var instance = result[i];
 
+                                        var row = document.createElement("tr");
+                                        row.setAttribute("id", instance[1]);
+                                        row.setAttribute("class", "service-instance-item");
+
+                                        var cell1_1 = document.createElement("td");
+                                        cell1_1.innerHTML = instance[3];
+                                        var cell1_2 = document.createElement("td");
+                                        cell1_2.innerHTML = instance[0];
+                                        var cell1_4 = document.createElement("td");
+                                        cell1_4.innerHTML = instance[2];
+                                        row.appendChild(cell1_1);
+                                        row.appendChild(cell1_2);
+                                        row.appendChild(cell1_4);
+                                        tbody.appendChild(row);
+                                    }
+                                    initServiceInstanceItems();
+                                },
+
+                                error: function (jqXHR, textStatus, errorThrown) {
+                                    console.log("No service instances.");
+
+                                }
+                            });
+                        }
+                    </script>
                     </tbody>
                 </table>
             </div>
 
         </div>
         <script>
-            $(".service-instance-item").each(function () {
-                var that = this;
-                var DELAY = 700, clicks = 0, timer = null;
+            function initServiceInstanceItems() {
+                $(".service-instance-item").each(function () {
+                    var that = this;
+                    var DELAY = 700, clicks = 0, timer = null;
 
-                $(that).click(function () {
-                    clicks++;  //count clicks
+                    $(that).click(function () {
+                        clicks++;  //count clicks
 
-                    if (clicks === 1) {
-                        timer = setTimeout(function () {
-                            clickServiceInstanceItem(that);
-                            clicks = 0;
-                        }, DELAY);
-                    } else {
-                        clearTimeout(timer);    //prevent single-click action
-                        if ($(that).hasClass("service-instance-highlighted")) {
-                            $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
-                            render.API.setHighlights([], "serviceHighlighting");
-                            render.API.highlightElements("serviceHighlighting");                        
-                            clicks = 0;             //after action performed, reset counter
-                        } else {
+                        if (clicks === 1) {
                             timer = setTimeout(function () {
                                 clickServiceInstanceItem(that);
                                 clicks = 0;
                             }, DELAY);
+                        } else {
+                            clearTimeout(timer);    //prevent single-click action
+                            if ($(that).hasClass("service-instance-highlighted")) {
+                                $(".service-instance-item.service-instance-highlighted").removeClass('service-instance-highlighted');
+                                render.API.setHighlights([], "serviceHighlighting");
+                                render.API.highlightElements("serviceHighlighting");
+                                clicks = 0;             //after action performed, reset counter
+                            } else {
+                                timer = setTimeout(function () {
+                                    clickServiceInstanceItem(that);
+                                    clicks = 0;
+                                }, DELAY);
+                            }
                         }
-                    }
-                }).dblclick(function (e) {
-                    e.preventDefault();
+                    }).dblclick(function (e) {
+                        e.preventDefault();
+                    });
                 });
-            });
+            }
+
 
 
             function clickServiceInstanceItem(item) {
@@ -844,6 +888,9 @@
                     crossDomain: true,
                     type: "GET",
                     url: "/StackV-web/restapi/app/service/availibleitems/" + UUID,
+                    beforeSend: function (xhr) {
+                       xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
                     dataType: "json",
 
                     success: function (data, textStatus, jqXHR) {
@@ -880,7 +927,7 @@
                 <button id="recenterButton">Recenter</button> <!-- @ -->
                 <button id="resetButton"> Reset Visualization </button>
                 <div id="displayName"></div>
-                <div id="treeMenu"></div>                
+                <div id="treeMenu"></div>
             </div>
             <div id="displayPanel-actions-container">
                 <div id="displayPanel-actions">
@@ -895,7 +942,7 @@
                     <div id="actionForm"></div>
                 </div>
             </div>
-        </div>        
+        </div>
 
         <svg class="loading" id="viz">
         <defs>
@@ -961,7 +1008,7 @@
                        0 0 0 1 0" />
         <feComposite result="drop" in="base" in2="mask" operator="in" />
         <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-    </filter>    
+    </filter>
     <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
@@ -981,7 +1028,7 @@
                        0 0 0 0 0
                        0 0 0 1 0" />
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
-    </filter>       
+    </filter>
     <filter id="subnetHighlightFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
         <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
         <feMorphology operator="dilate" radius="1"/>
@@ -991,11 +1038,11 @@
                        0 0 0 0 .3
                        0 0 0 1 0" />
         <feComposite operator="out" in="a" in2="SourceGraphic"/>
-    </filter>    
+    </filter>
     <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
         <feColorMatrix type="saturate" values=".2"/>
     </filter>
-    
+
     <filter id="trashcanHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
    <feFlood flood-color="#d11b1e" result="base" />
    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
@@ -1007,7 +1054,7 @@
    <feComposite result="drop" in="base" in2="mask" operator="in" />
    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
 </filter>
-    
+
      <marker id="marker_arrow_viz" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L0,6 L9,3 z" fill="black" />
     </marker>
@@ -1031,7 +1078,7 @@
 
     </g>
     </svg>
-    <div class="hide" id="hoverdiv_viz"></div>        
+    <div class="hide" id="hoverdiv_viz"></div>
 
     <!-- CONTEXT MENU -->
     <nav id="context-menu" class="context-menu">
@@ -1039,6 +1086,14 @@
             <li class="context-menu__item">
                 <a href="#" class="context-menu__link" data-action="Tag"><i class="fa  fa-tag"></i> Add Tag</a>
             </li>
+<!--             Hiding for May 2017 release            -->
+
+<!--            <li class="context-menu__item">
+                <a href="#" class="context-menu__link" data-action="AddToTrashcan"><i class="fa  fa-trash"></i> Add To Trashcan</a>
+            </li>
+            <li class="context-menu__item">
+                <a href="#" class="context-menu__link" data-action="Delete"><i class="fa  fa-times"></i> Delete</a>
+            </li>-->
         </ul>
     </nav>
 
@@ -1062,7 +1117,7 @@
 
                 <div id="tagDialogColorSelectionTab">
 
-                    <span class="colorBox" id="boxRed"> 
+                    <span class="colorBox" id="boxRed">
                     </span>
                     <span class="colorBox" id="boxOrange">
                     </span>
@@ -1096,13 +1151,13 @@
 
     <div id="dialog_modelView" title="Model View">
     </div>
-    
+
     <!-- OMM PANEL -->
-    <div id="omm-panel"> 
+    <div id="omm-panel">
     </div>
-    
+
     <!-- TAG PANEL -->
-    <div id="tag-panel"> 
+    <div id="tag-panel">
     </div>
 </body>
 </html>

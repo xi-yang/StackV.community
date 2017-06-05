@@ -5,10 +5,6 @@
  */
 package net.maxgigapop.mrs.service.compute;
 
-import com.hp.hpl.jena.rdf.model.Resource;
-import java.util.concurrent.Future;
-import net.maxgigapop.mrs.bean.ModelBase;
-import net.maxgigapop.mrs.bean.ServiceDelta;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.QuerySolution;
@@ -17,8 +13,6 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,20 +26,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
+import net.maxgigapop.mrs.bean.DeltaModel;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.common.Mrs;
-import net.maxgigapop.mrs.common.Nml;
-import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.service.compile.CompilerBase;
+import net.maxgigapop.mrs.service.compile.CompilerFactory;
 import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import org.apache.commons.net.util.SubnetUtils;
  
 /**
  *
@@ -54,20 +44,25 @@ import org.apache.commons.net.util.SubnetUtils;
 @Stateless
 public class MCE_OperationalModelModification implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_OperationalModelModification.class.getName());
+    private static final StackLogger logger = new StackLogger(MCE_OperationalModelModification.class.getName(), "MCE_OperationalModelModification");
+
     JSONParser parser = new JSONParser();
 
     @Override
+    @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
+        logger.cleanup();
+        String method = "process";
+        logger.refuuid(annotatedDelta.getReferenceUUID());
+        logger.start(method);
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
-            throw new EJBException(String.format("%s::process ", this.getClass().getName()));
+            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
         }
         try {
-            log.log(Level.FINE, "\n>>>MCE_OperationalModelModification--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+            logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
-            Logger.getLogger(MCE_OperationalModelModification.class.getName()).log(Level.SEVERE, null, ex);
+            logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
         }
-
         // importPolicyData
         String sparql = "SELECT ?policy ?data ?dataType ?dataValue WHERE {"
                 + "?policy a spa:PolicyAction. "
@@ -79,80 +74,90 @@ public class MCE_OperationalModelModification implements IModelComputationElemen
         Map<Resource, List> policyMap = new HashMap<>();
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
         RDFNode jsonInput = null;
+        RDFNode policy1 = null;
+        RDFNode policy2 = null;
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             jsonInput  = querySolution.get("dataValue");
+            policy1 = querySolution.get("policy");
         }
         
         String inputString = jsonInput.toString();
-        
-        JSONObject inputJSON = new JSONObject();
+                
+        JSONArray resourcesToRemove = null;
         try {
-            Object obj = parser.parse(inputString);
-            inputJSON = (JSONObject) obj;
-
-            System.out.println("Service API:: inputJSON: " + inputJSON.toJSONString());
-        } catch (ParseException ex) {
-            Logger.getLogger(MCE_OperationalModelModification.class.getName()).log(Level.SEVERE, null, ex);
-        }
+            resourcesToRemove = (JSONArray)parser.parse(inputString);
+            if (resourcesToRemove == null)throw new Exception();
+        } catch ( Exception ex) {
+            throw logger.throwing(method, "cannot parse json string "+inputString, ex);
+        } 
         
-        ServiceDelta outputDelta = annotatedDelta.clone();
-        JSONObject toRemove = (JSONObject)inputJSON.get("removeResource");
         Model subModel = ModelFactory.createDefaultModel();
         OntModel model = systemModel.getOntModel();
-
-        for (int i = 0; i < toRemove.size(); i++) {
-            String resourceURI = (String) toRemove.get(i);
-            Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
-            List<String> includeMatches = new ArrayList<String>();
-            List<String> excludeMatches = new ArrayList<String>();
-            List<String> excludeEssentials = new ArrayList<String>();
-            Set<RDFNode> visited = new HashSet<RDFNode>();
-            rdfDFSReverse(systemModel.getOntModel(), node, visited, subModel, includeMatches, excludeMatches);  
-            // perhaps go down as wel
-            MCETools.removeResolvedAnnotation(outputDelta.getModelReduction().getOntModel(), node);
-        }
-       // MCETools.removeResolvedAnnotation(outputDelta.getModelReduction().getOntModel(), policyAction);
-        outputDelta.getModelReduction().getOntModel().add(subModel);
         
+        List<Resource> resources = new ArrayList<>();
+        List<String> includeMatches = new ArrayList<String>();
+        List<String> excludeMatches = new ArrayList<String>();
+        List<String> excludeExtentials = new ArrayList<String>();
+        
+        CompilerBase simpleCompiler = CompilerFactory.createCompiler("net.maxgigapop.mrs.service.compile.SimpleCompiler");
+  
+        for (int i = 0; i < resourcesToRemove.size(); i++) {
+            String resourceURI = (String) resourcesToRemove.get(i);
+            if (isTopLevelTopology(systemModel.getOntModel(), resourceURI) || isTopLevelService(systemModel.getOntModel(), resourceURI)) {
+                throw new UnsupportedOperationException("MCE_OperationalModelModification::Cannot delete top level service or topology from model. ");
+            }
+            Resource node =  systemModel.getOntModel().getOntResource(resourceURI);
+            if (node != null) {
+                try {
+                    subModel.add(simpleCompiler.listUpDownStatements(systemModel.getOntModel(), node));
+                } catch (Exception ex) {
+                    throw logger.error_throwing(method, String.format("listUpDownStatements(%s) -exception- %s", node, ex));
+                }
+                resources.add(node);
+            } else {
+                throw new NullPointerException("MCE_OperationalModelModification:: Resource cannot be null.");
+            }
+        }
+        subModel.add(ModelUtil.getModelSubTree(systemModel.getOntModel(), resources, includeMatches, excludeMatches, excludeExtentials)); 
+       
+        ServiceDelta outputDelta = new ServiceDelta();
+        DeltaModel dmReduction = new DeltaModel();
+        dmReduction.setOntModel(ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF));
+        dmReduction.getOntModel().add(subModel);
+        outputDelta.setModelReduction(dmReduction);
+        
+        try {
+            logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+        } catch (Exception ex) {
+            logger.trace(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
+        }
+        logger.end(method);        
         return new AsyncResult(outputDelta);
+    }   
+        
+    public boolean isTopLevelTopology(OntModel systemModel, String URI) {
+        String sparql = "SELECT ?resource WHERE {"   
+               + "{?resource a nml:Topology.} UNION {?resource a nml:Node.}" 
+               + "MINUS { {?parent nml:hasNode ?resource.} UNION {?parent nml:hasTopology ?resource.}}" 
+               + String.format("FILTER ( ?resource = <%s>)", URI)                
+               + "}";
+        
+        ResultSet r = ModelUtil.sparqlQuery(systemModel, sparql);
+        return r.hasNext();
     }
     
-    public static void rdfDFSReverse(Model refModel, RDFNode node, Set<RDFNode> visited, Model subModel, List<String> propMatchIncludes, List<String> propMatchExcludes) {
-      if (visited.contains(node)) {
-          return;
-      } else {
-          visited.add(node);
-          if (node.isResource()) {
-              StmtIterator stmts = refModel.listStatements(null, null, node);
-              while (stmts.hasNext()) {
-                  Statement stmt = stmts.next();
-                  subModel.add(stmt);
-                  // optional: add type statements
-                  StmtIterator stmts2 = refModel.listStatements(stmt.getSubject(), RdfOwl.type, (RDFNode) null);
-                  while (stmts2.hasNext()) {
-                      subModel.add(stmts2.next());
-                  }
-                  boolean included = propMatchIncludes.isEmpty();
-                  for (String matchStr : propMatchIncludes) {
-                      if (stmt.getPredicate().toString().contains(matchStr)) {
-                          included = true;
-                          break;
-                      }
-                  }
-                  boolean excluded = false;
-                  for (String matchStr : propMatchExcludes) {
-                      if (stmt.getPredicate().toString().contains(matchStr)) {
-                          excluded = true;
-                          break;
-                      }
-                  }
-                  if (included && !excluded) {
-                      rdfDFSReverse(refModel, stmt.getSubject(), visited, subModel, propMatchIncludes, propMatchExcludes);
-                  }
-              }
-          }
-      }
-  }
-
+    public boolean isTopLevelService(OntModel systemModel, String URI) {
+        String sparql = "SELECT ?resource WHERE {" 
+           + " {" 
+           +"  	{{?parent nml:hasService ?resource} UNION {?parent nml:providesService ?resouce.}}" 
+           +" 	MINUS {{?other nml:hasNode ?parent.} UNION {?other nml:hasTopology ?parent.}}" 
+           +"  }" 
+           + String.format("FILTER ( ?resource = <%s>)", URI)                
+           + "}";
+        
+        ResultSet r = ModelUtil.sparqlQuery(systemModel, sparql);
+        return r.hasNext();   
+    }
 }
+ 

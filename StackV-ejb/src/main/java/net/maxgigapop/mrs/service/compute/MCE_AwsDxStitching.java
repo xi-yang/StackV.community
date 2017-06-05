@@ -40,11 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
-import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
@@ -53,6 +50,7 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.Spa;
+import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -65,18 +63,23 @@ import org.json.simple.parser.ParseException;
 @Stateless
 public class MCE_AwsDxStitching implements IModelComputationElement {
 
-    private static final Logger log = Logger.getLogger(MCE_AwsDxStitching.class.getName());
+    private static final StackLogger logger = new StackLogger(MCE_AwsDxStitching.class.getName(), "MCE_AwsDxStitching");
 
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
-        log.log(Level.FINE, "MCE_AWSDirectConnectStitch::process {0}", annotatedDelta);
-        try {
-            log.log(Level.FINE, "\n>>>MCE_AWSDirectConnectStitch--DeltaAddModel=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_AwsDxStitching.class.getName()).log(Level.SEVERE, null, ex);
+        logger.cleanup();
+        String method = "process";
+        logger.refuuid(annotatedDelta.getReferenceUUID());
+        logger.start(method);
+        if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
+            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
         }
-
+        try {
+            logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
+        } catch (Exception ex) {
+            logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
+        }
         // importPolicyData : Interface->Stitching->List<PolicyData>
         String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
                 + "?policy a spa:PolicyAction. "
@@ -129,6 +132,12 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             // remove policy dependency
             MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
         }
+        try {
+            logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+        } catch (Exception ex) {
+            logger.trace(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
+        }
+        logger.end(method);
         return new AsyncResult(outputDelta);
     }
 
@@ -138,7 +147,8 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
     // 2. identify the "attach-point" resource (eg. VLAN port) along with a stitching path
     // 3. add statements to the stitching path to connect the terminal to the attach-point (if applicable)
     private OntModel doStitching(OntModel systemModel, OntModel spaModel, Resource policyAction, Map stitchPolicyData) {
-        //@TODO: common logic
+        String method = "doStitching";
+        //@TODO: common logic for importing data
         List<Map> dataMapList = (List<Map>)stitchPolicyData.get("imports");
         JSONObject jsonStitchReq = null;
         for (Map entry : dataMapList) {
@@ -157,33 +167,28 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                         }
                     }
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::process doStitching cannot parse json string %s", this.getClass().getName(), (String) entry.get("value")));
+                    throw logger.throwing(method, String.format("cannot parse json string %s", entry.get("value")), e);
                 }
             } else {
-                throw new EJBException(String.format("%s::process doStitching does not import policyData of %s type", entry.get("type").toString()));
+                throw logger.error_throwing(method, String.format("cannot import policyData of %s type", entry.get("type")));
             }
         }
         
         if (jsonStitchReq == null || jsonStitchReq.isEmpty()) {
-            throw new EJBException(String.format("%s::process doStitching receive none request for <%s>", this.getClass().getName(), policyAction));
+            throw logger.error_throwing(method, String.format("received none request for policy <%s>", policyAction));
         }
 
         OntModel stitchModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Model unionSysModel = spaModel.union(systemModel);
-        try {
-            log.log(Level.FINE, "\n>>>MCE_AWSDirectConnectStitch--unionSysModel=\n" + ModelUtil.marshalModel(unionSysModel));
-        } catch (Exception ex) {
-            Logger.getLogger(MCE_AwsDxStitching.class.getName()).log(Level.SEVERE, null, ex);
-        }
 
         if (!jsonStitchReq.containsKey("parent") || !jsonStitchReq.containsKey("stitch_from")
                 || (!jsonStitchReq.containsKey("to_dxvif") && !jsonStitchReq.containsKey("to_l2path"))) {
-            throw new EJBException(String.format("%s::process doStitching imports incomplete JSON data", this.getClass().getName()));
+            throw logger.error_throwing(method, "imported incomplete JSON data");
         }
         String awsUri = (String) jsonStitchReq.get("parent");
         String stitchFromUri = (String) jsonStitchReq.get("stitch_from");
         if (stitchFromUri.isEmpty() || (!stitchFromUri.startsWith("ur") && stitchFromUri.startsWith("x-"))) {
-            throw new EJBException(String.format("%s::process doStitching imports invalid 'stitch_from' value", this.getClass().getName()));
+            throw logger.error_throwing(method, "imported invalid 'stitch_from' value");
         }
         // 1. get VGW resources
         String sparql = "SELECT ?vgw WHERE {{"
@@ -217,7 +222,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             QuerySolution solution = r.nextSolution();
             resVgw = solution.getResource("vgw");
         } else {
-            throw new EJBException(String.format("%s::process cannot find resource for '%s: must be uri for a VPC or VGW or Subnet", this.getClass().getName(), stitchFromUri));
+            throw logger.error_throwing(method, String.format("cannot find resource for '%s: must be uri for a VPC or VGW or Subnet", stitchFromUri));
         }
         Resource resDxvif = null;
         if (jsonStitchReq.containsKey("to_dxvif")) {
@@ -225,17 +230,17 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             if (unionSysModel.contains(unionSysModel.getResource(stitchToUri), Mrs.type, "direct-connect-vif")) {
                 resDxvif = unionSysModel.getResource(stitchToUri);
             } else {
-                throw new EJBException(String.format("%s::process cannot find resource for '%s: must be uri a DirectConnect vif", this.getClass().getName(), stitchToUri));
+            throw logger.error_throwing(method, String.format("cannot find resource for '%s: must be uri a DirectConnect vif", stitchToUri));
             }
         } else { //if (jsonStitchReq.containsKey("to_l2path"))
             JSONArray stitchToPath = (JSONArray) jsonStitchReq.get("to_l2path");
             if (stitchToPath.isEmpty()) {
-                throw new EJBException(String.format("%s::process cannot parse JSON data 'to_l2path': %s", this.getClass().getName(), stitchToPath));
+            throw logger.error_throwing(method, String.format("cannot parse JSON data 'to_l2path': %s", stitchToPath));
             }
             for (Object obj : stitchToPath) {
                 JSONObject jsonObj = (JSONObject) obj;
                 if (!jsonObj.containsKey("uri")) {
-                    throw new EJBException(String.format("%s::process cannot parse JSON data 'to_l2path': %s - invalid hop: %s", this.getClass().getName(), stitchToPath, jsonObj.toJSONString()));
+                    throw logger.error_throwing(method, String.format("cannot parse JSON data 'to_l2path': %s - invalid hop: %s", stitchToPath, jsonObj));
                 }
                 String hopUri = (String) jsonObj.get("uri");
                 sparql = "SELECT ?dxvif WHERE {"
@@ -252,7 +257,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
             }
         }
         if (resDxvif == null) {
-            throw new EJBException(String.format("%s::process cannot find DxVif resource to stitch to (in %s)", this.getClass().getName(), jsonStitchReq.containsKey("to_dxvif") ? (String) jsonStitchReq.get("to_l2path") : (String) jsonStitchReq.get("to_dxvif")));
+            throw logger.error_throwing(method, String.format("cannot find DxVif resource to stitch to (in %s)", jsonStitchReq.containsKey("to_dxvif") ? (String) jsonStitchReq.get("to_l2path") : (String) jsonStitchReq.get("to_dxvif")));
         }
         stitchModel.add(stitchModel.createStatement(resVgw, Nml.isAlias, resDxvif));
         stitchModel.add(stitchModel.createStatement(resDxvif, Nml.isAlias, resVgw));
@@ -262,6 +267,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
     }
     
     private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel stitchModel, OntModel systemModel) {
+        String method = "exportPolicyData";
         String sparql = "SELECT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
                 + String.format("<%s> spa:type 'MCE_AwsDxStitching'. ", resPolicy.getURI())
@@ -291,7 +297,7 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 try {
                     jsonValue = (JSONObject)parser.parse(dataValue.toString());
                 } catch (ParseException e) {
-                    throw new EJBException(String.format("%s::exportPolicyData  cannot parse json string %s due to: %s", this.getClass().getName(), dataValue.toString(), e));
+                    throw logger.throwing(method, String.format("cannot parse json string %s", dataValue), e);
                 }
             }
             
@@ -364,9 +370,8 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
                 String exportFormat = querySolution.get("format").toString();
                 try {
                     exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
-                } catch (EJBException ex) {
-                    log.log(Level.WARNING, ex.getMessage());
-                    continue;
+                } catch (Exception ex) {
+                    throw logger.throwing(method, ex);
                 }
             }
             spaModel.add(resData, Spa.value, exportValue);

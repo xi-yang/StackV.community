@@ -5,7 +5,7 @@
     "ssl-required": "external",
     "resource": "StackV",
     "credentials": {
-        "secret": "4897e8c3-b837-4211-a8f2-af3d6e363df2"
+        "secret": "ae53fbea-8812-4c13-918f-0065a1550b7c"
     },
     "use-resource-role-mappings": true
 }

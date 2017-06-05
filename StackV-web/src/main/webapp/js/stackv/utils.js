@@ -102,21 +102,10 @@ define([], function () {
           //console.log("in positionMenu: menu.style.left: " + menu.style.left + " , menu.style.top: " + menu.style.top);
     }
          function positionDisplayPanel(elementID, e) {
-            var clickCoords = getElementPosition(e);
-            var clickCoordsX = clickCoords.x;
-            var clickCoordsY = clickCoords.y;
-
-            var element = document.querySelector("#" + elementID);
-
-            var elemWidth = element.offsetWidth + 4;
-            var elemHeight = getHeight("#" + elementID) + 4; //element.offsetHeight + 4;
-
-            var windowWidth = window.innerWidth;
-            var windowHeight = window.innerHeight;
-
-            element.style.left = clickCoordsX + 20 + "px";
-            element.style.top = clickCoordsY - elemHeight + "px";
-            
+            $("#" + elementID).css({
+                'top': e.pageY, //- screen.height*.1,
+                'left': e.pageX + screen.width*.01
+            });
         }   
         
         function getHeight(elementName) {
