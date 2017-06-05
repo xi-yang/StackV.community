@@ -153,24 +153,27 @@ function executeRequest(){
     var apiUrl = baseUrl + "/StackV-web/restapi/app/"+ url;
     var type = url_request;
     
+    var input = $("#api_result").val();
+    
+
     var url_selected = String(url).split("/");
     
-    
-    $.ajax({
-        url: apiUrl,
-        type: type,
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        success: function (result) {
-            
-            var resultArr = String(result).split(",");
-            
+    if(type === "GET"){
+        $.ajax({
+            url: apiUrl,
+            type: type,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function (result) {
+                alert(result);
+                var resultArr = String(result).split(",");
+
                 var jsonStr = "[";
-                
+
                 var index = 0;
-                
+
                 for(index = 0;index < resultArr.length;index+=2){
                     if(index+2 == resultArr.length){
                         jsonStr += "["+"\""+resultArr[index+1]+"\""+" , "+"\""+resultArr[index]+"\""+"]";
@@ -178,17 +181,60 @@ function executeRequest(){
                         jsonStr += "["+"\""+resultArr[index+1]+"\""+" , "+"\""+resultArr[index]+"\""+"],";
                     }
                 }
-                
                 jsonStr += "]";
                 var jsonFormat = JSON.parse(jsonStr);
-                alert(JSON.stringify(jsonFormat));
-                document.getElementById("api_result").innerHTML = JSON.stringify(jsonFormat,null,2);
-
+                document.getElementById("api_result").innerHTML = JSON.stringify(jsonFormat,null,2); 
+            },
+            error: function () {
+                alert("failed");
+                document.getElementById("api_result").innerHTML = "failure";
+            }
+        });
+    } else if(type === "PUT"){
+        $.ajax({
+            url: apiUrl,
+            type: type,
+            data: input,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function (result) {
+                alert("success");
+            }
+        });
+    } else if(type === "POST"){
+        $.ajax({
+            url: apiUrl,
+            type: type,
+            data: input,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function (result) {
+                alert("success");
+            }
+        });
+    } else if(type === "DELETE"){
+        $.ajax({
+        url: apiUrl,
+        type: type,
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            document.getElementById("ret_field").innerHTML = result;
         },
         error: function () {
-            alert("failed");
-            document.getElementById("api_result").innerHTML = "failure";
+            document.getElementById("ret_field").innerHTML = "failure";
         }
     });
+    }
     
 }
