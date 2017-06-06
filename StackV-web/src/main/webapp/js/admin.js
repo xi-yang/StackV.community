@@ -166,8 +166,7 @@ function executeRequest(){
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                alert(result);
-                alert(typeof result);
+                
                 if(typeof result === "string"){
                     if(url_arr[0] === "keycloak"){
                         var resultArr = String(result).split(",");
@@ -181,7 +180,6 @@ function executeRequest(){
                             }
                         }
                         jsonStr += "]";
-                        alert(jsonStr);
                         var jsonFormat = JSON.parse(jsonStr);
                  
                         $("#api_result").val(JSON.stringify(jsonFormat,null,2));
