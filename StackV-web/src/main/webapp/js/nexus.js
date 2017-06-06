@@ -1138,16 +1138,16 @@ function loadDataTable(apiUrl) {
 function formatChild(d) {
     // `d` is the original data object for the row
     var retString = '<table cellpadding="5" cellspacing="0" border="0">';
-    if (!(d.message === "{}")) {
+    if (d.message !== "{}") {
         retString += '<tr>' +
                 '<td style="width:10%">Message:</td>' +
                 '<td style="white-space: normal">' + d.message + '</td>' +
                 '</tr>';
     }
-    if (!(d.exception === "")) {
+    if (d.exception !== "") {
         retString += '<tr>' +
                 '<td>Exception:</td>' +
-                '<td>' + d.exception + '</td>' +
+                '<td><textarea class="dataTables-child">' + d.exception + '</textarea></td>' +
                 '</tr>';
     }
     retString += '<tr>' +
