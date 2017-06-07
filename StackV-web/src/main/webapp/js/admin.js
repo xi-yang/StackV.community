@@ -192,8 +192,7 @@ function executeRequest(){
                 
             },
             error: function () {
-                alert("failed");
-                $("#api_result").val("failure");
+                $("#api_result").val("Failure");
             }
         });
     } else if(type === "PUT"){
@@ -208,12 +207,10 @@ function executeRequest(){
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                alert("success");
-                document.getElementById("api_result").innerHTML = "success";
+                $("#api_result").val("Success");
             },
             error: function () {
-                alert("failed");
-                document.getElementById("api_result").innerHTML = "failure";
+                $("#api_result").val("Failure");
             }
         });
     } else if(type === "POST"){
@@ -228,12 +225,10 @@ function executeRequest(){
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                alert("success");
-                document.getElementById("api_result").innerHTML = "success";
+                $("#api_result").val("Success");
             },
             error: function () {
-                alert("failed");
-                document.getElementById("api_result").innerHTML = "failure";
+                $("#api_result").val("Failure");
             }
         });
     } else if(type === "DELETE"){
@@ -245,11 +240,10 @@ function executeRequest(){
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            alert("success");
-            document.getElementById("api_result").innerHTML = "success";
+            $("#api_result").val("success");
         },
         error: function () {
-            document.getElementById("api_result").innerHTML = "failure";
+            $("#api_result").val("failure");
         }
     });
     }

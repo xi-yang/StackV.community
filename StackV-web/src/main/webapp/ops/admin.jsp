@@ -34,10 +34,10 @@
                     <div id ="API-header-div">API Module</div>
                     <div id="logging-body-div">
                         <select id = "API-request">
-                            <option value="GET">Get</option>
-                            <option value="PUT">Put</option>
-                            <option value="POST">Post</option>
-                            <option value="DELETE">Delete</option>
+                            <option value="GET">GET</option>
+                            <option value="PUT">PUT</option>
+                            <option value="POST">POST</option>
+                            <option value="DELETE">DELETE</option>
                         </select>
                         <input type="text" placeholder="URL" id="URL">
                         <button type="button" class="action-button" onclick="executeRequest();">Send</button>
