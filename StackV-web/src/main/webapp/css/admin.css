@@ -98,6 +98,10 @@ tr.shown td.details-control {
     min-height: 300px;
 }
 
-#URL {
-    width: 60%;
+.typeahead{
+    width: 100%;
 }
+
+
+
+
