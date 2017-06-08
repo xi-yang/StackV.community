@@ -46,6 +46,15 @@
                         <textarea id="api_result" style="color: black;"></textarea>
                     </div>
                 </div>
+                <div class="hide admin-panel-logging">
+                    <label for="select-logging-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
+                    <select id="select-logging-level" onchange="loggingChange(this)">
+                        <option value="TRACE">TRACE</option>
+                        <option value="INFO">INFO</option>
+                        <option value="WARN">WARN</option>
+                        <option value="ERROR">ERROR</option>
+                    </select>  
+                </div>
             </div>
             <div id="logging-panel">
                 <div id="logging-header-div">
@@ -95,35 +104,35 @@
         <script src="/StackV-web/js/admin.js"></script>
 
         <script>
-            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-            dojoConfig = {
-                has: {
-                    "dojo-firebug": true,
-                    "dojo-debug-messages": true
-                },
-                async: true,
-                parseOnLoad: true,
-                packages: [
-                    {
-                        name: "d3",
-                        location: "//d3js.org/",
-                        main: "d3.v3"
-                    },
-                    {
-                        name: "local",
-                        location: "/StackV-web/js/"
-                    }
-                ]
-            };
+                        //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+                        dojoConfig = {
+                            has: {
+                                "dojo-firebug": true,
+                                "dojo-debug-messages": true
+                            },
+                            async: true,
+                            parseOnLoad: true,
+                            packages: [
+                                {
+                                    name: "d3",
+                                    location: "//d3js.org/",
+                                    main: "d3.v3"
+                                },
+                                {
+                                    name: "local",
+                                    location: "/StackV-web/js/"
+                                }
+                            ]
+                        };
 
-            $(function () {
-                $("#dialog_policyAction").dialog({
-                    autoOpen: false
-                });
-                $("#dialog_policyData").dialog({
-                    autoOpen: false
-                });
-            });
+                        $(function () {
+                            $("#dialog_policyAction").dialog({
+                                autoOpen: false
+                            });
+                            $("#dialog_policyData").dialog({
+                                autoOpen: false
+                            });
+                        });
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
     </body>

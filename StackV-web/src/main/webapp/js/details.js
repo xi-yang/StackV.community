@@ -885,6 +885,9 @@ function buttonModerate() {
             $("#force_delete").toggleClass("hide");
         }
     }
+    
+    
+    $("#force_delete").removeClass("hide");
 }
 
 

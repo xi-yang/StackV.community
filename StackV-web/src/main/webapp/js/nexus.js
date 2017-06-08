@@ -170,21 +170,6 @@ function loadNavbar() {
     });
 }
 
-function loggingChange(sel) {
-    var level = sel.value;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/' + level;
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function () {
-
-        }
-    });
-}
-
 function prettyPrintInfo() {
     var ugly = document.getElementById('info-panel-text-area').value;
     var obj = JSON.parse(ugly);

@@ -67,7 +67,7 @@ class ServiceEngine {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        String result = null;
+        String result;
         logger.start(method);
         try {
             // Cache serviceDelta.
@@ -185,7 +185,7 @@ class ServiceEngine {
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
-
+        
         logger.end(method, "Failure");
         WebResource.commonsClose(front_conn, prep, rs);
         return false;

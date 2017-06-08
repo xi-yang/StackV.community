@@ -22,10 +22,7 @@
  */
 package net.maxgigapop.mrs.service;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -37,12 +34,9 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
-import net.maxgigapop.mrs.rest.api.WebResource;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import static net.maxgigapop.mrs.rest.api.WebResource.SuperState;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
@@ -219,9 +213,10 @@ public class ServiceHandler {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
+        String method = "operate:" + action;
 
         logger.refuuid(refUUID);
-        logger.start("operate:" + action);
+        logger.start(method);
         try {
             clearVerification();
             switch (action) {
@@ -256,10 +251,10 @@ public class ServiceHandler {
                     ServiceEngine.verify(refUUID, token);
 
                 default:
-                    logger.warning("doOperate", "Invalid action: " + action);
+                    logger.warning(method, "Invalid action");
             }
 
-            logger.end("doOperate:" + action);
+            logger.end(method);
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
             try {
 
@@ -273,9 +268,9 @@ public class ServiceHandler {
                 prep.setString(1, refUUID);
                 prep.executeUpdate();
             } catch (SQLException ex2) {
-                logger.catching("doOperate", ex2);
+                logger.catching(method, ex2);
             }
-            logger.catching("doOperate", ex);
+            logger.catching(method, ex);
         } finally {
             commonsClose(front_conn, prep, rs);
         }
