@@ -40,7 +40,7 @@
                             <option value="DELETE">DELETE</option>
                         </select>
 
-                            <input class = "typeahead" type="text" placeholder="URL" id="URL">
+                        <input class = "typeahead" type="text" placeholder="URL" id="URL">
 
                         <button id = "SEND" type="button" class="action-button" onclick="executeRequest();">Send</button>
                     </div>
@@ -95,43 +95,43 @@
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/admin.js"></script>
-<!--        type ahead libraries-->
-	<script src="/StackV-web/js/typeahead.js/typeahead.bundle.js"></script>
-  	<script src="/StackV-web/js/test.js"></script>
-        
-        
-        
+        <!--        type ahead libraries-->
+        <script src="/StackV-web/js/typeahead.js/typeahead.bundle.js"></script>
+        <script src="/StackV-web/js/test.js"></script>
+
+
+
 
         <script>
-            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-            dojoConfig = {
-                has: {
-                    "dojo-firebug": true,
-                    "dojo-debug-messages": true
-                },
-                async: true,
-                parseOnLoad: true,
-                packages: [
-                    {
-                        name: "d3",
-                        location: "//d3js.org/",
-                        main: "d3.v3"
-                    },
-                    {
-                        name: "local",
-                        location: "/StackV-web/js/"
-                    }
-                ]
-            };
+                            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+                            dojoConfig = {
+                                has: {
+                                    "dojo-firebug": true,
+                                    "dojo-debug-messages": true
+                                },
+                                async: true,
+                                parseOnLoad: true,
+                                packages: [
+                                    {
+                                        name: "d3",
+                                        location: "//d3js.org/",
+                                        main: "d3.v3"
+                                    },
+                                    {
+                                        name: "local",
+                                        location: "/StackV-web/js/"
+                                    }
+                                ]
+                            };
 
-            $(function () {
-                $("#dialog_policyAction").dialog({
-                    autoOpen: false
-                });
-                $("#dialog_policyData").dialog({
-                    autoOpen: false
-                });
-            });
+                            $(function () {
+                                $("#dialog_policyAction").dialog({
+                                    autoOpen: false
+                                });
+                                $("#dialog_policyData").dialog({
+                                    autoOpen: false
+                                });
+                            });
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
     </body>

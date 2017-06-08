@@ -32,6 +32,10 @@ div#admin-panel {
     height: 54px;
 }
 
+.twitter-typeahead {
+    width: 50%;
+}
+
 
 #filter-level-div {
     float: right;

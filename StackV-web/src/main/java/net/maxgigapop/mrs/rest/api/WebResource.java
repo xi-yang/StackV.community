@@ -88,6 +88,7 @@ import org.keycloak.representations.AccessToken;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.jboss.resteasy.spi.UnhandledException;
 
 /**
  * REST Web Service
@@ -1213,6 +1214,7 @@ public class WebResource {
 
             logger.trace_end(method);
             return retList;
+            
         } catch (IOException | ParseException ex) {
             logger.catching("getUserRoles", ex);
             return null;
@@ -1668,7 +1670,7 @@ public class WebResource {
             } else {
                 prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
             }
-
+            
             rs = prep.executeQuery();
             JSONObject retJSON = new JSONObject();
             JSONArray logArr = new JSONArray();
@@ -1689,8 +1691,11 @@ public class WebResource {
             retJSON.put("data", logArr);
 
             return retJSON.toJSONString();
+        } catch (UnhandledException ex) {
+            logger.trace(method, "Logging connection lost?");
+            return null;
         } catch (SQLException ex) {
-            logger.catching("getLogs", ex);
+            logger.catching(method, ex);
             return null;
         } finally {
             commonsClose(front_conn, prep, rs);
