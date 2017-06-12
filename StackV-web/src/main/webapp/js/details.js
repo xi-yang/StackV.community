@@ -27,6 +27,7 @@ var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInO
 var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px", opacity: "1", display: "block"});
 
 var view = "center";
+var lastState = null;
 
 Mousetrap.bind({
     'shift+left': function () {
@@ -216,7 +217,8 @@ function subloadDetails() {
             $("#instance-alias").html(instance[2]);
             $("#instance-creation-time").html(instance[3]);
             $("#instance-superstate").html(instance[4]);
-
+            
+            lastState = instance[5];
 
             // Next steps
             subloadStatus(uuid);
@@ -234,7 +236,11 @@ function subloadStatus(refUuid) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            ele.innerHTML = result;
+            if (result === "FAILED") {
+                ele.innerHTML = "FAILED (After " + lastState + ")";
+            } else {
+                ele.innerHTML = result;
+            }
 
             if (view === "center") {
                 tweenDetailsPanel.play();

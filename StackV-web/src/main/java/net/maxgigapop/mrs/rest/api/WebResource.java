@@ -2090,7 +2090,7 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, V.verification_state FROM service_instance I, service_verification V "
+            prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, V.verification_state, I.last_state FROM service_instance I, service_verification V "
                     + "WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id");
             prep.setString(1, uuid);
 
@@ -2101,6 +2101,7 @@ public class WebResource {
                 retList.add(rs.getString("alias_name"));
                 retList.add(rs.getString("creation_time"));
                 retList.add(rs.getString("super_state"));
+                retList.add(rs.getString("last_state"));
             }
 
             return retList;

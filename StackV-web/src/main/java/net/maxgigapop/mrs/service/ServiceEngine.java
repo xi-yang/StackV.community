@@ -41,6 +41,7 @@ import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.WebResource;
+import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.logging.log4j.ThreadContext;
 import org.json.simple.JSONArray;
@@ -59,15 +60,13 @@ class ServiceEngine {
     private final static String front_db_user = "front_view";
     private final static String front_db_pass = "frontuser";
     private final static String rains_db_user = "root";
-    private final static String rains_db_pass = "root";    
+    private final static String rains_db_pass = "root";
 
     // OPERATION FUNCTIONS    
     private static void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, TokenHandler token) {
-        String method = "orchestrateInstance";
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
+        String method = "orchestrateInstance";;
         String result;
+        String lastState = "PRE-INIT";
         logger.start(method);
         try {
             // Cache serviceDelta.
@@ -75,16 +74,20 @@ class ServiceEngine {
             int instanceID = results;
 
             result = initInstance(refUuid, svcDelta, token.auth());
+            lastState = "INIT";
             logger.trace(method, "Initialized");
             cacheSystemDelta(instanceID, result);
 
             propagateInstance(refUuid, svcDelta, token.auth());
+            lastState = "PROPAGATE";
             logger.trace(method, "Propagated");
 
             result = commitInstance(refUuid, svcDelta, token.auth());
-            logger.trace(method, "Committed");
+            lastState = "COMMIT";
+            logger.trace(method, "Committing");
 
             verifyInstance(refUuid, result, token);
+            lastState = "VERIFY";
             logger.end(method, "Verified");
         } catch (EJBException | IOException | InterruptedException | SQLException ex) {
             try {
@@ -94,7 +97,32 @@ class ServiceEngine {
             }
             logger.catching(method, ex);
         } finally {
-            WebResource.commonsClose(front_conn, prep, rs);
+            if (lastState != null) {
+                logger.trace_start("updateLastState");
+                
+                Connection front_conn = null;
+                PreparedStatement prep = null;
+                ResultSet rs = null;
+                try {
+                    Properties front_connectionProps = new Properties();
+                    front_connectionProps.put("user", front_db_user);
+                    front_connectionProps.put("password", front_db_pass);
+
+                    front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                            front_connectionProps);
+
+                    prep = front_conn.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
+                    prep.setString(1, lastState);
+                    prep.setString(2, refUuid);
+                    prep.executeUpdate();
+                    
+                    logger.trace_end("updateLastState");
+                } catch (SQLException ex) {
+                    logger.catching("cacheSystemDelta", ex);
+                } finally {                    
+                    commonsClose(front_conn, prep, rs);
+                }
+            }
         }
     }
 
@@ -185,7 +213,7 @@ class ServiceEngine {
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
-        
+
         logger.end(method, "Failure");
         WebResource.commonsClose(front_conn, prep, rs);
         return false;
@@ -1802,7 +1830,7 @@ class ServiceEngine {
         String method = "verifyInstance";
         logger.trace_start(method);
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
-               
+
         while (!result.equals("COMMITTED") && !result.equals("FAILED")) {
             logger.trace(method, "Waiting on instance: " + result);
             sleep(5000);//wait for 5 seconds and check again later        

@@ -59,6 +59,7 @@ public class ServiceHandler {
     String type;
     String owner;
     String alias;
+    String lastState = "PRE-INIT";
 
     public ServiceHandler(JSONObject input, TokenHandler initToken) {
         token = initToken;
@@ -198,6 +199,7 @@ public class ServiceHandler {
                 alias = rs1.getString("alias_name");
                 superState = SuperState.valueOf(rs1.getString("super_state"));
                 type = rs1.getString("type");
+                lastState = rs1.getString("last_state");
             }
 
             logger.trace_end(method);
@@ -273,6 +275,9 @@ public class ServiceHandler {
             logger.catching(method, ex);
         } finally {
             commonsClose(front_conn, prep, rs);
+            if (lastState != null) {
+                updateLastState(lastState, refUUID);
+            }
         }
     }
 
@@ -330,76 +335,61 @@ public class ServiceHandler {
      * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
      * error (Failed result check).
      */
-    private int cancelInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
+    private int cancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
         String instanceState = status();
-        try {
-            if (!instanceState.equalsIgnoreCase("READY")) {
-                return 1;
+        if (!instanceState.equalsIgnoreCase("READY")) {
+            return 1;
+        }
+
+        result = revert(refUuid, token.auth());
+        if (!result) {
+            return 2;
+        }
+
+        result = propagate(refUuid, token.auth());
+        if (!result) {
+            return 3;
+        }
+
+        result = commit(refUuid, token.auth());
+        if (!result) {
+            return 4;
+        }
+
+        while (true) {
+            instanceState = status();
+            if (instanceState.equals("COMMITTED")) {
+                ServiceEngine.verify(refUuid, token);
+                return 0;
+            } else if (!(instanceState.equals("COMMITTING"))) {
+                return 5;
             }
 
-            result = revert(refUuid, token.auth());
-            if (!result) {
-                return 2;
-            }
-
-            result = propagate(refUuid, token.auth());
-            if (!result) {
-                return 3;
-            }
-
-            result = commit(refUuid, token.auth());
-            if (!result) {
-                return 4;
-            }
-
-            while (true) {
-                logger.trace("cancelInstance", "Verification priming check");
-
-                instanceState = status();
-                if (instanceState.equals("COMMITTED")) {
-                    ServiceEngine.verify(refUuid, token);
-
-                    return 0;
-                } else if (!(instanceState.equals("COMMITTING"))) {
-                    return 5;
-                }
-
-                Thread.sleep(5000);
-            }
-        } catch (EJBException ex) {
-            logger.catching("cancelInstance", ex);
-            return -1;
+            Thread.sleep(5000);
         }
     }
 
-    private int forceCancelInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
-        boolean result;
-        try {
-            forceRevert(refUuid, token.auth());
-            forcePropagate(refUuid, token.auth());
-            forceCommit(refUuid, token.auth());
-            while (true) {
-                logger.trace("forceCancelInstance", "Verification priming check");
+    private int forceCancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+        forceRevert(refUuid, token.auth());
+        forcePropagate(refUuid, token.auth());
+        forceCommit(refUuid, token.auth());
+        while (true) {
+            logger.trace("forceCancelInstance", "Verification priming check");
 
-                String instanceState = status();
-                if (instanceState.equals("COMMITTED")) {
-                    ServiceEngine.verify(refUuid, token);
-
-                    return 0;
-                } else if (!(instanceState.equals("COMMITTING"))) {
-                    return 5;
-                }
-                Thread.sleep(5000);
+            String instanceState = status();
+            if (instanceState.equals("COMMITTED")) {
+                ServiceEngine.verify(refUuid, token);
+                lastState = "VERIFY";
+                return 0;
+            } else if (!(instanceState.equals("COMMITTING"))) {
+                return 5;
             }
-        } catch (EJBException ex) {
-            logger.catching("forceCancelInstance", ex);
-            return -1;
+            Thread.sleep(5000);
         }
     }
 
     private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
-        boolean result;
         forcePropagate(refUuid, token.auth());
         forceCommit(refUuid, token.auth());
         while (true) {
@@ -449,6 +439,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Propagate Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
+        lastState = result;
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
@@ -459,6 +450,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Forced Propagate Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
+        lastState = result;
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
@@ -469,6 +461,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Commit Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
+        lastState = result;
         return result.equalsIgnoreCase("COMMITTING");
     }
 
@@ -479,6 +472,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Forced Commit Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
+        lastState = result;
         return result.equalsIgnoreCase("COMMITTING");
     }
 
@@ -489,7 +483,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Revert Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        // Revert now returns service delta UUID; pending changes.
+        lastState = result;
         return true;
     }
 
@@ -500,7 +494,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Forced Revert Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        // Revert now returns service delta UUID; pending changes.
+        lastState = result;
         return true;
     }
 
@@ -511,6 +505,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Delete Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
+        lastState = result;
         return result;
     }
 
@@ -541,5 +536,33 @@ public class ServiceHandler {
         } finally {
             commonsClose(front_conn, prep, rs);
         }
+    }
+
+    void updateLastState(String lastState, String refUUID) {
+        String method = "updateLastState";
+        logger.trace_start(method);
+
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            prep = front_conn.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
+            prep.setString(1, lastState);
+            prep.setString(2, refUUID);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("cacheSystemDelta", ex);
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+
+        logger.trace_end(method);
     }
 }
