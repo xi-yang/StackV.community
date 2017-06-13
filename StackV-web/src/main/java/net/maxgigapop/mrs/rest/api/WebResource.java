@@ -24,7 +24,6 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -62,11 +61,20 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.util.Iterator;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
@@ -78,6 +86,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.QueryParam;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import org.apache.commons.dbutils.DbUtils;
@@ -85,8 +94,6 @@ import org.apache.logging.log4j.Level;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jboss.resteasy.spi.UnhandledException;
 
@@ -97,8 +104,37 @@ import org.jboss.resteasy.spi.UnhandledException;
  */
 @Path("app")
 public class WebResource {
+
+    // SERVICES DATA
+    public static final Map<String, List<String>> Services = createServiceMap();
+
+    public static enum SuperState {
+        CREATE, CANCEL, MODIFY, REINSTATE, DELETE
+    }
+
+    private static Map<String, List<String>> createServiceMap() {
+        HashMap<String, List<String>> result = new HashMap<>();
+
+        result.put("driver", Arrays.asList(
+                "Driver Management",
+                "Installation and Uninstallation of Driver Instances."));
+
+        result.put("netcreate", Arrays.asList(
+                "Virtual Cloud Network",
+                "Network Creation Pilot Testbed."));
+
+        result.put("dnc", Arrays.asList(
+                "Dynamic Network Connection",
+                "Creation of new network connections."));
+
+        result.put("hybridcloud", Arrays.asList(
+                "Advanced Hybrid Cloud",
+                "Advanced Hybrid Cloud Service."));
+
+        return Collections.unmodifiableMap(result);
+    }
+
     private final StackLogger logger = new StackLogger(WebResource.class.getName(), "WebResource");
-    private static final Marker SERVICE_MARKER = MarkerManager.getMarker("SQL");
 
     private final String front_db_user = "front_view";
     private final String front_db_pass = "frontuser";
@@ -125,13 +161,16 @@ public class WebResource {
     static {
         TrustManager[] trustAllCerts = new TrustManager[]{
             new X509TrustManager() {
+                @Override
                 public java.security.cert.X509Certificate[] getAcceptedIssuers() {
                     return null;
                 }
 
+                @Override
                 public void checkClientTrusted(X509Certificate[] certs, String authType) {
                 }
 
+                @Override
                 public void checkServerTrusted(X509Certificate[] certs, String authType) {
                 }
 
@@ -145,14 +184,15 @@ public class WebResource {
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
 
             HostnameVerifier allHostsValid = new HostnameVerifier() {
+                @Override
                 public boolean verify(String hostname, SSLSession session) {
                     return true;
                 }
             };
             // set the  allTrusting verifier
             HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-        } catch (Exception ex) {
-            ;
+        } catch (KeyManagementException | NoSuchAlgorithmException ex) {
+
         }
     }
 
@@ -404,7 +444,7 @@ public class WebResource {
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
+            String result = executeHttpMethod(url, connection, "POST", xmldata, auth);
             if (!result.equalsIgnoreCase("plug successfully")) //plugin error
             {
                 return "PLUGIN FAILED: Driver Resource did not return successfull";
@@ -469,7 +509,7 @@ public class WebResource {
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = servBean.executeHttpMethod(url, connection, "POST", xmldata, auth);
+            String result = executeHttpMethod(url, connection, "POST", xmldata, auth);
             if (!result.equalsIgnoreCase("plug successfully")) //plugin error
             {
                 return "PLUGIN FAILED: Driver Resource Failed";
@@ -1348,8 +1388,6 @@ public class WebResource {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            String method = "getLabels";
-            logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
             Properties front_connectionProps = new Properties();
@@ -1371,7 +1409,6 @@ public class WebResource {
                 retList.add(labelList);
             }
 
-            logger.trace_end(method);
             return retList;
         } catch (SQLException ex) {
             logger.catching("getLabels", ex);
@@ -1576,7 +1613,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Logging")
     public void setLogLevel(@PathParam("level") String level) {
-        if (verifyUserRole("realm", "admin")) {
+        if (verifyUserRole("admin")) {
             switch (level) {
                 case "TRACE":
                     Configurator.setLevel(WebResource.class.getName(), Level.TRACE);
@@ -1675,8 +1712,8 @@ public class WebResource {
             JSONObject retJSON = new JSONObject();
             JSONArray logArr = new JSONArray();
             while (rs.next()) {
-                JSONObject logJSON = new JSONObject();                
-                
+                JSONObject logJSON = new JSONObject();
+
                 logJSON.put("referenceUUID", rs.getString("referenceUUID"));
                 logJSON.put("marker", rs.getString("marker"));
                 logJSON.put("timestamp", rs.getString("timestamp"));
@@ -1728,50 +1765,76 @@ public class WebResource {
         logger.trace_start(method);
 
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-        String serviceType = getServiceType(svcUUID);
-        if (serviceType.equals("Virtual Cloud Network")) {
-            try {
-                URL url = new URL(String.format("%s/service/property/%s/host", host, svcUUID));
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                String result = servBean.executeHttpMethod(url, conn, "GET", null, auth);
-                switch (result) {
-                    case "ops":
-                        serviceType = "Virtual Cloud Network - OPS";
-                        break;
-                    case "aws":
-                        serviceType = "Virtual Cloud Network - AWS";
-                        break;
-                    default:
-                        throw new EJBException("cannot tell type of VCN service without 'host' property");
-                }
-            } catch (IOException | EJBException ex) {
-                throw new EJBException("cannot tell type of VCN service without 'host' property", ex);
-            }
-        }
-        String manifest = "";
-        switch (serviceType) {
-            case "Dynamic Network Connection":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC, auth);
-                break;
-            case "Advanced Hybrid Cloud":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC, auth);
-                break;
-            case "Virtual Cloud Network - OPS":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS, auth);
-                break;
-            case "Virtual Cloud Network - AWS":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
-                break;
-            default:
-                throw new EJBException("cannot get manifest for service type=" + serviceType);
-        }
-        org.json.JSONObject obj = new org.json.JSONObject(manifest);
-        if (!obj.has("jsonTemplate")) {
-            throw new EJBException("getManifest cannot get manifest for service uuid=" + svcUUID);
-        }
 
+        String serviceType = null;
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        try {
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            prep = front_conn.prepareStatement("select S.name from service_instance I, service S "
+                    + "where I.referenceUUID=? AND I.service_id=S.service_id");
+            prep.setString(1, svcUUID);
+            rs = prep.executeQuery();
+            while (rs.next()) {
+                serviceType = rs.getString("name");
+            }
+        } catch (SQLException ex) {
+            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+        if (serviceType != null) {
+            if (serviceType.equals("Virtual Cloud Network")) {
+                try {
+                    URL url = new URL(String.format("%s/service/property/%s/host", host, svcUUID));
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    String result = executeHttpMethod(url, conn, "GET", null, auth);
+                    switch (result) {
+                        case "ops":
+                            serviceType = "Virtual Cloud Network - OPS";
+                            break;
+                        case "aws":
+                            serviceType = "Virtual Cloud Network - AWS";
+                            break;
+                        default:
+                            throw new EJBException("cannot tell type of VCN service without 'host' property");
+                    }
+                } catch (IOException | EJBException ex) {
+                    throw new EJBException("cannot tell type of VCN service without 'host' property", ex);
+                }
+            }
+            String manifest = "";
+            switch (serviceType) {
+                case "Dynamic Network Connection":
+                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC, auth);
+                    break;
+                case "Advanced Hybrid Cloud":
+                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC, auth);
+                    break;
+                case "Virtual Cloud Network - OPS":
+                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS, auth);
+                    break;
+                case "Virtual Cloud Network - AWS":
+                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
+                    break;
+                default:
+                    throw new EJBException("cannot get manifest for service type=" + serviceType);
+            }
+            org.json.JSONObject obj = new org.json.JSONObject(manifest);
+            if (!obj.has("jsonTemplate")) {
+                throw new EJBException("getManifest cannot get manifest for service uuid=" + svcUUID);
+            }
+            logger.trace_end(method);
+            return obj.getString("jsonTemplate");
+        }
         logger.trace_end(method);
-        return obj.getString("jsonTemplate");
+        return null;
     }
 
     @GET
@@ -1815,14 +1878,13 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            if (username.equals("admin")) {
-                prep = front_conn.prepareStatement("SELECT DISTINCT S.name, I.referenceUUID, X.super_state, I.alias_name "
-                        + "FROM service S, service_instance I, service_state X, acl A "
-                        + "WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id");
+            if (verifyUserRole("admin")) {
+                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state "
+                        + "FROM service_instance I, acl A");
             } else {
-                prep = front_conn.prepareStatement("SELECT DISTINCT S.name, I.referenceUUID, X.super_state, I.alias_name "
-                        + "FROM service S, service_instance I, service_state X, acl A "
-                        + "WHERE S.service_id = I.service_id AND I.service_state_id = X.service_state_id AND I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?)");
+                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state "
+                        + "FROM service_instance I, acl A "
+                        + "WHERE I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?)");
                 prep.setString(1, username);
                 prep.setString(2, username);
             }
@@ -1830,7 +1892,7 @@ public class WebResource {
             while (rs.next()) {
                 ArrayList<String> instanceList = new ArrayList<>();
 
-                String instanceName = rs.getString("name");
+                String instanceName = Services.get(rs.getString("type")).get(0);
                 String instanceUUID = rs.getString("referenceUUID");
                 String instanceSuperState = rs.getString("super_state");
                 String instanceAlias = rs.getString("alias_name");
@@ -1839,7 +1901,7 @@ public class WebResource {
                         URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
                         HttpURLConnection status = (HttpURLConnection) url.openConnection();
 
-                        String instanceState = instanceSuperState + " - " + servBean.executeHttpMethod(url, status, "GET", null, auth);
+                        String instanceState = instanceSuperState + " - " + executeHttpMethod(url, status, "GET", null, auth);
 
                         instanceList.add(instanceName);
                         instanceList.add(instanceUUID);
@@ -1920,46 +1982,25 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("Panels")
     public ArrayList<ArrayList<String>> loadEditor(@PathParam("userId") String userId) {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
-            AccessToken accessToken = securityContext.getToken();
-            Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+        AccessToken accessToken = securityContext.getToken();
+        Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
 
-            Properties front_connectionProps = new Properties();
+        for (Map.Entry<String, List<String>> entry : Services.entrySet()) {
+            if (verifyUserRole(entry.getKey())) {
+                List<String> list = entry.getValue();
+                ArrayList<String> wizardList = new ArrayList<>();
+                wizardList.add(list.get(0));
+                wizardList.add(list.get(1));
+                wizardList.add(entry.getKey());
 
-            front_connectionProps.put(
-                    "user", front_db_user);
-            front_connectionProps.put(
-                    "password", front_db_pass);
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("SELECT DISTINCT S.name, S.filename, S.description FROM service S WHERE S.atomic = 0");
-            rs = prep.executeQuery();
-
-            while (rs.next()) {
-                if (roleSet.contains(rs.getString("filename"))) {
-                    ArrayList<String> wizardList = new ArrayList<>();
-                    wizardList.add(rs.getString("name"));
-                    wizardList.add(rs.getString("description"));
-                    wizardList.add(rs.getString("filename"));
-
-                    retList.add(wizardList);
-                }
+                retList.add(wizardList);
             }
-            return retList;
-        } catch (SQLException ex) {
-            logger.catching("loadEditor", ex);
-            return null;
-        } finally {
-            commonsClose(front_conn, prep, rs);
         }
+
+        return retList;
     }
 
     @GET
@@ -2051,17 +2092,18 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("SELECT S.name, I.creation_time, I.alias_name, X.super_state, V.verification_state FROM service S, service_instance I, service_state X, service_verification V "
-                    + "WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id AND S.service_id = I.service_id AND X.service_state_id = I.service_state_id");
+            prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, V.verification_state, I.last_state FROM service_instance I, service_verification V "
+                    + "WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
             while (rs.next()) {
                 retList.add(rs.getString("verification_state"));
-                retList.add(rs.getString("name"));
+                retList.add(Services.get(rs.getString("type")).get(0));
                 retList.add(rs.getString("alias_name"));
                 retList.add(rs.getString("creation_time"));
                 retList.add(rs.getString("super_state"));
+                retList.add(rs.getString("last_state"));
             }
 
             return retList;
@@ -2073,7 +2115,7 @@ public class WebResource {
         }
     }
 
-    @GET
+    /*@GET
     @Path("/details/{uuid}/delta")
     @Produces("application/json")
     @RolesAllowed("Panels")
@@ -2092,8 +2134,8 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("SELECT D.service_delta_id, D.delta, D.type, S.super_state FROM service_delta D, service_instance I, service_state S, service_history H "
-                    + "WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND D.service_history_id = H.service_history_id AND D.service_instance_id = H.service_instance_id AND H.service_state_id = S.service_state_id");
+            prep = front_conn.prepareStatement("SELECT D.service_delta_id, D.delta, D.type, I.super_state FROM service_delta D, service_instance I, service_history H "
+                    + "WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND D.service_history_id = H.service_history_id AND D.service_instance_id = H.service_instance_id");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
@@ -2113,7 +2155,7 @@ public class WebResource {
         } finally {
             commonsClose(front_conn, prep, rs);
         }
-    }
+    }*/
 
     @GET
     @Path("/details/{uuid}/verification")
@@ -2505,21 +2547,13 @@ public class WebResource {
     @GET
     @Path("/service/{siUUID}/status")
     @RolesAllowed("Services")
-    public String checkStatus(@PathParam("siUUID") String svcInstanceUUID) {
-        logger.refuuid(svcInstanceUUID);
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+    public String checkStatus(@PathParam("siUUID") String refUUID) {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
-        if (refresh != null) {
-            auth = token.auth();
-        }
 
-        try {
-            return superStatus(svcInstanceUUID) + " - " + status(svcInstanceUUID, auth) + "\n";
-        } catch (IOException ex) {
-            logger.catching("checkStatus", ex);
-            return null;
-        }
+        ServiceHandler instance = new ServiceHandler(refUUID, token);
+
+        return instance.superState.name() + " - " + instance.status() + "\n";
     }
 
     /**
@@ -2541,21 +2575,13 @@ public class WebResource {
     @GET
     @Path("/service/{siUUID}/substatus")
     @RolesAllowed("Services")
-    public String subStatus(@PathParam("siUUID") String svcInstanceUUID) {
-        logger.refuuid(svcInstanceUUID);
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+    public String subStatus(@PathParam("siUUID") String refUUID) {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
-        if (refresh != null) {
-            auth = token.auth();
-        }
 
-        try {
-            return status(svcInstanceUUID, auth);
-        } catch (IOException ex) {
-            logger.catching("subStatus", ex);
-        }
-        return null;
+        ServiceHandler instance = new ServiceHandler(refUUID, token);
+
+        return instance.status();
     }
 
     /**
@@ -2648,207 +2674,15 @@ public class WebResource {
 
     // Async Methods -----------------------------------------------------------
     private String doCreateService(JSONObject inputJSON, TokenHandler token) {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            logger.start("doCreateService");
-            logger.trace("doCreateService", "Thread:" + Thread.currentThread(), null);
-
-            String serviceType = (String) inputJSON.get("type");
-            String alias = (String) inputJSON.get("alias");
-            String username = (String) inputJSON.get("username");
-
-            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
-
-            // Find user ID.
-            try {
-                Class.forName("com.mysql.jdbc.Driver").newInstance();
-
-            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException ex) {
-                logger.catching("doCreateService", ex);
-            }
-
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            // Instance Creation
-            URL url = new URL(String.format("%s/service/instance", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String refUUID = servBean.executeHttpMethod(url, connection, "GET", null, token.auth());
-            logger.refuuid(refUUID);
-
-            // Create Parameter Map
-            HashMap<String, String> paraMap = new HashMap<>();
-            switch (serviceType) {
-                case "dnc":
-                    break;
-                case "netcreate":
-                    paraMap = parseNet(dataJSON, refUUID);
-                    break;
-                case "fl2p":
-                    paraMap = parseFlow(dataJSON, refUUID);
-                    break;
-                case "hybridcloud":
-                    paraMap = parseHybridCloud(dataJSON, refUUID);
-                    break;
-                case "omm":
-                    paraMap = parseOperatationalModifications(dataJSON, refUUID);
-                    break;
-                default:
-            }
-
-            // Initialize service parameters.
-            prep = front_conn.prepareStatement("SELECT service_id"
-                    + " FROM service WHERE filename = ?");
-            prep.setString(1, serviceType);
-            rs = prep.executeQuery();
-            int serviceID = -1;
-            while (rs.next()) {
-                serviceID = rs.getInt(1);
-            }
-            Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
-
-            // Install Instance into DB.
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`service_id`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `service_state_id`) VALUES (?, ?, ?, ?, ?, ?)");
-            prep.setInt(1, serviceID);
-            prep.setString(2, username);
-            prep.setTimestamp(3, timeStamp);
-            prep.setString(4, refUUID);
-            prep.setString(5, alias);
-            prep.setInt(6, 1);
-            prep.executeUpdate();
-            
-            System.out.println("First Point!");
-
-            int instanceID = servBean.getInstanceID(refUUID);
-
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` "
-                    + "(`service_state_id`, `service_instance_id`) VALUES (1, ?)");
-            prep.setInt(1, instanceID);
-            prep.executeUpdate();
-
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`) VALUES (?)");
-            prep.setInt(1, instanceID);
-            prep.executeUpdate();
-
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
-                    + "VALUES (?, '0', ?)");
-            prep.setString(1, username);
-            prep.setString(2, refUUID);
-            prep.executeUpdate();
-
-            logger.init();
-
-            // Execute service creation.
-            switch (serviceType) {
-                case "netcreate":
-                    servBean.createNetwork(paraMap, token);
-                    break;
-                case "hybridcloud":
-                    servBean.createHybridCloud(paraMap, token);
-                    break;
-                case "omm":
-                    servBean.createOperationModelModification(paraMap, token);
-                    break;
-                case "dnc":
-                    servBean.createDNC(dataJSON, token, refUUID);
-                    break;
-                default:
-            }
-
-            // Return instance UUID
-            logger.end("doCreateService");
-            return refUUID;
-
-        } catch (EJBException | SQLException | IOException ex) {
-            logger.catching("doCreateService", ex);
-            return "<<<CREATION ERROR: " + ex.getMessage();
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
+        ServiceHandler instance = new ServiceHandler(inputJSON, token);
+        return instance.refUUID;
     }
 
-    private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, TokenHandler token) {        
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
+    private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, TokenHandler token) {
+        ServiceHandler instance = new ServiceHandler(refUUID, token);
+        instance.operate(action);
 
-        logger.refuuid(refUUID);
-        logger.start("doOperate:" + action);
-        logger.trace("doOperate", "Action:" + action +"/Thread:" + Thread.currentThread(), null);
-        try {
-            clearVerification(refUUID);
-            switch (action) {
-                case "cancel":
-                    setSuperState(refUUID, 2);
-                    cancelInstance(refUUID, token);
-                    break;
-                case "force_cancel":
-                    setSuperState(refUUID, 2);
-                    forceCancelInstance(refUUID, token);
-                    break;
-
-                case "reinstate":
-                    setSuperState(refUUID, 4);
-                    cancelInstance(refUUID, token);
-                    break;
-                case "force_reinstate":
-                    setSuperState(refUUID, 4);
-                    forceCancelInstance(refUUID, token);
-                    break;
-
-                case "force_retry":
-                    forceRetryInstance(refUUID, token);
-                    break;
-
-                case "delete":
-                case "force_delete":
-                    deleteInstance(refUUID, token);
-
-                    logger.end("doOperate:" + action);
-                    return "Deletion Complete.\r\n";
-
-                case "verify":
-                case "reverify":
-                    servBean.verify(refUUID, token);
-
-                    logger.end("doOperate:" + action);
-                    return "Verification Complete.\r\n";
-
-                default:
-                    logger.warning("doOperate", "Invalid action: " + action);
-            }
-
-            String retString = superStatus(refUUID) + " - " + status(refUUID, token.auth()) + "\r\n";
-
-            logger.end("doOperate:" + action, retString);
-            return retString;
-        } catch (IOException | SQLException | InterruptedException | EJBException ex) {
-            try {
-
-                Properties front_connectionProps = new Properties();
-                front_connectionProps.put("user", front_db_user);
-                front_connectionProps.put("password", front_db_pass);
-                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                        front_connectionProps);
-
-                prep = front_conn.prepareStatement("UPDATE service_verification V INNER JOIN service_instance I SET V.verification_state = '-1' WHERE V.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
-                prep.setString(1, refUUID);
-                prep.executeUpdate();
-            } catch (SQLException ex2) {
-                logger.catching("doOperate", ex2);
-            }
-            logger.catching("doOperate", ex);
-            return "<<<OPERATION ERROR - " + action + ": " + ex.getMessage() + "\r\n";
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
+        return instance.superState.name();
     }
 
     @GET
@@ -2875,7 +2709,7 @@ public class WebResource {
             if (rs.getInt(1) > 0) {
                 URL url = new URL(String.format("%s/service/delta/%s", host, serviceUUID));
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
+                String result = executeHttpMethod(url, status, "GET", null, auth);
 
                 return result;
             } else {
@@ -2889,565 +2723,52 @@ public class WebResource {
         }
     }
 
-    // Operation Methods -------------------------------------------------------
-    /**
-     * Deletes a service instance.
-     *
-     * @param refUuid instance UUID
-     * @return error code |
-     */
-    private int deleteInstance(String refUuid, TokenHandler token) throws SQLException, IOException {
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
-        prep.setString(1, refUuid);
-        prep.executeUpdate();
-
-        prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE `acl`.`object` = ?");
-        prep.setString(1, refUuid);
-        prep.executeUpdate();
-
-        commonsClose(front_conn, prep, null);
-
-        String result = delete(refUuid, token.auth());
-        if (result.equalsIgnoreCase("Successfully terminated")) {
-            return 0;
-        } else {
-            return 1;
-        }
-    }
-
-    /**
-     * Cancels a service instance. Requires instance to be in 'ready' substate.
-     *
-     * @param refUuid instance UUID
-     * @return error code | -1: Exception thrown. 0: success. 1: stage 1 error
-     * (Failed pre-condition). 2: stage 2 error (Failed revert). 3: stage 3
-     * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
-     * error (Failed result check).
-     */
-    private int cancelInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
-        boolean result;
-        String instanceState = status(refUuid, token.auth());
-        try {
-            if (!instanceState.equalsIgnoreCase("READY")) {
-                return 1;
-            }
-
-            result = revert(refUuid, token.auth());
-            if (!result) {
-                return 2;
-            }
-
-            result = propagate(refUuid, token.auth());
-            if (!result) {
-                return 3;
-            }
-
-            result = commit(refUuid, token.auth());
-            if (!result) {
-                return 4;
-            }
-
-            while (true) {
-                logger.trace("cancelInstance", "Verification priming check");
-
-                instanceState = status(refUuid, token.auth());
-                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
-                    servBean.verify(refUuid, token);
-
-                    return 0;
-                } else if (!(instanceState.equals("COMMITTED"))) {
-                    return 5;
-                }
-
-                Thread.sleep(5000);
-            }
-        } catch (EJBException ex) {
-            logger.catching("cancelInstance", ex);
-            return -1;
-        }
-    }
-
-    private int forceCancelInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
-        boolean result;
-        try {
-            forceRevert(refUuid, token.auth());            
-            forcePropagate(refUuid, token.auth());
-            forceCommit(refUuid, token.auth());
-            while (true) {             
-                logger.trace("forceCancelInstance", "Verification priming check");
-                
-                String instanceState = status(refUuid, token.auth());
-                if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
-                    servBean.verify(refUuid, token);
-
-                    return 0;
-                } else if (!(instanceState.equals("COMMITTED"))) {
-                    return 5;
-                }
-                Thread.sleep(5000);
-            }
-        } catch (EJBException ex) {
-            logger.catching("forceCancelInstance", ex);
-            return -1;
-        }
-    }
-
-    private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
-        boolean result;
-        forcePropagate(refUuid, token.auth());
-        forceCommit(refUuid, token.auth());
-        while (true) {           
-            logger.trace("forceRetryInstance", "Verification priming check");
-            
-            String instanceState = status(refUuid, token.auth());
-            if (instanceState.equals("READY") || instanceState.equals("FAILED")) {
-                servBean.verify(refUuid, token);
-
-                return 0;
-            } else if (!(instanceState.equals("COMMITTED"))) {
-                return 5;
-            }
-            Thread.sleep(5000);
-        }
-    }
-
-    // Parsing Methods ---------------------------------------------------------
-    // @TODO: PRETTY MUCH UNDOING SERVLET CODE?
-    private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
-        HashMap<String, String> paraMap = new HashMap<>();
-        paraMap.put("instanceUUID", refUuid);
-
-        JSONArray linksArr = (JSONArray) dataJSON.get("links");
-        for (int i = 1; i <= linksArr.size(); i++) {
-            JSONObject linksJSON = (JSONObject) linksArr.get(i - 1);
-            String name = (String) linksJSON.get("name");
-            String src = (String) linksJSON.get("src");
-            String srcVlan = (String) linksJSON.get("src-vlan");
-            String des = (String) linksJSON.get("des");
-            String desVlan = (String) linksJSON.get("des-vlan");
-
-            String linkUrn = servBean.urnBuilder("dnc", name, refUuid);
-
-            paraMap.put("linkUri" + i, linkUrn);
-            paraMap.put("src-conn" + i, src);
-            paraMap.put("des-conn" + i, des);
-            paraMap.put("src-vlan" + i, srcVlan);
-            paraMap.put("des-vlan" + i, desVlan);
-        }
-
-        return paraMap;
-    }
-
-    private HashMap<String, String> parseNet(JSONObject dataJSON, String refUuid) {
-        
-        HashMap<String, String> paraMap = new HashMap<>();
-        paraMap.put("instanceUUID", refUuid);
-
-        JSONArray vcnArr = (JSONArray) dataJSON.get("virtual_clouds");
-        JSONObject vcnJSON = (JSONObject) vcnArr.get(0);
-        paraMap.put("netType", (String) vcnJSON.get("type"));
-        paraMap.put("netCidr", (String) vcnJSON.get("cidr"));
-
-        String parent = (String) vcnJSON.get("parent");
-        paraMap.put("topoUri", parent);
-
-        // Parse Subnets.
-        JSONArray subArr = (JSONArray) vcnJSON.get("subnets");
-        int vmCounter = 1;
-        for (int i = 0; i < subArr.size(); i++) {
-            JSONObject subJSON = (JSONObject) subArr.get(i);
-
-            String subName = (String) subJSON.get("name");
-            String subCidr = (String) subJSON.get("cidr");
-
-            // Parse VMs.
-            JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
-            if (vmArr != null) {
-                for (Object vmEle : vmArr) {
-                    //value format: "vm_name & subnet_index_number & type_detail & host & interfaces"
-                    JSONObject vmJSON = (JSONObject) vmEle;
-
-                    // Name
-                    String vmString = (String) vmJSON.get("name");
-                    // Subnet Index
-                    vmString += "&" + (i + 1);
-
-                    // TYPES
-                    vmString += vmJSON.containsKey("type") ? "&" + (String) vmJSON.get("type") : "& ";
-
-                    // VM Host
-                    vmString += vmJSON.containsKey("host") ? "&" + (String) vmJSON.get("host") : "& ";
-
-                    // INTERFACES
-                    if (vmJSON.containsKey("interfaces")) {
-                        JSONArray interfaceArr = (JSONArray) vmJSON.get("interfaces");
-                        if (!interfaceArr.isEmpty()) {
-                            vmString += "&" + interfaceArr.toString();
-                        } else {
-                            vmString += "& ";
-                        }
-                    } else {
-                        vmString += "& ";
-                    }
-                    // VM Routes
-                    if (vmJSON.containsKey("routes")) {
-                        JSONArray routeArr = (JSONArray) vmJSON.get("routes");
-                        if (!routeArr.isEmpty()) {
-                            vmString += "&" + routeArr.toString();
-                        } else {
-                            vmString += "& ";
-                        }
-                    } else {
-                        vmString += "& ";
-                    }
-
-                    // CephRBD
-                    if (vmJSON.containsKey("ceph_rbd")) {
-                        JSONArray rbdArr = (JSONArray) vmJSON.get("ceph_rbd");
-                        if (!rbdArr.isEmpty()) {
-                            vmString += "&" + rbdArr.toString();
-                        } else {
-                            vmString += "& ";
-                        }
-                    } else {
-                        vmString += "& ";
-                    }
-
-                    // Globus
-                    if (vmJSON.containsKey("globus_connect")) {
-                        JSONObject globusJSON = (JSONObject) vmJSON.get("globus_connect");
-                        vmString += "&" + globusJSON.toString();
-                    } else {
-                        vmString += "& ";
-                    }
-
-                    // NFS
-                    if (vmJSON.containsKey("nfs")) {
-                        JSONObject nfsJSON = (JSONObject) vmJSON.get("nfs");
-                        vmString += "&" + nfsJSON.toString();
-                    } else {
-                        vmString += "& ";
-                    }
-
-                    paraMap.put("vm" + vmCounter++, vmString);
-                }
-            }
-
-            // Parse subroutes.
-            JSONArray subRouteArr = (JSONArray) subJSON.get("routes");
-            String routeString = "";
-            if (subRouteArr != null) {
-                routeString = "routes";
-                for (Object routeEle : subRouteArr) {
-                    JSONObject routeJSON = (JSONObject) routeEle;
-
-                    JSONObject fromJSON = (JSONObject) routeJSON.get("from");
-                    if (fromJSON != null) {
-                        routeString += "from+" + fromJSON.get("value") + ",";
-                    }
-
-                    JSONObject toJSON = (JSONObject) routeJSON.get("to");
-                    if (toJSON != null) {
-                        routeString += "to+" + toJSON.get("value") + ",";
-                    }
-
-                    JSONObject nextJSON = (JSONObject) routeJSON.get("next_hop");
-                    if (nextJSON != null) {
-                        routeString += "nextHop+" + nextJSON.get("value");
-                    }
-
-                    routeString += "\r\n";
-                }
-
-                if (!routeString.equals("routes")) {
-                    routeString = routeString.substring(0, routeString.length() - 2);
-                }
-            }
-
-            String subString = "name+" + subName + "&cidr+" + subCidr;
-            if (!routeString.equals("routes")) {
-                subString += "&" + routeString;
-            }
-
-            paraMap.put("subnet" + (i + 1), subString);
-        }
-
-        // Parse Network Routes.
-        JSONArray netRouteArr = (JSONArray) vcnJSON.get("routes");
-        String netRouteString = "";
-        if (netRouteArr != null) {
-            for (Object routeEle : netRouteArr) {
-                JSONObject routeJSON = (JSONObject) routeEle;
-
-                JSONObject fromJSON = (JSONObject) routeJSON.get("from");
-                if (fromJSON != null) {
-                    netRouteString += "from+" + fromJSON.get("value") + ",";
-                }
-
-                JSONObject toJSON = (JSONObject) routeJSON.get("to");
-                if (toJSON != null) {
-                    netRouteString += "to+" + toJSON.get("value") + ",";
-                }
-
-                JSONObject nextJSON = (JSONObject) routeJSON.get("next_hop");
-                if (nextJSON != null) {
-                    netRouteString += "nextHop+" + nextJSON.get("value");
-                }
-
-                netRouteString += "\r\n";
-            }
-        }
-        paraMap.put("netRoutes", netRouteString);
-
-        // Parse Gateways.
-        if (vcnJSON.get("gateways") != null) {
-            JSONArray gatewayArr = (JSONArray) vcnJSON.get("gateways");
-            paraMap.put("gateways", gatewayArr.toString());
-        }
-
-        return paraMap;
-    }
-
-    private HashMap<String, String> parseHybridCloud(JSONObject dataJSON, String refUuid) {
-        HashMap<String, String> paraMap = new HashMap<>();
-        paraMap.put("instanceUUID", refUuid);
-        paraMap.put("virtual_clouds", dataJSON.get("virtual_clouds").toString());
-
-        return paraMap;
-    }
-
-    private HashMap<String, String> parseFlow(JSONObject dataJSON, String refUuid) {
-        HashMap<String, String> paraMap = new HashMap<>();
-        paraMap.put("instanceUUID", refUuid);
-
-        JSONObject flowJSON = (JSONObject) dataJSON.get("flow");
-        String name = (String) flowJSON.get("name");
-        String src = (String) flowJSON.get("src");
-        String des = (String) flowJSON.get("des");
-
-        String flowUrn = servBean.urnBuilder("flow", name, refUuid);
-        paraMap.put("topUri", flowUrn);
-        paraMap.put("eth_src", src);
-        paraMap.put("eth_des", des);
-
-        return paraMap;
-    }
-
-    private HashMap<String, String> parseOperatationalModifications(JSONObject dataJSON, String refUuid) {
-        HashMap<String, String> paraMap = new HashMap<>();
-        paraMap.put("instanceUUID", refUuid);
-
-        // { "modification" : "params", .. }
-        Iterator<?> keys = dataJSON.keySet().iterator();
-        while (keys.hasNext()) {
-            String key = (String) keys.next();
-            //if ( dataJSON.get(key) instanceof JSONObject ) {
-            paraMap.put(key, dataJSON.get(key).toString());
-            //}
-        }
-
-        return paraMap;
-    }
-
     // Utility Methods ---------------------------------------------------------
-    private void setSuperState(String refUuid, int superStateId) {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
+    /**
+     * Executes HTTP Request.
+     *
+     * @param url destination url
+     * @param conn connection object
+     * @param method request method
+     * @param body request body
+     * @param authHeader authorization header
+     * @return response string.
+     * @throws IOException
+     */
+    public static String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body, String authHeader) throws IOException {
+        conn.setRequestMethod(method);
+        conn.setRequestProperty("Content-type", "application/xml");
+        conn.setRequestProperty("Accept", "application/json");
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("UPDATE service_instance SET service_state_id = ? "
-                    + "WHERE referenceUUID = ?");
-            prep.setInt(1, superStateId);
-            prep.setString(2, refUuid);
-            prep.executeUpdate();
-
-            int instanceID = servBean.getInstanceID(refUuid);
-
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_history` (`service_state_id`, `service_instance_id`) "
-                    + "VALUES (?, ?)");
-            prep.setInt(1, superStateId);
-            prep.setInt(2, instanceID);
-            prep.executeUpdate();
-        } catch (SQLException ex) {
-            logger.catching("setSupereState", ex);
-        } finally {
-            commonsClose(front_conn, prep, rs);
+        if (authHeader != null) {
+            conn.setRequestProperty("Authorization", authHeader);
+            //logger.log(Level.INFO, "{0} header added", authHeader);
         }
-    }
 
-    private boolean propagate(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Propagate Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
-
-        return result.equalsIgnoreCase("PROPAGATED");
-    }
-
-    private boolean forcePropagate(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", host, refUuid));
-        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Forced Propagate Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
-
-        return result.equalsIgnoreCase("PROPAGATED");
-    }
-
-    private boolean commit(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Commit Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
-
-        return result.equalsIgnoreCase("COMMITTED");
-    }
-
-    private boolean forceCommit(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/commit_forced", host, refUuid));
-        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Forced Commit Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
-
-        return result.equalsIgnoreCase("COMMITTED");
-    }
-
-    private boolean revert(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
-        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Revert Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
-
-        // Revert now returns service delta UUID; pending changes.
-        return true;
-    }
-
-    private boolean forceRevert(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/revert_forced", host, refUuid));
-        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Forced Revert Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
-
-        // Revert now returns service delta UUID; pending changes.
-        return true;
-    }
-
-    private String delete(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/", host, refUuid));
-        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, propagate, "DELETE", null, auth);
-        //logger.log(Level.INFO, "Sending Delete Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
-
-        return result;
-    }
-
-    private boolean clearVerification(String refUuid) {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            int instanceID = servBean.getInstanceID(refUuid);
-
-            prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = ? WHERE `service_verification`.`service_instance_id` = ?");
-            prep.setNull(1, java.sql.Types.INTEGER);
-            prep.setInt(2, instanceID);
-            prep.executeUpdate();
-
-            return true;
-        } catch (SQLException ex) {
-            logger.catching("clearVerification", ex);
-            return false;
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
-    }
-
-    private String superStatus(String refUuid) {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("SELECT X.super_state FROM"
-                    + " service_instance I, service_state X WHERE I.referenceUUID = ? AND I.service_state_id = X.service_state_id");
-            prep.setString(1, refUuid);
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                return rs.getString("X.super_state");
+        if (body != null && !body.isEmpty()) {
+            conn.setDoOutput(true);
+            try (DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
+                wr.writeBytes(body);
+                wr.flush();
             }
-            return "ERROR";
-        } catch (SQLException ex) {
-            logger.catching("superStatus", ex);
-            return "ERROR";
-        } finally {
-            commonsClose(front_conn, prep, rs);
         }
-    }
 
-    private String status(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
-        HttpURLConnection status = (HttpURLConnection) url.openConnection();
-        String result = servBean.executeHttpMethod(url, status, "GET", null, auth);
-
-        return result;
-    }
-
-    private String getServiceType(String refUuid) {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        try {
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("select S.name from service_instance I, service S "
-                    + "where I.referenceUUID=? AND I.service_id=S.service_id");
-            prep.setString(1, refUuid);
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                return rs.getString("name");
+        int responseCode = conn.getResponseCode();
+        StringBuilder responseStr;
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            String inputLine;
+            responseStr = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                responseStr.append(inputLine);
             }
-        } catch (SQLException ex) {
-            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            commonsClose(front_conn, prep, rs);
         }
-        throw new EJBException("getServiceType failed to find service type for service uuid=" + refUuid);
+
+        String retStr = responseStr.substring(0, Math.min(responseStr.length(), 20));
+        if (retStr.length() == 20) {
+            retStr += "...";
+        }
+
+        return responseStr.toString();
     }
 
     private String resolveManifest(String refUuid, String jsonTemplate, String auth) {
@@ -3457,7 +2778,7 @@ public class WebResource {
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
                     + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
                     jsonTemplate);
-            String result = servBean.executeHttpMethod(url, conn, "POST", data, auth);
+            String result = executeHttpMethod(url, conn, "POST", data, auth);
             return result;
         } catch (IOException ex) {
             throw new EJBException("resolveManifest cannot fetch manifest for service uuid=" + refUuid, ex);
@@ -3490,22 +2811,19 @@ public class WebResource {
         return xmldata;
     }
 
-    private boolean verifyUserRole(String scope, String role) {
+    private boolean verifyUserRole(String role) {
         KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                 .getName());
         final AccessToken accessToken = securityContext.getToken();
 
         Set<String> roleSet;
-        if (scope.equals("realm")) {
-            roleSet = accessToken.getRealmAccess().getRoles();
-        } else {
-            roleSet = accessToken.getResourceAccess("StackV").getRoles();
-        }
+        roleSet = accessToken.getRealmAccess().getRoles();
+        roleSet.addAll(accessToken.getResourceAccess("StackV").getRoles());
 
         return roleSet.contains(role);
     }
 
-    private void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs) {
+    public static void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs) {
         try {
             if (rs != null) {
                 DbUtils.close(rs);
@@ -3517,7 +2835,7 @@ public class WebResource {
                 DbUtils.close(front_conn);
             }
         } catch (SQLException ex) {
-            logger.catching("DBUtils", ex);
+
         }
     }
 }

@@ -31,7 +31,7 @@ var countdownTimer;
 
 $(function () {
     $.ajaxSetup({
-        cache: false        
+        cache: false
     });
 
     keycloak.init().success(function (authenticated) {
@@ -166,21 +166,6 @@ function loadNavbar() {
 
                 evt.preventDefault();
             });
-        }
-    });
-}
-
-function loggingChange(sel) {
-    var level = sel.value;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/' + level;
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function () {
-
         }
     });
 }
@@ -348,7 +333,6 @@ function addVolume() {
                 + '<option value="gp2">gp2</option>'
                 + '</select>'
                 + '<input type="button" class="button-register" value="Remove" onClick="removeVolume(' + tableHeight + ')" />';
-
     }
 }
 
@@ -1041,7 +1025,11 @@ function resumeRefresh() {
     if (timer.attr('disabled')) {
         $("#refresh-button").attr('disabled', false);
         timer.attr('disabled', false);
-        setRefresh(timer.val());
+        if (timer.val() === "off") {
+            $("#refresh-button").html('Manually Refresh Now');
+        } else {
+            setRefresh(timer.val());
+        }
     }
 }
 function timerChange(sel) {
@@ -1138,16 +1126,16 @@ function loadDataTable(apiUrl) {
 function formatChild(d) {
     // `d` is the original data object for the row
     var retString = '<table cellpadding="5" cellspacing="0" border="0">';
-    if (!(d.message === "{}")) {
+    if (d.message !== "{}") {
         retString += '<tr>' +
                 '<td style="width:10%">Message:</td>' +
                 '<td style="white-space: normal">' + d.message + '</td>' +
                 '</tr>';
     }
-    if (!(d.exception === "")) {
+    if (d.exception !== "") {
         retString += '<tr>' +
                 '<td>Exception:</td>' +
-                '<td>' + d.exception + '</td>' +
+                '<td><textarea class="dataTables-child">' + d.exception + '</textarea></td>' +
                 '</tr>';
     }
     retString += '<tr>' +

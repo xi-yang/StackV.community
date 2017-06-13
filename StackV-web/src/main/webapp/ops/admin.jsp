@@ -48,6 +48,15 @@
                         <textarea id="api_result" style="color: black;"></textarea>
                     </div>
                 </div>
+                <div class="hide admin-panel-logging">
+                    <label for="select-logging-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
+                    <select id="select-logging-level" onchange="loggingChange(this)">
+                        <option value="TRACE">TRACE</option>
+                        <option value="INFO">INFO</option>
+                        <option value="WARN">WARN</option>
+                        <option value="ERROR">ERROR</option>
+                    </select>  
+                </div>
             </div>
             <div id="logging-panel">
                 <div id="logging-header-div">
@@ -132,6 +141,7 @@
                                     autoOpen: false
                                 });
                             });
+
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
     </body>

@@ -249,3 +249,18 @@ function executeRequest(){
     }
     
 }
+
+function loggingChange(sel) {
+    var level = sel.value;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/' + level;
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function () {
+
+        }
+    });
+}

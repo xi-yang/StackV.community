@@ -1,7 +1,7 @@
 <#if licenseFirst??>
 ${licenseFirst}
 </#if>
-${licensePrefix}Copyright (c) 2013-2016 University of Maryland
+${licensePrefix}Copyright (c) 2013-2017 University of Maryland
 ${licensePrefix}Created by: Alberto Jimenez
 ${licensePrefix}
 ${licensePrefix}Permission is hereby granted, free of charge, to any person obtaining a copy 
