@@ -798,9 +798,9 @@ public class WebResource {
         }
     }
     
-    /**
-     * 
-     */
+    
+    
+    
     
     
     
@@ -877,6 +877,67 @@ public class WebResource {
         } catch (IOException | ParseException ex) {
             logger.catching("removeGroupRole", ex);
         }
+    }
+    
+    /*Andrew's Draft for searching for the full information of a single role*/
+    @GET
+    @Path("keycloak/roles/{role}")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject){
+        String name = subject;
+        try {
+            String method = "getRoleData";
+            logger.trace_start(method);
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(kc_url + "/admin/realms/StackV/clients/5c0fab65-4577-4747-ad42-59e34061390b/roles");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            logger.trace("getRoleData", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            HashMap<String,ArrayList<String>> search = new HashMap<String,ArrayList<String>>();
+            JSONArray groupArr = (JSONArray) obj;
+            for (Object group : groupArr) {
+                ArrayList<String> groupList = new ArrayList<>();
+                JSONObject groupJSON = (JSONObject) group;
+                groupList.add((String) groupJSON.get("id"));
+                groupList.add((String) groupJSON.get("name"));
+                groupList.add(groupJSON.get("scopeParamRequired").toString());
+                groupList.add(groupJSON.get("composite").toString());
+                groupList.add(groupJSON.get("clientRole").toString());
+                groupList.add((String) groupJSON.get("containerId"));
+                
+                
+                search.put((String) groupJSON.get("name"), groupList);
+
+                
+            }
+            retList.add(search.get(name));
+            logger.trace_end(method);
+            return retList;
+        } catch (IOException | ParseException ex) {
+            logger.catching("getRoleData", ex);
+            return null;
+        }
+        
+        
+        
+        
     }
     
     
