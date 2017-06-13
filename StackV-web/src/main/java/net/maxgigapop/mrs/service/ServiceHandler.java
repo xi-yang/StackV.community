@@ -121,13 +121,14 @@ public class ServiceHandler {
 
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`) VALUES (?, ?, ?, ?, ?, ?)");
+                    + "(`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`, `last_state`) VALUES (?, ?, ?, ?, ?, ?, ?)");
             prep.setString(1, type);
             prep.setString(2, owner);
             prep.setTimestamp(3, timeStamp);
             prep.setString(4, refUUID);
             prep.setString(5, alias);
             prep.setString(6, "CREATE");
+            prep.setString(7, lastState);
             prep.executeUpdate();
 
             superState = SuperState.CREATE;
@@ -412,7 +413,6 @@ public class ServiceHandler {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -513,7 +513,6 @@ public class ServiceHandler {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);

@@ -1386,8 +1386,6 @@ public class WebResource {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            String method = "getLabels";
-            logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
             Properties front_connectionProps = new Properties();
@@ -1409,7 +1407,6 @@ public class WebResource {
                 retList.add(labelList);
             }
 
-            logger.trace_end(method);
             return retList;
         } catch (SQLException ex) {
             logger.catching("getLabels", ex);

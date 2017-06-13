@@ -31,7 +31,7 @@ var countdownTimer;
 
 $(function () {
     $.ajaxSetup({
-        cache: false        
+        cache: false
     });
 
     keycloak.init().success(function (authenticated) {
@@ -333,7 +333,6 @@ function addVolume() {
                 + '<option value="gp2">gp2</option>'
                 + '</select>'
                 + '<input type="button" class="button-register" value="Remove" onClick="removeVolume(' + tableHeight + ')" />';
-
     }
 }
 
@@ -1026,7 +1025,11 @@ function resumeRefresh() {
     if (timer.attr('disabled')) {
         $("#refresh-button").attr('disabled', false);
         timer.attr('disabled', false);
-        setRefresh(timer.val());
+        if (timer.val() === "off") {
+            $("#refresh-button").html('Manually Refresh Now');
+        } else {
+            setRefresh(timer.val());
+        }
     }
 }
 function timerChange(sel) {

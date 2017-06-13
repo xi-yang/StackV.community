@@ -74,20 +74,20 @@ class ServiceEngine {
             int instanceID = results;
 
             result = initInstance(refUuid, svcDelta, token.auth());
-            lastState = "INIT";
+            lastState = result;
             logger.trace(method, "Initialized");
             cacheSystemDelta(instanceID, result);
 
-            propagateInstance(refUuid, svcDelta, token.auth());
-            lastState = "PROPAGATE";
+            result = propagateInstance(refUuid, svcDelta, token.auth());
+            lastState = result;
             logger.trace(method, "Propagated");
 
             result = commitInstance(refUuid, svcDelta, token.auth());
-            lastState = "COMMIT";
+            lastState = result;
             logger.trace(method, "Committing");
 
-            verifyInstance(refUuid, result, token);
-            lastState = "VERIFY";
+            result = verifyInstance(refUuid, result, token);
+            lastState = result;
             logger.end(method, "Verified");
         } catch (EJBException | IOException | InterruptedException | SQLException ex) {
             try {
@@ -124,7 +124,7 @@ class ServiceEngine {
         }
     }
 
-    static boolean verify(String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
+    static String verify(String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
         ResultSet rs;
         String method = "verify";
         Properties front_connectionProps = new Properties();
@@ -192,7 +192,7 @@ class ServiceEngine {
 
                 logger.end(method, "Success");
                 WebResource.commonsClose(front_conn, prep, rs);
-                return true;
+                return "READY";
             }
 
             prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '0' WHERE `service_verification`.`service_instance_id` = ?");
@@ -208,7 +208,7 @@ class ServiceEngine {
 
         logger.end(method, "Failure");
         WebResource.commonsClose(front_conn, prep, rs);
-        return false;
+        return "READY";
     }
 
     // -------------------------- SERVICE FUNCTIONS --------------------------------    
@@ -1673,7 +1673,7 @@ class ServiceEngine {
 
     // UTILITY FUNCTIONS    
     private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
-        String method = "cache Service Delta";
+        String method = "cacheServiceDelta";
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -1707,7 +1707,7 @@ class ServiceEngine {
             prep.setString(3, formatDelta);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            logger.catching("cacheServiceDelta", ex);
+            logger.catching(method, ex);
         } finally {
             WebResource.commonsClose(front_conn, prep, rs);
         }
@@ -1818,7 +1818,7 @@ class ServiceEngine {
         return result;
     }
 
-    private static void verifyInstance(String refUuid, String result, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
+    private static String verifyInstance(String refUuid, String result, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
         String method = "verifyInstance";
         logger.trace_start(method);
         URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
@@ -1832,7 +1832,7 @@ class ServiceEngine {
             throw new EJBException("Ready Check Failed!");
             }*/
         }
-        verify(refUuid, token);
         logger.trace_end(method);
+        return verify(refUuid, token);        
     }
 }
