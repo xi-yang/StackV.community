@@ -97,31 +97,29 @@ class ServiceEngine {
             }
             logger.catching(method, ex);
         } finally {
-            if (lastState != null) {
-                logger.trace_start("updateLastState");
-                
-                Connection front_conn = null;
-                PreparedStatement prep = null;
-                ResultSet rs = null;
-                try {
-                    Properties front_connectionProps = new Properties();
-                    front_connectionProps.put("user", front_db_user);
-                    front_connectionProps.put("password", front_db_pass);
+            logger.trace_start("updateLastState");
 
-                    front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                            front_connectionProps);
+            Connection front_conn = null;
+            PreparedStatement prep = null;
+            ResultSet rs = null;
+            try {
+                Properties front_connectionProps = new Properties();
+                front_connectionProps.put("user", front_db_user);
+                front_connectionProps.put("password", front_db_pass);
 
-                    prep = front_conn.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
-                    prep.setString(1, lastState);
-                    prep.setString(2, refUuid);
-                    prep.executeUpdate();
-                    
-                    logger.trace_end("updateLastState");
-                } catch (SQLException ex) {
-                    logger.catching("cacheSystemDelta", ex);
-                } finally {                    
-                    commonsClose(front_conn, prep, rs);
-                }
+                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                        front_connectionProps);
+
+                prep = front_conn.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
+                prep.setString(1, lastState);
+                prep.setString(2, refUuid);
+                prep.executeUpdate();
+
+                logger.trace_end("updateLastState");
+            } catch (SQLException ex) {
+                logger.catching("cacheSystemDelta", ex);
+            } finally {
+                commonsClose(front_conn, prep, rs);
             }
         }
     }
@@ -147,9 +145,9 @@ class ServiceEngine {
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
-
-        for (int i = 1; i <= 5; i++) {
-            logger.trace(method, "Start verification Run " + i + "/5");
+        
+        for (int run = 1; run <= 15; run++) {
+            logger.trace(method, "Verification Attempt: " + run + "/10");
 
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
@@ -176,7 +174,7 @@ class ServiceEngine {
             prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
             prep.setString(7, (String) verifyJSON.get("reductionVerified"));
             prep.setString(8, (String) verifyJSON.get("additionVerified"));
-            prep.setInt(9, i);
+            prep.setInt(9, run);
             prep.setInt(10, instanceID);
             prep.executeUpdate();
 
@@ -193,13 +191,7 @@ class ServiceEngine {
                 prep.executeUpdate();
 
                 logger.end(method, "Success");
-                try {
-                    DbUtils.close(rs);
-                    DbUtils.close(prep);
-                    DbUtils.close(front_conn);
-                } catch (SQLException ex) {
-                    logger.catching("DBUtils", ex);
-                }
+                WebResource.commonsClose(front_conn, prep, rs);
                 return true;
             }
 
@@ -207,7 +199,7 @@ class ServiceEngine {
             prep.setInt(1, instanceID);
             prep.executeUpdate();
 
-            Thread.sleep(60000);
+            Thread.sleep(10000);
         }
 
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");

@@ -259,7 +259,6 @@ public class ServiceHandler {
             logger.end(method);
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
             try {
-
                 Properties front_connectionProps = new Properties();
                 front_connectionProps.put("user", front_db_user);
                 front_connectionProps.put("password", front_db_pass);
