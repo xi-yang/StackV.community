@@ -1,36 +1,38 @@
-var substringMatcher = function(strs) {
-  return function findMatches(q, cb) {
-    var matches, substrRegex;
+var substringMatcher = function (strs) {
+    return function findMatches(q, cb) {
+        var matches, substrRegex;
 
-    // an array that will be populated with substring matches
-    matches = [];
+        // an array that will be populated with substring matches
+        matches = [];
 
-    // regex used to determine if a string contains the substring `q`
-    substrRegex = new RegExp(q, 'i');
+        // regex used to determine if a string contains the substring `q`
+        substrRegex = new RegExp(q, 'i');
 
-    // iterate through the pool of strings and for any string that
-    // contains the substring `q`, add it to the `matches` array
-    $.each(strs, function(i, str) {
-      if (substrRegex.test(str)) {
-        matches.push(str);
-      }
-    });
+        // iterate through the pool of strings and for any string that
+        // contains the substring `q`, add it to the `matches` array
+        $.each(strs, function (i, str) {
+            if (substrRegex.test(str)) {
+                matches.push(str);
+            }
+        });
 
-    cb(matches);
-  };
+        cb(matches);
+    };
 };
 
-var states = ['keycloak', 'profile'
+var states = [
+    'keycloak/users', 
+    'keycloak/'
 ];
 
 $('.typeahead').typeahead({
-  hint: true,
-  highlight: true,
-  minLength: 1
+    hint: true,
+    highlight: true,
+    minLength: 1
 },
-{
-  name: 'states',
-  source: substringMatcher(states)
-});
+        {
+            name: 'states',
+            source: substringMatcher(states)
+        });
 
 $('the-basics .typeahead').width('100%');

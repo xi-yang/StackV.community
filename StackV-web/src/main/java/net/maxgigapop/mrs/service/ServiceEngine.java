@@ -145,7 +145,7 @@ class ServiceEngine {
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
-        
+
         for (int run = 1; run <= 15; run++) {
             logger.trace(method, "Verification Attempt: " + run + "/10");
 
@@ -210,6 +210,7 @@ class ServiceEngine {
         WebResource.commonsClose(front_conn, prep, rs);
         return "READY";
     }
+
     // UTILITY FUNCTIONS    
     private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
         String method = "cacheServiceDelta";
@@ -288,34 +289,6 @@ class ServiceEngine {
         }
     }
 
-    private static String getLinks(JSONObject JSONinput) {
-        ArrayList<String> retList = new ArrayList<>();
-        JSONArray tempArray = (JSONArray) JSONinput.get("connections");
-        JSONObject retJSON = new JSONObject();
-        String retString = "{";
-
-        if (tempArray != null) {
-            for (int i = 0; i < tempArray.size(); i++) {
-                JSONObject tempJSON = (JSONObject) tempArray.get(i);
-                JSONArray innerArray = (JSONArray) tempJSON.get("terminals");
-
-                if (!retString.equals("{")) {
-                    retString += ",";
-                }
-                retString += "\n\"" + tempJSON.get("name") + "\": {\n\t\""
-                        + ((JSONObject) innerArray.get(0)).get("uri")
-                        + "\":{\"vlan_tag\":\""
-                        + ((JSONObject) innerArray.get(0)).get("vlan_tag")
-                        + "\"},\n\t\""
-                        + ((JSONObject) innerArray.get(1)).get("uri")
-                        + "\":{\"vlan_tag\":\""
-                        + ((JSONObject) innerArray.get(1)).get("vlan_tag")
-                        + "\"}\n\t}\n";
-            }
-        }
-        return retString + "}";
-    }
-
     private static String networkAddressFromJson(JSONObject jsonAddr) {
         if (!jsonAddr.containsKey("value")) {
             return "";
@@ -372,7 +345,7 @@ class ServiceEngine {
             }*/
         }
         logger.trace_end(method);
-        return verify(refUuid, token);        
+        return verify(refUuid, token);
     }
 
     // -------------------------- SERVICE FUNCTIONS --------------------------------    
@@ -411,6 +384,34 @@ class ServiceEngine {
 
         orchestrateInstance(refUuid, svcDelta, refUuid, token);
         return 0;
+    }
+
+    private static String getLinks(JSONObject JSONinput) {
+        ArrayList<String> retList = new ArrayList<>();
+        JSONArray tempArray = (JSONArray) JSONinput.get("connections");
+        JSONObject retJSON = new JSONObject();
+        String retString = "{";
+
+        if (tempArray != null) {
+            for (int i = 0; i < tempArray.size(); i++) {
+                JSONObject tempJSON = (JSONObject) tempArray.get(i);
+                JSONArray innerArray = (JSONArray) tempJSON.get("terminals");
+
+                if (!retString.equals("{")) {
+                    retString += ",";
+                }
+                retString += "\n\"" + tempJSON.get("name") + "\": {\n\t\""
+                        + ((JSONObject) innerArray.get(0)).get("uri")
+                        + "\":{\"vlan_tag\":\""
+                        + ((JSONObject) innerArray.get(0)).get("vlan_tag")
+                        + "\"},\n\t\""
+                        + ((JSONObject) innerArray.get(1)).get("uri")
+                        + "\":{\"vlan_tag\":\""
+                        + ((JSONObject) innerArray.get(1)).get("vlan_tag")
+                        + "\"}\n\t}\n";
+            }
+        }
+        return retString + "}";
     }
 
     static int createNetwork(Map<String, String> paraMap, TokenHandler token) {
@@ -1833,5 +1834,5 @@ class ServiceEngine {
             logger.catching(method, ex);
             return 1;//connection error
         }
-    }    
+    }
 }

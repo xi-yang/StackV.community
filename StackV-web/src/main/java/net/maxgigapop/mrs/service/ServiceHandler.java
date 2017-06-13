@@ -70,8 +70,9 @@ public class ServiceHandler {
 
     public ServiceHandler(String refUUID, TokenHandler initToken) {
         this.refUUID = refUUID;
-        token = initToken;
         logger.refuuid(refUUID);
+
+        token = initToken;
 
         logger.trace("ServiceHandler", "Service Handler initialized: " + refUUID);
         loadInstance(refUUID);
@@ -116,7 +117,7 @@ public class ServiceHandler {
             ServiceParser paraParser = new ServiceParser(type);
             HashMap<String, String> paraMap = paraParser.parse(dataJSON, refUUID);
 
-            // Initialize service parameters.            
+            // Initialize service parameters.
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
             // Install Instance into DB.
