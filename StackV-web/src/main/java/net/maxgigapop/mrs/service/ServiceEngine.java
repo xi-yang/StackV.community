@@ -64,7 +64,7 @@ class ServiceEngine {
 
     // OPERATION FUNCTIONS    
     private static void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, TokenHandler token) {
-        String method = "orchestrateInstance";;
+        String method = "orchestrateInstance";
         String result;
         String lastState = "PRE-INIT";
         logger.start(method);
@@ -78,11 +78,11 @@ class ServiceEngine {
             logger.trace(method, "Initialized");
             cacheSystemDelta(instanceID, result);
 
-            result = propagateInstance(refUuid, svcDelta, token.auth());
+            result = propagateInstance(refUuid, token.auth());
             lastState = result;
             logger.trace(method, "Propagated");
 
-            result = commitInstance(refUuid, svcDelta, token.auth());
+            result = commitInstance(refUuid, token.auth());
             lastState = result;
             logger.trace(method, "Committing");
 
@@ -209,6 +209,170 @@ class ServiceEngine {
         logger.end(method, "Failure");
         WebResource.commonsClose(front_conn, prep, rs);
         return "READY";
+    }
+    // UTILITY FUNCTIONS    
+    private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
+        String method = "cacheServiceDelta";
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+
+        logger.trace_start(method);
+        // Cache serviceDelta.
+        int instanceID = -1;
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", "root");
+            front_connectionProps.put("password", "root");
+
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            prep = front_conn.prepareStatement("SELECT service_instance_id"
+                    + " FROM service_instance WHERE referenceUUID = ?");
+            prep.setString(1, refUuid);
+            ResultSet rs1 = prep.executeQuery();
+            rs1.next();
+            instanceID = rs1.getInt(1);
+
+            String formatDelta = svcDelta.replaceAll("<", "&lt;");
+            formatDelta = formatDelta.replaceAll(">", "&gt;");
+
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
+                    + "(`service_instance_id`, `super_state`, `type`, `referenceUUID`, `delta`) "
+                    + "VALUES (?, 'CREATE', 'Service', ?, ?)");
+            prep.setInt(1, instanceID);
+            prep.setString(2, deltaUUID);
+            prep.setString(3, formatDelta);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+        } finally {
+            WebResource.commonsClose(front_conn, prep, rs);
+        }
+
+        logger.end(method);
+        return instanceID;
+    }
+
+    private static void cacheSystemDelta(int instanceID, String result) {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", "root");
+            front_connectionProps.put("password", "root");
+
+            // Retrieve UUID from delta
+            /*
+            
+             */
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            String formatDelta = result.replaceAll("<", "&lt;");
+            formatDelta = formatDelta.replaceAll(">", "&gt;");
+
+            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
+                    + "(`service_instance_id`, `super_state`, `type`, `delta`) "
+                    + "VALUES (?, 'CREATE', 'System', ?)");
+            prep.setInt(1, instanceID);
+            prep.setString(2, formatDelta);
+            prep.executeUpdate();
+
+        } catch (SQLException ex) {
+            logger.catching("cacheSystemDelta", ex);
+        } finally {
+            WebResource.commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    private static String getLinks(JSONObject JSONinput) {
+        ArrayList<String> retList = new ArrayList<>();
+        JSONArray tempArray = (JSONArray) JSONinput.get("connections");
+        JSONObject retJSON = new JSONObject();
+        String retString = "{";
+
+        if (tempArray != null) {
+            for (int i = 0; i < tempArray.size(); i++) {
+                JSONObject tempJSON = (JSONObject) tempArray.get(i);
+                JSONArray innerArray = (JSONArray) tempJSON.get("terminals");
+
+                if (!retString.equals("{")) {
+                    retString += ",";
+                }
+                retString += "\n\"" + tempJSON.get("name") + "\": {\n\t\""
+                        + ((JSONObject) innerArray.get(0)).get("uri")
+                        + "\":{\"vlan_tag\":\""
+                        + ((JSONObject) innerArray.get(0)).get("vlan_tag")
+                        + "\"},\n\t\""
+                        + ((JSONObject) innerArray.get(1)).get("uri")
+                        + "\":{\"vlan_tag\":\""
+                        + ((JSONObject) innerArray.get(1)).get("vlan_tag")
+                        + "\"}\n\t}\n";
+            }
+        }
+        return retString + "}";
+    }
+
+    private static String networkAddressFromJson(JSONObject jsonAddr) {
+        if (!jsonAddr.containsKey("value")) {
+            return "";
+        }
+        String type = "ipv4-address";
+        if (jsonAddr.containsKey("type")) {
+            type = jsonAddr.get("type").toString();
+        }
+        return String.format("[a    mrs:NetworkAddress; mrs:type    \"%s\"; mrs:value   \"%s\"]", type, jsonAddr.get("value").toString());
+    }
+
+    private static String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s", host, refUuid));
+        HttpURLConnection compile = (HttpURLConnection) url.openConnection();
+        String result = WebResource.executeHttpMethod(url, compile, "POST", svcDelta, auth);
+        if (!result.contains("referenceVersion")) {
+            throw new EJBException("Service Delta Failed!");
+        }
+        return result;
+    }
+
+    private static String propagateInstance(String refUuid, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = WebResource.executeHttpMethod(url, propagate, "PUT", null, auth);
+        if (!result.equals("PROPAGATED")) {
+            throw new EJBException("Propagate Failed!");
+        }
+        return result;
+    }
+
+    private static String commitInstance(String refUuid, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+        HttpURLConnection commit = (HttpURLConnection) url.openConnection();
+        String result = WebResource.executeHttpMethod(url, commit, "PUT", null, auth);
+        if (!result.equals("COMMITTING")) {
+            throw new EJBException("Commit Failed!");
+        }
+        return result;
+    }
+
+    private static String verifyInstance(String refUuid, String result, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
+        String method = "verifyInstance";
+        logger.trace_start(method);
+        URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
+
+        while (!result.equals("COMMITTED") && !result.equals("FAILED")) {
+            logger.trace(method, "Waiting on instance: " + result);
+            sleep(5000);//wait for 5 seconds and check again later        
+            HttpURLConnection status = (HttpURLConnection) url.openConnection();
+            result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());
+            /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
+            throw new EJBException("Ready Check Failed!");
+            }*/
+        }
+        logger.trace_end(method);
+        return verify(refUuid, token);        
     }
 
     // -------------------------- SERVICE FUNCTIONS --------------------------------    
@@ -1669,170 +1833,5 @@ class ServiceEngine {
             logger.catching(method, ex);
             return 1;//connection error
         }
-    }
-
-    // UTILITY FUNCTIONS    
-    private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
-        String method = "cacheServiceDelta";
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-
-        logger.trace_start(method);
-        // Cache serviceDelta.
-        int instanceID = -1;
-        try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("SELECT service_instance_id"
-                    + " FROM service_instance WHERE referenceUUID = ?");
-            prep.setString(1, refUuid);
-            ResultSet rs1 = prep.executeQuery();
-            rs1.next();
-            instanceID = rs1.getInt(1);
-
-            String formatDelta = svcDelta.replaceAll("<", "&lt;");
-            formatDelta = formatDelta.replaceAll(">", "&gt;");
-
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `super_state`, `type`, `referenceUUID`, `delta`) "
-                    + "VALUES (?, 'CREATE', 'Service', ?, ?)");
-            prep.setInt(1, instanceID);
-            prep.setString(2, deltaUUID);
-            prep.setString(3, formatDelta);
-            prep.executeUpdate();
-        } catch (SQLException ex) {
-            logger.catching(method, ex);
-        } finally {
-            WebResource.commonsClose(front_conn, prep, rs);
-        }
-
-        logger.end(method);
-        return instanceID;
-    }
-
-    private static void cacheSystemDelta(int instanceID, String result) {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
-
-            // Retrieve UUID from delta
-            /*
-            
-             */
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            String formatDelta = result.replaceAll("<", "&lt;");
-            formatDelta = formatDelta.replaceAll(">", "&gt;");
-
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `super_state`, `type`, `delta`) "
-                    + "VALUES (?, 'CREATE', 'System', ?)");
-            prep.setInt(1, instanceID);
-            prep.setString(2, formatDelta);
-            prep.executeUpdate();
-
-        } catch (SQLException ex) {
-            logger.catching("cacheSystemDelta", ex);
-        } finally {
-            WebResource.commonsClose(front_conn, prep, rs);
-        }
-    }
-
-    private static String getLinks(JSONObject JSONinput) {
-        ArrayList<String> retList = new ArrayList<>();
-        JSONArray tempArray = (JSONArray) JSONinput.get("connections");
-        JSONObject retJSON = new JSONObject();
-        String retString = "{";
-
-        if (tempArray != null) {
-            for (int i = 0; i < tempArray.size(); i++) {
-                JSONObject tempJSON = (JSONObject) tempArray.get(i);
-                JSONArray innerArray = (JSONArray) tempJSON.get("terminals");
-
-                if (!retString.equals("{")) {
-                    retString += ",";
-                }
-                retString += "\n\"" + tempJSON.get("name") + "\": {\n\t\""
-                        + ((JSONObject) innerArray.get(0)).get("uri")
-                        + "\":{\"vlan_tag\":\""
-                        + ((JSONObject) innerArray.get(0)).get("vlan_tag")
-                        + "\"},\n\t\""
-                        + ((JSONObject) innerArray.get(1)).get("uri")
-                        + "\":{\"vlan_tag\":\""
-                        + ((JSONObject) innerArray.get(1)).get("vlan_tag")
-                        + "\"}\n\t}\n";
-            }
-        }
-        return retString + "}";
-    }
-
-    private static String networkAddressFromJson(JSONObject jsonAddr) {
-        if (!jsonAddr.containsKey("value")) {
-            return "";
-        }
-        String type = "ipv4-address";
-        if (jsonAddr.containsKey("type")) {
-            type = jsonAddr.get("type").toString();
-        }
-        return String.format("[a    mrs:NetworkAddress; mrs:type    \"%s\"; mrs:value   \"%s\"]", type, jsonAddr.get("value").toString());
-    }
-
-    private static String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s", host, refUuid));
-        HttpURLConnection compile = (HttpURLConnection) url.openConnection();
-        String result = WebResource.executeHttpMethod(url, compile, "POST", svcDelta, auth);
-        if (!result.contains("referenceVersion")) {
-            throw new EJBException("Service Delta Failed!");
-        }
-        return result;
-    }
-
-    private static String propagateInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
-        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
-        String result = WebResource.executeHttpMethod(url, propagate, "PUT", null, auth);
-        if (!result.equals("PROPAGATED")) {
-            throw new EJBException("Propagate Failed!");
-        }
-        return result;
-    }
-
-    private static String commitInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
-        HttpURLConnection commit = (HttpURLConnection) url.openConnection();
-        String result = WebResource.executeHttpMethod(url, commit, "PUT", null, auth);
-        if (!result.equals("COMMITTING")) {
-            throw new EJBException("Commit Failed!");
-        }
-        return result;
-    }
-
-    private static String verifyInstance(String refUuid, String result, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
-        String method = "verifyInstance";
-        logger.trace_start(method);
-        URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
-
-        while (!result.equals("COMMITTED") && !result.equals("FAILED")) {
-            logger.trace(method, "Waiting on instance: " + result);
-            sleep(5000);//wait for 5 seconds and check again later        
-            HttpURLConnection status = (HttpURLConnection) url.openConnection();
-            result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());
-            /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-            throw new EJBException("Ready Check Failed!");
-            }*/
-        }
-        logger.trace_end(method);
-        return verify(refUuid, token);        
-    }
+    }    
 }
