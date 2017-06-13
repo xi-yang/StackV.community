@@ -58,7 +58,7 @@
                         </tr>
                         <tr>
                             <td>Operation Status</td>
-                            <td id="instance-substate"></td>
+                            <td><p style="display: inline;" id="instance-substate"></p><small id="instance-laststate"></small></td>
                         </tr>
                         <tr class="instruction-row">
                             <td colspan="2"><div id="instruction-block"></div></td>

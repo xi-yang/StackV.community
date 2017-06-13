@@ -1,30 +1,33 @@
-/* 
+/*
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 /* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
 // Tweens
-var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px", opacity: "1", display: "block"});
-var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px", opacity: "1", display: "block"});
-var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px", opacity: "1", display: "block"});
+var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
+    paused: true, top: "0px", opacity: "1", display: "block"});
+var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut,
+    paused: true, left: "0px", opacity: "1", display: "block"});
+var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut,
+    paused: true, right: "0px", opacity: "1", display: "block"});
 
 var view = "center";
 var lastState = null;
@@ -244,7 +247,8 @@ function subloadDetails() {
     });
 }
 function subloadStatus(refUuid) {
-    var ele = document.getElementById("instance-substate");
+    var ele = $("#instance-substate");
+    var last = $("#instance-laststate");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + refUuid + '/substatus';
     $.ajax({
         url: apiUrl,
@@ -254,10 +258,11 @@ function subloadStatus(refUuid) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            if (result === "FAILED") {
-                ele.innerHTML = "FAILED (After " + lastState + ")";
+            if (result === "FAILED") {                
+                ele.html("FAILED");
+                last.html(" (After " + lastState + ")");
             } else {
-                ele.innerHTML = result;
+                ele.html(result);
             }
 
             if (view === "center") {
@@ -347,7 +352,7 @@ function subloadACL() {
                 $("#body-" + this.id).toggleClass("hide");
             });
 
-            // Next step            
+            // Next step
             loadACL(uuid);
         }
     });
@@ -420,7 +425,8 @@ function buildDeltaTable(type) {
     row = document.createElement("tr");
     var cell = document.createElement("td");
     cell.colSpan = "3";
-    cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.' + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
+    cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'
+            + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
     row.appendChild(cell);
     tbody.appendChild(row);
 
@@ -799,29 +805,43 @@ function instructionModerate() {
         var verificationRun = document.getElementById("verification-run").innerHTML;
         var blockString = "";
 
-        // State -1 - Error during validation/reconstruction
-        if ((subState === 'READY') && verificationState === "") {
-            blockString = "Service encountered an error during verification. Please contact your technical supervisor for further instructions.";
+        switch (subState) {
+            case "INIT":
+                blockString = "Service is being initialized.";
+                break;
+            case "PROPAGATED":
+                blockString = "Service delta has been sent to the backend.";
+                break;
+            case "COMMITTING":
+                blockString = "Service is currently being constructed.";
+                break;
+            case "COMMITTED":
+                blockString = "Service has been constructed, and is now being verified.";
+                break;
+            case "FAILED":
+                blockString = "Service has failed. Please see logging for more information.";
+                break;
+            case "READY":
+                switch (verificationState) {
+                    case "":
+                        blockString = "Service encountered an error during verification."
+                                + " Please contact your technical supervisor for further instructions.";
+                        break;
+                    case "0":
+                        blockString = "Service is verifying.";
+                        break;
+                    case "-1":
+                        blockString = "Service was not able to be verified.";
+                        break;
+                    case "1":
+                        blockString = "Service has been successfully verified.";
+                        break;
+                }
+                break;
         }
-        // State 0 - Before Verify
-        else if (subState !== 'READY') {
-            blockString = "Service is still processing. Please hold for further instructions.";
-        }
-        // State 1 - Ready & Verifying
-        else if (subState === 'READY' && verificationState === '0') {
-            blockString = "Service is verifying.";
-        }
-        // State 2 - Ready & Verified
-        else if (subState === 'READY' && verificationState === '1') {
-            blockString = "Service has been successfully verified.";
-        }
-        // State 3 - Ready & Unverified
-        else if ((subState === 'READY' || subState === 'FAILED') && verificationState === '-1') {
-            blockString = "Service was not able to be verified.";
-        }
-
-        document.getElementById("instruction-block").innerHTML = blockString;
     }
+
+    document.getElementById("instruction-block").innerHTML = blockString;
 }
 
 function buttonModerate() {
