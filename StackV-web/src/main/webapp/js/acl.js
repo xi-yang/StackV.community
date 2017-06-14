@@ -30,8 +30,8 @@ var tweenInstancePanel = new TweenLite("#acl-instance-panel", .5, {ease: Power2.
 var tweenInstanceACLPanel = new TweenLite("#acl-instance-acl", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
 
 
-var tweenHideUserPanel = new TweenLite("acl-role-user-div", .5, {ease: Power2.easInOut,paused: true, left: "-100%"});
-var tweenGroupRolePanel = new TweenLite("acl-role-user-div", .5, {ease: Power2.easInOut,paused: true, left: "5px"});
+var tweenHideUserPanel = new TweenLite("#acl-role-user-div", .5, {ease: Power2.easInOut,paused: true, left: "-100%"});
+var tweenGroupRolePanel = new TweenLite("div#acl-group-role-div", .5, {ease: Power2.easInOut,paused: true, left: "5px"});
 
 var view = "center";
 
@@ -642,9 +642,10 @@ function subloadRoleACLRoles1() {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
             success: function (result) {
+                $("#acl-role-select1").find('option').remove().end();
                 for (i = 0; i < result.length; i++) {
                     var role = result[i];
-
+                    
                     $("#acl-role-select1").append(new Option(role[1], role[0]));
                 }
             }
