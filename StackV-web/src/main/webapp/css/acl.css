@@ -50,12 +50,16 @@ div#acl-role-panel {
     overflow: hidden;
 }
 
-#acl-role-user-div {
+#acl-role-user-div, #acl-group-role-div {
     overflow: scroll;
     height: 95%;
     padding-right: 5px;
     width: 45%;
     position: absolute;
+    left:5px;
+}
+div#acl-group-role-div {
+    left: -100% !important;
 }
 
 #acl-role-group-div, #acl-role-role-div {
