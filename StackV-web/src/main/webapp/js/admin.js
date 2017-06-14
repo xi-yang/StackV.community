@@ -233,17 +233,20 @@ function executeRequest(){
         });
     } else if(type === "DELETE"){
         $.ajax({
-        url: apiUrl,
-        type: type,
+            url: apiUrl,
+            type: type,
+            data: input,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            $("#api_result").val("success");
+            $("#api_result").val("Success");
         },
         error: function () {
-            $("#api_result").val("failure");
+            $("#api_result").val("Failure");
         }
     });
     }
