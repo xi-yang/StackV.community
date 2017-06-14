@@ -146,8 +146,8 @@ class ServiceEngine {
         prep.setInt(1, instanceID);
         prep.executeUpdate();
 
-        for (int run = 1; run <= 15; run++) {
-            logger.trace(method, "Verification Attempt: " + run + "/10");
+        for (int run = 1; run <= 30; run++) {
+            logger.trace(method, "Verification Attempt: " + run + "/30");
 
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));

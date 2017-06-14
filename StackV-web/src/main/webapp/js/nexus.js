@@ -26,6 +26,7 @@ baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
 var refreshTimer;
 var countdownTimer;
+var dataTable;
 
 // Page Load Function
 
@@ -113,6 +114,10 @@ $(function () {
     $(".clickable-row").click(function () {
         sessionStorage.setItem("uuid", $(this).data("href"));
         window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
+    });
+
+    $(".checkbox-level").click(function (evt) {
+        evt.preventDefault();
     });
 
     clearCounters();
@@ -1122,6 +1127,11 @@ function loadDataTable(apiUrl) {
             pauseRefresh();
         }
     });
+
+    var level = sessionStorage.getItem("logging-level");
+    if (level !== null) {
+        $("#logging-filter-level").val(level);
+    }
 }
 function formatChild(d) {
     // `d` is the original data object for the row
@@ -1148,7 +1158,34 @@ function formatChild(d) {
 }
 function reloadLogs() {
     if (dataTable) {
-        dataTable.ajax.reload(null, false);
+        if (sessionStorage.getItem("logging-level") !== null) {
+            dataTable.ajax.reload(filterLogs(), false);
+        } else {
+            dataTable.ajax.reload(null, false);
+        }
     }
 }
+function filterLogs() {
+    var level = $("#logging-filter-level").val();
+    if (level !== undefined) {
+        sessionStorage.setItem("logging-level", level);
 
+        var curr = dataTable.ajax.url();
+        var paramArr = curr.split(/[?&]+/);
+        var newURL = paramArr[0];
+
+        var refEle;
+        for (var x in paramArr) {
+            if (paramArr[x].indexOf("refUUID") !== -1) {
+                refEle = paramArr[x];
+            }
+        }
+
+        newURL += "?level=" + level;
+        if (refEle) {
+            newURL += "&" + refEle;
+        }
+
+        dataTable.ajax.url(newURL).load(null, false);
+    }
+}

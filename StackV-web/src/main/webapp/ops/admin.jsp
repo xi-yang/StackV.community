@@ -48,19 +48,19 @@
                         <textarea id="api_result" style="color: black;"></textarea>
                     </div>
                 </div>
-                <div class="hide admin-panel-logging">
-                    <label for="select-logging-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
-                    <select id="select-logging-level" onchange="loggingChange(this)">
-                        <option value="TRACE">TRACE</option>
-                        <option value="INFO">INFO</option>
-                        <option value="WARN">WARN</option>
-                        <option value="ERROR">ERROR</option>
-                    </select>  
-                </div>
             </div>
             <div id="logging-panel">
                 <div id="logging-header-div">
-                    Logs                  
+                    Logs
+                    <div style="float:right;">
+                        <label for="logging-filter-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
+                        <select id="logging-filter-level" onchange="filterLogs(this)">
+                            <option value="TRACE" selected>TRACE</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARN">WARN</option>
+                            <option value="ERROR">ERROR</option>
+                        </select> 
+                    </div>                  
                 </div>
                 <div id="logging-body-div">
                     <table id="loggingData" class="table table-striped table-bordered display nowrap" cellspacing="0" width="100%">
@@ -107,10 +107,7 @@
         <!--        type ahead libraries-->
         <script src="/StackV-web/js/typeahead.js/typeahead.bundle.js"></script>
         <script src="/StackV-web/js/test.js"></script>
-
-
-
-
+        
         <script>
                             //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
                             dojoConfig = {

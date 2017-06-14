@@ -1692,22 +1692,47 @@ public class WebResource {
                     front_connectionProps);
 
             // Filtering by UUID alone
-            if (refUUID != null && level == null) {
+            if (refUUID != null && (level == null || level.equalsIgnoreCase("TRACE"))) {
                 prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
                 prep.setString(1, refUUID);
             } // Filtering by level alone 
             else if (refUUID == null && level != null) {
-                prep = front_conn.prepareStatement("SELECT * FROM log WHERE level = ? ORDER BY timestamp DESC");
-                prep.setString(1, level);
+                switch (level) {
+                    case "INFO":
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE level != 'TRACE' ORDER BY timestamp DESC");
+                        break;
+                    case "WARN":
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
+                        break;
+                    case "ERROR":
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE level = 'ERROR' ORDER BY timestamp DESC");
+                        break;
+                }                
             } // Filtering by both
-            else if (refUUID != null && level != null) {
-                prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level = ? ORDER BY timestamp DESC");
-                prep.setString(1, refUUID);
-                prep.setString(2, level);
-            } else {
-                prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
+            else if (refUUID != null && level != null) {                
+                switch (level) {
+                    case "TRACE":
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
+                        prep.setString(1, refUUID);
+                        break;
+                    case "INFO":
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' ORDER BY timestamp DESC");
+                        prep.setString(1, refUUID);
+                        break;
+                    case "WARN":
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
+                        prep.setString(1, refUUID);
+                        break;
+                    case "ERROR":
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level = 'ERROR' ORDER BY timestamp DESC");
+                        prep.setString(1, refUUID);
+                        break;
+                }
             }
             
+            if (prep == null ) {
+                prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
+            }           
             rs = prep.executeQuery();
             JSONObject retJSON = new JSONObject();
             JSONArray logArr = new JSONArray();

@@ -258,12 +258,10 @@ function subloadStatus(refUuid) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            if (result === "FAILED") {                
-                ele.html("FAILED");
+            if (result === "FAILED" || result === "READY") {
                 last.html(" (After " + lastState + ")");
-            } else {
-                ele.html(result);
             }
+            ele.html(result);
 
             if (view === "center") {
                 tweenDetailsPanel.play();
@@ -816,14 +814,21 @@ function instructionModerate() {
                 blockString = "Service is currently being constructed.";
                 break;
             case "COMMITTED":
-                blockString = "Service has been constructed, and is now being verified.";
+                blockString = "Service has been constructed, and is now being verified. (Run "
+                        + verificationRun + ")";
                 break;
             case "FAILED":
-                blockString = "Service has failed. Please see logging for more information.";
+                if (verificationRun > 0) {
+                    blockString = "Service has failed. Please see logging for more information. (Run "
+                            + verificationRun + ")";
+                } else {
+                    blockString = "Service has failed. Please see logging for more information.";
+                }
                 break;
             case "READY":
                 switch (verificationState) {
                     case "":
+                    case "null":
                         blockString = "Service encountered an error during verification."
                                 + " Please contact your technical supervisor for further instructions.";
                         break;
