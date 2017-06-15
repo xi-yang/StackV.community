@@ -142,8 +142,15 @@ public class ServiceResource {
         logger.targetid(svcApiDelta.getUuid());
         logger.trace_start(method);
         String workerClassPath = svcApiDelta.getWorkerClassPath();
-        SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        SystemDelta sysDelta;
+        try {
+            sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        } catch (Exception ex) {
+            serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+            throw ex;
+        }
         if (sysDelta == null) {
+            serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
             throw logger.error_throwing(method, "failed to compile target:ServiceDelta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
@@ -179,8 +186,15 @@ public class ServiceResource {
         logger.targetid(svcApiDelta.getUuid());
         logger.trace_start(method);
         String workerClassPath = svcApiDelta.getWorkerClassPath();
-        SystemDelta sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        SystemDelta sysDelta;
+        try {
+            sysDelta = serviceCallHandler.compileAddDelta(svcInstanceUUID, workerClassPath, svcApiDelta.getUuid(), svcApiDelta.getModelAddition(), svcApiDelta.getModelReduction());
+        } catch (Exception ex) {
+            serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+            throw ex;
+        }
         if (sysDelta == null) {
+            serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
             throw logger.error_throwing(method, "failed to compile target:ServiceDelta");
         }
         ApiDeltaBase apiSysDelta = new ApiDeltaBase();
