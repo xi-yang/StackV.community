@@ -258,7 +258,7 @@ function subloadStatus(refUuid) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            if (result === "FAILED" || result === "READY") {
+            if (result === "FAILED") {
                 last.html(" (After " + lastState + ")");
             }
             ele.html(result);
@@ -872,7 +872,7 @@ function buttonModerate() {
             break;
         case "FAILED":
             $("#verify").removeClass("hide");
-            if (lastState === "COMMITTED" || "COMMITTING") {
+            if (lastState === "COMMITTED" || "COMMITTING" || "READY") {
                 switch (superState) {
                     case "CREATE":
                     case "REINSTATE":
