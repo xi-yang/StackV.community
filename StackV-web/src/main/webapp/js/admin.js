@@ -150,7 +150,7 @@ function executeRequest(){
     var url_request = $("#API-request").val();
     var url = $("#URL").val();
     //var apiUrl = baseUrl + '/StackV-web/restapi/app/'+"option" + document.getElementById("URL").value;
-    var apiUrl = baseUrl + "/StackV-web/restapi/app/"+ url;
+    var apiUrl = baseUrl + "/StackV-web/restapi"+ url;
     var type = url_request;
     
     var input = $("#api_result").val();

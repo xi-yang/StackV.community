@@ -20,7 +20,7 @@ var substringMatcher = function(strs) {
   };
 };
 
-var states = ['keycloak', 'profile'];
+var states = ['/app/keycloak', '/app/profile', '/model'];
 
 $('.typeahead').typeahead({
   hint: true,
