@@ -59,7 +59,7 @@ public class ServiceHandler {
     String type;
     String owner;
     String alias;
-    String lastState = "PRE-INIT";
+    String lastState = "INIT";
 
     public ServiceHandler(JSONObject input, TokenHandler initToken) {
         token = initToken;
@@ -249,10 +249,14 @@ public class ServiceHandler {
                 case "delete":
                 case "force_delete":
                     deleteInstance(refUUID, token);
+                    break;
 
                 case "verify":
-                case "reverify":
                     ServiceEngine.verify(refUUID, token);
+                    break;
+                case "unverify":
+                    ServiceEngine.cancelVerify(refUUID, token);
+                    break;
 
                 default:
                     logger.warning(method, "Invalid action");
@@ -523,7 +527,7 @@ public class ServiceHandler {
             prep = front_conn.prepareStatement("UPDATE service_verification V "
                     + "INNER JOIN service_instance I "
                     + "ON V.service_instance_id = I.service_instance_id AND I.referenceUUID = ? "
-                    + "SET V.verification_state = ?");
+                    + "SET V.verification_state = ?, V.verification_run = 0");
             prep.setString(1, refUUID);
             prep.setNull(2, java.sql.Types.INTEGER);
             prep.executeUpdate();

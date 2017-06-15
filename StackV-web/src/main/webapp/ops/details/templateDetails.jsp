@@ -73,9 +73,8 @@
                                     <button class="btn btn-default hide instance-command" id="force_retry">Force Retry</button>
                                     <button class="btn btn-default hide instance-command" id="modify">Modify</button>
                                     <button class="btn btn-default hide instance-command" id="force_modify">Force Modify</button>
-                                    <button class="btn btn-default hide instance-command" id="reverify">Re-Verify</button>
+                                    <button class="btn btn-default hide instance-command" id="verify">Verify</button>
                                     <button class="btn btn-default hide instance-command" id="delete">Delete</button>
-                                    <button class="btn btn-default hide instance-command" id="force_delete">Force Delete</button>
                                 </div>
                             </td>
                         </tr>

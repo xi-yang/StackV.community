@@ -2201,8 +2201,8 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("SELECT V.service_instance_id, V.verification_run, V.creation_time, V.addition, V.reduction, V.verified_reduction, V.verified_addition, V.unverified_reduction, V.unverified_addition "
-                    + "FROM service_verification V, service_instance I WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+            prep = front_conn.prepareStatement("SELECT * FROM service_verification V, service_instance I "
+                    + "WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
@@ -2212,6 +2212,7 @@ public class WebResource {
                 retList.add(rs.getString("addition"));
                 retList.add(rs.getString("reduction"));
                 retList.add(rs.getString("service_instance_id"));
+                retList.add(String.valueOf(rs.getBoolean("enabled")));
             }
 
             return retList;

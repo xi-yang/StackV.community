@@ -30,7 +30,6 @@ var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut
     paused: true, right: "0px", opacity: "1", display: "block"});
 
 var view = "center";
-var lastState = null;
 
 Mousetrap.bind({
     'shift+left': function () {
@@ -232,7 +231,8 @@ function subloadDetails() {
              *      1 - name
              *      2 - alias_name
              *      3 - creation_time
-             *      4 - super_state     */
+             *      4 - super_state     
+             *      5 - last_state */
 
             $("#instance-verification").html(instance[0]);
             $("#instance-alias").html(instance[2]);
@@ -286,11 +286,15 @@ function subloadVerification() {
              *      1 - creation_time
              *      2 - addition
              *      3 - reduction
-             *      4 - service_instance_id */
+             *      4 - service_instance_id 
+             *      5 - enabled */
             $("#verification-run").html(verification[0]);
             $("#verification-time").html(verification[1]);
             $("#verification-addition").html(verification[2]);
             $("#verification-reduction").html(verification[3]);
+            
+            verificationRun = verification[0];
+            verificationEnabled = verification[5];
 
             instructionModerate();
             buttonModerate();
@@ -853,113 +857,52 @@ function buttonModerate() {
     var superState = document.getElementById("instance-superstate").innerHTML;
     var subState = document.getElementById("instance-substate").innerHTML;
     var verificationState = document.getElementById("instance-verification").innerHTML;
+    
+    var lastStateStr = $("#instance-laststate").html();
+    var lastState = lastStateStr.substring(8,lastStateStr.length-1);
     $(".instance-command").addClass("hide");
 
-    if (verificationState === "" || verificationState === "null") {
-        $("#force_delete").toggleClass("hide");
-        $("#force_cancel").toggleClass("hide");
-        $("#force_retry").toggleClass("hide");
-        $("#reverify").toggleClass("hide");
-    } else {
-        switch (subState) {
-            case "INIT":
-                break;
-            case "PROPAGATED":
-                break;
-            case "COMMITTING":
-                break;
-            case "COMMITTED":
-                break;
-            case "FAILED":
-                break;
-            case "READY":
-                break;
-        }
-        switch (superState) {
-            case "CREATE":
-                break;
-            case "CANCEL":
-                break;
-            case "REINSTATE":
-                break;
-        }
+    if (subState !== "COMMITTED") {
+        $("#delete").removeClass("hide");
+    }
 
-        if (superState === 'CREATE') {
-            // State 0 - Stuck
-            if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-                $("#force_delete").toggleClass("hide");
-                $("#force_cancel").toggleClass("hide");
-                $("#force_retry").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
+    switch (subState) {
+        case "COMMITTED":
+            $("#verify").removeClass("hide");
+            break;
+        case "FAILED":
+            $("#verify").removeClass("hide");
+            if (lastState === "COMMITTED" || "COMMITTING") {
+                switch (superState) {
+                    case "CREATE":
+                    case "REINSTATE":
+                        $("#force-cancel").removeClass("hide");
+                        break;
+                    case "CANCEL":
+                        $("#force-reinstate").removeClass("hide");
+                        break;
+                }
             }
-            // State 1 - Verifying
-            if ((subState === 'COMMITTED' || subState === 'FAILED') && verificationState === '0') {
-
+            if (lastState === "COMMITTING" || "PROPAGATED" || "COMPILED") {
+                $("#force_retry").removeClass("hide");
             }
-            // State 2 - Ready & Verified
-            else if (subState === 'READY' && verificationState === '1') {
-                $("#cancel").toggleClass("hide");
-                $("#modify").toggleClass("hide");
+            break;
+        case "READY":
+            switch (superState) {
+                case "CREATE":
+                case "REINSTATE":
+                    $("#cancel").removeClass("hide");
+                    break;
+                case "CANCEL":
+                    $("#reinstate").removeClass("hide");
+                    break;
             }
-            // State 3 - Ready & Unverified
-            else if (subState === 'READY' && verificationState === '-1') {
-                $("#force_cancel").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            } else if (subState === 'FAILED' && verificationState === '-1') {
-                $("#reverify").toggleClass("hide");
-                $("#force_delete").toggleClass("hide");
-            }
-        } else if (superState === 'CANCEL') {
-            // State 0 - Stuck
-            if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-                $("#force_delete").toggleClass("hide");
-                $("#force_retry").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            }
-            // State 1 - Verifying
-            if ((subState === 'COMMITTED' || subState === 'FAILED') && verificationState === '0') {
-
-            }
-            // State 2 - Ready & Verified
-            else if (subState === 'READY' && verificationState === '1') {
-                $("#reinstate").toggleClass("hide");
-                $("#modify").toggleClass("hide");
-                $("#delete").toggleClass("hide");
-            }
-            // State 3 - Ready & Unverified
-            else if (subState === 'READY' && verificationState === '-1') {
-                $("#force_delete").toggleClass("hide");
-                $("#force_reinstate").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            } else if (subState === 'FAILED' && verificationState === '-1') {
-                $("#reverify").toggleClass("hide");
-                $("#force_delete").toggleClass("hide");
-            }
-        } else if (superState === 'REINSTATE') {
-            // State 0 - Stuck
-            if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-                $("#force_delete").toggleClass("hide");
-                $("#force_retry").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            }
-            // State 1 - Verifying
-            if ((subState === 'COMMITTED' || subState === 'FAILED') && verificationState === '0') {
-
-            }
-            // State 2 - Ready & Verified
-            else if (subState === 'READY' && verificationState === '1') {
-                $("#cancel").toggleClass("hide");
-                $("#modify").toggleClass("hide");
-            }
-            // State 3 - Ready & Unverified
-            else if (subState === 'READY' && verificationState === '-1') {
-                $("#force_cancel").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            } else if (subState === 'FAILED' && verificationState === '-1') {
-                $("#reverify").toggleClass("hide");
-                $("#force_delete").toggleClass("hide");
-            }
-        }
+            break;
+    }   
+    
+    if (verificationRun > 0) {
+        $("#verify").html("Cancel Verification");
+        $("#verify").attr("id", "unverify");
     }
 }
 
