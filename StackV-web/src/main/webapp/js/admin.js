@@ -145,19 +145,19 @@ function reloadData() {
     });
 }
 
-function executeRequest(){
-    
+function executeRequest() {
+
     var url_request = $("#API-request").val();
     var url = $("#URL").val();
     //var apiUrl = baseUrl + '/StackV-web/restapi/app/'+"option" + document.getElementById("URL").value;
     var apiUrl = baseUrl + "/StackV-web/restapi"+ url;
     var type = url_request;
-    
+
     var input = $("#api_result").val();
-    
+
     url_arr = url.split("/");
-    
-    if(type === "GET"){
+
+    if (type === "GET") {
         $.ajax({
             url: apiUrl,
             type: type,
@@ -167,36 +167,36 @@ function executeRequest(){
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                
-                if(typeof result === "string"){
-                    if(url_arr[0] === "keycloak"){
+
+                if (typeof result === "string") {
+                    if (url_arr[0] === "keycloak") {
                         var resultArr = String(result).split(",");
                         var jsonStr = "[";
                         var index = 0;
-                        for(index = 0;index < resultArr.length;index+=2){
-                            if(index+2 == resultArr.length){
-                                jsonStr += "["+"\""+resultArr[index+1]+"\""+" , "+"\""+resultArr[index]+"\""+"]";
+                        for (index = 0; index < resultArr.length; index += 2) {
+                            if (index + 2 === resultArr.length) {
+                                jsonStr += "[" + "\"" + resultArr[index + 1] + "\"" + " , " + "\"" + resultArr[index] + "\"" + "]";
                             } else {
-                                jsonStr += "["+"\""+resultArr[index+1]+"\""+" , "+"\""+resultArr[index]+"\""+"],";
+                                jsonStr += "[" + "\"" + resultArr[index + 1] + "\"" + " , " + "\"" + resultArr[index] + "\"" + "],";
                             }
                         }
                         jsonStr += "]";
                         var jsonFormat = JSON.parse(jsonStr);
-                 
-                        $("#api_result").val(JSON.stringify(jsonFormat,null,2));
+
+                        $("#api_result").val(JSON.stringify(jsonFormat, null, 2));
                     } else {
                         $("#api_result").val(result);
                     }
                 } else {
-                    $("#api_result").val(JSON.stringify(result,null,2));
+                    $("#api_result").val(JSON.stringify(result, null, 2));
                 }
-                
+
             },
             error: function () {
                 $("#api_result").val("Failure");
             }
         });
-    } else if(type === "PUT"){
+    } else if (type === "PUT" || type === "POST") {
         $.ajax({
             url: apiUrl,
             type: type,
@@ -214,22 +214,19 @@ function executeRequest(){
                 $("#api_result").val("Failure");
             }
         });
-    } else if(type === "POST"){
+    } else if (type === "DELETE") {
         $.ajax({
             url: apiUrl,
             type: type,
-            data: input,
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                $("#api_result").val("Success");
+                $("#api_result").val("success");
             },
             error: function () {
-                $("#api_result").val("Failure");
+                $("#api_result").val("failure");
             }
         });
     } else if(type === "DELETE"){
@@ -251,7 +248,6 @@ function executeRequest(){
         }
     });
     }
-    
 }
 
 function loggingChange(sel) {

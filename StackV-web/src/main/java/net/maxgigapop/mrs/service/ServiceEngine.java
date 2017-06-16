@@ -66,7 +66,7 @@ class ServiceEngine {
     private static void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, TokenHandler token) {
         String method = "orchestrateInstance";
         String result;
-        String lastState = "PRE-INIT";
+        String lastState = "INIT";
         logger.start(method);
         try {
             // Cache serviceDelta.
@@ -145,9 +145,22 @@ class ServiceEngine {
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
         prep.setInt(1, instanceID);
         prep.executeUpdate();
-        
-        for (int run = 1; run <= 15; run++) {
-            logger.trace(method, "Verification Attempt: " + run + "/10");
+
+        for (int run = 1; run <= 30; run++) {
+            prep = front_conn.prepareStatement("SELECT V.enabled"
+                    + " FROM service_instance I, service_verification V"
+                    + " WHERE referenceUUID = ? AND I.service_instance_id = V.service_instance_id");
+            prep.setString(1, refUuid);
+            rs = prep.executeQuery();
+            rs.next();
+            boolean enabled = rs.getBoolean("enabled");
+            if (!enabled) {
+                logger.end(method, "Disabled");
+                WebResource.commonsClose(front_conn, prep, rs);
+                return "READY";
+            }
+
+            logger.trace(method, "Verification Attempt: " + run + "/30");
 
             boolean redVerified = true, addVerified = true;
             URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
@@ -210,6 +223,32 @@ class ServiceEngine {
         WebResource.commonsClose(front_conn, prep, rs);
         return "READY";
     }
+    static void cancelVerify(String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
+        ResultSet rs;
+        String method = "cancelVerify";
+        Properties front_connectionProps = new Properties();
+        front_connectionProps.put("user", front_db_user);
+        front_connectionProps.put("password", front_db_pass);
+        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                front_connectionProps);
+
+        ThreadContext.put("refUUID", refUuid);
+        logger.trace_start(method);      
+        
+        PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");
+        prep.setString(1, refUuid);
+        rs = prep.executeQuery();
+        rs.next();
+        int instanceID = rs.getInt("service_instance_id");
+
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `enabled` = 0 WHERE `service_verification`.`service_instance_id` = ?");
+        prep.setInt(1, instanceID);
+        prep.executeUpdate();
+
+        logger.trace_end(method);
+        WebResource.commonsClose(front_conn, prep, rs);
+    }
+
     // UTILITY FUNCTIONS    
     private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
         String method = "cacheServiceDelta";
@@ -288,34 +327,6 @@ class ServiceEngine {
         }
     }
 
-    private static String getLinks(JSONObject JSONinput) {
-        ArrayList<String> retList = new ArrayList<>();
-        JSONArray tempArray = (JSONArray) JSONinput.get("connections");
-        JSONObject retJSON = new JSONObject();
-        String retString = "{";
-
-        if (tempArray != null) {
-            for (int i = 0; i < tempArray.size(); i++) {
-                JSONObject tempJSON = (JSONObject) tempArray.get(i);
-                JSONArray innerArray = (JSONArray) tempJSON.get("terminals");
-
-                if (!retString.equals("{")) {
-                    retString += ",";
-                }
-                retString += "\n\"" + tempJSON.get("name") + "\": {\n\t\""
-                        + ((JSONObject) innerArray.get(0)).get("uri")
-                        + "\":{\"vlan_tag\":\""
-                        + ((JSONObject) innerArray.get(0)).get("vlan_tag")
-                        + "\"},\n\t\""
-                        + ((JSONObject) innerArray.get(1)).get("uri")
-                        + "\":{\"vlan_tag\":\""
-                        + ((JSONObject) innerArray.get(1)).get("vlan_tag")
-                        + "\"}\n\t}\n";
-            }
-        }
-        return retString + "}";
-    }
-
     private static String networkAddressFromJson(JSONObject jsonAddr) {
         if (!jsonAddr.containsKey("value")) {
             return "";
@@ -372,7 +383,7 @@ class ServiceEngine {
             }*/
         }
         logger.trace_end(method);
-        return verify(refUuid, token);        
+        return verify(refUuid, token);
     }
 
     // -------------------------- SERVICE FUNCTIONS --------------------------------    
@@ -411,6 +422,34 @@ class ServiceEngine {
 
         orchestrateInstance(refUuid, svcDelta, refUuid, token);
         return 0;
+    }
+
+    private static String getLinks(JSONObject JSONinput) {
+        ArrayList<String> retList = new ArrayList<>();
+        JSONArray tempArray = (JSONArray) JSONinput.get("connections");
+        JSONObject retJSON = new JSONObject();
+        String retString = "{";
+
+        if (tempArray != null) {
+            for (int i = 0; i < tempArray.size(); i++) {
+                JSONObject tempJSON = (JSONObject) tempArray.get(i);
+                JSONArray innerArray = (JSONArray) tempJSON.get("terminals");
+
+                if (!retString.equals("{")) {
+                    retString += ",";
+                }
+                retString += "\n\"" + tempJSON.get("name") + "\": {\n\t\""
+                        + ((JSONObject) innerArray.get(0)).get("uri")
+                        + "\":{\"vlan_tag\":\""
+                        + ((JSONObject) innerArray.get(0)).get("vlan_tag")
+                        + "\"},\n\t\""
+                        + ((JSONObject) innerArray.get(1)).get("uri")
+                        + "\":{\"vlan_tag\":\""
+                        + ((JSONObject) innerArray.get(1)).get("vlan_tag")
+                        + "\"}\n\t}\n";
+            }
+        }
+        return retString + "}";
     }
 
     static int createNetwork(Map<String, String> paraMap, TokenHandler token) {
@@ -1833,5 +1872,5 @@ class ServiceEngine {
             logger.catching(method, ex);
             return 1;//connection error
         }
-    }    
+    }
 }

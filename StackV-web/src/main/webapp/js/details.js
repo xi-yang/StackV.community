@@ -1,33 +1,35 @@
-/* 
+/*
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 /* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
 // Tweens
-var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px", opacity: "1", display: "block"});
-var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px", opacity: "1", display: "block"});
-var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px", opacity: "1", display: "block"});
+var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
+    paused: true, top: "0px", opacity: "1", display: "block"});
+var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut,
+    paused: true, left: "0px", opacity: "1", display: "block"});
+var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut,
+    paused: true, right: "0px", opacity: "1", display: "block"});
 
 var view = "center";
-var lastState = null;
 
 Mousetrap.bind({
     'shift+left': function () {
@@ -229,7 +231,8 @@ function subloadDetails() {
              *      1 - name
              *      2 - alias_name
              *      3 - creation_time
-             *      4 - super_state     */
+             *      4 - super_state     
+             *      5 - last_state */
 
             $("#instance-verification").html(instance[0]);
             $("#instance-alias").html(instance[2]);
@@ -244,7 +247,8 @@ function subloadDetails() {
     });
 }
 function subloadStatus(refUuid) {
-    var ele = document.getElementById("instance-substate");
+    var ele = $("#instance-substate");
+    var last = $("#instance-laststate");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + refUuid + '/substatus';
     $.ajax({
         url: apiUrl,
@@ -255,10 +259,9 @@ function subloadStatus(refUuid) {
         },
         success: function (result) {
             if (result === "FAILED") {
-                ele.innerHTML = "FAILED (After " + lastState + ")";
-            } else {
-                ele.innerHTML = result;
+                last.html(" (After " + lastState + ")");
             }
+            ele.html(result);
 
             if (view === "center") {
                 tweenDetailsPanel.play();
@@ -283,11 +286,15 @@ function subloadVerification() {
              *      1 - creation_time
              *      2 - addition
              *      3 - reduction
-             *      4 - service_instance_id */
+             *      4 - service_instance_id 
+             *      5 - enabled */
             $("#verification-run").html(verification[0]);
             $("#verification-time").html(verification[1]);
             $("#verification-addition").html(verification[2]);
             $("#verification-reduction").html(verification[3]);
+            
+            verificationRun = verification[0];
+            verificationEnabled = verification[5];
 
             instructionModerate();
             buttonModerate();
@@ -347,7 +354,7 @@ function subloadACL() {
                 $("#body-" + this.id).toggleClass("hide");
             });
 
-            // Next step            
+            // Next step
             loadACL(uuid);
         }
     });
@@ -420,7 +427,8 @@ function buildDeltaTable(type) {
     row = document.createElement("tr");
     var cell = document.createElement("td");
     cell.colSpan = "3";
-    cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.' + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
+    cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'
+            + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
     row.appendChild(cell);
     tbody.appendChild(row);
 
@@ -439,9 +447,10 @@ function loadVisualization() {
         var States = {
             "INIT": 0,
             "COMPILED": 1,
-            "COMMITTED": 2,
+            "COMMITTING": 2,
             "FAILED": 3,
-            "READY": 4
+            "COMMITTED": 4,
+            "READY": 5
         };
 
         var tabs = [
@@ -458,6 +467,11 @@ function loadVisualization() {
             {
                 "name": "Verification",
                 "state": "FAILED",
+                "createContent": createVizTab.bind(undefined, "Verification")
+            },
+            {
+                "name": "Verification",
+                "state": "COMMITTED",
                 "createContent": createVizTab.bind(undefined, "Verification")
             }
         ];
@@ -799,142 +813,102 @@ function instructionModerate() {
         var verificationRun = document.getElementById("verification-run").innerHTML;
         var blockString = "";
 
-        // State -1 - Error during validation/reconstruction
-        if ((subState === 'READY') && verificationState === "") {
-            blockString = "Service encountered an error during verification. Please contact your technical supervisor for further instructions.";
+        switch (subState) {
+            case "INIT":
+                blockString = "Service is being initialized.";
+                break;
+            case "PROPAGATED":
+                blockString = "Service delta has been sent to the backend.";
+                break;
+            case "COMMITTING":
+                blockString = "Service is currently being constructed.";
+                break;
+            case "COMMITTED":
+                blockString = "Service has been constructed, and is now being verified. (Run "
+                        + verificationRun + ")";
+                break;
+            case "FAILED":
+                if (verificationRun > 0) {
+                    blockString = "Service has failed. Please see logging for more information. (Run "
+                            + verificationRun + ")";
+                } else {
+                    blockString = "Service has failed. Please see logging for more information.";
+                }
+                break;
+            case "READY":
+                switch (verificationState) {
+                    case "":
+                    case "null":
+                        blockString = "Service encountered an error during verification."
+                                + " Please contact your technical supervisor for further instructions.";
+                        break;
+                    case "0":
+                        blockString = "Service is verifying.";
+                        break;
+                    case "-1":
+                        blockString = "Service was not able to be verified.";
+                        break;
+                    case "1":
+                        blockString = "Service has been successfully verified.";
+                        break;
+                }
+                break;
         }
-        // State 0 - Before Verify
-        else if (subState !== 'READY') {
-            blockString = "Service is still processing. Please hold for further instructions.";
-        }
-        // State 1 - Ready & Verifying
-        else if (subState === 'READY' && verificationState === '0') {
-            blockString = "Service is verifying.";
-        }
-        // State 2 - Ready & Verified
-        else if (subState === 'READY' && verificationState === '1') {
-            blockString = "Service has been successfully verified.";
-        }
-        // State 3 - Ready & Unverified
-        else if ((subState === 'READY' || subState === 'FAILED') && verificationState === '-1') {
-            blockString = "Service was not able to be verified.";
-        }
-
-        document.getElementById("instruction-block").innerHTML = blockString;
     }
+
+    document.getElementById("instruction-block").innerHTML = blockString;
 }
 
 function buttonModerate() {
     var superState = document.getElementById("instance-superstate").innerHTML;
     var subState = document.getElementById("instance-substate").innerHTML;
     var verificationState = document.getElementById("instance-verification").innerHTML;
+    
+    var lastStateStr = $("#instance-laststate").html();
+    var lastState = lastStateStr.substring(8,lastStateStr.length-1);
     $(".instance-command").addClass("hide");
 
-    if (verificationState === "" || verificationState === "null") {
-        $("#force_delete").toggleClass("hide");
-        $("#force_cancel").toggleClass("hide");
-        $("#force_retry").toggleClass("hide");
-        $("#reverify").toggleClass("hide");
-    } else {
-        switch (subState) {
-            case "INIT":
-                break;
-            case "PROPAGATED":
-                break;
-            case "COMMITTING":
-                break;
-            case "COMMITTED":
-                break;
-            case "FAILED":
-                break;
-            case "READY":
-                break;
-        }
-        switch (superState) {
-            case "CREATE":
-                break;
-            case "CANCEL":
-                break;
-            case "REINSTATE":
-                break;
-        }
+    if (subState !== "COMMITTED") {
+        $("#delete").removeClass("hide");
+    }
 
-        if (superState === 'CREATE') {
-            // State 0 - Stuck
-            if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-                $("#force_delete").toggleClass("hide");
-                $("#force_cancel").toggleClass("hide");
-                $("#force_retry").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
+    switch (subState) {
+        case "COMMITTED":
+            $("#verify").removeClass("hide");
+            break;
+        case "FAILED":
+            $("#verify").removeClass("hide");
+            if (lastState === "COMMITTED" || "COMMITTING" || "READY") {
+                switch (superState) {
+                    case "CREATE":
+                    case "REINSTATE":
+                        $("#force-cancel").removeClass("hide");
+                        break;
+                    case "CANCEL":
+                        $("#force-reinstate").removeClass("hide");
+                        break;
+                }
             }
-            // State 1 - Verifying
-            if ((subState === 'COMMITTED' || subState === 'FAILED') && verificationState === '0') {
-
+            if (lastState === "COMMITTING" || "PROPAGATED" || "COMPILED") {
+                $("#force_retry").removeClass("hide");
             }
-            // State 2 - Ready & Verified
-            else if (subState === 'READY' && verificationState === '1') {
-                $("#cancel").toggleClass("hide");
-                $("#modify").toggleClass("hide");
+            break;
+        case "READY":
+            switch (superState) {
+                case "CREATE":
+                case "REINSTATE":
+                    $("#cancel").removeClass("hide");
+                    break;
+                case "CANCEL":
+                    $("#reinstate").removeClass("hide");
+                    break;
             }
-            // State 3 - Ready & Unverified
-            else if (subState === 'READY' && verificationState === '-1') {
-                $("#force_cancel").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            } else if (subState === 'FAILED' && verificationState === '-1') {
-                $("#reverify").toggleClass("hide");
-                $("#force_delete").toggleClass("hide");
-            }
-        } else if (superState === 'CANCEL') {
-            // State 0 - Stuck
-            if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-                $("#force_delete").toggleClass("hide");
-                $("#force_retry").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            }
-            // State 1 - Verifying
-            if ((subState === 'COMMITTED' || subState === 'FAILED') && verificationState === '0') {
-
-            }
-            // State 2 - Ready & Verified
-            else if (subState === 'READY' && verificationState === '1') {
-                $("#reinstate").toggleClass("hide");
-                $("#modify").toggleClass("hide");
-                $("#delete").toggleClass("hide");
-            }
-            // State 3 - Ready & Unverified
-            else if (subState === 'READY' && verificationState === '-1') {
-                $("#force_delete").toggleClass("hide");
-                $("#force_reinstate").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            } else if (subState === 'FAILED' && verificationState === '-1') {
-                $("#reverify").toggleClass("hide");
-                $("#force_delete").toggleClass("hide");
-            }
-        } else if (superState === 'REINSTATE') {
-            // State 0 - Stuck
-            if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-                $("#force_delete").toggleClass("hide");
-                $("#force_retry").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            }
-            // State 1 - Verifying
-            if ((subState === 'COMMITTED' || subState === 'FAILED') && verificationState === '0') {
-
-            }
-            // State 2 - Ready & Verified
-            else if (subState === 'READY' && verificationState === '1') {
-                $("#cancel").toggleClass("hide");
-                $("#modify").toggleClass("hide");
-            }
-            // State 3 - Ready & Unverified
-            else if (subState === 'READY' && verificationState === '-1') {
-                $("#force_cancel").toggleClass("hide");
-                $("#reverify").toggleClass("hide");
-            } else if (subState === 'FAILED' && verificationState === '-1') {
-                $("#reverify").toggleClass("hide");
-                $("#force_delete").toggleClass("hide");
-            }
-        }
+            break;
+    }   
+    
+    if (verificationRun > 0) {
+        $("#verify").html("Cancel Verification");
+        $("#verify").attr("id", "unverify");
     }
 }
 

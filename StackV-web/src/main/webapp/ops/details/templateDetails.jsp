@@ -58,7 +58,7 @@
                         </tr>
                         <tr>
                             <td>Operation Status</td>
-                            <td id="instance-substate"></td>
+                            <td><p style="display: inline;" id="instance-substate"></p><small id="instance-laststate"></small></td>
                         </tr>
                         <tr class="instruction-row">
                             <td colspan="2"><div id="instruction-block"></div></td>
@@ -73,9 +73,8 @@
                                     <button class="btn btn-default hide instance-command" id="force_retry">Force Retry</button>
                                     <button class="btn btn-default hide instance-command" id="modify">Modify</button>
                                     <button class="btn btn-default hide instance-command" id="force_modify">Force Modify</button>
-                                    <button class="btn btn-default hide instance-command" id="reverify">Re-Verify</button>
+                                    <button class="btn btn-default hide instance-command" id="verify">Verify</button>
                                     <button class="btn btn-default hide instance-command" id="delete">Delete</button>
-                                    <button class="btn btn-default hide instance-command" id="force_delete">Force Delete</button>
                                 </div>
                             </td>
                         </tr>
@@ -109,7 +108,16 @@
             </div>
             <div id="logging-panel">
                 <div id="logging-header-div">
-                    Logs                  
+                    Logs
+                    <div style="float:right;">
+                        <label for="logging-filter-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
+                        <select id="logging-filter-level" onchange="filterLogs()">
+                            <option value="TRACE" selected>TRACE</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARN">WARN</option>
+                            <option value="ERROR">ERROR</option>
+                        </select> 
+                    </div>
                 </div>
                 <div id="logging-body-div">
                     <table id="loggingData" class="table table-striped table-bordered display" cellspacing="0" width="100%">
@@ -159,35 +167,35 @@
         <script src="/StackV-web/js/details.js"></script>
 
         <script>
-            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-            dojoConfig = {
-                has: {
-                    "dojo-firebug": true,
-                    "dojo-debug-messages": true
-                },
-                async: true,
-                parseOnLoad: true,
-                packages: [
-                    {
-                        name: "d3",
-                        location: "//d3js.org/",
-                        main: "d3.v3"
-                    },
-                    {
-                        name: "local",
-                        location: "/StackV-web/js/"
-                    }
-                ]
-            };
+                        //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+                        dojoConfig = {
+                            has: {
+                                "dojo-firebug": true,
+                                "dojo-debug-messages": true
+                            },
+                            async: true,
+                            parseOnLoad: true,
+                            packages: [
+                                {
+                                    name: "d3",
+                                    location: "//d3js.org/",
+                                    main: "d3.v3"
+                                },
+                                {
+                                    name: "local",
+                                    location: "/StackV-web/js/"
+                                }
+                            ]
+                        };
 
-            $(function () {
-                $("#dialog_policyAction").dialog({
-                    autoOpen: false
-                });
-                $("#dialog_policyData").dialog({
-                    autoOpen: false
-                });
-            });
+                        $(function () {
+                            $("#dialog_policyAction").dialog({
+                                autoOpen: false
+                            });
+                            $("#dialog_policyData").dialog({
+                                autoOpen: false
+                            });
+                        });
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
     </body>
