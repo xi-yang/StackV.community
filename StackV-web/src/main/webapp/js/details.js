@@ -27,6 +27,7 @@ var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInO
 var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px", opacity: "1", display: "block"});
 
 var view = "center";
+var lastState = null;
 
 Mousetrap.bind({
     'shift+left': function () {
@@ -162,34 +163,52 @@ function loadDetails() {
         pauseRefresh();
 
         var command = this.id;
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
+        var currStatus = $("#instance-substate").html();
+        var apiUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
         $.ajax({
             url: apiUrl,
-            type: 'PUT',
+            type: 'GET',
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
-            success: function () {
-                $(".instance-command").attr('disabled', false);
-                resumeRefresh();
-                if (command === "delete" || command === "force_delete") {
-                    setTimeout(function () {
-                        sessionStorage.removeItem("instance-uuid");
-                        window.document.location = "/StackV-web/ops/catalog.jsp";
-                    }, 250);
-                } else {
+            success: function (result) {
+                if (currStatus !== result) {
+                    $(".instance-command").attr('disabled', false);
+                    resumeRefresh();
                     reloadData();
+                } else {
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'PUT',
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        },
+                        success: function () {
+                            $(".instance-command").attr('disabled', false);
+                            resumeRefresh();
+                            if (command === "delete" || command === "force_delete") {
+                                setTimeout(function () {
+                                    sessionStorage.removeItem("instance-uuid");
+                                    window.document.location = "/StackV-web/ops/catalog.jsp";
+                                }, 250);
+                            } else {
+                                reloadData();
+                            }
+                        }
+                    });
+                    if (!(command === "delete") && !(command === "force_delete")) {
+                        setTimeout(function () {
+                            $(".instance-command").attr('disabled', false);
+                            resumeRefresh();
+                            reloadData();
+                        }, 250);
+                    }
                 }
             }
         });
-        if (!(command === "delete") && !(command === "force_delete")) {
-            setTimeout(function () {
-                $(".instance-command").attr('disabled', false);
-                resumeRefresh();
-                reloadData();
-            }, 250);
-        }
     });
 
 }
@@ -217,6 +236,7 @@ function subloadDetails() {
             $("#instance-creation-time").html(instance[3]);
             $("#instance-superstate").html(instance[4]);
 
+            lastState = instance[5];
 
             // Next steps
             subloadStatus(uuid);
@@ -234,7 +254,11 @@ function subloadStatus(refUuid) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            ele.innerHTML = result;
+            if (result === "FAILED") {
+                ele.innerHTML = "FAILED (After " + lastState + ")";
+            } else {
+                ele.innerHTML = result;
+            }
 
             if (view === "center") {
                 tweenDetailsPanel.play();
@@ -647,14 +671,16 @@ function loadVisualization() {
                     tabContent.appendChild(tab.createContent());
                 }
             }
-            tabBar.lastChild.classList.add("active");
-            tabContent.lastChild.classList.add("active");
+            if (tabBar.lastChild) {
+                tabBar.lastChild.classList.add("active");
+                tabContent.lastChild.classList.add("active");
 
-            var visualization_panel = document.getElementById("visual-panel");
-            visualization_panel.appendChild(tabBar);
-            visualization_panel.appendChild(tabContent);
+                var visualization_panel = document.getElementById("visual-panel");
+                visualization_panel.appendChild(tabBar);
+                visualization_panel.appendChild(tabContent);
 
-            setEvent();
+                setEvent();
+            }
         }
 
         function make_tab_id(tab) {
@@ -711,7 +737,7 @@ function loadVisualization() {
                     text_model_pre.width("inherit");
                     text_model_pre.addClass("expanded");
                     text_model_pre.height(viz.height() * 2);
-                                        
+
                     pauseRefresh();
                 } else {
                     if ($("#instance-details-table").hasClass("hide") && !$(".viz-hdr.expanded").not(this).length) {
@@ -774,11 +800,11 @@ function instructionModerate() {
         var blockString = "";
 
         // State -1 - Error during validation/reconstruction
-        if ((subState === 'READY' || subState === 'FAILED') && verificationState === "") {
+        if ((subState === 'READY') && verificationState === "") {
             blockString = "Service encountered an error during verification. Please contact your technical supervisor for further instructions.";
         }
         // State 0 - Before Verify
-        else if (subState !== 'READY' && subState !== 'FAILED') {
+        else if (subState !== 'READY') {
             blockString = "Service is still processing. Please hold for further instructions.";
         }
         // State 1 - Ready & Verifying
@@ -790,19 +816,7 @@ function instructionModerate() {
             blockString = "Service has been successfully verified.";
         }
         // State 3 - Ready & Unverified
-        else if (subState === 'READY' && verificationState === '-1') {
-            blockString = "Service was not able to be verified.";
-        }
-        // State 4 - Failed & Verifying
-        else if (subState === 'FAILED' && verificationState === '0') {
-            blockString = "Service is verifying. (Run " + verificationRun + "/5)";
-        }
-        // State 5 - Failed & Verified
-        else if (subState === 'FAILED' && verificationState === '1') {
-            blockString = "Service has been successfully verified.";
-        }
-        // State 6 - Failed & Unverified
-        else if (subState === 'FAILED' && verificationState === '-1') {
+        else if ((subState === 'READY' || subState === 'FAILED') && verificationState === '-1') {
             blockString = "Service was not able to be verified.";
         }
 
@@ -814,122 +828,112 @@ function buttonModerate() {
     var superState = document.getElementById("instance-superstate").innerHTML;
     var subState = document.getElementById("instance-substate").innerHTML;
     var verificationState = document.getElementById("instance-verification").innerHTML;
-
     $(".instance-command").addClass("hide");
-    if (superState === 'Create') {
-        // State 0 - Stuck
-        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-            $("#force_delete").toggleClass("hide");
-            $("#force_cancel").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 1 - Ready & Verifying
-        if (subState === 'READY' && verificationState === '0') {
 
+    if (verificationState === "" || verificationState === "null") {
+        $("#force_delete").toggleClass("hide");
+        $("#force_cancel").toggleClass("hide");
+        $("#force_retry").toggleClass("hide");
+        $("#reverify").toggleClass("hide");
+    } else {
+        switch (subState) {
+            case "INIT":
+                break;
+            case "PROPAGATED":
+                break;
+            case "COMMITTING":
+                break;
+            case "COMMITTED":
+                break;
+            case "FAILED":
+                break;
+            case "READY":
+                break;
         }
-        // State 2 - Ready & Verified
-        else if (subState === 'READY' && verificationState === '1') {
-            $("#cancel").toggleClass("hide");
-            $("#modify").toggleClass("hide");
+        switch (superState) {
+            case "CREATE":
+                break;
+            case "CANCEL":
+                break;
+            case "REINSTATE":
+                break;
         }
-        // State 3 - Ready & Unverified
-        else if (subState === 'READY' && verificationState === '-1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 4 - Failed & Verifying
-        else if (subState === 'FAILED' && verificationState === '0') {
 
-        }
-        // State 5 - Failed & Verified
-        else if (subState === 'FAILED' && verificationState === '1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#force_modify").toggleClass("hide");
-            $("#force_delete").toggleClass("hide");
-        }
-        // State 6 - Failed & Unverified
-        else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-            $("#force_delete").toggleClass("hide");
-        }
-    } else if (superState === 'Cancel') {
-        // State 0 - Stuck
-        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-            $("#force_delete").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 1 - Ready & Verifying
-        if (subState === 'READY' && verificationState === '0') {
+        if (superState === 'CREATE') {
+            // State 0 - Stuck
+            if (verificationState === "" || verificationState === "null" || subState === "INIT") {
+                $("#force_delete").toggleClass("hide");
+                $("#force_cancel").toggleClass("hide");
+                $("#force_retry").toggleClass("hide");
+                $("#reverify").toggleClass("hide");
+            }
+            // State 1 - Verifying
+            if ((subState === 'COMMITTED' || subState === 'FAILED') && verificationState === '0') {
 
-        }
-        // State 2 - Ready & Verified
-        else if (subState === 'READY' && verificationState === '1') {
-            $("#reinstate").toggleClass("hide");
-            $("#modify").toggleClass("hide");
-            $("#delete").toggleClass("hide");
-        }
-        // State 3 - Ready & Unverified
-        else if (subState === 'READY' && verificationState === '-1') {
-            $("#force_delete").toggleClass("hide");
-            $("#force_reinstate").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 4 - Failed & Verifying
-        else if (subState === 'FAILED' && verificationState === '0') {
+            }
+            // State 2 - Ready & Verified
+            else if (subState === 'READY' && verificationState === '1') {
+                $("#cancel").toggleClass("hide");
+                $("#modify").toggleClass("hide");
+            }
+            // State 3 - Ready & Unverified
+            else if (subState === 'READY' && verificationState === '-1') {
+                $("#force_cancel").toggleClass("hide");
+                $("#reverify").toggleClass("hide");
+            } else if (subState === 'FAILED' && verificationState === '-1') {
+                $("#reverify").toggleClass("hide");
+                $("#force_delete").toggleClass("hide");
+            }
+        } else if (superState === 'CANCEL') {
+            // State 0 - Stuck
+            if (verificationState === "" || verificationState === "null" || subState === "INIT") {
+                $("#force_delete").toggleClass("hide");
+                $("#force_retry").toggleClass("hide");
+                $("#reverify").toggleClass("hide");
+            }
+            // State 1 - Verifying
+            if ((subState === 'COMMITTED' || subState === 'FAILED') && verificationState === '0') {
 
-        }
-        // State 5 - Failed & Verified
-        else if (subState === 'FAILED' && verificationState === '1') {
-            $("#force_reinstate").toggleClass("hide");
-            $("#force_modify").toggleClass("hide");
-            $("#delete").toggleClass("hide");
-        }
-        // State 6 - Failed & Unverified
-        else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#force_delete").toggleClass("hide");
-            $("#force_reinstate").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-    } else if (superState === 'Reinstate') {
-        // State 0 - Stuck
-        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-            $("#force_delete").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 1 - Ready & Verifying
-        if (subState === 'READY' && verificationState === '0') {
+            }
+            // State 2 - Ready & Verified
+            else if (subState === 'READY' && verificationState === '1') {
+                $("#reinstate").toggleClass("hide");
+                $("#modify").toggleClass("hide");
+                $("#delete").toggleClass("hide");
+            }
+            // State 3 - Ready & Unverified
+            else if (subState === 'READY' && verificationState === '-1') {
+                $("#force_delete").toggleClass("hide");
+                $("#force_reinstate").toggleClass("hide");
+                $("#reverify").toggleClass("hide");
+            } else if (subState === 'FAILED' && verificationState === '-1') {
+                $("#reverify").toggleClass("hide");
+                $("#force_delete").toggleClass("hide");
+            }
+        } else if (superState === 'REINSTATE') {
+            // State 0 - Stuck
+            if (verificationState === "" || verificationState === "null" || subState === "INIT") {
+                $("#force_delete").toggleClass("hide");
+                $("#force_retry").toggleClass("hide");
+                $("#reverify").toggleClass("hide");
+            }
+            // State 1 - Verifying
+            if ((subState === 'COMMITTED' || subState === 'FAILED') && verificationState === '0') {
 
-        }
-        // State 2 - Ready & Verified
-        else if (subState === 'READY' && verificationState === '1') {
-            $("#cancel").toggleClass("hide");
-            $("#modify").toggleClass("hide");
-        }
-        // State 3 - Ready & Unverified
-        else if (subState === 'READY' && verificationState === '-1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 4 - Failed & Verifying
-        else if (subState === 'FAILED' && verificationState === '0') {
-
-        }
-        // State 5 - Failed & Verified
-        else if (subState === 'FAILED' && verificationState === '1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#force_modify").toggleClass("hide");
-        }
-        // State 6 - Failed & Unverified
-        else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
+            }
+            // State 2 - Ready & Verified
+            else if (subState === 'READY' && verificationState === '1') {
+                $("#cancel").toggleClass("hide");
+                $("#modify").toggleClass("hide");
+            }
+            // State 3 - Ready & Unverified
+            else if (subState === 'READY' && verificationState === '-1') {
+                $("#force_cancel").toggleClass("hide");
+                $("#reverify").toggleClass("hide");
+            } else if (subState === 'FAILED' && verificationState === '-1') {
+                $("#reverify").toggleClass("hide");
+                $("#force_delete").toggleClass("hide");
+            }
         }
     }
 }

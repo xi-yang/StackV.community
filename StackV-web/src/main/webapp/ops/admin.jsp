@@ -34,17 +34,28 @@
                     <div id ="API-header-div">API Module</div>
                     <div id="logging-body-div">
                         <select id = "API-request">
-                            <option value="GET">Get</option>
-                            <option value="PUT">Put</option>
-                            <option value="POST">Post</option>
-                            <option value="DELETE">Delete</option>
+                            <option value="GET">GET</option>
+                            <option value="PUT">PUT</option>
+                            <option value="POST">POST</option>
+                            <option value="DELETE">DELETE</option>
                         </select>
-                        <input type="text" placeholder="URL" id="URL">
-                        <button type="button" class="action-button" onclick="executeRequest();">Send</button>
+
+                        <input class = "typeahead" type="text" placeholder="URL" id="URL">
+
+                        <button id = "SEND" type="button" class="action-button" onclick="executeRequest();">Send</button>
                     </div>
                     <div id="logging-body-div">
                         <textarea id="api_result" style="color: black;"></textarea>
                     </div>
+                </div>
+                <div class="hide admin-panel-logging">
+                    <label for="select-logging-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
+                    <select id="select-logging-level" onchange="loggingChange(this)">
+                        <option value="TRACE">TRACE</option>
+                        <option value="INFO">INFO</option>
+                        <option value="WARN">WARN</option>
+                        <option value="ERROR">ERROR</option>
+                    </select>  
                 </div>
             </div>
             <div id="logging-panel">
@@ -93,37 +104,44 @@
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/admin.js"></script>
+        <!--        type ahead libraries-->
+        <script src="/StackV-web/js/typeahead.js/typeahead.bundle.js"></script>
+        <script src="/StackV-web/js/test.js"></script>
+
+
+
 
         <script>
-            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-            dojoConfig = {
-                has: {
-                    "dojo-firebug": true,
-                    "dojo-debug-messages": true
-                },
-                async: true,
-                parseOnLoad: true,
-                packages: [
-                    {
-                        name: "d3",
-                        location: "//d3js.org/",
-                        main: "d3.v3"
-                    },
-                    {
-                        name: "local",
-                        location: "/StackV-web/js/"
-                    }
-                ]
-            };
+                            //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+                            dojoConfig = {
+                                has: {
+                                    "dojo-firebug": true,
+                                    "dojo-debug-messages": true
+                                },
+                                async: true,
+                                parseOnLoad: true,
+                                packages: [
+                                    {
+                                        name: "d3",
+                                        location: "//d3js.org/",
+                                        main: "d3.v3"
+                                    },
+                                    {
+                                        name: "local",
+                                        location: "/StackV-web/js/"
+                                    }
+                                ]
+                            };
 
-            $(function () {
-                $("#dialog_policyAction").dialog({
-                    autoOpen: false
-                });
-                $("#dialog_policyData").dialog({
-                    autoOpen: false
-                });
-            });
+                            $(function () {
+                                $("#dialog_policyAction").dialog({
+                                    autoOpen: false
+                                });
+                                $("#dialog_policyData").dialog({
+                                    autoOpen: false
+                                });
+                            });
+
         </script>
         <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
     </body>

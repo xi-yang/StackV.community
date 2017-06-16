@@ -29,6 +29,10 @@ var tweenRoleRolesPanel = new TweenLite("#acl-role-role-div", .5, {ease: Power2.
 var tweenInstancePanel = new TweenLite("#acl-instance-panel", .5, {ease: Power2.easeInOut, paused: true, left: "5%"});
 var tweenInstanceACLPanel = new TweenLite("#acl-instance-acl", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
 
+
+var tweenHideUserPanel = new TweenLite("acl-role-user-div", .5, {ease: Power2.easInOut,paused: true, left: "-100%"});
+var tweenGroupRolePanel = new TweenLite("acl-role-user-div", .5, {ease: Power2.easInOut,paused: true, left: "5px"});
+
 var view = "center";
 
 Mousetrap.bind({
@@ -231,6 +235,10 @@ function subloadRoleACLUsers() {
 
 function subloadRoleACLGroups() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/groups';
+    
+    
+    
+    
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
@@ -275,6 +283,8 @@ function subloadRoleACLRoles() {
 
 function subloadRoleACLUserGroups() {
     tweenRoleGroupsPanel.reverse();
+    
+    
     setTimeout(function () {
         keycloak.updateToken(30).success(function () {
             var subject = $("#acl-user").val();
@@ -294,6 +304,8 @@ function subloadRoleACLUserGroups() {
                         var group = result[i];
 
                         var row = document.createElement("tr");
+                        row.className = "acl-user-group";
+                        row.setAttribute("data-groupname",group[1]);
 
                         var cell1_1 = document.createElement("td");
                         cell1_1.innerHTML = group[1] + '<button data-roleid="' + group[0] + '" data-rolename="' + group[1] + '" class="button-group-delete btn btn-default pull-right">Remove</button>';
@@ -304,6 +316,13 @@ function subloadRoleACLUserGroups() {
                         $("#acl-group-select option[value=" + group[0] + "]").addClass("hide");
                         $("#acl-group-select").val(null);
                     }
+                    
+                    $(".acl-user-group").click(function () {
+                        var name = $(this).data('groupname');
+                        loadGroupTable(name);
+                    });
+                    
+                    
 
                     $(".button-group-delete").click(function (evt) {
                         var subject = $("#acl-user").val();
@@ -609,4 +628,88 @@ function subloadInstanceACLTable(refUUID) {
             console.log("Fatal Error: Token update failed!");
         });
     }, 500);
+    
+    
+    
 }
+function subloadRoleACLRoles1() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles';
+    keycloak.updateToken(30).success(function () {
+        $.ajax({
+            url: apiUrl,
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            success: function (result) {
+                for (i = 0; i < result.length; i++) {
+                    var role = result[i];
+
+                    $("#acl-role-select1").append(new Option(role[1], role[0]));
+                }
+            }
+        });
+    }).error(function () {
+        console.log("Fatal Error: Token update failed!");
+    });
+}
+
+function loadGroupTable(groupname){
+    var group = groupname;
+    tweenHideUserPanel.play();
+    tweenGroupRolePanel.play();
+    //get the group
+    
+    var tbody = document.getElementById("group-role-body");
+    tbody.innerHTML = "";
+   
+    
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/keycloak/groups/" + group;
+    $.ajax({
+            url: apiUrl,
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function (result) {
+                alert(result);
+                for (i = 0; i < result.length; i++) {
+                    var role = result[i];
+
+                    var row = document.createElement("tr");
+
+                    var cell1_1 = document.createElement("td");
+                    if (role[2] === "assigned") {
+                        cell1_1.innerHTML = role[1] + '<button data-roleid="' + role[0] + '" data-rolename="' + role[1] + '" class="button-role-delete btn btn-default pull-right">Remove</button>';
+                    } else {
+                        cell1_1.innerHTML = role[1];
+                    }
+
+                    row.appendChild(cell1_1);
+                    tbody.appendChild(row);
+
+                }
+                subloadRoleACLRoles1();
+                //load the data into the table first
+                //reverse the users panel
+                //hide other role table
+                //display ur role table
+                //mechanism to clear ur table(reverse)
+                //if someone clicks unload, and theres nothing to unload, nothing happens
+                // highlight group selected
+                
+                
+                
+                
+            },
+            error: function () {
+                alert("failure");
+            }
+        });
+    
+    
+    
+}
+
+

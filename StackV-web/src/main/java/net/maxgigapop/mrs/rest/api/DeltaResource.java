@@ -87,7 +87,7 @@ public class DeltaResource {
             systemInstance.setCommitStatus(result);
             if (!result.isDone()) {
                 logger.trace_end(method);
-                return "PROCESSING";
+                return "COMMITTING";
             }
             logger.trace_end(method);
             return result.get();
@@ -100,7 +100,7 @@ public class DeltaResource {
     @GET
     @Path("/{refUUID}/{action}")
     public String checkStatus(@PathParam("refUUID") String refUUID, @PathParam("action") String action) throws InterruptedException, ExecutionException {
-        String method = "commit";
+        String method = "checkStatus";
         logger.refuuid(refUUID);
         logger.trace_start(method);
         if (!action.toLowerCase().equals("checkstatus")) {
@@ -119,8 +119,8 @@ public class DeltaResource {
             throw logger.error_throwing(method, "System Instance has not yet committed");
         }
         if (siCache.getCommitStatus() != null && !siCache.getCommitStatus().isDone()) {
-            logger.trace_end(method, "PROCESSING");
-            return "PROCESSING";
+            logger.trace_end(method, "COMMITTING");
+            return "COMMITTING";
         }
         String result = "";
         try {
@@ -135,8 +135,8 @@ public class DeltaResource {
     @POST
     @Consumes({"application/xml","application/json"})
     @Path("/{refUUID}/{action}")
-    public String push(@PathParam("refUUID")String SysInstanceRefUUID, ApiDeltaBase deltabase, @PathParam("action") String action) throws Exception{
-        String method = "commit";
+    public String propagate(@PathParam("refUUID")String SysInstanceRefUUID, ApiDeltaBase deltabase, @PathParam("action") String action) throws Exception{
+        String method = "propagate";
         logger.refuuid(SysInstanceRefUUID);
         logger.trace_start(method);
         if (!action.toLowerCase().startsWith("propagate")) {
@@ -146,20 +146,31 @@ public class DeltaResource {
         
         SystemDelta systemDelta = new SystemDelta();
         systemDelta.setReferenceVersionGroup(VersionGroupPersistenceManager.findByReferenceId(deltabase.getReferenceVersion()));
+
+        DeltaModel dmAddition = null;
+        if (deltabase.getModelAddition() != null) {
+            OntModel modelAddition = ModelUtil.unmarshalOntModel(deltabase.getModelAddition());
+            dmAddition = new DeltaModel();
+            dmAddition.setCommitted(false);
+            dmAddition.setDelta(systemDelta);
+            dmAddition.setIsAddition(true);
+            dmAddition.setOntModel(modelAddition);
+        }
+
+        DeltaModel dmReduction = null;
+        if (deltabase.getModelReduction() != null) {
+            OntModel modelReduction = ModelUtil.unmarshalOntModel(deltabase.getModelReduction());
+            dmReduction = new DeltaModel();
+            dmReduction.setCommitted(false);
+            dmReduction.setDelta(systemDelta);
+            dmReduction.setIsAddition(false);
+            dmReduction.setOntModel(modelReduction);
+        }
         
-        OntModel modelAddition = ModelUtil.unmarshalOntModel(deltabase.getModelAddition());
-        DeltaModel dmAddition = new DeltaModel();
-        dmAddition.setCommitted(false);
-        dmAddition.setDelta(systemDelta);
-        dmAddition.setIsAddition(true);
-        dmAddition.setOntModel(modelAddition);
-        
-        OntModel modelReduction = ModelUtil.unmarshalOntModel(deltabase.getModelReduction());
-        DeltaModel dmReduction = new DeltaModel();
-        dmReduction.setCommitted(false);
-        dmReduction.setDelta(systemDelta);
-        dmReduction.setIsAddition(false);
-        dmReduction.setOntModel(modelReduction);
+        if (dmAddition == null && dmReduction == null) {
+            logger.error(method, "Empty delta (both addition and reduction are null)"+action);
+            throw new BadRequestException("Empty delta (both addition and reduction are null)");
+        }
         
         systemDelta.setModelAddition(dmAddition);
         systemDelta.setModelReduction(dmReduction);
@@ -176,7 +187,7 @@ public class DeltaResource {
             throw logger.throwing(method, e);
         }
         logger.trace_end(method);
-        return "propagate successfully";
+        return "PROPAGATED";
     }
     
     

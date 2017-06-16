@@ -478,3 +478,7 @@ ul.vcn-progress li, ul.hc-progress li {
 .row-error.odd {
     background-color: #ffdbdb !important;
 }
+.dataTables-child {
+    width: 100%;
+    height: 20em;
+}
