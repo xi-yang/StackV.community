@@ -161,6 +161,7 @@ function executeRequest(){
         $.ajax({
             url: apiUrl,
             type: type,
+            dataType: "text",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
