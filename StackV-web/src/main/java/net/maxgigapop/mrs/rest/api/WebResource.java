@@ -838,6 +838,200 @@ public class WebResource {
             return null;
         }
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    /*Andrew's Draft for new post method for adding additional roles to groups*/
+    
+    @POST
+    @Path("/keycloak/groups/{group}")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public void addGroupRole(@PathParam("group") String subject, final String inputString) {
+        try {
+            String method = "addGroupRole";
+            logger.start(method);
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(kc_url + "/admin/realms/StackV/roles/" + subject + "/composites");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+
+            // Construct array
+            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
+                Object obj = parser.parse(inputString);
+                final JSONArray roleArr = (JSONArray) obj;
+//                JSONArray roleArr = new JSONArray();
+//                roleArr.add(inputJSON);
+
+                out.write(roleArr.toString());
+//                System.out.println("Check Here");
+//                System.out.println(roleArr.toString());
+                
+            }
+            logger.trace("addGroupRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
+        } catch (IOException | ParseException ex) {
+            logger.catching("addGroupRole", ex);
+        }
+    }
+    
+    /*Andrew's draft for new delete method for deleting a role from a group*/
+    @DELETE
+    @Path("keycloak/groups/{group}")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public void removeGroupRole(@PathParam("group") String subject, final String inputString) {
+        try {
+            String method = "removeGroupRole";
+            logger.start(method);
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(kc_url + "/admin/realms/StackV/roles/" + subject + "/composites");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("DELETE");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+
+            // Construct array
+            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
+                String actual = inputString.toString();
+                Object obj = parser.parse(actual);
+                final JSONArray roleArr = (JSONArray) obj;
+               
+                out.write(roleArr.toString());
+            }
+
+            logger.trace("removeGroupRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
+        } catch (IOException | ParseException ex) {
+            logger.catching("removeGroupRole", ex);
+        }
+    }
+    
+    /*Andrew's Draft for searching for the full information of a single role*/
+    @GET
+    @Path("keycloak/roles/{role}")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject){
+        String name = subject;
+        try {
+            String method = "getRoleData";
+            logger.trace_start(method);
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(kc_url + "/admin/realms/StackV/clients/5c0fab65-4577-4747-ad42-59e34061390b/roles");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            logger.trace("getRoleData", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            HashMap<String,ArrayList<String>> search = new HashMap<String,ArrayList<String>>();
+            JSONArray groupArr = (JSONArray) obj;
+            for (Object group : groupArr) {
+                ArrayList<String> groupList = new ArrayList<>();
+                JSONObject groupJSON = (JSONObject) group;
+                groupList.add((String) groupJSON.get("id"));
+                groupList.add((String) groupJSON.get("name"));
+                groupList.add(groupJSON.get("scopeParamRequired").toString());
+                groupList.add(groupJSON.get("composite").toString());
+                groupList.add(groupJSON.get("clientRole").toString());
+                groupList.add((String) groupJSON.get("containerId"));
+                
+                
+                search.put((String) groupJSON.get("name"), groupList);
+
+                
+            }
+            retList.add(search.get(name));
+            logger.trace_end(method);
+            return retList;
+        } catch (IOException | ParseException ex) {
+            logger.catching("getRoleData", ex);
+            return null;
+        }
+        
+        
+        
+        
+    }
+    
+    
+    
+    /*Andrew's draft for a new method to get roles for a single group*/
+    @GET
+    @Path("/keycloak/groups/{group}")
+    @Produces("application/json")
+    @RolesAllowed("Keycloak")
+    public ArrayList<ArrayList<String>> getGroupRoles(@PathParam("group") String subject){
+        try {
+            String method = "getGroupRoles";
+            logger.trace_start(method);
+            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(kc_url + "/admin/realms/StackV/roles/"+subject+"/composites");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            logger.trace("getGroupRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray groupArr = (JSONArray) obj;
+            for (Object group : groupArr) {
+                ArrayList<String> groupList = new ArrayList<>();
+                JSONObject groupJSON = (JSONObject) group;
+                groupList.add((String) groupJSON.get("id"));
+                groupList.add((String) groupJSON.get("name"));
+
+                retList.add(groupList);
+            }
+            logger.trace_end(method);
+            return retList;
+        } catch (IOException | ParseException ex) {
+            logger.catching("getGroupRoles", ex);
+            return null;
+        }
+    }
+    
+    
+    
 
     /**
      * @api {get} /app/keycloak/groups Get Groups
