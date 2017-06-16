@@ -447,9 +447,10 @@ function loadVisualization() {
         var States = {
             "INIT": 0,
             "COMPILED": 1,
-            "COMMITTED": 2,
+            "COMMITTING": 2,
             "FAILED": 3,
-            "READY": 4
+            "COMMITTED": 4,
+            "READY": 5
         };
 
         var tabs = [
@@ -466,6 +467,11 @@ function loadVisualization() {
             {
                 "name": "Verification",
                 "state": "FAILED",
+                "createContent": createVizTab.bind(undefined, "Verification")
+            },
+            {
+                "name": "Verification",
+                "state": "COMMITTED",
                 "createContent": createVizTab.bind(undefined, "Verification")
             }
         ];
