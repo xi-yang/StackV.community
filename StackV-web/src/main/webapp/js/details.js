@@ -463,20 +463,10 @@ function loadVisualization() {
                 "name": "System",
                 "state": "COMPILED",
                 "createContent": createVizTab.bind(undefined, "System")
-            },
+            },            
             {
                 "name": "Verification",
                 "state": "COMMITTING",
-                "createContent": createVizTab.bind(undefined, "Verification")
-            },
-            {
-                "name": "Verification",
-                "state": "FAILED",
-                "createContent": createVizTab.bind(undefined, "Verification")
-            },
-            {
-                "name": "Verification",
-                "state": "COMMITTED",
                 "createContent": createVizTab.bind(undefined, "Verification")
             }
         ];
