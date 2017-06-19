@@ -91,10 +91,7 @@ class ServiceEngine {
                 logger.trace(method, "Waiting on instance: " + result);
                 sleep(5000);//wait for 5 seconds and check again later        
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());
-                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-            throw new EJBException("Ready Check Failed!");
-            }*/
+                result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());                
             }
             logger.trace_end(method);
             result = verify(refUuid, token);

@@ -882,10 +882,10 @@ function buttonModerate() {
                 switch (superState) {
                     case "CREATE":
                     case "REINSTATE":
-                        $("#force-cancel").removeClass("hide");
+                        $("#force_cancel").removeClass("hide");
                         break;
                     case "CANCEL":
-                        $("#force-reinstate").removeClass("hide");
+                        $("#force_reinstate").removeClass("hide");
                         break;
                 }
             }
