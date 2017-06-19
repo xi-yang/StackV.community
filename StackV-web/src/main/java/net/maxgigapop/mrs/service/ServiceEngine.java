@@ -86,7 +86,19 @@ class ServiceEngine {
             lastState = result;
             logger.trace(method, "Committing");
 
-            result = verifyInstance(refUuid, result, token);
+            URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            while (!result.equals("COMMITTED") && !result.equals("FAILED")) {
+                logger.trace(method, "Waiting on instance: " + result);
+                sleep(5000);//wait for 5 seconds and check again later        
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());
+                /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
+            throw new EJBException("Ready Check Failed!");
+            }*/
+            }
+            logger.trace_end(method);
+            result = verify(refUuid, token);
+
             lastState = result;
             logger.end(method, "Verified");
         } catch (EJBException | IOException | InterruptedException | SQLException ex) {
@@ -223,6 +235,7 @@ class ServiceEngine {
         WebResource.commonsClose(front_conn, prep, rs);
         return "READY";
     }
+
     static void cancelVerify(String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
         ResultSet rs;
         String method = "cancelVerify";
@@ -233,8 +246,8 @@ class ServiceEngine {
                 front_connectionProps);
 
         ThreadContext.put("refUUID", refUuid);
-        logger.trace_start(method);      
-        
+        logger.trace_start(method);
+
         PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");
         prep.setString(1, refUuid);
         rs = prep.executeQuery();
@@ -366,24 +379,6 @@ class ServiceEngine {
             throw new EJBException("Commit Failed!");
         }
         return result;
-    }
-
-    private static String verifyInstance(String refUuid, String result, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
-        String method = "verifyInstance";
-        logger.trace_start(method);
-        URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
-
-        while (!result.equals("COMMITTED") && !result.equals("FAILED")) {
-            logger.trace(method, "Waiting on instance: " + result);
-            sleep(5000);//wait for 5 seconds and check again later        
-            HttpURLConnection status = (HttpURLConnection) url.openConnection();
-            result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());
-            /*if (!(result.equals("COMMITTED") || result.equals("FAILED"))) {
-            throw new EJBException("Ready Check Failed!");
-            }*/
-        }
-        logger.trace_end(method);
-        return verify(refUuid, token);
     }
 
     // -------------------------- SERVICE FUNCTIONS --------------------------------    

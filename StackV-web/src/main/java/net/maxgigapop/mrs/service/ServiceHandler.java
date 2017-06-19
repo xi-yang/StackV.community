@@ -365,6 +365,7 @@ public class ServiceHandler {
         while (true) {
             instanceState = status();
             if (instanceState.equals("COMMITTED")) {
+                lastState = instanceState;
                 ServiceEngine.verify(refUuid, token);
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
@@ -384,8 +385,7 @@ public class ServiceHandler {
 
             String instanceState = status();
             if (instanceState.equals("COMMITTED")) {
-                ServiceEngine.verify(refUuid, token);
-                lastState = "VERIFY";
+                lastState = ServiceEngine.verify(refUuid, token);              
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
                 return 5;
