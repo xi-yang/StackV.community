@@ -174,7 +174,7 @@ function loadDetails() {
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                if (subStatus !== result) {
+                if (subState !== result) {
                     $(".instance-command").attr('disabled', false);
                     resumeRefresh();
                     reloadData();
