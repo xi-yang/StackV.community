@@ -79,12 +79,7 @@
                             </td>
                         </tr>
                     </tbody>                                        
-                </table>                                        
-                <div class="hide" id="instance-verification"></div>
-                <div class="hide" id="verification-run"></div>
-                <div class="hide" id="verification-time"></div>
-                <div class="hide" id="verification-addition"></div>
-                <div class="hide" id="verification-reduction"></div>                                       
+                </table>                                                                                               
 
                 <!--ACL Table-->
                 <table class="management-table hide acl-table">

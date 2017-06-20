@@ -165,7 +165,6 @@ function loadDetails() {
         pauseRefresh();
 
         var command = this.id;
-        var currStatus = $("#instance-substate").html();
         var apiUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
         $.ajax({
             url: apiUrl,
@@ -175,7 +174,7 @@ function loadDetails() {
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                if (currStatus !== result) {
+                if (subStatus !== result) {
                     $(".instance-command").attr('disabled', false);
                     resumeRefresh();
                     reloadData();
@@ -234,12 +233,15 @@ function subloadDetails() {
              *      4 - super_state     
              *      5 - last_state */
 
-            $("#instance-verification").html(instance[0]);
-            $("#instance-alias").html(instance[2]);
-            $("#instance-creation-time").html(instance[3]);
-            $("#instance-superstate").html(instance[4]);
-
+            verificationState = instance[0];
+            alias = instance[2];
+            creation = instance[3];
+            superState = instance[4];
             lastState = instance[5];
+            
+            $("#instance-alias").html(alias);
+            $("#instance-creation-time").html(creation);
+            $("#instance-superstate").html(superState);
 
             // Next steps
             subloadStatus(uuid);
@@ -261,6 +263,8 @@ function subloadStatus(refUuid) {
             if (result === "FAILED") {
                 last.html(" (After " + lastState + ")");
             }
+            
+            subState = result;
             ele.html(result);
 
             if (view === "center") {
@@ -288,12 +292,11 @@ function subloadVerification() {
              *      3 - reduction
              *      4 - service_instance_id 
              *      5 - enabled */
-            $("#verification-run").html(verification[0]);
-            $("#verification-time").html(verification[1]);
-            $("#verification-addition").html(verification[2]);
-            $("#verification-reduction").html(verification[3]);
             
             verificationRun = verification[0];
+            verificationTime = verification[1];
+            verificationAddition = verification[2];
+            verificationReduction = verification[3];
             verificationEnabled = verification[5];
 
             instructionModerate();
@@ -311,7 +314,7 @@ function subloadACL() {
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
-        success: function (verification) {
+        success: function () {
             /*  acl mapping:
              */
             var panel = document.getElementById("details-panel");
@@ -440,9 +443,7 @@ function buildDeltaTable(type) {
 
 function loadVisualization() {
     $("#details-viz").load("/StackV-web/details_viz.html", function () {
-        document.getElementById("visual-panel").innerHTML = "";
-        var State = document.getElementById("instance-substate").innerHTML;
-        var verificationState = document.getElementById("instance-verification").innerHTML;
+        document.getElementById("visual-panel").innerHTML = "";        
 
         var States = {
             "INIT": 0,
@@ -675,7 +676,7 @@ function loadVisualization() {
                 if ((tab.name === "Verification") && (verificationState === null))
                     continue;
 
-                if (States[tab.state] <= States[State]) {
+                if (States[tab.state] <= States[subState]) {
                     createTab(tab, tabBar);
                     tabContent.appendChild(tab.createContent());
                 }
@@ -802,12 +803,8 @@ function toggleTextModel(viz_table, text_table) {
 
 // Moderation Functions
 function instructionModerate() {
-    if (document.getElementById("verification-run") !== null) {
-        var subState = document.getElementById("instance-substate").innerHTML;
-        var verificationState = document.getElementById("instance-verification").innerHTML;
-        var verificationRun = document.getElementById("verification-run").innerHTML;
-        var blockString = "";
-
+    var blockString = "";
+    if (verificationRun !== null) {               
         switch (subState) {
             case "INIT":
                 blockString = "Service is being initialized.";
@@ -854,11 +851,7 @@ function instructionModerate() {
     document.getElementById("instruction-block").innerHTML = blockString;
 }
 
-function buttonModerate() {
-    var superState = document.getElementById("instance-superstate").innerHTML;
-    var subState = document.getElementById("instance-substate").innerHTML;
-    var verificationState = document.getElementById("instance-verification").innerHTML;
-    
+function buttonModerate() {    
     var lastStateStr = $("#instance-laststate").html();
     var lastState = lastStateStr.substring(8,lastStateStr.length-1);
     $(".instance-command").addClass("hide");
