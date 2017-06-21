@@ -174,6 +174,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
                 VersionItemPersistenceManager.save(vi);
                 driverInstance.setHeadVersionItem(vi);
             }
+            
 
         } catch (IOException e) {
             throw logger.throwing(method, driverInstance + " failed AwsModelBuilder.createOntology", e);

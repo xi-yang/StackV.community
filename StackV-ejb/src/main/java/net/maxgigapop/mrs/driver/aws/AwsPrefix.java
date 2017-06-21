@@ -67,6 +67,8 @@ public class AwsPrefix {
     }
 
     public String ec2Service() {  return prefix+":ec2service+%s";  }
+    
+    public String cgw() { return prefix+":customer-gateway+%s"; }
 
     public String directConnectService() {  return defaultPrefix+":directconnect+%s";  }
 
@@ -113,4 +115,6 @@ public class AwsPrefix {
     public String vpcNetworkAddress() {  return prefix+":vpc+%s:cidr";  }
 
     public String vpcService() {  return prefix+":vpcservice+%s";  }
+    
+    public String vpn() {  return prefix+":vpn+%s";  }
 }
