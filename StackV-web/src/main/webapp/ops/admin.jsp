@@ -1,9 +1,4 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
 <html>
     <head>
@@ -15,6 +10,8 @@
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
+        
+        <link rel="stylesheet" type="text/css" href="/StackV-web/data/DataTables/datatables.min.css"/>
     </head>
 
     <body>
@@ -98,16 +95,14 @@
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
-        <script src="/StackV-web/js/datatables/jquery.dataTables.min.js"></script>
-        <script src="/StackV-web/js/datatables/dataTables.scroller.min.js"></script>
-        <script src="/StackV-web/js/datatables/dataTables.fixedColumns.min.js"></script>
+        <script src="/StackV-web/data/DataTables/datatables.min.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/admin.js"></script>
         <!--        type ahead libraries-->
         <script src="/StackV-web/js/typeahead.js/typeahead.bundle.js"></script>
         <script src="/StackV-web/js/test.js"></script>
-        
+
         <script>
                             //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
                             dojoConfig = {

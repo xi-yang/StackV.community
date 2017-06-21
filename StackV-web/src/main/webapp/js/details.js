@@ -690,7 +690,7 @@ function loadVisualization() {
                 visualization_panel.appendChild(tabContent);
 
                 setEvent();
-            }
+            }            
         }
 
         function make_tab_id(tab) {
