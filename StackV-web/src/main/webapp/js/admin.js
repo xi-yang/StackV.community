@@ -125,7 +125,7 @@ function loadAdmin() {
             tweenLoggingPanel.play();
             $('div.dataTables_filter input').focus();
         }
-    }, 500);
+    }, 1000);
     reloadLogs();
 }
 
