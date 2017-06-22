@@ -55,9 +55,12 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -959,7 +962,7 @@ public class AwsPush {
                 param 5 -> cgw uri
                 */
                 String[] parameters = request.split("\\s+");
-
+                
                 VpnGateway vgw = ec2Client.getVirtualPrivateGateway(parameters[1]);
                 if (vgw == null) {
                     throw logger.error_throwing(method, String.format("No VGW found with id %s", parameters[1]));
@@ -969,6 +972,24 @@ public class AwsPush {
                 VpnConnection vpn = ec2Client.vgwGetVpn(parameters[1]);
                 if (vpn != null) {
                     throw logger.error_throwing(method, String.format("VGW with id %s is already part of a vpn connection with id %s.", parameters[1], vpn.getVpnConnectionId()));
+                }
+                
+                //a valid cidr block consists of a comma separated list of ip ranges
+                //pattern requires 1 ip and allows zero or more additional ips separated by commas.
+                String pattern = "^((\\d{1,3})\\.(\\d{1,3})\\.0\\.0\\/16,)*"
+                                 + "(\\d{1,3})\\.(\\d{1,3})\\.0\\.0\\/16$";
+                if (!parameters[3].matches(pattern)) {
+                    throw logger.error_throwing(method, String.format("CIDR block is invalid: %s", parameters[3]));
+                }
+                
+                //find all the 1-3 digit groupings and make sure they are less than 256
+                Pattern num = Pattern.compile("\\d{1,3}");
+                Matcher m = num.matcher(parameters[3]);
+                while (m.find()) {
+                    int n = Integer.parseInt(m.group());
+                    if (n > 255) {
+                        throw logger.error_throwing(method, String.format("CIDR block contains an invalid number: %s", m.group()));
+                    }
                 }
                 
                 //create a new customer gateway for the vpn
@@ -983,14 +1004,18 @@ public class AwsPush {
                         withVpnGatewayId(parameters[1]);
                 CreateVpnConnectionResult vpnCResult = ec2.createVpnConnection(vpnCRequest);
                 vpn = vpnCResult.getVpnConnection();
-                //set the cidr route of the vpn
-                CreateVpnConnectionRouteRequest routeRequest = new CreateVpnConnectionRouteRequest();
-                routeRequest.withDestinationCidrBlock(parameters[3]).withVpnConnectionId(vpn.getVpnConnectionId());
-                ec2.createVpnConnectionRoute(routeRequest);
+                
+                //set the cidr routes of the vpn
+                List<String> cidrs = Arrays.asList(parameters[3].split(","));
+                for (String cidr : cidrs) {
+                    CreateVpnConnectionRouteRequest routeRequest = new CreateVpnConnectionRouteRequest();
+                    routeRequest.withVpnConnectionId(vpn.getVpnConnectionId()).withDestinationCidrBlock(cidr);
+                    ec2.createVpnConnectionRoute(routeRequest);
+                }
                 
                 ec2Client.getVpnConnections().add(vpn);
                 ec2Client.getCustomerGateways().add(cgw);
-                ec2Client.vpnCreationCheck(parameters[1]);
+                ec2Client.vpnCreationCheck(vpn.getVpnConnectionId());
                 ec2Client.tagResource(vpn.getVpnConnectionId(), parameters[4]);
                 ec2Client.tagResource(cgw.getCustomerGatewayId(), parameters[5]);
             }
