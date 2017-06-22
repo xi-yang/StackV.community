@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Jun 14, 2017 at 10:21 PM
+-- Generation Time: Jun 15, 2017 at 07:21 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -29,8 +29,7 @@ CREATE TABLE `acl` (
   `subject` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `is_group` tinyint(1) NOT NULL DEFAULT '0',
   `object` varchar(45) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -91,7 +90,7 @@ CREATE TABLE `log` (
   `message` longtext COLLATE utf8_unicode_ci NOT NULL,
   `severity` varchar(10) COLLATE utf8_unicode_ci DEFAULT NULL,
   `exception` longtext COLLATE utf8_unicode_ci
-) ENGINE=InnoDB AUTO_INCREMENT=11111 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=85894 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -107,7 +106,7 @@ CREATE TABLE `service_delta` (
   `type` varchar(60) COLLATE utf8_unicode_ci NOT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `delta` longtext COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -125,7 +124,7 @@ CREATE TABLE `service_instance` (
   `alias_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `super_state` varchar(11) COLLATE utf8_unicode_ci DEFAULT NULL,
   `last_state` varchar(11) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -145,7 +144,8 @@ CREATE TABLE `service_verification` (
   `unverified_reduction` longtext COLLATE utf8_unicode_ci,
   `unverified_addition` longtext COLLATE utf8_unicode_ci,
   `reduction` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `addition` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL
+  `addition` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `enabled` tinyint(1) NOT NULL DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
@@ -238,22 +238,22 @@ ALTER TABLE `service_wizard`
 -- AUTO_INCREMENT for table `acl`
 --
 ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=57;
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=59;
 --
 -- AUTO_INCREMENT for table `log`
 --
 ALTER TABLE `log`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=11111;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=85894;
 --
 -- AUTO_INCREMENT for table `service_delta`
 --
 ALTER TABLE `service_delta`
-  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=28;
+  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=30;
 --
 -- AUTO_INCREMENT for table `service_instance`
 --
 ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=47;
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=49;
 --
 -- AUTO_INCREMENT for table `service_wizard`
 --
