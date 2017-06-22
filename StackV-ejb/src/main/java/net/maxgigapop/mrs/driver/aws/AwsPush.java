@@ -948,7 +948,8 @@ public class AwsPush {
                     ec2.deleteCustomerGateway(cgwRequest);
                     ec2Client.vpnDeletionCheck(parameters[1]);
                 } else {
-                    throw logger.error_throwing(method, String.format("There is no vpn connection with id %s", parameters[1]));
+                    //just send a warning
+                    logger.warning(method, String.format("There is no vpn connection with id %s", parameters[1]));
                 }
                 //*/
             } else if (request.contains("CreateVPNConnectionRequest")) {
@@ -964,60 +965,47 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
                 
                 VpnGateway vgw = ec2Client.getVirtualPrivateGateway(parameters[1]);
+                VpnConnection vpn = null;
+                
                 if (vgw == null) {
-                    throw logger.error_throwing(method, String.format("No VGW found with id %s", parameters[1]));
-                }
-                
-                //each vgw can only be a part of at most one vpn connection
-                VpnConnection vpn = ec2Client.vgwGetVpn(parameters[1]);
-                if (vpn != null) {
-                    throw logger.error_throwing(method, String.format("VGW with id %s is already part of a vpn connection with id %s.", parameters[1], vpn.getVpnConnectionId()));
-                }
-                
-                //a valid cidr block consists of a comma separated list of ip ranges
-                //pattern requires 1 ip and allows zero or more additional ips separated by commas.
-                String pattern = "^((\\d{1,3})\\.(\\d{1,3})\\.0\\.0\\/16,)*"
-                                 + "(\\d{1,3})\\.(\\d{1,3})\\.0\\.0\\/16$";
-                if (!parameters[3].matches(pattern)) {
-                    throw logger.error_throwing(method, String.format("CIDR block is invalid: %s", parameters[3]));
-                }
-                
-                //find all the 1-3 digit groupings and make sure they are less than 256
-                Pattern num = Pattern.compile("\\d{1,3}");
-                Matcher m = num.matcher(parameters[3]);
-                while (m.find()) {
-                    int n = Integer.parseInt(m.group());
-                    if (n > 255) {
-                        throw logger.error_throwing(method, String.format("CIDR block contains an invalid number: %s", m.group()));
+                    logger.warning(method, String.format("No VGW found with id %s", parameters[1]));
+                } else {
+                    vpn = ec2Client.vgwGetVpn(parameters[1]);
+                    //each vgw can only be a part of at most one vpn connection
+                    if (vpn != null) {
+                        logger.warning(method, String.format("VGW with id %s is already part of a vpn connection with id %s.", parameters[1], vpn.getVpnConnectionId()));
+                        vgw = null;
                     }
                 }
+
+                if (vgw != null) {
+                    //create a new customer gateway for the vpn
+                    CreateCustomerGatewayRequest cgwRequest = new CreateCustomerGatewayRequest();
+                    cgwRequest.withType(GatewayType.Ipsec1).withPublicIp(parameters[2]);
+                    CreateCustomerGatewayResult cgwResult = ec2.createCustomerGateway(cgwRequest);
+                    CustomerGateway cgw = cgwResult.getCustomerGateway();
+                    //create a vpn connection between cgw and vgw
+                    CreateVpnConnectionRequest vpnCRequest = new CreateVpnConnectionRequest();
+                    vpnCRequest.withOptions(new VpnConnectionOptionsSpecification().withStaticRoutesOnly(true)).
+                            withType("ipsec.1").withCustomerGatewayId(cgw.getCustomerGatewayId()).
+                            withVpnGatewayId(parameters[1]);
+                    CreateVpnConnectionResult vpnCResult = ec2.createVpnConnection(vpnCRequest);
+                    vpn = vpnCResult.getVpnConnection();
                 
-                //create a new customer gateway for the vpn
-                CreateCustomerGatewayRequest cgwRequest = new CreateCustomerGatewayRequest();
-                cgwRequest.withType(GatewayType.Ipsec1).withPublicIp(parameters[2]);
-                CreateCustomerGatewayResult cgwResult = ec2.createCustomerGateway(cgwRequest);
-                CustomerGateway cgw = cgwResult.getCustomerGateway();
-                //create a vpn connection between cgw and vgw
-                CreateVpnConnectionRequest vpnCRequest = new CreateVpnConnectionRequest();
-                vpnCRequest.withOptions(new VpnConnectionOptionsSpecification().withStaticRoutesOnly(true)).
-                        withType("ipsec.1").withCustomerGatewayId(cgw.getCustomerGatewayId()).
-                        withVpnGatewayId(parameters[1]);
-                CreateVpnConnectionResult vpnCResult = ec2.createVpnConnection(vpnCRequest);
-                vpn = vpnCResult.getVpnConnection();
+                    //set the cidr routes of the vpn
+                    List<String> cidrs = Arrays.asList(parameters[3].split(","));
+                    for (String cidr : cidrs) {
+                        CreateVpnConnectionRouteRequest routeRequest = new CreateVpnConnectionRouteRequest();
+                        routeRequest.withVpnConnectionId(vpn.getVpnConnectionId()).withDestinationCidrBlock(cidr);
+                        ec2.createVpnConnectionRoute(routeRequest);
+                    }
                 
-                //set the cidr routes of the vpn
-                List<String> cidrs = Arrays.asList(parameters[3].split(","));
-                for (String cidr : cidrs) {
-                    CreateVpnConnectionRouteRequest routeRequest = new CreateVpnConnectionRouteRequest();
-                    routeRequest.withVpnConnectionId(vpn.getVpnConnectionId()).withDestinationCidrBlock(cidr);
-                    ec2.createVpnConnectionRoute(routeRequest);
+                    ec2Client.getVpnConnections().add(vpn);
+                    ec2Client.getCustomerGateways().add(cgw);
+                    ec2Client.vpnCreationCheck(vpn.getVpnConnectionId());
+                    ec2Client.tagResource(vpn.getVpnConnectionId(), parameters[4]);
+                    ec2Client.tagResource(cgw.getCustomerGatewayId(), parameters[5]);
                 }
-                
-                ec2Client.getVpnConnections().add(vpn);
-                ec2Client.getCustomerGateways().add(cgw);
-                ec2Client.vpnCreationCheck(vpn.getVpnConnectionId());
-                ec2Client.tagResource(vpn.getVpnConnectionId(), parameters[4]);
-                ec2Client.tagResource(cgw.getCustomerGatewayId(), parameters[5]);
             }
             logger.trace_end(method+"."+request);
         }
@@ -3357,6 +3345,25 @@ public class AwsPush {
             String vpnURI = q.get("vpnURI").toString();
             String cgwURI = q.get("cgwURI").toString();
 
+                            
+            //Validate the CIDR
+            //pattern requires one IPv4 address and allows additional IPs separated by commas.
+            String pattern = "^((\\d{1,3})\\.(\\d{1,3})\\.0\\.0\\/16,)*"
+                             + "(\\d{1,3})\\.(\\d{1,3})\\.0\\.0\\/16$";
+            if (!routeCIDR.matches(pattern)) {
+                throw logger.error_throwing(method, String.format("CIDR block is invalid: %s", routeCIDR));
+            }
+                
+            //find all the 1-3 digit groupings and make sure they are less than 256
+            Pattern num = Pattern.compile("\\d{1,3}");
+            Matcher m = num.matcher(routeCIDR);
+            while (m.find()) {
+                int n = Integer.parseInt(m.group());
+                if (n > 255) {
+                    throw logger.error_throwing(method, String.format("CIDR block contains an invalid number: %s", m.group()));
+                }
+            }
+            
             requests += String.format("CreateVPNConnectionRequest %s %s %s %s %s\n", vgwID, cgwIP, routeCIDR, vpnURI, cgwURI);
         }
 
