@@ -75,7 +75,6 @@ public class TokenHandler {
         }
 
         try {
-            logger.trace_start(method);
             URL url = new URL(kc_url + "/realms/StackV/protocol/openid-connect/token");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
 

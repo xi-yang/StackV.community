@@ -26,6 +26,7 @@ baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
 var refreshTimer;
 var countdownTimer;
+var dataTable;
 
 // Page Load Function
 
@@ -113,6 +114,10 @@ $(function () {
     $(".clickable-row").click(function () {
         sessionStorage.setItem("uuid", $(this).data("href"));
         window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
+    });
+
+    $(".checkbox-level").click(function (evt) {
+        evt.preventDefault();
     });
 
     clearCounters();
@@ -1074,18 +1079,21 @@ function loadDataTable(apiUrl) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             }
         },
+        "dom": 'Bfrtip',
+        "buttons": [ 'csv' ],
         "columns": [
             {
                 "className": 'details-control',
                 "orderable": false,
                 "data": null,
                 "defaultContent": '',
-                "width": ""
+                "width": "20px"
             },
-            {"data": "timestamp", "width": "180px"},
+            {"data": "timestamp", "width": "150px"},
             {"data": "event"},
-            {"data": "referenceUUID", "width": "280px"},
-            {"data": "level"}
+            {"data": "referenceUUID", "width": "250px"},
+            {"data": "level", "width": "70px"},
+            {"data": "message", "visible": false, "searchable": false}
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("row-" + data.level.toLowerCase());
@@ -1097,7 +1105,10 @@ function loadDataTable(apiUrl) {
             displayBuffer: 10
         },
         "scrollX": true,
-        "scrollY": "calc(60vh - 130px)"
+        "scrollY": "calc(60vh - 130px)",
+        "initComplete": function (settings, json) {
+            console.log('DataTables has finished its initialisation.');
+        }
     });
     new $.fn.dataTable.FixedColumns(dataTable);
 
@@ -1122,6 +1133,11 @@ function loadDataTable(apiUrl) {
             pauseRefresh();
         }
     });
+
+    var level = sessionStorage.getItem("logging-level");
+    if (level !== null) {
+        $("#logging-filter-level").val(level);
+    }
 }
 function formatChild(d) {
     // `d` is the original data object for the row
@@ -1138,6 +1154,12 @@ function formatChild(d) {
                 '<td><textarea class="dataTables-child">' + d.exception + '</textarea></td>' +
                 '</tr>';
     }
+    if (d.referenceUUID !== "") {
+        retString += '<tr>' +
+                '<td>UUID:</td>' +
+                '<td><textarea class="dataTables-child">' + d.referenceUUID + '</textarea></td>' +
+                '</tr>';
+    }
     retString += '<tr>' +
             '<td>Logger:</td>' +
             '<td>' + d.logger + '</td>' +
@@ -1148,7 +1170,46 @@ function formatChild(d) {
 }
 function reloadLogs() {
     if (dataTable) {
-        dataTable.ajax.reload(null, false);
+        if (sessionStorage.getItem("logging-level") !== null) {
+            dataTable.ajax.reload(filterLogs(), false);
+        } else {
+            dataTable.ajax.reload(null, false);
+        }
     }
 }
+function filterLogs() {
+    var level = $("#logging-filter-level").val();
+    if (level !== undefined) {
+        sessionStorage.setItem("logging-level", level);
 
+        var curr = dataTable.ajax.url();
+        var paramArr = curr.split(/[?&]+/);
+        var newURL = paramArr[0];
+
+        var refEle;
+        for (var x in paramArr) {
+            if (paramArr[x].indexOf("refUUID") !== -1) {
+                refEle = paramArr[x];
+            }
+        }
+
+        newURL += "?level=" + level;
+        if (refEle) {
+            newURL += "&" + refEle;
+        }
+
+        dataTable.ajax.url(newURL).load(null, false);
+    }
+}
+function downloadLogs() {
+    var ret = [];
+    if (dataTable) {
+        var data = dataTable.rows().data();
+        for (var i in data) {
+            var log = data[i];
+
+            ret.push(JSON.stringify(log));
+        }
+    }
+    return ret;
+}

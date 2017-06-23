@@ -258,14 +258,14 @@ public class HandleServiceCall {
             throw logger.error_throwing(method, "cannot find ref:ServiceInstance");
         }
         logger.status(method, serviceInstance.getStatus());
-        if (!serviceInstance.getStatus().equals("COMPILED") && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL") && !serviceInstance.getStatus().equals("COMMITTED-PARTIAL")) {
+        if (!serviceInstance.getStatus().equals("COMPILED") && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL") && !serviceInstance.getStatus().equals("COMMITTING-PARTIAL")) {
             throw logger.error_throwing(method, "ref:ServiceInstance must have status=INIT or PROPAGATED-PARTIAL or COMMITTED-PARTIAL while the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         if (!itSD.hasNext()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to propagate.");
         }
-        // By default propagate a delta if it is the first with init status in queue or there is only commited ones before.
+        // By default propagate a delta if it is the first with init status in queue or there is only committing ones before.
         // Commit only one delta at a time.
         boolean canMultiPropagate = false;
         String multiPropagate = serviceInstance.getProperty("multiPropagate");
@@ -290,33 +290,33 @@ public class HandleServiceCall {
                 if (!canMultiPropagate) {
                     break;
                 }
-            } else if (!canMultiPropagate && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("READY")) {
+            } else if (!canMultiPropagate && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED")) {
                 throw logger.error_throwing(method, "ref:ServiceInstance with 'multiPropagate=false' encounters target:ServiceDelta with status="+serviceDelta.getStatus());
             }
         }
         itSD = serviceInstance.getServiceDeltas().iterator();
         boolean hasInitiated = false;
         boolean hasPropagated = false;
-        boolean hasCommited = false;
+        boolean isCommitting = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
                 hasInitiated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
-            } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTED")) {
-                hasCommited = true;
+            } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTING")) {
+                isCommitting = true;
             }
         }
         //serviceInstance.setStatus("COMPILED");
         if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
-        } else if (hasPropagated && !hasCommited) {
+        } else if (hasPropagated && !isCommitting) {
             serviceInstance.setStatus("PROPAGATED");
-        } else if (hasPropagated && hasCommited) {
-            serviceInstance.setStatus("COMMITTED-PARTIAL");
-        } else if (!hasPropagated && hasCommited) {
-            serviceInstance.setStatus("COMMITTED");
+        } else if (hasPropagated && isCommitting) {
+            serviceInstance.setStatus("COMMITTING-PARTIAL");
+        } else if (!hasPropagated && isCommitting) {
+            serviceInstance.setStatus("COMMITTING");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
@@ -334,14 +334,14 @@ public class HandleServiceCall {
         }
         if (!serviceInstance.getStatus().equals("PROPAGATED")
                 && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL")
-                && !serviceInstance.getStatus().equals("COMMITTED-PARTIAL")) {
+                && !serviceInstance.getStatus().equals("COMMITTING-PARTIAL")) {
             throw logger.error_throwing(method, "ref:ServiceInstance must have status=PROPAGATED or PROPAGATED-PARTIAL or COMMITTED-PARTIAL while the actual status=" + serviceInstance.getStatus());
         }
         if (serviceInstance.getServiceDeltas() == null || serviceInstance.getServiceDeltas().isEmpty()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to commit.");
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
-        // By default commit a delta if it is the first with propagated status in queue or there is only commited ones before.
+        // By default commit a delta if it is the first with propagated status in queue or there is only committing ones before.
         // Also commit only one delta at a time.
         boolean canMultiCommit = false;
         String multiCommit = serviceInstance.getProperty("multiCommit");
@@ -363,38 +363,38 @@ public class HandleServiceCall {
                 Future<String> asynResult = systemCallHandler.commitDelta(systemInstance);
                 systemInstance.setCommitStatus(asynResult);
                 //systemInstance.setCommitFlag(true);
-                serviceDelta.setStatus("COMMITTED");
+                serviceDelta.setStatus("COMMITTING");
                 DeltaPersistenceManager.merge(serviceDelta);
                 if (!canMultiCommit) {
                     break;
                 }
-            } else if (!forced && !canMultiCommit && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("READY")) {
+            } else if (!forced && !canMultiCommit && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED")) {
                 throw logger.error_throwing(method, "ref:ServiceInstance with forced==false and canMultiCommit==false encounters target:ServiceDelta in unexpected status=" + serviceDelta.getStatus());
             }
         }
         itSD = serviceInstance.getServiceDeltas().iterator();
         boolean hasInitiated = false;
         boolean hasPropagated = false;
-        boolean hasCommited = false;
+        boolean isCommitting = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
                 hasInitiated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
-            } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTED")) {
-                hasCommited = true;
+            } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTING")) {
+                isCommitting = true;
             }
         }
         //serviceInstance.setStatus("INIT");
         if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
-        } else if (hasPropagated && !hasCommited) {
+        } else if (hasPropagated && !isCommitting) {
             serviceInstance.setStatus("PROPAGATED");
-        } else if (hasPropagated && hasCommited) {
-            serviceInstance.setStatus("COMMITTED-PARTIAL");
-        } else if (!hasPropagated && hasCommited) {
-            serviceInstance.setStatus("COMMITTED");
+        } else if (hasPropagated && isCommitting) {
+            serviceInstance.setStatus("COMMITTING-PARTIAL");
+        } else if (!hasPropagated && isCommitting) {
+            serviceInstance.setStatus("COMMITTING");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
@@ -437,15 +437,16 @@ public class HandleServiceCall {
         }
         logger.status(method, serviceInstance.getStatus());
         if (!forced && !serviceInstance.getStatus().startsWith("PROPAGATED")
-                && !serviceInstance.getStatus().startsWith("COMMITTED")
+                && !serviceInstance.getStatus().startsWith("COMMITTING")
+                && !serviceInstance.getStatus().equals("COMMITTED")
                 && !serviceInstance.getStatus().equals("READY")) {
-            throw logger.error_throwing(method, "ref:ServiceInstance with forced==false must have status=PROPAGATED or COMMITTED or READY while the actual status=" + serviceInstance.getStatus());
+            throw logger.error_throwing(method, "ref:ServiceInstance with forced==false must have status=PROPAGATED or COMMITTING or COMMITTED or READY while the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         List<ServiceDelta> reversableServiceDeltas = new ArrayList<>();
         while (itSD.hasNext()) {
             ServiceDelta svcDelta = itSD.next();
-            if (svcDelta.getStatus().equalsIgnoreCase("READY") || svcDelta.getStatus().equalsIgnoreCase("COMMITTED")
+            if (svcDelta.getStatus().equalsIgnoreCase("COMMITTED") || svcDelta.getStatus().equalsIgnoreCase("COMMITTING")
                     || (forced && svcDelta.getStatus().equalsIgnoreCase("FAILED"))) {
                 reversableServiceDeltas.add(svcDelta);
             }
@@ -564,7 +565,7 @@ public class HandleServiceCall {
         if (serviceInstance.getStatus().equals("PROPAGATED")) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else {
-            serviceInstance.setStatus("COMMITTED-PARTIAL");
+            serviceInstance.setStatus("COMMITTING-PARTIAL");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
@@ -584,7 +585,7 @@ public class HandleServiceCall {
         if (!serviceInstance.getStatus().equals(ServiceInstancePersistenceManager.findById(serviceInstance.getId()).getStatus())) {
             ServiceInstancePersistenceManager.merge(serviceInstance);
         }
-        if (!serviceInstance.getStatus().equals("COMMITTED")) {
+        if (!serviceInstance.getStatus().equals("COMMITTING")) {
             logger.trace_end(method, serviceInstance.getStatus());
             return serviceInstance.getStatus();
         }
@@ -603,16 +604,16 @@ public class HandleServiceCall {
             if (serviceDelta.getSystemDelta() == null) {
                 throw logger.error_throwing(method, "ref:ServiceInstance encounters uncompiled ref:ServiceDelta (having null SystemDelta).");
             }
-            if (serviceDelta.getStatus().equals("READY")) {
+            if (serviceDelta.getStatus().equals("COMMITTED")) {
                 continue;
             }
             if (serviceDelta.getStatus().equals("FAILED")) {
                 continue;
             }
-            if (!serviceDelta.getStatus().equals("COMMITTED")) {
+            if (!serviceDelta.getStatus().equals("COMMITTING")) {
                 throw logger.error_throwing(method, "ref:ServiceInstance encounters uncompiled ref:ServiceDelta in unexpected status=" + serviceDelta.getStatus());
             }
-            // for commited serviceDelta we check if the systemDelta has been commited
+            // for committing serviceDelta we check if the systemDelta has been committing
             SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
             if (systemInstance == null) {
                 throw logger.error_throwing(method, "cannot find SystemInstance based on ref:ServiceDelta.");
@@ -628,14 +629,14 @@ public class HandleServiceCall {
                 try {
                     String commitStatus = asyncStatus.get();
                     if (commitStatus.equals("SUCCESS")) {
-                        serviceDelta.setStatus("READY");
+                        serviceDelta.setStatus("COMMITTED");
                     }
                 } catch (Exception ex) {
                     logger.error(method, "ref:ServiceInstance->SystemInstance commit done and asyncStatus.get() -exception- "+ex);
                     serviceDelta.setStatus("FAILED");
                 }
             } else {
-                serviceDelta.setStatus("COMMITTED");
+                serviceDelta.setStatus("COMMITTING");
             }
             DeltaPersistenceManager.merge(serviceDelta);
         }
@@ -651,16 +652,16 @@ public class HandleServiceCall {
             if (serviceDelta.getStatus().equals("FAILED")) {
                 failed = true;
                 break;
-            } else if (serviceDelta.getStatus().equals("COMMITTED")) {
+            } else if (serviceDelta.getStatus().equals("COMMITTING")) {
                 ready = false;
             }
         }
         if (failed) {
             serviceInstance.setStatus("FAILED");
         } else if (ready) {
-            serviceInstance.setStatus("READY");
-        } else {
             serviceInstance.setStatus("COMMITTED");
+        } else {
+            serviceInstance.setStatus("COMMITTING");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.trace_end(method, serviceInstance.getStatus());
@@ -741,26 +742,26 @@ public class HandleServiceCall {
         itSD = serviceInstance.getServiceDeltas().iterator();
         boolean hasInitiated = false;
         boolean hasPropagated = false;
-        boolean hasCommited = false;
+        boolean isCommitting = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
                 hasInitiated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
-            } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTED")) {
-                hasCommited = true;
+            } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTING")) {
+                isCommitting = true;
             }
         }
         //serviceInstance.setStatus("COMPILED");
         if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
-        } else if (hasPropagated && !hasCommited) {
+        } else if (hasPropagated && !isCommitting) {
             serviceInstance.setStatus("PROPAGATED");
-        } else if (hasPropagated && hasCommited) {
-            serviceInstance.setStatus("COMMITTED-PARTIAL");
-        } else if (!hasPropagated && hasCommited) {
-            serviceInstance.setStatus("COMMITTED");
+        } else if (hasPropagated && isCommitting) {
+            serviceInstance.setStatus("COMMITTING-PARTIAL");
+        } else if (!hasPropagated && isCommitting) {
+            serviceInstance.setStatus("COMMITTING");
         }
         ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
@@ -788,12 +789,14 @@ public class HandleServiceCall {
         if (refModel == null) {
             throw logger.error_throwing(method, "fetchReferenceModel() returned null - systemModelCoordinator not ready or contending on access lock");
         }
+        Boolean ready = null;
         if (serviceDelta.getSystemDelta().getModelAddition() != null && serviceDelta.getSystemDelta().getModelAddition().getOntModel() != null) {
             Model modelAdditionVerified = ModelFactory.createDefaultModel();
             Model modelAdditionUnverified = ModelFactory.createDefaultModel();
             boolean additionVerified = this.verifyModelAddition(serviceDelta.getSystemDelta().getModelAddition().getOntModel().getBaseModel(), 
                     refModel.getBaseModel(), modelAdditionVerified, modelAdditionUnverified);
             apiData.setAdditionVerified(additionVerified);
+            ready = additionVerified;
             try {
                 if (marshallWithJson) {
                     apiData.setModelAdditionVerified(ModelUtil.marshalModelJson(modelAdditionVerified));
@@ -812,6 +815,11 @@ public class HandleServiceCall {
             boolean reductionVerified = this.verifyModelReduction(serviceDelta.getSystemDelta().getModelReduction().getOntModel().getBaseModel(), 
                     refModel.getBaseModel(), modelReductionVerified, modelReductionUnverified);
             apiData.setReductionVerified(reductionVerified);
+            if (ready == null) {
+                ready = reductionVerified;
+            } else {
+                ready = (ready && reductionVerified);
+            }
             try {
                 if (marshallWithJson) {
                     apiData.setModelReductionVerified(ModelUtil.marshalModelJson(modelReductionVerified));
@@ -823,6 +831,10 @@ public class HandleServiceCall {
             } catch (Exception ex) {
                 throw logger.throwing(method, ex);
             }
+        }
+        if (ready) {
+            serviceInstance.setStatus("READY");
+            ServiceInstancePersistenceManager.merge(serviceInstance);
         }
         logger.end(method);
     }

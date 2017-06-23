@@ -59,7 +59,7 @@ public class ServiceHandler {
     String type;
     String owner;
     String alias;
-    String lastState = "PRE-INIT";
+    String lastState = "INIT";
 
     public ServiceHandler(JSONObject input, TokenHandler initToken) {
         token = initToken;
@@ -70,8 +70,9 @@ public class ServiceHandler {
 
     public ServiceHandler(String refUUID, TokenHandler initToken) {
         this.refUUID = refUUID;
-        token = initToken;
         logger.refuuid(refUUID);
+
+        token = initToken;
 
         logger.trace("ServiceHandler", "Service Handler initialized: " + refUUID);
         loadInstance(refUUID);
@@ -116,7 +117,7 @@ public class ServiceHandler {
             ServiceParser paraParser = new ServiceParser(type);
             HashMap<String, String> paraMap = paraParser.parse(dataJSON, refUUID);
 
-            // Initialize service parameters.            
+            // Initialize service parameters.
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
             // Install Instance into DB.
@@ -248,10 +249,14 @@ public class ServiceHandler {
                 case "delete":
                 case "force_delete":
                     deleteInstance(refUUID, token);
+                    break;
 
                 case "verify":
-                case "reverify":
                     ServiceEngine.verify(refUUID, token);
+                    break;
+                case "unverify":
+                    ServiceEngine.cancelVerify(refUUID, token);
+                    break;
 
                 default:
                     logger.warning(method, "Invalid action");
@@ -360,6 +365,7 @@ public class ServiceHandler {
         while (true) {
             instanceState = status();
             if (instanceState.equals("COMMITTED")) {
+                lastState = instanceState;
                 ServiceEngine.verify(refUuid, token);
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
@@ -379,8 +385,7 @@ public class ServiceHandler {
 
             String instanceState = status();
             if (instanceState.equals("COMMITTED")) {
-                ServiceEngine.verify(refUuid, token);
-                lastState = "VERIFY";
+                lastState = ServiceEngine.verify(refUuid, token);              
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
                 return 5;
@@ -522,7 +527,7 @@ public class ServiceHandler {
             prep = front_conn.prepareStatement("UPDATE service_verification V "
                     + "INNER JOIN service_instance I "
                     + "ON V.service_instance_id = I.service_instance_id AND I.referenceUUID = ? "
-                    + "SET V.verification_state = ?");
+                    + "SET V.verification_state = ?, V.verification_run = 0");
             prep.setString(1, refUUID);
             prep.setNull(2, java.sql.Types.INTEGER);
             prep.executeUpdate();

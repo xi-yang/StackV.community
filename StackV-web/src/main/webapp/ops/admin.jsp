@@ -1,9 +1,4 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
 <html>
     <head>
@@ -15,6 +10,8 @@
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
+        
+        <link rel="stylesheet" type="text/css" href="/StackV-web/data/DataTables/datatables.min.css"/>
     </head>
 
     <body>
@@ -48,19 +45,19 @@
                         <textarea id="api_result" style="color: black;"></textarea>
                     </div>
                 </div>
-                <div class="hide admin-panel-logging">
-                    <label for="select-logging-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
-                    <select id="select-logging-level" onchange="loggingChange(this)">
-                        <option value="TRACE">TRACE</option>
-                        <option value="INFO">INFO</option>
-                        <option value="WARN">WARN</option>
-                        <option value="ERROR">ERROR</option>
-                    </select>  
-                </div>
             </div>
             <div id="logging-panel">
                 <div id="logging-header-div">
-                    Logs                  
+                    Logs
+                    <div style="float:right;">
+                        <label for="logging-filter-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
+                        <select id="logging-filter-level" onchange="filterLogs(this)">
+                            <option value="TRACE" selected>TRACE</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARN">WARN</option>
+                            <option value="ERROR">ERROR</option>
+                        </select> 
+                    </div>                  
                 </div>
                 <div id="logging-body-div">
                     <table id="loggingData" class="table table-striped table-bordered display nowrap" cellspacing="0" width="100%">
@@ -98,18 +95,13 @@
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
-        <script src="/StackV-web/js/datatables/jquery.dataTables.min.js"></script>
-        <script src="/StackV-web/js/datatables/dataTables.scroller.min.js"></script>
-        <script src="/StackV-web/js/datatables/dataTables.fixedColumns.min.js"></script>
+        <script src="/StackV-web/data/DataTables/datatables.min.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/admin.js"></script>
         <!--        type ahead libraries-->
         <script src="/StackV-web/js/typeahead.js/typeahead.bundle.js"></script>
         <script src="/StackV-web/js/test.js"></script>
-
-
-
 
         <script>
                             //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
