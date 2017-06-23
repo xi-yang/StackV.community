@@ -3355,15 +3355,21 @@ public class AwsPush {
             List<String> cidrs = Arrays.asList(routeCIDR.split(","));
             //now validate each individual cidr
             for (String cidr : cidrs) {
-                String parts[] = cidr.split("\\/|.");
+                String parts[] = cidr.split("[/.]");
                 
-                int ip = 0, temp, mask, min, max, bits = Integer.parseInt(parts[4]);
+                //int ip = 0, temp, mask, min, max, bits = Integer.parseInt(parts[4]);
+                if (parts.length < 5) {
+                    throw logger.error_throwing(method, String.format("CIDR is invalid: %s, cannot divide into 5 parts.", cidr));
+                }
+                    
+                int temp, bits = Integer.parseInt(parts[4]);
                 
                 if (bits > 32) {
                     throw logger.error_throwing(method, String.format("CIDR range is invalid: %d", bits));
                 }
                 
                 for (int i = 0; i < 4; i++) {
+                     System.out.println(i);
                     temp = Integer.parseInt(parts[i]);
                     if (temp > 255) {
                         throw logger.error_throwing(method, String.format("ip entry is invalid: %d", temp));
