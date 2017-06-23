@@ -993,7 +993,8 @@ public class AwsPush {
                     vpn = vpnCResult.getVpnConnection();
                 
                     //set the cidr routes of the vpn. assumes that cidrs have been validated
-                    for (String cidr : parameters[3].split(",")) {
+                    List <String> cidrs = Arrays.asList(parameters[3].split(","));
+                    for (String cidr : cidrs) {
                         CreateVpnConnectionRouteRequest routeRequest = new CreateVpnConnectionRouteRequest();
                         routeRequest.withVpnConnectionId(vpn.getVpnConnectionId()).withDestinationCidrBlock(cidr);
                         ec2.createVpnConnectionRoute(routeRequest);
@@ -3357,32 +3358,24 @@ public class AwsPush {
             for (String cidr : cidrs) {
                 String parts[] = cidr.split("[/.]");
                 
-                //int ip = 0, temp, mask, min, max, bits = Integer.parseInt(parts[4]);
                 if (parts.length < 5) {
-                    throw logger.error_throwing(method, String.format("CIDR is invalid: %s, cannot divide into 5 parts.", cidr));
+                    throw logger.error_throwing(method, String.format("CIDR is invalid: %s.", cidr));
                 }
-                    
-                int temp, bits = Integer.parseInt(parts[4]);
                 
+                //validate the CIDR range
+                int bits = Integer.parseInt(parts[4]);
                 if (bits > 32) {
-                    throw logger.error_throwing(method, String.format("CIDR range is invalid: %d", bits));
+                    throw logger.error_throwing(method, String.format("CIDR range is invalid: %d, must be between 0 and 32 inclusive.", bits));
                 }
                 
-                for (int i = 0; i < 4; i++) {
-                     System.out.println(i);
-                    temp = Integer.parseInt(parts[i]);
+                int temp;
+                for (String s : parts) {
+                    temp = Integer.parseInt(s);
                     if (temp > 255) {
-                        throw logger.error_throwing(method, String.format("ip entry is invalid: %d", temp));
+                        throw logger.error_throwing(method, String.format("IP number is invalid: %d, must be between 0 and 255 inclusive.", temp));
                     }
-                    //ip = ip<<8 | temp;
                 }
-                
-                //mask = -1 << (32 - bits);
-                //min = ip & mask;
-                //max = ip | ~mask;
-                
             }
-            
             requests += String.format("CreateVPNConnectionRequest %s %s %s %s %s\n", vgwID, cgwIP, routeCIDR, vpnURI, cgwURI);
         }
 
