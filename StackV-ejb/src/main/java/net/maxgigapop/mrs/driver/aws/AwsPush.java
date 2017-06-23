@@ -992,9 +992,8 @@ public class AwsPush {
                     CreateVpnConnectionResult vpnCResult = ec2.createVpnConnection(vpnCRequest);
                     vpn = vpnCResult.getVpnConnection();
                 
-                    //set the cidr routes of the vpn
-                    List<String> cidrs = Arrays.asList(parameters[3].split(","));
-                    for (String cidr : cidrs) {
+                    //set the cidr routes of the vpn. assumes that cidrs have been validated
+                    for (String cidr : parameters[3].split(",")) {
                         CreateVpnConnectionRouteRequest routeRequest = new CreateVpnConnectionRouteRequest();
                         routeRequest.withVpnConnectionId(vpn.getVpnConnectionId()).withDestinationCidrBlock(cidr);
                         ec2.createVpnConnectionRoute(routeRequest);
@@ -3345,23 +3344,37 @@ public class AwsPush {
             String vpnURI = q.get("vpnURI").toString();
             String cgwURI = q.get("cgwURI").toString();
 
-                            
             //Validate the CIDR
             //pattern requires one IPv4 address and allows additional IPs separated by commas.
-            String pattern = "^((\\d{1,3})\\.(\\d{1,3})\\.0\\.0\\/16,)*"
-                             + "(\\d{1,3})\\.(\\d{1,3})\\.0\\.0\\/16$";
+            String cidrPattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\/\\d{1,2}";
+            String pattern = "^("+cidrPattern+",)*"+cidrPattern+"$";
             if (!routeCIDR.matches(pattern)) {
                 throw logger.error_throwing(method, String.format("CIDR block is invalid: %s", routeCIDR));
             }
+            
+            List<String> cidrs = Arrays.asList(routeCIDR.split(","));
+            //now validate each individual cidr
+            for (String cidr : cidrs) {
+                String parts[] = cidr.split("\\/|.");
                 
-            //find all the 1-3 digit groupings and make sure they are less than 256
-            Pattern num = Pattern.compile("\\d{1,3}");
-            Matcher m = num.matcher(routeCIDR);
-            while (m.find()) {
-                int n = Integer.parseInt(m.group());
-                if (n > 255) {
-                    throw logger.error_throwing(method, String.format("CIDR block contains an invalid number: %s", m.group()));
+                int ip = 0, temp, mask, min, max, bits = Integer.parseInt(parts[4]);
+                
+                if (bits > 32) {
+                    throw logger.error_throwing(method, String.format("CIDR range is invalid: %d", bits));
                 }
+                
+                for (int i = 0; i < 4; i++) {
+                    temp = Integer.parseInt(parts[i]);
+                    if (temp > 255) {
+                        throw logger.error_throwing(method, String.format("ip entry is invalid: %d", temp));
+                    }
+                    //ip = ip<<8 | temp;
+                }
+                
+                //mask = -1 << (32 - bits);
+                //min = ip & mask;
+                //max = ip | ~mask;
+                
             }
             
             requests += String.format("CreateVPNConnectionRequest %s %s %s %s %s\n", vgwID, cgwIP, routeCIDR, vpnURI, cgwURI);
