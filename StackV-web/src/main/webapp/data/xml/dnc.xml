@@ -3,7 +3,7 @@
 <intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:noNamespaceSchemaLocation="intent.xsd">
     <stage name="Connections">
-        <group factory="true" name="Link">
+        <group factory="true" name="link">
             <input>
                 <name>Connection Name</name>
                 <type>text</type>

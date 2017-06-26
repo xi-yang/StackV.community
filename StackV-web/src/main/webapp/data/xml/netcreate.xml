@@ -3,22 +3,10 @@
 <intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="intent.xsd">
     <meta>
-        <block>
-            <name>subnets</name>
-            <type>number</type>
-        </block>
-        <block>
-            <name>vms</name>
-            <type>number</type>
-        </block>
-        <block condition="openstack-form">
-            <name>gateways</name>
-            <type>number</type>
-        </block>
-        <block condition="openstack-form">
-            <name>sriovs</name>
-            <type>number</type>
-        </block>
+        <block>subnets</block>            
+        <block>vms</block>
+        <block condition="openstack-form">gateways</block>
+        <block condition="openstack-form">sriovs</block>
     </meta>
     <stage name="Host">
         <input>
@@ -33,7 +21,7 @@
         </input>
     </stage>
     <stage name="Details">
-        <group>            
+        <group name="network">            
             <input>
                 <name>Driver URI</name>
                 <type>select</type>
@@ -48,7 +36,7 @@
                 <type>text</type>
             </input>
         </group>
-        <group condition="aws-form">
+        <group condition="aws-form" name="direct">
             <input>
                 <name>Direct Connect Destination</name>
                 <type>text</type>
@@ -60,9 +48,33 @@
         </group>
     </stage>
     <stage name="Subnets">
-        <input>
-            <name>Name</name>
-            <type>text</type>
-        </input>
+        <group block="subnets" name="subnet">
+            <input>
+                <name>Name</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>CIDR Block</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>Default Routing</name>
+                <type>checkbox</type>
+            </input>
+            <group factory="true" name="route">
+                <input>
+                    <name>From</name>
+                    <type>text</type>
+                </input>
+                <input>
+                    <name>To</name>
+                    <type>text</type>
+                </input>
+                <input>
+                    <name>Next Hop</name>
+                    <type>text</type>
+                </input>
+            </group>
+        </group>
     </stage>
 </intent>
