@@ -189,7 +189,7 @@ public class OpenStackNeutronModelBuilder {
             String imageid = server.getImageId();
             String flavorid = server.getFlavorId();
             String keypair = server.getKeyName();
-            String server_name = openstackget.getServereName(server);
+            String server_name = openstackget.getServerName(server);
 
             Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostID, node);
 
