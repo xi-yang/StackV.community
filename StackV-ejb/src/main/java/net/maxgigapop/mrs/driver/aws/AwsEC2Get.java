@@ -1176,15 +1176,16 @@ public class AwsEC2Get {
     public void vpnDeletionCheck(String id) {
         DescribeVpnConnectionsRequest request = new DescribeVpnConnectionsRequest();
         request.withVpnConnectionIds(id);
-
+        
         long delay = 1000L;
         while (true) {
             delay *= 2;
             try {
                 VpnConnection resource = client.describeVpnConnections(request).getVpnConnections().get(0);
-                if (resource == null) {
+                if (resource == null || resource.getState().equals(VpnState.Deleted.toString()) ) {
                     break;
                 }
+                
             } catch (com.amazonaws.AmazonServiceException ex) {
                 if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
