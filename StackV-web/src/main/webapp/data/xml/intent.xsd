@@ -38,10 +38,12 @@ IN THE WORK.
     <!--Simple-->
     <xs:attribute name="factory" type="xs:boolean"/>
     <xs:attribute name="name" type="xs:string"/>
+    <xs:element name="condition" type="xs:string"/>
     
     <xs:element name="name" type="xs:string"/>
     <xs:element name="type" type="xs:string"/>
     <xs:element name="size" type="xs:string"/>
+    <xs:element name="trigger" type="xs:string"/>
     <xs:element name="default" type="xs:string"/>
     
     <!--Complex-->
@@ -59,6 +61,7 @@ IN THE WORK.
                 <xs:element ref="group" minOccurs="0" maxOccurs="10"/>
                 <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
+            <xs:attribute ref="name" use="required"/>
         </xs:complexType>
     </xs:element>
     

@@ -1,8 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:noNamespaceSchemaLocation="intent.xsd">
-    <stage>
-        
+        xsi:noNamespaceSchemaLocation="intent.xsd">
+    <meta>
+        <block>
+            <name>subnets</name>
+            <type>number</type>
+        </block>
+        <block>
+            <name>vms</name>
+            <type>number</type>
+        </block>
+        <block condition="openstack-form">
+            <name>gateways</name>
+            <type>number</type>
+        </block>
+        <block condition="openstack-form">
+            <name>sriovs</name>
+            <type>number</type>
+        </block>
+    </meta>
+    <stage name="Host">
+        <input>
+            <name>AWS</name>
+            <type>button</type>
+            <trigger>aws-form</trigger>
+        </input>
+        <input>
+            <name>OpenStack</name>
+            <type>button</type>
+            <trigger>openstack-form</trigger>
+        </input>
+    </stage>
+    <stage name="Details">
+        <group>            
+            <input>
+                <name>Driver URI</name>
+                <type>select</type>
+                <source>/drivers</source>
+            </input>
+            <input>
+                <name>Type</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>CIDR</name>
+                <type>text</type>
+            </input>
+        </group>
+        <group condition="aws-form">
+            <input>
+                <name>Direct Connect Destination</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>Direct Connect VLAN</name>
+                <type>text</type>
+            </input>
+        </group>
+    </stage>
+    <stage name="Subnets">
+        <input>
+            <name>Name</name>
+            <type>text</type>
+        </input>
     </stage>
 </intent>
