@@ -2,6 +2,7 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Zan Wang 2015
  * Modified by: Xi Yang 2015-2016
+ * Modified by: Adam Smith 2017
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -207,6 +208,7 @@ public class OpenStackNeutronModelBuilder {
             model.add(model.createStatement(VM, Mrs.num_core, Integer.toString(server.getFlavor().getVcpus())));
             model.add(model.createStatement(VM, Mrs.memory_mb, Integer.toString(server.getFlavor().getRam())));
             model.add(model.createStatement(VM, Mrs.disk_gb, Integer.toString(server.getFlavor().getDisk())));
+                        
             
             for (Port port : openstackget.getServerPorts(server)) {
                 String PortName = openstackget.getResourceName(port);
@@ -275,6 +277,7 @@ public class OpenStackNeutronModelBuilder {
                 }
                 linuxRouteNum++;
             }
+            
             if (metadata != null && metadata.containsKey("quagga:bgp:info")) {
                 if (vmRoutingSvc == null) {
                     vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
@@ -490,6 +493,61 @@ public class OpenStackNeutronModelBuilder {
                     logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), cephRbdJson, cephRbdKey));
                 }
             }
+            
+            //Strongswan ipsec vpn
+            if (metadata != null && metadata.containsKey("ipsec:strongswan")) {
+                String endpointUri = ResourceTool.getResourceUri(server_name, ":service+vpn", server_name);
+                Resource strongswan = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
+                model.add(model.createStatement(VM, Nml.hasService, strongswan));
+
+                Resource localIp = RdfOwl.createResource(model, endpointUri+":tunnel1", Mrs.NetworkAddress);
+                Resource localSubnet = RdfOwl.createResource(model, endpointUri+":tunnel2", Mrs.NetworkAddress);
+                Resource remoteSubnet = RdfOwl.createResource(model, endpointUri+":tunnel1", Mrs.NetworkAddress);
+                model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localIp));
+                model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localSubnet));
+                model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, remoteSubnet));
+                
+                //need to obtain the following values;
+                /*
+                local ip
+                local subnet cidr
+                remote subnet cidr
+                t1,t2 remote ip
+                t2,t2 secret
+                */
+                model.add(model.createStatement(localIp, Mrs.type, "ipv4-address"));
+                model.add(model.createStatement(localIp, Mrs.value, "206.196.179.134"));
+                model.add(model.createStatement(localSubnet, Mrs.type, "ipv4-prefix-list"));
+                model.add(model.createStatement(localSubnet, Mrs.value, "192.168.0.0/16"));
+                model.add(model.createStatement(remoteSubnet, Mrs.type, "ipv4-prefix-list"));
+                model.add(model.createStatement(remoteSubnet, Mrs.value, "10.10.0.0/16"));
+                
+                Resource tunnel1 = RdfOwl.createResource(model, endpointUri+":tunnel1", Nml.BidirectionalPort);
+                Resource tunnel2 = RdfOwl.createResource(model, endpointUri+":tunnel2", Nml.BidirectionalPort);
+                model.add(model.createStatement(strongswan, Nml.hasBidirectionalPort, tunnel1));
+                model.add(model.createStatement(strongswan, Nml.hasBidirectionalPort, tunnel2));
+                
+                Resource t1RemoteIp = RdfOwl.createResource(model, endpointUri+":tunnel1:remote-ip", Mrs.NetworkAddress);
+                Resource t1Secret = RdfOwl.createResource(model,endpointUri+"tunnel1:secret", Mrs.NetworkAddress);
+                model.add(model.createStatement(tunnel1, Mrs.hasNetworkAddress, t1RemoteIp));
+                model.add(model.createStatement(tunnel1, Mrs.hasNetworkAddress, t1Secret));
+                model.add(model.createStatement(t1RemoteIp, Mrs.type, "ipv4-address"));
+                model.add(model.createStatement(t1RemoteIp, Mrs.value, "101.101.101.101"));
+                model.add(model.createStatement(t1RemoteIp, Mrs.type, "secret"));
+                model.add(model.createStatement(t1RemoteIp, Mrs.value, "####"));
+                
+                Resource t2RemoteIp = RdfOwl.createResource(model, endpointUri+":tunnel2:remote-ip", Mrs.NetworkAddress);
+                Resource t2Secret = RdfOwl.createResource(model,endpointUri+"tunnel2:secret", Mrs.NetworkAddress);
+                model.add(model.createStatement(tunnel2, Mrs.hasNetworkAddress, t2RemoteIp));
+                model.add(model.createStatement(tunnel2, Mrs.hasNetworkAddress, t2Secret));
+                model.add(model.createStatement(t2RemoteIp, Mrs.type, "ipv4-address"));
+                model.add(model.createStatement(t2RemoteIp, Mrs.value, "101.101.101.101"));
+                model.add(model.createStatement(t2RemoteIp, Mrs.type, "secret"));
+                model.add(model.createStatement(t2RemoteIp, Mrs.value, "####"));
+                
+                
+            }
+            
             // Globus Connect Service
             if (metadata != null && metadata.containsKey("globus:info")) {
                 String globusJson = metadata.get("globus:info");
@@ -568,7 +626,8 @@ public class OpenStackNeutronModelBuilder {
                 }
             }
         }
-
+        
+        
         for (NovaFloatingIP f : openstackget.getNovaFloatingIP()) {
             String ipAddr = f.getFloatingIpAddress();
             if (!fips.contains(ipAddr)) {
