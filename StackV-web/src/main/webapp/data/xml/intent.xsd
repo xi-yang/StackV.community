@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<!--
+Copyright (c) 2013-2017 University of Maryland
+Created by: Alberto Jimenez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy 
+of this software and/or hardware specification (the “Work”) to deal in the 
+Work without restriction, including without limitation the rights to use, 
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+the Work, and to permit persons to whom the Work is furnished to do so, 
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in 
+all copies or substantial portions of the Work.
+
+THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+IN THE WORK.
+-->
+
+<!--
+
+* Requirements for intents:
+    - Staging/pagination for inputs
+    - Support for multiple instances of inputs
+    - Support for accessing API for sourcing input values
+    - Support for input defaults
+    - Support for conditional stages/inputs
+
+-->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">          
+    
+    <!--Simple-->
+    <xs:attribute name="factory" type="xs:boolean"/>
+    <xs:attribute name="name" type="xs:string"/>
+    
+    <xs:element name="name" type="xs:string"/>
+    <xs:element name="type" type="xs:string"/>
+    <xs:element name="size" type="xs:string"/>
+    <xs:element name="default" type="xs:string"/>
+    
+    <!--Complex-->
+    <xs:element name="intent">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="stage" maxOccurs="5"/>                    
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="stage">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="group" minOccurs="0" maxOccurs="10"/>
+                <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="group">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="input" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute ref="factory" default="false"/>
+            <xs:attribute ref="name" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="input">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="name"/>
+                <xs:element ref="type"/>
+                <xs:element ref="size" minOccurs="0"/>
+                <xs:element ref="default" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    
+</xs:schema>

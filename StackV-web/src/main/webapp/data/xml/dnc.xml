@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:noNamespaceSchemaLocation="intent.xsd">
+    <stage>
+        <group factory="true" name="Link">
+            <input>
+                <name>Connection Name</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>Source</name>
+                <type>text</type>
+                <size>medium</size>
+            </input>
+            <input>
+                <name>Source VLAN</name>
+                <type>text</type>
+                <size>small</size>
+            </input>
+            <input>
+                <name>Destination</name>
+                <type>text</type>
+                <size>medium</size>
+            </input>
+            <input>
+                <name>Destination VLAN</name>
+                <type>text</type>
+                <size>small</size>
+            </input>
+        </group>
+    </stage>
+</intent>
