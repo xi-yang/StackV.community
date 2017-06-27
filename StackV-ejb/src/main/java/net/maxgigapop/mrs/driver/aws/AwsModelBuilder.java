@@ -238,6 +238,7 @@ public class AwsModelBuilder {
         */
         for (VpnConnection vpn : ec2Client.getVpnConnections()) {
             String vpnState = vpn.getState();
+            String vpnId = ec2Client.getIdTag(vpn.getVpnConnectionId());
             String vgwId = ec2Client.getIdTag(vpn.getVpnGatewayId());
             String cgwId = vpn.getCustomerGatewayId();
             
@@ -247,7 +248,8 @@ public class AwsModelBuilder {
             }
             
             //First, create the VPN Connection resource
-            Resource VPNC = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpn.getVpnConnectionId(), awsPrefix.vpn(), vpn.getVpnConnectionId()), Nml.BidirectionalPort);
+            Resource VPNC = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpnId, awsPrefix.vpn(), vpnId), Nml.BidirectionalPort);
+            //Resource VPNC = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpn.getVpnConnectionId(), awsPrefix.vpn(), vpn.getVpnConnectionId()), Nml.BidirectionalPort);
             //the vpn connection has type vpn-connection to prevent it from being mistaken for a createPortsRequest during modelAddition
             model.add(model.createStatement(VPNC, Mrs.type, "vpn-connection"));
             model.add(model.createStatement(awsTopology, Nml.hasBidirectionalPort, VPNC));
@@ -255,14 +257,7 @@ public class AwsModelBuilder {
             Resource vgwResource = model.getResource(ResourceTool.getResourceUri(vgwId, awsPrefix.gateway(), vgwId));
             model.add(model.createStatement(VPNC, Nml.isAlias, vgwResource));
             model.add(model.createStatement(vgwResource, Nml.isAlias, VPNC));
-            
-            /*
-            //The system can correctly retrieve the gateway ID of vgw that were added to the model via API, but not those that were added manually.
-            String resourceName = ResourceTool.getResourceName(vgwResource.toString(), awsPrefix.instance());
-            String vgwID = ec2Client.getVpnGatewayId(resourceName);
-            System.out.println("DEBUG: vgwID " + vgwID + ", Resource name was "+vgwResource.toString());
-            */
-            
+
             //Now, add the customer gateway to the model as a Mrs.NetworkAddress resource
             CustomerGateway cgw = ec2Client.getCustomerGateway(cgwId);
             Resource cgwIp = RdfOwl.createResource(model, ResourceTool.getResourceUri(cgwId, awsPrefix.cgw(), cgwId), Mrs.NetworkAddress);

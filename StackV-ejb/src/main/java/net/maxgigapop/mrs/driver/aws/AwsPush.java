@@ -55,9 +55,12 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -945,7 +948,8 @@ public class AwsPush {
                     ec2.deleteCustomerGateway(cgwRequest);
                     ec2Client.vpnDeletionCheck(parameters[1]);
                 } else {
-                    throw logger.error_throwing(method, String.format("There is no vpn connection with id %s", parameters[1]));
+                    //just send a warning
+                    logger.warning(method, String.format("There is no vpn connection with id %s", parameters[1]));
                 }
                 //*/
             } else if (request.contains("CreateVPNConnectionRequest")) {
@@ -959,40 +963,49 @@ public class AwsPush {
                 param 5 -> cgw uri
                 */
                 String[] parameters = request.split("\\s+");
-
+                
                 VpnGateway vgw = ec2Client.getVirtualPrivateGateway(parameters[1]);
+                VpnConnection vpn = null;
+                
                 if (vgw == null) {
-                    throw logger.error_throwing(method, String.format("No VGW found with id %s", parameters[1]));
+                    logger.warning(method, String.format("No VGW found with id %s", parameters[1]));
+                } else {
+                    vpn = ec2Client.vgwGetVpn(parameters[1]);
+                    //each vgw can only be a part of at most one vpn connection
+                    if (vpn != null) {
+                        logger.warning(method, String.format("VGW with id %s is already part of a vpn connection with id %s.", parameters[1], vpn.getVpnConnectionId()));
+                        vgw = null;
+                    }
                 }
+
+                if (vgw != null) {
+                    //create a new customer gateway for the vpn
+                    CreateCustomerGatewayRequest cgwRequest = new CreateCustomerGatewayRequest();
+                    cgwRequest.withType(GatewayType.Ipsec1).withPublicIp(parameters[2]);
+                    CreateCustomerGatewayResult cgwResult = ec2.createCustomerGateway(cgwRequest);
+                    CustomerGateway cgw = cgwResult.getCustomerGateway();
+                    //create a vpn connection between cgw and vgw
+                    CreateVpnConnectionRequest vpnCRequest = new CreateVpnConnectionRequest();
+                    vpnCRequest.withOptions(new VpnConnectionOptionsSpecification().withStaticRoutesOnly(true)).
+                            withType("ipsec.1").withCustomerGatewayId(cgw.getCustomerGatewayId()).
+                            withVpnGatewayId(parameters[1]);
+                    CreateVpnConnectionResult vpnCResult = ec2.createVpnConnection(vpnCRequest);
+                    vpn = vpnCResult.getVpnConnection();
                 
-                //each vgw can only be a part of at most one vpn connection
-                VpnConnection vpn = ec2Client.vgwGetVpn(parameters[1]);
-                if (vpn != null) {
-                    throw logger.error_throwing(method, String.format("VGW with id %s is already part of a vpn connection with id %s.", parameters[1], vpn.getVpnConnectionId()));
+                    //set the cidr routes of the vpn. assumes that cidrs have been validated
+                    List <String> cidrs = Arrays.asList(parameters[3].split(","));
+                    for (String cidr : cidrs) {
+                        CreateVpnConnectionRouteRequest routeRequest = new CreateVpnConnectionRouteRequest();
+                        routeRequest.withVpnConnectionId(vpn.getVpnConnectionId()).withDestinationCidrBlock(cidr);
+                        ec2.createVpnConnectionRoute(routeRequest);
+                    }
+                
+                    ec2Client.getVpnConnections().add(vpn);
+                    ec2Client.getCustomerGateways().add(cgw);
+                    ec2Client.vpnCreationCheck(vpn.getVpnConnectionId());
+                    ec2Client.tagResource(vpn.getVpnConnectionId(), parameters[4]);
+                    ec2Client.tagResource(cgw.getCustomerGatewayId(), parameters[5]);
                 }
-                
-                //create a new customer gateway for the vpn
-                CreateCustomerGatewayRequest cgwRequest = new CreateCustomerGatewayRequest();
-                cgwRequest.withType(GatewayType.Ipsec1).withPublicIp(parameters[2]);
-                CreateCustomerGatewayResult cgwResult = ec2.createCustomerGateway(cgwRequest);
-                CustomerGateway cgw = cgwResult.getCustomerGateway();
-                //create a vpn connection between cgw and vgw
-                CreateVpnConnectionRequest vpnCRequest = new CreateVpnConnectionRequest();
-                vpnCRequest.withOptions(new VpnConnectionOptionsSpecification().withStaticRoutesOnly(true)).
-                        withType("ipsec.1").withCustomerGatewayId(cgw.getCustomerGatewayId()).
-                        withVpnGatewayId(parameters[1]);
-                CreateVpnConnectionResult vpnCResult = ec2.createVpnConnection(vpnCRequest);
-                vpn = vpnCResult.getVpnConnection();
-                //set the cidr route of the vpn
-                CreateVpnConnectionRouteRequest routeRequest = new CreateVpnConnectionRouteRequest();
-                routeRequest.withDestinationCidrBlock(parameters[3]).withVpnConnectionId(vpn.getVpnConnectionId());
-                ec2.createVpnConnectionRoute(routeRequest);
-                
-                ec2Client.getVpnConnections().add(vpn);
-                ec2Client.getCustomerGateways().add(cgw);
-                ec2Client.vpnCreationCheck(parameters[1]);
-                ec2Client.tagResource(vpn.getVpnConnectionId(), parameters[4]);
-                ec2Client.tagResource(cgw.getCustomerGatewayId(), parameters[5]);
             }
             logger.trace_end(method+"."+request);
         }
@@ -3332,6 +3345,37 @@ public class AwsPush {
             String vpnURI = q.get("vpnURI").toString();
             String cgwURI = q.get("cgwURI").toString();
 
+            //Validate the CIDR
+            //pattern requires one IPv4 address and allows additional IPs separated by commas.
+            String cidrPattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\/\\d{1,2}";
+            String pattern = "^("+cidrPattern+",)*"+cidrPattern+"$";
+            if (!routeCIDR.matches(pattern)) {
+                throw logger.error_throwing(method, String.format("CIDR block is invalid: %s", routeCIDR));
+            }
+            
+            List<String> cidrs = Arrays.asList(routeCIDR.split(","));
+            //now validate each individual cidr
+            for (String cidr : cidrs) {
+                String parts[] = cidr.split("[/.]");
+                
+                if (parts.length < 5) {
+                    throw logger.error_throwing(method, String.format("CIDR is invalid: %s.", cidr));
+                }
+                
+                //validate the CIDR range
+                int bits = Integer.parseInt(parts[4]);
+                if (bits > 32) {
+                    throw logger.error_throwing(method, String.format("CIDR range is invalid: %d, must be between 0 and 32 inclusive.", bits));
+                }
+                
+                int temp;
+                for (String s : parts) {
+                    temp = Integer.parseInt(s);
+                    if (temp > 255) {
+                        throw logger.error_throwing(method, String.format("IP number is invalid: %d, must be between 0 and 255 inclusive.", temp));
+                    }
+                }
+            }
             requests += String.format("CreateVPNConnectionRequest %s %s %s %s %s\n", vgwID, cgwIP, routeCIDR, vpnURI, cgwURI);
         }
 
