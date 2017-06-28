@@ -138,6 +138,8 @@
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/catalog.js"></script>
+        
+        <script src="/StackV-web/js/svc/intentEngine.js"></script>
 
     </body>
 </html>

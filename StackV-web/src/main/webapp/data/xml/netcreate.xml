@@ -3,21 +3,20 @@
 <intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="intent.xsd">
     <meta>
+        <name></name>
         <block>subnets</block>            
         <block>vms</block>
         <block condition="openstack-form">gateways</block>
         <block condition="openstack-form">sriovs</block>
     </meta>
     <stage name="Host">
-        <input>
+        <input trigger="aws-form">
             <name>AWS</name>
             <type>button</type>
-            <trigger>aws-form</trigger>
         </input>
-        <input>
+        <input trigger="openstack-form">
             <name>OpenStack</name>
             <type>button</type>
-            <trigger>openstack-form</trigger>
         </input>
     </stage>
     <stage name="Details">
@@ -25,7 +24,7 @@
             <input>
                 <name>Driver URI</name>
                 <type>select</type>
-                <source>/drivers</source>
+                <source>/app/intents/drivers</source>
             </input>
             <input>
                 <name>Type</name>
@@ -48,7 +47,7 @@
         </group>
     </stage>
     <stage name="Subnets">
-        <group block="subnets" name="subnet">
+        <group block="subnets" name="subnet" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -57,10 +56,15 @@
                 <name>CIDR Block</name>
                 <type>text</type>
             </input>
-            <input>
+            <input condition="aws-form">
+                <name>VPN Route Propagation</name>
+                <type>checkbox</type>
+            </input>
+            <input condition="openstack-form">
                 <name>Default Routing</name>
                 <type>checkbox</type>
             </input>
+            
             <group factory="true" name="route">
                 <input>
                     <name>From</name>
@@ -75,6 +79,135 @@
                     <type>text</type>
                 </input>
             </group>
+        </group>
+    </stage>
+    <stage name="VMs">
+        <group block="vms" name="vm" collapsible="true">
+            <input>
+                <name>Name</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>Subnet Host</name>
+                <type>select</type>
+                <source>/app/intents/subnets</source>
+            </input>
+            <input>
+                <name>Keypair Name</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>Security Group</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>Host</name>
+                <type>text</type>
+                <default>any</default>
+            </input>
+            <input>
+                <name>Floating IP</name>
+                <type>text</type>
+                <default>any</default>
+            </input>
+            
+            <group factory="true" name="route">
+                <input>
+                    <name>From</name>
+                    <type>text</type>
+                </input>
+                <input>
+                    <name>To</name>
+                    <type>text</type>
+                </input>
+                <input>
+                    <name>Next Hop</name>
+                    <type>text</type>
+                </input>
+            </group>
+        </group>
+    </stage>
+    <stage name="Gateways" condition="openstack-form">
+        <group block="gateways" name="gateway" collapsible="true">
+            <input>
+                <name>Name</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>Gateway Host</name>
+                <type>select</type>
+                <source>/app/intents/gateways</source>
+            </input>                        
+            <group name="route">
+                <input>
+                    <name>From</name>
+                    <type>text</type>
+                </input>
+                <input>
+                    <name>To</name>
+                    <type>text</type>
+                </input>
+                <input>
+                    <name>Next Hop</name>
+                    <type>text</type>
+                </input>
+            </group>
+        </group>
+    </stage>
+    <stage name="Gateways" condition="openstack-form">
+        <group block="gateways" name="gateway" collapsible="true">
+            <input>
+                <name>Name</name>
+                <type>text</type>
+            </input>
+            <input>
+                <name>Gateway Host</name>
+                <type>select</type>
+                <options>
+                    <option>UCS Port Profile</option>
+                    <option>L2 Stitch Port</option>
+                </options>
+            </input>                        
+            <group name="route">
+                <input>
+                    <name>From</name>
+                    <type>text</type>
+                </input>
+                <input>
+                    <name>To</name>
+                    <type>text</type>
+                </input>
+                <input>
+                    <name>Next Hop</name>
+                    <type>text</type>
+                </input>
+            </group>
+        </group>
+    </stage>
+    <stage name="SRIOVs" condition="openstack-form">
+        <group block="sriovs" name="sriov" collapsible="true">
+            <input>
+                <name>Hosting Gateway</name>
+                <type>select</type>
+                <source>/app/intents/gateways</source>
+            </input>  
+            <input>
+                <name>Hosting VM</name>
+                <type>select</type>
+                <source>/app/intents/vms</source>
+            </input>             
+            <input>
+                <name>Name</name>
+                <type>text</type>
+            </input>           
+            <input>
+                <name>IP Address</name>
+                <type>text</type>
+            </input>       
+            <input>
+                <name>MAC Address</name>
+                <type>text</type>
+            </input>               
         </group>
     </stage>
 </intent>

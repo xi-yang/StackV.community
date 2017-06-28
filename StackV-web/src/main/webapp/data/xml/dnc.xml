@@ -1,33 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:noNamespaceSchemaLocation="intent.xsd">
+        xsi:noNamespaceSchemaLocation="intent.xsd">
+    <meta>
+        <name>Dynamic Network Connection</name>
+        <block>test</block>
+        <block>testtesttest</block>
+    </meta>
     <stage name="Connections">
-        <group factory="true" name="link">
+        <group factory="true" name="link" collapsible="true">
             <input>
-                <name>Connection Name</name>
+                <name>Name</name>
                 <type>text</type>
             </input>
-            <input>
-                <name>Source</name>
-                <type>text</type>
-                <size>medium</size>
-            </input>
-            <input>
-                <name>Source VLAN</name>
-                <type>text</type>
-                <size>small</size>
-            </input>
-            <input>
-                <name>Destination</name>
-                <type>text</type>
-                <size>medium</size>
-            </input>
-            <input>
-                <name>Destination VLAN</name>
-                <type>text</type>
-                <size>small</size>
-            </input>
+            <group name="source">
+                <input>
+                    <name>URI</name>
+                    <type>text</type>
+                    <size>large</size>
+                </input>
+                <input>
+                    <name>VLAN</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <default>any</default>
+                </input>
+            </group>
+            <group name="destination">
+                <input>
+                    <name>URI</name>
+                    <type>text</type>
+                    <size>large</size>
+                </input>
+                <input>
+                    <name>VLAN</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <default>any</default>
+                </input>
+            </group>
         </group>
     </stage>
 </intent>

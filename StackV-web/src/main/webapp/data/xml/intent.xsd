@@ -37,24 +37,26 @@ IN THE WORK.
     
     <!--Simple-->
     <xs:attribute name="factory" type="xs:boolean"/>
+    <xs:attribute name="collapsible" type="xs:boolean"/>
     <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="trigger" type="xs:string"/>
     <xs:attribute name="condition" type="xs:string"/>
     <xs:attribute name="type" type="xs:string"/>
     <xs:attribute name="block" type="xs:string"/>
     
     <xs:element name="name" type="xs:string"/>
     <xs:element name="type" type="xs:string"/>
-    <xs:element name="size" type="xs:string"/>
-    <xs:element name="trigger" type="xs:string"/>
+    <xs:element name="size" type="xs:string"/>    
     <xs:element name="default" type="xs:string"/>
     <xs:element name="source" type="xs:string"/>
+    <xs:element name="option" type="xs:string"/>
     
     <!--Complex-->
     <xs:element name="intent">
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="meta"/>
-                <xs:element ref="stage" maxOccurs="5"/>
+                <xs:element ref="stage" maxOccurs="10"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -62,7 +64,8 @@ IN THE WORK.
     <xs:element name="meta">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="block" maxOccurs="10"/>                
+                <xs:element ref="name"/>
+                <xs:element ref="block" minOccurs="0" maxOccurs="10"/>                
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -88,6 +91,7 @@ IN THE WORK.
             <xs:attribute ref="name" use="required"/>
             <xs:attribute ref="condition"/>
             <xs:attribute ref="block"/>
+            <xs:attribute ref="collapsible" default="false"/>
         </xs:complexType>
     </xs:element>
     
@@ -97,10 +101,11 @@ IN THE WORK.
                 <xs:element ref="name"/>
                 <xs:element ref="type"/>
                 <xs:element ref="size" minOccurs="0"/>
-                <xs:element ref="default" minOccurs="0"/>
-                <xs:element ref="trigger" minOccurs="0"/>
+                <xs:element ref="default" minOccurs="0"/>                
                 <xs:element ref="source" minOccurs="0"/>
+                <xs:element ref="options" minOccurs="0"/>
             </xs:sequence>
+            <xs:attribute ref="trigger"/>
             <xs:attribute ref="condition"/>
         </xs:complexType>
     </xs:element>
@@ -116,5 +121,11 @@ IN THE WORK.
         </xs:complexType>
     </xs:element>
     
-    
+    <xs:element name="options">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="option" maxOccurs="10"/>                
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>        
 </xs:schema>
