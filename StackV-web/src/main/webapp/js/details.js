@@ -865,6 +865,12 @@ function buttonModerate() {
             $("#verify").removeClass("hide");
             break;
         case "FAILED":
+            // Error case
+            if (lastState === "INIT") {
+                $(".instance-command").addClass("hide");
+                $("#delete").removeClass("hide");
+            }
+            
             $("#verify").removeClass("hide");
             if (lastState === "COMMITTED" || "COMMITTING" || "READY") {
                 switch (superState) {
