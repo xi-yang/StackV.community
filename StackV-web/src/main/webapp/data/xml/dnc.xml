@@ -4,8 +4,6 @@
         xsi:noNamespaceSchemaLocation="intent.xsd">
     <meta>
         <name>Dynamic Network Connection</name>
-        <block>test</block>
-        <block>testtesttest</block>
     </meta>
     <stage name="Connections">
         <group factory="true" name="link" collapsible="true">

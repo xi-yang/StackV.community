@@ -23,7 +23,9 @@
 
 var conditionMap = {};
 var triggerMap = {};
+var factoryMap = {};
 var intent;
+var transit = false;
 
 loadIntent('dnc');
 function loadIntent(type) {
@@ -54,12 +56,14 @@ function renderIntent() {
         var stage = stages[i];
         verifyConditions(stage);
         var stageName = stage.attributes.getNamedItem("name").nodeValue;
-        var div = $("<div>", {class: "intent-stage-div", id: stageName.toLowerCase()});
-        panel.append(div);
+        var $div = $("<div>", {class: "intent-stage-div", id: stageName.toLowerCase()});
+        panel.append($div);
+        $currentStageDiv = $div;
 
-        $currStagePanel = $("#" + stageName.toLowerCase());
+        $div = $("<div>", {class: "intent-stage-factory", id: stageName.toLowerCase() + "-factory"});
+        $("#intent-panel-header").append($div);
         // Begin recursive rendering
-        renderInputs(stage.children, $currStagePanel);
+        renderInputs(stage.children, $currentStageDiv);
     }
 }
 
@@ -98,30 +102,69 @@ function renderInputs(arr, $parent) {
             var collapsibleAttr = attr.getNamedItem("collapsible");
             var str = name.charAt(0).toUpperCase() + name.slice(1);
 
-            var $div = $("<div>", {class: "intent-group-div"});
+            var $div = $("<div>", {class: "intent-group-div", id: name});
             $parent.append($div);
-
-            // Handle potential element modifiers
-            if (factoryAttr && factoryAttr.nodeValue === "true") {
-                str += " 1";
-            }
             var $name = $('<div class="group-header col-sm-12">' + str + "</div>");
             $div.append($name);
-            
+
+            // Handle potential element modifiers            
+            var $targetDiv = $div;
             if (collapsibleAttr && collapsibleAttr.nodeValue === "true") {
-                var collapseStr = "group-" + str.replace(" ", "_");
-                var $collapseDiv = $("<div>", {class: "collapse", id: collapseStr});
-                
-                var $toggle = $("<a>").attr("data-toggle", "collapse")
-                        .attr("data-target", "#" + collapseStr)
-                        .text("Toggle!");
-                $name.append($toggle);
-                
-                $div = $collapseDiv;
-            }                        
+                $targetDiv = collapseDiv($name, $div);
+            }
+            if (factoryAttr && factoryAttr.nodeValue === "true") {
+                // Grab current index
+                if (!(name in factoryMap)) {
+                    factoryMap[name] = 1;
+
+                    var $button = $("<button>")
+                            .addClass("button-factory")                            
+                            .attr("data-stage", $currentStageDiv.attr("id"))
+                            .attr("data-subject", name)
+                            .attr("data-target", $div.attr("id"))
+                            .text("Add New " + str);
+
+                    $button.click(function () {
+                        if (!transit) {
+                            // Ensure rapid clicks aren't processed
+                            transit = true;
+
+                            // Update map and retrieve target div
+                            factoryMap[name] = factoryMap[name] + 1;
+                            var $target = $("#" + $(this).attr("data-target")).parent();
+
+                            // Grab element schema
+                            var subject = $(this).attr("data-subject");
+                            var coll = intent.getElementsByTagName("group");
+                            var arr = [];
+                            for (i = 0; i < coll.length; i++) {
+                                if (coll[i].getAttribute("name") === subject) {
+                                    arr.push(coll[i]);
+                                    break;
+                                }
+                            }
+
+                            renderInputs(arr, $target);
+
+                            transit = false;
+                        }
+                    });
+                    $(".intent-stage-factory").append($button);
+                }
+
+                var index = factoryMap[name];
+
+                // Start with names
+                var $header = $div.children(".group-header");
+                $header.html($header.text() + " " + index + $header.html().substring($header.text().length));
+
+                // Look for collapse
+                $div.children(".collapse").attr("id", "collapse-" + name + "_" + index);
+                $header.children(".group-collapse-toggle").attr("data-target", "#collapse-" + name + "_" + index);
+            }
 
             // Recurse!
-            renderInputs(ele.children, $div);
+            renderInputs(ele.children, $targetDiv);
         } else if (ele.nodeName === "input") {
             var type = ele.children[1].innerHTML;
             var name = generateInputName(ele);
@@ -159,6 +202,9 @@ function renderInputs(arr, $parent) {
 }
 
 
+
+// UTILITY FUNCTIONS
+
 function verifyConditions(ele) {
     var attr = ele.attributes;
     var triggerAttr = attr.getNamedItem("trigger");
@@ -173,16 +219,36 @@ function verifyConditions(ele) {
 
 function generateInputName(ele) {
     var parent = ele.parentElement;
-    var parentStr = parent.attributes.getNamedItem("name").nodeValue.toLowerCase().replace(" ", "_");
+    var parentStr = parent.getAttribute("name").toLowerCase().replace(" ", "_");
     var eleStr = ele.children[0].innerHTML.toLowerCase().replace(" ", "_");
 
-    var retString = parentStr + "-" + eleStr;
+    var retString = eleStr;
     while (parent.nodeName !== "stage") {
+        if (parentStr in factoryMap) {
+            retString = parentStr + "_" + factoryMap[parentStr] + "-" + retString;
+        } else {
+            retString = parentStr + "-" + retString;
+        }
         parent = parent.parentElement;
-        parentStr = parent.attributes.getNamedItem("name").nodeValue.toLowerCase().replace(" ", "_");
+        parentStr = parent.getAttribute("name").toLowerCase().replace(" ", "_");
+    }
+    return parentStr + "-" + retString;
+}
 
-        retString = parentStr + "-" + retString;
+function collapseDiv($name, $div) {
+    var name = $name.html().toLowerCase();
+    var collapseStr = "collapse-" + name.replace(" ", "_");
+    if (name in factoryMap) {
+        var $collapseDiv = $("<div>", {class: "collapse", id: collapseStr});
+    } else {
+        var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});        
     }
 
-    return retString;
+    var $toggle = $("<a>").attr("data-toggle", "collapse")
+            .attr("data-target", "#" + collapseStr)
+            .addClass("group-collapse-toggle");
+    $name.append($toggle);
+
+    $div.append($collapseDiv);
+    return $collapseDiv;
 }
