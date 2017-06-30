@@ -26,8 +26,9 @@ var triggerMap = {};
 var factoryMap = {};
 var intent;
 var transit = false;
+var activeStage;
 
-loadIntent('dnc');
+loadIntent('netcreate');
 function loadIntent(type) {
     $.ajax({
         type: "GET",
@@ -57,6 +58,10 @@ function renderIntent() {
         verifyConditions(stage);
         var stageName = stage.attributes.getNamedItem("name").nodeValue;
         var $div = $("<div>", {class: "intent-stage-div", id: stageName.toLowerCase()});
+        if (i === 1) {
+            $div.addClass("active");
+            $activeStage = $div;
+        }
         panel.append($div);
         $currentStageDiv = $div;
 
@@ -70,9 +75,12 @@ function renderIntent() {
 
 // UTILITY FUNCTIONS
 function initMeta(meta) {
-    var panel = $("#intent-panel-meta");
-    panel.append($("<div>", {html: meta.children[0].innerHTML, style: "margin-bottom:50px;"}));
+    // Render service tag
+    var $panel = $("#intent-panel-meta");
+    $panel.append($("<div>", {html: meta.children[0].innerHTML, style: "margin-bottom:50px;height:50px;"}));
 
+    // Render blocks
+    var $blockDiv = $("<div>").attr("id", "intent-panel-meta-block");
     var blocks = meta.children;
     for (var i = 1; i < blocks.length; i++) {
         var $div = $("<div>", style = "margin-bottom:20px;");
@@ -82,13 +90,18 @@ function initMeta(meta) {
 
         var str = html.charAt(0).toUpperCase() + html.slice(1);
         var $label = $("<label>").text(str);
-        var $input = $("<input>", {type: "number", id: "block-" + html, name: "meta-block-" + html, value: 0});
+        var $input = $("<input>", {type: "number", id: "block-" + html, name: "meta-block-" + html, value: 1});
         $label.append($input);
         $div.append($label);
 
-        panel.append($div);
+        $blockDiv.append($div);
     }
+    $panel.append($blockDiv);
 
+    // Render control buttons
+    var $controlDiv = $("<div>").attr("id", "intent-panel-meta-control");
+    $controlDiv.append($("<button>", {id: "intent-submit", html: "Submit"}));
+    $panel.append($controlDiv);
 }
 
 function renderInputs(arr, $parent) {
@@ -118,7 +131,7 @@ function renderInputs(arr, $parent) {
                     factoryMap[name] = 1;
 
                     var $button = $("<button>")
-                            .addClass("button-factory")                            
+                            .addClass("button-factory")
                             .attr("data-stage", $currentStageDiv.attr("id"))
                             .attr("data-subject", name)
                             .attr("data-target", $div.attr("id"))
@@ -149,6 +162,11 @@ function renderInputs(arr, $parent) {
                             transit = false;
                         }
                     });
+
+                    if ($button.data("stage") === $activeStage.attr("id")) {
+                        $button.addClass("active");
+                    }
+
                     $(".intent-stage-factory").append($button);
                 }
 
@@ -171,6 +189,16 @@ function renderInputs(arr, $parent) {
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
             var $input = $("<input>", {type: type, id: name, name: name});
+            switch (type) {
+                case "button":
+                    $input.click(function (e) {
+                        
+                        
+                        e.preventDefault();
+                    });
+                    break;
+            }
+
             // Handle potential element modifiers
             if (ele.getElementsByTagName("size").length > 0) {
                 switch (ele.getElementsByTagName("size")[0].innerHTML) {
@@ -238,15 +266,17 @@ function generateInputName(ele) {
 function collapseDiv($name, $div) {
     var name = $name.html().toLowerCase();
     var collapseStr = "collapse-" + name.replace(" ", "_");
-    if (name in factoryMap) {
-        var $collapseDiv = $("<div>", {class: "collapse", id: collapseStr});
-    } else {
-        var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});        
-    }
-
     var $toggle = $("<a>").attr("data-toggle", "collapse")
             .attr("data-target", "#" + collapseStr)
             .addClass("group-collapse-toggle");
+
+    if (name in factoryMap) {
+        var $collapseDiv = $("<div>", {class: "collapse", id: collapseStr});
+        $toggle.addClass("collapsed");
+    } else {
+        var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});
+    }
+
     $name.append($toggle);
 
     $div.append($collapseDiv);

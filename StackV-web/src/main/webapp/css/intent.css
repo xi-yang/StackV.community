@@ -23,7 +23,7 @@ IN THE WORK.
 
 #intent-panel {
     margin-top: 25px;
-    border-radius: 10px;
+    border-radius: 20px;
     background-color: white;
     height: 80%;
     width: 60%;
@@ -37,7 +37,7 @@ IN THE WORK.
     height: 50px;
     float: right;
     background: #eee;
-    border-radius: 0 10px 0 0;
+    border-radius: 0 20px 0 0;
 }
 
 #intent-panel-body {
@@ -50,13 +50,12 @@ IN THE WORK.
 
 #intent-panel-meta {
     background: #ddd;
-    border-radius: 10px 0 0 10px;
+    border-radius: 20px 0 0 20px;
     border-right: 1px solid black;
     width: 150px;
     height: 100%;
     padding: 20px 10px;
 }
-
 #intent-panel-meta input {
     width: 25%;
     margin-left: 5px;
@@ -64,6 +63,13 @@ IN THE WORK.
 #intent-panel-meta #meta-alias {
     width: 100%;
     margin: 5px;
+    height: 25px;
+}
+#intent-panel-meta-block {
+    height: calc(100% - 175px);
+}
+#intent-panel-meta-control {
+    height: 50px;
 }
 
 .intent-stage-div label {
@@ -87,7 +93,7 @@ IN THE WORK.
 
 .intent-stage-factory {
     float: right;
-    margin-bottom: 10px;
+    margin: 10px;
 }
 
 .group-collapse-toggle:after {
@@ -100,4 +106,18 @@ IN THE WORK.
 .group-collapse-toggle.collapsed:after {
     /* symbol for "collapsed" panels */
     content: "\e080";    /* adjust as needed, taken from bootstrap.css */
+}
+
+.intent-stage-div {
+    display: none;
+}
+.intent-stage-div.active {
+    display: block;
+}
+
+.button-factory {
+    display: none;
+}
+.button-factory.active {
+    display: block;
 }
