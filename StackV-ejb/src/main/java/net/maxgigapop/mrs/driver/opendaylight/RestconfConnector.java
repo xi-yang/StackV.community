@@ -24,6 +24,7 @@
 package net.maxgigapop.mrs.driver.opendaylight;
 
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import org.json.simple.JSONObject;
@@ -58,9 +59,8 @@ public class RestconfConnector {
     }
     
     //pull configured flows
-    public JSONObject getConfigFlows(String subsystemBaseUrl, String username, String password) {
+    public JSONObject getConfigFlows(String subsystemBaseUrl, String username, String password) throws Exception {
         String method = "getConfigFlows";
-        try  {
             URL url = new URL(subsystemBaseUrl + "/config/opendaylight-inventory:nodes"); 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String[] response = DriverUtil.executeHttpMethod(username, password, conn, "GET", null);
@@ -70,9 +70,6 @@ public class RestconfConnector {
             JSONParser jsonParser = new JSONParser();
             JSONObject jsonObject = (JSONObject) jsonParser.parse(response[0]);
             return jsonObject;
-        } catch (Exception ex) {
-            throw logger.throwing(method, ex);
-        }
     }
     
     //push to add flow
