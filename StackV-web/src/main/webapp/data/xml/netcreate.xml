@@ -9,10 +9,10 @@
         <block condition="openstack-form">gateways</block>
         <block condition="openstack-form">sriovs</block>
     </meta>
-    <stage name="Host">
+    <stage name="Host" return="false">
         <input trigger="aws-form">
             <name>AWS</name>
-            <type>button</type>
+            <type>button</type>            
         </input>
         <input trigger="openstack-form">
             <name>OpenStack</name>

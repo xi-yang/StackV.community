@@ -38,6 +38,8 @@ IN THE WORK.
     <!--Simple-->
     <xs:attribute name="factory" type="xs:boolean"/>
     <xs:attribute name="collapsible" type="xs:boolean"/>
+    <xs:attribute name="return" type="xs:boolean"/>
+    
     <xs:attribute name="name" type="xs:string"/>
     <xs:attribute name="trigger" type="xs:string"/>
     <xs:attribute name="condition" type="xs:string"/>
@@ -78,6 +80,7 @@ IN THE WORK.
             </xs:sequence>
             <xs:attribute ref="name" use="required"/>
             <xs:attribute ref="condition"/>
+            <xs:attribute ref="return"/>
         </xs:complexType>
     </xs:element>
     
