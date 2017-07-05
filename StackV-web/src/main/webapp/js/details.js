@@ -238,7 +238,7 @@ function subloadDetails() {
             creation = instance[3];
             superState = instance[4];
             lastState = instance[5];
-            
+
             $("#instance-alias").html(alias);
             $("#instance-creation-time").html(creation);
             $("#instance-superstate").html(superState);
@@ -263,7 +263,7 @@ function subloadStatus(refUuid) {
             if (result === "FAILED") {
                 last.html(" (After " + lastState + ")");
             }
-            
+
             subState = result;
             ele.html(result);
 
@@ -292,7 +292,7 @@ function subloadVerification() {
              *      3 - reduction
              *      4 - service_instance_id 
              *      5 - enabled */
-            
+
             verificationRun = verification[0];
             verificationTime = verification[1];
             verificationAddition = verification[2];
@@ -443,7 +443,7 @@ function buildDeltaTable(type) {
 
 function loadVisualization() {
     $("#details-viz").load("/StackV-web/details_viz.html", function () {
-        document.getElementById("visual-panel").innerHTML = "";        
+        document.getElementById("visual-panel").innerHTML = "";
 
         var States = {
             "INIT": 0,
@@ -464,7 +464,7 @@ function loadVisualization() {
                 "name": "System",
                 "state": "COMPILED",
                 "createContent": createVizTab.bind(undefined, "System")
-            },            
+            },
             {
                 "name": "Verification",
                 "state": "COMMITTING",
@@ -690,7 +690,7 @@ function loadVisualization() {
                 visualization_panel.appendChild(tabContent);
 
                 setEvent();
-            }            
+            }
         }
 
         function make_tab_id(tab) {
@@ -804,7 +804,7 @@ function toggleTextModel(viz_table, text_table) {
 // Moderation Functions
 function instructionModerate() {
     var blockString = "";
-    if (verificationRun !== null) {               
+    if (verificationRun !== null) {
         switch (subState) {
             case "INIT":
                 blockString = "Service is being initialized.";
@@ -851,9 +851,9 @@ function instructionModerate() {
     document.getElementById("instruction-block").innerHTML = blockString;
 }
 
-function buttonModerate() {    
+function buttonModerate() {
     var lastStateStr = $("#instance-laststate").html();
-    var lastState = lastStateStr.substring(8,lastStateStr.length-1);
+    var lastState = lastStateStr.substring(8, lastStateStr.length - 1);
     $(".instance-command").addClass("hide");
 
     if (subState !== "COMMITTED") {
@@ -870,9 +870,11 @@ function buttonModerate() {
                 $(".instance-command").addClass("hide");
                 $("#delete").removeClass("hide");
             }
-            
+
             $("#verify").removeClass("hide");
-            if (lastState === "COMMITTED" || "COMMITTING" || "READY") {
+            if (lastState === "COMMITTED" ||
+                    lastState === "COMMITTING" ||
+                    lastState === "READY") {
                 switch (superState) {
                     case "CREATE":
                     case "REINSTATE":
@@ -883,7 +885,9 @@ function buttonModerate() {
                         break;
                 }
             }
-            if (lastState === "COMMITTING" || "PROPAGATED" || "COMPILED") {
+            if (lastState === "COMMITTING" ||
+                    lastState === "PROPAGATED" ||
+                    lastState === "COMPILED") {
                 $("#force_retry").removeClass("hide");
             }
             break;
@@ -898,8 +902,8 @@ function buttonModerate() {
                     break;
             }
             break;
-    }   
-    
+    }
+
     if (verificationRun > 0) {
         $("#verify").html("Cancel Verification");
         $("#verify").attr("id", "unverify");
