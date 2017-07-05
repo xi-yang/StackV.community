@@ -657,8 +657,7 @@ function subloadRoleACLRoles1() {
 
 function loadGroupTable(groupname){
     var group = groupname;
-    tweenHideUserPanel.play();
-    tweenGroupRolePanel.play();
+    
     //get the group
     
     var tbody = document.getElementById("group-role-body");
@@ -674,7 +673,6 @@ function loadGroupTable(groupname){
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                alert(result);
                 for (i = 0; i < result.length; i++) {
                     var role = result[i];
 
@@ -692,6 +690,59 @@ function loadGroupTable(groupname){
 
                 }
                 subloadRoleACLRoles1();
+                tweenHideUserPanel.play();
+                tweenGroupRolePanel.play();
+                
+                $(".acl-group-roles").click(function (evt) {
+                    tweenHideUserPanel.reverse();
+                    tweenGroupRolePanel.reverse();
+                    evt.preventDefault();
+                });
+                        
+                $("#acl-group-role-add").click(function(){
+                    var option = $('#acl-role-select1').children("option:selected").text();
+                    
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles/'+ option;
+                    
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'GET',
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        },
+                        success: function (result) {
+                            var str = String(result).split(",");
+                            var output = "[{ \"id\": \""+str[0]+"\", \"name\": \"" + str[1] + "\",\"scopeParamRequired\": " + str[2] + ", \"composite\": " + str[3] + ", \"clientRole\":" + str[4] + ",\"containerId\":\""+str[5] +"\"}]";
+                            
+                            var apiUrl2 = baseUrl + '/Stack-web/restapi/app/keycloak/groups/'+groupname;
+                            
+                            $.ajax({
+                                url: apiUrl2,
+                                type: 'POST',
+                                data: output,
+                                contentType: "application/json; charset=utf-8",
+                                dataType: "json",
+                                beforeSend: function (xhr) {
+                                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                                    xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                                },
+                                success: function () {
+                                    alert("success")
+                                }
+                            });
+                            
+                            
+                            
+                            
+                        }
+                    });
+                });
+                
+                
+               
+                
+                //click on group roles, reverse the animation
+                //
                 //load the data into the table first
                 //reverse the users panel
                 //hide other role table
