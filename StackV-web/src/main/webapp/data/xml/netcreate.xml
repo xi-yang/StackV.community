@@ -16,7 +16,7 @@
         </input>
         <input trigger="openstack-form">
             <name>OpenStack</name>
-            <type>button</type>
+            <type>button</type>           
         </input>
     </stage>
     <stage name="Details">
@@ -69,14 +69,17 @@
                 <input>
                     <name>From</name>
                     <type>text</type>
+                    <size>small</size>
                 </input>
                 <input>
                     <name>To</name>
                     <type>text</type>
+                    <size>small</size>
                 </input>
                 <input>
                     <name>Next Hop</name>
                     <type>text</type>
+                    <size>small</size>
                 </input>
             </group>
         </group>
@@ -115,20 +118,23 @@
                 <input>
                     <name>From</name>
                     <type>text</type>
+                    <size>small</size>
                 </input>
                 <input>
                     <name>To</name>
                     <type>text</type>
+                    <size>small</size>
                 </input>
                 <input>
                     <name>Next Hop</name>
                     <type>text</type>
+                    <size>small</size>
                 </input>
             </group>
         </group>
     </stage>
-    <stage name="Gateways" condition="openstack-form">
-        <group block="gateways" name="gateway" collapsible="true">
+    <stage name="Gateways" condition="aws-form">
+        <group block="gateways" name="awsgateway" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -142,20 +148,23 @@
                 <input>
                     <name>From</name>
                     <type>text</type>
+                    <size>small</size>
                 </input>
                 <input>
                     <name>To</name>
                     <type>text</type>
+                    <size>small</size>
                 </input>
                 <input>
                     <name>Next Hop</name>
                     <type>text</type>
+                    <size>small</size>
                 </input>
             </group>
         </group>
     </stage>
     <stage name="Gateways" condition="openstack-form">
-        <group block="gateways" name="gateway" collapsible="true">
+        <group block="gateways" name="opsgateway" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>

@@ -83,7 +83,7 @@ IN THE WORK.
 }
 
 .intent-group-div {
-    margin-left: 10px;
+    margin-left: 15px;
 }
 .intent-group-div .group-header {
     text-align: left;
@@ -94,6 +94,14 @@ IN THE WORK.
 .intent-stage-factory {
     float: right;
     margin: 10px;
+}
+.intent-button-factory {
+    float: right;
+    margin-right: 10px;
+}
+
+.group-name {
+    display: inline;
 }
 
 .group-collapse-toggle:after {
@@ -131,6 +139,6 @@ IN THE WORK.
 .conditional { 
     display: none; 
 }
-.conditional.active {
+.conditional.conditioned {
     display: block;
 }

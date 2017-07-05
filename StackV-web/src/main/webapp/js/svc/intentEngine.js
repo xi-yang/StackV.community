@@ -146,7 +146,7 @@ function renderInputs(arr, $parent) {
 
             var $div = $("<div>", {class: "intent-group-div", id: constructID(ele)});
             $parent.append($div);
-            var $name = $('<div class="group-header col-sm-12">' + str + "</div>");
+            var $name = $('<div class="group-header col-sm-12"><div class="group-name">' + str + "</div></div>");
             $div.append($name);
 
             // Handle potential element modifiers            
@@ -155,6 +155,7 @@ function renderInputs(arr, $parent) {
                 $targetDiv = collapseDiv($name, $div);
             }
             if (factory === "true" || block) {
+                $div.addClass("factory");
                 var factObj = {};
                 factObj["count"] = 1;
                 factories[constructID(ele)] = factObj;
@@ -181,6 +182,7 @@ function renderInputs(arr, $parent) {
 
                         e.preventDefault();
                     });
+                    $input.val("Select");
                     break;
             }
 
@@ -188,10 +190,10 @@ function renderInputs(arr, $parent) {
             if (ele.getElementsByTagName("size").length > 0) {
                 switch (ele.getElementsByTagName("size")[0].innerHTML) {
                     case "small":
-                        $label.addClass("col-sm-3");
+                        $label.addClass("col-sm-4");
                         break;
                     case "large":
-                        $label.addClass("col-sm-9");
+                        $label.addClass("col-sm-8");
                         break;
                     default:
                         $label.addClass("col-sm-6");
@@ -216,7 +218,7 @@ function renderInputs(arr, $parent) {
                     case "button":
                         $label.attr("data-trigger", trigger);
                         $label.click(function () {
-                            $("[data-condition='" + $(this).data("trigger") + "']").addClass("active");
+                            $("[data-condition='" + $(this).data("trigger") + "']").addClass("conditioned");
                             conditions.push($(this).data("trigger"));
                         });
                         break;
@@ -234,31 +236,122 @@ function renderInputs(arr, $parent) {
 }
 
 function factorizeRendering() {
-    for (var key in factories) {
+    // Step 1: Recursively reformat elements
+    var factoryArr = $("#intent-panel-body").find(".factory");
+    for (var i = 0; i < factoryArr.length; i++) {
+        var fact = factoryArr[i];
+        var id = fact.id;
+        recursivelyFactor(id, fact);
+    }
+
+    // Step 2: Check for collapsible elements
+    var collapseArr = $("#intent-panel-body").find(".group-collapse-toggle");
+    for (var i = 0; i < collapseArr.length; i++) {
+        var toggle = collapseArr[i];
+        toggle.setAttribute("data-target", toggle.getAttribute("data-target") + "_num1");
+
+        var collapse = toggle.parentElement.nextSibling;
+        collapse.id += "_num1";
+    }
+
+    // Step 3: Insert user elements
+    for (var i = 0; i < factoryArr.length; i++) {
+        var fact = factoryArr[i];
+        var id = fact.id;
+        var head = fact.children[0];
+        
+        var $button = $("<button>", {class: "intent-button-factory", text: "Add " + name});
+        $button.attr("data-factory", id);
+        $button.attr("data-target", fact.parentElement.attr("id"));
+        $button.click(function (e) {
+            // Modify clone for current index
+            var key = $(this).data("factory");
+            var target = $(this).data("target");
+            var count = ++factories[key]["count"];
+            var $clone = factories[key]["clone"].clone(true);
+
+            
+
+            $("#" + target).append($clone);
+
+            e.preventDefault();
+        });
+        $(head).append($button);
+    }
+
+    if (false) {
         var $ele = $("#" + key);
+        var newID = key + "_num1";
 
         // Step 1: Reformat static elements with numbering:              
-        //      * Name
+        //      * Names
+        $ele.attr("id", newID);
         var $header = $ele.children(".group-header");
+        var name = $header.children(".group-name").text();
+        $header.children(".group-name").text(name + " #1");
 
-        //      * Collapsible (Optional)
-        $header.text($header.text() + " 1");
-        $header.children()[0].data("target", $header.children()[0].data("target") + "-1");
-        $ele.children(".collapse").attr("id", $ele.children(".collapse").attr("id") + "-1");
+        //      * Collapsible (Optional)       
+        var target = $header.children(".group-collapse-toggle").data("target");
+        $header.children(".group-collapse-toggle").attr("data-target", target + "_num1");
+        $ele.children(".collapse").attr("id", $ele.children(".collapse").attr("id") + "_num1");
 
-        //      * Inputs
-        var $inputs = $("#" + key +  " input");
-        $inputs.each(function () {
-            var name = $(this).attr("id").replace(key, key + "-1");
-            $(this).attr("id", name);
-            $(this).attr("name", name);
+        //      * Children
+        var $body = $ele.children();
+        if (target) {
+            $body = $ele.children(".collapse").children();
+        }
+        $body.each(function () {
+            var $child;
+            if ($(this)[0].tagName === "LABEL")
+                $child = $(this).children();
+            else {
+                $child = $(this);
+            }
+            var name = $child.attr("id").replace(key, newID);
+            $child.attr("id", name);
+            $child.attr("name", name);
         });
+
+        // Step 2: Add User buttons:
+
+
+        // Step 3: Cache clones for replication:
+        factories[key]["clone"] = $ele.clone(true);
+    }
+}
+function recursivelyFactor(id, ele) {
+    if (ele) {
+        var arr = ele.children;
+
+        // Replace any matching IDs
+        var eleID = ele.id;
+        if (eleID) {
+            var index = eleID.indexOf(id);
+            if (index >= 0) {
+                ele.id = eleID.replace(id, id + "_num1");
+                if (ele.name) {
+                    ele.name = ele.name.replace(id, id + "_num1");
+                }
+                if (ele.children[0] && ele.children[0].children[0]) {
+                    if (ele.children[0].children[0].innerText.indexOf("#1") < 0) {
+                        ele.children[0].children[0].innerText += " #1";
+                    }
+                }
+            }
+        }
+
+        // Recurse
+        if (arr) {
+            for (var i = 0; i < arr.length; i++) {
+                recursivelyFactor(id, arr[i]);
+            }
+        }
     }
 }
 
 // UTILITY FUNCTIONS
 function collapseDiv($name, $div) {
-    var name = $name.html().toLowerCase();
+    var name = $name.text().toLowerCase();
     var collapseStr = "collapse-" + name.replace(" ", "_");
     var $toggle = $("<a>").attr("data-toggle", "collapse")
             .attr("data-target", "#" + collapseStr)
