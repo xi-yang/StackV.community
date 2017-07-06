@@ -682,7 +682,7 @@ function loadGroupTable(groupname){
                     if (role[2] === "assigned") {
                         cell1_1.innerHTML = role[1] + '<button data-roleid="' + role[0] + '" data-rolename="' + role[1] + '" class="button-role-delete btn btn-default pull-right">Remove</button>';
                     } else {
-                        cell1_1.innerHTML = role[1];
+                        cell1_1.innerHTML = role[1]+'<button data-rolename="' + role[1]+'" class="button-role-delete1 btn btn-default pull-right">Remove</button>';
                     }
 
                     row.appendChild(cell1_1);
@@ -692,6 +692,43 @@ function loadGroupTable(groupname){
                 subloadRoleACLRoles1();
                 tweenHideUserPanel.play();
                 tweenGroupRolePanel.play();
+                
+                $(".button-role-delete1").click(function(evt){
+                    
+                    
+                    var option = $(this).data("rolename");
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles/'+ option;
+                    
+                    
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'GET',
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        },
+                        success: function (result) {
+                            var str = String(result).split(",");
+                            var output = "[{ \"id\": \""+str[0]+"\", \"name\": \"" + str[1] + "\",\"scopeParamRequired\": " + str[2] + ", \"composite\": " + str[3] + ", \"clientRole\":" + str[4] + ",\"containerId\":\""+str[5] +"\"}]";
+                            
+                            var apiUrl2 = baseUrl + '/StackV-web/restapi/app/keycloak/groups/'+groupname;
+                            
+                            $.ajax({
+                                url: apiUrl2,
+                                type: 'DELETE',
+                                data: output,
+                                contentType: "application/json; charset=utf-8",
+                                dataType: "json",
+                                beforeSend: function (xhr) {
+                                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                                    xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                                },
+                                success: function () {
+                                    loadGroupTable(groupname);
+                                }
+                            });
+                        }
+                    });
+                });
                 
                 $(".acl-group-roles").click(function (evt) {
                     tweenHideUserPanel.reverse();
@@ -714,7 +751,7 @@ function loadGroupTable(groupname){
                             var str = String(result).split(",");
                             var output = "[{ \"id\": \""+str[0]+"\", \"name\": \"" + str[1] + "\",\"scopeParamRequired\": " + str[2] + ", \"composite\": " + str[3] + ", \"clientRole\":" + str[4] + ",\"containerId\":\""+str[5] +"\"}]";
                             
-                            var apiUrl2 = baseUrl + '/Stack-web/restapi/app/keycloak/groups/'+groupname;
+                            var apiUrl2 = baseUrl + '/StackV-web/restapi/app/keycloak/groups/'+groupname;
                             
                             $.ajax({
                                 url: apiUrl2,
@@ -727,7 +764,7 @@ function loadGroupTable(groupname){
                                     xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                                 },
                                 success: function () {
-                                    alert("success")
+                                    loadGroupTable(groupname);
                                 }
                             });
                             
