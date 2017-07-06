@@ -259,10 +259,11 @@ function factorizeRendering() {
         var fact = factoryArr[i];
         var id = fact.id;
         var head = fact.children[0];
+        var name = head.children[0].innerText.split(" #")[0];
         
         var $button = $("<button>", {class: "intent-button-factory", text: "Add " + name});
-        $button.attr("data-factory", id);
-        $button.attr("data-target", fact.parentElement.attr("id"));
+        $button.attr("data-factory", id.replace(new RegExp("\\_num\\d*","gm"), ""));
+        $button.attr("data-target", fact.parentElement.id);
         $button.click(function (e) {
             // Modify clone for current index
             var key = $(this).data("factory");
@@ -278,6 +279,16 @@ function factorizeRendering() {
         });
         $(head).append($button);
     }
+
+    // Step 4: Cache schemas
+    for (var i = 0; i < factoryArr.length; i++) {
+        var fact = factoryArr[i];
+        var id = fact.id;
+        var key = id.replace(new RegExp("\\_num\\d*","gm"), "");
+        
+        factories[key]["clone"] = $(fact).clone(true);
+    }
+
 
     if (false) {
         var $ele = $("#" + key);
