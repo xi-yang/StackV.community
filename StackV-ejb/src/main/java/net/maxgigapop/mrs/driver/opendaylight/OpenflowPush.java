@@ -148,7 +148,11 @@ public class OpenflowPush {
                 logger.warning(method, "cannot delete invalid flow =" + jFlow.toJSONString());
                 continue;
             }
-            restconf.pushDeleteFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString());
+            try {
+                restconf.pushDeleteFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString());
+            } catch (Exception ex) {
+                throw logger.throwing(method, ex);
+            }
         }
         JSONArray jCreate = (JSONArray) jRequests.get("create");
         for (Object o1 : jCreate) {
@@ -157,7 +161,11 @@ public class OpenflowPush {
                 logger.warning(method, "cannot create invalid flow=" + jFlow.toJSONString());
                 continue;
             }
-            restconf.pushModFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString(), (List) jFlow.get("match"), (List) jFlow.get("action"));
+            try {
+                restconf.pushModFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString(), (List) jFlow.get("match"), (List) jFlow.get("action"));
+            } catch (Exception ex) {
+                throw logger.throwing(method, ex);
+            }
         }
     }
 
