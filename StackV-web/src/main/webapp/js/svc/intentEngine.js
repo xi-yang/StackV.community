@@ -211,7 +211,7 @@ function renderInputs(arr, $parent) {
             var condition = ele.getAttribute("condition");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
-            var $input = $("<input>", {type: type, name: name});
+            var $input = $("<input>", {type: type, id: name, name: name});
             switch (type) {
                 case "button":
                     $input.click(function (e) {
