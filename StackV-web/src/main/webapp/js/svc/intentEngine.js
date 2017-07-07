@@ -27,6 +27,7 @@ var conditions = [];
 var factories = {};
 var intent;
 var transit = false;
+var proceeding = false;
 var activeStage;
 
 Mousetrap.bind({
@@ -107,10 +108,38 @@ function initMeta(meta) {
         var $div = $("<div>", style = "margin-bottom:20px;");
         var block = blocks[i];
         var html = block.innerHTML;
+        var condition = block.getAttribute("condition");
 
         var str = html.charAt(0).toUpperCase() + html.slice(1);
         var $label = $("<label>").text(str);
-        var $input = $("<input>", {type: "number", id: "block-" + html, name: "block-" + html, value: 1});
+        var $input = $("<input>", {type: "number", name: "block-" + html, value: 1, min: 1});
+        $input.attr("data-block", html);
+        $input.change(function () {
+            var eles = $(".block-" + $(this).data("block"));
+            var count = eles.length;
+            var val = $(this).val();
+            var key = eles.first().data("factory");
+            var target = eles.first().data("target");
+
+            // Adding elements
+            while (val > count) {
+                buildClone(key, target);
+                count++;
+            }
+            // Removing elements            
+            while (val < count) {
+                eles.last().remove();
+                eles = $(".block-" + $(this).data("block"));
+                count--;
+                factories[key]["count"]--;
+            }
+        });
+
+        if (condition) {
+            $label.addClass("conditional");
+            $label.attr("data-condition", condition);
+        }
+
         $label.append($input);
         $div.append($label);
 
@@ -154,10 +183,18 @@ function renderInputs(arr, $parent) {
             if (collapsible === "true") {
                 $targetDiv = collapseDiv($name, $div);
             }
-            if (factory === "true" || block) {
+            if (factory === "true") {
                 $div.addClass("factory");
                 var factObj = {};
                 factObj["count"] = 1;
+                factories[constructID(ele)] = factObj;
+            }
+            if (block) {
+                $div.addClass("factory");
+                $div.addClass("block-" + block);
+                var factObj = {};
+                factObj["count"] = 1;
+                factObj["block"] = block;
                 factories[constructID(ele)] = factObj;
             }
             if (condition) {
@@ -174,7 +211,7 @@ function renderInputs(arr, $parent) {
             var condition = ele.getAttribute("condition");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
-            var $input = $("<input>", {type: type, id: name, name: name});
+            var $input = $("<input>", {type: type, name: name});
             switch (type) {
                 case "button":
                     $input.click(function (e) {
@@ -260,74 +297,34 @@ function factorizeRendering() {
         var id = fact.id;
         var head = fact.children[0];
         var name = head.children[0].innerText.split(" #")[0];
-        
-        var $button = $("<button>", {class: "intent-button-factory", text: "Add " + name});
-        $button.attr("data-factory", id.replace(new RegExp("\\_num\\d*","gm"), ""));
-        $button.attr("data-target", fact.parentElement.id);
-        $button.click(function (e) {
-            // Modify clone for current index
-            var key = $(this).data("factory");
-            var target = $(this).data("target");
-            var count = ++factories[key]["count"];
-            var $clone = factories[key]["clone"].clone(true);
+        var key = id.replace(new RegExp("\\_num\\d*", "gm"), "");
+        if (factories[key]["block"] === undefined) {
+            var $button = $("<button>", {class: "intent-button-factory", text: "Add " + name});
+            $button.attr("data-factory", key);
+            $button.attr("data-target", fact.parentElement.id);
+            $button.click(function (e) {
+                // Modify clone for current index
+                var key = $(this).data("factory");
+                var target = $(this).data("target");
 
-            
+                buildClone(key, target);
 
-            $("#" + target).append($clone);
-
-            e.preventDefault();
-        });
-        $(head).append($button);
+                e.preventDefault();
+            });
+            $(head).append($button);
+        } else {
+            $(fact).attr("data-factory", key);
+            $(fact).attr("data-target", fact.parentElement.id);
+        }
     }
 
     // Step 4: Cache schemas
     for (var i = 0; i < factoryArr.length; i++) {
         var fact = factoryArr[i];
         var id = fact.id;
-        var key = id.replace(new RegExp("\\_num\\d*","gm"), "");
-        
-        factories[key]["clone"] = $(fact).clone(true);
-    }
+        var key = id.replace(new RegExp("\\_num\\d*", "gm"), "");
 
-
-    if (false) {
-        var $ele = $("#" + key);
-        var newID = key + "_num1";
-
-        // Step 1: Reformat static elements with numbering:              
-        //      * Names
-        $ele.attr("id", newID);
-        var $header = $ele.children(".group-header");
-        var name = $header.children(".group-name").text();
-        $header.children(".group-name").text(name + " #1");
-
-        //      * Collapsible (Optional)       
-        var target = $header.children(".group-collapse-toggle").data("target");
-        $header.children(".group-collapse-toggle").attr("data-target", target + "_num1");
-        $ele.children(".collapse").attr("id", $ele.children(".collapse").attr("id") + "_num1");
-
-        //      * Children
-        var $body = $ele.children();
-        if (target) {
-            $body = $ele.children(".collapse").children();
-        }
-        $body.each(function () {
-            var $child;
-            if ($(this)[0].tagName === "LABEL")
-                $child = $(this).children();
-            else {
-                $child = $(this);
-            }
-            var name = $child.attr("id").replace(key, newID);
-            $child.attr("id", name);
-            $child.attr("name", name);
-        });
-
-        // Step 2: Add User buttons:
-
-
-        // Step 3: Cache clones for replication:
-        factories[key]["clone"] = $ele.clone(true);
+        factories[key]["clone"] = $(fact).clone(true, true);
     }
 }
 function recursivelyFactor(id, ele) {
@@ -377,34 +374,75 @@ function collapseDiv($name, $div) {
 }
 
 function prevStage() {
-    // Remove active rendering
-    var active = $activeStage.attr("id");
-    var prev = $activeStage.prev().attr("id");
+    if (!proceeding) {
+        proceeding = true;
+        // Remove active rendering
+        var active = $activeStage.attr("id");
+        var $prev = $activeStage.prev();
+        while ($prev.hasClass("conditional") && !$prev.hasClass("conditioned")) {
+            $prev = $prev.prev();
+        }
+        if ($prev.length === 0) {
+            proceeding = false;
+            return;
+        }
 
-    $activeStage.removeClass("active");
-    $("[data-stage=" + active + "").removeClass("active");
+        var prevID = $prev.attr("id");
 
-    // Activate new rendering
-    setTimeout(function () {
-        $activeStage = $activeStage.prev();
-        $activeStage.addClass("active");
-        $("[data-stage=" + prev + "").addClass("active");
-    }, 500);
+        $activeStage.removeClass("active");
+        $("[data-stage=" + active + "").removeClass("active");
+
+        // Activate new rendering
+        setTimeout(function () {
+            $activeStage = $prev;
+            $activeStage.addClass("active");
+            $("[data-stage=" + prevID + "").addClass("active");
+            proceeding = false;
+        }, 500);
+    }
 }
 function nextStage() {
-    // Remove active rendering
-    var active = $activeStage.attr("id");
-    var next = $activeStage.next().attr("id");
+    if (!proceeding) {
+        proceeding = true;
+        // Remove active rendering
+        var active = $activeStage.attr("id");
+        var $next = $activeStage.next();
+        while ($next.hasClass("conditional") && !$next.hasClass("conditioned")) {
+            $next = $next.next();
+        }
+        if ($next.length === 0) {
+            proceeding = false;
+            return;
+        }
 
-    $activeStage.removeClass("active");
-    $("[data-stage=" + active + "").removeClass("active");
+        var nextID = $next.attr("id");
 
-    // Activate new rendering
-    setTimeout(function () {
-        $activeStage = $activeStage.next();
-        $activeStage.addClass("active");
-        $("[data-stage=" + next + "").addClass("active");
-    }, 500);
+        $activeStage.removeClass("active");
+        $("[data-stage=" + active + "").removeClass("active");
+
+        // Activate new rendering
+        setTimeout(function () {
+            $activeStage = $next;
+            $activeStage.addClass("active");
+            $("[data-stage=" + nextID + "").addClass("active");
+            proceeding = false;
+        }, 500);
+    }
+}
+
+function getParentName(key) {
+    var arr = key.split("-");
+    var index = arr.length - 2;
+    if (index >= 0) {
+        return arr[index];
+    } else {
+        return null;
+    }
+}
+function getName(key) {
+    var arr = key.split("-");
+    var index = arr.length - 1;
+    return arr[index];
 }
 
 function constructID(ele) {
@@ -418,4 +456,57 @@ function constructID(ele) {
         ele = ele.parentElement;
     }
     return retString.replace(" ", "_").toLowerCase();
+}
+
+function buildClone(key, target) {
+    var count = ++factories[key]["count"];
+    var $clone = factories[key]["clone"].clone(true, true);
+    var name = getName(key);
+
+    var header = $clone[0].children[0].children[0];
+    header.innerText = header.innerText.replace("#1", "#" + count);
+
+    var regName = new RegExp(name + "_num1", "g");
+    $clone.html($clone.html().replace(regName, name + "_num" + count));
+    //$clone.html($clone.html().replace(/#1/g, "#" + count));
+
+    var regColl = new RegExp("collapse-" + name + "_num1", "g");
+    $clone.html($clone.html().replace(regColl, "collapse-" + name + "_num" + count));
+
+    // Replace control buttons    
+    var $button = $("<button>", {class: "intent-button-remove close"});
+    $button.attr("aria-label", "Close");
+    $button.html('<span aria-hidden="true">&times;</span>');
+    $button.click(function () {
+        $(this).parent().parent().remove();
+    });
+    $clone.find("[data-factory=" + key + "]").replaceWith($button);
+
+    // Change element attributes
+    $clone.attr("id", $clone.attr("id").replace(regName, name + "_num" + count));
+
+    // Match parent (sub-factories)
+    var $target = $("#" + target);
+    var $parent = $target.parent();
+
+    if ($parent.attr("id") !== "intent-panel-body" && 
+            getParentName($clone.attr("id")) !== getName($parent.attr("id"))) {
+        var regParent = new RegExp(getParentName($clone.attr("id"), "g"));
+        $clone.attr("id", $clone.attr("id").replace(regParent, getName($parent.attr("id"))));
+        $clone.html($clone.html().replace(regParent, getName($parent.attr("id"))));
+    }
+
+    $target.append($clone);
+
+    // Reset button listeners  
+    $(".intent-button-factory").off("click");
+    $(".intent-button-factory").click(function (e) {
+        // Modify clone for current index
+        var key = $(this).data("factory");
+        var target = $(this).data("target");
+
+        buildClone(key, target);
+
+        e.preventDefault();
+    });
 }

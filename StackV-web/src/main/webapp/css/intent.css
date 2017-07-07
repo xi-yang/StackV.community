@@ -122,6 +122,9 @@ IN THE WORK.
 .intent-stage-div.active {
     display: block;
 }
+.intent-stage-div.conditional.conditioned:not(.active) {
+    display: none;
+}
 
 .button-factory {
     display: none;    

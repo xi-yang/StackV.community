@@ -47,7 +47,7 @@
         </group>
     </stage>
     <stage name="Subnets">
-        <group block="subnets" name="subnet" collapsible="true">
+        <group block="subnets" name="Subnet" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -85,7 +85,7 @@
         </group>
     </stage>
     <stage name="VMs">
-        <group block="vms" name="vm" collapsible="true">
+        <group block="vms" name="VM" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -114,7 +114,7 @@
                 <default>any</default>
             </input>
             
-            <group factory="true" name="route">
+            <group factory="true" name="Route">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -134,7 +134,7 @@
         </group>
     </stage>
     <stage name="Gateways" condition="aws-form">
-        <group block="gateways" name="awsgateway" collapsible="true">
+        <group block="gateways" name="AWS Gateway" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -144,7 +144,7 @@
                 <type>select</type>
                 <source>/app/intents/gateways</source>
             </input>                        
-            <group name="route">
+            <group name="Route">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -164,7 +164,7 @@
         </group>
     </stage>
     <stage name="Gateways" condition="openstack-form">
-        <group block="gateways" name="opsgateway" collapsible="true">
+        <group block="gateways" name="OPS Gateway" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -177,7 +177,7 @@
                     <option>L2 Stitch Port</option>
                 </options>
             </input>                        
-            <group name="route">
+            <group name="Route">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -194,7 +194,7 @@
         </group>
     </stage>
     <stage name="SRIOVs" condition="openstack-form">
-        <group block="sriovs" name="sriov" collapsible="true">
+        <group block="sriovs" name="SRIOV" collapsible="true">
             <input>
                 <name>Hosting Gateway</name>
                 <type>select</type>
