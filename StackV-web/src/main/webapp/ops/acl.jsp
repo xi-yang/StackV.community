@@ -87,7 +87,7 @@
                                 <th>Group Roles<button type="button" class="acl-group-roles close" aria-hidden="true">&times;</button></th>
                             </tr>
                         </thead>
-                        <tbody id="group-role-body">
+                        <tbody id="group-role-body1">
                         </tbody>
                         <tfoot>
                             <tr>

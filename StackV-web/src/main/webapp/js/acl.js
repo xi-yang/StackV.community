@@ -660,9 +660,11 @@ function loadGroupTable(groupname){
     
     //get the group
     
-    var tbody = document.getElementById("group-role-body");
+    var tbody = document.getElementById("group-role-body1");
     tbody.innerHTML = "";
-   
+    
+    $("#group-role-body1").empty();
+    $("#group-role-body1").html("");
     
     var apiUrl = baseUrl + "/StackV-web/restapi/app/keycloak/groups/" + group;
     $.ajax({
@@ -673,9 +675,10 @@ function loadGroupTable(groupname){
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
+                
                 for (i = 0; i < result.length; i++) {
                     var role = result[i];
-
+                    
                     var row = document.createElement("tr");
 
                     var cell1_1 = document.createElement("td");
@@ -687,8 +690,10 @@ function loadGroupTable(groupname){
 
                     row.appendChild(cell1_1);
                     tbody.appendChild(row);
+                    
 
                 }
+               
                 subloadRoleACLRoles1();
                 tweenHideUserPanel.play();
                 tweenGroupRolePanel.play();
@@ -724,6 +729,7 @@ function loadGroupTable(groupname){
                                 },
                                 success: function () {
                                     loadGroupTable(groupname);
+                                    evt.preventDefault();
                                 }
                             });
                         }
@@ -765,6 +771,7 @@ function loadGroupTable(groupname){
                                 },
                                 success: function () {
                                     loadGroupTable(groupname);
+                                    evt.preventDefault();
                                 }
                             });
                             
@@ -775,30 +782,17 @@ function loadGroupTable(groupname){
                     });
                 });
                 
-                
-               
-                
-                //click on group roles, reverse the animation
-                //
-                //load the data into the table first
-                //reverse the users panel
-                //hide other role table
-                //display ur role table
-                //mechanism to clear ur table(reverse)
-                //if someone clicks unload, and theres nothing to unload, nothing happens
-                // highlight group selected
-                
-                
-                
-                
+                evt.preventDefault();
+              
             },
             error: function () {
                 alert("failure");
             }
+            
         });
     
     
-    
+    evt.preventDefault();
 }
 
 
