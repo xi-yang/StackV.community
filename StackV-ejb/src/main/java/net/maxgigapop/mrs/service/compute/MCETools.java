@@ -116,6 +116,22 @@ public class MCETools {
         public void setOntModel(OntModel ontModel) {
             this.ontModel = ontModel;
         }
+        
+        public void tagHops(String value) {
+            if (this.ontModel == null) {
+                return;
+            }
+            Iterator<Statement> itStmt = this.iterator();
+            while (itStmt.hasNext()) {
+                Statement stmt = itStmt.next();
+                Resource hop = stmt.getSubject();
+                ontModel.add(ontModel.createStatement(hop, Mrs.tag, value));
+                if (!itStmt.hasNext()) {
+                    hop = stmt.getObject().asResource();
+                    ontModel.add(ontModel.createStatement(hop, Mrs.tag, value));
+                }
+            }
+        }
     }
 
     public static Path getLeastCostPath(List<Path> candidates) {

@@ -53,7 +53,17 @@ public class MCE_MPVlanConnection extends MCEBase {
 
     private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
     
-    private static final String SPEC_OTemplate = "{}"; // placeholder
+    private static final String SPEC_OTemplate = 
+"{\n" +
+"	\"$$\": [\n" +
+"		{\n" +
+"			\"hop\": \"?hop?\",\n" +
+"			\"vlan_tag\": \"?vlan?\",\n" +
+"			\"#sparql\": \"SELECT DISTINCT ?hop ?vlan WHERE {?hop a nml:BidirectionalPort. ?hop nml:hasLabel ?vlan. "
+            + "?vlan nml:value ?tag. ?hop mrs:tag \\\"$$\\\".}\"\n" +
+"		}\n" +
+"	]\n" +
+"}";
 
     @Override
     @Asynchronous
@@ -66,17 +76,18 @@ public class MCE_MPVlanConnection extends MCEBase {
 
         // Specific MCE logic - compute a List<Model> of MPVlan connections
         ServiceDelta outputDelta = annotatedDelta.clone();
-        Map<String, MCETools.Path> l2pathMap = this.doMultiPathFinding(systemModel.getOntModel(), policyResDataMap);
-        for (String connId : l2pathMap.keySet()) {
-            outputDelta.getModelAddition().getOntModel().add(l2pathMap.get(connId).getOntModel().getBaseModel());
+        for (Resource res: policyResDataMap.keySet()) {
+            Map<String, MCETools.Path> l2pathMap = this.doMultiPathFinding(systemModel.getOntModel(), policyResDataMap.get(res));
+            for (String connId : l2pathMap.keySet()) {
+                outputDelta.getModelAddition().getOntModel().add(l2pathMap.get(connId).getOntModel().getBaseModel());
+            }
         }
-
-        this.postProcess(policy, policyResDataMap, outputDelta.getModelAddition().getOntModel(), SPEC_OTemplate);
+        this.postProcess(policy, outputDelta.getModelAddition().getOntModel(), systemModel.getOntModel(), SPEC_OTemplate, policyResDataMap);
         logger.end(method);        
         return new AsyncResult(outputDelta);
     }
 
-    private Map<String, MCETools.Path> doMultiPathFinding(OntModel systemModel, Map<Resource, JSONObject> connDataMap) {
+    private Map<String, MCETools.Path> doMultiPathFinding(OntModel systemModel, Map<String, JSONObject> connDataMap) {
         String method = "doMultiPathFinding";
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
@@ -87,10 +98,9 @@ public class MCE_MPVlanConnection extends MCEBase {
             logger.trace(method, "marshalModel(transformedModel) failed -- "+ex);
         }
         Map<String, MCETools.Path> mapConnPaths = new HashMap<>();
-        for (Resource connReq: connDataMap.keySet()) {
-            String connId = (String) connReq.getURI();
+        for (String connId: connDataMap.keySet()) {
             List<Resource> terminals = new ArrayList<>();
-            JSONObject jsonConnReq = (JSONObject)connDataMap.get(connReq);
+            JSONObject jsonConnReq = (JSONObject)connDataMap.get(connId);
             if (jsonConnReq.size() != 2) {
                 throw logger.error_throwing(method, String.format("cannot find path for connection '%s' - request must have exactly 2 terminals", connId));
             }
@@ -115,6 +125,7 @@ public class MCE_MPVlanConnection extends MCEBase {
             }
             // pick the shortest path from remaining/feasible paths in KSP
             MCETools.Path connPath = MCETools.getLeastCostPath(KSP);
+            connPath.tagHops(connId);
             transformedModel.add(connPath.getOntModel());
             mapConnPaths.put(connId, connPath);
         }
