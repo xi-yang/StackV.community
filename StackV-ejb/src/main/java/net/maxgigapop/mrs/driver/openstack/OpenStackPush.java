@@ -2,6 +2,7 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Zan Wang 2015
  * Modified by: Xi Yang 2015-2016
+ * Modified by: Adam Smith 2017
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -156,6 +157,7 @@ public class OpenStackPush {
         requests.addAll(isAliasRequest(modelRef, modelReduct, false));
         requests.addAll(subnetRequests(modelRef, modelReduct, false));
         requests.addAll(networkRequests(modelRef, modelReduct, false));
+        requests.addAll(vpnEndpointRequests(modelRef, modelReduct, false));
         logger.trace(method, "propgate addition model");
         requests.addAll(networkRequests(modelRef, modelAdd, true));
         requests.addAll(subnetRequests(modelRef, modelAdd, true));
@@ -172,7 +174,8 @@ public class OpenStackPush {
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
         requests.addAll(globusConnectRequests(modelRef, modelAdd, true));
         requests.addAll(nfsRequests(modelRef, modelAdd, true));
-
+        requests.addAll(vpnEndpointRequests(modelRef, modelAdd, true));
+        
         return requests;
     }
 
@@ -1000,6 +1003,27 @@ public class OpenStackPush {
                 if (status.equals("delete")) {
                     CephRbdDeletionCheck(servername, deviceId);
                 }
+            } else if (o.get("request").toString().equals("VpnEndpointRequest")) {
+                String servername = (String) o.get("server name");
+                String localIp = (String) o.get("local-ip");
+                String localSubnet = (String) o.get("local-subnet");
+                String remoteSubnet = (String) o.get("remote-subnet");
+                String remoteIp = "";
+                String status = (String) o.get("status");
+                String newMetadata = "{";
+                newMetadata += "'status':'"+status+"',";
+                newMetadata += "'local-ip':'"+localIp+"',";
+                newMetadata += "'local-subnet':'"+localSubnet+"',";
+                newMetadata += "'remote-subnet':'"+remoteSubnet+"'";
+                int i = 1;
+                while (o.containsKey("remote-ip-"+i)) {
+                    remoteIp = (String) o.get("remote-ip-"+i);
+                    newMetadata += ",'remote-ip-"+i+"':'"+remoteIp+"'";
+                    i++;
+                }
+                newMetadata += "}";
+                System.out.println("newMetadata: "+newMetadata);
+                client.setMetadata(servername, "ipsec:strongswan", newMetadata);
             } else if (o.get("request").toString().equals("GlobusConnectRequest")) {
                 String servername = (String) o.get("server name");
                 String globusUser = (String) o.get("username");
@@ -1365,7 +1389,10 @@ public class OpenStackPush {
         //1 get the tag resource from the reference model that indicates 
         //that this is a network  interface 
         //2 select all the ports in the reference model that have that tag
-        query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort .}";
+        
+        //added 9/28: filter out bidirectional ports that contain the word "tunnel",
+        //as these are part of vpn endpoint and not port requests.
+        query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort . FILTER (!regex( str(?port), \".*tunnel.*\")) }";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
@@ -2653,6 +2680,87 @@ public class OpenStackPush {
         return requests;
     }
 
+    private List<JSONObject> vpnEndpointRequests(OntModel modelref, OntModel modelDelta, boolean creation) {
+        String method = "vpnEndpointRequests";
+        List<JSONObject> requests = new ArrayList();
+        //List of VMs that have already been found in the model
+        List<String> vms = new ArrayList<>();
+
+        /*
+        We have to find the vpn endpoint to add and then find the tunnels in a 
+        second query because we dont know how many tunnels there will be.
+        However, we make sure that the vpn enpoint has at least one in the first query.
+        */
+        String query = "SELECT ?vm ?strongswan ?localIp ?localSubnet ?remoteSubnet WHERE {"
+                + "?vm nml:hasService ?strongswan . "
+                + "?strongswan a mrs:EndPoint ; mrs:hasNetworkAddress ?localIpUri , "
+                + "?localSubnetUri , ?remoteSubnetUri ; nml:hasBidirectionalPort ?tunnel . "
+                + "FILTER regex( str(?tunnel), \".*tunnel1.*\") "
+                + "?localIpUri a mrs:NetworkAddress ; mrs:type \"ipv4-address\" ; "
+                + "mrs:value ?localIp . "
+                + "?localSubnetUri a mrs:NetworkAddress ; mrs:type \"ipv4-prefix-list\" ; "
+                + "mrs:value ?localSubnet . FILTER regex( str(?localSubnetUri), \".*local.*\") "
+                + "?remoteSubnetUri a mrs:NetworkAddress ; mrs:type \"ipv4-prefix-list\" ; "
+                + "mrs:value ?remoteSubnet . FILTER regex( str(?remoteSubnetUri), \".*remote.*\") "
+                + "}";
+
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            String vm = q.get("vm").toString();
+            //escape the regex character "+"
+            String strongswan = q.get("strongswan").toString().replaceAll("[+]", "[+]");
+            String localIp = q.get("localIp").toString();
+            String localSubnet = q.get("localSubnet").toString();
+            String remoteSubnet = q.get("remoteSubnet").toString();
+            
+            if (vms.contains(vm)) {
+                logger.warning(method, "Adding a second vpn endpoint to VM "+vm+" may cause unexpected behavior.");
+            } else {
+                vms.add(vm);
+                //System.out.println("VM: "+vm);
+            }
+
+            //Find all the tunnels.  Note that the FILTER in the tunnelQuery
+            //ensures that all tunnels are part of the same ipsec service as the
+            //one found in solution q.
+            String tunnelQuery = "SELECT ?tunnelUri ?remoteIp ?secret WHERE {"
+                    + "?strongswan a mrs:EndPoint ; nml:hasBidirectionalPort "
+                    + "?tunnelUri . FILTER regex( str(?strongswan), \""+ strongswan +"\" )"
+                    + "?tunnelUri a nml:BidirectionalPort ; mrs:hasNetworkAddress "
+                    + "?remoteUri , ?secretUri . "
+                    + "?remoteUri a mrs:NetworkAddress ; mrs:type \"ipv4-address\" ; "
+                    + "mrs:value ?remoteIp . "
+                    + "?secretUri a mrs:NetworkAddress ; mrs:type \"secret\" ; "
+                    + "mrs:value ?secret . "
+                    + "}";
+            
+            ResultSet tunnelResults = executeQuery(tunnelQuery, emptyModel, modelDelta);
+            
+            //Put all info into the json request
+            JSONObject request = new JSONObject();
+            requests.add(request);
+            request.put("request", "VpnEndpointRequest");
+            if (creation == true) request.put("status", "create");
+            else request.put("status", "delete");
+            request.put("local-ip", localIp);
+            request.put("local-subnet", localSubnet);
+            request.put("remote-subnet", remoteSubnet);
+            
+            int i = 1;
+            while (tunnelResults.hasNext()) {
+                QuerySolution tunnelSolution = tunnelResults.next();
+                request.put("remote-ip-"+(i++), tunnelSolution.get("remoteIp").toString());
+                
+            }
+        }
+        
+        //System.out.println("requests: "+requests.toString());
+        logger.trace(method, "requests: "+requests.toString());
+        return requests;
+    }
+    
     private List<JSONObject> globusConnectRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
         String method = "globusConnectRequests";
         List<JSONObject> requests = new ArrayList();
@@ -3075,7 +3183,6 @@ public class OpenStackPush {
             }
         }
     }
-
     
     public void CephRbdDeletionCheck(String serverId, String deviceId) {
         int maxTries = 20; // up to 10 minutes

@@ -112,6 +112,8 @@ public class OpenstackPrefix {
     
     public static String hypervisorBypassSvc = prefix+":host+%s:hypervisor-bypass-svc+%s";
     
+    public static String ipsec = prefix+":service+ipsec";
+    
     public static String nic = prefix+":vpc+%s:subnet+%s:nic+%s";
     
     public static String nicNetworkAddress = prefix+":vpc+%s:subnet+%s:nic+%s:ip+%s";
@@ -139,6 +141,4 @@ public class OpenstackPrefix {
     public static String vpcNetworkAddress = prefix+":vpc+%s:cidr";
 
     public static String vpcService = prefix+":vpcservice+%s";
-    
-    public static String vpn = prefix+":service+vpn";
 }

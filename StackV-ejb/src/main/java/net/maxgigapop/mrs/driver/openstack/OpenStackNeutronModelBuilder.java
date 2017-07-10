@@ -388,7 +388,7 @@ public class OpenStackNeutronModelBuilder {
                             vmfexSvc = RdfOwl.createResource(model, HOST.getURI() + ":vmfex", Mrs.HypervisorBypassInterfaceService);
                         }
                         model.add(model.createStatement(vmfexSvc, Mrs.providesVNic, sriovPort));
-                        // profile 
+                        //profile
                         String portProfile = (String) jsonObj.get("profile");
                         sparql = "SELECT ?port_profile WHERE {"
                                 + "?port_profile a mrs:SwitchingSubnet . "
@@ -496,56 +496,82 @@ public class OpenStackNeutronModelBuilder {
             
             //Strongswan ipsec vpn
             if (metadata != null && metadata.containsKey("ipsec:strongswan")) {
-                String endpointUri = ResourceTool.getResourceUri(server_name, ":service+vpn", server_name);
-                Resource strongswan = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
-                model.add(model.createStatement(VM, Nml.hasService, strongswan));
-
-                Resource localIp = RdfOwl.createResource(model, endpointUri+":tunnel1", Mrs.NetworkAddress);
-                Resource localSubnet = RdfOwl.createResource(model, endpointUri+":tunnel2", Mrs.NetworkAddress);
-                Resource remoteSubnet = RdfOwl.createResource(model, endpointUri+":tunnel1", Mrs.NetworkAddress);
-                model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localIp));
-                model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localSubnet));
-                model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, remoteSubnet));
+                String input = metadata.get("ipsec:strongswan");
+                input = input.replaceAll("'", "\"");
+                JSONParser j = new JSONParser();
                 
-                //need to obtain the following values;
-                /*
-                local ip
-                local subnet cidr
-                remote subnet cidr
-                t1,t2 remote ip
-                t2,t2 secret
-                */
-                model.add(model.createStatement(localIp, Mrs.type, "ipv4-address"));
-                model.add(model.createStatement(localIp, Mrs.value, "206.196.179.134"));
-                model.add(model.createStatement(localSubnet, Mrs.type, "ipv4-prefix-list"));
-                model.add(model.createStatement(localSubnet, Mrs.value, "192.168.0.0/16"));
-                model.add(model.createStatement(remoteSubnet, Mrs.type, "ipv4-prefix-list"));
-                model.add(model.createStatement(remoteSubnet, Mrs.value, "10.10.0.0/16"));
-                
-                Resource tunnel1 = RdfOwl.createResource(model, endpointUri+":tunnel1", Nml.BidirectionalPort);
-                Resource tunnel2 = RdfOwl.createResource(model, endpointUri+":tunnel2", Nml.BidirectionalPort);
-                model.add(model.createStatement(strongswan, Nml.hasBidirectionalPort, tunnel1));
-                model.add(model.createStatement(strongswan, Nml.hasBidirectionalPort, tunnel2));
-                
-                Resource t1RemoteIp = RdfOwl.createResource(model, endpointUri+":tunnel1:remote-ip", Mrs.NetworkAddress);
-                Resource t1Secret = RdfOwl.createResource(model,endpointUri+"tunnel1:secret", Mrs.NetworkAddress);
-                model.add(model.createStatement(tunnel1, Mrs.hasNetworkAddress, t1RemoteIp));
-                model.add(model.createStatement(tunnel1, Mrs.hasNetworkAddress, t1Secret));
-                model.add(model.createStatement(t1RemoteIp, Mrs.type, "ipv4-address"));
-                model.add(model.createStatement(t1RemoteIp, Mrs.value, "101.101.101.101"));
-                model.add(model.createStatement(t1RemoteIp, Mrs.type, "secret"));
-                model.add(model.createStatement(t1RemoteIp, Mrs.value, "####"));
-                
-                Resource t2RemoteIp = RdfOwl.createResource(model, endpointUri+":tunnel2:remote-ip", Mrs.NetworkAddress);
-                Resource t2Secret = RdfOwl.createResource(model,endpointUri+"tunnel2:secret", Mrs.NetworkAddress);
-                model.add(model.createStatement(tunnel2, Mrs.hasNetworkAddress, t2RemoteIp));
-                model.add(model.createStatement(tunnel2, Mrs.hasNetworkAddress, t2Secret));
-                model.add(model.createStatement(t2RemoteIp, Mrs.type, "ipv4-address"));
-                model.add(model.createStatement(t2RemoteIp, Mrs.value, "101.101.101.101"));
-                model.add(model.createStatement(t2RemoteIp, Mrs.type, "secret"));
-                model.add(model.createStatement(t2RemoteIp, Mrs.value, "####"));
-                
-                
+                try {
+                    JSONObject jdata = (JSONObject) j.parse(input);
+                    
+                    if (!jdata.get("status").equals("up")) {
+                        continue;
+                    }
+                    
+                    String endpointUri = server_name+":service+ipsec";
+                    Resource strongswan = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
+                    model.add(model.createStatement(VM, Nml.hasService, strongswan));
+                    
+                    /*
+                    Get the following values:
+                    local ip            -> "local-ip"
+                    local subnet cidr   -> "local-subnet"
+                    remote subnet cidr  -> "remote-subnet"
+                    t1,t2 remote ip     -> "remote-ip-n"
+                    t1,t2 secret        -> not included in model
+                    */
+                    String localIPStr = jdata.get("local-ip").toString();
+                    String localSubnetCIDR = jdata.get("local-subnet").toString();
+                    String remoteSubnetCIDR = jdata.get("remote-subnet").toString();
+                    
+                    if (localIPStr == null) localIPStr = "null";
+                    if (localSubnetCIDR == null) localSubnetCIDR = "null";
+                    if (remoteSubnetCIDR == null) remoteSubnetCIDR = "null";
+                    
+                    //add local ip to model
+                    Resource localIp = RdfOwl.createResource(model, endpointUri+":local-ip", Mrs.NetworkAddress);
+                    model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localIp));
+                    model.add(model.createStatement(localIp, Mrs.type, "ipv4-address"));
+                    model.add(model.createStatement(localIp, Mrs.value, localIPStr));
+                    //add local subnet
+                    Resource localSubnet = RdfOwl.createResource(model, endpointUri+":local-subnet", Mrs.NetworkAddress);
+                    model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localSubnet));
+                    model.add(model.createStatement(localSubnet, Mrs.type, "ipv4-prefix-list"));
+                    model.add(model.createStatement(localSubnet, Mrs.value, localSubnetCIDR));
+                    //add remote subnet
+                    Resource remoteSubnet = RdfOwl.createResource(model, endpointUri+":remote-subnet", Mrs.NetworkAddress);
+                    model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, remoteSubnet));
+                    model.add(model.createStatement(remoteSubnet, Mrs.type, "ipv4-prefix-list"));
+                    model.add(model.createStatement(remoteSubnet, Mrs.value, remoteSubnetCIDR));
+                    
+                    //add tunnels
+                    int i = 1;
+                    String tunnelStr = "remote-ip-1";
+                    ArrayList <String> tunnelIPs = new ArrayList<>();
+                    
+                    while (jdata.containsKey(tunnelStr)) {
+                        tunnelIPs.add( (String) jdata.get(tunnelStr));
+                        tunnelStr = "remote-ip-" + (++i);
+                    }
+                    
+                    i = 0;
+                    tunnelStr = endpointUri+":tunnel";
+                    for (String ip : tunnelIPs) {
+                        tunnelStr = endpointUri + ":tunnel" + (++i);
+                        //System.out.println("Added tunnel: "+tunnelStr);
+                        Resource tunnel = RdfOwl.createResource(model, tunnelStr, Nml.BidirectionalPort);
+                        model.add(model.createStatement(strongswan, Nml.hasBidirectionalPort, tunnel));
+                        Resource remoteIp = RdfOwl.createResource(model, tunnelStr+":remote-ip", Mrs.NetworkAddress);
+                        model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, remoteIp));
+                        model.add(model.createStatement(remoteIp, Mrs.type, "ipv4-address"));
+                        model.add(model.createStatement(remoteIp, Mrs.value, ip));
+                        Resource secret = RdfOwl.createResource(model,tunnelStr+":secret", Mrs.NetworkAddress);
+                        model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, secret));
+                        model.add(model.createStatement(secret, Mrs.type, "secret"));
+                        model.add(model.createStatement(secret, Mrs.value, "####"));
+                    }
+                } catch (Exception e) {
+                    logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), input, "ipsec:strongswan"));
+                }
             }
             
             // Globus Connect Service
