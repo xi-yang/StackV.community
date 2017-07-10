@@ -660,11 +660,17 @@ function loadGroupTable(groupname){
     
     //get the group
     
-    var tbody = document.getElementById("group-role-body1");
+    
+    
+    
+    var tbody = document.getElementById("group-role-body");
+    var tbody1 = $("#group-role-body");
     tbody.innerHTML = "";
     
-    $("#group-role-body1").empty();
-    $("#group-role-body1").html("");
+    tbody1.empty();
+    tbody1.html("");
+    
+    $("#acl-group-role-table > tbody").html("");
     
     var apiUrl = baseUrl + "/StackV-web/restapi/app/keycloak/groups/" + group;
     $.ajax({
@@ -675,6 +681,10 @@ function loadGroupTable(groupname){
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
+                
+                tbody.innerHTML = "";
+                tbody1.empty();
+                tbody1.html("");
                 
                 for (i = 0; i < result.length; i++) {
                     var role = result[i];
@@ -729,7 +739,6 @@ function loadGroupTable(groupname){
                                 },
                                 success: function () {
                                     loadGroupTable(groupname);
-                                    evt.preventDefault();
                                 }
                             });
                         }
@@ -771,7 +780,6 @@ function loadGroupTable(groupname){
                                 },
                                 success: function () {
                                     loadGroupTable(groupname);
-                                    evt.preventDefault();
                                 }
                             });
                             
@@ -782,7 +790,7 @@ function loadGroupTable(groupname){
                     });
                 });
                 
-                evt.preventDefault();
+               
               
             },
             error: function () {
@@ -792,7 +800,6 @@ function loadGroupTable(groupname){
         });
     
     
-    evt.preventDefault();
 }
 
 
