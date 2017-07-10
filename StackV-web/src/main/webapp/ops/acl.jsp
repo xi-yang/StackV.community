@@ -84,7 +84,7 @@
                     <table class="management-table" id="acl-group-role-table">
                         <thead>
                             <tr>
-                                <th>Group Roles<button type="button" class="acl-user-close close" aria-hidden="true">&times;</button></th>
+                                <th>Group Roles<button type="button" class="acl-group-roles close" aria-hidden="true">&times;</button></th>
                             </tr>
                         </thead>
                         <tbody id="group-role-body">
@@ -93,7 +93,7 @@
                             <tr>
                                 <th>
                                     <select id="acl-role-select1"><option selected disabled>Choose a role</option></select>
-                                    <button class="btn-default" id="acl-role-add">Add</button>
+                                    <button class="btn-default" id="acl-group-role-add">Add</button>
                                 </th>
                             </tr>
                         </tfoot>

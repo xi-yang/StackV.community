@@ -59,7 +59,7 @@ div#acl-role-panel {
     left:5px;
 }
 div#acl-group-role-div {
-    left: -100% !important;
+    left: -100%;
 }
 
 #acl-role-group-div, #acl-role-role-div {
