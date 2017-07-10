@@ -71,24 +71,37 @@ function initializeIntent() {
 
     // Begin rendering stages
     var stages = intent.children;
+    var $progress = $("#progressbar");
     for (var i = 1; i < stages.length; i++) {
-
         // Initialize stage panel
         var stage = stages[i];
-        var $div = $("<div>", {class: "intent-stage-div", id: constructID(stage)});
+        var id = constructID(stage);
+        var $div = $("<div>", {class: "intent-stage-div", id: id});
+        var $prog = $("<li>");
         if (i === 1) {
             $div.addClass("active");
             $activeStage = $div;
+            $prog.addClass("active");
         }
         if (stage.getAttribute("condition")) {
             $div.addClass("conditional");
             $div.attr("data-condition", stage.getAttribute("condition"));
+
+            $prog.addClass("conditional");
+            $prog.attr("data-condition", stage.getAttribute("condition"));
         }
+        if (stage.getAttribute("proceeding") === "true") {
+            $div.addClass("proceeding");
+        }
+        if (stage.getAttribute("return") === "false") {
+            $div.addClass("unreturnable");
+        }
+        $prog.text(stage.getAttribute("name"));
         panel.append($div);
+        stages[id] = $div;
         $currentStageDiv = $div;
 
-        $div = $("<div>", {class: "intent-stage-factory", id: "factory-" + constructID(stage)});
-        $("#intent-panel-header").append($div);
+        $progress.append($prog);
         // Begin recursive rendering
         renderInputs(stage.children, $currentStageDiv);
     }
@@ -150,8 +163,6 @@ function initMeta(meta) {
     // Render control buttons
     var $controlDiv = $("<div>").attr("id", "intent-panel-meta-control");
     $controlDiv.append($("<button>", {class: "button-control active", id: "intent-submit", html: "Submit"}));
-    $controlDiv.append($("<button>", {class: "button-control active", id: "intent-prev", html: "Prev"}));
-    $controlDiv.append($("<button>", {class: "button-control active", id: "intent-next", html: "Next"}));
     $panel.append($controlDiv);
 
     $("#intent-prev").click(function () {
@@ -168,6 +179,7 @@ function renderInputs(arr, $parent) {
         if (ele.nodeName === "group") {
             var name = ele.getAttribute("name");
             var factory = ele.getAttribute("factory");
+            var label = ele.getAttribute("label");
             var condition = ele.getAttribute("condition");
             var collapsible = ele.getAttribute("collapsible");
             var block = ele.getAttribute("block");
@@ -197,6 +209,13 @@ function renderInputs(arr, $parent) {
                 factObj["block"] = block;
                 factories[constructID(ele)] = factObj;
             }
+
+            if (label === "false") {
+                $div.find(".group-name").addClass("hidden");
+            } else {
+                $div.addClass("labeled");
+            }
+
             if (condition) {
                 $div.addClass("conditional");
                 $div.attr("data-condition", condition);
@@ -211,11 +230,11 @@ function renderInputs(arr, $parent) {
             var condition = ele.getAttribute("condition");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
-            var $input = $("<input>", {type: type, id: name, name: name});
+            var $input = $("<input>", {type: type, id: name});
             switch (type) {
                 case "button":
                     $input.click(function (e) {
-                        nextStage();
+                        nextStage(true);
 
                         e.preventDefault();
                     });
@@ -330,17 +349,14 @@ function factorizeRendering() {
 function recursivelyFactor(id, ele) {
     if (ele) {
         var arr = ele.children;
-
+        var label = $(ele).hasClass("labeled");
         // Replace any matching IDs
         var eleID = ele.id;
         if (eleID) {
             var index = eleID.indexOf(id);
             if (index >= 0) {
                 ele.id = eleID.replace(id, id + "_num1");
-                if (ele.name) {
-                    ele.name = ele.name.replace(id, id + "_num1");
-                }
-                if (ele.children[0] && ele.children[0].children[0]) {
+                if (label && ele.children[0] && ele.children[0].children[0]) {
                     if (ele.children[0].children[0].innerText.indexOf("#1") < 0) {
                         ele.children[0].children[0].innerText += " #1";
                     }
@@ -375,17 +391,30 @@ function collapseDiv($name, $div) {
 
 function prevStage() {
     if (!proceeding) {
-        proceeding = true;
-        // Remove active rendering
+        proceeding = true;        
         var active = $activeStage.attr("id");
         var $prev = $activeStage.prev();
-        while ($prev.hasClass("conditional") && !$prev.hasClass("conditioned")) {
-            $prev = $prev.prev();
-        }
-        if ($prev.length === 0) {
+        if ($prev.hasClass("unreturnable")) {
             proceeding = false;
             return;
         }
+        while ($prev.hasClass("conditional") && !$prev.hasClass("conditioned")) {
+            $prev = $prev.prev();
+            if ($prev.hasClass("unreturnable")) {
+                proceeding = false;
+                return;
+            }
+        }
+        if ($prev[0].tagName === "DIV") {
+            proceeding = false;
+            return;
+        }
+
+        // Update progress bar
+        var $prog = $("#progressbar");
+        var activeProg = $prog.children(".active")[0];
+        activeProg.className = "";
+        activeProg.previousElementSibling.className = "active";
 
         var prevID = $prev.attr("id");
 
@@ -401,10 +430,14 @@ function prevStage() {
         }, 500);
     }
 }
-function nextStage() {
+function nextStage(flag) {
     if (!proceeding) {
         proceeding = true;
-        // Remove active rendering
+
+        if ($activeStage.hasClass("proceeding") && !flag) {
+            proceeding = false;
+            return;
+        }
         var active = $activeStage.attr("id");
         var $next = $activeStage.next();
         while ($next.hasClass("conditional") && !$next.hasClass("conditioned")) {
@@ -414,6 +447,12 @@ function nextStage() {
             proceeding = false;
             return;
         }
+
+        // Update progress bar
+        var $prog = $("#progressbar");
+        var activeProg = $prog.children(".active")[0];
+        activeProg.className = "";
+        activeProg.nextElementSibling.className = "active";
 
         var nextID = $next.attr("id");
 
@@ -473,6 +512,20 @@ function buildClone(key, target) {
     var regColl = new RegExp("collapse-" + name + "_num1", "g");
     $clone.html($clone.html().replace(regColl, "collapse-" + name + "_num" + count));
 
+    // Change element attributes
+    $clone.attr("id", $clone.attr("id").replace(regName, name + "_num" + count));
+
+    // Match parent (sub-factories)
+    var $target = $("#" + target);
+    var $parent = $target.parent();
+
+    if ($parent.attr("id") !== "intent-panel-body" &&
+            getParentName($clone.attr("id")) !== getName($parent.attr("id"))) {
+        var regParent = new RegExp(getParentName($clone.attr("id")), "g");
+        $clone.attr("id", $clone.attr("id").replace(regParent, getName($parent.attr("id"))));
+        $clone.html($clone.html().replace(regParent, getName($parent.attr("id"))));
+    }
+
     // Replace control buttons    
     var $button = $("<button>", {class: "intent-button-remove close"});
     $button.attr("aria-label", "Close");
@@ -481,20 +534,6 @@ function buildClone(key, target) {
         $(this).parent().parent().remove();
     });
     $clone.find("[data-factory=" + key + "]").replaceWith($button);
-
-    // Change element attributes
-    $clone.attr("id", $clone.attr("id").replace(regName, name + "_num" + count));
-
-    // Match parent (sub-factories)
-    var $target = $("#" + target);
-    var $parent = $target.parent();
-
-    if ($parent.attr("id") !== "intent-panel-body" && 
-            getParentName($clone.attr("id")) !== getName($parent.attr("id"))) {
-        var regParent = new RegExp(getParentName($clone.attr("id"), "g"));
-        $clone.attr("id", $clone.attr("id").replace(regParent, getName($parent.attr("id"))));
-        $clone.html($clone.html().replace(regParent, getName($parent.attr("id"))));
-    }
 
     $target.append($clone);
 

@@ -139,9 +139,95 @@ IN THE WORK.
     display: block;
 }
 
+#intent-prev {
+    left: 330px;
+    position: fixed;
+    bottom: 110px;
+}
+#intent-next {
+    left: 738px;
+    position: fixed;
+    bottom: 110px;
+}
+
 .conditional { 
     display: none; 
 }
 .conditional.conditioned {
     display: block;
+}
+
+/*Progress bar*/
+/*progressbar*/
+ul#progressbar {
+    margin-bottom: 30px;
+    overflow: hidden;
+    padding: 0;
+    /*CSS counters to number the steps*/
+    counter-reset: step;
+}
+ul#progressbar li.condition {
+    color: black;
+}
+ul#progressbar li {
+    list-style-type: none;
+    color: black;
+    text-transform: uppercase;
+    font-size: 9px;
+    float: left;
+    position: relative;
+    transition: all 1s ease;
+}
+ul#progressbar li.condition {
+    color: black;
+}
+ul#progressbar li.condition.conditioned {
+    color: white;
+}
+
+ul#progressbar li:before {
+    content: counter(step);
+    counter-increment: step;
+    width: 20px;
+    line-height: 20px;
+    display: block;
+    font-size: 10px;
+    color: white;
+    background: #242d38;
+    border-radius: 3px;
+    margin: 0 auto 5px auto;
+    transition: all 1s ease;
+}
+/*progressbar connectors*/
+ul#progressbar li:after {
+    content: '';
+    width: 100%;
+    height: 2px;
+    background: #242d38;
+    position: absolute;
+    left: -50%;
+    top: 9px;
+    z-index: -1; /*put it behind the numbers*/
+    transition: all 1s ease;
+}
+ul#progressbar li.invalid {
+    color: red;
+}
+ul#progressbar li.invalid:before, ul#progressbar li.invalid:after {
+    color: black;
+    background: red;
+}
+ul#progressbar li.active.invalid:before {
+    color: black;
+    background: red;
+}
+ul#progressbar li:first-child:after {
+    /*connector not needed before the first step*/
+    content: none;
+}
+/*marking active/completed steps green*/
+/*The number of the step and the connector before it = green*/
+ul#progressbar li.active:before,  ul#progressbar li.active:after{
+    background: black;
+    color: #333;
 }

@@ -23,8 +23,13 @@
                     <div class="col-sm-4 text-right" id="intent-panel-meta">
                         <input id="meta-alias" name="meta-alias" placeholder="Service Alias"/>
                     </div>
-                    <div id="intent-panel-header"></div>
-                    <div class="col-sm-8" id="intent-panel-body">                         
+                    <div id="intent-panel-header">
+                        <ul class="intent-progress" id="progressbar">                            
+                        </ul>
+                    </div>
+                    <div class="col-sm-8" id="intent-panel-body">  
+                        <button class="button-control active" id="intent-prev">Prev</button>
+                        <button class="button-control active" id="intent-next">Next</button>
                     </div>
                 </div>
             </div>
@@ -40,7 +45,7 @@
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>        
-        
+
         <script src="/StackV-web/js/svc/intentEngine.js"></script>
 
     </body>

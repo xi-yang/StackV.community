@@ -38,6 +38,8 @@ IN THE WORK.
     <!--Simple-->
     <xs:attribute name="factory" type="xs:boolean"/>
     <xs:attribute name="collapsible" type="xs:boolean"/>
+    <xs:attribute name="label" type="xs:boolean"/>
+    <xs:attribute name="proceeding" type="xs:boolean"/>
     <xs:attribute name="return" type="xs:boolean"/>
     
     <xs:attribute name="name" type="xs:string"/>
@@ -80,6 +82,7 @@ IN THE WORK.
             </xs:sequence>
             <xs:attribute ref="name" use="required"/>
             <xs:attribute ref="condition"/>
+            <xs:attribute ref="proceeding"/>
             <xs:attribute ref="return"/>
         </xs:complexType>
     </xs:element>
@@ -95,6 +98,7 @@ IN THE WORK.
             <xs:attribute ref="condition"/>
             <xs:attribute ref="block"/>
             <xs:attribute ref="collapsible" default="false"/>
+            <xs:attribute ref="label" default="true"/>
         </xs:complexType>
     </xs:element>
     
