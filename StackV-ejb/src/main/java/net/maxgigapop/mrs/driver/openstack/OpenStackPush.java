@@ -144,6 +144,7 @@ public class OpenStackPush {
         
         logger.trace(method, "propgate reduction model");
         requests.addAll(nfsRequests(modelRef, modelReduct, false));
+        
         requests.addAll(vpnEndpointRequests(modelRef, modelReduct, false));
         requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
@@ -153,6 +154,7 @@ public class OpenStackPush {
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumeRequests(modelRef, modelReduct, false));
         requests.addAll(portRequests(modelRef, modelReduct, false));
+        
         requests.addAll(serverRequests(modelRef, modelReduct, false));
         requests.addAll(layer3Requests(modelRef, modelReduct, false));
         requests.addAll(isAliasRequest(modelRef, modelReduct, false));
@@ -164,6 +166,7 @@ public class OpenStackPush {
         requests.addAll(volumeRequests(modelRef, modelAdd, true));
         requests.addAll(portRequests(modelRef, modelAdd, true));
         requests.addAll(serverRequests(modelRef, modelAdd, true));
+        
         requests.addAll(volumesAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(portAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(layer3Requests(modelRef, modelAdd, true));
@@ -174,6 +177,7 @@ public class OpenStackPush {
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
         requests.addAll(globusConnectRequests(modelRef, modelAdd, true));
         requests.addAll(vpnEndpointRequests(modelRef, modelAdd, true));
+        
         requests.addAll(nfsRequests(modelRef, modelAdd, true));
         
         return requests;
@@ -1024,7 +1028,7 @@ public class OpenStackPush {
                     i++;
                 }
                 newMetadata += "}";
-                System.out.println("newMetadata: "+newMetadata);
+                //System.out.println("newMetadata: "+newMetadata);
                 client.setMetadata(servername, "ipsec:strongswan", newMetadata);
             } else if (o.get("request").toString().equals("GlobusConnectRequest")) {
                 String servername = (String) o.get("server name");
@@ -2711,6 +2715,7 @@ public class OpenStackPush {
         while (r.hasNext()) {
             QuerySolution q = r.next();
             String vm = q.get("vm").toString();
+            String serverName = ResourceTool.getResourceName(vm, OpenstackPrefix.vm);
             //escape the regex character "+"
             String strongswan = q.get("strongswan").toString().replaceAll("[+]", "[+]");
             String localIp = q.get("localIp").toString();
@@ -2746,6 +2751,7 @@ public class OpenStackPush {
             request.put("request", "VpnEndpointRequest");
             if (creation == true) request.put("status", "create");
             else request.put("status", "delete");
+            request.put("server name", serverName);
             request.put("local-ip", localIp);
             request.put("local-subnet", localSubnet);
             request.put("remote-subnet", remoteSubnet);
