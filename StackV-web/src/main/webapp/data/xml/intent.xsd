@@ -50,6 +50,7 @@ IN THE WORK.
     
     <xs:element name="name" type="xs:string"/>
     <xs:element name="type" type="xs:string"/>
+    <xs:element name="tag" type="xs:string"/>
     <xs:element name="size" type="xs:string"/>    
     <xs:element name="default" type="xs:string"/>
     <xs:element name="source" type="xs:string"/>
@@ -119,12 +120,11 @@ IN THE WORK.
     
     <xs:element name="block">
         <xs:complexType>
-            <xs:simpleContent>
-                <xs:extension base="xs:string">                    
-                    <xs:attribute ref="type" default="number"/>
-                    <xs:attribute ref="condition"/>
-                </xs:extension>
-            </xs:simpleContent>
+            <xs:sequence>
+                <xs:element ref="tag"/>
+                <xs:element ref="name"/>
+            </xs:sequence>
+            <xs:attribute ref="condition"/>
         </xs:complexType>
     </xs:element>
     

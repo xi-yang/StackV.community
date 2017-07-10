@@ -21,7 +21,7 @@
  * IN THE WORK.
  */
 
-/* global Mousetrap */
+/* global Mousetrap, keycloak */
 
 var conditions = [];
 var factories = {};
@@ -39,7 +39,6 @@ Mousetrap.bind({
     }
 });
 
-loadIntent('netcreate');
 function loadIntent(type) {
     $.ajax({
         type: "GET",
@@ -120,13 +119,13 @@ function initMeta(meta) {
     for (var i = 1; i < blocks.length; i++) {
         var $div = $("<div>", style = "margin-bottom:20px;");
         var block = blocks[i];
-        var html = block.innerHTML;
+        var tag = block.children[0].innerHTML;
+        var str = block.children[1].innerHTML;
         var condition = block.getAttribute("condition");
 
-        var str = html.charAt(0).toUpperCase() + html.slice(1);
         var $label = $("<label>").text(str);
-        var $input = $("<input>", {type: "number", name: "block-" + html, value: 1, min: 1});
-        $input.attr("data-block", html);
+        var $input = $("<input>", {type: "number", name: "block-" + tag, value: 1, min: 1});
+        $input.attr("data-block", tag);
         $input.change(function () {
             var eles = $(".block-" + $(this).data("block"));
             var count = eles.length;
@@ -262,10 +261,47 @@ function renderInputs(arr, $parent) {
                 $input.val(ele.getElementsByTagName("default")[0].innerHTML);
             }
             if (ele.getElementsByTagName("source").length > 0) {
+                $input = $("<select>", {id: name});
+                var selectName = name;
 
+                var apiURL = window.location.origin +
+                        "/StackV-web/restapi" +
+                        ele.getElementsByTagName("source")[0].innerHTML;
+                $.ajax({
+                    url: apiURL,
+                    type: 'GET',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (instance) {
+                        for (var i in instance) {
+                            var $option = $("<option>");
+                            $option.text(instance[i]);
+                            $option.val(instance[i]);
+
+                            $("#" + selectName).append($option);
+                        }
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        if (xhr.status === 404) {
+                            console.log(thrownError);
+                        }
+                    }
+                });
             }
             if (ele.getElementsByTagName("options").length > 0) {
+                $input = $("<select>", {id: name});
+                var selectName = name;
+                var options = ele.getElementsByTagName("options")[0].children;
 
+                for (var i = 0; i < options.length; i++) {
+                    var $option = $("<option>");
+                    $option.text(options[i].innerHTML);
+                    $option.val(options[i].innerHTML);
+
+                    $input.append($option);
+                }
             }
             if (trigger) {
                 switch (type) {
@@ -391,7 +427,7 @@ function collapseDiv($name, $div) {
 
 function prevStage() {
     if (!proceeding) {
-        proceeding = true;        
+        proceeding = true;
         var active = $activeStage.attr("id");
         var $prev = $activeStage.prev();
         if ($prev.hasClass("unreturnable")) {
@@ -405,7 +441,7 @@ function prevStage() {
                 return;
             }
         }
-        if ($prev[0].tagName === "DIV") {
+        if ($prev[0].tagName !== "DIV") {
             proceeding = false;
             return;
         }
