@@ -144,6 +144,7 @@ public class OpenStackPush {
         
         logger.trace(method, "propgate reduction model");
         requests.addAll(nfsRequests(modelRef, modelReduct, false));
+        requests.addAll(vpnEndpointRequests(modelRef, modelReduct, false));
         requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
         requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
@@ -157,7 +158,6 @@ public class OpenStackPush {
         requests.addAll(isAliasRequest(modelRef, modelReduct, false));
         requests.addAll(subnetRequests(modelRef, modelReduct, false));
         requests.addAll(networkRequests(modelRef, modelReduct, false));
-        requests.addAll(vpnEndpointRequests(modelRef, modelReduct, false));
         logger.trace(method, "propgate addition model");
         requests.addAll(networkRequests(modelRef, modelAdd, true));
         requests.addAll(subnetRequests(modelRef, modelAdd, true));
@@ -173,8 +173,8 @@ public class OpenStackPush {
         requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
         requests.addAll(globusConnectRequests(modelRef, modelAdd, true));
-        requests.addAll(nfsRequests(modelRef, modelAdd, true));
         requests.addAll(vpnEndpointRequests(modelRef, modelAdd, true));
+        requests.addAll(nfsRequests(modelRef, modelAdd, true));
         
         return requests;
     }
@@ -1008,10 +1008,12 @@ public class OpenStackPush {
                 String localIp = (String) o.get("local-ip");
                 String localSubnet = (String) o.get("local-subnet");
                 String remoteSubnet = (String) o.get("remote-subnet");
-                String remoteIp = "";
+                String uri = (String) o.get("uri");
                 String status = (String) o.get("status");
+                String remoteIp;
                 String newMetadata = "{";
                 newMetadata += "'status':'"+status+"',";
+                newMetadata += "'uri':'"+uri+"',";
                 newMetadata += "'local-ip':'"+localIp+"',";
                 newMetadata += "'local-subnet':'"+localSubnet+"',";
                 newMetadata += "'remote-subnet':'"+remoteSubnet+"'";
@@ -2747,6 +2749,7 @@ public class OpenStackPush {
             request.put("local-ip", localIp);
             request.put("local-subnet", localSubnet);
             request.put("remote-subnet", remoteSubnet);
+            request.put("uri", strongswan);
             
             int i = 1;
             while (tunnelResults.hasNext()) {
