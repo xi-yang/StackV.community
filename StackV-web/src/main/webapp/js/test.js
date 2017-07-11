@@ -20,7 +20,10 @@ var substringMatcher = function (strs) {
     };
 };
 
-var states = ['/app/keycloak/users', '/app/profile', '/model', '/service/verify/'];
+var states = ['/app/keycloak/users', '/app/profile', '/model', '/service/verify/',
+    '/service/ready/reset','/service/instance','/service/verify/','/service/delta/',
+    '/service/manifest/','/service','/model/systeminstance','/model/systeminstance/',
+    '/model/view/','/driver','/delta'];
 
 $('.typeahead').typeahead({
     hint: true,
