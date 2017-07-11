@@ -563,6 +563,7 @@ function openWindow() {
     var descname = document.createElement("p");
     var desc = document.createElement("input");
     var saveButton = document.createElement("button");
+    saveButton.className = "button-profile-select btn btn-default";
 
     $('#info-panel').addClass("active");
 
@@ -682,6 +683,10 @@ function updateDrivers() {
                 var delButton = document.createElement("button");
                 var edButton = document.createElement("button");
                 var spacer = document.createElement("div");
+                
+                detButton.className = "button-profile-select btn btn-default";
+                
+                delButton.className = "button-profile-select btn btn-default";
 
                 detButton.innerHTML = "Details";
                 detButton.onclick = function () {
@@ -690,14 +695,14 @@ function updateDrivers() {
                     changeNameDet();
                     getDetailsProfile(this.id);
                 };
-                detButton.style.width = "50px";
+               
                 detButton.id = result[i + 3];
 
                 delButton.innerHTML = "Delete";
                 delButton.onclick = function () {
                     removeDriverProfile(this.id);
                 };
-                delButton.style.width = "50px";
+               
                 delButton.id = result[i + 3];
 
                 edButton.innerHTML = "Edit";
@@ -706,7 +711,7 @@ function updateDrivers() {
                     activateSide();
                     editDriverProfile(this.id);
                 };
-                edButton.style.width = "50px";
+                
                 edButton.id = result[i + 3];
 
                 spacer.style.width = "25px";
@@ -777,9 +782,11 @@ function getDetailsProfile(clickID) {
                     table.appendChild(row);
                 }
             }
-
+            
             var instDetailsButton = document.createElement("button");
+            instDetailsButton.className = "button-profile-select btn btn-default";
             instDetailsButton.innerHTML = "Install";
+            
             instDetailsButton.onclick = function () {
                 plugDriver(result["TOPURI"]);
             };
@@ -812,6 +819,7 @@ function getAllDetails() {
                 var spacer = document.createElement("div");
 
                 detButton.innerHTML = "Details";
+                detButton.className = "button-profile-select btn btn-default";
                 detButton.onclick = function () {
                     clearPanel();
                     activateSide();
@@ -819,15 +827,16 @@ function getAllDetails() {
                     getDetails(this.id);
                     openContentPanel();
                 };
-                detButton.style.width = "50px";
+                
                 detButton.id = result[i];
 
                 delButton.innerHTML = "Delete";
+                delButton.className = "button-profile-select btn btn-default";
                 delButton.onclick = function () {
                     removeDriver(this.id);
                     reloadData();
                 };
-                delButton.style.width = "50px";
+             
                 delButton.id = result[i + 2];
 
                 spacer.style.width = "25px";
