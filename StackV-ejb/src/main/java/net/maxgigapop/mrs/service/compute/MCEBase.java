@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -68,11 +69,6 @@ public class MCEBase implements IModelComputationElement {
         String method = this.getClass().getSimpleName()+".preProcess";
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw logger.error_throwing(method, "target:ServiceDelta has null addition model for " + policy);
-        }
-        try {
-            logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
-        } catch (Exception ex) {
-            logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
         }
         // list resources depending on the current policy
         String sparql = "SELECT DISTINCT ?res WHERE {"
@@ -158,12 +154,6 @@ public class MCEBase implements IModelComputationElement {
     
     protected void postProcess(Resource policy, OntModel spaModel, OntModel modelRef, String outputTemplate, Map<Resource, JSONObject> policyResDataMap) {
         String method = this.getClass().getSimpleName()+".postProcess";
-        
-        try {
-            logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(spaModel));
-        } catch (Exception ex) {
-            logger.trace(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
-        }
 
         String outputJson = outputPolicyData(spaModel, modelRef, outputTemplate, policyResDataMap);
         
@@ -204,11 +194,11 @@ public class MCEBase implements IModelComputationElement {
             } else if (!dataType.toString().equalsIgnoreCase("JSON")) {
                 logger.warning(method, "export policy data: `" + resData + "' forcefully in JSON format");
             }
-            
+            String exportValue = outputJson;
             if (querySolution.contains("format")) {
                 String exportFormat = querySolution.get("format").toString();
                 try {
-                    outputJson = MCETools.formatJsonExport(outputJson, exportFormat); //@TODO: move from MCETools in here
+                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat); //@TODO: move from MCETools in here
                 } catch (Exception ex) {
                     logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
                     continue;
@@ -217,7 +207,7 @@ public class MCEBase implements IModelComputationElement {
             if (dataValue != null) {
                 spaModel.remove(resData, Spa.value, dataValue);
             }
-            spaModel.add(resData, Spa.value, outputJson);
+            spaModel.add(resData, Spa.value, exportValue);
         }
     }
     
@@ -233,7 +223,7 @@ public class MCEBase implements IModelComputationElement {
             if (obj instanceof JSONObject) {
                 JSONObject jo = (JSONObject) obj;
                 if (jo.containsKey("$$")) {
-                    jo = expandJsonWildcardKey(jo, model, policyResDataMap);
+                    jo = expandJsonWildcardKey(jo, policyResDataMap);
                 }
                 JSONArray joArr = handleSparsqlJsonMap(jo, model, modelRef);;
                 if (joArr != null && !joArr.isEmpty()) {
@@ -301,22 +291,41 @@ public class MCEBase implements IModelComputationElement {
         }
     }
     
-    static private JSONObject expandJsonWildcardKey(JSONObject jo, OntModel model, Map<Resource, JSONObject> policyResDataMap) {
+    static private JSONObject expandJsonWildcardKey(JSONObject jo, Map<Resource, JSONObject> policyResDataMap) {
         String method = "expandJsonWildcardKey";
         if (!jo.containsKey("$$")) {
             return null;
         }
+        JSONParser parser = new JSONParser();
         for (Resource key : policyResDataMap.keySet()) {
             String json;
             if (jo.get("$$") instanceof JSONObject) {
                 json = ((JSONObject) jo.get("$$")).toJSONString();
             } else if (jo.get("$$") instanceof JSONArray) {
-                json = ((JSONArray) jo.get("$$")).toJSONString();                
+                json = ((JSONArray) jo.get("$$")).toJSONString();
+                if (json.contains("%%")) {
+                    if (((JSONArray) jo.get("$$")).size() > 1) {
+                        throw logger.error_throwing(method, "Invalid output format: %% must only be included in a single element array.");
+                    }
+                    Object obj1 = ((JSONArray) jo.get("$$")).get(0);
+                    json = "[";
+                    for (Object obj2 : policyResDataMap.get(key).keySet()) {
+                        if (obj1 instanceof JSONObject && obj2 instanceof String) {
+                            JSONObject oj1 = (JSONObject) obj1;
+                            String json2 = oj1.toJSONString();
+                            json2 = json2.replaceAll("%%", (String)obj2);
+                            if (!json.equals("[")) {
+                                json += ",";
+                            }
+                            json += json2;
+                        }
+                    }
+                    json += "]";
+                }
             } else {
                 throw logger.error_throwing(method, key + " -> non-JSON value.");
             }
             json = json.replaceAll("\\$\\$", key.toString());
-            JSONParser parser = new JSONParser();
             try {
                 Object obj = parser.parse(json);
                 jo.put(key.toString(), obj);

@@ -116,22 +116,6 @@ public class MCETools {
         public void setOntModel(OntModel ontModel) {
             this.ontModel = ontModel;
         }
-        
-        public void tagHops(String value) {
-            if (this.ontModel == null) {
-                return;
-            }
-            Iterator<Statement> itStmt = this.iterator();
-            while (itStmt.hasNext()) {
-                Statement stmt = itStmt.next();
-                Resource hop = stmt.getSubject();
-                ontModel.add(ontModel.createStatement(hop, Mrs.tag, value));
-                if (!itStmt.hasNext()) {
-                    hop = stmt.getObject().asResource();
-                    ontModel.add(ontModel.createStatement(hop, Mrs.tag, value));
-                }
-            }
-        }
     }
 
     public static Path getLeastCostPath(List<Path> candidates) {
@@ -972,7 +956,26 @@ public class MCETools {
         return vlanSubnetModel;
     }
 
-
+    public static void tagPathHops(MCETools.Path l2path, String tag) {
+        OntModel model = l2path.getOntModel();
+        String sparql = String.format("SELECT DISTINCT ?subnet ?bp  WHERE {"
+                + " ?subnet a mrs:SwitchingSubnet. "
+                + " ?subnet nml:hasBidirectionalPort ?bp. "
+                + " ?bp a nml:BidirectionalPort. "
+                + " ?bp nml:hasLabel ?vlan."
+                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>}");
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        List<Statement> addStmts = new ArrayList<>();
+        while (r.hasNext()) {
+            QuerySolution solution = r.next();
+            Resource resSubnet = solution.getResource("subnet");
+            Resource resSubport = solution.getResource("bp");
+            addStmts.add(model.createStatement(resSubnet, Mrs.tag, tag));
+            addStmts.add(model.createStatement(resSubport, Mrs.tag, tag));
+        }
+        model.add(addStmts);
+    }
+    
     public static List<QuerySolution> getTerminalVlanLabels(MCETools.Path l2path) {
         OntModel model = l2path.getOntModel();
         String sparql = String.format("SELECT ?bp ?vlan ?tag WHERE {"
