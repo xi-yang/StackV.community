@@ -61,10 +61,13 @@ import org.apache.commons.net.util.SubnetUtils;
  * @author xyang
  */
 @Stateless
-public class MCE_NfvBgpRouting implements IModelComputationElement {
+public class MCE_NfvBgpRouting extends MCEBase {
 
     private static final StackLogger logger = new StackLogger(MCE_NfvBgpRouting.class.getName(), "MCE_NfvBgpRouting");
-
+    
+    private static final String OSpec_Template
+            = "{ }";
+    
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
@@ -72,66 +75,19 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
         String method = "process";
         logger.refuuid(annotatedDelta.getReferenceUUID());
         logger.start(method);
-        if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
-            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
-        }
-        try {
-            logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
-        } catch (Exception ex) {
-            logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
-        }
-        // importPolicyData : Interface->Stitching->List<PolicyData>
-        String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
-                + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_NfvBgpRouting'. "
-                + "?policy spa:importFrom ?data. "
-                + "?data spa:type ?type. ?data spa:value ?value. "
-                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
-                + "}";
+        
+        Map<Resource, JSONObject> policyResDataMap = this.preProcess(policy, systemModel, annotatedDelta);        
 
-        ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
-        Map<Resource, Map> policyDataMap = new HashMap<>();
-        while (r.hasNext()) {
-            QuerySolution querySolution = r.next();
-            Resource resPolicy = querySolution.get("policy").asResource();
-            if (!policyDataMap.containsKey(resPolicy)) {
-                Map<String, List> stitchMap = new HashMap<>();
-                List dataList = new ArrayList<>();
-                stitchMap.put("imports", dataList);
-                policyDataMap.put(resPolicy, stitchMap);
-            }
-            Resource resData = querySolution.get("data").asResource();
-            RDFNode nodeDataType = querySolution.get("type");
-            RDFNode nodeDataValue = querySolution.get("value");
-            boolean existed =false;
-            for (Map dataMap: (List<Map>)policyDataMap.get(resPolicy).get("imports")) {
-                if(dataMap.get("data").equals(resData)) {
-                    existed = true;
-                    break;
-                }
-            }
-            if (!existed) {
-                Map policyData = new HashMap<>();
-                policyData.put("data", resData);
-                policyData.put("type", nodeDataType.toString());
-                policyData.put("value", nodeDataValue.toString());
-                ((List)policyDataMap.get(resPolicy).get("imports")).add(policyData);
-            }
-        }
+        // Specific MCE logic
         ServiceDelta outputDelta = annotatedDelta.clone();
-
-        for (Resource policyAction : policyDataMap.keySet()) {
-            OntModel routingModel = this.doRouting(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policyAction, policyDataMap.get(policyAction));
-            // merge the placement satements into spaModel
+        for (Resource res : policyResDataMap.keySet()) {
+            OntModel routingModel = this.doRouting(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), res, policyResDataMap.get(res));
             if (routingModel != null) {
                 outputDelta.getModelAddition().getOntModel().add(routingModel.getBaseModel());
             }
-
-            exportPolicyData(outputDelta.getModelAddition().getOntModel(), policyAction, routingModel, systemModel.getOntModel());
-
-            // remove policy dependency
-            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
         }
+
+        this.postProcess(policy, outputDelta.getModelAddition().getOntModel(), systemModel.getOntModel(), OSpec_Template, policyResDataMap);
         
         try {
             logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
@@ -142,37 +98,8 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
         return new AsyncResult(outputDelta);
     }
 
-    private OntModel doRouting(OntModel systemModel, OntModel spaModel, Resource policyAction, Map stitchPolicyData) {
+    private OntModel doRouting(OntModel systemModel, OntModel spaModel, Resource res, JSONObject jsonReqData) {
         String method = "doMultiPathFinding";
-        //@TODO: common logic
-        List<Map> dataMapList = (List<Map>)stitchPolicyData.get("imports");
-        JSONObject jsonReqData = null;
-        for (Map entry : dataMapList) {
-            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
-                continue;
-            }
-            if (entry.get("type").toString().equalsIgnoreCase("JSON")) {
-                JSONParser parser = new JSONParser();
-                try {
-                    JSONObject jsonObj = (JSONObject) parser.parse((String) entry.get("value"));
-                    if (jsonReqData == null) {
-                        jsonReqData = jsonObj;
-                    } else { // merge
-                        for (Object key: jsonObj.keySet()) {
-                            jsonReqData.put(key, jsonObj.get(key));
-                        }
-                    }
-                } catch (ParseException e) {
-                    throw logger.throwing(method, String.format("cannot parse json string %s", entry.get("value")), e);
-                }
-            } else {
-                throw logger.error_throwing(method, String.format("cannot import policyData of %s type", entry.get("type")));
-            }
-        }
-        
-        if (jsonReqData == null || jsonReqData.isEmpty()) {
-            throw logger.error_throwing(method, String.format("received none request for policy <%s>", policyAction));
-        }
 
         OntModel routingModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Model unionSysModel = spaModel.union(systemModel);
@@ -290,64 +217,5 @@ public class MCE_NfvBgpRouting implements IModelComputationElement {
             }
         }
         return routingModel;
-    }
-    
-    private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel routingModel, OntModel systemModel) {
-        String method = "exportPolicyData";
-        String sparql = "SELECT ?data ?type ?value ?format WHERE {"
-                + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
-                + String.format("<%s> spa:type 'MCE_NfvBgpRouting'. ", resPolicy.getURI())
-                + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
-                + "OPTIONAL {?data spa:type ?type.} "
-                + "OPTIONAL {?data spa:value ?value.} "
-                + "OPTIONAL {?data spa:format ?format.} "
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-        for (QuerySolution querySolution : solutions) {
-            Resource resData = querySolution.get("data").asResource();
-            RDFNode dataType = querySolution.get("type");
-            RDFNode dataValue = querySolution.get("value");
-
-            if (dataType == null) {
-                spaModel.add(resData, Spa.type, "JSON");
-            } else if (!dataType.toString().equalsIgnoreCase("JSON")) {
-                continue;
-            }
-            JSONObject jsonValue = new JSONObject();
-            if (dataValue != null) {
-                JSONParser parser = new JSONParser();
-                try {
-                    jsonValue = (JSONObject)parser.parse(dataValue.toString());
-                } catch (ParseException e) {
-                    throw logger.throwing(method, String.format("cannot parse json string %s", dataValue), e);
-                }
-            }
-            
-            //@ get export data
-            
-            //@ put new data into jsonValue
-            //jsonValue.put(name, data);
-            
-            //@TODO: common logic
-            if (dataValue != null) {
-                spaModel.remove(resData, Spa.value, dataValue);
-            }
-            //add output as spa:value of the export resrouce
-            String exportValue = jsonValue.toJSONString();
-            if (querySolution.contains("format")) {
-                String exportFormat = querySolution.get("format").toString();
-                try {
-                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
-                } catch (Exception ex) {
-                    logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
-                    continue;
-                }
-            }
-            spaModel.add(resData, Spa.value, exportValue);
-        }
     }
 }

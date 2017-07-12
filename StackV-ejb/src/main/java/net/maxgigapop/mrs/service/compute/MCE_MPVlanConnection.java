@@ -53,17 +53,17 @@ public class MCE_MPVlanConnection extends MCEBase {
 
     private static final StackLogger logger = new StackLogger(MCE_MPVlanConnection.class.getName(), "MCE_MPVlanConnection");
     
-    private static final String SPEC_OTemplate = 
-"{\n" +
-"	\"$$\": [\n" +
-"		{\n" +
-"			\"hop\": \"?hop?\",\n" +
-"			\"vlan_tag\": \"?vid?\",\n" +
-"			\"#sparql\": \"SELECT DISTINCT ?hop ?vid WHERE {?hop a nml:BidirectionalPort. "  +
-"?hop nml:hasLabel ?vlan. ?vlan nml:value ?vid. ?hop mrs:tag \\\"l2path+$$:%%\\\".}\"\n" +
-"		}\n" +
-"	]\n" +
-"}";
+    private static final String OSpec_Template
+            = "{\n"
+            + "	\"$$\": [\n"
+            + "		{\n"
+            + "			\"hop\": \"?hop?\",\n"
+            + "			\"vlan_tag\": \"?vid?\",\n"
+            + "			\"#sparql\": \"SELECT DISTINCT ?hop ?vid WHERE {?hop a nml:BidirectionalPort. "
+            + "?hop nml:hasLabel ?vlan. ?vlan nml:value ?vid. ?hop mrs:tag \\\"l2path+$$:%%\\\".}\"\n"
+            + "		}\n"
+            + "	]\n"
+            + "}";
 
     @Override
     @Asynchronous
@@ -72,13 +72,13 @@ public class MCE_MPVlanConnection extends MCEBase {
         String method = "process";
         logger.refuuid(annotatedDelta.getReferenceUUID());
         logger.start(method);
-        Map<Resource, JSONObject> policyResDataMap = this.preProcess(policy, systemModel, annotatedDelta);        
-
         try {
             logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
         }
+        
+        Map<Resource, JSONObject> policyResDataMap = this.preProcess(policy, systemModel, annotatedDelta);        
 
         // Specific MCE logic - compute a List<Model> of MPVlan connections
         ServiceDelta outputDelta = annotatedDelta.clone();
@@ -89,13 +89,13 @@ public class MCE_MPVlanConnection extends MCEBase {
             }
         }
         
+        this.postProcess(policy, outputDelta.getModelAddition().getOntModel(), systemModel.getOntModel(), OSpec_Template, policyResDataMap);
+        
         try {
             logger.message(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             logger.message(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
         }
-
-        this.postProcess(policy, outputDelta.getModelAddition().getOntModel(), systemModel.getOntModel(), SPEC_OTemplate, policyResDataMap);
         logger.end(method);        
         return new AsyncResult(outputDelta);
     }
