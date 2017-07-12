@@ -1162,6 +1162,7 @@ public class AwsEC2Get {
      * actually exists
      * ****************************************************************
      */
+    
     public String getResourceId(String tag) {
         Filter filter = new Filter();
         filter.withName("value")
@@ -1175,6 +1176,84 @@ public class AwsEC2Get {
         }
         return tag;
     }
+    
+    
+    //returns the list of resources with the given tag
+    public List<String> getBatchResourceId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();        
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                   batchIds.add(des.getResourceId());
+            }
+            return batchIds; //get the last resource tagged with this id 
+        }
+        return null;
+    }
+    
+//    to extract the additional volume IDs for deletion. Use the getvolumeId method instead
+    /*public List<String> getBatchVolumes(String tag) {
+        Filter filter = new Filter();
+        filter.withName("tag:id")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();  
+        DescribeVolumesRequest tagRequest = new DescribeVolumesRequest();
+        tagRequest.withFilters(filter);
+        List<Volume> descriptions = client.describeVolumes(tagRequest).getVolumes();
+        if (!descriptions.isEmpty()) {
+            for (Volume des : descriptions) {
+                   batchIds.add(des.getVolumeId());
+            }
+            return batchIds; 
+        }
+        return null;
+    }*/
+    
+    //return list of additional network interfaces attached to the instance
+    public List<String> getBatchNetworkInterfaces(String tag) {
+        Filter filter = new Filter();
+        filter.withName("tag:id")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();  
+        DescribeNetworkInterfacesRequest tagRequest = new DescribeNetworkInterfacesRequest();
+        tagRequest.withFilters(filter);
+        List<NetworkInterface> descriptions = client.describeNetworkInterfaces(tagRequest).getNetworkInterfaces();
+        if (!descriptions.isEmpty()) {
+            for (NetworkInterface des : descriptions) {
+                if(des.getAttachment().getDeviceIndex()!=0){ //to select network interfaces which are not default eni
+                   batchIds.add(des.getNetworkInterfaceId());
+            }}
+            return batchIds;
+        }
+        return null;
+    }
+    
+    //return list of instances created in batch with the same tag
+    public List<String> getBatchInstanceIds(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                Instance i = getInstance(des.getResourceId());
+                if (i != null && i.getState().getCode() != 48) //check if the instance was not deleted
+                {
+                    batchIds.add(des.getResourceId());
+                }
+            }
+            return batchIds;
+        }
+        return null;
+    }
 
     /**
      * ****************************************************************
@@ -1185,7 +1264,7 @@ public class AwsEC2Get {
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
+        
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1201,6 +1280,27 @@ public class AwsEC2Get {
         return tag;
     }
 
+    //return the list of additional volumes created with the same tag
+    public List<String> getBatchVolumeId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        List<String> batchIds = new ArrayList();
+
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                Volume vol = getVolume(des.getResourceId());
+                if (vol != null && !vol.getState().equals("deleted")) {
+                    batchIds.add(des.getResourceId());
+                }
+            }
+            return batchIds;
+        }
+        return null;
+    }
     /**
      * ****************************************************************
      * //function to get the Id from and volume tag
@@ -1343,6 +1443,8 @@ public class AwsEC2Get {
             delay *= 2; 
             try {
                 List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+//                DescribeTagsResult a = client.describeTags();
+//                List<TagDescription> descriptions = a.getTags();
                 return descriptions;
             } catch (com.amazonaws.AmazonServiceException ex) {
                 if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax*2) {

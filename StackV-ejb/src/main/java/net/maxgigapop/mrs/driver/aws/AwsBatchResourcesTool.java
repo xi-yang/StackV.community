@@ -215,9 +215,12 @@ public class AwsBatchResourcesTool {
      resources are unified into batch resources if they are part of a batch
      *************************************************************************
      */
+   
     public OntModel contractVMbatch(OntModel model) {
         Map<String, String> batches = new HashMap<>();
+        Map<String, String> portbatches = new HashMap<>();
         JSONObject batchNumber = new JSONObject();
+        JSONObject orderNumber = new JSONObject();
 
         //look for all Nodes in the model and contract the batches
         String query = "SELECT ?node WHERE {?node a nml:Node}";
@@ -230,25 +233,21 @@ public class AwsBatchResourcesTool {
             if (node == null) {
                 continue;
             }
-            String tagValue = ec2Client.getTagValue("batch", node.getTags());
-            if (tagValue != null) {
+            String batchtagValue = ec2Client.getTagValue("batch", node.getTags());
+            String idtagValue = ec2Client.getTagValue("id", node.getTags());
+            
+            if (batchtagValue != null) {
                 if (batches.get(nodeTag) == null) {
-                    batches.put(nodeTag, tagValue);
+                    batches.put(nodeTag, idtagValue);
                 }
-                if (batchNumber.get(tagValue) == null) {
-                    batchNumber.put(tagValue, "0");
+                if (batchNumber.get(idtagValue) == null) {
+                    batchNumber.put(idtagValue, batchtagValue.split("batchusingsubnetidingroupof")[1]);
                 }
-                String number = Integer.toString(Integer.parseInt(batchNumber.get(tagValue).toString()) + 1);
-                batchNumber.remove(tagValue);
-                batchNumber.put(tagValue, number);
             }
         }
-
+        
         //look for all nics in the model abd contract the batches
-        query = "SELECT ?port WHERE {?port a nml:BidirectionalPort ."
-                + "?subnet a mrs:SwitchingSubnet ."
-                + "?subnet  nml:hasBidirectionalPort ?port ."
-                + "FILTER (NOT EXISTS {?port mrs:type ?type})}";
+        query = "SELECT ?port WHERE {?port a nml:BidirectionalPort}";
         r = executeQuery(query, model);
         while (r.hasNext()) {
             QuerySolution q = r.next();
@@ -258,103 +257,31 @@ public class AwsBatchResourcesTool {
             if (port == null) {
                 continue;
             }
-            String tagValue = ec2Client.getTagValue("batch", port.getTagSet());
-            if (tagValue != null) {
-                if (batches.get(portTag) == null) {
-                    batches.put(portTag, tagValue);
+            String batchtagValue = ec2Client.getTagValue("batch", port.getTagSet());
+            String idtagValue = ec2Client.getTagValue("id", port.getTagSet());
+            if (batchtagValue != null) {
+                if (portbatches.get(portTag) == null) {
+                    portbatches.put(portTag, idtagValue);
                 }
-                if (batchNumber.get(tagValue) == null) {
-                    batchNumber.put(tagValue, "0");
+                if (orderNumber.get(idtagValue) == null) {
+                    orderNumber.put(idtagValue, batchtagValue.split("withbatchorder_")[1]);
                 }
-                String number = Integer.toString(Integer.parseInt(batchNumber.get(tagValue).toString()) + 1);
-                batchNumber.remove(tagValue);
-                batchNumber.put(tagValue, number);
+                
             }
-        }
-
-        //look for all nics in the model abd contract the batches
-        query = "SELECT ?volume WHERE {?volume a mrs:Volume}";
-        r = executeQuery(query, model);
-        while (r.hasNext()) {
-            QuerySolution q = r.next();
-            String volumeTag = ResourceTool.getResourceName(q.get("volume").asResource().toString(), awsPrefix.volume());
-            String volumeId = ec2Client.getVolumeId(volumeTag);
-            Volume vol = ec2Client.getVolume(volumeId);
-            if (vol == null) {
-                continue;
-            }
-            String tagValue = ec2Client.getTagValue("batch", vol.getTags());
-            if (tagValue != null) {
-                if (batches.get(volumeTag) == null) {
-                    batches.put(volumeTag, tagValue);
-                }
-                if (batchNumber.get(tagValue) == null) {
-                    batchNumber.put(tagValue, "0");
-                }
-                String number = Integer.toString(Integer.parseInt(batchNumber.get(tagValue).toString()) + 1);
-                batchNumber.remove(tagValue);
-                batchNumber.put(tagValue, number);
-            }
-        }
-
+        }  
         //return if there is nothing to change
         if (batches.isEmpty()) {
             return model;
         }
-
-        //get a list of all the statements and put the batches
-        List<Statement> stmtsToRemove = new ArrayList<>();
-        List<Statement> stmtsToAdd = new ArrayList<>();
-        StmtIterator statements = model.listStatements();
-        while (statements.hasNext()) {
-            Statement st = statements.next();
-            Resource resource = st.getSubject();
-            RDFNode object = st.getObject();
-            Property property = st.getPredicate();
-
-            if (resource != null && batches.containsKey(resource.toString())) {
-                String resourceUri = batches.get(resource.toString()).replace("batch", "");
-                resource = model.getResource(resourceUri);
-                //model.remove(st);
-                //model.add(model.createStatement(resource, property, object));
-                stmtsToRemove.add(st);
-                stmtsToAdd.add(model.createStatement(resource, property, object));
-            }
-
-            if (object != null && object.isResource() && batches.containsKey(object.asResource().toString())) {
-                String objectUri = batches.get(object.asResource().toString()).replace("batch", "");
-                object = model.getResource(objectUri);
-                //model.remove(st);
-                //model.add(model.createStatement(resource, property, object));
-                stmtsToRemove.add(st);
-                stmtsToAdd.add(model.createStatement(resource, property, object));
-            }
-        }
-
-        if (!stmtsToRemove.isEmpty()) {
-            model.remove(stmtsToRemove);
-        }
-        if (!stmtsToAdd.isEmpty()) {
-            model.add(stmtsToAdd);
-        }
-
-        //create batch statements and delete all explicit resources
+        //place the batch and order property in instances and network interfaces
         for (String key : batches.keySet()) {
-            //remove old resources, this will make sure deletion was succesfull
-            Resource oldResource = model.getResource(key);
-            model.removeAll(oldResource, null, null);
-            model.removeAll(null, null, oldResource);
-
-            //create batch statements
-            Resource baseResource = model.getResource(batches.get(key).replace("batch", ""));
-            Resource batch = RdfOwl.createResource(model, batches.get(key), Mrs.Batch);
-            model.add(model.createStatement(baseResource, Mrs.hasBatch, batch));
-            model.add(model.createStatement(batch, Mrs.BatchRule, "numbered"));
-            model.add(model.createStatement(batch, Mrs.value, batchNumber.get(batches.get(key)).toString()));
+            model.add(model.createStatement(model.getResource(key), Mrs.batch, batchNumber.get(batches.get(key)).toString()));
+        }
+        
+        for (String key : portbatches.keySet()) {
+            model.add(model.createStatement(model.getResource(key), Mrs.order, orderNumber.get(portbatches.get(key)).toString()));
         }
 
-        //temporal hack
-        //TODO improve this part
         //eliminate the network addresses of those network interfaces that are batches
         for (Object key : batchNumber.keySet()) {
             Resource baseResource = model.getResource(key.toString().replace("batch", ""));
@@ -367,9 +294,6 @@ public class AwsBatchResourcesTool {
             }
 
         }
-
-        //add the batch statements
-        //replace all ocurrences of the nodes
         return model;
     }
 
