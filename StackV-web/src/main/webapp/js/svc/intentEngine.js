@@ -260,6 +260,8 @@ function renderInputs(arr, $parent) {
             if (ele.getElementsByTagName("default").length > 0) {
                 $input.val(ele.getElementsByTagName("default")[0].innerHTML);
             }
+            
+            // Handle multiple choice sourcing
             if (ele.getElementsByTagName("source").length > 0) {
                 $input = $("<select>", {id: name});
                 var selectName = name;
@@ -290,7 +292,22 @@ function renderInputs(arr, $parent) {
                     }
                 });
             }
-            if (ele.getElementsByTagName("options").length > 0) {
+            else if (ele.getElementsByTagName("link").length > 0) {
+                $input = $("<select>", {id: name});
+                var selectName = name;
+                var link = ele.getElementsByTagName("link")[0];
+                
+                
+
+                for (var i = 0; i < options.length; i++) {
+                    var $option = $("<option>");
+                    $option.text(options[i].innerHTML);
+                    $option.val(options[i].innerHTML);
+
+                    $input.append($option);
+                }
+            }            
+            else if (ele.getElementsByTagName("options").length > 0) {
                 $input = $("<select>", {id: name});
                 var selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;

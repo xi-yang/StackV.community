@@ -63,7 +63,7 @@
         </group>
     </stage>
     <stage name="Subnets">
-        <group block="subnets" name="Subnet" label="true" collapsible="true">
+        <group block="subnets" name="Subnet" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -130,7 +130,7 @@
                 <default>any</default>
             </input>
             
-            <group factory="true" name="Route">
+            <group factory="true" label="false" name="Route">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -160,7 +160,7 @@
                 <type>select</type>
                 <link></link>
             </input>                        
-            <group name="Route">
+            <group name="Route" label="false">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -193,7 +193,7 @@
                     <option>L2 Stitch Port</option>
                 </options>
             </input>                        
-            <group name="Route">
+            <group name="Route" label="false">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -220,7 +220,7 @@
                 <name>Hosting VM</name>
                 <type>select</type>
                 <link>vms</link>
-            </input>             
+            </input>
             <input>
                 <name>Name</name>
                 <type>text</type>
