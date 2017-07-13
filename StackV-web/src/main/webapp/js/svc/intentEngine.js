@@ -260,7 +260,7 @@ function renderInputs(arr, $parent) {
             if (ele.getElementsByTagName("default").length > 0) {
                 $input.val(ele.getElementsByTagName("default")[0].innerHTML);
             }
-            
+
             // Handle multiple choice sourcing
             if (ele.getElementsByTagName("source").length > 0) {
                 $input = $("<select>", {id: name});
@@ -291,23 +291,12 @@ function renderInputs(arr, $parent) {
                         }
                     }
                 });
-            }
-            else if (ele.getElementsByTagName("link").length > 0) {
+            } else if (ele.getElementsByTagName("link").length > 0) {
                 $input = $("<select>", {id: name});
                 var selectName = name;
-                var link = ele.getElementsByTagName("link")[0];
-                
-                
-
-                for (var i = 0; i < options.length; i++) {
-                    var $option = $("<option>");
-                    $option.text(options[i].innerHTML);
-                    $option.val(options[i].innerHTML);
-
-                    $input.append($option);
-                }
-            }            
-            else if (ele.getElementsByTagName("options").length > 0) {
+                var link = ele.getElementsByTagName("link")[0].innerHTML;
+                $input.attr("data-link", link);
+            } else if (ele.getElementsByTagName("options").length > 0) {
                 $input = $("<select>", {id: name});
                 var selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
@@ -342,6 +331,7 @@ function renderInputs(arr, $parent) {
             $parent.append($label);
         }
     }
+    refreshLinks();
 }
 
 function factorizeRendering() {
@@ -601,4 +591,24 @@ function buildClone(key, target) {
 
         e.preventDefault();
     });
+}
+
+function refreshLinks() {
+    var $inputArr = $("[data-link]"); 
+    for (var i = 0; i < $inputArr.length; i++) {
+        var $input = $inputArr[i];
+        var link = $input.data("link");
+
+        var targetArr = $(".block-" + link);
+        for (var j = 0; j < targetArr.length; j++) {
+            var $option = $("<option>");
+
+            var eleID = "test"; //targetArr[i].id;
+            var eleName = "test2";//$("#" + eleID + "-name").val();
+            $option.text("Subnet 1 (" + eleName + ")");
+            $option.val(eleID);
+
+            $input.append($option);
+        }
+    }
 }
