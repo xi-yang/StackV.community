@@ -93,6 +93,7 @@ IN THE WORK.
 .intent-group-div select {
     display: block;
     margin: auto;
+    width: 100%;
 }
 
 .intent-stage-factory {

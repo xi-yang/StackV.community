@@ -103,6 +103,7 @@ function initializeIntent() {
         $progress.append($prog);
         // Begin recursive rendering
         renderInputs(stage.children, $currentStageDiv);
+        refreshLinks();
     }
 }
 
@@ -296,6 +297,10 @@ function renderInputs(arr, $parent) {
                 var selectName = name;
                 var link = ele.getElementsByTagName("link")[0].innerHTML;
                 $input.attr("data-link", link);
+
+                $label.click(function () {
+                    refreshLinks();
+                });
             } else if (ele.getElementsByTagName("options").length > 0) {
                 $input = $("<select>", {id: name});
                 var selectName = name;
@@ -331,7 +336,6 @@ function renderInputs(arr, $parent) {
             $parent.append($label);
         }
     }
-    refreshLinks();
 }
 
 function factorizeRendering() {
@@ -594,21 +598,27 @@ function buildClone(key, target) {
 }
 
 function refreshLinks() {
-    var $inputArr = $("[data-link]"); 
+    var $inputArr = $("[data-link]");
     for (var i = 0; i < $inputArr.length; i++) {
-        var $input = $inputArr[i];
+        var $input = $($inputArr[i]);
+        var currSelection = $input.val();
+        $input.children().remove();
         var link = $input.data("link");
 
         var targetArr = $(".block-" + link);
         for (var j = 0; j < targetArr.length; j++) {
             var $option = $("<option>");
 
-            var eleID = "test"; //targetArr[i].id;
-            var eleName = "test2";//$("#" + eleID + "-name").val();
-            $option.text("Subnet 1 (" + eleName + ")");
+            var eleID = targetArr[j].id;
+            var eleName = $("#" + eleID + "-name").val();
+            $option.text("Subnet " + (j + 1) + " (" + eleName + ")");
             $option.val(eleID);
 
             $input.append($option);
+        }
+
+        if (currSelection) {
+            $input.val(currSelection);
         }
     }
 }
