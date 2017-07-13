@@ -70,12 +70,14 @@ public class MCE_VMFilterPlacement extends MCEBase {
 
     private static final String OSpec_Template
             = "{\n"
-            + " \"$$\": {\n"
-            + "	\"uri\": \"$$\",\n"
-            + "	\"host\": \"?host?\",\n"
-            + "	\"#sparql\": \"SELECT ?host WHERE {?host nml:hasNode <$$>. <$$> a nml:Node.} "
-            + " UNION {?host nml:hasBidirectionalPort <$$>. <$$> a nml:BidirectionalPort.} \"\n"
-            + " }"
+            + "  \"$$\": {\n"
+            + "	   \"uri\": \"$$\",\n"
+            + "	   \"host\": \"?host?\",\n"
+            + "	   \"#sparql\": \"SELECT ?host WHERE { "
+            + "       {?host nml:hasNode <$$>. <$$> a nml:Node.} "
+            + "       UNION "
+            + "       {?host nml:hasBidirectionalPort <$$>. <$$> a nml:BidirectionalPort.} }\"\n"
+            + "  }\n"
             + "}";
 
     @Override

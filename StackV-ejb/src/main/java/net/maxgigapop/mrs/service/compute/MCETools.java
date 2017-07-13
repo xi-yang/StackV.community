@@ -958,20 +958,22 @@ public class MCETools {
 
     public static void tagPathHops(MCETools.Path l2path, String tag) {
         OntModel model = l2path.getOntModel();
-        String sparql = String.format("SELECT DISTINCT ?subnet ?bp  WHERE {"
-                + " ?subnet a mrs:SwitchingSubnet. "
-                + " ?subnet nml:hasBidirectionalPort ?bp. "
+        String sparql = String.format("SELECT DISTINCT ?bp ?subnet  WHERE {"
                 + " ?bp a nml:BidirectionalPort. "
                 + " ?bp nml:hasLabel ?vlan."
-                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>}");
+                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> "
+                + " OPTIONAL {?subnet nml:hasBidirectionalPort ?bp. ?subnet a mrs:SwitchingSubnet.} "
+                + "}");
         ResultSet r = ModelUtil.sparqlQuery(model, sparql);
         List<Statement> addStmts = new ArrayList<>();
         while (r.hasNext()) {
             QuerySolution solution = r.next();
-            Resource resSubnet = solution.getResource("subnet");
             Resource resSubport = solution.getResource("bp");
-            addStmts.add(model.createStatement(resSubnet, Mrs.tag, tag));
             addStmts.add(model.createStatement(resSubport, Mrs.tag, tag));
+            if (solution.contains("subnet")) {
+                Resource resSubnet = solution.getResource("subnet");
+                addStmts.add(model.createStatement(resSubnet, Mrs.tag, tag));
+            }
         }
         model.add(addStmts);
     }

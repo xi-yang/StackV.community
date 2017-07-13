@@ -102,6 +102,7 @@ public class MCE_MPVlanConnection extends MCEBase {
 
     private Map<String, MCETools.Path> doMultiPathFinding(OntModel systemModel, Resource resConn, Map<String, JSONObject> connDataMap) {
         String method = "doMultiPathFinding";
+        logger.message(method, "@doMultiPathFinding -> " + resConn);
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);

@@ -193,14 +193,14 @@ public class MCE_AwsDxStitching extends MCEBase {
         } else { //if (jsonStitchReq.containsKey("to_l2path"))
             JSONArray stitchToPath = (JSONArray) jsonStitchReq.get("to_l2path");
             if (stitchToPath.isEmpty()) {
-            throw logger.error_throwing(method, String.format("cannot parse JSON data 'to_l2path': %s", stitchToPath));
+                throw logger.error_throwing(method, String.format("cannot parse JSON data 'to_l2path': %s", stitchToPath));
             }
             for (Object obj : stitchToPath) {
                 JSONObject jsonObj = (JSONObject) obj;
-                if (!jsonObj.containsKey("uri")) {
+                if (!jsonObj.containsKey("hop")) {
                     throw logger.error_throwing(method, String.format("cannot parse JSON data 'to_l2path': %s - invalid hop: %s", stitchToPath, jsonObj));
                 }
-                String hopUri = (String) jsonObj.get("uri");
+                String hopUri = (String) jsonObj.get("hop");
                 sparql = "SELECT ?dxvif WHERE {"
                         + "?aws nml:hasBidirectionalPort ?dxport."
                         + "?aws a nml:Topology."

@@ -77,7 +77,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             + "			\"hop\": \"?hop?\",\n"
             + "			\"vlan_tag\": \"?vid?\",\n"
             + "			\"#sparql\": \"SELECT DISTINCT ?hop ?vid WHERE {?hop a nml:BidirectionalPort. "
-            + "?hop nml:hasLabel ?vlan. ?vlan nml:value ?vid. ?hop mrs:tag \\\"l2path+$$:%%\\\".}\"\n"
+            + "?hop nml:hasLabel ?vlan. ?vlan nml:value ?vid. ?hop mrs:tag \\\"l2path+$$:%%\\\".}\",\n"
+            + "			\"required\": \"false\",\n"
             + "		}\n"
             + "	]\n"
             + "}";
@@ -101,7 +102,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         // Specific MCE logic - compute a List<Model> of MPVlan connections
         ServiceDelta outputDelta = annotatedDelta.clone();
         for (Resource res: policyResDataMap.keySet()) {
-            Map<String, MCETools.Path> l2pathMap = this.doMultiPathFinding(systemModel.getOntModel(), res, policyResDataMap.get(res));
+            Map<String, MCETools.Path> l2pathMap = this.doMPVBFinding(systemModel.getOntModel(), res, policyResDataMap.get(res));
             for (String connId : l2pathMap.keySet()) {
                 outputDelta.getModelAddition().getOntModel().add(l2pathMap.get(connId).getOntModel().getBaseModel());
             }
@@ -119,8 +120,9 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         return new AsyncResult(outputDelta);
     }
 
-    private Map<String, MCETools.Path> doMultiPathFinding(OntModel systemModel, Resource policyAction,  Map<String, JSONObject> connDataMap) {
-        String method = "doMultiPathFinding";
+    private Map<String, MCETools.Path> doMPVBFinding(OntModel systemModel, Resource resConn,  Map<String, JSONObject> connDataMap) {
+        String method = "doMPVBFinding";
+        logger.message(method, "@doMPVBFinding -> " + resConn);
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
@@ -170,6 +172,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 mpvbPath.getOntModel().add(bridgePath.getOntModel().getBaseModel());
             }
 
+            MCETools.tagPathHops(mpvbPath, "l2path+"+resConn.getURI()+":"+connId+"");
             transformedModel.add(mpvbPath.getOntModel());
             mapConnPaths.put(connId, mpvbPath);
         }

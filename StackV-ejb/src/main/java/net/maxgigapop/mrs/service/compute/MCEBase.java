@@ -70,7 +70,7 @@ public class MCEBase implements IModelComputationElement {
     }
 
     protected Map<Resource, JSONObject> preProcess(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
-        String method = this.getClass().getSimpleName()+".preProcess";
+        String method = "preProcess";
         if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
             throw logger.error_throwing(method, "target:ServiceDelta has null addition model for " + policy);
         }
@@ -79,7 +79,7 @@ public class MCEBase implements IModelComputationElement {
                 + "?res spa:dependOn ?policy . "
                 + "?policy a spa:PolicyAction. "
                 + String.format("?policy spa:type '%s'. ", this.getClass().getSimpleName())
-                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
+                + String.format("FILTER (NOT EXISTS {?policy spa:dependOn ?other} && ?policy = <%s> && NOT EXISTS {?res a spa:PolicyAction})", policy.getURI())
                 + "}";
         ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
         List<Resource> listRes = new ArrayList();
@@ -89,7 +89,7 @@ public class MCEBase implements IModelComputationElement {
             listRes.add(res);
         }
         if (listRes.isEmpty()) {
-            throw logger.error_throwing(method, "SPA model incorrectly composed: none reqsource dpending on policy: " + policy);
+            logger.warning(method, "Is the SPA model composition correct? - none reqsource dpending on policy: " + policy);
         }
         // list data the current policy imports
         sparql = "SELECT DISTINCT ?data ?type ?value WHERE {"
@@ -126,6 +126,15 @@ public class MCEBase implements IModelComputationElement {
         Map<Resource, JSONObject> policyResDataMap = new HashMap<>();
         if (listRes.size() == 1 && !jsonData.containsKey(listRes.get(0).toString())) {
             policyResDataMap.put(listRes.get(0), jsonData);
+        } else if (listRes.isEmpty()) {
+            for (Object key: jsonData.keySet()) {
+                if (key instanceof String && jsonData.get(key) instanceof JSONObject) {
+                    Resource resNew = annotatedDelta.getModelAddition().getOntModel().createResource((String)key);
+                    JSONObject jsonDataWrap = new JSONObject();
+                    jsonDataWrap.put(key, (JSONObject)jsonData.get(key));
+                    policyResDataMap.put(resNew, jsonDataWrap);
+                }
+            }
         } else {
             for (Resource res: listRes) {
                 // if the imported JSON has a key matching a resource uri, the value will be the input data for that resource
@@ -133,7 +142,9 @@ public class MCEBase implements IModelComputationElement {
                     if (!(jsonData.get(res.toString()) instanceof JSONObject)) {
                         throw logger.error_throwing(method, "SPA model incorrectly composed: resource: '" + res + "' has no correcponding entry (in JSON) in policy data");
                     }
-                    policyResDataMap.put(res, (JSONObject)jsonData.get(res.toString()));
+                    JSONObject jsonDataWrap = new JSONObject();
+                    jsonDataWrap.put(res.getURI(), (JSONObject)jsonData.get(res.getURI()));
+                    policyResDataMap.put(res, jsonDataWrap);
                 } else { // otherwise, give the whole JSON as input data to the resource 
                     policyResDataMap.put(res, jsonData);                    
                 }
@@ -159,24 +170,25 @@ public class MCEBase implements IModelComputationElement {
     }
     
     protected void postProcess(Resource policy, OntModel spaModel, OntModel modelRef, String outputTemplate, Map<Resource, JSONObject> policyResDataMap) {
-        String method = this.getClass().getSimpleName()+".postProcess";
-
         String outputJson = outputPolicyData(spaModel, modelRef, outputTemplate, policyResDataMap);
         
         exportPolicyData(policy, spaModel, outputJson);
         
-        removeResolvedAnnotation(spaModel, policy); //@TODO: move from MCETools in here
+        removeResolvedAnnotation(spaModel, policy);
     }
 
     //@TODO genreate output JSON from resulting spaModel and  outputTemplate         
     protected String outputPolicyData(OntModel spaModel, OntModel modelRef, String outputTemplate, Map<Resource, JSONObject> policyResDataMap) {
-        String method = this.getClass().getSimpleName()+".outputPolicyData";
+        String method = "outputPolicyData";
         JSONObject retJO = (JSONObject)querySparsqlTemplateJson(spaModel, modelRef, outputTemplate, policyResDataMap);
+        if (retJO == null) {
+            return "{}";
+        }
         return retJO.toJSONString();
     }
     
     protected void exportPolicyData(Resource policy, OntModel spaModel, String outputJson) {
-        String method = this.getClass().getSimpleName()+".exportPolicyData";
+        String method = "exportPolicyData";
         String sparql = "SELECT DISTINCT ?data ?type ?value ?format WHERE {"
                 + String.format("<%s> a spa:PolicyAction. ", policy)
                 + String.format("<%s> spa:type '%s'. ", policy, this.getClass().getSimpleName())
@@ -415,7 +427,7 @@ public class MCEBase implements IModelComputationElement {
         ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
         if (!rs.hasNext()) {
             if (required) {
-                throw logger.error_throwing(method, "no required reqsult for manifest query for: " + sparql);
+                throw logger.error_throwing(method, "no required result for query: " + sparql);
             } else {
                 return null;
             }
@@ -433,7 +445,7 @@ public class MCEBase implements IModelComputationElement {
             JSONParser parser = new JSONParser();
             if ((jo.containsKey("#sparql-ref") || jo.containsKey("#sparql-ext")) && modelRef != null) {
                 ResultSet rsFull;
-                if (!jo.containsKey("#sparql-ref")) {
+                if (jo.containsKey("#sparql-ref")) {
                     String sparqlFull = (String) jo.get("#sparql-ref");
                     sparqlFull = replaceSparqlVars(sparqlFull, newVarMap);
                     rsFull = ModelUtil.sparqlQuery(modelRef, sparqlFull);

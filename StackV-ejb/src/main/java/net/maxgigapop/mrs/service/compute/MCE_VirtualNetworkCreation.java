@@ -73,12 +73,12 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
 
     private static final String OSpec_Template
             = "{\n"
-            + "	\"name\": \"?vpc_name?\",\n"
-            + "	\"cidr\": \"?vpc_cidr?\",\n"
+            //+ "	\"name\": \"?vpc_name?\",\n"
+            //+ "	\"cidr\": \"?vpc_cidr?\",\n"
             + "	\"subnets\": [\n"
             + "		{\n"
-            + "			\"name\": \"?subnet_name?\",\n"
-            + "			\"cidr\": \"?subnet_cidr?\",\n"
+            //+ "			\"name\": \"?subnet_name?\",\n"
+            //+ "			\"cidr\": \"?subnet_cidr?\",\n"
             + "			\"uri\": \"?subnet_uri?\",\n"
             + "			\"#required\": \"false\",\n"
             + "			\"#sparql\": \"SELECT DISTINCT ?subnet_uri WHERE {?vpc_uri nml:hasService ?service. ?service a mrs:SwitchingService. ?service mrs:providesSubnet ?subnet_uri}\"\n"
@@ -86,7 +86,7 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
             + "	],\n"
             + "	\"gateways\": [\n"
             + "		{\n"
-            + "			\"name\": \"?gateway_name?\",\n"
+            //+ "			\"name\": \"?gateway_name?\",\n"
             + "			\"type\": \"?gateway_type?\",\n"
             + "			\"uri\": \"?gateway_uri?\",\n"
             + "			\"#required\": \"false\",\n"
@@ -94,7 +94,7 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
             + "		}\n"
             + "	],\n"
             + "	\"uri\": \"?vpc_uri?\",\n"
-            + "	\"#sparql\": \"SELECT DISTINCT ?vpc_uri WHERE {?vpc_uri a nml:Topology}\"\n"
+            + "	\"#sparql\": \"SELECT DISTINCT ?vpc_uri WHERE {?vpc_uri a nml:Topology. ?cloud mrs:providesVPC ?vpc_uri.}\"\n"
             + "}";
     
     @Override
@@ -140,7 +140,7 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
     // ignore if dependOn 'Abstraction'
     private OntModel doCreation(OntModel systemModel, OntModel spaModel, Resource resNetwork, JSONObject topoDescription) {
         String method = "doCreation";
-        logger.message(method, "@doCreation -> " + resNetwork);
+        logger.message(method, "@doVirtualNetworkCreation -> " + resNetwork);
         //1 get all the info in the array that matters for this MCE
         //1.1 get topology info it should be Stirngs
         String type = (String) topoDescription.get("type");

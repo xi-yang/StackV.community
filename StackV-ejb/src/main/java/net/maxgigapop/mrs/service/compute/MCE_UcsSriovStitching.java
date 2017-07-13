@@ -69,14 +69,13 @@ public class MCE_UcsSriovStitching extends MCEBase {
             + "\"port_profile\": \"\",\n"
             + "\"ip_address\": \"\",\n"
             + "\"mac_address\": \"\",\n"
-            + "\"#sparsql\": \"SELECT SELECT ?vm ?vnic WHERE { ?vm nml:hasBidirectionalPort ?vnic. ?vmfex mrs:providesVNic ?vnic. }\",\n"
+            + "\"#sparsql\": \"SELECT ?vm ?vnic WHERE { ?vm nml:hasBidirectionalPort ?vnic. ?vmfex mrs:providesVNic ?vnic. }\",\n"
             + "\"#required\": \"true\",\n"
             + "\"#sparsql-ext\": \"SELECT ?ip_address ?mac_address ?port_profile WHERE {"
-            + "?vnic mrs:hasNetworkAddress ?netaddr_ip. \"?netaddr_ip mrs:type \\\"ipv4-address\\\". ?netaddr_ip mrs:value ?ip_address. "
+            + "?vnic mrs:hasNetworkAddress ?netaddr_ip. ?netaddr_ip mrs:type \\\"ipv4-address\\\". ?netaddr_ip mrs:value ?ip_address. "
             + "?vnic mrs:hasNetworkAddress ?netaddr_mac. ?netaddr_mac mrs:type \\\"mac-address\\\". ?netaddr_mac mrs:value ?mac_address. "
             + "?profile_subnet nml:hasBidirectionalPort ?vnic. ?profile_subnet a mrs:SwitchingSubnet. "
-            + "?profile_subnet mrs:type \\\"Cisco_UCS_Port_Profile\\\". ?profile_subnet mrs:value ?port_profile. "
-            + "}\"\n"
+            + "?profile_subnet mrs:type \\\"Cisco_UCS_Port_Profile\\\". ?profile_subnet mrs:value ?port_profile. }\"\n"
             + "}";
 
     @Override
@@ -170,10 +169,10 @@ public class MCE_UcsSriovStitching extends MCEBase {
             }
             for (Object obj : stitchToPath) {
                 JSONObject jsonObj = (JSONObject) obj;
-                if (!jsonObj.containsKey("uri")) {
+                if (!jsonObj.containsKey("hop")) {
                     throw logger.error_throwing(method, String.format("cannot parse JSON data 'to_l2path': %s - invalid hop: %s", stitchToPath, jsonObj.toJSONString()));
                 }
-                String hopUri = (String) jsonObj.get("uri");
+                String hopUri = (String) jsonObj.get("hop");
                 // find a port profile that the hop connects to via a VLAN
                 sparql = "SELECT ?profile WHERE {"
                         + "?profile a mrs:SwitchingSubnet. "
