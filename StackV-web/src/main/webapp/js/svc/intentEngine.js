@@ -26,6 +26,7 @@
 var conditions = [];
 var factories = {};
 var intent;
+var manifest;
 var transit = false;
 var proceeding = false;
 var activeStage;
@@ -47,6 +48,7 @@ function loadIntent(type) {
         success: function (xml) {
             intent = xml.children[0];
             renderIntent();
+            parseSchemaIntoManifest();
         },
         error: function (err) {
             console.log('Error Loading XML! \n' + err);
@@ -423,7 +425,7 @@ function recursivelyFactor(id, ele) {
 // UTILITY FUNCTIONS
 function collapseDiv($name, $div) {
     var name = $name.text().toLowerCase();
-    var collapseStr = "collapse-" + name.replace(" ", "_");
+    var collapseStr = "collapse-" + name.replace(/ /g, "_");
     var $toggle = $("<a>").attr("data-toggle", "collapse")
             .attr("data-target", "#" + collapseStr)
             .addClass("group-collapse-toggle");
@@ -541,7 +543,7 @@ function constructID(ele) {
         retString = ele.parentElement.getAttribute("name") + "-" + retString;
         ele = ele.parentElement;
     }
-    return retString.replace(" ", "_").toLowerCase();
+    return retString.replace(/ /g, "_").toLowerCase();
 }
 
 function buildClone(key, target) {
@@ -621,4 +623,35 @@ function refreshLinks() {
             $input.val(currSelection);
         }
     }
+}
+
+function parseSchemaIntoManifest() {
+    var json = {};
+    $(intent).find("input").each(function () {
+        var arr = [this.children[0].innerHTML.toLowerCase().replace(/ /g, "_")];
+        var parent = this.parentElement;
+        while (parent.tagName !== "intent") {
+            var name = parent.getAttribute("name").toLowerCase().replace(/ /g, "_");
+            if (parent.getAttribute("block") || parent.getAttribute("factory")) {
+                arr.unshift(name + "_numX");
+            } else {
+                arr.unshift(name);
+            }
+            parent = parent.parentElement;
+        }
+
+        var last = json;
+        var i;
+        for (i = 0; i < (arr.length - 1); i++) {
+            var key = arr[i];
+            if (!(key in last)) {
+                last[key] = {};
+            }
+            last = last[key];
+        }
+        var key = arr[i];
+        last[key] = "";
+    });
+
+    manifest = json;
 }
