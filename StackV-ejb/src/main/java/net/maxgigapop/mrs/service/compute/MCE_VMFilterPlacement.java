@@ -64,9 +64,21 @@ import org.json.simple.parser.ParseException;
  * @author xyang
  */
 @Stateless
-public class MCE_VMFilterPlacement implements IModelComputationElement {
+public class MCE_VMFilterPlacement extends MCEBase {
 
     private static final StackLogger logger = new StackLogger(MCE_VMFilterPlacement.class.getName(), "MCE_VMFilterPlacement");
+
+    private static final String OSpec_Template
+            = "{\n"
+            + "  \"$$\": {\n"
+            + "	   \"uri\": \"$$\",\n"
+            + "	   \"host\": \"?host?\",\n"
+            + "	   \"#sparql\": \"SELECT ?host WHERE { "
+            + "       {?host nml:hasNode <$$>. <$$> a nml:Node.} "
+            + "       UNION "
+            + "       {?host nml:hasBidirectionalPort <$$>. <$$> a nml:BidirectionalPort.} }\"\n"
+            + "  }\n"
+            + "}";
 
     @Override
     @Asynchronous
@@ -75,70 +87,32 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         String method = "process";
         logger.refuuid(annotatedDelta.getReferenceUUID());
         logger.start(method);
-        if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
-            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
-        }
         try {
             logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
         }
-        // importPolicyData
-        String sparql = "SELECT ?res ?policy ?data ?dataType ?dataValue WHERE {"
-                + "?res spa:dependOn ?policy . "
-                + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_VMFilterPlacement'. "
-                + "?policy spa:importFrom ?data. "
-                + "?data spa:type ?dataType. ?data spa:value ?dataValue. "
-                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
-                + "}";
-        Map<Resource, List> policyMap = new HashMap<>();
-        ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
-        while (r.hasNext()) {
-            QuerySolution querySolution = r.next();
-            Resource res = querySolution.get("res").asResource();
-            if (annotatedDelta.getModelAddition().getOntModel().contains(res, RdfOwl.type, Spa.PolicyAction)) {
-                continue;
-            }
-            if (!policyMap.containsKey(res)) {
-                List policyList = new ArrayList<>();
-                policyMap.put(res, policyList);
-            }
-            Resource resPolicy = querySolution.get("policy").asResource();
-            Resource resData = querySolution.get("data").asResource();
-            RDFNode nodeDataType = querySolution.get("dataType");
-            RDFNode nodeDataValue = querySolution.get("dataValue");
-            Map policyData = new HashMap<>();
-            policyData.put("policy", resPolicy);
-            policyData.put("data", resData);
-            policyData.put("type", nodeDataType.toString());
-            policyData.put("value", nodeDataValue.toString());
-            policyMap.get(res).add(policyData);
-        }
+        
+        Map<Resource, JSONObject> policyResDataMap = this.preProcess(policy, systemModel, annotatedDelta);        
+
+        // Specific MCE logic 
         OntModel combinedModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         combinedModel.add(systemModel.getOntModel());
         combinedModel.add(annotatedDelta.getModelAddition().getOntModel());
-        
         ServiceDelta outputDelta = annotatedDelta.clone();
-        
-        for (Resource res : policyMap.keySet()) {
+        for (Resource res : policyResDataMap.keySet()) {
             //1. compute placement based on filter/match criteria *policyData*
             // returned placementModel contains the VM as well as hosting Node/Topology and HypervisorService from systemModel
-            OntModel placementModel = this.doPlacement(combinedModel, res, policyMap.get(res));
+            OntModel placementModel = this.doPlacement(combinedModel, res, policyResDataMap.get(res));
             if (placementModel == null) {
                 throw logger.error_throwing(method, "cannot apply policy to place VM=" + res);
             }
 
             //2. merge the placement satements into spaModel
             outputDelta.getModelAddition().getOntModel().add(placementModel.getBaseModel());
-
-            //3. update policyData this action exportTo 
-            this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), res);
-
-            //4. remove policy and all related SPA statements receursively under the res from spaModel
-            //   and also remove all statements that say dependOn this 'policy'
-            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), res);
         }
+
+        this.postProcess(policy, outputDelta.getModelAddition().getOntModel(), systemModel.getOntModel(), OSpec_Template, policyResDataMap);
 
         try {
             logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
@@ -151,54 +125,37 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
 
     //?? Use current containing abstract Topology ?
     // ignore if dependOn 'Abstraction'
-    private OntModel doPlacement(OntModel model, Resource vm, List<Map> placementCriteria) {
+    private OntModel doPlacement(OntModel model, Resource res, JSONObject jsonData) {
         String method = "doPlacement";
-        logger.message(method, "@doPlacement -> "+vm);
+        logger.message(method, "@doPlacement -> " + res);
         OntModel placementModel = null;
-        for (Map filterCriterion : placementCriteria) {
-            if (!filterCriterion.containsKey("data") || !filterCriterion.containsKey("type") || !filterCriterion.containsKey("value")) {
-                continue;
-            }
-            String placeToUri = null;
-            if (((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.Topology.getURI())
-                    || ((String) filterCriterion.get("type")).equalsIgnoreCase(Nml.Node.getURI())) {
-                placeToUri = (String) filterCriterion.get("value");
-            } else if (((String) filterCriterion.get("type")).equalsIgnoreCase("JSON")) {
-                //$$ merge JSON for multi-filter ?
-                JSONParser parser = new JSONParser();
-                try {
-                    JSONObject jsonObj = (JSONObject) parser.parse((String) filterCriterion.get("value"));
-                    if (jsonObj.containsKey("place_into")) {
-                        placeToUri = (String) jsonObj.get("place_into");
-                    }
-                } catch (ParseException e) {
-                    throw logger.throwing(method, String.format("cannot parse json string %s", filterCriterion.get("value")), e);
-                }  
-            } 
+        String placeToUri = null;
+        if (jsonData.containsKey("place_into")) {
+            placeToUri = (String) jsonData.get("place_into");
             if (placeToUri.endsWith("+any")) {
                 placeToUri = "any";
             }
-            if (placeToUri == null || (!placeToUri.startsWith("any") && !model.contains(model.getResource(placeToUri), null))) {
-                throw logger.error_throwing(method, "json input misses placeToUri");
-            }
-            OntModel hostModel;
-            if (placeToUri.startsWith("any")) {
-                // place VM to any host (Topology / Node) that has more resources
-                hostModel = selectAnyPlace(model, vm);
-            } else {
-                // place VM to a specific subnet or host (Topology / Node) 
-                // or place intreface to a specific subnet
-                hostModel = filterAndPlace(model, vm, placeToUri);
-            }
-            if (hostModel == null) {
-                throw logger.error_throwing(method, String.format("cannot place %s based on polocy %s", vm, filterCriterion.get("policy")));
-            }
-            // assemble placementModel;
-            if (placementModel == null) {
-                placementModel = hostModel;
-            } else {
-                placementModel.add(hostModel.getBaseModel());
-            }
+        }
+        if (placeToUri == null || (!placeToUri.startsWith("any") && !model.contains(model.getResource(placeToUri), null))) {
+            throw logger.error_throwing(method, "json input misses placeToUri");
+        }
+        OntModel hostModel;
+        if (placeToUri.startsWith("any")) {
+            // place VM to any host (Topology / Node) that has more resources
+            hostModel = selectAnyPlace(model, res);
+        } else {
+            // place VM to a specific subnet or host (Topology / Node) 
+            // or place intreface to a specific subnet
+            hostModel = filterAndPlace(model, res, placeToUri);
+        }
+        if (hostModel == null) {
+            throw logger.error_throwing(method, String.format("cannot place '%s'", res));
+        }
+        // assemble placementModel;
+        if (placementModel == null) {
+            placementModel = hostModel;
+        } else {
+            placementModel.add(hostModel.getBaseModel());
         }
         return placementModel;
     }
@@ -240,6 +197,11 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
                 diskGb = Integer.parseInt(querySolution.get("total_disk_gb").toString()) - Integer.parseInt(querySolution.get("used_disk_gb").toString());
             }
             paramMap.put("disk_gb", diskGb);
+            //@TODO: check the params against requested VM flavor / type. 
+            // The below is a temp logic to make sure the host has at least 160GB for 1 xlarge instnace.
+            if (diskGb < 160) {
+                continue;
+            }
             rankArray.add(paramMap);
         }
         OntModel placeModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -366,47 +328,4 @@ public class MCE_VMFilterPlacement implements IModelComputationElement {
         }
         return null;
     }
-
-    private void exportPolicyData(OntModel spaModel, Resource res) {
-        String method = "exportPolicyData";
-        // find Placement policy -> exportTo -> policyData
-        String sparql = "SELECT ?hostPlace ?policyData WHERE {"
-                + String.format("?hostPlace nml:hasNode <%s> .", res.getURI()) 
-                + "?hvservice a mrs:HypervisorService . "
-                + String.format("?hvservice mrs:providesVM <%s> .", res.getURI())
-                + String.format("<%s> spa:dependOn ?policyAction .", res.getURI())
-                + "?policyAction a spa:PolicyAction. "
-                + "?policyAction spa:type 'MCE_VMFilterPlacement'. "
-                + "?policyAction spa:exportTo ?policyData . "
-                + "?policyData a spa:PolicyData . "
-                + "OPTIONAL {?policyData spa:format ?format.}"
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-        for (QuerySolution querySolution : solutions) {
-            Resource resHost = querySolution.get("hostPlace").asResource();
-            Resource resData = querySolution.get("policyData").asResource();
-            spaModel.add(resData, Spa.type, "JSON");
-            // add export data
-            JSONObject output = new JSONObject();
-            output.put("uri", res.getURI());
-            output.put("place_into", resHost.getURI());
-            //add output as spa:value of the export resrouce
-            String exportValue = output.toJSONString();
-            if (querySolution.contains("format")) {
-                String exportFormat = querySolution.get("format").toString();
-                try {
-                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
-                } catch (Exception ex) {
-                    logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
-                    continue;
-                }
-            }
-            spaModel.add(resData, Spa.value, exportValue);
-        }
-    }
-
 }

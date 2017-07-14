@@ -117,7 +117,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         if (requests.isEmpty()) {
             driverInstance.getProperties().remove(requestId);
             DriverInstancePersistenceManager.merge(driverInstance);
-            throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
+            logger.warning(method, "requests.isEmpty - no change to commit, requestId="+requestId);
         }        
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");

@@ -61,9 +61,36 @@ import org.json.simple.parser.ParseException;
  * @author xyang
  */
 @Stateless
-public class MCE_AwsDxStitching implements IModelComputationElement {
+public class MCE_AwsDxStitching extends MCEBase {
 
     private static final StackLogger logger = new StackLogger(MCE_AwsDxStitching.class.getName(), "MCE_AwsDxStitching");
+
+    private static final String OSpec_Template
+            = "{\n"
+            + "\"vlan\": \"?vlan?\",\n"
+            + "\"dxvif_name\": \"?dxvif_name?\",\n"
+            + "\"vgw_name\": \"?vgw_name?\",\n"
+            + "\"amazon_ip\": \"?amazon_ip?\",\n"
+            + "\"customer_ip\": \"?customer_ip?\",\n"
+            + "\"authkey\": \"?authkey?\",\n"
+            + "\"customer_asn\": \"?customer_asn?\",\n"
+            + "\"#sparql\": \"SELECT ?dxvif ?vgw WHERE {?dxvif mrs:type \\\"direct-connect-vif\\\". ?dxvif nml:isAlias ?vgw. }\",\n"
+            + "\"#required\": \"true\",\n"
+            + "\"#sparql-ext\": \"SELECT ?dxvif_name ?vgw_name ?customer_asn ?vlan ?amazon_ip ?customer_ip ?authkey "
+            + "WHERE {"
+            + "?dxvif mrs:hasNetworkAddress ?netaddr_asn. "
+            + "?netaddr_asn mrs:type \\\"bgp-asn\\\". "
+            + "?netaddr_asn mrs:value ?customer_asn. "
+            + "?dxvif nml:hasLabelGroup ?lg_vlan. "
+            + "?lg_vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+            + "?lg_vlan nml:values ?vlan. "
+            + "OPTIONAL { ?dxvif nml:name ?dxvif_name. } "
+            + "OPTIONAL {?dxvif mrs:hasNetworkAddress ?netaddr_amazon_ip. ?netaddr_amazon_ip mrs:type \\\"ipv4-address:amazon\\\". "
+            + "?netaddr_amazon_ip mrs:value ?amazon_ip. ?dxvif mrs:hasNetworkAddress ?netaddr_customer_ip. "
+            + "?netaddr_customer_ip mrs:type \\\"ipv4-address:customer\\\". ?netaddr_customer_ip mrs:value ?customer_ip. }"
+            + "OPTIONAL {?dxvif mrs:hasNetworkAddress ?netaddr_authkey. ?netaddr_authkey mrs:type \\\"bgp-authkey\\\". ?netaddr_authkey mrs:value ?authkey. }"
+            + "}\""
+            + "}";
 
     @Override
     @Asynchronous
@@ -72,66 +99,25 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
         String method = "process";
         logger.refuuid(annotatedDelta.getReferenceUUID());
         logger.start(method);
-        if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
-            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
-        }
         try {
             logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
         }
-        // importPolicyData : Interface->Stitching->List<PolicyData>
-        String sparql = "SELECT ?policy ?data ?type ?value WHERE {"
-                + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_AwsDxStitching'. "
-                + "?policy spa:importFrom ?data. "
-                + "?data spa:type ?type. ?data spa:value ?value. "
-                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
-                + "}";
+        
+        Map<Resource, JSONObject> policyResDataMap = this.preProcess(policy, systemModel, annotatedDelta);        
 
-        ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
-        Map<Resource, Map> stitchPolicyMap = new HashMap<>();
-        while (r.hasNext()) {
-            QuerySolution querySolution = r.next();
-            Resource resPolicy = querySolution.get("policy").asResource();
-            if (!stitchPolicyMap.containsKey(resPolicy)) {
-                Map<String, List> stitchMap = new HashMap<>();
-                List dataList = new ArrayList<>();
-                stitchMap.put("imports", dataList);
-                stitchPolicyMap.put(resPolicy, stitchMap);
-            }
-            Resource resData = querySolution.get("data").asResource();
-            RDFNode nodeDataType = querySolution.get("type");
-            RDFNode nodeDataValue = querySolution.get("value");
-            boolean existed =false;
-            for (Map dataMap: (List<Map>)stitchPolicyMap.get(resPolicy).get("imports")) {
-                if(dataMap.get("data").equals(resData)) {
-                    existed = true;
-                    break;
-                }
-            }
-            if (!existed) {
-                Map policyData = new HashMap<>();
-                policyData.put("data", resData);
-                policyData.put("type", nodeDataType.toString());
-                policyData.put("value", nodeDataValue.toString());
-                ((List)stitchPolicyMap.get(resPolicy).get("imports")).add(policyData);
-            }
-        }
+        // Specific MCE logic 
         ServiceDelta outputDelta = annotatedDelta.clone();
-
-        for (Resource policyAction : stitchPolicyMap.keySet()) {
-            OntModel stitchModel = this.doStitching(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policyAction, stitchPolicyMap.get(policyAction));
-            // merge the placement satements into spaModel
+        for (Resource res : policyResDataMap.keySet()) {
+            OntModel stitchModel = this.doStitching(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), res, policyResDataMap.get(res));
             if (stitchModel != null) {
                 outputDelta.getModelAddition().getOntModel().add(stitchModel.getBaseModel());
             }
-
-            exportPolicyData(outputDelta.getModelAddition().getOntModel(), policyAction, stitchModel, systemModel.getOntModel());
-
-            // remove policy dependency
-            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
         }
+        
+        this.postProcess(policy, outputDelta.getModelAddition().getOntModel(), systemModel.getOntModel(), OSpec_Template, policyResDataMap);
+
         try {
             logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
@@ -146,37 +132,9 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
     // General logic: 1. find the "terminal / end" containing resource (eg. Host Node or Topology)
     // 2. identify the "attach-point" resource (eg. VLAN port) along with a stitching path
     // 3. add statements to the stitching path to connect the terminal to the attach-point (if applicable)
-    private OntModel doStitching(OntModel systemModel, OntModel spaModel, Resource policyAction, Map stitchPolicyData) {
+    private OntModel doStitching(OntModel systemModel, OntModel spaModel, Resource res, JSONObject jsonStitchReq) {
         String method = "doStitching";
-        //@TODO: common logic for importing data
-        List<Map> dataMapList = (List<Map>)stitchPolicyData.get("imports");
-        JSONObject jsonStitchReq = null;
-        for (Map entry : dataMapList) {
-            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
-                continue;
-            }
-            if (entry.get("type").toString().equalsIgnoreCase("JSON")) {
-                JSONParser parser = new JSONParser();
-                try {
-                    JSONObject jsonObj = (JSONObject) parser.parse((String) entry.get("value"));
-                    if (jsonStitchReq == null) {
-                        jsonStitchReq = jsonObj;
-                    } else { // merge
-                        for (Object key: jsonObj.keySet()) {
-                            jsonStitchReq.put(key, jsonObj.get(key));
-                        }
-                    }
-                } catch (ParseException e) {
-                    throw logger.throwing(method, String.format("cannot parse json string %s", entry.get("value")), e);
-                }
-            } else {
-                throw logger.error_throwing(method, String.format("cannot import policyData of %s type", entry.get("type")));
-            }
-        }
-        
-        if (jsonStitchReq == null || jsonStitchReq.isEmpty()) {
-            throw logger.error_throwing(method, String.format("received none request for policy <%s>", policyAction));
-        }
+        logger.message(method, "@doStitching -> " + res);
 
         OntModel stitchModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Model unionSysModel = spaModel.union(systemModel);
@@ -235,14 +193,14 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
         } else { //if (jsonStitchReq.containsKey("to_l2path"))
             JSONArray stitchToPath = (JSONArray) jsonStitchReq.get("to_l2path");
             if (stitchToPath.isEmpty()) {
-            throw logger.error_throwing(method, String.format("cannot parse JSON data 'to_l2path': %s", stitchToPath));
+                throw logger.error_throwing(method, String.format("cannot parse JSON data 'to_l2path': %s", stitchToPath));
             }
             for (Object obj : stitchToPath) {
                 JSONObject jsonObj = (JSONObject) obj;
-                if (!jsonObj.containsKey("uri")) {
+                if (!jsonObj.containsKey("hop")) {
                     throw logger.error_throwing(method, String.format("cannot parse JSON data 'to_l2path': %s - invalid hop: %s", stitchToPath, jsonObj));
                 }
-                String hopUri = (String) jsonObj.get("uri");
+                String hopUri = (String) jsonObj.get("hop");
                 sparql = "SELECT ?dxvif WHERE {"
                         + "?aws nml:hasBidirectionalPort ?dxport."
                         + "?aws a nml:Topology."
@@ -264,117 +222,5 @@ public class MCE_AwsDxStitching implements IModelComputationElement {
         stitchModel.add(stitchModel.createStatement(resDxvif, Mrs.type, "direct-connect-vif"));
 
         return stitchModel;
-    }
-    
-    private void exportPolicyData(OntModel spaModel, Resource resPolicy, OntModel stitchModel, OntModel systemModel) {
-        String method = "exportPolicyData";
-        String sparql = "SELECT ?data ?type ?value ?format WHERE {"
-                + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
-                + String.format("<%s> spa:type 'MCE_AwsDxStitching'. ", resPolicy.getURI())
-                + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
-                + "OPTIONAL {?data spa:type ?type.} "
-                + "OPTIONAL {?data spa:value ?value.} "
-                + "OPTIONAL {?data spa:format ?format.} "
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-        for (QuerySolution querySolution : solutions) {
-            Resource resData = querySolution.get("data").asResource();
-            RDFNode dataType = querySolution.get("type");
-            RDFNode dataValue = querySolution.get("value");
-
-            if (dataType == null) {
-                spaModel.add(resData, Spa.type, "JSON");
-            } else if (!dataType.toString().equalsIgnoreCase("JSON")) {
-                continue;
-            }
-            JSONObject jsonValue = new JSONObject();
-            if (dataValue != null) {
-                JSONParser parser = new JSONParser();
-                try {
-                    jsonValue = (JSONObject)parser.parse(dataValue.toString());
-                } catch (ParseException e) {
-                    throw logger.throwing(method, String.format("cannot parse json string %s", dataValue), e);
-                }
-            }
-            
-            // get export data
-            sparql = "SELECT ?dxvif ?vgw WHERE {"
-                + "?dxvif mrs:type \"direct-connect-vif\". "
-                + "?dxvif nml:isAlias ?vgw. "
-                + "}";
-            r = ModelUtil.sparqlQuery(stitchModel, sparql);
-            if (!r.hasNext()) {
-                return;
-            }
-            QuerySolution solution = r.next();
-            Resource resDxvif = solution.getResource("dxvif");
-            Resource resVgw = solution.getResource("vgw");
-            sparql = "SELECT ?dxvif_name ?asn ?vlan ?amazon_ip ?customer_ip ?authkey WHERE {"
-                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_asn. ", resDxvif.getURI())
-                    + "?netaddr_asn mrs:type \"bgp-asn\". "
-                    + "?netaddr_asn mrs:value ?asn. "
-                    + String.format("<%s> nml:hasLabelGroup ?lg_vlan. ", resDxvif.getURI())
-                    + "?lg_vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
-                    + "?lg_vlan nml:values ?vlan. "
-                    + "OPTIONAL {"
-                    + String.format("<%s> nml:name ?dxvif_name. ", resDxvif.getURI())
-                    + "}"
-                    + "OPTIONAL {"
-                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_amazon_ip. ", resDxvif.getURI())
-                    + "?netaddr_amazon_ip mrs:type \"ipv4-address:amazon\". "
-                    + "?netaddr_amazon_ip mrs:value ?amazon_ip. "
-                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_customer_ip. ", resDxvif.getURI())
-                    + "?netaddr_customer_ip mrs:type \"ipv4-address:customer\". "
-                    + "?netaddr_customer_ip mrs:value ?customer_ip. "
-                    + "}"
-                    + "OPTIONAL {"
-                    + String.format("<%s> mrs:hasNetworkAddress ?netaddr_authkey. ", resDxvif.getURI())
-                    + "?netaddr_authkey mrs:type \"bgp-authkey\". "
-                    + "?netaddr_authkey mrs:value ?authkey. "
-                    + "}"
-                    + "}";
-            Model unionModel = ModelFactory.createUnion(systemModel, spaModel); // spaModel contains stitchModel
-            r = ModelUtil.sparqlQuery(unionModel, sparql);
-            if (!r.hasNext()) {
-                return;
-            }
-            solution = r.next();
-            JSONObject dxvifData = new JSONObject();
-            dxvifData.put("customer_asn", solution.get("asn").toString());
-            dxvifData.put("vlan", solution.get("vlan").toString());
-            if (solution.contains("dxvif_name")) {
-                dxvifData.put("name", solution.getLiteral("dxvif_name").getString());
-            }
-            if (solution.contains("amazon_ip")) {
-                dxvifData.put("amazon_ip", solution.get("amazon_ip").toString());
-            }
-            if (solution.contains("customer_ip")) {
-                dxvifData.put("customer_ip", solution.get("customer_ip").toString());
-            }
-            if (solution.contains("authkey")) {
-                dxvifData.put("bgp_authkey", solution.get("authkey").toString());
-            }
-            // put new data into jsonValue
-            jsonValue.put(resDxvif.getURI(), dxvifData);
-            //@TODO: common logic
-            if (dataValue != null) {
-                spaModel.remove(resData, Spa.value, dataValue);
-            }
-            //add output as spa:value of the export resrouce
-            String exportValue = jsonValue.toJSONString();
-            if (querySolution.contains("format")) {
-                String exportFormat = querySolution.get("format").toString();
-                try {
-                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
-                } catch (Exception ex) {
-                    throw logger.throwing(method, ex);
-                }
-            }
-            spaModel.add(resData, Spa.value, exportValue);
-        }
     }
 }

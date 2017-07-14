@@ -22,19 +22,19 @@
         </JDBC>      
     </Appenders>
     <Loggers>
-        <AsyncLogger name="net.maxgigapop.mrs.service" level="debug" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.service" level="info" additivity="false">
             <AppenderRef ref="RainsOut" />
             <AppenderRef ref="MySQL" level="info" />
         </AsyncLogger>
-        <AsyncLogger name="net.maxgigapop.mrs.system" level="debug" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.system" level="info" additivity="false">
             <AppenderRef ref="RainsOut" />
             <AppenderRef ref="MySQL" level="info" />
         </AsyncLogger>
-        <AsyncLogger name="net.maxgigapop.mrs.driver" level="debug" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.driver" level="trace" additivity="false">
             <AppenderRef ref="RainsOut" />
             <AppenderRef ref="MySQL" level="info" />
         </AsyncLogger>
-        <AsyncLogger name="net.maxgigapop.mrs.core" level="debug" additivity="false">
+        <AsyncLogger name="net.maxgigapop.mrs.core" level="info" additivity="false">
             <AppenderRef ref="RainsOut" />
             <AppenderRef ref="MySQL" level="info" />
         </AsyncLogger>

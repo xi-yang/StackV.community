@@ -55,7 +55,7 @@ import weka.core.Instances;
  * @author xin
  */
 @Stateless
-public class MCE_TransferCreation implements IModelComputationElement{
+public class MCE_TransferCreation extends MCEBase{
 
     private static final Logger log = Logger.getLogger(MCE_TransferCreation.class.getName());
     private String output;
@@ -121,7 +121,7 @@ public class MCE_TransferCreation implements IModelComputationElement{
 
             //4. remove policy and all related SPA statements receursively under the res from spaModel
             //   and also remove all statements that say dependOn this 'policy'
-            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), res);            
+            removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), res);            
         }
         try {
             log.log(Level.FINE, "\n>>>MCE_TransferCreation--outputDelta Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
