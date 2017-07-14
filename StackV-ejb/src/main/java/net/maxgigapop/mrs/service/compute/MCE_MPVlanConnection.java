@@ -106,13 +106,13 @@ public class MCE_MPVlanConnection extends MCEBase {
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
-        
+        /*
         try {
             logger.trace(method, "\n>>>MCE_MPVlanConnection--SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
             logger.trace(method, "marshalModel(transformedModel) failed -- "+ex);
         }
-        
+        */
         Map<String, MCETools.Path> mapConnPaths = new HashMap<>();
         for (String connId: connDataMap.keySet()) {
             List<Resource> terminals = new ArrayList<>();

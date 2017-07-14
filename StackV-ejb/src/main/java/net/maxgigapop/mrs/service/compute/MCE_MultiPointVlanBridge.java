@@ -78,7 +78,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             + "			\"vlan_tag\": \"?vid?\",\n"
             + "			\"#sparql\": \"SELECT DISTINCT ?hop ?vid WHERE {?hop a nml:BidirectionalPort. "
             + "?hop nml:hasLabel ?vlan. ?vlan nml:value ?vid. ?hop mrs:tag \\\"l2path+$$:%%\\\".}\",\n"
-            + "			\"required\": \"false\",\n"
+            + "			\"#required\": \"false\",\n"
             + "		}\n"
             + "	]\n"
             + "}";
@@ -126,12 +126,13 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
+        /*
         try {
             logger.trace(method, "SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
             logger.trace(method, "marshalModel(marshalModel(transformedModel) failed -- "+ex);
         }
-        
+        */
         Map<String, MCETools.Path> mapConnPaths = new HashMap<>();
         for (String connId: connDataMap.keySet()) {
             List<Resource> terminals = new ArrayList<>();

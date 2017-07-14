@@ -197,6 +197,11 @@ public class MCE_VMFilterPlacement extends MCEBase {
                 diskGb = Integer.parseInt(querySolution.get("total_disk_gb").toString()) - Integer.parseInt(querySolution.get("used_disk_gb").toString());
             }
             paramMap.put("disk_gb", diskGb);
+            //@TODO: check the params against requested VM flavor / type. 
+            // The below is a temp logic to make sure the host has at least 160GB for 1 xlarge instnace.
+            if (diskGb < 160) {
+                continue;
+            }
             rankArray.add(paramMap);
         }
         OntModel placeModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
