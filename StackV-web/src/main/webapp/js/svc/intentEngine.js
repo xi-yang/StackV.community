@@ -48,7 +48,7 @@ function loadIntent(type) {
         success: function (xml) {
             intent = xml.children[0];
             renderIntent();
-            parseSchemaIntoManifest();
+            parseSchemaIntoManifest(intent);
         },
         error: function (err) {
             console.log('Error Loading XML! \n' + err);
@@ -625,9 +625,9 @@ function refreshLinks() {
     }
 }
 
-function parseSchemaIntoManifest() {
+function parseSchemaIntoManifest(schema) {
     var json = {};
-    $(intent).find("input").each(function () {
+    $(schema).find("input").each(function () {
         var arr = [this.children[0].innerHTML.toLowerCase().replace(/ /g, "_")];
         var parent = this.parentElement;
         while (parent.tagName !== "intent") {
