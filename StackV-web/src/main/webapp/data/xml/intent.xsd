@@ -52,9 +52,13 @@ IN THE WORK.
     <xs:element name="type" type="xs:string"/>
     <xs:element name="tag" type="xs:string"/>
     <xs:element name="size" type="xs:string"/>    
+    <xs:element name="link" type="xs:string"/>    
     <xs:element name="default" type="xs:string"/>
-    <xs:element name="source" type="xs:string"/>
     <xs:element name="option" type="xs:string"/>
+    <xs:element name="interval" type="xs:string"/>
+    <xs:element name="url" type="xs:string"/>
+    <xs:element name="value" type="xs:string"/>
+    <xs:element name="text" type="xs:string"/>
     
     <!--Complex-->
     <xs:element name="intent">
@@ -112,6 +116,7 @@ IN THE WORK.
                 <xs:element ref="default" minOccurs="0"/>                
                 <xs:element ref="source" minOccurs="0"/>
                 <xs:element ref="options" minOccurs="0"/>
+                <xs:element ref="link" minOccurs="0"/>
             </xs:sequence>
             <xs:attribute ref="trigger"/>
             <xs:attribute ref="condition"/>
@@ -125,6 +130,17 @@ IN THE WORK.
                 <xs:element ref="name"/>
             </xs:sequence>
             <xs:attribute ref="condition"/>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="source">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="url"/>
+                <xs:element ref="interval"/>
+                <xs:element ref="text"/>
+                <xs:element ref="value"/>
+            </xs:sequence>
         </xs:complexType>
     </xs:element>
     

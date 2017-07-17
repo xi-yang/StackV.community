@@ -148,6 +148,10 @@ function initMeta(meta) {
                 count--;
                 factories[key]["count"]--;
             }
+            
+            for (var i = 0; i < conditions.length; i++) {
+                $("[data-condition='" + conditions[i] + "']").addClass("conditioned");
+            }
         });
 
         if (condition) {
@@ -269,26 +273,37 @@ function renderInputs(arr, $parent) {
 
             // Handle multiple choice sourcing
             if (ele.getElementsByTagName("source").length > 0) {
-                $input = $("<select>", {id: name});
+                $input = $("<select>", {id: name, class: "intent-input"});
                 var selectName = name;
+                var source = ele.getElementsByTagName("source")[0];
 
                 var apiURL = window.location.origin +
                         "/StackV-web/restapi" +
-                        ele.getElementsByTagName("source")[0].innerHTML;
+                        source.children[0].innerHTML;
                 $.ajax({
                     url: apiURL,
                     type: 'GET',
+                    sourceSettings: [source.children[1].innerHTML,source.children[2].innerHTML,source.children[3].innerHTML],
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
-                    success: function (instance) {
-                        for (var i in instance) {
+                    success: function (instance) {                   
+                        var text = this.sourceSettings[1];
+                        var value = this.sourceSettings[2];
+                        var interval = this.sourceSettings[0];
+                        
+                        for (var i = -1; i < (instance.length - parseInt(interval)); i) {
                             var $option = $("<option>");
-                            $option.text(instance[i]);
-                            $option.val(instance[i]);
+                            
+                            var textIndex = i + parseInt(text);
+                            $option.text(instance[textIndex]);
+                            var valueIndex = i + parseInt(value);
+                            $option.val(instance[valueIndex]);
 
                             $("#" + selectName).append($option);
+                            
+                            i += parseInt(interval);
                         }
                     },
                     error: function (xhr, ajaxOptions, thrownError) {
@@ -428,7 +443,7 @@ function recursivelyFactor(id, ele) {
 function submitIntent() {
     var json = {};
     $("#intent-panel-body .intent-input").each(function () {
-        var arr = this.id.split("-");        
+        var arr = this.id.split("-");
 
         var last = json;
         var i;
@@ -440,7 +455,11 @@ function submitIntent() {
             last = last[key];
         }
         var key = arr[i];
-        last[key] = $(this).val();
+        if ($(this).attr("type") === "checkbox") {
+            last[key] = $(this).is(":checked");
+        } else {
+            last[key] = $(this).val();
+        }
     });
 
     manifest = json;

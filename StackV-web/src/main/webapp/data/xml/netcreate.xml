@@ -40,7 +40,12 @@
             <input>
                 <name>Driver URI</name>
                 <type>select</type>
-                <source>/app/intent/drivers</source>
+                <source>
+                    <url>/driver</url>
+                    <interval>3</interval>
+                    <text>3</text>
+                    <value>3</value>
+                </source>
             </input>
             <input>
                 <name>Type</name>
