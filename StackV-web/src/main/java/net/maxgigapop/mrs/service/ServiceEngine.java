@@ -253,7 +253,7 @@ class ServiceEngine {
 
         prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `enabled` = ? WHERE `service_verification`.`service_instance_id` = ?");
         prep.setBoolean(1, enabled);
-        prep.setInt(1, instanceID);
+        prep.setInt(2, instanceID);
         prep.executeUpdate();
 
         logger.trace_end(method);
