@@ -173,6 +173,9 @@ function initMeta(meta) {
     $("#intent-next").click(function () {
         nextStage();
     });
+    $("#intent-submit").click(function () {
+        submitIntent();
+    });
 }
 
 function renderInputs(arr, $parent) {
@@ -232,7 +235,7 @@ function renderInputs(arr, $parent) {
             var condition = ele.getAttribute("condition");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
-            var $input = $("<input>", {type: type, id: name});
+            var $input = $("<input>", {type: type, class: "intent-input", id: name});
             switch (type) {
                 case "button":
                     $input.click(function (e) {
@@ -420,6 +423,27 @@ function recursivelyFactor(id, ele) {
             }
         }
     }
+}
+
+function submitIntent() {
+    var json = {};
+    $("#intent-panel-body .intent-input").each(function () {
+        var arr = this.id.split("-");        
+
+        var last = json;
+        var i;
+        for (i = 0; i < (arr.length - 1); i++) {
+            var key = arr[i];
+            if (!(key in last)) {
+                last[key] = {};
+            }
+            last = last[key];
+        }
+        var key = arr[i];
+        last[key] = $(this).val();
+    });
+
+    manifest = json;
 }
 
 // UTILITY FUNCTIONS
