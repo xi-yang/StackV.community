@@ -129,7 +129,7 @@
             </div>
 
 
-            <div id="driver-content-panel">
+            <div id="driver-content-panel" class="hidden">
                 <div class="tab-content" id="catalog-tab-content">                                    
                     <div id="install-content" class="tab-pane fadeIn">
                         <div id='install-type'></div>

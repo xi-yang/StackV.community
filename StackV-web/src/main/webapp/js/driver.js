@@ -131,6 +131,8 @@ function openContentPanel() {
         tweenBlackScreen.play();
         tweenContentPanel.play();
         $("#driver-content-panel").addClass("open");
+        $("#driver-content-panel").removeClass("hidden");
+        $("#driver-content-panel").addClass("active");
     }
 }
 function closeContentPanel() {
@@ -138,6 +140,8 @@ function closeContentPanel() {
         tweenBlackScreen.reverse();
         tweenContentPanel.reverse();
         $("#driver-content-panel").removeClass("open");
+        $("#driver-content-panel").removeClass("active");
+        $("#driver-content-panel").addClass("hidden");
     }
 }
 
@@ -690,6 +694,8 @@ function updateDrivers() {
 
                 detButton.innerHTML = "Details";
                 detButton.onclick = function () {
+                    $("#driver-content-panel").removeClass("hidden");
+                    $("#driver-content-panel").addClass("active");
                     clearPanel();
                     activateSide();
                     changeNameDet();
