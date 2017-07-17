@@ -51,42 +51,42 @@
                                 <td>AWS Driver</td>
                                 <td>Amazon AWS Cloud Services</td>
                                 <td style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install install-button'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Generic REST Driver</td>
                                 <td>Generic REST API for Compatible Model Driven Services</td>
                                 <td style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install install-button'>Install</button>
+                                    <button onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>OpenStack Driver</td>
                                 <td>OpenStack Cloud Services</td>
                                 <td  style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install install-button'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Stack Driver</td>
                                 <td>Stack Over Sub-level StackV in Hierarchical Deployment</td>
                                 <td  style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install install-button'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr> 
                             <tr>
                                 <td>Stub Driver</td>
                                 <td>A Dump Driver Instance with Pre-loaded Fixed Model</td>
                                 <td style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install install-button'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Raw Driver</td>
                                 <td>Take Raw XML to Plug in "Any" Type of Driver Instance</td>
                                 <td  style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install install-button'>Install</button>
+                                    <button onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                         </tbody>

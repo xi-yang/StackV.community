@@ -786,10 +786,12 @@ function getDetailsProfile(clickID) {
             var instDetailsButton = document.createElement("button");
             instDetailsButton.className = "button-profile-select btn btn-default";
             instDetailsButton.innerHTML = "Install";
+            instDetailsButton.className = "button-profile-select btn btn-default";
             
             instDetailsButton.onclick = function () {
                 plugDriver(result["TOPURI"]);
             };
+            instDetailsButton.className = "button-profile-select btn btn-default";
             botpanel.appendChild(instDetailsButton);
         }
     });
