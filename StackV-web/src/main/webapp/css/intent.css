@@ -182,6 +182,7 @@ ul#progressbar li {
     float: left;
     position: relative;
     transition: all 1s ease;
+    margin: 7px;
 }
 ul#progressbar li.condition {
     color: black;
