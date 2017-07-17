@@ -232,8 +232,8 @@ class ServiceEngine {
         WebResource.commonsClose(front_conn, prep, rs);
         return "READY";
     }
-
-    static void cancelVerify(String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
+      
+    static void toggleVerify(boolean enabled, String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
         ResultSet rs;
         String method = "cancelVerify";
         Properties front_connectionProps = new Properties();
@@ -251,7 +251,8 @@ class ServiceEngine {
         rs.next();
         int instanceID = rs.getInt("service_instance_id");
 
-        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `enabled` = 0 WHERE `service_verification`.`service_instance_id` = ?");
+        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `enabled` = ? WHERE `service_verification`.`service_instance_id` = ?");
+        prep.setBoolean(1, enabled);
         prep.setInt(1, instanceID);
         prep.executeUpdate();
 
