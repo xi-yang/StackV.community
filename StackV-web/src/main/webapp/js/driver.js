@@ -212,6 +212,8 @@ function installed_tab_fix() {
 }
 
 function activateSide() {
+    $("#driver-content-panel").removeClass("hidden");
+    $("#driver-content-panel").addClass("active");
     $('#driver-panel-right').addClass('active-detail');
     $('#install-content').addClass('active');
     $('#driver-panel-top').removeClass('no-side-tab');
@@ -221,6 +223,10 @@ function activateSide() {
 }
 
 function closeSide() {
+    
+    $("#driver-content-panel").removeClass("active");
+    $("#driver-content-panel").addClass("hidden");
+    
     document.getElementById("driver-panel-right").className = "inactive";
     $('#install-tab').removeClass = "active";
     $('#install-content').removeClass('active');
@@ -237,13 +243,13 @@ function installRaw() {
     var divContent = document.getElementById("install-type");
 
     type.innerHTML = "raw";
-    type.style.color = "white";
+    type.style.color = "#333";
     type.id = "drivertype";
     divContent.appendChild(type);
 
 
     first.innerHTML = "Enter Raw XML:";
-    first.style.color = "white";
+    first.style.color = "#333";
     second.id = "rawXML";
     second.rows = "15";
     second.cols = "45";
@@ -259,18 +265,18 @@ function installStub() {
     var divContent = document.getElementById("install-type");
 
     type.innerHTML = "StubSystemDriver";
-    type.style.color = "white";
+    type.style.color = "#333";
     type.id = "drivertype";
     divContent.appendChild(type);
 
     first.innerHTML = "Topology URI:";
-    first.style.color = "white";
+    first.style.color = "#333";
 
     second.type = "text";
     second.id = "TOPURI";
 
     third.innerHTML = "TTL:";
-    third.style.color = "white";
+    third.style.color = "#333";
 
     fourth.id = "stubModelTtl";
     fourth.rows = "20";
@@ -304,31 +310,31 @@ function installAWS() {
     var divContent = document.getElementById("install-type");
 
     type.innerHTML = "AwsDriver";
-    type.style.color = "white";
+    type.style.color = "#333";
     type.id = "drivertype";
     divContent.appendChild(type);
 
 
     first.innerHTML = "Topology URI:";
-    first.style.color = "white";
+    first.style.color = "#333";
 
     second.type = "text";
     second.id = "TOPURI";
 
     third.innerHTML = "Amazon Access ID:";
-    third.style.color = "white";
+    third.style.color = "#333";
 
     fourth.type = "text";
     fourth.id = "aws_access_key_id";
 
     fifth.innerHTML = "Amazon Secret Key:";
-    fifth.style.color = "white";
+    fifth.style.color = "#333";
 
     sixth.type = "text";
     sixth.id = "aws_secret_access_key";
 
     seventh.innerHTML = "Region";
-    seventh.style.color = "white";
+    seventh.style.color = "#333";
 
     option1.text = "us-east-1";
     option2.text = "us-east-2";
@@ -375,14 +381,14 @@ function installOpenstack() {
     divContentRight.style = "float: right;margin-right:15%";    
 
     type.innerHTML = "OpenStackDriver";
-    type.style.color = "white";
+    type.style.color = "#333";
     type.id = "drivertype";
     divContent.appendChild(type);
 
     for (var i = 0; i < 22; i += 2) {
         var textbox = document.createElement("p");
         var input = document.createElement("input");
-        textbox.style.color = "white";
+        textbox.style.color = "#333";
         input.type = "text";
         content[i] = textbox;
         content[i + 1] = input;
@@ -413,7 +419,7 @@ function installOpenstack() {
 
 
     extName.innerHTML = "ModelExt:";
-    extName.style.color = "white";
+    extName.style.color = "#333";
     ext.id = "modelExt";
     ext.rows = "15";
     ext.cols = "30";
@@ -444,30 +450,30 @@ function installStack() {
     var divContent = document.getElementById("install-type");
 
     type.innerHTML = "StackSystemDriver";
-    type.style.color = "white";
+    type.style.color = "#333";
     type.id = "drivertype";
     divContent.appendChild(type);
 
     first.innerHTML = "Topology URI:";
-    first.style.color = "white";
+    first.style.color = "#333";
 
     second.type = "text";
     second.id = "TOPURI";
 
     third.innerHTML = "Subsystem Base URL:";
-    third.style.color = "white";
+    third.style.color = "#333";
 
     fourth.type = "text";
     fourth.id = "subsystemBaseUrl";
 
     fifth.innerHTML = "Authorization Server:";
-    fifth.style.color = "white";
+    fifth.style.color = "#333";
 
     sixth.type = "text";
     sixth.id = "authServer";
 
     seventh.innerHTML = "Credentials:";
-    seventh.style.color = "white";
+    seventh.style.color = "#333";
 
     eighth.type = "password";
     eighth.id = "credentials";
@@ -491,18 +497,18 @@ function installGeneric() {
     var divContent = document.getElementById("install-type");
 
     type.innerHTML = "GenericRESTDriver";
-    type.style.color = "white";
+    type.style.color = "#333";
     type.id = "drivertype";
     divContent.appendChild(type);
 
     first.innerHTML = "Topology URI:";
-    first.style.color = "white";
+    first.style.color = "#333";
 
     second.type = "text";
     second.id = "TOPURI";
 
     third.innerHTML = "Subsystem Base URL:";
-    third.style.color = "white";
+    third.style.color = "#333";
 
     fourth.type = "text";
     fourth.id = "subsystemBaseUrl";
@@ -521,6 +527,7 @@ function clearPanel() {
     document.getElementById("install-options").style = "";
     var closeButton = document.createElement("button");
     closeButton.innerHTML = "Close";
+    closeButton.className = "button-profile-select btn btn-default";
     closeButton.onclick = function () {
         clearPanel();
         closeContentPanel();
@@ -535,12 +542,14 @@ function clearText() {
 function changeNameInst() {
     var saveButton = document.createElement("button");
     saveButton.innerHTML = "Save Driver";
+    saveButton.className = "button-profile-select btn btn-default";
     saveButton.onclick = function () {
         openWindow();
     };
     document.getElementById('install-options').appendChild(saveButton);
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
+    instButton.className = "button-profile-select btn btn-default";
     instButton.onclick = function () {
         installDriver();
         reloadData();
@@ -550,6 +559,7 @@ function changeNameInst() {
 }
 function changeNameInstRaw() {
     var instButton = document.createElement("button");
+    instButton.className = "button-profile-select btn btn-default";
     instButton.innerHTML = "Install Driver";
     instButton.onclick = function () {
         plugRaw();
@@ -795,6 +805,7 @@ function getDetailsProfile(clickID) {
             instDetailsButton.className = "button-profile-select btn btn-default";
             
             instDetailsButton.onclick = function () {
+                alert("success initial ");
                 plugDriver(result["TOPURI"]);
             };
             instDetailsButton.className = "button-profile-select btn btn-default";
@@ -827,6 +838,7 @@ function getAllDetails() {
                 var spacer = document.createElement("div");
 
                 detButton.innerHTML = "Details";
+                detButton.style.width = "70px";
                 detButton.className = "button-profile-select btn btn-default";
                 detButton.onclick = function () {
                     clearPanel();
@@ -839,6 +851,7 @@ function getAllDetails() {
                 detButton.id = result[i];
 
                 delButton.innerHTML = "Delete";
+                delButton.style.width = "70px";
                 delButton.className = "button-profile-select btn btn-default";
                 delButton.onclick = function () {
                     removeDriver(this.id);
@@ -928,7 +941,9 @@ function plugDriver(topuri) {
     var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/install/' + URI;
     var panel = document.getElementById("install-type");
-
+    
+    alert("success inside function2");
+    
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -937,11 +952,12 @@ function plugDriver(topuri) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
+            alert("success");
             getAllDetails();
             $('#install-type').empty();
             var data = document.createElement("p");
 
-            data.style.color = "white";
+            data.style.color = "#333";
             data.innerHTML = result;
             panel.appendChild(data);
         }
@@ -990,7 +1006,7 @@ function installDriver() {
         success: function (result) {
             var data = document.createElement("p");
 
-            data.style.color = "white";
+            data.style.color = "#333";
             data.innerHTML = result;
             panel.appendChild(data);
             getAllDetails();
