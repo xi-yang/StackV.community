@@ -101,15 +101,36 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Content-type", "application/x-gzip");
             String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
-            if (response[1].equals("202")) {
+            if (response[1].equals("201") || response[1].equals("202")) {
                 //$$ 201/202: Created/Accepted
-                //$$ 300 Multiple Choices 
+                aDelta.setStatus("PROPGATED");
+                DeltaPersistenceManager.merge(aDelta);
+            } else if (response[1].equals("300")) {
+                //$$ 300 Multiple Choices
+                //@TODO: Extract "model update" list
+                String jsonData = response[0];
+                //$$ parse into JSONObject / JSONArray
+                //$$ extract modifier delta(s)
+                //$$ compose into EJBExceptionNegotiable and throw
+            } else if (response[1].equals("400")) {
+                throw logger.error_throwing(method, driverInstance + "Bad Request - " + response[0]);
+            } else if (response[1].equals("401")) {
+                throw logger.error_throwing(method, driverInstance + " Unauthorized Request - " + response[0]);
+            } else if (response[1].equals("404")) {
+                throw logger.error_throwing(method, driverInstance + " Resource Unfound - " + response[0]);
+            } else if (response[1].equals("406")) {
+                throw logger.error_throwing(method, driverInstance + " Request Unacceptable - " + response[0]);                
+            } else if (response[1].equals("409")) {
+                throw logger.error_throwing(method, driverInstance + " Resource Conflict - " + response[0]);                
+            } else if (response[1].equals("500")) {
+                throw logger.error_throwing(method, driverInstance + " RM Internal Error - " + response[0]);                
             } else {
-                //@TODO: Error HTTP code 400 (Bad Req), 401 (Unauthorized), 404 (Not Found), 
-                //       406 (Not Acceptable), 409 (Conflict?), 500 (Internal Server Error).
+                throw logger.error_throwing(method, driverInstance + " Unexpected HTTP return code: " + response[1]);
             }
-        } catch (Exception e) {
-            throw logger.throwing(method, driverInstance + " failed to propagate ", e);
+        } catch (IOException e) {
+            throw logger.throwing(method, driverInstance + " API failed to communicate with subsystem - ", e);
+        } catch (Exception ex) {
+            throw logger.throwing(method, driverInstance + " API failed to propagate - ", ex);
         }
         logger.end(method);
     }
@@ -137,8 +158,26 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getId(), aDelta.getId()));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String[] response = DriverUtil.executeHttpMethod(conn, "PUT", null);
+            if (response[1].equals("200")) {
+                aDelta.setStatus("COMMITTING");
+                DeltaPersistenceManager.merge(aDelta);
+            } else if (response[1].equals("400")) {
+                throw logger.error_throwing(method, driverInstance + "Bad Request - " + response[0]);
+            } else if (response[1].equals("401")) {
+                throw logger.error_throwing(method, driverInstance + " Unauthorized Request - " + response[0]);
+            } else if (response[1].equals("404")) {
+                throw logger.error_throwing(method, driverInstance + " Resource Unfound - " + response[0]);
+            } else if (response[1].equals("406")) {
+                throw logger.error_throwing(method, driverInstance + " Request Unacceptable - " + response[0]);
+            } else if (response[1].equals("409")) {
+                throw logger.error_throwing(method, driverInstance + " Resource Conflict - " + response[0]);
+            } else if (response[1].equals("500")) {
+                throw logger.error_throwing(method, driverInstance + " RM Internal Error - " + response[0]);
+            } else { // handle other HTTP code
+                throw logger.error_throwing(method, driverInstance + " Unexpected HTTP return code: " + response[1]);
+            }
         } catch (IOException ex) {
-            throw logger.throwing(method, driverInstance + " failed to communicate with subsystem ", ex);
+            throw logger.throwing(method, driverInstance + " API failed to communicate with subsystem ", ex);
         }
         // query through GET
         boolean doPoll = true;
@@ -150,21 +189,31 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
-                if (response[1].equals("204")) {
-                    doPoll = false; // committed successfully
+                if (response[1].equals("204")) { // committed successfully
+                    doPoll = false; 
+                    aDelta.setStatus("COMMITTED");
+                    DeltaPersistenceManager.merge(aDelta);
                 } else if (response[1].equals("200")) {
-                    // committing
-                }  else { //@TODO: handle other HTTP code
-                    throw logger.error_throwing(method, driverInstance + " failed to commit target:DriverSystemDelta with status=" + response[0]);
+                    // COMMITTING
+                } else if (response[1].equals("400")) {
+                    throw logger.error_throwing(method, driverInstance + "Bad Request - " + response[0]);
+                } else if (response[1].equals("401")) {
+                    throw logger.error_throwing(method, driverInstance + " Unauthorized Request - " + response[0]);
+                } else if (response[1].equals("404")) {
+                    throw logger.error_throwing(method, driverInstance + " Resource Unfound - " + response[0]);
+                } else if (response[1].equals("406")) {
+                    throw logger.error_throwing(method, driverInstance + " Request Unacceptable - " + response[0]);
+                } else if (response[1].equals("409")) {
+                    throw logger.error_throwing(method, driverInstance + " Resource Conflict - " + response[0]);
+                } else if (response[1].equals("500")) {
+                    throw logger.error_throwing(method, driverInstance + " RM Internal Error - " + response[0]);
+                } else { // handle other HTTP code
+                    throw logger.error_throwing(method, driverInstance + " Unexpected HTTP return code: " + response[1]);
                 }
-            } catch (InterruptedException ex) {
+            } catch (InterruptedException e) {
                 throw logger.error_throwing(method, driverInstance + " polling commit status got interrupted");
             } catch (IOException ex) {
-                if (ex instanceof java.io.FileNotFoundException) {
-                    logger.warning(method, String.format("%s failed with exception (%s) - check the subsystem for expected resource change...", driverInstance, ex));
-                } else {
-                    throw logger.throwing(method, driverInstance + " failed to communicate with subsystem ", ex);
-                }
+                throw logger.throwing(method, driverInstance + " failed to communicate with subsystem - ", ex);
             }
         }
         logger.end(method);
@@ -230,7 +279,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty creationTime from SENSE-RM");
                 }
             } catch (IOException ex) {
-                throw logger.throwing(method, driverInstance + " failed to connect to subsystem with ", ex);
+                throw logger.throwing(method, driverInstance + " API failed to connect to subsystem with ", ex);
             } catch (ParseException ex) {
                 throw logger.throwing(method, driverInstance + " parse pulled information from subsystem ", ex);
             }
@@ -269,7 +318,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 } catch (Exception ex) {
                     ; // do nothing (logging?)
                 }
-                throw logger.throwing(method, driverInstance + " failed to pull model ", e);
+                throw logger.throwing(method, driverInstance + " API failed to pull model ", e);
             }
         }
         logger.trace_end(method);
