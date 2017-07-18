@@ -63,6 +63,7 @@ import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
+import net.maxgigapop.mrs.common.EJBExceptionNegotiable;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
@@ -246,6 +247,8 @@ public class HandleServiceCall {
         return compileAddDelta(serviceInstanceUuid, workerClassPath, spaDelta);
     }
 
+    //@TODO: recompileDeltas(String serviceInstanceUuid, String workerClassPath)
+
     // handling multiple deltas:  propagate + commit + query = transactional propagate + parallel commits
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public String propagateDeltas(String serviceInstanceUuid, boolean useCachedVG, boolean refreshForced) {
@@ -277,11 +280,15 @@ public class HandleServiceCall {
             if (serviceDelta.getSystemDelta() == null) {
                 logger.targetid(serviceDelta.getId());
                 logger.error(method, "target:ServiceDelta getSystemDelta() == null -but- continue");
-                continue; 
+                continue;
             } else if (serviceDelta.getStatus().equals("INIT")) {
                 SystemInstance systemInstance = systemCallHandler.createInstance();
                 try {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
+                } catch (EJBExceptionNegotiable ex) {
+                    //@TODO: extract modifierDeltaList and save to ServiceDelta
+                    serviceDelta.setStatus("NEGOTIATING");
+                    DeltaPersistenceManager.merge(serviceDelta);
                 } catch (EJBException ex) {
                     logger.throwing(method, ex);
                 }
@@ -298,6 +305,7 @@ public class HandleServiceCall {
         boolean hasInitiated = false;
         boolean hasPropagated = false;
         boolean isCommitting = false;
+        boolean isNegotiating = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
@@ -306,10 +314,14 @@ public class HandleServiceCall {
                 hasPropagated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTING")) {
                 isCommitting = true;
+            } else if (serviceDelta.getStatus().equalsIgnoreCase("NEGOTIATING")) {
+                isNegotiating = true;
             }
         }
         //serviceInstance.setStatus("COMPILED");
-        if (hasInitiated && hasPropagated) {
+        if (isNegotiating) {
+            serviceInstance.setStatus("NEGOTIATING");
+        } else if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else if (hasPropagated && !isCommitting) {
             serviceInstance.setStatus("PROPAGATED");

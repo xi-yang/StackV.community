@@ -316,7 +316,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                         VersionItemPersistenceManager.delete(vi);
                     }
                 } catch (Exception ex) {
-                    ; // do nothing (logging?)
+                    logger.error(method, "failed to clean up (" + ex + ") for exception: " + e);
                 }
                 throw logger.throwing(method, driverInstance + " API failed to pull model ", e);
             }
