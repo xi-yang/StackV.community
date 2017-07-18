@@ -36,9 +36,13 @@
         </input>
     </stage>
     <stage name="Details">
-        <group name="network">            
+        <group name="network">
+            <path>
+                <parent>root</parent>
+            </path>
+                        
             <input>
-                <name>Driver URI</name>
+                <name>Parent</name>
                 <type>select</type>
                 <source>
                     <url>/driver</url>
@@ -107,6 +111,10 @@
     </stage>
     <stage name="VMs">
         <group block="vms" name="VM" collapsible="true">
+            <path>
+                <parent>subnet host</parent>
+            </path>
+            
             <input>
                 <name>Name</name>
                 <type>text</type>

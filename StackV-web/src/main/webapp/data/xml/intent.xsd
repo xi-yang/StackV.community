@@ -59,6 +59,7 @@ IN THE WORK.
     <xs:element name="url" type="xs:string"/>
     <xs:element name="value" type="xs:string"/>
     <xs:element name="text" type="xs:string"/>
+    <xs:element name="parent" type="xs:string"/>
     
     <!--Complex-->
     <xs:element name="intent">
@@ -95,6 +96,7 @@ IN THE WORK.
     <xs:element name="group">
         <xs:complexType>
             <xs:sequence>
+                <xs:element ref="path"/>
                 <xs:element ref="input" maxOccurs="unbounded"/>
                 <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
@@ -151,4 +153,12 @@ IN THE WORK.
             </xs:sequence>
         </xs:complexType>
     </xs:element>        
+    
+    <xs:element name="path">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="parent" maxOccurs="10"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>   
 </xs:schema>

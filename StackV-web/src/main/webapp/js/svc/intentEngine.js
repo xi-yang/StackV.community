@@ -242,6 +242,7 @@ function renderInputs(arr, $parent) {
             var $input = $("<input>", {type: type, class: "intent-input", id: name});
             switch (type) {
                 case "button":
+                    $input.removeClass("intent-input");
                     $input.click(function (e) {
                         nextStage(true);
 
@@ -313,7 +314,7 @@ function renderInputs(arr, $parent) {
                     }
                 });
             } else if (ele.getElementsByTagName("link").length > 0) {
-                $input = $("<select>", {id: name});
+                $input = $("<select>", {id: name, class: "intent-input"});
                 var selectName = name;
                 var link = ele.getElementsByTagName("link")[0].innerHTML;
                 $input.attr("data-link", link);
@@ -322,7 +323,7 @@ function renderInputs(arr, $parent) {
                     refreshLinks();
                 });
             } else if (ele.getElementsByTagName("options").length > 0) {
-                $input = $("<select>", {id: name});
+                $input = $("<select>", {id: name, class: "intent-input"});
                 var selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
 
@@ -412,6 +413,8 @@ function factorizeRendering() {
 
         factories[key]["clone"] = $(fact).clone(true, true);
     }
+    
+    refreshLinks();
 }
 function recursivelyFactor(id, ele) {
     if (ele) {
@@ -441,13 +444,14 @@ function recursivelyFactor(id, ele) {
 }
 
 function submitIntent() {
+    refreshLinks();
     var json = {};
     $("#intent-panel-body .intent-input").each(function () {
         var arr = this.id.split("-");
 
         var last = json;
         var i;
-        for (i = 0; i < (arr.length - 1); i++) {
+        for (i = 1; i < (arr.length - 1); i++) {
             var key = arr[i];
             if (!(key in last)) {
                 last[key] = {};
@@ -463,6 +467,7 @@ function submitIntent() {
     });
 
     manifest = json;
+    parseManifestIntoJSON();
 }
 
 // UTILITY FUNCTIONS
@@ -657,7 +662,7 @@ function refreshLinks() {
             var eleID = targetArr[j].id;
             var eleName = $("#" + eleID + "-name").val();
             $option.text("Subnet " + (j + 1) + " (" + eleName + ")");
-            $option.val(eleID);
+            $option.val(getName(eleID));
 
             $input.append($option);
         }
@@ -685,7 +690,7 @@ function parseSchemaIntoManifest(schema) {
 
         var last = json;
         var i;
-        for (i = 0; i < (arr.length - 1); i++) {
+        for (i = 1; i < (arr.length - 1); i++) {
             var key = arr[i];
             if (!(key in last)) {
                 last[key] = {};
@@ -697,4 +702,89 @@ function parseSchemaIntoManifest(schema) {
     });
 
     manifest = json;
+}
+
+var recurCache = {};
+function parseManifestIntoJSON() {    
+    $(intent).find("path").each(function () {
+        var arr = this.children;
+        for (var i = 0; i < arr.length; i++) {
+            var target = arr[i].innerHTML.toLowerCase().replace(/ /g, "_");
+            var eleName = this.parentElement.getAttribute("name");
+            
+            // Find element(s) in manifest
+            recurCache = [];
+            findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+            
+            for (var key in recurCache) {
+                var ele = recurCache[key];
+                // Find target
+                if (target === "root") {
+                    for (var child in ele) {
+                        manifest[child] = ele[child];
+                    }                    
+                } else {
+                    var targetEle = findKeyDeep(manifest, ele[target]);
+                    targetEle[key] = ele;
+                }
+            }
+            
+        }
+    });
+}
+
+function findKeyDeepCache(recur, key) {
+    var result = null;
+    if (recur instanceof Array) {
+        for (var i = 0; i < recur.length; i++) {
+            result = findKeyDeepCache(recur[i], key);
+            if (result) {
+                break;
+            }   
+        }
+    }
+    else
+    {
+        for (var prop in recur) {
+            console.log(prop + ': ' + recur[prop]);
+            if (prop.split("_num")[0] === key) {
+                    recurCache[prop] = recur[prop];
+                    delete recur[prop];
+            }
+            if (recur[prop] instanceof Object || recur[prop] instanceof Array) {
+                result = findKeyDeepCache(recur[prop], key);
+                if (result) {
+                    break;
+                }
+            } 
+        }
+    }
+    return result;
+}
+function findKeyDeep(recur, key) {
+    var result = null;
+    if (recur instanceof Array) {
+        for (var i = 0; i < recur.length; i++) {
+            result = findKeyDeep(recur[i], key);
+            if (result) {
+                break;
+            }   
+        }
+    }
+    else
+    {
+        for (var prop in recur) {
+            console.log(prop + ': ' + recur[prop]);
+            if (prop === key) {
+                    return recur[prop];
+            }
+            if (recur[prop] instanceof Object || recur[prop] instanceof Array) {
+                result = findKeyDeep(recur[prop], key);
+                if (result) {
+                    break;
+                }
+            } 
+        }
+    }
+    return result;
 }
