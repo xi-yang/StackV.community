@@ -705,7 +705,8 @@ function parseSchemaIntoManifest(schema) {
 }
 
 var recurCache = {};
-function parseManifestIntoJSON() {    
+function parseManifestIntoJSON() {        
+    // Step 1: Reorg hierarchy
     $(intent).find("path").each(function () {
         var arr = this.children;
         for (var i = 0; i < arr.length; i++) {
@@ -725,12 +726,16 @@ function parseManifestIntoJSON() {
                     }                    
                 } else {
                     var targetEle = findKeyDeep(manifest, ele[target]);
+                    delete ele[target];
                     targetEle[key] = ele;
                 }
             }
             
         }
     });
+    
+    // Step 2: Convert numerals into proper arrays
+    
 }
 
 function findKeyDeepCache(recur, key) {
