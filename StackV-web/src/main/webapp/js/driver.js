@@ -286,6 +286,22 @@ function installAWS() {
     var fourth = document.createElement("input");
     var fifth = document.createElement("p");
     var sixth = document.createElement("input");
+    
+    //Instance Type
+    //Image
+    //Key Pair
+    //Sec Group
+    var instance = document.createElement("p");
+    var instanceInput = document.createElement("input");
+    var image = document.createElement("p");
+    var imageInput = document.createElement("input");
+    var keyPair = document.createElement("p");
+    var keyPairInput = document.createElement("input");
+    var secGroup = document.createElement("p");
+    var secGroupInput = document.createElement("input");
+    
+    
+    
     var seventh = document.createElement("p");
     var eighth = document.createElement("SELECT");
     var option1 = document.createElement("option");
@@ -301,7 +317,7 @@ function installAWS() {
     var divContent = document.getElementById("install-type");
 
     
-    $("#info-panel-title").text("Aws Driver");
+    $("#info-panel-title").text("AWS Driver");
 
 
     first.innerHTML = "Topology URI:";
@@ -321,6 +337,31 @@ function installAWS() {
 
     sixth.type = "text";
     sixth.id = "aws_secret_access_key";
+    
+   
+    instance.innerHTML = "Default Instance";
+    instance.style.color = "#333";
+    
+    instanceInput.type = "text";
+    instanceInput.id = "instance";
+    
+    image.innerHTML = "Default Image";
+    image.style.color = "#333";
+    
+    imageInput.type = "text";
+    imageInput.id = "image";
+    
+    keyPair.innerHTML = "Default Key Pair";
+    keyPair.style.color = "#333";
+    
+    keyPairInput.type = "text";
+    keyPairInput.id = "key-pair";
+    
+    secGroup.innerHTML = "Default Sec Group";
+    secGroup.style.color = "#333";
+    
+    secGroupInput.type = "text";
+    secGroupInput.id = "sec-group";
 
     seventh.innerHTML = "Region";
     seventh.style.color = "#333";
@@ -347,13 +388,21 @@ function installAWS() {
     eighth.add(option9);
     eighth.add(option10);
     eighth.id = "region";
-
+    
     divContent.appendChild(first);
     divContent.appendChild(second);
     divContent.appendChild(third);
     divContent.appendChild(fourth);
     divContent.appendChild(fifth);
     divContent.appendChild(sixth);
+    divContent.appendChild(instance);
+    divContent.appendChild(instanceInput);
+    divContent.appendChild(image);
+    divContent.appendChild(imageInput);
+    divContent.appendChild(keyPair);
+    divContent.appendChild(keyPairInput);
+    divContent.appendChild(secGroup);
+    divContent.appendChild(secGroupInput);
     divContent.appendChild(seventh);
     divContent.appendChild(eighth);
 }
@@ -366,7 +415,7 @@ function installOpenstack() {
 
     $("#info-panel-title").text("Open Stack Driver");
 
-    for (var i = 0; i < 22; i += 2) {
+    for (var i = 0; i < 26; i += 2) {
         var textbox = document.createElement("p");
         var input = document.createElement("input");
         textbox.style.color = "#333";
@@ -397,6 +446,12 @@ function installOpenstack() {
     content[19].id = "defaultImage";
     content[20].innerHTML = "Default Flavor:";
     content[21].id = "defaultFlavor";
+    content[22].innerHTML = "Default Key Pair";
+    content[23].id = "key-pair";
+    content[24].innerHTML = "Default Sec Group";
+    content[25].id = "sec-group";
+    
+
 
 
     extName.innerHTML = "ModelExt:";
@@ -406,7 +461,7 @@ function installOpenstack() {
     ext.cols = "30";
 
 
-    for (var i = 0; i < 22; i++) {
+    for (var i = 0; i < 26; i++) {
         divContent.appendChild(content[i]);
     }
 
