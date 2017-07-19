@@ -144,7 +144,6 @@ public class OpenStackPush {
         
         logger.trace(method, "propgate reduction model");
         requests.addAll(nfsRequests(modelRef, modelReduct, false));
-        
         requests.addAll(vpnEndpointRequests(modelRef, modelReduct, false));
         requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
@@ -154,7 +153,6 @@ public class OpenStackPush {
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumeRequests(modelRef, modelReduct, false));
         requests.addAll(portRequests(modelRef, modelReduct, false));
-        
         requests.addAll(serverRequests(modelRef, modelReduct, false));
         requests.addAll(layer3Requests(modelRef, modelReduct, false));
         requests.addAll(isAliasRequest(modelRef, modelReduct, false));
@@ -166,7 +164,6 @@ public class OpenStackPush {
         requests.addAll(volumeRequests(modelRef, modelAdd, true));
         requests.addAll(portRequests(modelRef, modelAdd, true));
         requests.addAll(serverRequests(modelRef, modelAdd, true));
-        
         requests.addAll(volumesAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(portAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(layer3Requests(modelRef, modelAdd, true));
@@ -177,7 +174,6 @@ public class OpenStackPush {
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
         requests.addAll(globusConnectRequests(modelRef, modelAdd, true));
         requests.addAll(vpnEndpointRequests(modelRef, modelAdd, true));
-        
         requests.addAll(nfsRequests(modelRef, modelAdd, true));
         
         return requests;
@@ -1012,24 +1008,24 @@ public class OpenStackPush {
                 String localIp = (String) o.get("local-ip");
                 String localSubnet = (String) o.get("local-subnet");
                 String remoteSubnet = (String) o.get("remote-subnet");
-                String uri = (String) o.get("uri");
                 String status = (String) o.get("status");
                 String remoteIp;
+                //String secret;
                 String newMetadata = "{";
                 newMetadata += "'status':'"+status+"',";
-                newMetadata += "'uri':'"+uri+"',";
-                newMetadata += "'local-ip':'"+localIp+"',";
-                newMetadata += "'local-subnet':'"+localSubnet+"',";
-                newMetadata += "'remote-subnet':'"+remoteSubnet+"'";
+                newMetadata += "'local_ip':'"+localIp+"',";
+                newMetadata += "'local_subnet':'"+localSubnet+"',";
+                newMetadata += "'remote_subnet':'"+remoteSubnet+"'";
                 int i = 1;
                 while (o.containsKey("remote-ip-"+i)) {
                     remoteIp = (String) o.get("remote-ip-"+i);
-                    newMetadata += ",'remote-ip-"+i+"':'"+remoteIp+"'";
+                    //secret = (String) o.get("secret-"+i);
+                    newMetadata += ",'remote_ip_"+i+"':'"+remoteIp+"'";
+                    //newMetadata += ",'secret_"+i+"':'"+secret+"'";
                     i++;
                 }
                 newMetadata += "}";
-                //System.out.println("newMetadata: "+newMetadata);
-                client.setMetadata(servername, "ipsec:strongswan", newMetadata);
+                client.setMetadata(servername, "ipsec", newMetadata);
             } else if (o.get("request").toString().equals("GlobusConnectRequest")) {
                 String servername = (String) o.get("server name");
                 String globusUser = (String) o.get("username");
@@ -2717,7 +2713,8 @@ public class OpenStackPush {
             String vm = q.get("vm").toString();
             String serverName = ResourceTool.getResourceName(vm, OpenstackPrefix.vm);
             //escape the regex character "+"
-            String strongswan = q.get("strongswan").toString().replaceAll("[+]", "[+]");
+            String strongswan = q.get("strongswan").toString();
+            String strongRegex = strongswan.replaceAll("[+]", "[+]");
             String localIp = q.get("localIp").toString();
             String localSubnet = q.get("localSubnet").toString();
             String remoteSubnet = q.get("remoteSubnet").toString();
@@ -2726,7 +2723,6 @@ public class OpenStackPush {
                 logger.warning(method, "Adding a second vpn endpoint to VM "+vm+" may cause unexpected behavior.");
             } else {
                 vms.add(vm);
-                //System.out.println("VM: "+vm);
             }
 
             //Find all the tunnels.  Note that the FILTER in the tunnelQuery
@@ -2734,7 +2730,7 @@ public class OpenStackPush {
             //one found in solution q.
             String tunnelQuery = "SELECT ?tunnelUri ?remoteIp ?secret WHERE {"
                     + "?strongswan a mrs:EndPoint ; nml:hasBidirectionalPort "
-                    + "?tunnelUri . FILTER regex( str(?strongswan), \""+ strongswan +"\" )"
+                    + "?tunnelUri . FILTER regex( str(?strongswan), \""+ strongRegex +"\" )"
                     + "?tunnelUri a nml:BidirectionalPort ; mrs:hasNetworkAddress "
                     + "?remoteUri , ?secretUri . "
                     + "?remoteUri a mrs:NetworkAddress ; mrs:type \"ipv4-address\" ; "
@@ -2744,6 +2740,10 @@ public class OpenStackPush {
                     + "}";
             
             ResultSet tunnelResults = executeQuery(tunnelQuery, emptyModel, modelDelta);
+            
+            if (localSubnet.equals(remoteSubnet)) {
+                logger.warning(method, "VPN endpoint warning: The local and remote subnets are identical.");
+            }
             
             //Put all info into the json request
             JSONObject request = new JSONObject();
@@ -2760,8 +2760,9 @@ public class OpenStackPush {
             int i = 1;
             while (tunnelResults.hasNext()) {
                 QuerySolution tunnelSolution = tunnelResults.next();
-                request.put("remote-ip-"+(i++), tunnelSolution.get("remoteIp").toString());
-                
+                request.put("remote-ip-"+i, tunnelSolution.get("remoteIp").toString());
+                //request.put("secret-"+i, tunnelSolution.get("secret").toString());
+                i++;
             }
         }
         
