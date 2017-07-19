@@ -132,7 +132,7 @@
             <div id="driver-content-panel" class="hidden">
                 <div class="modal-content">
                     <div class = "modal-header">
-                        <h3 id ="info-panel-title">Header</h3>
+                        <h3 id ="info-panel-title"></h3>
                     </div>
                     <div class ="modal-body " style="background-color:#FFFFFF">
                         <div class="tab-content" style="background-color:#FFFFFF">                                    

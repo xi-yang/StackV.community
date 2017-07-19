@@ -237,15 +237,11 @@ function closeSide() {
 
 }
 function installRaw() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("textarea");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "raw";
-    type.style.color = "#333";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    $("#info-panel-title").text("Raw Driver");
 
 
     first.innerHTML = "Enter Raw XML:";
@@ -257,17 +253,13 @@ function installRaw() {
     divContent.appendChild(second);
 }
 function installStub() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
     var fourth = document.createElement("textarea");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "StubSystemDriver";
-    type.style.color = "#333";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    $("#info-panel-title").text("Stub System Driver");
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -288,7 +280,6 @@ function installStub() {
     divContent.appendChild(fourth);
 }
 function installAWS() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
@@ -309,10 +300,8 @@ function installAWS() {
     var option10 = document.createElement("option");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "AwsDriver";
-    type.style.color = "#333";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    
+    $("#info-panel-title").text("Aws Driver");
 
 
     first.innerHTML = "Topology URI:";
@@ -369,21 +358,13 @@ function installAWS() {
     divContent.appendChild(eighth);
 }
 function installOpenstack() {
-    var type = document.createElement("p");
     var divContent = document.getElementById("install-type");
-    var divContentRight = document.getElementById("install-type-right");
 
     var extName = document.createElement("p");
     var ext = document.createElement("textarea");
     var content = [];
 
-    divContent.style = "float: left;margin-left:15%";
-    divContentRight.style = "float: right;margin-right:15%";    
-
-    type.innerHTML = "OpenStackDriver";
-    type.style.color = "#333";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    $("#info-panel-title").text("Open Stack Driver");
 
     for (var i = 0; i < 22; i += 2) {
         var textbox = document.createElement("p");
@@ -425,20 +406,17 @@ function installOpenstack() {
     ext.cols = "30";
 
 
-    for (var i = 0; i < 16; i++) {
+    for (var i = 0; i < 22; i++) {
         divContent.appendChild(content[i]);
     }
 
-    for (var i = 16; i < 22; i++) {
-        divContentRight.appendChild(content[i]);
-    }
+   
 
 
-    divContentRight.appendChild(extName);
-    divContentRight.appendChild(ext);
+    divContent.appendChild(extName);
+    divContent.appendChild(ext);
 }
 function installStack() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
@@ -449,10 +427,7 @@ function installStack() {
     var eighth = document.createElement("input");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "StackSystemDriver";
-    type.style.color = "#333";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    $("#info-panel-title").text("Stack System Driver");
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -489,17 +464,13 @@ function installStack() {
     divContent.appendChild(eighth);
 }
 function installGeneric() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
     var fourth = document.createElement("input");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "GenericRESTDriver";
-    type.style.color = "#333";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    $("#info-panel-title").text("Generic REST Driver");
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -519,6 +490,7 @@ function installGeneric() {
     divContent.appendChild(fourth);
 }
 function clearPanel() {
+    $("#info-panel-title").text("Details");
     $('#install-type').empty();
     $('#install-options').empty();
     $('#install-type-right').empty();
@@ -696,7 +668,6 @@ function updateDrivers() {
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
                 var edButton = document.createElement("button");
-                var spacer = document.createElement("div");
                 
                 detButton.className = "button-profile-select btn btn-default";
                 
@@ -706,6 +677,7 @@ function updateDrivers() {
                 detButton.onclick = function () {
                     $("#driver-content-panel").removeClass("hidden");
                     $("#driver-content-panel").addClass("active");
+                    $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
                     changeNameDet();
@@ -730,7 +702,6 @@ function updateDrivers() {
                 
                 edButton.id = result[i + 3];
 
-                spacer.style.width = "25px";
 
                 drivername.innerHTML = result[i];
                 description.innerHTML = result[i + 1];
@@ -835,10 +806,9 @@ function getAllDetails() {
                 var cell3 = document.createElement("td");
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
-                var spacer = document.createElement("div");
 
                 detButton.innerHTML = "Details";
-                detButton.style.width = "70px";
+                detButton.style.width = "65px";
                 detButton.className = "button-profile-select btn btn-default";
                 detButton.onclick = function () {
                     clearPanel();
@@ -851,7 +821,7 @@ function getAllDetails() {
                 detButton.id = result[i];
 
                 delButton.innerHTML = "Delete";
-                delButton.style.width = "70px";
+                delButton.style.width = "64px";
                 delButton.className = "button-profile-select btn btn-default";
                 delButton.onclick = function () {
                     removeDriver(this.id);
@@ -860,12 +830,10 @@ function getAllDetails() {
              
                 delButton.id = result[i + 2];
 
-                spacer.style.width = "25px";
 
                 drivername.innerHTML = result[i + 2];
                 description.innerHTML = result[i + 1];
                 cell3.appendChild(detButton);
-                cell3.appendChild(spacer);
                 cell3.appendChild(delButton);
                 cell3.style.width = "170px";
 
