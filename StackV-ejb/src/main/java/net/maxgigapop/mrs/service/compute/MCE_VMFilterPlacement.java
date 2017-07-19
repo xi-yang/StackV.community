@@ -259,6 +259,10 @@ public class MCE_VMFilterPlacement extends MCEBase {
                     topArray.remove(map1);
             }
         }
+        if (topArray.isEmpty()) {
+            logger.error("selectAnyPlace", "cannot find a host with enough resources to place VM=" + resPlace);
+            return null;
+        }
         placeModel.add((Resource)topArray.get(0).get("host"), Nml.hasNode, resPlace);
         placeModel.add((Resource)topArray.get(0).get("hypervisor"), Mrs.providesVM, resPlace);
         return placeModel;
