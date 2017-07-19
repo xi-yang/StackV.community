@@ -60,13 +60,17 @@
                 <type>text</type>
             </input>
         </group>
-        <group condition="aws-form" name="direct">
+        <group condition="aws-form" name="Direct Connect">
+            <path>
+                <parent>aws gateways</parent>
+            </path>
+            
             <input>
-                <name>Direct Connect Destination</name>
+                <name>Destination</name>
                 <type>text</type>
             </input>
             <input>
-                <name>Direct Connect VLAN</name>
+                <name>VLAN</name>
                 <type>text</type>
             </input>
         </group>
@@ -112,7 +116,7 @@
     <stage name="VMs">
         <group block="vms" name="VM" collapsible="true">
             <path>
-                <parent>subnet host</parent>
+                <parent>subnet host</parent>                
             </path>
             
             <input>
@@ -143,6 +147,17 @@
                 <default>any</default>
             </input>
             
+            <group factory="true" condition="aws-form" name="Interface">
+                <input>
+                    <name>Public</name>
+                    <type>checkbox</type>
+                </input>
+                <input>
+                    <name>Elastic IP</name>
+                    <type>text</type>
+                    <size>small</size>
+                </input>                
+            </group>
             <group factory="true" label="false" name="Route">
                 <input>
                     <name>From</name>
@@ -163,13 +178,13 @@
         </group>
     </stage>
     <stage name="Gateways" condition="aws-form">
-        <group block="awsgateways" name="AWS Gateway" collapsible="true">
+        <group block="awsgateways" name="AWS Gateway" collapsible="true">            
             <input>
                 <name>Name</name>
                 <type>text</type>
             </input>
             <input>
-                <name>Gateway Host</name>
+                <name>Type</name>
                 <type>select</type>
                 <link></link>
             </input>                        
@@ -199,7 +214,7 @@
                 <type>text</type>
             </input>
             <input>
-                <name>Gateway Host</name>
+                <name>Type</name>
                 <type>select</type>
                 <options>
                     <option>UCS Port Profile</option>
@@ -224,6 +239,10 @@
     </stage>
     <stage name="SRIOVs" condition="openstack-form">
         <group block="sriovs" name="SRIOV" collapsible="true">
+            <path>
+                <parent>Hosting VM</parent>
+            </path>
+            
             <input>
                 <name>Hosting Gateway</name>
                 <type>select</type>

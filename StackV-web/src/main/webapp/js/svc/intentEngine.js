@@ -148,10 +148,12 @@ function initMeta(meta) {
                 count--;
                 factories[key]["count"]--;
             }
-            
+
             for (var i = 0; i < conditions.length; i++) {
                 $("[data-condition='" + conditions[i] + "']").addClass("conditioned");
             }
+
+            refreshLinks();
         });
 
         if (condition) {
@@ -284,26 +286,26 @@ function renderInputs(arr, $parent) {
                 $.ajax({
                     url: apiURL,
                     type: 'GET',
-                    sourceSettings: [source.children[1].innerHTML,source.children[2].innerHTML,source.children[3].innerHTML],
+                    sourceSettings: [source.children[1].innerHTML, source.children[2].innerHTML, source.children[3].innerHTML],
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
-                    success: function (instance) {                   
+                    success: function (instance) {
                         var text = this.sourceSettings[1];
                         var value = this.sourceSettings[2];
                         var interval = this.sourceSettings[0];
-                        
+
                         for (var i = -1; i < (instance.length - parseInt(interval)); i) {
                             var $option = $("<option>");
-                            
+
                             var textIndex = i + parseInt(text);
                             $option.text(instance[textIndex]);
                             var valueIndex = i + parseInt(value);
                             $option.val(instance[valueIndex]);
 
                             $("#" + selectName).append($option);
-                            
+
                             i += parseInt(interval);
                         }
                     },
@@ -413,7 +415,7 @@ function factorizeRendering() {
 
         factories[key]["clone"] = $(fact).clone(true, true);
     }
-    
+
     refreshLinks();
 }
 function recursivelyFactor(id, ele) {
@@ -705,39 +707,44 @@ function parseSchemaIntoManifest(schema) {
 }
 
 var recurCache = {};
-function parseManifestIntoJSON() {        
+function parseManifestIntoJSON() {
     // Step 1: Reorg hierarchy
     $(intent).find("path").each(function () {
         var arr = this.children;
         for (var i = 0; i < arr.length; i++) {
             var target = arr[i].innerHTML.toLowerCase().replace(/ /g, "_");
             var eleName = this.parentElement.getAttribute("name");
-            
+
             // Find element(s) in manifest
             recurCache = [];
             findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
-            
+
             for (var key in recurCache) {
                 var ele = recurCache[key];
                 // Find target
                 if (target === "root") {
                     for (var child in ele) {
                         manifest[child] = ele[child];
-                    }                    
+                    }
                 } else {
                     var targetEle = findKeyDeep(manifest, ele[target]);
                     delete ele[target];
                     targetEle[key] = ele;
                 }
             }
-            
+
         }
     });
-    
+
     // Step 2: Convert numerals into proper arrays
-    
+    convertToArrays(manifest);
+
+    // Step 3: Trim leaves
+
 }
 
+
+// Recursive Functions
 function findKeyDeepCache(recur, key) {
     var result = null;
     if (recur instanceof Array) {
@@ -745,23 +752,20 @@ function findKeyDeepCache(recur, key) {
             result = findKeyDeepCache(recur[i], key);
             if (result) {
                 break;
-            }   
+            }
         }
-    }
-    else
-    {
+    } else {
         for (var prop in recur) {
-            console.log(prop + ': ' + recur[prop]);
             if (prop.split("_num")[0] === key) {
-                    recurCache[prop] = recur[prop];
-                    delete recur[prop];
+                recurCache[prop] = recur[prop];
+                delete recur[prop];
             }
             if (recur[prop] instanceof Object || recur[prop] instanceof Array) {
                 result = findKeyDeepCache(recur[prop], key);
                 if (result) {
                     break;
                 }
-            } 
+            }
         }
     }
     return result;
@@ -773,23 +777,37 @@ function findKeyDeep(recur, key) {
             result = findKeyDeep(recur[i], key);
             if (result) {
                 break;
-            }   
+            }
         }
-    }
-    else
-    {
+    } else {
         for (var prop in recur) {
-            console.log(prop + ': ' + recur[prop]);
             if (prop === key) {
-                    return recur[prop];
+                return recur[prop];
             }
             if (recur[prop] instanceof Object || recur[prop] instanceof Array) {
                 result = findKeyDeep(recur[prop], key);
                 if (result) {
                     break;
                 }
-            } 
+            }
         }
     }
     return result;
+}
+
+function convertToArrays(recur) {
+    for (var prop in recur) {
+        if (recur[prop] instanceof Object || recur[prop] instanceof Array) {
+            convertToArrays(recur[prop]);
+        }
+        if (prop.indexOf("_num") > -1) {
+            var name = prop.split("_num")[0] + "s";
+            if (!(name in recur)) {
+                recur[name] = [];
+            }
+
+            recur[name].push(recur[prop]);
+            delete recur[prop];
+        }
+    }
 }
