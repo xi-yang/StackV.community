@@ -30,7 +30,7 @@ import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
-import javax.persistence.Transient;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -52,6 +52,8 @@ public class ServiceDelta extends DeltaBase {
 
     private String status = "INIT";
 
+    private JSONObject negotiationMarkup = null;
+    
     public String getReferenceUUID() {
         return referenceUUID;
     }
@@ -83,6 +85,14 @@ public class ServiceDelta extends DeltaBase {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public JSONObject getNegotiationMarkup() {
+        return negotiationMarkup;
+    }
+
+    public void setNegotiationMarkup(JSONObject negotiationMarkup) {
+        this.negotiationMarkup = negotiationMarkup;
     }
 
     public ServiceDelta clone() {

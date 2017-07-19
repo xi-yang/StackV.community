@@ -99,19 +99,15 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             // push via REST POST
             URL url = new URL(String.format("%s/deltas", subsystemBaseUrl));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("Content-type", "application/x-gzip");
+            conn.setRequestProperty("Content-Encoding", "gzip");
             String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
-            if (response[1].equals("201") || response[1].equals("202")) {
-                //$$ 201/202: Created/Accepted
+            if (response[1].equals("201")) {
                 aDelta.setStatus("PROPGATED");
                 DeltaPersistenceManager.merge(aDelta);
-            } else if (response[1].equals("300")) {
-                //$$ 300 Multiple Choices
-                //@TODO: Extract "model update" list
+            } else if (response[1].equals("409")) {
                 String jsonData = response[0];
                 //$$ parse into JSONObject / JSONArray
-                //$$ extract modifier delta(s)
-                //$$ compose into EJBExceptionNegotiable and throw
+                //$$ creates deltas in markupDeltaList of EJBExceptionNegotiable and throw
             } else if (response[1].equals("400")) {
                 throw logger.error_throwing(method, driverInstance + "Bad Request - " + response[0]);
             } else if (response[1].equals("401")) {
@@ -120,8 +116,6 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 throw logger.error_throwing(method, driverInstance + " Resource Unfound - " + response[0]);
             } else if (response[1].equals("406")) {
                 throw logger.error_throwing(method, driverInstance + " Request Unacceptable - " + response[0]);                
-            } else if (response[1].equals("409")) {
-                throw logger.error_throwing(method, driverInstance + " Resource Conflict - " + response[0]);                
             } else if (response[1].equals("500")) {
                 throw logger.error_throwing(method, driverInstance + " RM Internal Error - " + response[0]);                
             } else {
@@ -189,12 +183,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
-                if (response[1].equals("204")) { // committed successfully
-                    doPoll = false; 
-                    aDelta.setStatus("COMMITTED");
+                if (response[1].equals("200")) { // committed successfully
+                    aDelta.setStatus(response[0]);
                     DeltaPersistenceManager.merge(aDelta);
-                } else if (response[1].equals("200")) {
-                    // COMMITTING
+                    if (response[0].equals("COMMITTING")) {
+                        doPoll = false;
+                    }
                 } else if (response[1].equals("400")) {
                     throw logger.error_throwing(method, driverInstance + "Bad Request - " + response[0]);
                 } else if (response[1].equals("401")) {
@@ -259,13 +253,26 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
                 }
                 conn.setConnectTimeout(5*1000);
-                conn.addRequestProperty("Accept", "application/x-gzip");
-                String[] responseStr = DriverUtil.executeHttpMethod(conn, "GET", null);
-                if (responseStr[1].equals("304")) {
+                conn.addRequestProperty("Content-Encoding", "gzip");
+                String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
+                if (response[1].equals("304")) {
                     return new AsyncResult<>("SUCCESS");
+                } else if (response[1].equals("400")) {
+                    throw logger.error_throwing(method, driverInstance + "Bad Request - " + response[0]);
+                } else if (response[1].equals("401")) {
+                    throw logger.error_throwing(method, driverInstance + " Unauthorized Request - " + response[0]);
+                } else if (response[1].equals("404")) {
+                    throw logger.error_throwing(method, driverInstance + " Resource Unfound - " + response[0]);
+                } else if (response[1].equals("406")) {
+                    throw logger.error_throwing(method, driverInstance + " Request Unacceptable - " + response[0]);
+                } else if (response[1].equals("409")) {
+                    throw logger.error_throwing(method, driverInstance + " Resource Conflict - " + response[0]);
+                } else if (response[1].equals("500")) {
+                    throw logger.error_throwing(method, driverInstance + " RM Internal Error - " + response[0]);
+                } else if (!response[1].equals("200")) { // handle other HTTP code
+                    throw logger.error_throwing(method, driverInstance + " Unexpected HTTP return code: " + response[1]);
                 }
-                //@TODO: handle other HTTP code (responseStr[1])
-                JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(responseStr[0]);
+                JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(response[0]);
                 version = responseJSON.get("id").toString();
                 if (version == null || version.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty id in pulled model from SENSE-RM");
