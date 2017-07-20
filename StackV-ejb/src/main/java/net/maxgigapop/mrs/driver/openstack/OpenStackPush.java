@@ -3236,8 +3236,8 @@ public class OpenStackPush {
     }
 
     private static String cidrValidator(String cidr) {
-        //Validate the CIDR
-        //returns an empty string if the pattern is correct.
+        //returns an empty string if the pattern is correct, or
+        //an explanation why it is incorrect if it fails
         //pattern requires one IPv4 address and allows additional IPs separated by commas.
         String cidrPattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\/\\d{1,2}";
         String pattern = "^("+cidrPattern+",)*"+cidrPattern+"$";
@@ -3273,7 +3273,7 @@ public class OpenStackPush {
             return "The ip pattern is invalid.";
         }
         
-        String parts[] = ip.split("[/.]");
+        String parts[] = ip.split("[.]");
         int temp;
             for (String s : parts) {
                 temp = Integer.parseInt(s);
