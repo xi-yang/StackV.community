@@ -182,11 +182,15 @@
             <input>
                 <name>Name</name>
                 <type>text</type>
+                <initial>Direct Connect</initial>
             </input>
             <input>
                 <name>Type</name>
                 <type>select</type>
-                <link></link>
+                <options>
+                    <option>UCS Port Profile</option>
+                    <option>L2 Stitch Port</option>
+                </options>
             </input>                        
             <group name="Route" label="false">
                 <input>

@@ -54,6 +54,7 @@ IN THE WORK.
     <xs:element name="size" type="xs:string"/>    
     <xs:element name="link" type="xs:string"/>    
     <xs:element name="default" type="xs:string"/>
+    <xs:element name="initial" type="xs:string"/>
     <xs:element name="option" type="xs:string"/>
     <xs:element name="interval" type="xs:string"/>
     <xs:element name="url" type="xs:string"/>
@@ -115,7 +116,8 @@ IN THE WORK.
                 <xs:element ref="name"/>
                 <xs:element ref="type"/>
                 <xs:element ref="size" minOccurs="0"/>
-                <xs:element ref="default" minOccurs="0"/>                
+                <xs:element ref="default" minOccurs="0"/>  
+                <xs:element ref="initial" minOccurs="0"/>                
                 <xs:element ref="source" minOccurs="0"/>
                 <xs:element ref="options" minOccurs="0"/>
                 <xs:element ref="link" minOccurs="0"/>

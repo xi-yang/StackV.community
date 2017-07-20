@@ -25,6 +25,7 @@
 
 var conditions = [];
 var factories = {};
+var initials = {};
 var intent;
 var manifest;
 var transit = false;
@@ -149,9 +150,7 @@ function initMeta(meta) {
                 factories[key]["count"]--;
             }
 
-            for (var i = 0; i < conditions.length; i++) {
-                $("[data-condition='" + conditions[i] + "']").addClass("conditioned");
-            }
+            recondition();
 
             refreshLinks();
         });
@@ -273,6 +272,9 @@ function renderInputs(arr, $parent) {
             if (ele.getElementsByTagName("default").length > 0) {
                 $input.val(ele.getElementsByTagName("default")[0].innerHTML);
             }
+            if (ele.getElementsByTagName("initial").length > 0) {
+                $input.attr("data-initial", ele.getElementsByTagName("initial")[0].innerHTML);
+            }
 
             // Handle multiple choice sourcing
             if (ele.getElementsByTagName("source").length > 0) {
@@ -329,10 +331,10 @@ function renderInputs(arr, $parent) {
                 var selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
 
-                for (var i = 0; i < options.length; i++) {
+                for (var j = 0; j < options.length; j++) {
                     var $option = $("<option>");
-                    $option.text(options[i].innerHTML);
-                    $option.val(options[i].innerHTML);
+                    $option.text(options[j].innerHTML);
+                    $option.val(options[j].innerHTML);
 
                     $input.append($option);
                 }
@@ -413,9 +415,12 @@ function factorizeRendering() {
         var id = fact.id;
         var key = id.replace(new RegExp("\\_num\\d*", "gm"), "");
 
-        factories[key]["clone"] = $(fact).clone(true, true);
+        var $clone = $(fact).clone(true, true);
+        $clone.find("[data-initial]").removeAttr("data-initial");
+        factories[key]["clone"] = $clone;
     }
 
+    initializeInputs();
     refreshLinks();
 }
 function recursivelyFactor(id, ele) {
@@ -647,6 +652,8 @@ function buildClone(key, target) {
 
         e.preventDefault();
     });
+    
+    recondition();
 }
 
 function refreshLinks() {
@@ -809,5 +816,21 @@ function convertToArrays(recur) {
             recur[name].push(recur[prop]);
             delete recur[prop];
         }
+    }
+}
+
+function recondition() {
+    for (var i = 0; i < conditions.length; i++) {
+        $("[data-condition='" + conditions[i] + "']").addClass("conditioned");
+    }
+}
+
+function initializeInputs() {
+    var $arr = $("[data-initial]");
+    for (var i = 0; i < $arr.length; i++) {
+        var $input = $($arr[i]);
+        var val = $input.data("initial");
+        $input.val(val);
+        $input.removeAttr("data-initial");
     }
 }
