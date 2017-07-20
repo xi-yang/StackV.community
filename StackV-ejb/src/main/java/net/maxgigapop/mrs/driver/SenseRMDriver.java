@@ -24,10 +24,7 @@
 package net.maxgigapop.mrs.driver;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import static java.lang.Thread.sleep;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -39,6 +36,7 @@ import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
+import javax.net.ssl.HttpsURLConnection;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
@@ -98,7 +96,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             }
             // push via REST POST
             URL url = new URL(String.format("%s/deltas", subsystemBaseUrl));
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn;
+            if (url.toString().startsWith("https:")) {
+                conn = (HttpURLConnection) url.openConnection();
+            } else {
+                conn = (HttpsURLConnection) url.openConnection();
+            }
             conn.setRequestProperty("Content-Encoding", "gzip");
             String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
             if (response[1].equals("201")) {
@@ -150,7 +153,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         // commit through PUT
         try {
             URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getId(), aDelta.getId()));
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn;
+            if (url.toString().startsWith("https:")) {
+                conn = (HttpURLConnection) url.openConnection();
+            } else {
+                conn = (HttpsURLConnection) url.openConnection();
+            }
             String[] response = DriverUtil.executeHttpMethod(conn, "PUT", null);
             if (response[1].equals("200")) {
                 aDelta.setStatus("COMMITTING");
@@ -181,7 +189,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
                 URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                HttpURLConnection conn;
+                if (url.toString().startsWith("https:")) {
+                    conn = (HttpURLConnection) url.openConnection();
+                } else {
+                    conn = (HttpsURLConnection) url.openConnection();
+                }
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("200")) { // committed successfully
                     aDelta.setStatus(response[0]);
@@ -248,7 +261,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 }
                 // pull model from REST API
                 URL url = new URL(subsystemBaseUrl + "/models");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                HttpURLConnection conn;
+                if (url.toString().startsWith("https:")) {
+                    conn = (HttpURLConnection) url.openConnection();
+                } else {
+                    conn = (HttpsURLConnection) url.openConnection();
+                }
                 if (lastModified != null) {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
                 }
