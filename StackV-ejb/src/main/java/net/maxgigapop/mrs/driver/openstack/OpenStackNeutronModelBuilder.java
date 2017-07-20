@@ -495,19 +495,19 @@ public class OpenStackNeutronModelBuilder {
             }
             
             //Strongswan ipsec vpn
-            if (metadata != null && metadata.containsKey("ipsec:strongswan")) {
-                String input = metadata.get("ipsec:strongswan");
+            if (metadata != null && metadata.containsKey("ipsec")) {
+                String input = metadata.get("ipsec");
                 JSONParser j = new JSONParser();
                 
                 try {
                     input = input.replaceAll("'", "\"");
-                    //System.out.println(input);
+                    
                     JSONObject jdata = (JSONObject) j.parse(input);
                     if (!jdata.get("status").equals("up")) {
                         continue;
                     }
                     
-                    String endpointUri = jdata.get("uri").toString();
+                    String endpointUri = VM+":vpn";
                     Resource strongswan = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
                     model.add(model.createStatement(VM, Nml.hasService, strongswan));
                     
@@ -519,9 +519,9 @@ public class OpenStackNeutronModelBuilder {
                     t1,t2 remote ip     -> "remote-ip-n"
                     t1,t2 secret        -> not included in model
                     */
-                    String localIPStr = jdata.get("local-ip").toString();
-                    String localSubnetCIDR = jdata.get("local-subnet").toString();
-                    String remoteSubnetCIDR = jdata.get("remote-subnet").toString();
+                    String localIPStr = jdata.get("local_ip").toString();
+                    String localSubnetCIDR = jdata.get("local_subnet").toString();
+                    String remoteSubnetCIDR = jdata.get("remote_subnet").toString();
                     
                     if (localIPStr == null) localIPStr = "null";
                     if (localSubnetCIDR == null) localSubnetCIDR = "null";
@@ -545,19 +545,18 @@ public class OpenStackNeutronModelBuilder {
                     
                     //add tunnels
                     int i = 1;
-                    String tunnelStr = "remote-ip-1";
+                    String tunnelStr = "remote_ip_1";
                     ArrayList <String> tunnelIPs = new ArrayList<>();
                     
                     while (jdata.containsKey(tunnelStr)) {
                         tunnelIPs.add( (String) jdata.get(tunnelStr));
-                        tunnelStr = "remote-ip-" + (++i);
+                        tunnelStr = "remote_ip_" + (++i);
                     }
                     
                     i = 0;
                     tunnelStr = endpointUri+":tunnel";
                     for (String ip : tunnelIPs) {
                         tunnelStr = endpointUri + ":tunnel" + (++i);
-                        //System.out.println("Added tunnel: "+tunnelStr);
                         Resource tunnel = RdfOwl.createResource(model, tunnelStr, Nml.BidirectionalPort);
                         model.add(model.createStatement(strongswan, Nml.hasBidirectionalPort, tunnel));
                         Resource remoteIp = RdfOwl.createResource(model, tunnelStr+":remote-ip", Mrs.NetworkAddress);
@@ -570,7 +569,7 @@ public class OpenStackNeutronModelBuilder {
                         model.add(model.createStatement(secret, Mrs.value, "####"));
                     }
                 } catch (Exception e) {
-                    logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), input, "ipsec:strongswan"));
+                    logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), input, "ipsec"));
                 }
             }
             

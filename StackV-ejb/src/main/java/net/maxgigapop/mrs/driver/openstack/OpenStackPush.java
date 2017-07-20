@@ -1010,7 +1010,7 @@ public class OpenStackPush {
                 String remoteSubnet = (String) o.get("remote-subnet");
                 String status = (String) o.get("status");
                 String remoteIp;
-                //String secret;
+                 //String secret;
                 String newMetadata = "{";
                 newMetadata += "'status':'"+status+"',";
                 newMetadata += "'local_ip':'"+localIp+"',";
@@ -2724,7 +2724,7 @@ public class OpenStackPush {
             } else {
                 vms.add(vm);
             }
-
+            
             //Find all the tunnels.  Note that the FILTER in the tunnelQuery
             //ensures that all tunnels are part of the same ipsec service as the
             //one found in solution q.
@@ -2755,7 +2755,7 @@ public class OpenStackPush {
             request.put("local-ip", localIp);
             request.put("local-subnet", localSubnet);
             request.put("remote-subnet", remoteSubnet);
-            request.put("uri", strongswan);
+            //request.put("uri", strongswan);
             
             int i = 1;
             while (tunnelResults.hasNext()) {
