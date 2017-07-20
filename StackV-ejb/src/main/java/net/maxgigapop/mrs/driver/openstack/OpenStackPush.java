@@ -37,6 +37,7 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -2741,8 +2742,24 @@ public class OpenStackPush {
             
             ResultSet tunnelResults = executeQuery(tunnelQuery, emptyModel, modelDelta);
             
+            String result;
+            result = cidrValidator(localSubnet);
+            if (!result.isEmpty()) {
+                logger.warning(method, "The local subnet is not a valid cidr block: "+result);
+            }
+            
+            result = cidrValidator(remoteSubnet);
+            if (!result.isEmpty()) {
+                logger.warning(method, "The remote subnet is not a valid cidr block: "+result);
+            }
+            
+            result = ipValidator(localIp);
+            if (!result.isEmpty()) {
+                logger.warning(method, "The local ip is not a valid ip address: "+result);
+            }
+            
             if (localSubnet.equals(remoteSubnet)) {
-                logger.warning(method, "VPN endpoint warning: The local and remote subnets are identical.");
+                logger.warning(method, "The local and remote subnets are identical.");
             }
             
             //Put all info into the json request
@@ -2755,18 +2772,23 @@ public class OpenStackPush {
             request.put("local-ip", localIp);
             request.put("local-subnet", localSubnet);
             request.put("remote-subnet", remoteSubnet);
-            //request.put("uri", strongswan);
             
             int i = 1;
+            String tunnelIp;
             while (tunnelResults.hasNext()) {
                 QuerySolution tunnelSolution = tunnelResults.next();
-                request.put("remote-ip-"+i, tunnelSolution.get("remoteIp").toString());
+                tunnelIp = tunnelSolution.get("remoteIp").toString();
+                result = ipValidator(tunnelIp);
+                if (!result.isEmpty()) {
+                    logger.warning(method, "A tunnel ip address is invalid: "+result);
+                }
+                
+                request.put("remote-ip-"+i, tunnelIp);
                 //request.put("secret-"+i, tunnelSolution.get("secret").toString());
                 i++;
             }
         }
         
-        //System.out.println("requests: "+requests.toString());
         logger.trace(method, "requests: "+requests.toString());
         return requests;
     }
@@ -3211,5 +3233,54 @@ public class OpenStackPush {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    private static String cidrValidator(String cidr) {
+        //Validate the CIDR
+        //returns an empty string if the pattern is correct.
+        //pattern requires one IPv4 address and allows additional IPs separated by commas.
+        String cidrPattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\/\\d{1,2}";
+        String pattern = "^("+cidrPattern+",)*"+cidrPattern+"$";
+        if (!cidr.matches(pattern)) {
+            return "The cidr pattern is invalid.";
+        }
+        
+        List<String> cidrs = Arrays.asList(cidr.split(","));
+        //now validate each individual cidr
+        for (String c : cidrs) {
+            String result;
+            String parts[] = c.split("[/.]");
+                
+            //validate the CIDR range
+            int bits = Integer.parseInt(parts[4]);
+            if (bits > 32) {
+                return "The subnet mask should be 32 or less.";
+            }
+            
+            for (String s : parts) {
+                result = ipValidator(s);
+                if (!result.isEmpty()) return result;
+            }
+        }
+        return "";
+    }
+    
+    private static String ipValidator(String ip) {
+        //returns an empty string if the argument is a valid ip address,
+        //or an explanation why it is incorrect if it fails
+        String ipPattern = "d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}";
+        if (!ip.matches(ipPattern)) {
+            return "The ip pattern is invalid.";
+        }
+        
+        String parts[] = ip.split("[/.]");
+        int temp;
+            for (String s : parts) {
+                temp = Integer.parseInt(s);
+                if (temp > 255) {
+                    return "Each ip value should be less than 256";
+                }
+            }
+        return "";
     }
 }
