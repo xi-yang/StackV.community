@@ -454,22 +454,27 @@ function submitIntent() {
     refreshLinks();
     var json = {};
     $("#intent-panel-body .intent-input").each(function () {
-        var arr = this.id.split("-");
-
-        var last = json;
-        var i;
-        for (i = 1; i < (arr.length - 1); i++) {
-            var key = arr[i];
-            if (!(key in last)) {
-                last[key] = {};
-            }
-            last = last[key];
-        }
-        var key = arr[i];
-        if ($(this).attr("type") === "checkbox") {
-            last[key] = $(this).is(":checked");
+        var cond = $(this).parents('.conditional').length;
+        if (cond > 0 && $(this).parents('.conditioned').length < cond) {
+            ;
         } else {
-            last[key] = $(this).val();
+            var arr = this.id.split("-");
+
+            var last = json;
+            var i;
+            for (i = 1; i < (arr.length - 1); i++) {
+                var key = arr[i];
+                if (!(key in last)) {
+                    last[key] = {};
+                }
+                last = last[key];
+            }
+            var key = arr[i];
+            if ($(this).attr("type") === "checkbox") {
+                last[key] = $(this).is(":checked");
+            } else {
+                last[key] = $(this).val();
+            }
         }
     });
 
@@ -652,7 +657,7 @@ function buildClone(key, target) {
 
         e.preventDefault();
     });
-    
+
     recondition();
 }
 
@@ -747,7 +752,7 @@ function parseManifestIntoJSON() {
     convertToArrays(manifest);
 
     // Step 3: Trim leaves
-
+    trimLeaves(manifest);
 }
 
 
@@ -814,6 +819,22 @@ function convertToArrays(recur) {
             }
 
             recur[name].push(recur[prop]);
+            delete recur[prop];
+        }
+    }
+}
+
+function trimLeaves(recur) {
+    for (var prop in recur) {
+        if (recur[prop] instanceof Object || recur[prop] instanceof Array) {
+            trimLeaves(recur[prop]);
+        }
+
+        if (recur[prop] === "") {
+            delete recur[prop];
+        } else if (recur[prop] && recur[prop].constructor === Object && Object.keys(recur[prop]).length === 0) {
+            delete recur[prop];
+        } else if (recur[prop] && recur[prop].constructor === Array && recur[prop][0] === undefined) {
             delete recur[prop];
         }
     }

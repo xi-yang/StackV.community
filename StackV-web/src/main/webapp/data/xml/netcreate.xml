@@ -59,21 +59,7 @@
                 <name>CIDR</name>
                 <type>text</type>
             </input>
-        </group>
-        <group condition="aws-form" name="Direct Connect">
-            <path>
-                <parent>aws gateways</parent>
-            </path>
-            
-            <input>
-                <name>Destination</name>
-                <type>text</type>
-            </input>
-            <input>
-                <name>VLAN</name>
-                <type>text</type>
-            </input>
-        </group>
+        </group>        
     </stage>
     <stage name="Subnets">
         <group block="subnets" name="Subnet" collapsible="true">
@@ -188,16 +174,10 @@
                 <name>Type</name>
                 <type>select</type>
                 <options>
-                    <option>UCS Port Profile</option>
-                    <option>L2 Stitch Port</option>
+                    <option>AWS Direct Connect</option>
                 </options>
             </input>                        
-            <group name="Route" label="false">
-                <input>
-                    <name>From</name>
-                    <type>text</type>
-                    <size>small</size>
-                </input>
+            <group name="Route" label="false">                
                 <input>
                     <name>To</name>
                     <type>text</type>
