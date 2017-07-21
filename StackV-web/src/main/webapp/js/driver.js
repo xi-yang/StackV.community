@@ -137,7 +137,6 @@ function openContentPanel() {
 }
 function closeContentPanel() {
     if ($("#driver-content-panel").hasClass("active")) {
-        alert("reached");
         tweenBlackScreen.reverse();
         tweenContentPanel.reverse();
         $("#driver-content-panel").removeClass("open");
@@ -835,7 +834,6 @@ function getDetailsProfile(clickID) {
             instDetailsButton.className = "button-profile-select btn btn-default";
             
             instDetailsButton.onclick = function () {
-                alert("success initial ");
                 plugDriver(result["TOPURI"]);
             };
             instDetailsButton.className = "button-profile-select btn btn-default";
@@ -969,8 +967,6 @@ function plugDriver(topuri) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/install/' + URI;
     var panel = document.getElementById("install-type");
     
-    alert("success inside function2");
-    
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -979,7 +975,6 @@ function plugDriver(topuri) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            alert("success");
             getAllDetails();
             $('#install-type').empty();
             var data = document.createElement("p");
@@ -1039,9 +1034,7 @@ function installDriver() {
             getAllDetails();
         },
         error: function (textStatus, errorThrown) {
-            alert("failed");
-            alert(textStatus);
-            alert(errorThrown);
+            
         }
     });
 }
