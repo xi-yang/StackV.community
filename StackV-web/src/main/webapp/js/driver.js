@@ -136,7 +136,8 @@ function openContentPanel() {
     }
 }
 function closeContentPanel() {
-    if ($("#driver-content-panel").hasClass("open")) {
+    if ($("#driver-content-panel").hasClass("active")) {
+        alert("reached");
         tweenBlackScreen.reverse();
         tweenContentPanel.reverse();
         $("#driver-content-panel").removeClass("open");
@@ -639,7 +640,7 @@ function addDriver() {
     var description = document.getElementById("description").value;
     var driver = document.getElementById("drivername").value;
     var URI = document.getElementById("TOPURI").value;
-    var type = document.getElementById("drivertype").innerHTML;
+    var type = document.getElementById("info-panel-title").innerHTML;
 
     $('#black-screen').addClass("off");
     $('#info-panel').removeClass();
@@ -682,6 +683,9 @@ function addDriver() {
         data: sentData,
         success: function () {
             updateDrivers();
+        },
+        error: function(){
+            alert("failed");
         }
     });
 }
@@ -992,7 +996,7 @@ function installDriver() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/install';
     var jsonData = [];
     var tempData = {};
-    var type = document.getElementById("drivertype").innerHTML;
+    var type = document.getElementById("info-panel-title").innerHTML;
 
     for (var temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
@@ -1012,7 +1016,7 @@ function installDriver() {
             tempData[temp.id] = temp.value;
     }
 
-    tempData["drivertype"] = type;
+    tempData["info-panel-title"] = type;
     jsonData.push(tempData);
 
     var settings = JSON.stringify({jsonData});
@@ -1033,6 +1037,11 @@ function installDriver() {
             data.innerHTML = result;
             panel.appendChild(data);
             getAllDetails();
+        },
+        error: function (textStatus, errorThrown) {
+            alert("failed");
+            alert(textStatus);
+            alert(errorThrown);
         }
     });
 }
