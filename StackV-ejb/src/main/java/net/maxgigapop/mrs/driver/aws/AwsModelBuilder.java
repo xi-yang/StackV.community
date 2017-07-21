@@ -343,7 +343,7 @@ public class AwsModelBuilder {
                             Resource VOLUME = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeId,awsPrefix.volume(),volumeId), volume);
                             model.add(model.createStatement(ebsService, providesVolume, VOLUME));
                             model.add(model.createStatement(INSTANCE, hasVolume, VOLUME));
-                            model.add(model.createStatement(VOLUME, value, vol.getVolumeType()));
+                            model.add(model.createStatement(VOLUME, type, vol.getVolumeType()));
                             model.add(model.createStatement(VOLUME, Mrs.disk_gb, Integer.toString(vol.getSize())));
                             List<VolumeAttachment> volAttach = vol.getAttachments();
                             for (VolumeAttachment va : volAttach) {
@@ -481,7 +481,7 @@ public class AwsModelBuilder {
             String volumeId = ec2Client.getIdTag(v.getVolumeId());
             Resource VOLUME = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeId,awsPrefix.volume(),volumeId), volume);
             model.add(model.createStatement(ebsService, providesVolume, VOLUME));
-            model.add(model.createStatement(VOLUME, value, v.getVolumeType()));
+            model.add(model.createStatement(VOLUME, type, v.getVolumeType()));
             model.add(model.createStatement(VOLUME, Mrs.disk_gb, Integer.toString(v.getSize())));
         }
 

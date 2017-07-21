@@ -283,17 +283,17 @@ public class AwsBatchResourcesTool {
         }
 
         //eliminate the network addresses of those network interfaces that are batches
-        for (Object key : batchNumber.keySet()) {
-            Resource baseResource = model.getResource(key.toString().replace("batch", ""));
-            Statement st = model.getProperty(baseResource, Mrs.hasNetworkAddress);
-            while (st !=null){
-               Resource object = st.getObject().asResource();
-               model.removeAll(object,null,null);
-               model.removeAll(null,null,object);
-               st = model.getProperty(baseResource, Mrs.hasNetworkAddress);
-            }
-
-        }
+//        for (Object key : batchNumber.keySet()) {
+//            Resource baseResource = model.getResource(key.toString().replace("batch", ""));
+//            Statement st = model.getProperty(baseResource, Mrs.hasNetworkAddress);
+//            while (st !=null){
+//               Resource object = st.getObject().asResource();
+//               model.removeAll(object,null,null);
+//               model.removeAll(null,null,object);
+//               st = model.getProperty(baseResource, Mrs.hasNetworkAddress);
+//            }
+//
+//        }
         return model;
     }
 

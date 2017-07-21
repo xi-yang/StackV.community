@@ -1028,6 +1028,37 @@ public class AwsEC2Get {
             }
         }
     }
+    
+    /**
+     * ****************************************************************
+     * function to wait for the correct port deletion status check
+     * ****************************************************************
+     */
+    public void PortDeletionCheckBatch(List<String> ids) {
+        DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+        request.withNetworkInterfaceIds(ids);
+        long delay = 1000L;
+        while (true) {
+            delay *= 2;
+            try {
+                List<NetworkInterface> resources = client.describeNetworkInterfaces(request).getNetworkInterfaces();
+                if (resources.isEmpty()) {
+                    break;
+                }
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+                break;
+            } catch (NullPointerException ex2) {
+                break;
+            }
+        }
+    }
 
     /**
      * ****************************************************************
@@ -1089,12 +1120,47 @@ public class AwsEC2Get {
             }
         }
     }
-
+    
+    /**
+     * ****************************************************************
+     * function to wait for the correct batch instance status
+     * ****************************************************************
+     */
+    public void instanceStatusCheckBatch(List<String> ids, String status) {
+        DescribeInstanceStatusRequest request = new DescribeInstanceStatusRequest();
+        request.withIncludeAllInstances(Boolean.TRUE).withInstanceIds(ids);
+        Filter filter = new Filter();
+        filter.withName("instance-state-name").withValues(status);
+        DescribeInstanceStatusRequest request2 = new DescribeInstanceStatusRequest();
+        request2.withIncludeAllInstances(Boolean.TRUE).withFilters(filter);
+                    
+        long delay = 1000L;
+        while (true) {
+            delay *= 2;
+            try {
+                List<InstanceStatus> stats = client.describeInstanceStatus(request).getInstanceStatuses();
+                List<InstanceStatus> instanceIds = client.describeInstanceStatus(request2).getInstanceStatuses();
+                if(instanceIds.containsAll(stats)){break;}  
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
+            }
+        }
+    }
+    
     /**
      * ****************************************************************
      * function to wait for the correct instance status
      * ****************************************************************
      */
+    
     public void instanceStatusCheck(String id, String status) {
         DescribeInstancesRequest request = new DescribeInstancesRequest();
         request.withInstanceIds(id);
@@ -1215,6 +1281,29 @@ public class AwsEC2Get {
     }*/
     
     //return list of additional network interfaces attached to the instance
+    public List<String> getBatchNetworkInterfacesForDeletion(String tag) {
+        Filter filter = new Filter();
+        filter.withName("tag:id")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();  
+        DescribeNetworkInterfacesRequest tagRequest = new DescribeNetworkInterfacesRequest();
+        tagRequest.withFilters(filter);
+        List<NetworkInterface> descriptions = client.describeNetworkInterfaces(tagRequest).getNetworkInterfaces();
+        if (!descriptions.isEmpty()) {
+            for (NetworkInterface des : descriptions) {
+            // to select network interafaces that are created and not attached to any instance
+                if(des.getAttachment() == null){ 
+                    if(des.getStatus().equals("available")){batchIds.add(des.getNetworkInterfaceId());}
+                }
+            //to select network interfaces which are not default eni 
+            else{
+                if(des.getAttachment().getDeviceIndex()!=0 ){ 
+                   batchIds.add(des.getNetworkInterfaceId());}}
+                    }
+        return batchIds;}
+        return null;
+    }
+    
     public List<String> getBatchNetworkInterfaces(String tag) {
         Filter filter = new Filter();
         filter.withName("tag:id")
@@ -1225,9 +1314,8 @@ public class AwsEC2Get {
         List<NetworkInterface> descriptions = client.describeNetworkInterfaces(tagRequest).getNetworkInterfaces();
         if (!descriptions.isEmpty()) {
             for (NetworkInterface des : descriptions) {
-                if(des.getAttachment().getDeviceIndex()!=0){ //to select network interfaces which are not default eni
                    batchIds.add(des.getNetworkInterfaceId());
-            }}
+            }
             return batchIds;
         }
         return null;
@@ -1405,6 +1493,42 @@ public class AwsEC2Get {
     public void tagResource(String id, String tag) {
         CreateTagsRequest tagRequest = new CreateTagsRequest();
         tagRequest.withTags(new Tag("id", tag));
+        tagRequest.withResources(id);
+        while (true) {
+            try {
+                client.createTags(tagRequest);
+                break;
+            } catch (AmazonServiceException e) {
+            }
+        }
+    }
+    
+    /**
+     * ****************************************************************
+     * function to create tags in batches
+     * ****************************************************************
+     */
+    public void tagBatchResources(List<String> id, String tag) {
+        CreateTagsRequest tagRequest = new CreateTagsRequest();
+        tagRequest.withTags(new Tag("id", tag));
+        tagRequest.withResources(id);
+        while (true) {
+            try {
+                client.createTags(tagRequest);
+                break;
+            } catch (AmazonServiceException e) {
+            }
+        }
+    }
+    
+    /**
+     * ****************************************************************
+     * function to create batch tags for the resources
+     * ****************************************************************
+     */
+    public void tagResourcesWithBatchId(List<String> id, String tag) {
+        CreateTagsRequest tagRequest = new CreateTagsRequest();
+        tagRequest.withTags(new Tag("batch", tag));
         tagRequest.withResources(id);
         while (true) {
             try {

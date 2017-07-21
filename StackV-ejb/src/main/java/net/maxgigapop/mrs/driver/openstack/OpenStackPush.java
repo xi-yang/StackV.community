@@ -262,7 +262,73 @@ public class OpenStackPush {
                 }
                 osClient.networking().network().delete(network.getId());
                 NetworkDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
-            } else if (o.get("request").toString().equals("RunInstanceRequest")) {
+            } 
+            
+            
+//            else if (o.get("request").toString().equals("RunInstanceRequest")) {
+//                ServerCreateBuilder builder = Builders.server();
+//                // determine image and flavor
+//                if (o.get("image").toString().equals("any") && o.get("image").toString().equals("any")) {
+//                    builder.name(o.get("server name").toString())
+//                            .image(client.getImages().get(0).getId())
+//                            .flavor(client.getFlavors().get(0).getId());
+//                } else if (o.get("image").toString().equals("any")) {
+//
+//                    builder.name(o.get("server name").toString())
+//                            .image(client.getImages().get(0).getId())
+//                            .flavor(o.get("flavor").toString());
+//                } else if (o.get("flavor").toString().equals("any")) {
+//
+//                    builder.name(o.get("server name").toString())
+//                            .image(o.get("image").toString())
+//                            .flavor(client.getFlavors().get(0).getId());
+//                } else {
+//                    builder.name(o.get("server name").toString())
+//                            .image(o.get("image").toString())
+//                            .flavor(o.get("flavor").toString());
+//                }
+//                // optional keypair 
+//                if (o.containsKey("keypair") && !o.get("keypair").toString().isEmpty()) {
+//                    builder.keypairName(o.get("keypair").toString());
+//                } 
+//                // optional host placement
+//                if (o.containsKey("host name")) {
+//                    builder.availabilityZone("nova:"+o.get("host name").toString());
+//                }
+//                int index = 0;
+//                while (true) {
+//                    String key = "port" + Integer.toString(index);
+//                    if (o.containsKey(key)) {
+//                        OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
+//                        for (Port p : client.getPorts()) {  //here need to be careful
+//                            if (client.getResourceName(p).equals(o.get(key).toString())) {
+//                                builder.addNetworkPort(p.getId());
+//                                break;
+//                            }
+//                        }
+//                        index++;
+//                    } else {
+//                        break;
+//                    }
+//                }
+//                ServerCreate server = (ServerCreate) builder.build();
+//                Server s = osClient.compute().servers().boot(server);
+//                String servername = o.get("server name").toString();
+//                VmCreationCheck(servername, url, NATServer, username, password, tenantName, topologyUri);
+//                // optional secgroups 
+//                if (o.containsKey("secgroup") && !o.get("secgroup").toString().isEmpty()) {
+//                    String[] sgs = o.get("secgroup").toString().split(",|;|:");
+//                    for (String secgroup : sgs) {
+//                        SecurityGroupAddCheck(s.getId(), secgroup);
+//                    }
+//                }
+//                if (o.containsKey("alt name")) {
+//                    client.setMetadata(o.get("server name").toString(), "alt name", o.get("alt name").toString());
+//                }
+//            } 
+            
+            
+            else if (o.get("request").toString().equals("RunInstanceRequest")) {
                 ServerCreateBuilder builder = Builders.server();
                 // determine image and flavor
                 if (o.get("image").toString().equals("any") && o.get("image").toString().equals("any")) {
@@ -308,7 +374,12 @@ public class OpenStackPush {
                         break;
                     }
                 }
+                //check for batch requests
+                int batchVal = Integer.parseInt(o.get("batch").toString());
+                
                 ServerCreate server = (ServerCreate) builder.build();
+                
+                for(int cnt=0;cnt<batchVal;cnt++){
                 Server s = osClient.compute().servers().boot(server);
                 String servername = o.get("server name").toString();
                 VmCreationCheck(servername, url, NATServer, username, password, tenantName, topologyUri);
@@ -321,8 +392,12 @@ public class OpenStackPush {
                 }
                 if (o.containsKey("alt name")) {
                     client.setMetadata(o.get("server name").toString(), "alt name", o.get("alt name").toString());
-                }
-            } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
+                }}
+            } 
+            
+            
+            
+            else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
                 Server server = client.getServer(o.get("server name").toString());
                 osClient.compute().servers().delete(server.getId());
                 VmDeletionCheck(server.getId(), url, NATServer, username, password, tenantName, topologyUri);
@@ -1800,6 +1875,226 @@ public class OpenStackPush {
                 } else {
                     o.put("request", "TerminateInstanceRequest");
                 }
+
+                o.put("server name", serverName);
+                String imageType = defaultImage;
+                String flavorType = defaultFlavor;
+
+                if ((imageType == null || imageType.isEmpty()) && imageID.equals("any")) {
+                    throw logger.error_throwing(method, String.format("Cannot determine server image type."));
+                }
+                if ((flavorType == null || flavorType.isEmpty()) && flavorID.equals("any")) {
+                    throw logger.error_throwing(method, String.format("Cannot determine server flavor type."));
+                }
+                if (imageID.equals("any")) {
+                    o.put("image", imageType);
+                } else {
+                    o.put("image", imageID);
+                }
+                if (flavorID.equals("any")) {
+                    o.put("flavor", flavorType);
+                } else {
+                    o.put("flavor", flavorID);
+                }
+                
+                if (keypairName == null) {
+                    if (defaultKeyPair == null) {
+                        logger.warning(method, String.format("Cannot determine server key pair."));
+                    } else {
+                        keypairName = defaultKeyPair;
+                    }
+                }
+                if (keypairName != null && !keypairName.isEmpty())  {
+                    o.put("keypair", keypairName);
+                }
+
+                if (secgroupName == null) {
+                    if (defaultSecGroup == null) {
+                        logger.warning(method, String.format("Cannot determine server security group."));
+                    } else {
+                        secgroupName = defaultSecGroup;
+                    }
+                }
+                if (secgroupName != null && !secgroupName.isEmpty()) {
+                    o.put("secgroup", secgroupName);
+                }
+                
+                if (hostName != null && !hostName.isEmpty()) {
+                    o.put("host name", hostName);
+                }
+                if (serverAltName != null && !serverAltName.isEmpty()) {
+                    o.put("alt name", serverAltName);
+                }
+                //1.10.1 put all the ports in the request
+                int index = 0;
+                for (String port : portNames) {
+                    String key = "port" + Integer.toString(index);
+                    o.put(key, port);
+                    index++; //increment the device index
+                }
+                requests.add(o);
+
+            }
+        }
+        return requests;
+    }
+
+    private List<JSONObject> serverRequestsNew(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        String method = "serverRequests";
+        List<JSONObject> requests = new ArrayList();
+        String query;
+
+        //1 check for any operation involving a server
+        query = "SELECT ?server ?port ?name ?batch WHERE {"
+                + "?server a nml:Node. "
+                + "OPTIONAL { ?server nml:name ?name. }"
+                + "OPTIONAL { ?server mrs:batch ?batch}" 
+                + "}";
+        ResultSet r = executeQuery(query, modelDelta, emptyModel);//here modified 
+
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            RDFNode vm = q.get("server");
+            String servername = vm.asResource().toString();
+            String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
+            Server server = client.getServer(serverName);
+            
+            //check for batch requests
+            RDFNode batch = q.get("batch");
+            String batchVal = (batch!=null)? batch.asResource().toString(): "1";
+            
+            
+            String serverAltName = "";
+            if (q.contains("name")) {
+                serverAltName = q.get("name").toString();
+            }
+            //1.1 check if the desired operation is a valid operation
+            if (server == null ^ creation) //check if server needs to be created or deleted
+            {
+                if (creation == true) {
+                    throw logger.error_throwing(method, String.format("Server %s already exists", serverName));
+                } else {
+                    throw logger.error_throwing(method, String.format("Server %s does not exist, cannot be deleted", serverName));
+                }
+            } else {
+                //1.2 check what service is providing the instance
+                query = "SELECT ?service WHERE {?service mrs:providesVM <" + vm.asResource() + ">}";
+                ResultSet r1 = executeQuery(query, modelRef, modelDelta);
+                if (!r1.hasNext()) {
+                    throw logger.error_throwing(method, String.format("Delta model does not specify service that provides the VM: %s", vm));
+                }
+                QuerySolution q1 = r1.next();
+                RDFNode hypervisorService = q1.get("service");
+                
+                
+
+                //1.3 check that service is a hypervisor service
+                query = "SELECT ?type WHERE { ?type a mrs:HypervisorService}";//modified here
+                r1 = executeQuery(query, modelRef, modelDelta);//here may error
+                if (!r1.hasNext()) {
+                    throw logger.error_throwing(method, String.format("Service %s is not a hypervisor service", hypervisorService));
+                }
+
+                //1.4 find the host of the VM
+                query = "SELECT ?host WHERE {?host nml:hasService <" + hypervisorService.asResource() + ">}";//the deltamodel
+                r1 = executeQuery(query, modelRef, modelDelta);
+                if (!r1.hasNext()) {
+                    throw logger.error_throwing(method, String.format("Delta model does not specify host that provides service %s", hypervisorService));
+                }
+                q1 = r1.next();
+                RDFNode host = q1.get("host");
+                //String hostName = host.asResource().toString().replace(topologyUri, "");
+
+                //1.5 make sure that the host is a node
+                //query = "SELECT ?node WHERE {?node a nml:Node. FILTER(?node = <" + server.asResource() + ">)}";
+                query = "SELECT ?node WHERE {?node a nml:Node. FILTER(?node = <" + host.asResource() + ">)}";
+                r1 = executeQuery(query, modelRef, modelDelta);
+                if (!r1.hasNext()) {
+                    throw logger.error_throwing(method, String.format("Host %s to host node %s is not of type nml:Node", host, vm));
+                }
+                String hostName = ResourceTool.getResourceName(host.toString(), OpenstackPrefix.host);
+
+                //?? unused ?
+                //1.6 find the network that the server will be in
+                //query = "SELECT ?node WHERE {?node a nml:Node. FILTER(?node = <" + server.asResource() + ">)}";
+                query = "SELECT ?subnet ?port WHERE {?subnet a mrs:SwitchingSubnet ."
+                        + "?subnet nml:hasBidirectionalPort ?port}";
+                r1 = executeQuery(query, modelRef, modelDelta);
+                if (!r1.hasNext()) {
+                    throw logger.error_throwing(method, String.format("VM %s does not specify network", vm));
+                }
+                q1 = r1.next();
+                RDFNode subnet = q1.get("subnet");
+
+                //find the port
+                query = "SELECT ?port WHERE {<" + subnet.asResource() + "> nml:hasBidirectionalPort ?port}";
+                ResultSet r5 = executeQuery(query, modelRef, modelDelta);
+                if (!r5.hasNext()) {
+                    throw logger.error_throwing(method, String.format("Vm %s does not specify the attached network interface", vm));
+                }
+                query = "SELECT ?type WHERE {<" + vm.asResource() + "> mrs:type ?type}";
+                r5 = executeQuery(query, emptyModel, modelDelta);
+                String imageID = "any";
+                String flavorID = "any";
+                String keypairName = null;
+                String secgroupName = null;
+                String instanceTypes = null;
+                while (r5.hasNext()) {
+                    QuerySolution q2 = r5.next();
+                    RDFNode type = q2.get("type");
+                    if (instanceTypes == null) {
+                        instanceTypes = type.toString();
+                    } else {
+                        instanceTypes += "," + type.toString();
+                    }
+                }
+                if (instanceTypes != null) {
+                    String[] typeItems = instanceTypes.split(",|;|:");
+                    for (String typename : typeItems) {
+                        String value = null;
+                        if (typename.contains("+") || typename.contains("=")) {
+                            value = typename.split("\\+|=")[1];
+                        } else {
+                            continue;
+                        }
+                        if (typename.startsWith("image")) {
+                            imageID = value;
+                        } else if (typename.startsWith("flavor") || typename.startsWith("instance")) {
+                            flavorID = value;
+                        } else if (typename.startsWith("keypair")) {
+                            keypairName = value;
+                        } else if (typename.startsWith("secgroup")) {
+                            secgroupName = value;
+                        }
+                    }
+                }
+
+                //1.7 (creation==true) find the subnet the server is in first  find the port the server uses
+                query = "SELECT ?port WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port}";
+                ResultSet r2 = executeQuery(query, modelRef, modelDelta);
+                if (creation && !r2.hasNext()) {
+                    throw logger.error_throwing(method, String.format("Vm %s does not specify the attached network interface", vm));
+                }
+                List<String> portNames = new ArrayList();
+                while (creation && r2.hasNext())//there could be multiple network interfaces attached to the instance
+                {
+                    QuerySolution q2 = r2.next();
+                    RDFNode port = q2.get("port");
+                    String Name = port.asResource().toString();
+                    String name = ResourceTool.getResourceName(Name, OpenstackPrefix.PORT);
+                    portNames.add(name);
+                }
+                
+                //1.10 create the request
+                JSONObject o = new JSONObject();
+                if (creation == true) {
+                    o.put("request", "RunInstanceRequest");
+                } else {
+                    o.put("request", "TerminateInstanceRequest");
+                }
+                
+                //add batchVal
+                o.put("batch",batchVal);
 
                 o.put("server name", serverName);
                 String imageType = defaultImage;
