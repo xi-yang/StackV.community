@@ -30,6 +30,8 @@ import net.maxgigapop.mrs.service.compile.CompilerFactory;
 import net.maxgigapop.mrs.service.compute.MCE_AwsDxStitching;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -41,20 +43,31 @@ public class NegotiableWorker extends WorkerBase {
 
     @Override
     public void run() {
+        String method = "run";
         // annoatedModel and rootActions should have been instantiated by caller
         if (annoatedModelDelta == null) {
-            throw logger.error_throwing("run", "Workerflow cannot run with null annoatedModel");
+            throw logger.error_throwing(method, "Workerflow cannot run with null annoatedModel");
         }
         // retrieve latest system (ref) model
         retrieveSystemModel();
         // apply annoatedModelDelta->negotiationMarkup to this.referenceSystemModelVG.getCachedModelBase()
-        if (annoatedModelDelta.getNegotiationMarkup() != null && annoatedModelDelta.getNegotiationMarkup().containsKey("markup") && annoatedModelDelta.getNegotiationMarkup().get("markup") instanceof JSONArray) {
-            //@TODO: Validate with markup data UUID and Expires parameters
-            for (Object obj: (JSONArray)annoatedModelDelta.getNegotiationMarkup().get("markup")) {
+        if (annoatedModelDelta.getNegotiationMarkup() != null && !annoatedModelDelta.getNegotiationMarkup().isEmpty()) {
+            JSONParser parser = new JSONParser();
+            JSONObject jsonObj;
+            try {
+                jsonObj = (JSONObject) parser.parse(annoatedModelDelta.getNegotiationMarkup());
+            } catch (ParseException ex1) {
+                throw logger.error_throwing(method, "failed to parse negotiation markup JSON: " + ex1);
+            }
+            if (!jsonObj.containsKey("markup") || !(jsonObj.get("markup") instanceof JSONArray)) {
+                throw logger.error_throwing(method, "received negotiation markup JSON has no 'markup' array");
+            }
+            //@TODO: validate with markup data UUID and Expires parameters
+            for (Object obj : (JSONArray) jsonObj.get("markup")) {
                 JSONObject jsonDelta = (JSONObject) obj;
                 DeltaBase delta = new DeltaBase();
                 //@TODO: turn jsonDelta into delta
-                this.referenceSystemModelVG.getCachedModelBase().applyDelta(delta); 
+                this.referenceSystemModelVG.getCachedModelBase().applyDelta(delta);
             }
             //@TODO: incorporate 'conflict' array into workflow to constrain some MCEs in special need
         }

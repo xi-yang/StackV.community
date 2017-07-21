@@ -60,7 +60,8 @@ public class MCE_MPVlanConnection extends MCEBase {
             + "			\"hop\": \"?hop?\",\n"
             + "			\"vlan_tag\": \"?vid?\",\n"
             + "			\"#sparql\": \"SELECT DISTINCT ?hop ?vid WHERE {?hop a nml:BidirectionalPort. "
-            + "?hop nml:hasLabel ?vlan. ?vlan nml:value ?vid. ?hop mrs:tag \\\"l2path+$$:%%\\\".}\"\n"
+            + "?hop nml:hasLabel ?vlan. ?vlan nml:value ?vid. ?hop mrs:tag \\\"l2path+$$:%%\\\".}\",\n"
+            + "			\"#required\": \"false\"\n"
             + "		}\n"
             + "	]\n"
             + "}";

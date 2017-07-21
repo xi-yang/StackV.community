@@ -414,10 +414,12 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch2, Mrs.type, "dl_vlan"));
         bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch2, Mrs.value, bridgeVlanTag));
         Character bridgePortActionOrder = 'A'; // order of actions in bridgeFlow will be A-B-C-D-D
+        /*
         Resource resBridgeFlowAction = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
         bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resBridgeFlowAction));
         bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowAction, Mrs.type, "strip_vlan"));
         bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowAction, Mrs.value, "strip_vlan"));
+        */
         for (Resource mpvbFlow : mpvpFlowMap.keySet()) {
             Map flowParams = mpvpFlowMap.get(mpvbFlow);
             String flowInPort = (String) flowParams.get("port_in");

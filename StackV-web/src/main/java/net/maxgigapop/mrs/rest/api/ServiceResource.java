@@ -264,7 +264,7 @@ public class ServiceResource {
     }
 
     
-    @POST
+    @PUT
     @Consumes({"application/xml", "application/json"})
     @Produces("application/json")
     @Path("/{siUUID}")

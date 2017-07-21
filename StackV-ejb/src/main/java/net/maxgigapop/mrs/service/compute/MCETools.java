@@ -975,6 +975,16 @@ public class MCETools {
                 addStmts.add(model.createStatement(resSubnet, Mrs.tag, tag));
             }
         }
+        sparql = String.format("SELECT DISTINCT ?flow  WHERE {"
+                + " ?flow a mrs:Flow. "
+                + " ?of mrs:providesFlow ?flow."
+                + "}");
+        r = ModelUtil.sparqlQuery(model, sparql);
+        while (r.hasNext()) {
+            QuerySolution solution = r.next();
+            Resource resFlow = solution.getResource("flow");
+            addStmts.add(model.createStatement(resFlow, Mrs.tag, tag));
+        }
         model.add(addStmts);
     }
     
@@ -1054,12 +1064,12 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
-
+            /*
             Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "A"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
-            
+            */
             //$$ add new flow with action output to currentHop + swap suggestedVlan VLAN 
             String outFlowId = currentHop.getURI() + ":flow=output_vlan"+flowNameVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
@@ -1092,12 +1102,12 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
-
+            /*
             Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "A"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
-
+            */
             String outFlowId = lastPort.getURI() + ":flow=input_vlan" + flowNameVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
 

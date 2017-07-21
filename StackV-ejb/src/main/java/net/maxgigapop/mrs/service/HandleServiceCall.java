@@ -363,7 +363,7 @@ public class HandleServiceCall {
                     if (!jsonObj.containsKey("conflict") && !jsonObj.containsKey("markup")) {
                         throw logger.error_throwing(method, "received EJBExceptionNegotiable (" + ex  + "), but without providing 'conflict' or 'markup' data");
                     }
-                    serviceDelta.setNegotiationMarkup(jsonObj);
+                    serviceDelta.setNegotiationMarkup(ex.getMessage());
                     serviceDelta.setStatus("NEGOTIATING");
                     DeltaPersistenceManager.merge(serviceDelta);
                 } catch (EJBException ex) {
