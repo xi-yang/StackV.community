@@ -46,8 +46,10 @@ import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.DriverUtil;
+import net.maxgigapop.mrs.common.EJBExceptionNegotiable;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
+import org.apache.logging.log4j.core.net.Severity;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -109,8 +111,9 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 DeltaPersistenceManager.merge(aDelta);
             } else if (response[1].equals("409")) {
                 String jsonData = response[0];
-                //$$ parse into JSONObject / JSONArray
-                //$$ creates deltas in markupDeltaList of EJBExceptionNegotiable and throw
+                EJBExceptionNegotiable ejbNegotiable = new EJBExceptionNegotiable();
+                ejbNegotiable.setNegotitaionMessage(jsonData);
+                throw logger.throwing(method, ejbNegotiable);
             } else if (response[1].equals("400")) {
                 throw logger.error_throwing(method, driverInstance + "Bad Request - " + response[0]);
             } else if (response[1].equals("401")) {
@@ -283,8 +286,6 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     throw logger.error_throwing(method, driverInstance + " Resource Unfound - " + response[0]);
                 } else if (response[1].equals("406")) {
                     throw logger.error_throwing(method, driverInstance + " Request Unacceptable - " + response[0]);
-                } else if (response[1].equals("409")) {
-                    throw logger.error_throwing(method, driverInstance + " Resource Conflict - " + response[0]);
                 } else if (response[1].equals("500")) {
                     throw logger.error_throwing(method, driverInstance + " RM Internal Error - " + response[0]);
                 } else if (!response[1].equals("200")) { // handle other HTTP code

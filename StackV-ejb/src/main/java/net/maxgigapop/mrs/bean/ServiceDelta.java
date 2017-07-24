@@ -31,6 +31,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
+import javax.persistence.Transient;
 import org.json.simple.JSONObject;
 
 /**
@@ -53,7 +54,9 @@ public class ServiceDelta extends DeltaBase {
 
     private String status = "INIT";
 
-    @Lob
+    //@TODO: @Transient to avoid DB change for now; change back to @Lob later
+    //@Lob
+    @Transient
     private String negotiationMarkup = null;
     
     public String getReferenceUUID() {

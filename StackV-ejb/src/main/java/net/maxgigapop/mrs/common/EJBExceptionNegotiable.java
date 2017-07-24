@@ -13,13 +13,13 @@ import javax.ejb.EJBException;
  * @author xyang
  */
 public class EJBExceptionNegotiable extends EJBException {
-    protected List modifierDeltaList = null;
+    protected String negotitaionMessage = null;
 
-    public List getModifierDeltaList() {
-        return modifierDeltaList;
+    public String getNegotitaionMessage() {
+        return negotitaionMessage;
     }
 
-    public void setModifierDeltaList(List modifierDeltaList) {
-        this.modifierDeltaList = modifierDeltaList;
+    public void setNegotitaionMessage(String negotitaionMessage) {
+        this.negotitaionMessage = negotitaionMessage;
     }
 }
