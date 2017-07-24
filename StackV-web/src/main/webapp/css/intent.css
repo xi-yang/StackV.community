@@ -81,6 +81,10 @@ IN THE WORK.
     margin-bottom: 10px;
     width: 100%;
 }
+.intent-stage-div input .invalid {
+    border: 1px solid red;
+    color: red;
+}
 
 .intent-group-div {
     margin-left: 15px;

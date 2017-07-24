@@ -12,12 +12,8 @@
             <tag>vms</tag>
             <name>VMs</name>
         </block>
-        <block condition="aws-form">
-            <tag>awsgateways</tag>
-            <name>Gateways</name>
-        </block>
-        <block condition="openstack-form">
-            <tag>opsgateways</tag>
+        <block>
+            <tag>gateways</tag>
             <name>Gateways</name>
         </block>
         <block condition="openstack-form">
@@ -50,6 +46,7 @@
                     <text>3</text>
                     <value>3</value>
                 </source>
+                <valid>string</valid>
             </input>
             <input>
                 <name>Type</name>
@@ -58,6 +55,7 @@
             <input>
                 <name>CIDR</name>
                 <type>text</type>
+                <valid>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}</valid>
             </input>
         </group>        
     </stage>
@@ -84,17 +82,17 @@
                 <input>
                     <name>From</name>
                     <type>text</type>
-                    <size>small</size>
+                    <size>xlarge</size>
                 </input>
                 <input>
                     <name>To</name>
                     <type>text</type>
-                    <size>small</size>
+                    <size>xlarge</size>
                 </input>
                 <input>
                     <name>Next Hop</name>
                     <type>text</type>
-                    <size>small</size>
+                    <size>xlarge</size>
                 </input>
             </group>
         </group>
@@ -127,7 +125,7 @@
                 <type>text</type>
                 <default>any</default>
             </input>
-            <input>
+            <input condition="openstack-form">
                 <name>Floating IP</name>
                 <type>text</type>
                 <default>any</default>
@@ -141,58 +139,29 @@
                 <input>
                     <name>Elastic IP</name>
                     <type>text</type>
-                    <size>small</size>
                 </input>                
             </group>
-            <group factory="true" label="false" name="Route">
+            <group factory="true" name="Route">
                 <input>
                     <name>From</name>
                     <type>text</type>
-                    <size>small</size>
+                    <size>xlarge</size>
                 </input>
                 <input>
                     <name>To</name>
                     <type>text</type>
-                    <size>small</size>
+                    <size>xlarge</size>
                 </input>
                 <input>
                     <name>Next Hop</name>
                     <type>text</type>
-                    <size>small</size>
+                    <size>xlarge</size>
                 </input>
             </group>
         </group>
     </stage>
-    <stage name="Gateways" condition="aws-form">
-        <group block="awsgateways" name="AWS Gateway" collapsible="true">            
-            <input>
-                <name>Name</name>
-                <type>text</type>
-                <initial>Direct Connect</initial>
-            </input>
-            <input>
-                <name>Type</name>
-                <type>select</type>
-                <options>
-                    <option>AWS Direct Connect</option>
-                </options>
-            </input>                        
-            <group name="Route" label="false">                
-                <input>
-                    <name>To</name>
-                    <type>text</type>
-                    <size>small</size>
-                </input>
-                <input>
-                    <name>Next Hop</name>
-                    <type>text</type>
-                    <size>small</size>
-                </input>
-            </group>
-        </group>
-    </stage>
-    <stage name="Gateways" condition="openstack-form">
-        <group block="opsgateways" name="OPS Gateway" collapsible="true">
+    <stage name="Gateways">
+        <group block="gateways" name="Gateway" collapsible="true">            
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -201,26 +170,30 @@
                 <name>Type</name>
                 <type>select</type>
                 <options>
-                    <option>UCS Port Profile</option>
-                    <option>L2 Stitch Port</option>
+                    <option condition="aws-form">AWS Direct Connect</option>
+                    <option condition="openstack-form">UCS Port Profile</option>
+                    <option condition="openstack-form">L2 Stitch Port</option>
                 </options>
             </input>                        
-            <group name="Route" label="false">
+            <group factory="true" name="Route" label="false">                
                 <input>
                     <name>From</name>
                     <type>text</type>
+                    <size>xlarge</size>
                 </input>
                 <input>
                     <name>To</name>
                     <type>text</type>
+                    <size>xlarge</size>
                 </input>
                 <input>
                     <name>Next Hop</name>
                     <type>text</type>
+                    <size>xlarge</size>
                 </input>
             </group>
         </group>
-    </stage>
+    </stage>    
     <stage name="SRIOVs" condition="openstack-form">
         <group block="sriovs" name="SRIOV" collapsible="true">
             <path>
@@ -230,7 +203,7 @@
             <input>
                 <name>Hosting Gateway</name>
                 <type>select</type>
-                <link>opsgateways</link>
+                <link>gateways</link>
             </input>  
             <input>
                 <name>Hosting VM</name>

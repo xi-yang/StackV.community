@@ -26,6 +26,7 @@
 var conditions = [];
 var factories = {};
 var initials = {};
+var validation = {};
 var intent;
 var manifest;
 var transit = false;
@@ -238,6 +239,7 @@ function renderInputs(arr, $parent) {
             var name = constructID(ele);
             var trigger = ele.getAttribute("trigger");
             var condition = ele.getAttribute("condition");
+            var valid = ele.getAttribute("valid");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
             var $input = $("<input>", {type: type, class: "intent-input", id: name});
@@ -261,6 +263,9 @@ function renderInputs(arr, $parent) {
                         break;
                     case "large":
                         $label.addClass("col-sm-8");
+                        break;
+                    case "xlarge":
+                        $label.addClass("col-sm-12");
                         break;
                     default:
                         $label.addClass("col-sm-6");
@@ -330,11 +335,14 @@ function renderInputs(arr, $parent) {
                 $input = $("<select>", {id: name, class: "intent-input"});
                 var selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
+                var $default = $("<option>", {disabled: true, selected: true}).text("");
+                $input.append($default);
 
                 for (var j = 0; j < options.length; j++) {
-                    var $option = $("<option>");
+                    var $option = $("<option>", {disabled: true});
                     $option.text(options[j].innerHTML);
                     $option.val(options[j].innerHTML);
+                    $option.attr("data-condition-select", options[j].getAttribute("condition"));
 
                     $input.append($option);
                 }
@@ -347,6 +355,7 @@ function renderInputs(arr, $parent) {
                         $label.attr("data-trigger", trigger);
                         $label.click(function () {
                             $("[data-condition='" + $(this).data("trigger") + "']").addClass("conditioned");
+                            $("[data-condition-select='" + $(this).data("trigger") + "']").removeAttr("disabled");
                             conditions.push($(this).data("trigger"));
                         });
                         break;
@@ -355,6 +364,22 @@ function renderInputs(arr, $parent) {
             if (condition) {
                 $label.addClass("conditional");
                 $label.attr("data-condition", condition);
+            }
+
+            if (ele.getElementsByTagName("valid").length > 0) {
+                var valid = ele.getElementsByTagName("valid")[0].innerHTML;
+                var regex;
+                switch (valid) {
+                    case "string":
+                        regex = new RegExp("\\S+", "gm");
+                        break;
+                    default:
+                        valid = valid.replace(/\\/g, "\\");
+                        regex = new RegExp(valid, "gm");
+                        break;
+                }
+
+                validation[name] = regex;
             }
 
             $label.append($input);
@@ -452,34 +477,54 @@ function recursivelyFactor(id, ele) {
 
 function submitIntent() {
     refreshLinks();
-    var json = {};
-    $("#intent-panel-body .intent-input").each(function () {
-        var cond = $(this).parents('.conditional').length;
-        if (cond > 0 && $(this).parents('.conditioned').length < cond) {
-            ;
-        } else {
-            var arr = this.id.split("-");
+    $(".intent-input.invalid").removeClass("invalid");
 
-            var last = json;
-            var i;
-            for (i = 1; i < (arr.length - 1); i++) {
-                var key = arr[i];
-                if (!(key in last)) {
-                    last[key] = {};
-                }
-                last = last[key];
-            }
-            var key = arr[i];
-            if ($(this).attr("type") === "checkbox") {
-                last[key] = $(this).is(":checked");
-            } else {
-                last[key] = $(this).val();
-            }
+    // Validate
+    var valid = true;
+    for (var key in validation) {
+        var regex = validation[key];
+        var $input = $("#" + key);
+
+        if ($input.val() === null || $input.val() === "") {
+            valid = false;
+            $input.addClass("invalid");
+        } else if ($input.val().match(regex) === null) {
+            valid = false;
+            $input.addClass("invalid");
         }
-    });
+    }
 
-    manifest = json;
-    parseManifestIntoJSON();
+    if (valid) {
+        // Submit
+        var json = {};
+        $("#intent-panel-body .intent-input").each(function () {
+            var cond = $(this).parents('.conditional').length;
+            if (cond > 0 && $(this).parents('.conditioned').length < cond) {
+                ;
+            } else {
+                var arr = this.id.split("-");
+
+                var last = json;
+                var i;
+                for (i = 1; i < (arr.length - 1); i++) {
+                    var key = arr[i];
+                    if (!(key in last)) {
+                        last[key] = {};
+                    }
+                    last = last[key];
+                }
+                var key = arr[i];
+                if ($(this).attr("type") === "checkbox") {
+                    last[key] = $(this).is(":checked");
+                } else {
+                    last[key] = $(this).val();
+                }
+            }
+        });
+
+        manifest = json;
+        parseManifestIntoJSON();
+    }
 }
 
 // UTILITY FUNCTIONS
@@ -830,7 +875,7 @@ function trimLeaves(recur) {
             trimLeaves(recur[prop]);
         }
 
-        if (recur[prop] === "") {
+        if (recur[prop] === "" || recur[prop] === null) {
             delete recur[prop];
         } else if (recur[prop] && recur[prop].constructor === Object && Object.keys(recur[prop]).length === 0) {
             delete recur[prop];
@@ -843,6 +888,7 @@ function trimLeaves(recur) {
 function recondition() {
     for (var i = 0; i < conditions.length; i++) {
         $("[data-condition='" + conditions[i] + "']").addClass("conditioned");
+        $("[data-condition-select='" + conditions[i] + "']").removeAttr("disabled");
     }
 }
 
