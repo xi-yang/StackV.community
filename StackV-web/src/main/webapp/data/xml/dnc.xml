@@ -4,24 +4,39 @@
         xsi:noNamespaceSchemaLocation="intent.xsd">
     <meta>
         <name>Dynamic Network Connection</name>
+        <validation>
+            <constraint>
+                <name>string</name>
+                <regex>\S+</regex>
+                <message>Please enter a valid string.</message>
+            </constraint>
+            <constraint>
+                <name>vlan</name>
+                <regex>^\d{4}$|^\d{4}-\d{4}$|^any$</regex>
+                <message>Please enter a valid VLAN.</message>
+            </constraint>
+        </validation>
     </meta>
     <stage name="Connections">
         <group factory="true" name="link" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
+                <valid>string</valid>
             </input>
             <group name="source">
                 <input>
                     <name>URI</name>
                     <type>text</type>
                     <size>large</size>
+                    <valid>string</valid>
                 </input>
                 <input>
                     <name>VLAN</name>
                     <type>text</type>
                     <size>small</size>
                     <default>any</default>
+                    <valid>vlan</valid>
                 </input>
             </group>
             <group name="destination">
@@ -29,12 +44,14 @@
                     <name>URI</name>
                     <type>text</type>
                     <size>large</size>
+                    <valid>string</valid>
                 </input>
                 <input>
                     <name>VLAN</name>
                     <type>text</type>
                     <size>small</size>
                     <default>any</default>
+                    <valid>vlan</valid>
                 </input>
             </group>
         </group>
