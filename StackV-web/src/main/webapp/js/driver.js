@@ -681,10 +681,10 @@ function addDriver() {
         contentType: 'application/json',
         data: sentData,
         success: function () {
-            updateDrivers();
+            updateDrivers(URI);
+            alert("success");
         },
         error: function(){
-            alert("failed");
         }
     });
 }
@@ -700,12 +700,14 @@ function removeDriverProfile(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function () {
-            updateDrivers();
+            updateDrivers(URI);
         }
     });
 }
 //needs to change
-function updateDrivers() {
+//UPDATE THE API CALLS
+//Fixes for Andrew
+function updateDrivers(URI) {
     var userId = keycloak.tokenParsed.preferred_username;
     var table = document.getElementById("saved-table");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/get';
@@ -728,8 +730,10 @@ function updateDrivers() {
                 var edButton = document.createElement("button");
                 
                 detButton.className = "button-profile-select btn btn-default";
+                detButton.style.width = "64px";
                 
                 delButton.className = "button-profile-select btn btn-default";
+                delButton.style.width = "64px";
 
                 detButton.innerHTML = "Details";
                 detButton.onclick = function () {
@@ -739,23 +743,25 @@ function updateDrivers() {
                     clearPanel();
                     activateSide();
                     changeNameDet();
-                    getDetailsProfile(this.id);
+                    getDetailsProfile(URI);
                 };
                
                 detButton.id = result[i + 3];
 
                 delButton.innerHTML = "Delete";
                 delButton.onclick = function () {
-                    removeDriverProfile(this.id);
+                    removeDriverProfile(URI);
                 };
                
                 delButton.id = result[i + 3];
 
                 edButton.innerHTML = "Edit";
+                edButton.style.width = "64px";
+                edButton.className = "button-profile-select btn btn-default";
                 edButton.onclick = function () {
                     clearPanel();
                     activateSide();
-                    editDriverProfile(this.id);
+                    editDriverProfile(URI);
                 };
                 
                 edButton.id = result[i + 3];
@@ -787,6 +793,7 @@ function editDriverProfile(clickID) {
         row.cells[1].appendChild(textbox);
     }
 }
+//FIX THIS
 function getDetailsProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var panel = document.getElementById("install-type");
@@ -838,6 +845,9 @@ function getDetailsProfile(clickID) {
             };
             instDetailsButton.className = "button-profile-select btn btn-default";
             botpanel.appendChild(instDetailsButton);
+        },
+        error: function(){
+            alert("Failure");
         }
     });
     panel.appendChild(table);
@@ -865,7 +875,7 @@ function getAllDetails() {
                 var delButton = document.createElement("button");
 
                 detButton.innerHTML = "Details";
-                detButton.style.width = "65px";
+                detButton.style.width = "64px";
                 detButton.className = "button-profile-select btn btn-default";
                 detButton.onclick = function () {
                     clearPanel();

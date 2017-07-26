@@ -683,6 +683,7 @@ function loadGroupTable(groupname) {
     $("#acl-group-role-table > tbody").html("");
 
     var apiUrl = baseUrl + "/StackV-web/restapi/app/keycloak/groups/" + group;
+    alert(apiUrl);
     $.ajax({
         url: apiUrl,
         type: 'GET',

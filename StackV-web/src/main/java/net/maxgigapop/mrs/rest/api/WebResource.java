@@ -543,7 +543,7 @@ public class WebResource {
      * TODO - Add Example Response
      */
     @PUT
-    @Path("driver/{user}/add")
+    @Path("/driver/{user}/add")
     @Consumes(value = {"application/json"})
     @RolesAllowed("Drivers")
     public void addDriver(@PathParam("user") String username, final String dataInput) {
@@ -600,7 +600,7 @@ public class WebResource {
     }
 
     @PUT
-    @Path("driver/{user}/edit/{topur}")
+    @Path("/driver/{user}/edit/{topur}")
     @RolesAllowed("Drivers")
     public String editDriverProfile(@PathParam("user") String username, @PathParam("topuri") String uri) throws SQLException {
         Properties front_connectionProps = new Properties();
@@ -636,7 +636,7 @@ public class WebResource {
      * TODO - Add Example Response
      */
     @DELETE
-    @Path(value = "/driver/{username}/delete/{topuri}")
+    @Path(value = "driver/{username}/delete/{topuri}")
     @RolesAllowed("Drivers")
     public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) {
         Connection front_conn = null;
