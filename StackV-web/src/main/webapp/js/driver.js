@@ -682,7 +682,6 @@ function addDriver() {
         data: sentData,
         success: function () {
             updateDrivers(URI);
-            alert("success");
         },
         error: function(){
         }
@@ -744,7 +743,10 @@ function updateDrivers(URI) {
                     activateSide();
                     changeNameDet();
                     getDetailsProfile(URI);
+                    openContentPanel();
                 };
+                
+                    
                
                 detButton.id = result[i + 3];
 
@@ -821,6 +823,7 @@ function getDetailsProfile(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
+            alert(JSON.stringify(result));
             $('#installed-type').empty();
             for (var key in result) {
                 if (result.hasOwnProperty(key)) {

@@ -600,7 +600,7 @@ public class WebResource {
     }
 
     @PUT
-    @Path("/driver/{user}/edit/{topur}")
+    @Path("/driver/{user}/edit/{topuri}")
     @RolesAllowed("Drivers")
     public String editDriverProfile(@PathParam("user") String username, @PathParam("topuri") String uri) throws SQLException {
         Properties front_connectionProps = new Properties();
@@ -690,9 +690,9 @@ public class WebResource {
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 prop);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+topuri+"\'");
+//        prep.setString(1, username);
+//        prep.setString(2, topuri);
         ResultSet rs = prep.executeQuery();
 
         rs.next();
