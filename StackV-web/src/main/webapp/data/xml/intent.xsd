@@ -54,13 +54,15 @@ IN THE WORK.
     <xs:element name="size" type="xs:string"/>    
     <xs:element name="link" type="xs:string"/>    
     <xs:element name="default" type="xs:string"/>
-    <xs:element name="initial" type="xs:string"/>
-    <xs:element name="option" type="xs:string"/>
+    <xs:element name="initial" type="xs:string"/>    
     <xs:element name="interval" type="xs:string"/>
     <xs:element name="url" type="xs:string"/>
     <xs:element name="value" type="xs:string"/>
     <xs:element name="text" type="xs:string"/>
     <xs:element name="parent" type="xs:string"/>
+    <xs:element name="valid" type="xs:string"/>
+    <xs:element name="regex" type="xs:string"/>
+    <xs:element name="message" type="xs:string"/>
     
     <!--Complex-->
     <xs:element name="intent">
@@ -76,7 +78,16 @@ IN THE WORK.
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="name"/>
-                <xs:element ref="block" minOccurs="0" maxOccurs="10"/>                
+                <xs:element ref="block" minOccurs="0" maxOccurs="10"/>
+                <xs:element ref="validation" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="validation">
+        <xs:complexType>
+            <xs:sequence>                
+                <xs:element ref="constraint" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -97,7 +108,7 @@ IN THE WORK.
     <xs:element name="group">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="path"/>
+                <xs:element ref="path" minOccurs="0"/>
                 <xs:element ref="input" maxOccurs="unbounded"/>
                 <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
@@ -121,6 +132,7 @@ IN THE WORK.
                 <xs:element ref="source" minOccurs="0"/>
                 <xs:element ref="options" minOccurs="0"/>
                 <xs:element ref="link" minOccurs="0"/>
+                <xs:element ref="valid" minOccurs="0"/>
             </xs:sequence>
             <xs:attribute ref="trigger"/>
             <xs:attribute ref="condition"/>
@@ -160,6 +172,26 @@ IN THE WORK.
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="parent" maxOccurs="10"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>   
+    
+    <xs:element name="option">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:string">
+                    <xs:attribute name="condition" type="xs:string" />
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="constraint">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="name"/>
+                <xs:element ref="regex"/>
+                <xs:element ref="message" minOccurs="0"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>   

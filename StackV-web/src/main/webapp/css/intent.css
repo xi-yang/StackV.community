@@ -81,9 +81,18 @@ IN THE WORK.
     margin-bottom: 10px;
     width: 100%;
 }
-.intent-stage-div input .invalid {
+.intent-input.invalid {
     border: 1px solid red;
     color: red;
+}
+.intent-input-message {
+    font-weight: normal;
+    text-align: left;
+    color: darkred;
+    display: none;
+}
+.intent-input.invalid + .intent-input-message {
+    display: block;
 }
 
 .intent-group-div {
@@ -238,6 +247,7 @@ ul#progressbar li:first-child:after {
 /*marking active/completed steps green*/
 /*The number of the step and the connector before it = green*/
 ul#progressbar li.active:before,  ul#progressbar li.active:after{
-    background: black;
+    background: #ddd;
     color: #333;
+    border: #333 solid 1px;
 }

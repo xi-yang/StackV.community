@@ -26,7 +26,6 @@
 var conditions = [];
 var factories = {};
 var initials = {};
-var validation = {};
 var intent;
 var manifest;
 var transit = false;
@@ -51,6 +50,7 @@ function loadIntent(type) {
             intent = xml.children[0];
             renderIntent();
             parseSchemaIntoManifest(intent);
+            preloadAWSVCN();
         },
         error: function (err) {
             console.log('Error Loading XML! \n' + err);
@@ -80,7 +80,7 @@ function initializeIntent() {
         var stage = stages[i];
         var id = constructID(stage);
         var $div = $("<div>", {class: "intent-stage-div", id: id});
-        var $prog = $("<li>");
+        var $prog = $("<li>", {id: "prog-" + id});
         if (i === 1) {
             $div.addClass("active");
             $activeStage = $div;
@@ -120,8 +120,8 @@ function initMeta(meta) {
 
     // Render blocks
     var $blockDiv = $("<div>").attr("id", "intent-panel-meta-block");
-    var blocks = meta.children;
-    for (var i = 1; i < blocks.length; i++) {
+    var blocks = meta.getElementsByTagName("block");
+    for (var i = 0; i < blocks.length; i++) {
         var $div = $("<div>", style = "margin-bottom:20px;");
         var block = blocks[i];
         var tag = block.children[0].innerHTML;
@@ -243,6 +243,7 @@ function renderInputs(arr, $parent) {
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
             var $input = $("<input>", {type: type, class: "intent-input", id: name});
+            var $message = null;
             switch (type) {
                 case "button":
                     $input.removeClass("intent-input");
@@ -329,7 +330,7 @@ function renderInputs(arr, $parent) {
                 $input.attr("data-link", link);
 
                 $label.click(function () {
-                    refreshLinks();
+                    //refreshLinks();
                 });
             } else if (ele.getElementsByTagName("options").length > 0) {
                 $input = $("<select>", {id: name, class: "intent-input"});
@@ -339,10 +340,16 @@ function renderInputs(arr, $parent) {
                 $input.append($default);
 
                 for (var j = 0; j < options.length; j++) {
-                    var $option = $("<option>", {disabled: true});
+                    var $option;
+                    if (options[j].getAttribute("condition") !== null) {
+                        $option = $("<option>", {disabled: true});
+                        $option.attr("data-condition-select", options[j].getAttribute("condition"));
+                    } else {
+                        $option = $("<option>");
+                    }
+
                     $option.text(options[j].innerHTML);
                     $option.val(options[j].innerHTML);
-                    $option.attr("data-condition-select", options[j].getAttribute("condition"));
 
                     $input.append($option);
                 }
@@ -367,22 +374,22 @@ function renderInputs(arr, $parent) {
             }
 
             if (ele.getElementsByTagName("valid").length > 0) {
-                var valid = ele.getElementsByTagName("valid")[0].innerHTML;
-                var regex;
-                switch (valid) {
-                    case "string":
-                        regex = new RegExp("\\S+", "gm");
-                        break;
-                    default:
-                        valid = valid.replace(/\\/g, "\\");
-                        regex = new RegExp(valid, "gm");
-                        break;
-                }
+                var validRef = ele.getElementsByTagName("valid")[0].innerHTML;
+                $input.attr("data-valid", validRef);
 
-                validation[name] = regex;
+                $input.change(function () {
+                    $(this).removeClass("invalid");
+                    var $stage = $($(this).parents(".intent-stage-div")[0]);
+                    if ($stage.find(".invalid").length === 0) {
+                        $("#prog-" + $stage.attr("id")).removeClass("invalid");
+                    }
+                });
             }
 
             $label.append($input);
+            if ($message) {
+                $label.append($message);
+            }
             $parent.append($label);
         }
     }
@@ -480,17 +487,43 @@ function submitIntent() {
     $(".intent-input.invalid").removeClass("invalid");
 
     // Validate
+    var validation = $("[data-valid]");
     var valid = true;
-    for (var key in validation) {
-        var regex = validation[key];
-        var $input = $("#" + key);
+    for (var i = 0; i < validation.length; i++) {
+        var $input = $(validation[i]);
+        var validRef = $input.data("valid");
+        var validEle = intent.children[0].getElementsByTagName("validation")[0];
+        var valid = null;
+        for (var j = 0; j < validEle.children.length; j++) {
+            var constraint = validEle.children[j];
+            if (constraint.children[0].innerHTML === validRef) {
+                valid = constraint;
+                break;
+            }
+        }
+        if (valid) {
+            var regex = valid.children[1].innerHTML;
+            regex = regex.replace(/\\/g, "\\");
+            regex = new RegExp(regex, "gm");
 
-        if ($input.val() === null || $input.val() === "") {
-            valid = false;
-            $input.addClass("invalid");
-        } else if ($input.val().match(regex) === null) {
-            valid = false;
-            $input.addClass("invalid");
+            var $message = $("<div>", {class: "intent-input-message"});
+            if (valid.getElementsByTagName("message").length > 0) {
+                $message.text(valid.getElementsByTagName("message")[0].innerHTML);
+            }
+
+            $input.parent().append($message);
+
+            if ($input.val() === null || $input.val() === "") {
+                valid = false;
+                $input.addClass("invalid");
+                var $stage = $($input.parents(".intent-stage-div")[0]);                
+                $("#prog-" + $stage.attr("id")).addClass("invalid");
+            } else if ($input.val().match(regex) === null) {
+                valid = false;
+                $input.addClass("invalid");
+                var $stage = $($input.parents(".intent-stage-div")[0]);                
+                $("#prog-" + $stage.attr("id")).addClass("invalid");
+            }
         }
     }
 
@@ -564,11 +597,13 @@ function prevStage() {
             return;
         }
 
+        refreshLinks();
+
         // Update progress bar
         var $prog = $("#progressbar");
-        var activeProg = $prog.children(".active")[0];
-        activeProg.className = "";
-        activeProg.previousElementSibling.className = "active";
+        var $activeProg = $($prog.children(".active")[0]);
+        $activeProg.removeClass("active");
+        $activeProg.prev().addClass("active");
 
         var prevID = $prev.attr("id");
 
@@ -602,11 +637,13 @@ function nextStage(flag) {
             return;
         }
 
+        refreshLinks();
+
         // Update progress bar
         var $prog = $("#progressbar");
-        var activeProg = $prog.children(".active")[0];
-        activeProg.className = "";
-        activeProg.nextElementSibling.className = "active";
+        var $activeProg = $($prog.children(".active")[0]);
+        $activeProg.removeClass("active");
+        $activeProg.next().addClass("active");
 
         var nextID = $next.attr("id");
 
@@ -900,4 +937,30 @@ function initializeInputs() {
         $input.val(val);
         $input.removeAttr("data-initial");
     }
+}
+
+
+// TESTING
+
+function preloadAWSVCN() {
+    $("#details-network-parent").val("urn:ogf:network:aws.amazon.com:aws-cloud");
+    $("#details-network-type").val("internal");
+    $("#details-network-cidr").val("10.0.0.0/24");
+
+    $("#subnets-subnet_num1-name").val("TestSub1");
+    $("#subnets-subnet_num1-cidr_block").val("10.0.0.0/24");
+    $("#subnets-subnet_num1-route_num1-from").val("TestFrom");
+    $("#subnets-subnet_num1-route_num1-to").val("TestTo");
+    $("#subnets-subnet_num1-route_num1-next_hop").val("TestNext");
+
+    $("#vms-vm_num1-name").val("TestVM1");
+    $("#vms-vm_num1-subnet_host").val("subnet_num1");
+    $("#vms-vm_num1-keypair_name").val("driver_key");
+    $("#vms-vm_num1-security_group").val("geni");
+    $("#vms-vm_num1-route_num1-from").val("TestFrom");
+    $("#vms-vm_num1-route_num1-to").val("TestTo");
+    $("#vms-vm_num1-route_num1-next_hop").val("TestNext");
+
+    $("#gateways-gateway_num1-name").val("TestGate");
+    $("#gateways-gateway_num1-route_num1-to").val("TestTo");
 }
