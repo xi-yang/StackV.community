@@ -1006,6 +1006,7 @@ public class OpenStackPush {
                 }
             } else if (o.get("request").toString().equals("VpnEndpointRequest")) {
                 String servername = (String) o.get("server name");
+                String uri = (String) o.get("uri");
                 String localIp = (String) o.get("local-ip");
                 String localSubnet = (String) o.get("local-subnet");
                 String remoteSubnet = (String) o.get("remote-subnet");
@@ -1023,10 +1024,13 @@ public class OpenStackPush {
                     //secret = (String) o.get("secret-"+i);
                     newMetadata += ",'remote_ip_"+i+"':'"+remoteIp+"'";
                     //newMetadata += ",'secret_"+i+"':'"+secret+"'";
+                    //the key is added to the metadata but only as a dummy value (PSK_1, PSK_2, etc)
+                    newMetadata += ",'secret_"+i+"':'PSK_"+i+"'";
                     i++;
                 }
                 newMetadata += "}";
                 client.setMetadata(servername, "ipsec", newMetadata);
+                client.setMetadata(servername, "ipsec:uri", uri);
             } else if (o.get("request").toString().equals("GlobusConnectRequest")) {
                 String servername = (String) o.get("server name");
                 String globusUser = (String) o.get("username");
@@ -2706,7 +2710,7 @@ public class OpenStackPush {
                 + "?remoteSubnetUri a mrs:NetworkAddress ; mrs:type \"ipv4-prefix-list\" ; "
                 + "mrs:value ?remoteSubnet . FILTER regex( str(?remoteSubnetUri), \".*remote.*\") "
                 + "}";
-
+        
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         
         while (r.hasNext()) {
@@ -2768,6 +2772,7 @@ public class OpenStackPush {
             request.put("request", "VpnEndpointRequest");
             if (creation == true) request.put("status", "create");
             else request.put("status", "delete");
+            request.put("uri", strongswan);
             request.put("server name", serverName);
             request.put("local-ip", localIp);
             request.put("local-subnet", localSubnet);
