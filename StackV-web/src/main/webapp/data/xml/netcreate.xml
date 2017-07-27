@@ -96,7 +96,7 @@
                 <valid>string</valid>
             </input>
             <input>
-                <name>CIDR Block</name>
+                <name>CIDR</name>
                 <type>text</type>
                 <valid>cidr</valid>
             </input>
@@ -113,20 +113,21 @@
                 <input>
                     <name>From</name>
                     <type>text</type>
-                    <size>xlarge</size>
                     <valid>string</valid>
                 </input>
                 <input>
                     <name>To</name>
                     <type>text</type>
-                    <size>xlarge</size>
                     <valid>string</valid>
                 </input>
                 <input>
                     <name>Next Hop</name>
                     <type>text</type>
-                    <size>xlarge</size>
                     <valid>string</valid>
+                </input>
+                <input>
+                    <name>Type</name>
+                    <type>text</type>
                 </input>
             </group>
         </group>
@@ -199,20 +200,21 @@
                 <input>
                     <name>From</name>
                     <type>text</type>
-                    <size>xlarge</size>
                     <valid>string</valid>
                 </input>
                 <input>
                     <name>To</name>
                     <type>text</type>
-                    <size>xlarge</size>
                     <valid>string</valid>
                 </input>
                 <input>
                     <name>Next Hop</name>
                     <type>text</type>
-                    <size>xlarge</size>
                     <valid>string</valid>
+                </input>
+                <input>
+                    <name>Type</name>
+                    <type>text</type>
                 </input>
             </group>
         </group>
@@ -238,20 +240,21 @@
                 <input>
                     <name>From</name>
                     <type>text</type>
-                    <size>xlarge</size>
                     <valid>string</valid>
                 </input>
                 <input>
                     <name>To</name>
                     <type>text</type>
-                    <size>xlarge</size>
                     <valid>string</valid>
                 </input>
                 <input>
                     <name>Next Hop</name>
                     <type>text</type>
-                    <size>xlarge</size>
                     <valid>string</valid>
+                </input>
+                <input>
+                    <name>Type</name>
+                    <type>text</type>
                 </input>
             </group>
         </group>

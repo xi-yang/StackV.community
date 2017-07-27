@@ -21,11 +21,12 @@
  * IN THE WORK.
  */
 
-/* global Mousetrap, keycloak */
+/* global Mousetrap, keycloak, Power2 */
 
 var conditions = [];
 var factories = {};
 var initials = {};
+var gsap = {};
 var intent;
 var manifest;
 var transit = false;
@@ -81,11 +82,6 @@ function initializeIntent() {
         var id = constructID(stage);
         var $div = $("<div>", {class: "intent-stage-div", id: id});
         var $prog = $("<li>", {id: "prog-" + id});
-        if (i === 1) {
-            $div.addClass("active");
-            $activeStage = $div;
-            $prog.addClass("active");
-        }
         if (stage.getAttribute("condition")) {
             $div.addClass("conditional");
             $div.attr("data-condition", stage.getAttribute("condition"));
@@ -103,6 +99,13 @@ function initializeIntent() {
         panel.append($div);
         stages[id] = $div;
         $currentStageDiv = $div;
+        gsap[id] = new TweenLite("#" + id, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
+
+        if (i === 1) {
+            $activeStage = $div;
+            gsap[id].play();
+            $prog.addClass("active");
+        }
 
         $progress.append($prog);
         // Begin recursive rendering
@@ -516,12 +519,12 @@ function submitIntent() {
             if ($input.val() === null || $input.val() === "") {
                 valid = false;
                 $input.addClass("invalid");
-                var $stage = $($input.parents(".intent-stage-div")[0]);                
+                var $stage = $($input.parents(".intent-stage-div")[0]);
                 $("#prog-" + $stage.attr("id")).addClass("invalid");
             } else if ($input.val().match(regex) === null) {
                 valid = false;
                 $input.addClass("invalid");
-                var $stage = $($input.parents(".intent-stage-div")[0]);                
+                var $stage = $($input.parents(".intent-stage-div")[0]);
                 $("#prog-" + $stage.attr("id")).addClass("invalid");
             }
         }
@@ -579,7 +582,6 @@ function collapseDiv($name, $div) {
 function prevStage() {
     if (!proceeding) {
         proceeding = true;
-        var active = $activeStage.attr("id");
         var $prev = $activeStage.prev();
         if ($prev.hasClass("unreturnable")) {
             proceeding = false;
@@ -605,16 +607,15 @@ function prevStage() {
         $activeProg.removeClass("active");
         $activeProg.prev().addClass("active");
 
+        var currID = $activeStage.attr("id");
         var prevID = $prev.attr("id");
 
-        $activeStage.removeClass("active");
-        $("[data-stage=" + active + "").removeClass("active");
+        gsap[currID].reverse();
+        $activeStage = $prev;
 
         // Activate new rendering
         setTimeout(function () {
-            $activeStage = $prev;
-            $activeStage.addClass("active");
-            $("[data-stage=" + prevID + "").addClass("active");
+            gsap[prevID].play();
             proceeding = false;
         }, 500);
     }
@@ -627,7 +628,6 @@ function nextStage(flag) {
             proceeding = false;
             return;
         }
-        var active = $activeStage.attr("id");
         var $next = $activeStage.next();
         while ($next.hasClass("conditional") && !$next.hasClass("conditioned")) {
             $next = $next.next();
@@ -645,16 +645,14 @@ function nextStage(flag) {
         $activeProg.removeClass("active");
         $activeProg.next().addClass("active");
 
+        var currID = $activeStage.attr("id");
         var nextID = $next.attr("id");
-
-        $activeStage.removeClass("active");
-        $("[data-stage=" + active + "").removeClass("active");
+        gsap[currID].reverse();
+        $activeStage = $next;
 
         // Activate new rendering
         setTimeout(function () {
-            $activeStage = $next;
-            $activeStage.addClass("active");
-            $("[data-stage=" + nextID + "").addClass("active");
+            gsap[nextID].play();
             proceeding = false;
         }, 500);
     }
@@ -709,6 +707,7 @@ function buildClone(key, target) {
     // Match parent (sub-factories)
     var $target = $("#" + target);
     var $parent = $target.parent();
+    $clone.addClass("factored");
 
     if ($parent.attr("id") !== "intent-panel-body" &&
             getParentName($clone.attr("id")) !== getName($parent.attr("id"))) {
@@ -717,16 +716,26 @@ function buildClone(key, target) {
         $clone.html($clone.html().replace(regParent, getName($parent.attr("id"))));
     }
 
+    var cloneID = $clone.attr("id");        
+
     // Replace control buttons    
     var $button = $("<button>", {class: "intent-button-remove close"});
     $button.attr("aria-label", "Close");
     $button.html('<span aria-hidden="true">&times;</span>');
     $button.click(function () {
-        $(this).parent().parent().remove();
+        var $btn = $(this);
+        var id = $btn.parent().parent().attr("id");        
+        gsap[id].reverse();
+        setTimeout(function () {
+            $btn.parent().parent().remove();
+        }, 500);
     });
     $clone.find("[data-factory=" + key + "]").replaceWith($button);
 
     $target.append($clone);
+    
+    gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
+    gsap[cloneID].play();
 
     // Reset button listeners  
     $(".intent-button-factory").off("click");

@@ -135,10 +135,8 @@ IN THE WORK.
 }
 
 .intent-stage-div {
-    display: none;    
-}
-.intent-stage-div.active {
-    display: block;
+    display: none;  
+    opacity: 0;
 }
 .intent-stage-div.conditional.conditioned:not(.active) {
     display: none;
@@ -173,6 +171,11 @@ IN THE WORK.
 }
 .conditional.conditioned {
     display: block;
+}
+
+.factored {
+    display: none;  
+    opacity: 0;
 }
 
 /*Progress bar*/

@@ -18,13 +18,21 @@
         </validation>
     </meta>
     <stage name="Connections">
-        <group factory="true" name="link" collapsible="true">
+        <input>
+            <name>Type</name>
+            <type>select</type>
+            <options>
+                <option>Multi-Path P2P VLAN</option>
+                <option>Multi-Point VLAN Bridge</option>
+            </options>
+        </input>
+        <group factory="true" name="connection" collapsible="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
                 <valid>string</valid>
             </input>
-            <group name="source">
+            <group factory="true" name="terminal">
                 <input>
                     <name>URI</name>
                     <type>text</type>
@@ -32,28 +40,13 @@
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>VLAN</name>
+                    <name>VLAN Tag</name>
                     <type>text</type>
                     <size>small</size>
                     <default>any</default>
                     <valid>vlan</valid>
                 </input>
-            </group>
-            <group name="destination">
-                <input>
-                    <name>URI</name>
-                    <type>text</type>
-                    <size>large</size>
-                    <valid>string</valid>
-                </input>
-                <input>
-                    <name>VLAN</name>
-                    <type>text</type>
-                    <size>small</size>
-                    <default>any</default>
-                    <valid>vlan</valid>
-                </input>
-            </group>
+            </group>            
         </group>
     </stage>
 </intent>
