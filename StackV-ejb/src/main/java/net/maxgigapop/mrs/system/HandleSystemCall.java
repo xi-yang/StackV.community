@@ -587,6 +587,33 @@ public class HandleSystemCall {
         logger.end(method);
     }
 
+    public List lookupDriverBoundServiceInstances(String topoUri) {
+        logger.cleanup();
+        String method = "lookupDriverServiceInstances";
+        logger.start(method);
+        DriverInstance di = DriverInstancePersistenceManager.findByTopologyUri(topoUri);
+        if (di == null) {
+            throw logger.error_throwing(method, String.format("canot find DriverInstance with topologyURI='%s'.", topoUri));
+        }
+        List<DriverSystemDelta> listDeltas = DeltaPersistenceManager.retrieveDriverInstanceDeltas(di.getId());
+        if (listDeltas == null) {
+            return null;
+        } 
+        List<String> listUUIDs = new ArrayList();
+        for (DriverSystemDelta delta: listDeltas) {
+            if (delta.getSystemDelta() == null || delta.getSystemDelta().getServiceDelta() == null
+                    || delta.getSystemDelta().getServiceDelta().getServiceInstance() == null) {
+                continue;
+            }
+            listUUIDs.add(delta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.end(method);
+        if (listUUIDs.isEmpty()) {
+            return null;
+        }
+        return listUUIDs;
+    }
+    
     public void unplugDriverInstance(String topoUri) {
         logger.cleanup();
         String method = "unplugDriverInstance";
@@ -608,7 +635,7 @@ public class HandleSystemCall {
                 SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
                 systemModelCoordinator.setBootStrapped(false);
             } catch (Exception ex) {
-            throw logger.throwing(method, ex);
+                throw logger.throwing(method, ex);
             }
         }
         logger.message(method, "unplugged " + di);
