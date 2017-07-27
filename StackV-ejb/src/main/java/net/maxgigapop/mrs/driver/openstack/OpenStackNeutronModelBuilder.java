@@ -2,6 +2,7 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Zan Wang 2015
  * Modified by: Xi Yang 2015-2016
+ * Modified by: Adam Smith 2017
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -207,6 +208,7 @@ public class OpenStackNeutronModelBuilder {
             model.add(model.createStatement(VM, Mrs.num_core, Integer.toString(server.getFlavor().getVcpus())));
             model.add(model.createStatement(VM, Mrs.memory_mb, Integer.toString(server.getFlavor().getRam())));
             model.add(model.createStatement(VM, Mrs.disk_gb, Integer.toString(server.getFlavor().getDisk())));
+                        
             
             for (Port port : openstackget.getServerPorts(server)) {
                 String PortName = openstackget.getResourceName(port);
@@ -275,6 +277,7 @@ public class OpenStackNeutronModelBuilder {
                 }
                 linuxRouteNum++;
             }
+            
             if (metadata != null && metadata.containsKey("quagga:bgp:info")) {
                 if (vmRoutingSvc == null) {
                     vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
@@ -385,7 +388,7 @@ public class OpenStackNeutronModelBuilder {
                             vmfexSvc = RdfOwl.createResource(model, HOST.getURI() + ":vmfex", Mrs.HypervisorBypassInterfaceService);
                         }
                         model.add(model.createStatement(vmfexSvc, Mrs.providesVNic, sriovPort));
-                        // profile 
+                        //profile
                         String portProfile = (String) jsonObj.get("profile");
                         sparql = "SELECT ?port_profile WHERE {"
                                 + "?port_profile a mrs:SwitchingSubnet . "
@@ -490,6 +493,86 @@ public class OpenStackNeutronModelBuilder {
                     logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), cephRbdJson, cephRbdKey));
                 }
             }
+            
+            //Strongswan ipsec vpn
+            if (metadata != null && metadata.containsKey("ipsec")) {
+                String input = metadata.get("ipsec");
+                JSONParser j = new JSONParser();
+                
+                try {
+                    input = input.replaceAll("'", "\"");
+                    
+                    JSONObject jdata = (JSONObject) j.parse(input);
+                    if (!jdata.get("status").equals("up")) {
+                        continue;
+                    }
+                    
+                    String endpointUri = VM+":vpn";
+                    Resource strongswan = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
+                    model.add(model.createStatement(VM, Nml.hasService, strongswan));
+                    
+                    /*
+                    Get the following values:
+                    local ip            -> "local-ip"
+                    local subnet cidr   -> "local-subnet"
+                    remote subnet cidr  -> "remote-subnet"
+                    t1,t2 remote ip     -> "remote-ip-n"
+                    t1,t2 secret        -> not included in model
+                    */
+                    String localIPStr = jdata.get("local_ip").toString();
+                    String localSubnetCIDR = jdata.get("local_subnet").toString();
+                    String remoteSubnetCIDR = jdata.get("remote_subnet").toString();
+                    
+                    if (localIPStr == null) localIPStr = "null";
+                    if (localSubnetCIDR == null) localSubnetCIDR = "null";
+                    if (remoteSubnetCIDR == null) remoteSubnetCIDR = "null";
+                    
+                    //add local ip to model
+                    Resource localIp = RdfOwl.createResource(model, endpointUri+":local-ip", Mrs.NetworkAddress);
+                    model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localIp));
+                    model.add(model.createStatement(localIp, Mrs.type, "ipv4-address"));
+                    model.add(model.createStatement(localIp, Mrs.value, localIPStr));
+                    //add local subnet
+                    Resource localSubnet = RdfOwl.createResource(model, endpointUri+":local-subnet", Mrs.NetworkAddress);
+                    model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localSubnet));
+                    model.add(model.createStatement(localSubnet, Mrs.type, "ipv4-prefix-list"));
+                    model.add(model.createStatement(localSubnet, Mrs.value, localSubnetCIDR));
+                    //add remote subnet
+                    Resource remoteSubnet = RdfOwl.createResource(model, endpointUri+":remote-subnet", Mrs.NetworkAddress);
+                    model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, remoteSubnet));
+                    model.add(model.createStatement(remoteSubnet, Mrs.type, "ipv4-prefix-list"));
+                    model.add(model.createStatement(remoteSubnet, Mrs.value, remoteSubnetCIDR));
+                    
+                    //add tunnels
+                    int i = 1;
+                    String tunnelStr = "remote_ip_1";
+                    ArrayList <String> tunnelIPs = new ArrayList<>();
+                    
+                    while (jdata.containsKey(tunnelStr)) {
+                        tunnelIPs.add( (String) jdata.get(tunnelStr));
+                        tunnelStr = "remote_ip_" + (++i);
+                    }
+                    
+                    i = 0;
+                    tunnelStr = endpointUri+":tunnel";
+                    for (String ip : tunnelIPs) {
+                        tunnelStr = endpointUri + ":tunnel" + (++i);
+                        Resource tunnel = RdfOwl.createResource(model, tunnelStr, Nml.BidirectionalPort);
+                        model.add(model.createStatement(strongswan, Nml.hasBidirectionalPort, tunnel));
+                        Resource remoteIp = RdfOwl.createResource(model, tunnelStr+":remote-ip", Mrs.NetworkAddress);
+                        model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, remoteIp));
+                        model.add(model.createStatement(remoteIp, Mrs.type, "ipv4-address"));
+                        model.add(model.createStatement(remoteIp, Mrs.value, ip));
+                        Resource secret = RdfOwl.createResource(model,tunnelStr+":secret", Mrs.NetworkAddress);
+                        model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, secret));
+                        model.add(model.createStatement(secret, Mrs.type, "secret"));
+                        model.add(model.createStatement(secret, Mrs.value, "####"));
+                    }
+                } catch (Exception e) {
+                    logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), input, "ipsec"));
+                }
+            }
+            
             // Globus Connect Service
             if (metadata != null && metadata.containsKey("globus:info")) {
                 String globusJson = metadata.get("globus:info");
@@ -568,7 +651,8 @@ public class OpenStackNeutronModelBuilder {
                 }
             }
         }
-
+        
+        
         for (NovaFloatingIP f : openstackget.getNovaFloatingIP()) {
             String ipAddr = f.getFloatingIpAddress();
             if (!fips.contains(ipAddr)) {
