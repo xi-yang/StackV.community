@@ -497,17 +497,22 @@ public class OpenStackNeutronModelBuilder {
             //Strongswan ipsec vpn
             if (metadata != null && metadata.containsKey("ipsec")) {
                 String input = metadata.get("ipsec");
+                String endpointUri = metadata.get("ipsec:uri");
                 JSONParser j = new JSONParser();
                 
                 try {
                     input = input.replaceAll("'", "\"");
+                    endpointUri = endpointUri.replaceAll("'", "\"");
                     
                     JSONObject jdata = (JSONObject) j.parse(input);
                     if (!jdata.get("status").equals("up")) {
                         continue;
                     }
                     
-                    String endpointUri = VM+":vpn";
+                    //JSONObject jUri = (JSONObject) j.parse(uri);
+                    //String endpointUri = jUri.get("uri").toString();
+                    //provide a default uri if ipsec:uri is empty
+                    if (endpointUri == null) endpointUri = VM+":vpn";
                     Resource strongswan = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
                     model.add(model.createStatement(VM, Nml.hasService, strongswan));
                     
