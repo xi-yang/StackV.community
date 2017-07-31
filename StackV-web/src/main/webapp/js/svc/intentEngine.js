@@ -174,11 +174,6 @@ function initMeta(meta) {
     }
     $panel.append($blockDiv);
 
-    // Render control buttons
-    var $controlDiv = $("<div>").attr("id", "intent-panel-meta-control");
-    $controlDiv.append($("<button>", {class: "button-control active", id: "intent-submit", html: "Submit"}));
-    $panel.append($controlDiv);
-
     $("#intent-prev").click(function () {
         prevStage();
     });
