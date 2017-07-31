@@ -119,7 +119,7 @@ function initializeIntent() {
 function initMeta(meta) {
     // Render service tag
     var $panel = $("#intent-panel-meta");
-    $panel.append($("<div>", {html: meta.children[0].innerHTML, style: "margin-bottom:50px;height:50px;"}));
+    $("#meta-service").append($("<div>", {html: meta.children[0].innerHTML, id: "meta-title"}));
 
     // Render blocks
     var $blockDiv = $("<div>").attr("id", "intent-panel-meta-block");

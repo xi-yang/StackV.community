@@ -292,11 +292,6 @@ form.stageform input, form.stageform textarea {
     color: #2C3E50;
 }
 
-form.stageform input.invalid, form.stageform select.invalid {
-    border: 1px solid red;
-    color: red;
-}
-
 form.stageform .small-counter {
     width: 12%;
     margin-left: 10px;
@@ -428,17 +423,6 @@ ul#progressbar li:after {
     top: 9px;
     z-index: -1; /*put it behind the numbers*/
     transition: all 1s ease;
-}
-ul#progressbar li.invalid {
-    color: red;
-}
-ul#progressbar li.invalid:before, ul#progressbar li.invalid:after {
-    color: white;
-    background: red;
-}
-ul#progressbar li.active.invalid:before {
-    color: white;
-    background: red;
 }
 ul#progressbar li:first-child:after {
     /*connector not needed before the first step*/
