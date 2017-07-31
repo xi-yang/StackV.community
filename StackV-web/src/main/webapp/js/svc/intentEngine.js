@@ -148,7 +148,10 @@ function initMeta(meta) {
             }
             // Removing elements            
             while (val < count) {
+                var id = eles.last().attr("id");
+                gsap[id].reverse();
                 eles.last().remove();
+
                 eles = $(".block-" + $(this).data("block"));
                 count--;
                 factories[key]["count"]--;
@@ -488,44 +491,47 @@ function recursivelyFactor(id, ele) {
 function submitIntent() {
     refreshLinks();
     $(".intent-input.invalid").removeClass("invalid");
+    $(".intent-input-message").remove();
 
     // Validate
     var validation = $("[data-valid]");
     var valid = true;
     for (var i = 0; i < validation.length; i++) {
         var $input = $(validation[i]);
-        var validRef = $input.data("valid");
-        var validEle = intent.children[0].getElementsByTagName("validation")[0];
-        var valid = null;
-        for (var j = 0; j < validEle.children.length; j++) {
-            var constraint = validEle.children[j];
-            if (constraint.children[0].innerHTML === validRef) {
-                valid = constraint;
-                break;
+        if (isEnabledInput($input)) {
+            var validRef = $input.data("valid");
+            var validEle = intent.children[0].getElementsByTagName("validation")[0];
+            var valid = null;
+            for (var j = 0; j < validEle.children.length; j++) {
+                var constraint = validEle.children[j];
+                if (constraint.children[0].innerHTML === validRef) {
+                    valid = constraint;
+                    break;
+                }
             }
-        }
-        if (valid) {
-            var regex = valid.children[1].innerHTML;
-            regex = regex.replace(/\\/g, "\\");
-            regex = new RegExp(regex, "gm");
+            if (valid) {
+                var regex = valid.children[1].innerHTML;
+                regex = regex.replace(/\\/g, "\\");
+                regex = new RegExp(regex, "gm");
 
-            var $message = $("<div>", {class: "intent-input-message"});
-            if (valid.getElementsByTagName("message").length > 0) {
-                $message.text(valid.getElementsByTagName("message")[0].innerHTML);
-            }
+                var $message = $("<div>", {class: "intent-input-message"});
+                if (valid.getElementsByTagName("message").length > 0) {
+                    $message.text(valid.getElementsByTagName("message")[0].innerHTML);
+                }
 
-            $input.parent().append($message);
+                $input.parent().append($message);
 
-            if ($input.val() === null || $input.val() === "") {
-                valid = false;
-                $input.addClass("invalid");
-                var $stage = $($input.parents(".intent-stage-div")[0]);
-                $("#prog-" + $stage.attr("id")).addClass("invalid");
-            } else if ($input.val().match(regex) === null) {
-                valid = false;
-                $input.addClass("invalid");
-                var $stage = $($input.parents(".intent-stage-div")[0]);
-                $("#prog-" + $stage.attr("id")).addClass("invalid");
+                if ($input.val() === null || $input.val() === "") {
+                    valid = false;
+                    $input.addClass("invalid");
+                    var $stage = $($input.parents(".intent-stage-div")[0]);
+                    $("#prog-" + $stage.attr("id")).addClass("invalid");
+                } else if ($input.val().match(regex) === null) {
+                    valid = false;
+                    $input.addClass("invalid");
+                    var $stage = $($input.parents(".intent-stage-div")[0]);
+                    $("#prog-" + $stage.attr("id")).addClass("invalid");
+                }
             }
         }
     }
@@ -716,7 +722,7 @@ function buildClone(key, target) {
         $clone.html($clone.html().replace(regParent, getName($parent.attr("id"))));
     }
 
-    var cloneID = $clone.attr("id");        
+    var cloneID = $clone.attr("id");
 
     // Replace control buttons    
     var $button = $("<button>", {class: "intent-button-remove close"});
@@ -724,7 +730,7 @@ function buildClone(key, target) {
     $button.html('<span aria-hidden="true">&times;</span>');
     $button.click(function () {
         var $btn = $(this);
-        var id = $btn.parent().parent().attr("id");        
+        var id = $btn.parent().parent().attr("id");
         gsap[id].reverse();
         setTimeout(function () {
             $btn.parent().parent().remove();
@@ -733,7 +739,7 @@ function buildClone(key, target) {
     $clone.find("[data-factory=" + key + "]").replaceWith($button);
 
     $target.append($clone);
-    
+
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
 
@@ -948,6 +954,16 @@ function initializeInputs() {
     }
 }
 
+function isEnabledInput($input) {
+    var cond = $input.parents('.conditional').length;
+    if (cond > 0 && $input.parents('.conditioned').length < cond) {
+        return false;
+    }
+    if ($input.hasClass("conditional") && !$input.hasClass("conditioned")) {
+        return false;
+    }
+    return true;
+}
 
 // TESTING
 
