@@ -10,7 +10,7 @@
         </block>
         <block>
             <tag>ops-subnets</tag>
-            <name>OpenStack Subnets</name>
+            <name>OPS Subnets</name>
         </block>
         <block>
             <tag>aws-vms</tag>
@@ -18,7 +18,7 @@
         </block>
         <block>
             <tag>ops-vms</tag>
-            <name>OpenStack VMs</name>
+            <name>OPS VMs</name>
         </block>
         <block>
             <tag>gateways</tag>

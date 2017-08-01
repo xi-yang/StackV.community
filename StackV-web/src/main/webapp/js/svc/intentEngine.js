@@ -110,7 +110,7 @@ function initializeIntent() {
         $progress.append($prog);
         // Begin recursive rendering
         renderInputs(stage.children, $currentStageDiv);
-        refreshLinks();        
+        refreshLinks();
     }
     moderateControls();
 }
@@ -133,7 +133,7 @@ function initMeta(meta) {
         var condition = block.getAttribute("condition");
 
         var $label = $("<label>").text(str);
-        var $input = $("<input>", {type: "number", name: "block-" + tag, value: 1, min: 1});
+        var $input = $("<input>", {type: "number", name: "block-" + tag, value: 1, min: 0});
         $input.attr("data-block", tag);
         $input.change(function () {
             var eles = $(".block-" + $(this).data("block"));
@@ -613,7 +613,7 @@ function prevStage() {
         var prevID = $prev.attr("id");
         gsap[currID].reverse();
         $activeStage = $prev;
-        
+
         moderateControls();
 
         // Activate new rendering
@@ -652,7 +652,7 @@ function nextStage(flag) {
         var nextID = $next.attr("id");
         gsap[currID].reverse();
         $activeStage = $next;
-        
+
         moderateControls();
 
         // Activate new rendering
@@ -755,6 +755,17 @@ function buildClone(key, target) {
     });
 
     recondition();
+
+    if ($clone.children(".collapse").length > 0) {
+        var id = "#" + $($clone.children(".collapse")[0]).attr("id");
+        var arr = $clone.find(".group-collapse-toggle");
+        for (var i = 0; i < arr.length; i++) {
+            if ($(arr[i]).data("target") === id) {
+                $(arr[i]).click();
+                break;
+            }
+        }
+    }
 }
 
 function refreshLinks() {
@@ -788,7 +799,7 @@ function moderateControls() {
     var returning = true;
     $(".intent-controls").removeClass("blocked");
     var $prevButton = $("#intent-prev");
-    var $nextButton = $("#intent-next");    
+    var $nextButton = $("#intent-next");
 
     var $prev = $activeStage.prev();
     if ($prev.hasClass("unreturnable")) {
@@ -812,9 +823,9 @@ function moderateControls() {
         $next = $next.next();
     }
     if ($next.length === 0) {
-        proceeding = false;        
+        proceeding = false;
     }
-    
+
     if (!returning) {
         $prevButton.addClass("blocked");
     }
