@@ -698,8 +698,10 @@ function removeDriverProfile(clickID) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        success: function () {
-            updateDrivers(URI);
+        success: function (result) {
+            updateDrivers(topuri);
+        },
+        error: function(result){
         }
     });
 }
@@ -823,7 +825,6 @@ function getDetailsProfile(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            alert(JSON.stringify(result));
             $('#installed-type').empty();
             for (var key in result) {
                 if (result.hasOwnProperty(key)) {
@@ -930,6 +931,10 @@ function removeDriver(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function () {
+            alert("success");
+        },
+        error: function(){
+            alert("failure");
         }
     });
 }

@@ -649,9 +649,9 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("DELETE FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
-            prep.setString(1, username);
-            prep.setString(2, topuri);
+            prep = front_conn.prepareStatement("DELETE FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+topuri+"\'");
+//            prep.setString(1, username);
+//            prep.setString(2, topuri);
             prep.executeUpdate();
 
             return "Deleted";
