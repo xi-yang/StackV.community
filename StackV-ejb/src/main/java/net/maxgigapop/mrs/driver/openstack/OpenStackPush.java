@@ -1317,7 +1317,7 @@ public class OpenStackPush {
                 }
 
                 //1.4 find out the type of the volume
-                query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:value ?type}";
+                query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:type ?type}";
                 r1 = executeQuery(query, modelRef, model);
                 if (!r1.hasNext()) {
                     throw logger.error_throwing(method, String.format("model addition does not specify new type of volume: %s", volume));
@@ -1909,7 +1909,7 @@ public class OpenStackPush {
                 if (vol == null) {
                     query = "SELECT ?deviceName ?size ?type WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName ."
                             + "<" + volume.asResource() + "> mrs:type ?type ."
-                            + "<" + volume.asResource() + "> mrs:size ?size }";
+                            + "<" + volume.asResource() + "> mrs:disk_gb ?size }";
                     r2 = executeQuery(query, modelRef, modelDelta);
                     if (!r2.hasNext()) {
                         throw logger.error_throwing(method, String.format("volume %s is not well specified in volume delta", volume));
