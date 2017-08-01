@@ -2,9 +2,14 @@
  *   nodejs handlebars .ttl template rendering service
  */
 
-var fs = require('fs');
-var net = require('net');
-var handlebars = require('handlebars');
+'use strict';
+
+const PORT = 4000;
+
+// modules
+const fs = require('fs');
+const net = require('net');
+const handlebars = require('handlebars');
 
 var log = {
     info: function(msg) {
@@ -47,21 +52,25 @@ function load_dir(dir, evaluate=false) {
     return file_strings;
 }
 function compile_templates() {
-    /* depending on whether there will be one monolithic template or various ones
-     * for different services, this will either be one line or
-     * in the style of the above loaders */
-
-    // for now, just using one template
-    return {ahc: handlebars.compile(fs.readFileSync('ahc.hb', 'utf8'))};
+    var template_strings = load_dir('templates');
+    var templates = {};
+    for (let ts in template_strings) {
+        templates[ts] = handlebars.compile(template_strings[ts])
+    }
+    return templates;
 }
-function render(service, input_json){
-    // throws TypeError on invalid
-    return templates[service](input_json);
+function render(intent){
+    intent.data.uuid = intent.uuid;
+    try {
+        return templates[intent.service](intent.data);
+    } catch (err) {
+        log.error(err);
+    }
 }
 
 // initialize handlebars
 handlebars.registerPartial(load_dir('partials'));
-handlebars.registerHelper(load_dir('helpers', evaluate=true));
+handlebars.registerHelper(load_dir('helpers', true));
 var templates = compile_templates();
 
 // initialize server
@@ -77,24 +86,30 @@ server.on('connection', function(socket) {
     socket.on('data', function(buffer) {
         // validate over schema first, maybe
         try {
-            var json = JSON.parse(buffer);
-            var service = json.service;
-            var rendered_string = render(service, json.data); 
-        } catch (e) {
-            log.error(connection_prefix+'Invalid JSON input.');
+            var intent = JSON.parse(buffer);
+        } catch (err) {
+            socket.write('<!-- Invalid JSON input. -->');
+            log.warn(connection_prefix+'Invalid JSON input.');
             return;
         }
-        socket.write(rendered_string);
+        var rendered_string = render(intent);
+        try {
+            socket.write(rendered_string);
+        } catch (err) {
+            log.error('Error sending rendered template.');
+        }
         log.okay(connection_prefix+'Template rendered & sent.');
     });
     log.info(connection_prefix+'Connected.');
 });
-
-var unix_socket = '/tmp/handlebars.sock';
-// remove socket if server was killed and left file
-try {
-    fs.unlinkSync(unix_socket);
-} catch (e) {}
+server.on('error', function(err) {
+    if (err.errno === 'EADDRINUSE') {
+        log.error('Port '+PORT+' already in use.');
+        process.exit(1);
+    } else {
+        throw err;
+    }
+});
 
 // accept requests
-server.listen(unix_socket); // can be changed to tcp port if desired
+server.listen(PORT);
