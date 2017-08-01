@@ -76,7 +76,7 @@ $(function () {
             loadDriverNavbar();
             loadDriverPortal();
         } else if (window.location.pathname === "/StackV-web/ops/intent_test.html") {
-            loadIntent('netcreate');            
+            loadIntent(getURLParameter("intent"));            
         }
 
         if ($("#tag-panel").length) {

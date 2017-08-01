@@ -110,8 +110,9 @@ function initializeIntent() {
         $progress.append($prog);
         // Begin recursive rendering
         renderInputs(stage.children, $currentStageDiv);
-        refreshLinks();
+        refreshLinks();        
     }
+    moderateControls();
 }
 
 
@@ -595,7 +596,7 @@ function prevStage() {
                 return;
             }
         }
-        if ($prev[0].tagName !== "DIV") {
+        if ($prev[0].tagName === "IMG") {
             proceeding = false;
             return;
         }
@@ -610,9 +611,10 @@ function prevStage() {
 
         var currID = $activeStage.attr("id");
         var prevID = $prev.attr("id");
-
         gsap[currID].reverse();
         $activeStage = $prev;
+        
+        moderateControls();
 
         // Activate new rendering
         setTimeout(function () {
@@ -650,6 +652,8 @@ function nextStage(flag) {
         var nextID = $next.attr("id");
         gsap[currID].reverse();
         $activeStage = $next;
+        
+        moderateControls();
 
         // Activate new rendering
         setTimeout(function () {
@@ -776,6 +780,46 @@ function refreshLinks() {
         if (currSelection) {
             $input.val(currSelection);
         }
+    }
+}
+
+function moderateControls() {
+    var proceeding = true;
+    var returning = true;
+    $(".intent-controls").removeClass("blocked");
+    var $prevButton = $("#intent-prev");
+    var $nextButton = $("#intent-next");    
+
+    var $prev = $activeStage.prev();
+    if ($prev.hasClass("unreturnable")) {
+        returning = false;
+    }
+    while ($prev.hasClass("conditional") && !$prev.hasClass("conditioned")) {
+        $prev = $prev.prev();
+        if ($prev.hasClass("unreturnable")) {
+            returning = false;
+        }
+    }
+    if ($prev[0].tagName === "IMG") {
+        returning = false;
+    }
+
+    if ($activeStage.hasClass("proceeding")) {
+        proceeding = false;
+    }
+    var $next = $activeStage.next();
+    while ($next.hasClass("conditional") && !$next.hasClass("conditioned")) {
+        $next = $next.next();
+    }
+    if ($next.length === 0) {
+        proceeding = false;        
+    }
+    
+    if (!returning) {
+        $prevButton.addClass("blocked");
+    }
+    if (!proceeding) {
+        $nextButton.addClass("blocked");
     }
 }
 
