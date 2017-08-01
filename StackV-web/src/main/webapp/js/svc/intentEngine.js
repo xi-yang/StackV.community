@@ -771,7 +771,7 @@ function refreshLinks() {
 
             var eleID = targetArr[j].id;
             var eleName = $("#" + eleID + "-name").val();
-            $option.text("Subnet " + (j + 1) + " (" + eleName + ")");
+            $option.text((j + 1) + " (" + eleName + ")");
             $option.val(getName(eleID));
 
             $input.append($option);
