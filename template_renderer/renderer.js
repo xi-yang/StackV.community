@@ -31,10 +31,12 @@ var log = {
         log_file.write('ERRR | ' +msg+'\n');
     },
 };
-// basic commands for development/testing purposes
+var last_cmd = 'reload';
 process.stdin.on('data', function(data) {
     var line = data.toString().trim();
-    switch (line) {
+    if (line) last_cmd = line;
+    // basic commands for development/testing purposes
+    switch (last_cmd) {
         case 'reload':
             load_hb(); 
             break;
@@ -135,10 +137,10 @@ server.on('connection', function(socket) {
         var rendered_string = render(intent);
         try {
             socket.write(rendered_string);
+            log.okay(connection_prefix+'Template rendered & sent.');
         } catch (err) {
             log.error('Error sending rendered template.');
         }
-        log.okay(connection_prefix+'Template rendered & sent.');
     });
     log.info(connection_prefix+'Connected.');
 });

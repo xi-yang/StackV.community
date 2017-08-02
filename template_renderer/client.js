@@ -22,3 +22,4 @@ connection.on('data', function(data) {
     process.exit(0);
 });
 connection.write(input);
+setTimeout(process.exit, 1000, 1); // close if no response

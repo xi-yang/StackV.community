@@ -20,14 +20,14 @@
 
 <x-policy-annotation:action:create-path>
 	a            spa:PolicyAction ;
-    spa:type     "MCE_MPVlanConnection" ; {{! will use the type property from input JSON, probably using a helper }}
+    spa:type     "{{DNC-Type type}}" ;
 	spa:importFrom <x-policy-annotation:data:conn-criteria> ;
 	spa:exportTo <x-policy-annotation:data:conn-criteriaexport> .
 
 <x-policy-annotation:data:conn-criteria>
 	a            spa:PolicyData;
 	spa:type     "JSON";
-    spa:value    """{{>getLinks}}""".
+    spa:value    """{ {{~>DNC-PolicyData}}    }""".
 
 <x-policy-annotation:data:conn-criteriaexport>
     a            spa:PolicyData.
