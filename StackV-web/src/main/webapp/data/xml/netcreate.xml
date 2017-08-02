@@ -139,24 +139,24 @@
             </path>
             
             <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>            
-            <input>
                 <name>Subnet Host</name>
                 <type>select</type>
                 <link>subnets</link>
                 <valid>select</valid>
-            </input>            
+            </input>
             <input>
-                <name>Keypair Name</name>
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>                                    
+            <input>
+                <name>Security Group</name>
                 <type>text</type>
                 <size>small</size>
                 <valid>string</valid>
             </input>
             <input>
-                <name>Security Group</name>
+                <name>Keypair Name</name>
                 <type>text</type>
                 <size>small</size>
                 <valid>string</valid>

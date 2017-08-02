@@ -40,6 +40,7 @@ IN THE WORK.
     <xs:attribute name="collapsible" type="xs:boolean"/>
     <xs:attribute name="label" type="xs:boolean"/>
     <xs:attribute name="proceeding" type="xs:boolean"/>
+    <xs:attribute name="required" type="xs:boolean"/>
     <xs:attribute name="return" type="xs:boolean"/>
     
     <xs:attribute name="name" type="xs:string"/>
@@ -134,6 +135,7 @@ IN THE WORK.
                 <xs:element ref="link" minOccurs="0"/>
                 <xs:element ref="valid" minOccurs="0"/>
             </xs:sequence>
+            <xs:attribute ref="required"/>
             <xs:attribute ref="trigger"/>
             <xs:attribute ref="condition"/>
         </xs:complexType>

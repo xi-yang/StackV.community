@@ -10,7 +10,7 @@
         </block>
         <block>
             <tag>ops-subnets</tag>
-            <name>OpenStack Subnets</name>
+            <name>OPS Subnets</name>
         </block>
         <block>
             <tag>aws-vms</tag>
@@ -18,7 +18,7 @@
         </block>
         <block>
             <tag>ops-vms</tag>
-            <name>OpenStack VMs</name>
+            <name>OPS VMs</name>
         </block>
         <block>
             <tag>gateways</tag>
@@ -57,7 +57,7 @@
             </constraint>
             <constraint>
                 <name>vlan</name>
-                <regex>^\d{4}$|^\d{4}-\d{4}$|^any$</regex>
+                <regex>^\d{1,4}$|^\d{1,4}-\d{1,4}$|^any$</regex>
                 <message>Please enter a valid VLAN.</message>
             </constraint>
         </validation>
@@ -65,7 +65,7 @@
     <stage name="Network">
         <group name="AWS">
             <input>
-                <name>topoURI</name>
+                <name>Parent</name>
                 <type>select</type>
                 <source>
                     <url>/driver</url>
@@ -88,7 +88,7 @@
         </group>
         <group name="OpenStack">
             <input>
-                <name>topoURI</name>
+                <name>Parent</name>
                 <type>select</type>
                 <source>
                     <url>/driver</url>
@@ -183,11 +183,6 @@
         </group>
         <group block="gateways" name="Gateway" collapsible="true">            
             <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
                 <name>Type</name>
                 <type>select</type>
                 <options>
@@ -195,7 +190,12 @@
                     <option>L2 Stitch Port</option>
                 </options>
                 <valid>select</valid>
-            </input>                        
+            </input>
+            <input>
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>                                    
             <input>
                 <name>Value</name>
                 <type>text</type>
@@ -206,16 +206,16 @@
     <stage name="VMs">
         <group block="aws-vms" name="AWS" collapsible="true">
             <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input> 
-            <input>
                 <name>Subnet Host</name>
                 <type>select</type>
                 <link>aws-subnets</link>
                 <valid>select</valid>
-            </input>                       
+            </input>      
+            <input>
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>                              
             <input>
                 <name>Keypair Name</name>
                 <type>text</type>
@@ -239,16 +239,16 @@
         </group>
         <group block="ops-vms" name="OpenStack" collapsible="true">
             <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input> 
-            <input>
                 <name>Subnet Host</name>
                 <type>select</type>
                 <link>aws-subnets</link>
                 <valid>select</valid>
-            </input>                       
+            </input>
+            <input>
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>                        
             <input>
                 <name>Keypair Name</name>
                 <type>text</type>
