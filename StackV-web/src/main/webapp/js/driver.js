@@ -763,9 +763,16 @@ function updateDrivers(URI) {
                 edButton.style.width = "64px";
                 edButton.className = "button-profile-select btn btn-default";
                 edButton.onclick = function () {
+                    $("#driver-content-panel").removeClass("hidden");
+                    $("#driver-content-panel").addClass("active");
+                    $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
+                    
+                    changeNameDet();
                     editDriverProfile(URI);
+                    
+                    openContentPanel();
                 };
                 
                 edButton.id = result[i + 3];
@@ -931,7 +938,7 @@ function removeDriver(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function () {
-            alert("success");
+            updateDrivers(URI);
         },
         error: function(){
             alert("failure");

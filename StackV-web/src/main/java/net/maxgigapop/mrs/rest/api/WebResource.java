@@ -609,9 +609,9 @@ public class WebResource {
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, uri);
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+uri+"\'");
+//        prep.setString(1, username);
+//        prep.setString(2, uri);
         ResultSet rs = prep.executeQuery();
 
         commonsClose(front_conn, prep, rs);
