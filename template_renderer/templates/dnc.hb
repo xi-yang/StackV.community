@@ -15,12 +15,12 @@
 
 <urn:ogf:network:vo1.maxgigapop.net:link=abstract>
 	a            nml:Link ;
-	spa:type            spa:Abstraction ;
+	spa:type     spa:Abstraction ;
 	spa:dependOn <x-policy-annotation:action:create-path>.
 
 <x-policy-annotation:action:create-path>
 	a            spa:PolicyAction ;
-	spa:type     "MCE_MPVlanConnection" ;
+    spa:type     "MCE_MPVlanConnection" ; {{! will use the type property from input JSON, probably using a helper }}
 	spa:importFrom <x-policy-annotation:data:conn-criteria> ;
 	spa:exportTo <x-policy-annotation:data:conn-criteriaexport> .
 
