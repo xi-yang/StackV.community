@@ -9,5 +9,6 @@
 }
 {{~#unless @last}},{{/unless}}
 {{/terminals}}
-{{~#unless @last}},{{/unless}}      }
+      }
+{{~#unless @last}},{{/unless}}
 {{/connections}}
