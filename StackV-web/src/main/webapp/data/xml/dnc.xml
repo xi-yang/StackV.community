@@ -12,13 +12,18 @@
             </constraint>
             <constraint>
                 <name>vlan</name>
-                <regex>^\d{4}$|^\d{4}-\d{4}$|^any$</regex>
+                <regex>^\d{1,4}$|^\d{1,4}-\d{1,4}$|^any$</regex>
                 <message>Please enter a valid VLAN.</message>
+            </constraint>
+            <constraint>
+                <name>macs</name>
+                <regex>^\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2}(,\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2})*$</regex>
+                <message>Please enter a valid comma-separated list of MAC addresses.</message>
             </constraint>
         </validation>
     </meta>
     <stage name="Connections">
-        <input>
+        <input required="true">
             <name>Type</name>
             <type>select</type>
             <options>
@@ -27,24 +32,30 @@
             </options>
         </input>
         <group factory="true" name="connection" collapsible="true">
-            <input>
+            <input required="true">
                 <name>Name</name>
                 <type>text</type>
                 <valid>string</valid>
             </input>
             <group factory="true" name="terminal">
-                <input>
+                <input required="true">
                     <name>URI</name>
                     <type>text</type>
-                    <size>large</size>
+                    <size>xlarge</size>
                     <valid>string</valid>
                 </input>
-                <input>
+                <input required="true">
                     <name>VLAN Tag</name>
                     <type>text</type>
                     <size>small</size>
                     <default>any</default>
                     <valid>vlan</valid>
+                </input>
+                <input>
+                    <name>MAC Address List</name>
+                    <type>text</type>
+                    <size>large</size>
+                    <valid>macs</valid>
                 </input>
             </group>            
         </group>

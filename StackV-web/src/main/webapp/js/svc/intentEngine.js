@@ -69,13 +69,14 @@ function renderIntent() {
 
 function initializeIntent() {
     var panel = $("#intent-panel-body");
+    gsap["intent"] = new TweenLite("#intent-panel", 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     // Initialize meta sidebar
     var meta = intent.children[0];
     initMeta(meta);
 
     // Begin rendering stages
     var stages = intent.children;
-    var $progress = $("#progressbar");
+    var $progress = $("#intent-progress");
     for (var i = 1; i < stages.length; i++) {
         // Initialize stage panel
         var stage = stages[i];
@@ -95,7 +96,10 @@ function initializeIntent() {
         if (stage.getAttribute("return") === "false") {
             $div.addClass("unreturnable");
         }
-        $prog.text(stage.getAttribute("name"));
+
+        var $a = $("<a>").text(stage.getAttribute("name"));
+        $prog.append($a);
+
         panel.append($div);
         stages[id] = $div;
         $currentStageDiv = $div;
@@ -112,7 +116,11 @@ function initializeIntent() {
         renderInputs(stage.children, $currentStageDiv);
         refreshLinks();
     }
+    $progress.append($("<li>"));
     moderateControls();
+    setTimeout(function () {
+        gsap["intent"].play();
+    }, 500);
 }
 
 
@@ -241,7 +249,7 @@ function renderInputs(arr, $parent) {
             var name = constructID(ele);
             var trigger = ele.getAttribute("trigger");
             var condition = ele.getAttribute("condition");
-            var valid = ele.getAttribute("valid");
+            var required = ele.getAttribute("required");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
             var $input = $("<input>", {type: type, class: "intent-input", id: name});
@@ -282,6 +290,10 @@ function renderInputs(arr, $parent) {
             }
             if (ele.getElementsByTagName("initial").length > 0) {
                 $input.attr("data-initial", ele.getElementsByTagName("initial")[0].innerHTML);
+            }
+
+            if (required === "true") {
+                $input.attr("data-required", true);
             }
 
             // Handle multiple choice sourcing
@@ -413,7 +425,7 @@ function factorizeRendering() {
         toggle.setAttribute("data-target", toggle.getAttribute("data-target") + "_num1");
 
         var collapse = toggle.parentElement.nextSibling;
-        collapse.id += "_num1";
+        //collapse.id += "_num1";
     }
 
     // Step 3: Insert user elements
@@ -485,90 +497,99 @@ function recursivelyFactor(id, ele) {
 }
 
 function submitIntent() {
-    refreshLinks();
-    $(".intent-input.invalid").removeClass("invalid");
-    $(".intent-input-message").remove();
+    gsap["intent"].reverse();
+    setTimeout(function () {
+        refreshLinks();
+        $(".intent-input.invalid").removeClass("invalid");
+        $(".intent-input-message").remove();
 
-    // Validate
-    var validation = $("[data-valid]");
-    var valid = true;
-    for (var i = 0; i < validation.length; i++) {
-        var $input = $(validation[i]);
-        if (isEnabledInput($input)) {
-            var validRef = $input.data("valid");
-            var validEle = intent.children[0].getElementsByTagName("validation")[0];
-            var valid = null;
-            for (var j = 0; j < validEle.children.length; j++) {
-                var constraint = validEle.children[j];
-                if (constraint.children[0].innerHTML === validRef) {
-                    valid = constraint;
-                    break;
+        // Validate
+        var validation = $("[data-valid]");
+        var valid = true;
+        for (var i = 0; i < validation.length; i++) {
+            var $input = $(validation[i]);
+            if (isEnabledInput($input)) {
+                var validRef = $input.data("valid");
+                var validEle = intent.children[0].getElementsByTagName("validation")[0];
+                var valid = null;
+                for (var j = 0; j < validEle.children.length; j++) {
+                    var constraint = validEle.children[j];
+                    if (constraint.children[0].innerHTML === validRef) {
+                        valid = constraint;
+                        break;
+                    }
                 }
-            }
-            if (valid) {
-                var regex = valid.children[1].innerHTML;
-                regex = regex.replace(/\\/g, "\\");
-                regex = new RegExp(regex, "gm");
+                if (valid) {
+                    var regex = valid.children[1].innerHTML;
+                    regex = regex.replace(/\\/g, "\\");
+                    regex = new RegExp(regex, "gm");
 
-                var $message = $("<div>", {class: "intent-input-message"});
-                if (valid.getElementsByTagName("message").length > 0) {
-                    $message.text(valid.getElementsByTagName("message")[0].innerHTML);
-                }
+                    var $message = $("<div>", {class: "intent-input-message"});
+                    if (valid.getElementsByTagName("message").length > 0) {
+                        $message.text(valid.getElementsByTagName("message")[0].innerHTML);
+                    }
 
-                $input.parent().append($message);
+                    $input.parent().append($message);
 
-                if ($input.val() === null || $input.val() === "") {
-                    valid = false;
-                    $input.addClass("invalid");
-                    var $stage = $($input.parents(".intent-stage-div")[0]);
-                    $("#prog-" + $stage.attr("id")).addClass("invalid");
-                } else if ($input.val().match(regex) === null) {
-                    valid = false;
-                    $input.addClass("invalid");
-                    var $stage = $($input.parents(".intent-stage-div")[0]);
-                    $("#prog-" + $stage.attr("id")).addClass("invalid");
+                    if (($input.val() === null || $input.val() === "")) {
+                        if ($input.data("required")) {
+                            valid = false;
+                            $input.addClass("invalid");
+                            var $stage = $($input.parents(".intent-stage-div")[0]);
+                            $("#prog-" + $stage.attr("id")).addClass("invalid");
+                        }
+                    } else if ($input.val().match(regex) === null) {
+                        valid = false;
+                        $input.addClass("invalid");
+                        var $stage = $($input.parents(".intent-stage-div")[0]);
+                        $("#prog-" + $stage.attr("id")).addClass("invalid");
+                    }
                 }
             }
         }
-    }
 
-    if (valid) {
-        // Submit
-        var json = {};
-        $("#intent-panel-body .intent-input").each(function () {
-            var cond = $(this).parents('.conditional').length;
-            if (cond > 0 && $(this).parents('.conditioned').length < cond) {
-                ;
-            } else {
-                var arr = this.id.split("-");
-
-                var last = json;
-                var i;
-                for (i = 1; i < (arr.length - 1); i++) {
-                    var key = arr[i];
-                    if (!(key in last)) {
-                        last[key] = {};
-                    }
-                    last = last[key];
-                }
-                var key = arr[i];
-                if ($(this).attr("type") === "checkbox") {
-                    last[key] = $(this).is(":checked");
+        if (valid) {
+            // Submit
+            var json = {};
+            $("#intent-panel-body .intent-input").each(function () {
+                var cond = $(this).parents('.conditional').length;
+                if (cond > 0 && $(this).parents('.conditioned').length < cond) {
+                    ;
                 } else {
-                    last[key] = $(this).val();
-                }
-            }
-        });
+                    var arr = this.id.split("-");
 
-        manifest = json;
-        parseManifestIntoJSON();
-    }
+                    var last = json;
+                    var i;
+                    for (i = 1; i < (arr.length - 1); i++) {
+                        var key = arr[i];
+                        if (!(key in last)) {
+                            last[key] = {};
+                        }
+                        last = last[key];
+                    }
+                    var key = arr[i];
+                    if ($(this).attr("type") === "checkbox") {
+                        last[key] = $(this).is(":checked");
+                    } else {
+                        last[key] = $(this).val();
+                    }
+                }
+            });
+
+            manifest = json;
+            parseManifestIntoJSON();
+        }
+    }, 500);
+    setTimeout(function () {
+        gsap["intent"].play();
+    }, 500);
 }
 
 // UTILITY FUNCTIONS
 function collapseDiv($name, $div) {
     var name = $name.text().toLowerCase();
-    var collapseStr = "collapse-" + name.replace(/ /g, "_");
+    var parent = getParentName($div.attr("id"));
+    var collapseStr = "collapse-" + parent.replace(/ /g, "_") + "-" + name.replace(/ /g, "_");
     var $toggle = $("<a>").attr("data-toggle", "collapse")
             .attr("data-target", "#" + collapseStr)
             .addClass("group-collapse-toggle");
@@ -604,7 +625,7 @@ function prevStage() {
         refreshLinks();
 
         // Update progress bar
-        var $prog = $("#progressbar");
+        var $prog = $("#intent-progress");
         var $activeProg = $($prog.children(".active")[0]);
         $activeProg.removeClass("active");
         $activeProg.prev().addClass("active");
@@ -643,7 +664,7 @@ function nextStage(flag) {
         refreshLinks();
 
         // Update progress bar
-        var $prog = $("#progressbar");
+        var $prog = $("#intent-progress");
         var $activeProg = $($prog.children(".active")[0]);
         $activeProg.removeClass("active");
         $activeProg.next().addClass("active");
