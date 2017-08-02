@@ -60,6 +60,7 @@ import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.common.EJBExceptionNegotiable;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;

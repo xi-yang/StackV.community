@@ -140,7 +140,6 @@ public class OpenStackNeutronModelBuilder {
         }
 
         model.add(model.createStatement(OpenstackTopology, hasService, routingService));
-        model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
         model.add(model.createStatement(OpenstackTopology, hasService, networkService));
         model.add(model.createStatement(OpenstackTopology, hasService, cinderService));
 

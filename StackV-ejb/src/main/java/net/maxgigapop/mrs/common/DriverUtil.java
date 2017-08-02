@@ -42,10 +42,12 @@ public class DriverUtil {
     
     public static String[] executeHttpMethod(String username, String password, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
-        String userPassword=username+":"+password;
-        byte[] encoded=Base64.encodeBase64(userPassword.getBytes());
-        String stringEncoded=new String(encoded);
-        conn.setRequestProperty("Authorization", "Basic "+stringEncoded);
+        if (username != null && !username.isEmpty()) {
+            String userPassword=username+":"+password;
+            byte[] encoded=Base64.encodeBase64(userPassword.getBytes());
+            String stringEncoded=new String(encoded);
+            conn.setRequestProperty("Authorization", "Basic "+stringEncoded);
+        }
         conn.setRequestProperty("Content-type", "application/json");
         conn.setRequestProperty("Accept", "application/json");
         if (body != null && !body.isEmpty()) {
@@ -69,6 +71,10 @@ public class DriverUtil {
         }
         String strArray[] = {responseStr.toString(), Integer.toString(responseCode)};
         return strArray;
+    }
+    
+    public static String[] executeHttpMethod(HttpURLConnection conn, String method, String body) throws IOException {
+        return executeHttpMethod(null, null, conn, method, body);
     }
     
     public static String[]  executeHttpMethod(String username, String password, URL url, String method, String body) throws IOException {
