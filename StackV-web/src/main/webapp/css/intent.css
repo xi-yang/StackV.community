@@ -237,10 +237,10 @@ button:focus {
 }
 
 .conditional { 
-    display: none; 
+    display: none !important; 
 }
 .conditional.conditioned {
-    display: block;
+    display: block !important;
 }
 
 .factored {
