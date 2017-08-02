@@ -940,8 +940,15 @@ function removeDriver(clickID) {
         success: function () {
             updateDrivers(URI);
         },
-        error: function(){
-            alert("failure");
+        error: function(result){
+            clearPanel();
+            activateSide();
+            changeNameDet();
+            //add method here to list all the service instances.
+            $("#info-panel-title").text("Failed Due to Service Instances:");
+            alert(result);
+            openContentPanel();
+            
         }
     });
 }
