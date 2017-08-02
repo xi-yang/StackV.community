@@ -682,6 +682,7 @@ function addDriver() {
         data: sentData,
         success: function () {
             updateDrivers(URI);
+            reloadData();
         },
         error: function(){
         }
@@ -700,6 +701,7 @@ function removeDriverProfile(clickID) {
         },
         success: function (result) {
             updateDrivers(topuri);
+            reloadData();
         },
         error: function(result){
         }
@@ -939,6 +941,7 @@ function removeDriver(clickID) {
         },
         success: function () {
             updateDrivers(URI);
+            reloadData();
         },
         error: function(result){
             clearPanel();
