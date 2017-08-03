@@ -128,7 +128,7 @@ function initializeIntent() {
 function initMeta(meta) {
     // Render service tag
     var $panel = $("#intent-panel-meta");
-    $("#meta-service").append($("<div>", {html: meta.children[0].innerHTML, id: "meta-title"}));
+    $("#meta-title").text(meta.children[0].innerHTML);
 
     // Render blocks
     var $blockDiv = $("<div>").attr("id", "intent-panel-meta-block");
@@ -144,26 +144,43 @@ function initMeta(meta) {
         var $input = $("<input>", {type: "number", name: "block-" + tag, value: 1, min: 0});
         $input.attr("data-block", tag);
         $input.change(function () {
-            var eles = $(".block-" + $(this).data("block"));
-            var count = eles.length;
+            var eles = $(".block-" + $(this).data("block"));            
             var val = $(this).val();
             var key = eles.first().data("factory");
             var target = eles.first().data("target");
 
+            var count = eles.length;
+            if (eles.first().hasClass("block-removed")) {
+                count = 0;
+            }
+
             // Adding elements
             while (val > count) {
-                buildClone(key, target);
-                count++;
+                if (count === 0) {
+                    // Replace first element (superficially)
+                    eles.last().remove();
+                    buildClone(key, target);
+                    count++;
+                } else {
+                    buildClone(key, target);
+                    count++;
+                }
             }
             // Removing elements            
             while (val < count) {
-                var id = eles.last().attr("id");
-                gsap[id].reverse();
-                eles.last().remove();
+                if (count === 1) {
+                    // Remove last element (superficially)
+                    eles.last().empty().addClass("block-removed");
+                    
+                    factories[key]["count"]--;
+                    break;
+                } else {
+                    eles.last().remove();
 
-                eles = $(".block-" + $(this).data("block"));
-                count--;
-                factories[key]["count"]--;
+                    eles = $(".block-" + $(this).data("block"));
+                    count--;
+                    factories[key]["count"]--;
+                }
             }
 
             recondition();
@@ -232,7 +249,8 @@ function renderInputs(arr, $parent) {
             }
 
             if (label === "false") {
-                $div.find(".group-name").addClass("hidden");
+                var $groupName = $div.find(".group-name").addClass("unlabeled");
+                $groupName.text($groupName.text().split("#")[0]);
             } else {
                 $div.addClass("labeled");
             }

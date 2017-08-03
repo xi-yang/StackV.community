@@ -83,6 +83,7 @@
             <input>
                 <name>Direct Connect VLAN</name>
                 <type>text</type>
+                <default>any</default>
                 <valid>vlan</valid>
             </input>
         </group>
@@ -117,7 +118,7 @@
                 <type>text</type>
                 <valid>cidr</valid>
             </input>
-            <group factory="true" name="route" >
+            <group factory="true" name="route" label="false" >
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -150,7 +151,7 @@
                 <type>text</type>
                 <valid>cidr</valid>
             </input>
-            <group factory="true" name="route" >
+            <group factory="true" name="route" label="false" >
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -281,7 +282,7 @@
                 <default>any</default>
                 <valid>string</valid>
             </input>
-            <group factory="true" name="Route">
+            <group factory="true" name="Route" label="false" >
                 <input>
                     <name>From</name>
                     <type>text</type>
