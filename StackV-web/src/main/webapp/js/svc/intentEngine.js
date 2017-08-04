@@ -32,6 +32,7 @@ var manifest;
 var transit = false;
 var proceeding = false;
 var activeStage;
+var simpleManifest = false;
 
 Mousetrap.bind({
     'left': function () {
@@ -51,7 +52,7 @@ function loadIntent(type) {
             intent = xml.children[0];
             renderIntent();
             parseSchemaIntoManifest(intent);
-            preloadAWSVCN();
+            preloadAHC();
         },
         error: function (err) {
             console.log('Error Loading XML! \n' + err);
@@ -73,6 +74,10 @@ function initializeIntent() {
     // Initialize meta sidebar
     var meta = intent.children[0];
     initMeta(meta);
+
+    if (intent.getAttribute("simplify") === "true") {
+        simpleManifest = true;
+    }
 
     // Begin rendering stages
     var stages = intent.children;
@@ -144,7 +149,7 @@ function initMeta(meta) {
         var $input = $("<input>", {type: "number", name: "block-" + tag, value: 1, min: 0});
         $input.attr("data-block", tag);
         $input.change(function () {
-            var eles = $(".block-" + $(this).data("block"));            
+            var eles = $(".block-" + $(this).data("block"));
             var val = $(this).val();
             var key = eles.first().data("factory");
             var target = eles.first().data("target");
@@ -171,7 +176,7 @@ function initMeta(meta) {
                 if (count === 1) {
                     // Remove last element (superficially)
                     eles.last().empty().addClass("block-removed");
-                    
+
                     factories[key]["count"]--;
                     break;
                 } else {
@@ -360,15 +365,17 @@ function renderInputs(arr, $parent) {
                 var selectName = name;
                 var link = ele.getElementsByTagName("link")[0].innerHTML;
                 $input.attr("data-link", link);
-
-                $label.click(function () {
-                    //refreshLinks();
-                });
+                var $default = $("<option>", {selected: true}).text("");
+                $input.append($default);
+                var nameVal = ele.getElementsByTagName("link")[0].getAttribute("name");
+                if (nameVal) {
+                    $input.addClass("nameVal");
+                }
             } else if (ele.getElementsByTagName("options").length > 0) {
                 $input = $("<select>", {id: name, class: "intent-input"});
                 var selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
-                var $default = $("<option>", {disabled: true, selected: true}).text("");
+                var $default = $("<option>", {selected: true}).text("");
                 $input.append($default);
 
                 for (var j = 0; j < options.length; j++) {
@@ -460,9 +467,9 @@ function factorizeRendering() {
             $button.click(function (e) {
                 // Modify clone for current index
                 var key = $(this).data("factory");
-                var target = $(this).data("target");
+                var target = $(this).parent().parent().attr("id");
 
-                buildClone(key, target);
+                buildClone(key, target, true);
 
                 e.preventDefault();
             });
@@ -730,7 +737,7 @@ function constructID(ele) {
     return retString.replace(/ /g, "_").toLowerCase();
 }
 
-function buildClone(key, target) {
+function buildClone(key, target, button) {
     var count = ++factories[key]["count"];
     var $clone = factories[key]["clone"].clone(true, true);
     var name = getName(key);
@@ -786,14 +793,15 @@ function buildClone(key, target) {
     $(".intent-button-factory").click(function (e) {
         // Modify clone for current index
         var key = $(this).data("factory");
-        var target = $(this).data("target");
+        var target = $(this).parent().parent().attr("id");
 
-        buildClone(key, target);
+        buildClone(key, target, true);
 
         e.preventDefault();
     });
 
     recondition();
+    refreshLinks();
 
     if ($clone.children(".collapse").length > 0) {
         var id = "#" + $($clone.children(".collapse")[0]).attr("id");
@@ -811,9 +819,12 @@ function refreshLinks() {
     var $inputArr = $("[data-link]");
     for (var i = 0; i < $inputArr.length; i++) {
         var $input = $($inputArr[i]);
+        var nameVal = $input.hasClass("nameVal");
         var currSelection = $input.val();
         $input.children().remove();
         var link = $input.data("link");
+        var $default = $("<option>", {selected: true}).text("");
+        $input.append($default);
 
         var targetArr = $(".block-" + link);
         for (var j = 0; j < targetArr.length; j++) {
@@ -822,7 +833,11 @@ function refreshLinks() {
             var eleID = targetArr[j].id;
             var eleName = $("#" + eleID + "-name").val();
             $option.text((j + 1) + " (" + eleName + ")");
-            $option.val(getName(eleID));
+            if (nameVal) {
+                $option.val(eleName);
+            } else {
+                $option.val(getName(eleID));
+            }
 
             $input.append($option);
         }
@@ -926,8 +941,24 @@ function parseManifestIntoJSON() {
                     }
                 } else {
                     var targetEle = findKeyDeep(manifest, ele[target]);
-                    delete ele[target];
-                    targetEle[key] = ele;
+                    if (targetEle) {
+                        // Input link path
+                        delete ele[target];
+                        targetEle[key] = ele;
+                    } else {
+                        // Explicit JSON path
+                        var pathArr = target.split("/");
+
+                        var obj = manifest;
+                        for (var j = 0; j < pathArr.length; j++) {
+                            if (!(pathArr[j] in obj)) {
+                                obj[pathArr[j]] = {};
+                            }
+                            obj = obj[pathArr[j]];
+                        }
+
+                        obj[key] = ele;
+                    }
                 }
             }
 
@@ -936,6 +967,11 @@ function parseManifestIntoJSON() {
 
     // Step 2: Convert numerals into proper arrays
     convertToArrays(manifest);
+
+    // Step 2.5: Simplify manifest
+    if (simpleManifest) {
+        simplifyManifest(manifest);
+    }
 
     // Step 3: Trim leaves
     trimLeaves(manifest);
@@ -1010,6 +1046,26 @@ function convertToArrays(recur) {
     }
 }
 
+function simplifyManifest(manifest) {
+    for (var prop in manifest) {
+        simplifyManifestSub(manifest[prop], prop);
+    }
+}
+function simplifyManifestSub(recur, key) {
+    for (var prop in recur) {
+        var index = prop.indexOf(key);
+        if (index > -1) {
+            var newProp = prop.slice(prop.indexOf(key) + key.length + 1);
+            recur[newProp] = recur[prop];
+            delete recur[prop];
+
+            simplifyManifestSub(recur[newProp], key);
+        } else if (recur[prop] instanceof Object || recur[prop] instanceof Array) {
+            simplifyManifestSub(recur[prop], key);
+        }
+    }
+}
+
 function trimLeaves(recur) {
     for (var prop in recur) {
         if (recur[prop] instanceof Object || recur[prop] instanceof Array) {
@@ -1077,4 +1133,48 @@ function preloadAWSVCN() {
 
     $("#gateways-gateway_num1-name").val("TestGate");
     $("#gateways-gateway_num1-route_num1-to").val("TestTo");
+}
+
+function preloadAHC() {
+    $("#network-aws-parent").val("urn:ogf:network:aws.amazon.com:aws-cloud");
+    $("#network-aws-cidr").val("10.0.0.0/16");
+
+    $("#network-openstack-parent").val("urn:ogf:network:openstack.com:openstack-cloud");
+    $("#network-openstack-cidr").val("10.1.0.0/16");
+
+    $("#subnets-aws_subnet_num1-name").val("subnet1");
+    $("#subnets-aws_subnet_num1-cidr").val("10.0.0.0/24");
+
+    $("#subnets-aws_subnet_num1-route_num1-from").val("vpn");
+    $("#subnets-aws_subnet_num1-route_num1-to").val("0.0.0.0/0");
+    $("#subnets-aws_subnet_num1-route_num1-next_hop").val("vpn");
+
+    $("#subnets-openstack_subnet_num1-name").val("subnet1");
+    $("#subnets-openstack_subnet_num1-cidr").val("10.1.0.0/24");
+
+    $("#gateways-gateway_num1-name").val("intercloud-1");
+    $("#gateways-gateway_num1-type").val("Inter Cloud Network");
+
+    $("#vms-aws_vm_num1-name").val("vm1");
+    $("#vms-aws_vm_num1-keypair_name").val("driver_key");
+    $("#vms-aws_vm_num1-security_group").val("geni");
+    $("#vms-aws_vm_num1-image").val("ami-0d1bf860");
+    $("#vms-aws_vm_num1-instance_type").val("m4.large");
+    $("#vms-aws_vm_num1-interface_num1-type").val("Ethernet");
+
+    $("#vms-openstack_vm_num1-name").val("vtn2-vm1");
+    $("#vms-openstack_vm_num1-keypair_name").val("demo-key");
+    $("#vms-openstack_vm_num1-security_group").val("rains");
+    $("#vms-openstack_vm_num1-instance_type").val("5");
+    
+    $("#vms-openstack_bgp-asn").val("7224");
+    $("#vms-openstack_bgp-authentication_key").val("versastack");
+    $("#vms-openstack_bgp-networks").val("10.10.0.0/16");
+
+    $("#vms-openstack_vm_num1-route_num1-to").val("10.10.0.0/16");
+    $("#vms-openstack_vm_num1-route_num1-next_hop").val("10.1.0.1");
+
+    $("#vms-openstack_vm_num1-interface_num1-name").val("vtn2-vm1:eth1");
+    $("#vms-openstack_vm_num1-interface_num1-type").val("SRIOV");
+    $("#vms-openstack_vm_num1-interface_num1-address").val("ipv4+10.10.0.1/24,mac+aa:bb:cc:ff:01:11");
 }
