@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="intent.xsd">
+    <meta>
+        <name>Dynamic Network Connection</name>
+        <validation>
+            <constraint>
+                <name>string</name>
+                <regex>\S+</regex>
+                <message>Please enter a valid string.</message>
+            </constraint>
+            <constraint>
+                <name>vlan</name>
+                <regex>^\d{1,4}$|^\d{1,4}-\d{1,4}$|^any$</regex>
+                <message>Please enter a valid VLAN.</message>
+            </constraint>
+            <constraint>
+                <name>macs</name>
+                <regex>^\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2}(,\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2})*$</regex>
+                <message>Please enter a valid comma-separated list of MAC addresses.</message>
+            </constraint>
+        </validation>
+    </meta>
+    <stage name="Connections">
+        <input required="true">
+            <name>Type</name>
+            <type>select</type>
+            <options>
+                <option>Multi-Path P2P VLAN</option>
+                <option>Multi-Point VLAN Bridge</option>
+            </options>
+        </input>
+        <group factory="true" name="connection" collapsible="true">
+            <input required="true">
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>
+            <group factory="true" name="terminal">
+                <input required="true">
+                    <name>URI</name>
+                    <type>text</type>
+                    <size>xlarge</size>
+                    <valid>string</valid>
+                </input>
+                <input required="true">
+                    <name>VLAN Tag</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <default>any</default>
+                    <valid>vlan</valid>
+                </input>
+                <input>
+                    <name>MAC Address List</name>
+                    <type>text</type>
+                    <size>large</size>
+                    <valid>macs</valid>
+                </input>
+            </group>            
+        </group>
+    </stage>
+</intent>

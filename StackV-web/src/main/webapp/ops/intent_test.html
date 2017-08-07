@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Service Catalog</title>
+
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel="stylesheet" href="/StackV-web/css/style.css">
+    </head>
+
+    <body>
+        <!-- NAV BAR -->
+        <div id="nav">
+        </div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
+        <!-- MAIN PANEL -->
+        <div id="black-screen"></div>
+        <div id="main-pane">
+            <div class="container" id="intent-panel">
+                <div class="row">
+                    <div id="intent-panel-header">
+                        <ol class="cd-breadcrumb triangle" id="intent-progress">                            
+                        </ol>
+                    </div>
+                </div>                                
+                <div class="row" style="height:100%;">
+                    <div class="col-sm-4 text-right" id="intent-panel-meta">
+                        <div id="meta-service">
+                            <div id="meta-title"></div>
+                            <input id="meta-alias" name="meta-alias" placeholder="Service Alias"/>
+                        </div>                        
+                        <button class="button-control active" id="intent-submit">Submit</button>
+                    </div>                    
+                    <div class="col-sm-8" id="intent-panel-body">  
+                        <img class="intent-controls" id="intent-prev" alt="Prev" src="/StackV-web/img/prev_arrow.png" />
+                        <img class="intent-controls" id="intent-next" alt="Next" src="/StackV-web/img/next_arrow.png" />                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+
+        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
+        <script src="/StackV-web/js/mousetrap.js"></script>
+        <script src="/StackV-web/js/mousetrap-dict.js"></script>
+
+        <script src="/StackV-web/js/nexus.js"></script>        
+
+        <script src="/StackV-web/js/svc/intentEngine.js"></script>
+
+    </body>
+</html>

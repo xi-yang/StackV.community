@@ -24,7 +24,9 @@
 package net.maxgigapop.mrs.bean.persist;
 
 import java.util.List;
+import javax.persistence.Query;
 import net.maxgigapop.mrs.bean.DeltaBase;
+import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
 
 /**
@@ -40,5 +42,10 @@ public class DeltaPersistenceManager extends PersistenceManager {
 
     public static List<DeltaBase> retrieveAll() {
         return createQuery("FROM " + DeltaBase.class.getSimpleName()).getResultList();
+    }
+
+    public static List<DriverSystemDelta> retrieveDriverInstanceDeltas(Long id) {
+        Query q =  createQuery(String.format("FROM %s WHERE driverInstanceId = %d", DriverSystemDelta.class.getSimpleName(), id));
+        return (List<DriverSystemDelta>)q.getResultList();
     }
 }

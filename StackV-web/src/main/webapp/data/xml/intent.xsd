@@ -1,0 +1,200 @@
+<?xml version="1.0"?>
+<!--
+Copyright (c) 2013-2017 University of Maryland
+Created by: Alberto Jimenez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy 
+of this software and/or hardware specification (the “Work”) to deal in the 
+Work without restriction, including without limitation the rights to use, 
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+the Work, and to permit persons to whom the Work is furnished to do so, 
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in 
+all copies or substantial portions of the Work.
+
+THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+IN THE WORK.
+-->
+
+<!--
+
+* Requirements for intents:
+    - Staging/pagination for inputs
+    - Support for multiple instances of inputs
+    - Support for accessing API for sourcing input values
+    - Support for input defaults
+    - Support for conditional stages/inputs
+
+-->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">          
+    
+    <!--Simple-->
+    <xs:attribute name="factory" type="xs:boolean"/>
+    <xs:attribute name="collapsible" type="xs:boolean"/>
+    <xs:attribute name="label" type="xs:boolean"/>
+    <xs:attribute name="proceeding" type="xs:boolean"/>
+    <xs:attribute name="required" type="xs:boolean"/>
+    <xs:attribute name="return" type="xs:boolean"/>
+    
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="trigger" type="xs:string"/>
+    <xs:attribute name="condition" type="xs:string"/>
+    <xs:attribute name="type" type="xs:string"/>
+    <xs:attribute name="block" type="xs:string"/>
+    
+    <xs:element name="name" type="xs:string"/>
+    <xs:element name="type" type="xs:string"/>
+    <xs:element name="tag" type="xs:string"/>
+    <xs:element name="size" type="xs:string"/>    
+    <xs:element name="link" type="xs:string"/>    
+    <xs:element name="default" type="xs:string"/>
+    <xs:element name="initial" type="xs:string"/>    
+    <xs:element name="interval" type="xs:string"/>
+    <xs:element name="url" type="xs:string"/>
+    <xs:element name="value" type="xs:string"/>
+    <xs:element name="text" type="xs:string"/>
+    <xs:element name="parent" type="xs:string"/>
+    <xs:element name="valid" type="xs:string"/>
+    <xs:element name="regex" type="xs:string"/>
+    <xs:element name="message" type="xs:string"/>
+    
+    <!--Complex-->
+    <xs:element name="intent">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="meta"/>
+                <xs:element ref="stage" maxOccurs="10"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="meta">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="name"/>
+                <xs:element ref="block" minOccurs="0" maxOccurs="10"/>
+                <xs:element ref="validation" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="validation">
+        <xs:complexType>
+            <xs:sequence>                
+                <xs:element ref="constraint" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="stage">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="group" minOccurs="0" maxOccurs="10"/>
+                <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute ref="name" use="required"/>
+            <xs:attribute ref="condition"/>
+            <xs:attribute ref="proceeding"/>
+            <xs:attribute ref="return"/>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="group">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="path" minOccurs="0"/>
+                <xs:element ref="input" maxOccurs="unbounded"/>
+                <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute ref="factory" default="false"/>
+            <xs:attribute ref="name" use="required"/>
+            <xs:attribute ref="condition"/>
+            <xs:attribute ref="block"/>
+            <xs:attribute ref="collapsible" default="false"/>
+            <xs:attribute ref="label" default="true"/>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="input">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="name"/>
+                <xs:element ref="type"/>
+                <xs:element ref="size" minOccurs="0"/>
+                <xs:element ref="default" minOccurs="0"/>  
+                <xs:element ref="initial" minOccurs="0"/>                
+                <xs:element ref="source" minOccurs="0"/>
+                <xs:element ref="options" minOccurs="0"/>
+                <xs:element ref="link" minOccurs="0"/>
+                <xs:element ref="valid" minOccurs="0"/>
+            </xs:sequence>
+            <xs:attribute ref="required"/>
+            <xs:attribute ref="trigger"/>
+            <xs:attribute ref="condition"/>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="block">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="tag"/>
+                <xs:element ref="name"/>
+            </xs:sequence>
+            <xs:attribute ref="condition"/>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="source">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="url"/>
+                <xs:element ref="interval"/>
+                <xs:element ref="text"/>
+                <xs:element ref="value"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="options">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="option" maxOccurs="10"/>                
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>        
+    
+    <xs:element name="path">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="parent" maxOccurs="10"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>   
+    
+    <xs:element name="option">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:string">
+                    <xs:attribute name="condition" type="xs:string" />
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="constraint">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="name"/>
+                <xs:element ref="regex"/>
+                <xs:element ref="message" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>   
+</xs:schema>

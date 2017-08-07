@@ -76,6 +76,8 @@ $(function () {
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
             loadDriverNavbar();
             loadDriverPortal();
+        } else if (window.location.pathname === "/StackV-web/ops/intent_test.html") {
+            loadIntent(getURLParameter("intent"));            
         }
 
         if ($("#tag-panel").length) {
@@ -84,6 +86,7 @@ $(function () {
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
+            
             console.log("Token automatically updated!");
         }).error(function () {
             console.log("Automatic token update failed!");

@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="intent.xsd">
+    <meta>
+        <name>Virtual Cloud Network</name>
+        <block>
+            <tag>subnets</tag>
+            <name>Subnets</name>
+        </block>
+        <block>
+            <tag>vms</tag>
+            <name>VMs</name>
+        </block>
+        <block>
+            <tag>gateways</tag>
+            <name>Gateways</name>
+        </block>
+        <block condition="openstack-form">
+            <tag>sriovs</tag>
+            <name>SRIOVs</name>
+        </block>
+        
+        <validation>
+            <constraint>
+                <name>string</name>
+                <regex>\S+</regex>
+                <message>Please enter a valid string.</message>
+            </constraint>
+            <constraint>
+                <name>select</name>
+                <regex>.+</regex>
+                <message>Please select a valid option.</message>
+            </constraint>
+            <constraint>
+                <name>cidr</name>
+                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}$</regex>
+                <message>Please enter a valid CIDR.</message>
+            </constraint>
+            <constraint>
+                <name>ip</name>
+                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$</regex>
+                <message>Please enter a valid IP Address.</message>
+            </constraint>
+            <constraint>
+                <name>mac</name>
+                <regex>^\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2}$</regex>
+                <message>Please enter a valid MAC Address.</message>
+            </constraint>
+        </validation>
+    </meta>
+    <stage name="Host" return="false" proceeding="true">        
+        <input trigger="aws-form">
+            <name>AWS</name>
+            <type>button</type>            
+        </input>
+        <input trigger="openstack-form">
+            <name>OpenStack</name>
+            <type>button</type>           
+        </input>
+    </stage>
+    <stage name="Details">
+        <group name="network">
+            <path>
+                <parent>root</parent>
+            </path>
+                        
+            <input>
+                <name>Parent</name>
+                <type>select</type>
+                <source>
+                    <url>/driver</url>
+                    <interval>3</interval>
+                    <text>3</text>
+                    <value>3</value>
+                </source>
+                <valid>select</valid>
+            </input>
+            <input>
+                <name>Type</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>
+            <input>
+                <name>CIDR</name>
+                <type>text</type>
+                <valid>cidr</valid>
+            </input>
+        </group>        
+    </stage>
+    <stage name="Subnets">
+        <group block="subnets" name="Subnet" collapsible="true">
+            <input>
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>
+            <input>
+                <name>CIDR</name>
+                <type>text</type>
+                <valid>cidr</valid>
+            </input>
+            <input condition="aws-form">
+                <name>VPN Route Propagation</name>
+                <type>checkbox</type>
+            </input>
+            <input condition="openstack-form">
+                <name>Default Routing</name>
+                <type>checkbox</type>
+            </input>
+            
+            <group factory="true" name="route" label="false">
+                <input>
+                    <name>From</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>To</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Next Hop</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Type</name>
+                    <type>text</type>
+                </input>
+            </group>
+        </group>
+    </stage>
+    <stage name="VMs">
+        <group block="vms" name="VM" collapsible="true">
+            <path>
+                <parent>subnet host</parent>                
+            </path>
+            
+            <input>
+                <name>Subnet Host</name>
+                <type>select</type>
+                <link>subnets</link>
+                <valid>select</valid>
+            </input>
+            <input>
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>                                    
+            <input>
+                <name>Security Group</name>
+                <type>text</type>
+                <size>small</size>
+                <valid>string</valid>
+            </input>
+            <input>
+                <name>Keypair Name</name>
+                <type>text</type>
+                <size>small</size>
+                <valid>string</valid>
+            </input>
+            <input>
+                <name>Host</name>
+                <type>text</type>
+                <size>small</size>                
+                <default>any</default>
+                <valid>string</valid>
+            </input>
+            <input condition="openstack-form">
+                <name>Floating IP</name>
+                <type>text</type>
+                <default>any</default>
+            </input>
+            
+            <group factory="true" condition="aws-form" name="Interface">
+                <input>
+                    <name>Type</name>
+                    <type>select</type>
+                    <size>small</size>
+                    <options>
+                        <option>Ethernet</option>
+                        <option condition="openstack-form">SRIOV</option>
+                    </options>     
+                    <valid>select</valid>               
+                </input>
+                <input>
+                    <name>Public</name>
+                    <type>checkbox</type>
+                    <size>small</size>
+                </input>
+                <input>
+                    <name>Elastic IP</name>
+                    <type>text</type>
+                    <size>small</size>                    
+                </input>                
+            </group>
+            <group factory="true" name="Route">
+                <input>
+                    <name>From</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>To</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Next Hop</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Type</name>
+                    <type>text</type>
+                </input>
+            </group>
+        </group>
+    </stage>
+    <stage name="Gateways">
+        <group block="gateways" name="Gateway" collapsible="true">            
+            <input>
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>
+            <input>
+                <name>Type</name>
+                <type>select</type>
+                <options>
+                    <option condition="aws-form">AWS Direct Connect</option>
+                    <option condition="openstack-form">UCS Port Profile</option>
+                    <option condition="openstack-form">L2 Stitch Port</option>
+                </options>
+                <valid>select</valid>
+            </input>                        
+            <group factory="true" name="Route" label="false">                
+                <input>
+                    <name>From</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>To</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Next Hop</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Type</name>
+                    <type>text</type>
+                </input>
+            </group>
+        </group>
+    </stage>    
+    <stage name="SRIOVs" condition="openstack-form">
+        <group block="sriovs" name="SRIOV" collapsible="true">
+            <path>
+                <parent>Hosting VM</parent>
+            </path>
+            
+            <input>
+                <name>Hosting Gateway</name>
+                <type>select</type>
+                <link>gateways</link>
+                <valid>select</valid>
+            </input>  
+            <input>
+                <name>Hosting VM</name>
+                <type>select</type>
+                <link>vms</link>
+                <valid>select</valid>
+            </input>
+            <input>
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>           
+            <input>
+                <name>IP Address</name>
+                <type>text</type>
+                <valid>ip</valid>
+            </input>       
+            <input>
+                <name>MAC Address</name>
+                <type>text</type>
+                <valid>mac</valid>
+            </input>               
+        </group>
+    </stage>
+</intent>

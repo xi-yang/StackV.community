@@ -26,14 +26,12 @@ package net.maxgigapop.mrs.rest.api;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
@@ -58,13 +56,9 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
-import java.util.Iterator;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.security.KeyManagementException;
@@ -76,7 +70,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -543,7 +536,7 @@ public class WebResource {
      * TODO - Add Example Response
      */
     @PUT
-    @Path("driver/{user}/add")
+    @Path("/driver/{user}/add")
     @Consumes(value = {"application/json"})
     @RolesAllowed("Drivers")
     public void addDriver(@PathParam("user") String username, final String dataInput) {
@@ -600,7 +593,7 @@ public class WebResource {
     }
 
     @PUT
-    @Path("driver/{user}/edit/{topur}")
+    @Path("/driver/{user}/edit/{topuri}")
     @RolesAllowed("Drivers")
     public String editDriverProfile(@PathParam("user") String username, @PathParam("topuri") String uri) throws SQLException {
         Properties front_connectionProps = new Properties();
@@ -609,9 +602,9 @@ public class WebResource {
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, uri);
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+uri+"\'");
+//        prep.setString(1, username);
+//        prep.setString(2, uri);
         ResultSet rs = prep.executeQuery();
 
         commonsClose(front_conn, prep, rs);
@@ -636,7 +629,7 @@ public class WebResource {
      * TODO - Add Example Response
      */
     @DELETE
-    @Path(value = "/driver/{username}/delete/{topuri}")
+    @Path(value = "driver/{username}/delete/{topuri}")
     @RolesAllowed("Drivers")
     public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) {
         Connection front_conn = null;
@@ -649,9 +642,9 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("DELETE FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
-            prep.setString(1, username);
-            prep.setString(2, topuri);
+            prep = front_conn.prepareStatement("DELETE FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+topuri+"\'");
+//            prep.setString(1, username);
+//            prep.setString(2, topuri);
             prep.executeUpdate();
 
             return "Deleted";
@@ -690,9 +683,9 @@ public class WebResource {
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 prop);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+topuri+"\'");
+//        prep.setString(1, username);
+//        prep.setString(2, topuri);
         ResultSet rs = prep.executeQuery();
 
         rs.next();
@@ -838,16 +831,8 @@ public class WebResource {
             return null;
         }
     }
-    
-    
-    
-    
-    
-    
-    
-    
+
     /*Andrew's Draft for new post method for adding additional roles to groups*/
-    
     @POST
     @Path("/keycloak/groups/{group}")
     @Produces("application/json")
@@ -877,14 +862,14 @@ public class WebResource {
                 out.write(roleArr.toString());
 //                System.out.println("Check Here");
 //                System.out.println(roleArr.toString());
-                
+
             }
             logger.trace("addGroupRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("addGroupRole", ex);
         }
     }
-    
+
     /*Andrew's draft for new delete method for deleting a role from a group*/
     @DELETE
     @Path("keycloak/groups/{group}")
@@ -910,7 +895,7 @@ public class WebResource {
                 String actual = inputString.toString();
                 Object obj = parser.parse(actual);
                 final JSONArray roleArr = (JSONArray) obj;
-               
+
                 out.write(roleArr.toString());
             }
 
@@ -919,13 +904,13 @@ public class WebResource {
             logger.catching("removeGroupRole", ex);
         }
     }
-    
+
     /*Andrew's Draft for searching for the full information of a single role*/
     @GET
     @Path("keycloak/roles/{role}")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject){
+    public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject) {
         String name = subject;
         try {
             String method = "getRoleData";
@@ -951,7 +936,7 @@ public class WebResource {
             }
 
             Object obj = parser.parse(responseStr.toString());
-            HashMap<String,ArrayList<String>> search = new HashMap<String,ArrayList<String>>();
+            HashMap<String, ArrayList<String>> search = new HashMap<String, ArrayList<String>>();
             JSONArray groupArr = (JSONArray) obj;
             for (Object group : groupArr) {
                 ArrayList<String> groupList = new ArrayList<>();
@@ -962,11 +947,9 @@ public class WebResource {
                 groupList.add(groupJSON.get("composite").toString());
                 groupList.add(groupJSON.get("clientRole").toString());
                 groupList.add((String) groupJSON.get("containerId"));
-                
-                
+
                 search.put((String) groupJSON.get("name"), groupList);
 
-                
             }
             retList.add(search.get(name));
             logger.trace_end(method);
@@ -975,26 +958,21 @@ public class WebResource {
             logger.catching("getRoleData", ex);
             return null;
         }
-        
-        
-        
-        
+
     }
-    
-    
-    
+
     /*Andrew's draft for a new method to get roles for a single group*/
     @GET
     @Path("/keycloak/groups/{group}")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getGroupRoles(@PathParam("group") String subject){
+    public ArrayList<ArrayList<String>> getGroupRoles(@PathParam("group") String subject) {
         try {
             String method = "getGroupRoles";
             logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/roles/"+subject+"/composites");
+            URL url = new URL(kc_url + "/admin/realms/StackV/roles/" + subject + "/composites");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
             conn.setRequestProperty("Authorization", auth);
             conn.setReadTimeout(10000);
@@ -1029,9 +1007,6 @@ public class WebResource {
             return null;
         }
     }
-    
-    
-    
 
     /**
      * @api {get} /app/keycloak/groups Get Groups
@@ -1448,7 +1423,7 @@ public class WebResource {
 
             logger.trace_end(method);
             return retList;
-            
+
         } catch (IOException | ParseException ex) {
             logger.catching("getUserRoles", ex);
             return null;
@@ -1901,9 +1876,9 @@ public class WebResource {
                     case "ERROR":
                         prep = front_conn.prepareStatement("SELECT * FROM log WHERE level = 'ERROR' ORDER BY timestamp DESC");
                         break;
-                }                
+                }
             } // Filtering by both
-            else if (refUUID != null && level != null) {                
+            else if (refUUID != null && level != null) {
                 switch (level) {
                     case "TRACE":
                         prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
@@ -1923,10 +1898,10 @@ public class WebResource {
                         break;
                 }
             }
-            
-            if (prep == null ) {
+
+            if (prep == null) {
                 prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
-            }           
+            }
             rs = prep.executeQuery();
             JSONObject retJSON = new JSONObject();
             JSONArray logArr = new JSONArray();
@@ -2375,7 +2350,6 @@ public class WebResource {
             commonsClose(front_conn, prep, rs);
         }
     }*/
-
     @GET
     @Path("/details/{uuid}/verification")
     @Produces("application/json")
@@ -2748,6 +2722,27 @@ public class WebResource {
     }
 
     // >Services
+    /**
+     * @api {get} /app/intent/drivers Get Drivers
+     * @apiVersion 1.0.0
+     * @apiDescription Retrieve list of available drivers for the intent layer
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     *
+     */
+    @GET
+    @Path("/intent/drivers")
+    @Produces("application/json")
+    @RolesAllowed("Services")
+    public ArrayList<String> getDrivers() {
+        ArrayList<String> retList = new ArrayList<>();
+
+        retList.add("test1");
+        retList.add("test2");
+
+        return retList;
+    }
+
     /**
      * @api {get} /app/service/:siUUID/status Check Status
      * @apiVersion 1.0.0

@@ -131,12 +131,12 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         Integer count = 0;
         try {
             // remove all VGs that has no dependency (by systemDelta)
-            Query q = createQuery(String.format("FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
-            List<VersionGroup> listVG = (List<VersionGroup>) q.getResultList();
+            Query q = createQuery(String.format("SELECT vg.id FROM %s vg WHERE NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionGroup = vg)", VersionGroup.class.getSimpleName(), SystemDelta.class.getSimpleName()));
+            List<Long> listVG = (List<Long>) q.getResultList();
             if (listVG != null) {
-                Iterator<VersionGroup> it = listVG.iterator();
+                Iterator<Long> it = listVG.iterator();
                 while (it.hasNext()) {
-                    VersionGroup vg = it.next();
+                    VersionGroup vg = findById(it.next());
                     if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
                         continue;
                     }
@@ -146,12 +146,12 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                 }
             }
             // remove all empty VGs
-            q = createQuery(String.format("FROM %s", VersionGroup.class.getSimpleName()));
-            listVG = (List<VersionGroup>) q.getResultList();
+            q = createQuery(String.format("SELECT id FROM %s", VersionGroup.class.getSimpleName()));
+            listVG = (List<Long>) q.getResultList();
             if (listVG != null) {
-                Iterator<VersionGroup> it = listVG.iterator();
+                Iterator<Long> it = listVG.iterator();
                 while (it.hasNext()) {
-                    VersionGroup vg = it.next();
+                    VersionGroup vg = findById(it.next());
                     if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
                         VersionGroupPersistenceManager.delete(vg);
                         count++;
