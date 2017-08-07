@@ -22,7 +22,7 @@
  */
 /* global XDomainRequest, baseUrl, loggedIn, TweenLite, Power2, tweenBlackScreen */
 // Service JavaScript Library
-baseUrl = window.location.origin;
+var baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
 var refreshTimer;
 var countdownTimer;

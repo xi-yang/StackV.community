@@ -2525,7 +2525,7 @@ public class WebResource {
         }
     }
 
-    // >Profiles
+        // >Profiles
     /**
      * @api {get} /app/profile/:wizardID Get Profile
      * @apiVersion 1.0.0
@@ -2643,6 +2643,7 @@ public class WebResource {
         try {
             String method = "newProfile";
             logger.start(method);
+            
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -2653,22 +2654,15 @@ public class WebResource {
 
             String name = (String) inputJSON.get("name");
             String description = (String) inputJSON.get("description");
-            String inputData = (String) inputJSON.get("data");
+            String inputData = ((JSONObject) inputJSON.get("data")).toJSONString();
+            String username = (String) inputJSON.get("username");
 
-            Object obj2 = parser.parse(inputData);
-            JSONObject dataJSON = (JSONObject) obj2;
-            String username = authUsername((String) dataJSON.get("userID"));
-            String type = (String) dataJSON.get("type");
-
-            int serviceID = servBean.getServiceID(type);
-
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (service_id, username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?, ?)");
-            prep.setInt(1, serviceID);
-            prep.setString(2, username);
-            prep.setString(3, name);
-            prep.setString(4, inputData);
-            prep.setString(5, description);
-            prep.setInt(6, 0);
+            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?)");
+            prep.setString(1, username);
+            prep.setString(2, name);
+            prep.setString(3, inputData);
+            prep.setString(4, description);
+            prep.setInt(5, 0);
             prep.executeUpdate();
 
             logger.end(method);

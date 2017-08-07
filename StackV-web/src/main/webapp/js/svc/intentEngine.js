@@ -21,13 +21,14 @@
  * IN THE WORK.
  */
 
-/* global Mousetrap, keycloak, Power2 */
+/* global Mousetrap, keycloak, Power2, baseUrl */
 
 var conditions = [];
 var factories = {};
 var initials = {};
 var gsap = {};
 var intent;
+var intentType;
 var manifest;
 var transit = false;
 var proceeding = false;
@@ -44,6 +45,7 @@ Mousetrap.bind({
 });
 
 function loadIntent(type) {
+    intentType = type;
     $.ajax({
         type: "GET",
         url: "/StackV-web/data/xml/" + type + ".xml",
@@ -212,7 +214,10 @@ function initMeta(meta) {
         nextStage();
     });
     $("#intent-submit").click(function () {
-        submitIntent();
+        submitIntent(false);
+    });
+    $("#intent-save").click(function () {
+        submitIntent(true);
     });
 }
 
@@ -521,7 +526,7 @@ function recursivelyFactor(id, ele) {
     }
 }
 
-function submitIntent() {
+function submitIntent(save) {
     gsap["intent"].reverse();
     setTimeout(function () {
         refreshLinks();
@@ -574,7 +579,7 @@ function submitIntent() {
         }
 
         if (valid) {
-            // Submit
+            // Parse manifest
             var json = {};
             $("#intent-panel-body .intent-input").each(function () {
                 var cond = $(this).parents('.conditional').length;
@@ -603,6 +608,13 @@ function submitIntent() {
 
             manifest = json;
             parseManifestIntoJSON();
+
+            // Check for saving
+            if (save) {
+                saveManifest();
+            } else {
+                // Submit to templating engine
+            }
         }
     }, 500);
     setTimeout(function () {
@@ -975,6 +987,13 @@ function parseManifestIntoJSON() {
 
     // Step 3: Trim leaves
     trimLeaves(manifest);
+    
+    // Step 4: Finishing touches
+    var newManifest = {};
+    newManifest["intent"] = manifest;
+    manifest = newManifest;
+    manifest["name"] = $("#meta-alias").val();
+    manifest["type"] = intentType;
 }
 
 
@@ -1110,6 +1129,28 @@ function isEnabledInput($input) {
     return true;
 }
 
+function saveManifest() {
+    var scaffManifest = {};
+    scaffManifest["name"] = "testName";
+    scaffManifest["description"] = "testDescription";
+    scaffManifest["username"] = "admin";
+    scaffManifest["data"] = manifest;  
+
+    // Save to DB
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        data: JSON.stringify(scaffManifest),
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            console.log("Saved!");
+        }
+    });
+}
+
 // TESTING
 
 function preloadAWSVCN() {
@@ -1166,7 +1207,7 @@ function preloadAHC() {
     $("#vms-openstack_vm_num1-keypair_name").val("demo-key");
     $("#vms-openstack_vm_num1-security_group").val("rains");
     $("#vms-openstack_vm_num1-instance_type").val("5");
-    
+
     $("#vms-openstack_bgp-asn").val("7224");
     $("#vms-openstack_bgp-authentication_key").val("versastack");
     $("#vms-openstack_bgp-networks").val("10.10.0.0/16");
