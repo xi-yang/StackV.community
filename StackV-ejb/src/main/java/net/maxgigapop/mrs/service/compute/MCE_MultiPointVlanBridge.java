@@ -401,6 +401,8 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
         return bridgeSvc;
     }
 
+    //@TODO: Create separate ARP and IPv4 (0x806 | 0x800) flows for static mac forwarding.
+    // The ARP flows will broadcast to VLAN, while IPv4 flows will do src / dst mac matching.
     private OntModel createBridgePathFlows(OntModel transformedModel, MCETools.Path mpvbPath, OntModel bridgePathModel,
             Resource bridgeOpenflowService, Resource bridgePort, String bridgeVlanTag) {
         // create VLAN bridging flows with bridgeOpenflowService and bridgePort and add to l2PathModel

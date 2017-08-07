@@ -536,7 +536,7 @@ public class WebResource {
      * TODO - Add Example Response
      */
     @PUT
-    @Path("driver/{user}/add")
+    @Path("/driver/{user}/add")
     @Consumes(value = {"application/json"})
     @RolesAllowed("Drivers")
     public void addDriver(@PathParam("user") String username, final String dataInput) {
@@ -593,7 +593,7 @@ public class WebResource {
     }
 
     @PUT
-    @Path("driver/{user}/edit/{topur}")
+    @Path("/driver/{user}/edit/{topuri}")
     @RolesAllowed("Drivers")
     public String editDriverProfile(@PathParam("user") String username, @PathParam("topuri") String uri) throws SQLException {
         Properties front_connectionProps = new Properties();
@@ -602,9 +602,9 @@ public class WebResource {
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, uri);
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+uri+"\'");
+//        prep.setString(1, username);
+//        prep.setString(2, uri);
         ResultSet rs = prep.executeQuery();
 
         commonsClose(front_conn, prep, rs);
@@ -629,7 +629,7 @@ public class WebResource {
      * TODO - Add Example Response
      */
     @DELETE
-    @Path(value = "/driver/{username}/delete/{topuri}")
+    @Path(value = "driver/{username}/delete/{topuri}")
     @RolesAllowed("Drivers")
     public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) {
         Connection front_conn = null;
@@ -642,9 +642,9 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("DELETE FROM frontend.driver_wizard WHERE username = ? AND TopUri = ?");
-            prep.setString(1, username);
-            prep.setString(2, topuri);
+            prep = front_conn.prepareStatement("DELETE FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+topuri+"\'");
+//            prep.setString(1, username);
+//            prep.setString(2, topuri);
             prep.executeUpdate();
 
             return "Deleted";
@@ -683,9 +683,9 @@ public class WebResource {
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 prop);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+topuri+"\'");
+//        prep.setString(1, username);
+//        prep.setString(2, topuri);
         ResultSet rs = prep.executeQuery();
 
         rs.next();

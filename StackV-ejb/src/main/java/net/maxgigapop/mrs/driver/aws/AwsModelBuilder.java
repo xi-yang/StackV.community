@@ -2,6 +2,7 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Miguel Uzcategui 2015
  * Modified by: Xi Yang 2015-2016
+ * Modified by: Adam smith 2017
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -128,15 +129,13 @@ public class AwsModelBuilder {
         Resource s3Service = RdfOwl.createResource(model, ResourceTool.getResourceUri("", awsPrefix.s3Service(), region.getName()), objectStorageService);
         Resource ebsService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", awsPrefix.ebsService(), region.getName()), blockStorageService);
         Resource directConnect = RdfOwl.createResource(model, ResourceTool.getResourceUri("", awsPrefix.directConnectService(), region.getName()), biPort);
-
+        
         model.add(model.createStatement(awsTopology, hasService, ec2Service));
         model.add(model.createStatement(awsTopology, hasService, vpcService));
         model.add(model.createStatement(awsTopology, hasService, s3Service));
         model.add(model.createStatement(awsTopology, hasService, ebsService));
         model.add(model.createStatement(awsTopology, hasBidirectionalPort, directConnect));
-
-
-
+        
         //create resource for Vlan labels
         Resource vlan = model.createResource("http://schemas.ogf.org/nml/2012/10/ethernet#vlan");
 
@@ -155,9 +154,15 @@ public class AwsModelBuilder {
             Resource VPNGATEWAY = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpnGatewayId,awsPrefix.gateway(),vpnGatewayId), biPort);
             model.add(model.createStatement(VPNGATEWAY, Mrs.type, "vpn-gateway"));
             model.add(model.createStatement(awsTopology, hasBidirectionalPort, VPNGATEWAY));
+            
+            /*
+            String resourceName = ResourceTool.getResourceName(VPNGATEWAY.toString(), awsPrefix.instance());
+            System.out.println("DEBUG: vgwID " + ec2Client.getVpnGatewayId(resourceName) + ", Resource name was "+VPNGATEWAY.toString());
+            //*/
+
         }
 
-        //get a list of all the virtual interfaces that do not bellong to a VPN gateway
+        //get a list of all the virtual interfaces that do not belong to a VPN gateway
         //as this Virtual interfaces could be accepted or denied to be a part of a dc connection
         //in the push part
         for (VirtualInterface vi : dcClient.getVirtualInterfaces()) {
@@ -166,7 +171,8 @@ public class AwsModelBuilder {
             String[] invalidStates = {VirtualInterfaceState.Deleted.toString(), VirtualInterfaceState.Deleting.toString()};
             if ((Arrays.asList(invalidStates).contains(virtualInterfaceState))) {
                 continue;
-            }            
+            }
+            
             Resource VIRTUAL_INTERFACE = RdfOwl.createResource(model, ResourceTool.getResourceUri(vi.getVirtualInterfaceId(), awsPrefix.vif(), directConnect.getURI(), vi.getVlan().toString()), biPort);
             model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.name, vi.getVirtualInterfaceId()));
             model.add(model.createStatement(VIRTUAL_INTERFACE, Mrs.type, "direct-connect-vif"));
@@ -215,6 +221,79 @@ public class AwsModelBuilder {
                     model.add(model.createStatement(VPNGATEWAY, Nml.isAlias, VIRTUAL_INTERFACE));
                     model.add(model.createStatement(VIRTUAL_INTERFACE, Nml.isAlias, VPNGATEWAY));
                 }
+            }
+        }
+
+        /*
+        Get a list of vpnConnections. A vpn essentially consists of a virtual
+        gateway and a customer gateway connected by two ipsec tunnels.
+        
+        Here's a list of the vpn connection properties currently used in the model:
+        
+        vpn.getVpnGatewayId()
+        vpn.getVpnConnectionId()
+        vpn.getVgwTelemetry()
+        vpn.getCustomerGatewayId()
+        vpn.getRoutes()
+        */
+        for (VpnConnection vpn : ec2Client.getVpnConnections()) {
+            String vpnState = vpn.getState();
+            String vpnId = ec2Client.getIdTag(vpn.getVpnConnectionId());
+            String vgwId = ec2Client.getIdTag(vpn.getVpnGatewayId());
+            String cgwId = vpn.getCustomerGatewayId();
+            
+            String[] invalidStates = {VpnState.Deleted.toString(), VpnState.Deleting.toString()};
+            if (Arrays.asList(invalidStates).contains(vpnState)) {
+                continue;
+            }
+            
+            //First, create the VPN Connection resource
+            Resource VPNC = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpnId, awsPrefix.vpn(), vpnId), Nml.BidirectionalPort);
+            //Resource VPNC = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpn.getVpnConnectionId(), awsPrefix.vpn(), vpn.getVpnConnectionId()), Nml.BidirectionalPort);
+            //the vpn connection has type vpn-connection to prevent it from being mistaken for a createPortsRequest during modelAddition
+            model.add(model.createStatement(VPNC, Mrs.type, "vpn-connection"));
+            model.add(model.createStatement(awsTopology, Nml.hasBidirectionalPort, VPNC));
+            //Next, find the vgw and add it as an alias
+            Resource vgwResource = model.getResource(ResourceTool.getResourceUri(vgwId, awsPrefix.gateway(), vgwId));
+            model.add(model.createStatement(VPNC, Nml.isAlias, vgwResource));
+            model.add(model.createStatement(vgwResource, Nml.isAlias, VPNC));
+
+            //Now, add the customer gateway to the model as a Mrs.NetworkAddress resource
+            CustomerGateway cgw = ec2Client.getCustomerGateway(cgwId);
+            Resource cgwIp = RdfOwl.createResource(model, ResourceTool.getResourceUri(cgwId, awsPrefix.cgw(), cgwId), Mrs.NetworkAddress);
+            model.add(model.createStatement(cgwIp, Mrs.type, "ipv4-address:customer"));
+            model.add(model.createStatement(cgwIp, Mrs.value, cgw.getIpAddress()));
+            model.add(model.createStatement(VPNC, Mrs.hasNetworkAddress, cgwIp));
+            //Add the static routes to the model
+            List<VpnStaticRoute> routes = vpn.getRoutes();
+            if (!routes.isEmpty()) {
+                Resource customerCIDR = RdfOwl.createResource(model, VPNC.getURI()+":routes", Mrs.NetworkAddress);
+                model.add(model.createStatement(customerCIDR, Mrs.type, "ipv4-prefix-list:customer"));
+                model.add(model.createStatement(customerCIDR, Mrs.value, routes.get(0).getDestinationCidrBlock()));
+                model.add(model.createStatement(VPNC, Mrs.hasNetworkAddress, customerCIDR));
+            }
+            /*
+            Every vpnConnection has 2 tunnels.
+            The vpn connection has a hasBidirectionalPort relation to each tunnel.
+            Each tunnel then has a hasNetworkAddress relation to its ip address.
+            technically each tunnel has 2 ip addresses, amazon and customer but we are 
+            only interested in our side.
+            
+            Since the two tunnels are not used identically, one is referred to
+            as tunnnel1 and the other as tunnel2. tunnel2 is a backup tunnel.
+            */
+            List <VgwTelemetry> telemetry = vpn.getVgwTelemetry();
+            int i = 0;
+            for (VgwTelemetry tunnel : telemetry) {
+                i ++;
+                Resource tunnelIpResource = RdfOwl.createResource(model, VPNC.getURI()+":tunnel"+i+"-ip", Mrs.NetworkAddress);
+                model.add(model.createStatement(tunnelIpResource, Mrs.type, "ipv4-address:amazon"));
+                model.add(model.createStatement(tunnelIpResource, Mrs.value, tunnel.getOutsideIpAddress()));
+                
+                Resource tunnelResource = RdfOwl.createResource(model, VPNC.getURI()+":tunnel"+i, Nml.BidirectionalPort);
+                model.add(model.createStatement(VPNC, Nml.hasBidirectionalPort, tunnelResource));
+                model.add(model.createStatement(tunnelResource, Mrs.hasNetworkAddress, tunnelIpResource));
+                model.add(model.createStatement(tunnelResource, Mrs.type, "vpn-tunnel"));
             }
         }
 
@@ -471,7 +550,6 @@ public class AwsModelBuilder {
                         }
                         i++; //increment the association index
                     }
-
                 }
             }
         }

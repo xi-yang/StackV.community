@@ -2,6 +2,7 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Miguel Uzcategui 2015
  * Modified by: Xi Yang 2015-2016
+ * Modified by: Adam Smith 2017
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -49,11 +50,17 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -104,7 +111,7 @@ public class AwsPush {
     }
 
     /**
-     * ***********************************************
+     * ************************************************
      * function to propagate all the requests
      * ************************************************
      */
@@ -169,6 +176,10 @@ public class AwsPush {
         //delete the Vpcs that need to be deleted
         requests += deleteVpcsRequests(modelRef, modelReduct);
 
+        //Added 6/9
+        //delete certain vpn connections
+        requests += deleteVPNConnectionRequests(modelRef, modelReduct);
+        
         //create all the vpcs that need to be created
         requests += createVpcsRequests(modelRef, modelAdd);
 
@@ -212,6 +223,11 @@ public class AwsPush {
 
         //associate elastic IP 
         requests += associateElasticIpRequests(modelRef, modelAdd);
+        
+        //Added 6/8
+        //create new vpn connections
+        requests += createVPNConnectionRequests(modelRef, modelAdd);
+        
         return requests;
     }
 
@@ -914,7 +930,83 @@ public class AwsPush {
                 elasticIpRequest.withInstanceId(ec2Client.getInstanceId(parameters[1]))
                         .withPublicIp(parameters[2].split("/")[0]);
                 ec2.associateAddress(elasticIpRequest);
-            } 
+            } else if (request.contains("DeleteVPNConnectionRequest")) {
+                //Added 6/9
+                //delete a vpn connection and its customer gateway
+                //param 1 -> vpn connection ID to delete (we have to find the cgw ID)
+                String[] parameters = request.split("\\s+");
+                
+                VpnConnection vpn = ec2Client.getVpnConnection(parameters[1]);
+                if (vpn != null) {
+                    //Set up the delete vpn connection request.
+                    DeleteVpnConnectionRequest vpnRequest = new DeleteVpnConnectionRequest();
+                    vpnRequest.withVpnConnectionId(parameters[1]);
+                    DeleteCustomerGatewayRequest cgwRequest = new DeleteCustomerGatewayRequest();
+                    cgwRequest.withCustomerGatewayId(vpn.getCustomerGatewayId());
+                    //delete both amazon resources
+                    ec2.deleteVpnConnection(vpnRequest);
+                    ec2.deleteCustomerGateway(cgwRequest);
+                    ec2Client.vpnDeletionCheck(parameters[1]);
+                } else {
+                    //just send a warning
+                    logger.warning(method, String.format("There is no vpn connection with id %s", parameters[1]));
+                }
+                //*/
+            } else if (request.contains("CreateVPNConnectionRequest")) {
+                /*
+                Added 6/8
+                create a new vpn connection and customer gateway.
+                param 1 -> VGW to attach
+                param 2 -> IP of CGW to create
+                param 3 -> routes
+                param 4 -> vpnc uri
+                param 5 -> cgw uri
+                */
+                String[] parameters = request.split("\\s+");
+                
+                VpnGateway vgw = ec2Client.getVirtualPrivateGateway(parameters[1]);
+                VpnConnection vpn = null;
+                
+                if (vgw == null) {
+                    logger.warning(method, String.format("No VGW found with id %s", parameters[1]));
+                } else {
+                    vpn = ec2Client.vgwGetVpn(parameters[1]);
+                    //each vgw can only be a part of at most one vpn connection
+                    if (vpn != null) {
+                        logger.warning(method, String.format("VGW with id %s is already part of a vpn connection with id %s.", parameters[1], vpn.getVpnConnectionId()));
+                        vgw = null;
+                    }
+                }
+
+                if (vgw != null) {
+                    //create a new customer gateway for the vpn
+                    CreateCustomerGatewayRequest cgwRequest = new CreateCustomerGatewayRequest();
+                    cgwRequest.withType(GatewayType.Ipsec1).withPublicIp(parameters[2]);
+                    CreateCustomerGatewayResult cgwResult = ec2.createCustomerGateway(cgwRequest);
+                    CustomerGateway cgw = cgwResult.getCustomerGateway();
+                    //create a vpn connection between cgw and vgw
+                    CreateVpnConnectionRequest vpnCRequest = new CreateVpnConnectionRequest();
+                    vpnCRequest.withOptions(new VpnConnectionOptionsSpecification().withStaticRoutesOnly(true)).
+                            withType("ipsec.1").withCustomerGatewayId(cgw.getCustomerGatewayId()).
+                            withVpnGatewayId(parameters[1]);
+                    CreateVpnConnectionResult vpnCResult = ec2.createVpnConnection(vpnCRequest);
+                    vpn = vpnCResult.getVpnConnection();
+                
+                    //set the cidr routes of the vpn. assumes that cidrs have been validated
+                    List <String> cidrs = Arrays.asList(parameters[3].split(","));
+                    for (String cidr : cidrs) {
+                        CreateVpnConnectionRouteRequest routeRequest = new CreateVpnConnectionRouteRequest();
+                        routeRequest.withVpnConnectionId(vpn.getVpnConnectionId()).withDestinationCidrBlock(cidr);
+                        ec2.createVpnConnectionRoute(routeRequest);
+                    }
+                
+                    ec2Client.getVpnConnections().add(vpn);
+                    ec2Client.getCustomerGateways().add(cgw);
+                    ec2Client.vpnCreationCheck(vpn.getVpnConnectionId());
+                    ec2Client.tagResource(vpn.getVpnConnectionId(), parameters[4]);
+                    ec2Client.tagResource(cgw.getCustomerGatewayId(), parameters[5]);
+                }
+            }
             logger.trace_end(method+"."+request);
         }
         logger.end(method);
@@ -1078,7 +1170,7 @@ public class AwsPush {
             NetworkInterface p = ec2Client.getNetworkInterface(portId);
             if (p == null) //network interface does not exist, need to create a network interface
             {
-                throw logger.error_throwing(method, String.format("The port %s to be deleted"
+                throw logger.error_throwing(method, String.format("The port %s to be deleted "
                         + "does not exists", port));
             } else {
                 //check to see the network interface has no attachments before
@@ -3010,7 +3102,7 @@ public class AwsPush {
     public String acceptRejectVirtualInterfaceRequests(OntModel model, OntModel modelAdd) {
         String method = "acceptRejectVirtualInterfaceRequests";
         String requests = "";
-
+        
         //@TODO: public VLAN with hasLabel in delta model will be intepreted as "Accept" request
         
         //check for aliasing of an interface
@@ -3145,7 +3237,7 @@ public class AwsPush {
             }
 
             //one resource is aliased to the second resource, make sure that the 
-            //reverse also happens in the elta model
+            //reverse also happens in the delta model
             query = "SELECT  ?a  WHERE {<" + y.asResource() + ">  nml:isAlias  <" + x.asResource() + ">}";
             r1 = executeQuery(query, emptyModel, modelReduct);
             if (!r1.hasNext()) {
@@ -3209,5 +3301,119 @@ public class AwsPush {
             requests  +=  String.format("AssociateElasticIpRequest %s %s \n", instanceId, floatingIp);
         }
         return requests;
-    }    
+    }
+    
+    public String createVPNConnectionRequests(OntModel model, OntModel modelAdd) {
+        String method = "createVPNConnectionRequests";
+        String requests = "";
+        /*
+        Find vpns to add
+        This query is divided into three parts: first, find the vpn URI, its static
+        routes, and cgw ID. Next, find the routes IP CIDR. Last, find the cgw IP
+        address and recover the URI of the cgw.
+        
+        Tunnel info is intentionally omitted from query.
+        */
+        String query = "SELECT ?vgwID ?cgwIP ?routeCIDR ?vpnURI ?cgwURI WHERE {"
+                + "?amazonCloud nml:hasBidirectionalPort ?vpnURI ."
+                + "?vpnURI a nml:BidirectionalPort ; "
+                + "mrs:hasNetworkAddress ?routeURI , ?cgwURI ; "
+                + "mrs:type \"vpn-connection\" ; "
+                //+ "nml:hasBidirectionalPort ?tunnel1 , ?tunnel2 ; "
+                + "nml:isAlias ?vgwID . "
+                + "?routeURI a mrs:NetworkAddress ; "
+                + "mrs:type \"ipv4-prefix-list:customer\" ; "
+                + "mrs:value ?routeCIDR . "
+                + "?cgwURI a mrs:NetworkAddress ; "
+                + "mrs:type \"ipv4-address:customer\" ; "
+                + "mrs:value ?cgwIP . "
+                //+ "?tunnel1 a nml:BidirectionalPort ;"
+                //+ "mrs:type \"vpn-tunnel\" ; "
+                //+ "mrs:hasNetworkAddress ?tunnel1IP . "
+                //+ "?tunnel2 a nml:BidirectionalPort ; "
+                //+ "mrs:type \"vpn-tunnel\" ; "
+                //+ "mrs:hasNetworkAddress ?tunnel2IP . "
+                + "}";
+        
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            String resourceName = ResourceTool.getResourceName(q.get("vgwID").asResource().toString(), awsPrefix.instance());
+            String vgwID = ec2Client.getVpnGatewayId(resourceName);
+            String cgwIP = q.get("cgwIP").toString();
+            String routeCIDR = q.get("routeCIDR").toString();
+            String vpnURI = q.get("vpnURI").toString();
+            String cgwURI = q.get("cgwURI").toString();
+
+            //Validate the CIDR
+            //pattern requires one IPv4 address and allows additional IPs separated by commas.
+            String cidrPattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\/\\d{1,2}";
+            String pattern = "^("+cidrPattern+",)*"+cidrPattern+"$";
+            if (!routeCIDR.matches(pattern)) {
+                throw logger.error_throwing(method, String.format("CIDR block is invalid: %s", routeCIDR));
+            }
+            
+            List<String> cidrs = Arrays.asList(routeCIDR.split(","));
+            //now validate each individual cidr
+            for (String cidr : cidrs) {
+                String parts[] = cidr.split("[/.]");
+                
+                if (parts.length < 5) {
+                    throw logger.error_throwing(method, String.format("CIDR is invalid: %s.", cidr));
+                }
+                
+                //validate the CIDR range
+                int bits = Integer.parseInt(parts[4]);
+                if (bits > 32) {
+                    throw logger.error_throwing(method, String.format("CIDR range is invalid: %d, must be between 0 and 32 inclusive.", bits));
+                }
+                
+                int temp;
+                for (String s : parts) {
+                    temp = Integer.parseInt(s);
+                    if (temp > 255) {
+                        throw logger.error_throwing(method, String.format("IP number is invalid: %d, must be between 0 and 255 inclusive.", temp));
+                    }
+                }
+            }
+            requests += String.format("CreateVPNConnectionRequest %s %s %s %s %s\n", vgwID, cgwIP, routeCIDR, vpnURI, cgwURI);
+        }
+
+       return requests;
+    }
+    
+    public String deleteVPNConnectionRequests(OntModel model, OntModel modelReduct) {
+        /*
+        Deleting a vpn entails also deleting the attached CGW
+        We need to find the vpn connection id. The cgw ID does not need to be
+        known because we can use the client to find it.
+        */
+
+        String method = "deleteVPNConnectionRequests";
+        String requests = "";
+        String query = "SELECT ?vpnURI WHERE {"
+                + "?amazonCloud nml:hasBidirectionalPort ?vpnURI ."
+                + "?vpnURI a nml:BidirectionalPort ; "
+                + "mrs:hasNetworkAddress ?routeURI , ?cgwURI ; "
+                + "mrs:type \"vpn-connection\" ; "
+                + "nml:isAlias ?vgwID . "
+                + "?routeURI a mrs:NetworkAddress ; "
+                + "mrs:type \"ipv4-prefix-list:customer\" ; "
+                + "mrs:value ?routeCIDR . "
+                + "?cgwURI a mrs:NetworkAddress ; "
+                + "mrs:type \"ipv4-address:customer\" ; "
+                + "mrs:value ?cgwIP . "
+                + "}";
+        
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            String resourceName = ResourceTool.getResourceName(q.get("vpnURI").asResource().toString(), awsPrefix.instance());
+            String vpnID = ec2Client.getVpnConnectionId(resourceName);
+            
+            requests += String.format("DeleteVPNConnectionRequest %s\n", vpnID);
+        }
+
+        return requests;
+    }
 }
