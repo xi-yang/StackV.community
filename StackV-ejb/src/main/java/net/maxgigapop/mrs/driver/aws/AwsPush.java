@@ -29,6 +29,8 @@ import net.maxgigapop.mrs.driver.aws.AwsEC2Get;
 import net.maxgigapop.mrs.driver.aws.AwsPush;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.ec2.model.Subnet;
+import com.amazonaws.services.ec2.model.Vpc;
 import com.amazonaws.services.directconnect.AmazonDirectConnectAsyncClient;
 import com.amazonaws.services.directconnect.AmazonDirectConnectClient;
 import com.amazonaws.services.directconnect.model.ConfirmPrivateVirtualInterfaceRequest;
@@ -89,6 +91,7 @@ public class AwsPush {
     String defaultInstanceType = null;
     String defaultKeyPair = null;
     String defaultSecGroup = null;
+    String previousnodeId = null;//to support multiple port attachments
     private AwsBatchResourcesTool batchTool = new AwsBatchResourcesTool();
     static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
@@ -127,10 +130,6 @@ public class AwsPush {
             modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
             modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
 
-            //add the batched resources
-            modelRef = batchTool.expandBatchAbstraction(modelRef);
-            modelAdd = batchTool.expandBatchAbstraction(modelAdd);
-            modelReduct = batchTool.expandBatchAbstraction(modelReduct);
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
@@ -138,17 +137,18 @@ public class AwsPush {
         //deatch volumes that need to be detached
         requests += detachVolumeRequests(modelRef, modelReduct);
 
-        //Delete a volume if a volume needs to be created
-        requests += deleteVolumesRequests(modelRef, modelReduct);
-
         //delete all the instances that need to be created
         requests += deleteInstancesRequests(modelRef, modelReduct);
 
         //detach a network interface from an existing instance
         requests += detachPortRequest(modelRef, modelReduct);
+        
+        //Delete a volume if a volume needs to be created
+        requests += deleteVolumesRequests(modelRef, modelReduct);
 
         //disassociate an address from a network interface
         //requests += disassociateAddressRequest(modelRef, modelReduct);
+        
         //Delete the network interfaces that need to be deleted
         requests += deletePortsRequests(modelRef, modelReduct);
 
@@ -203,20 +203,21 @@ public class AwsPush {
 
         //create the new routes requests
         requests += createRouteRequests(modelRef, modelAdd);
-
-        //create a volume if a volume needs to be created
-        requests += createVolumesRequests(modelRef, modelAdd);
-
-        //create network interface if it needs to be created
-        requests += createPortsRequests(modelRef, modelAdd);
-
-        //Associate an address with a  interface
-        //requests += associateAddressRequest(modelRef, modelAdd);
-        //attach ports to existing instances
-        requests += attachPortRequest(modelRef, modelAdd);
-
+        
         //create all the nodes that need to be created 
         requests += createInstancesRequests(modelRef, modelAdd);
+        
+        //create a volume if a volume needs to be created
+        requests += createVolumesRequests(modelRef, modelAdd);
+        
+        //create network interface if it needs to be created
+        requests += createPortsRequests(modelRef, modelAdd);
+        
+        //Associate an address with a  interface
+        //requests += associateAddressRequest(modelRef, modelAdd);
+        
+        //attach ports to existing instances
+        requests += attachPortRequest(modelRef, modelAdd);
 
         //attach volumes that need to be atatched to existing instances
         requests += attachVolumeRequests(modelRef, modelAdd);
@@ -243,15 +244,18 @@ public class AwsPush {
         for (String request : requests) {
             logger.trace_start(method+"."+request);
             if (request.contains("TerminateInstancesRequest")) {
-                String[] parameters = request.split("\\s+");
-
-                String instanceId = ec2Client.getInstanceId(parameters[1]);
+                String[] parameters = (request.split("TerminateInstancesRequest_")[1]).split("\\s+");
+                List<String> instanceIds = new ArrayList();
+                for(String id: parameters){
+                String instanceId = ec2Client.getInstanceId(id);
+                instanceIds.add(instanceId);}
                 TerminateInstancesRequest del = new TerminateInstancesRequest();
-                del.withInstanceIds(instanceId);
+                del.withInstanceIds(instanceIds);
                 DeleteTagsRequest tagRequest = new DeleteTagsRequest();
                 ec2.terminateInstances(del);
-                ec2Client.getEc2Instances().remove(ec2Client.getInstance(instanceId));
-                ec2Client.instanceStatusCheck(parameters[1], "terminated");
+                for(String instanceId: instanceIds){
+                ec2Client.getEc2Instances().remove(ec2Client.getInstance(instanceId));}
+                ec2Client.instanceStatusCheckBatch(Arrays.asList(parameters),"terminated");
 
             } else if (request.contains("DetachNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -282,13 +286,13 @@ public class AwsPush {
                 ec2.disassociateAddress(disassociateAddressRequest);
 
             } else if (request.contains("DeleteNetworkInterfaceRequest")) {
-                String[] parameters = request.split("\\s+");
-
+                List<String> parameters = Arrays.asList((request.split("DeleteNetworkInterfaceRequest ")[1]).split("\\s+"));
                 DeleteNetworkInterfaceRequest portRequest = new DeleteNetworkInterfaceRequest();
-                portRequest.withNetworkInterfaceId(parameters[1]);
+                for(String id: parameters){
+                portRequest.withNetworkInterfaceId(id);
                 ec2.deleteNetworkInterface(portRequest);
-                ec2Client.getNetworkInterfaces().remove(ec2Client.getNetworkInterface(parameters[1]));
-                ec2Client.PortDeletionCheck(parameters[1]);
+                ec2Client.getNetworkInterfaces().remove(ec2Client.getNetworkInterface(id));}
+                ec2Client.PortDeletionCheckBatch(parameters);
 
             } else if (request.contains("DeleteVolumeRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -418,6 +422,7 @@ public class AwsPush {
                         continue;
                     }
                 }
+                
             } else if (request.contains("DeleteVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -523,6 +528,7 @@ public class AwsPush {
                 //create the tag for the vpc
                 ec2Client.tagResource(vpcId, parameters[2]);
                 ec2Client.tagResource(mainTable.getRouteTableId(), parameters[3]);
+                
             } else if (request.contains("CreateSubnetRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -541,6 +547,7 @@ public class AwsPush {
                             .withSubnetId(subnetResult.getSubnet().getSubnetId())
                             .withMapPublicIpOnLaunch(true));
                 }
+                
             } else if (request.contains("CreateRouteTableReques")) {
                 String[] parameters = request.split("\\s+");
 
@@ -604,6 +611,7 @@ public class AwsPush {
                         }
                     }
                 }
+                
             } else if (request.contains("CreateVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -639,6 +647,7 @@ public class AwsPush {
                         }
                     }
                 }
+                
             } else if (request.contains("PropagateVpnRequest")) {
                 String[] parameters = request.split("\\s+");
                 String tableIdTag = parameters[1];
@@ -665,6 +674,7 @@ public class AwsPush {
                         .withVirtualGatewayId(ec2Client.getVpnGatewayId(parameters[2]));
 
                 ConfirmPrivateVirtualInterfaceResult interfaceResult = dc.confirmPrivateVirtualInterface(interfaceRequest);
+            
             } else if (request.contains("CreateRouteRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -696,55 +706,60 @@ public class AwsPush {
 
             } else if (request.contains("CreateVolumeRequest")) {
                 String[] parameters = request.split("\\s+");
-
                 CreateVolumeRequest volumeRequest = new CreateVolumeRequest();
                 volumeRequest.withVolumeType(parameters[1])
                         .withSize(Integer.parseInt(parameters[2]))
                         .withAvailabilityZone(parameters[3]);
-
+                
+                List<String> volumeIds = new ArrayList();
+                for(int cnt = 0; cnt<Integer.parseInt(parameters[5]);cnt++){
                 CreateVolumeResult result = ec2.createVolume(volumeRequest);
 
                 Volume volume = result.getVolume();
                 ec2Client.volumeAdditionCheck(volume.getVolumeId(), "available");
-                ec2Client.tagResource(volume.getVolumeId(), parameters[4]);
+                volumeIds.add(volume.getVolumeId());
                 ec2Client.getVolumes().clear();
                 ec2Client.getVolumes().addAll(ec2.describeVolumes().getVolumes());
-
-                //suport for batch
-                if (parameters[4].matches("(.*)(batch)(\\d{1,19}$)")) {
-                    String batchTag = parameters[4].split("batch")[0] + "batch";
-                    CreateTagsRequest tagRequest = new CreateTagsRequest();
-                    tagRequest.withTags(new Tag("batch", batchTag));
-                    tagRequest.withResources(volume.getVolumeId());
-                    ec2.createTags(tagRequest);
                 }
-
-            } else if (request.contains("CreateNetworkInterfaceRequest")) {
+                ec2Client.tagBatchResources(volumeIds, parameters[4]);
+                //suport for batch
+                if (Integer.parseInt(parameters[5])>1) {
+                    String batchTag = parameters[4].split("batch")[0] + "batch";
+                ec2Client.tagResourcesWithBatchId(volumeIds,batchTag);
+                }
+            } 
+            
+            else if (request.contains("CreateNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
                 CreateNetworkInterfaceRequest portRequest = new CreateNetworkInterfaceRequest();
+                String portId = ec2Client.getResourceId(parameters[3].split("withbatchorder_")[0]);
+                NetworkInterface p = ec2Client.getNetworkInterface(portId);
+                if(p==null){ ///to check if the port is in use already
                 if (parameters[1].equalsIgnoreCase("any")) {
                     portRequest.withSubnetId(ec2Client.getResourceId(parameters[2]));
                 } else {
                     portRequest.withPrivateIpAddress(parameters[1])
                             .withSubnetId(ec2Client.getResourceId(parameters[2]));
                 }
+                
+                List<String> networkInterfaceIds = new ArrayList();
+                for(int i=0; i<Integer.parseInt(parameters[4]);i++ ){
                 CreateNetworkInterfaceResult portResult = ec2.createNetworkInterface(portRequest);
-
+                
                 NetworkInterface port = portResult.getNetworkInterface();
                 ec2Client.getNetworkInterfaces().add(port);
                 ec2Client.PortAdditionCheck(port.getNetworkInterfaceId());
-                ec2Client.tagResource(port.getNetworkInterfaceId(), parameters[3]);
-
-                //suport for batch
-                if (parameters[3].matches("(.*)(batch)(\\d{1,19}$)")) {
-                    String batchTag = parameters[3].split("batch")[0] + "batch";
-                    CreateTagsRequest tagRequest = new CreateTagsRequest();
-                    tagRequest.withTags(new Tag("batch", batchTag));
-                    tagRequest.withResources(port.getNetworkInterfaceId());
-                    ec2.createTags(tagRequest);
+                networkInterfaceIds.add(port.getNetworkInterfaceId());
                 }
-
-            } else if (request.contains("AssociateAddressRequest")) {
+                ec2Client.tagBatchResources(networkInterfaceIds,parameters[3].split("withbatchorder_")[0] );
+                //suport for batch
+                if (Integer.parseInt(parameters[4])!=1) {
+                ec2Client.tagResourcesWithBatchId(networkInterfaceIds,parameters[3]);
+                }
+                }
+            } 
+            
+            else if (request.contains("AssociateAddressRequest")) {
                 String[] parameters = request.split("\\s+");
 
                 Address publicIp = ec2Client.getElasticIp(parameters[1]);
@@ -761,18 +776,34 @@ public class AwsPush {
 
             } else if (request.contains("AttachNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
-
-                String portId = ec2Client.getResourceId(parameters[1]);
-                String nodeId = ec2Client.getInstanceId(parameters[2]);
-                int index = Integer.parseInt(parameters[3]);
+                
+                List<String> batchresourceIds = ec2Client.getBatchNetworkInterfaces(parameters[1]);
+                List<String> batchnodes = ec2Client.getBatchInstanceIds(parameters[2]);
+                //to support batch VMs check for batch parameter[3]
+                String nodeId = null;
+                String portId = null;
+                for(int cnt = 0 ; cnt<Integer.parseInt(parameters[3]);cnt++){
+                nodeId = batchnodes.get(cnt);
+                portId = batchresourceIds.get(cnt);
+                //to find the index id for the interface
+                Instance i = null;
+                int index = 0;
+                i = ec2Client.getInstance(nodeId);
+                index = i.getNetworkInterfaces().size();
+                String temp = previousnodeId;
+                if(temp!=null && temp.equals(parameters[2])){index++;}
+                
                 AttachNetworkInterfaceRequest portRequest = new AttachNetworkInterfaceRequest();
                 portRequest.withInstanceId(nodeId);
                 portRequest.withNetworkInterfaceId(portId);
                 portRequest.withDeviceIndex(index);
                 ec2.attachNetworkInterface(portRequest);
                 ec2Client.PortAttachmentCheck(portId);
-
-            } else if (request.contains("RunInstancesRequest")) {
+                }
+                previousnodeId = parameters[2];
+            } 
+            
+            else if (request.contains("RunInstancesRequest")) {
                 //requests += String.format("RunInstancesRequest ami-146e2a7c t2.micro ") 
                 //requests+=String.format("InstanceNetworkInterfaceSpecification %s %d",id,index)
                 String[] parameters = request.split("\\s+");
@@ -781,54 +812,45 @@ public class AwsPush {
                 runInstance.withImageId(parameters[1]);
                 runInstance.withInstanceType(parameters[2]);
                 runInstance.withKeyName(parameters[3]);
-                runInstance.withMaxCount(1);
-                runInstance.withMinCount(1);
+                runInstance.withMaxCount(Integer.parseInt(parameters[11]));
+                runInstance.withMinCount(Integer.parseInt(parameters[11]));
                 //runInstance.withSecurityGroupIds(parameters[4]);
 
                 //integrate the root device
-                if (!parameters[6].equalsIgnoreCase("any")) {
+                if (!parameters[7].equalsIgnoreCase("any")) {
                     EbsBlockDevice device = new EbsBlockDevice();
-                    device.withVolumeType(parameters[6]);
-                    device.withVolumeSize(Integer.parseInt(parameters[7]));
+                    device.withVolumeType(parameters[7]);
+                    device.withVolumeSize(Integer.parseInt(parameters[8]));
                     BlockDeviceMapping mapping = new BlockDeviceMapping();
-                    mapping.withDeviceName(parameters[8]);
+                    mapping.withDeviceName(parameters[9]);
                     mapping.withEbs(device);
-                    String volumeTag = parameters[9];
+                    String volumeTag = parameters[10];
                     runInstance.withBlockDeviceMappings(mapping);
                 }
 
-                List<InstanceNetworkInterfaceSpecification> portSpecification = new ArrayList();
-                for (int i = 11; i < parameters.length; i++) {
-                    InstanceNetworkInterfaceSpecification s = new InstanceNetworkInterfaceSpecification();
-                    String netIfId = ec2Client.getResourceId(parameters[i]);
-                    int retry = 0; // special handling for lagging interface name and tag
-                    while (!netIfId.startsWith("eni-") && retry++ < 6) {
-                        netIfId = ec2Client.getResourceId(parameters[i]);
-                        try {
-                            sleep(10000L);
-                        } catch (InterruptedException ex) {
-                            ;
-                        }
-                    }
-                    s.withNetworkInterfaceId(netIfId);
-                    i++;
-                    s.withDeviceIndex(Integer.parseInt(parameters[i]));
-                    portSpecification.add(s);
-                }
-                runInstance.withNetworkInterfaces(portSpecification);
-
+                String subnetId = ec2Client.getResourceId(parameters[6]);
+                runInstance.withSubnetId(subnetId); //run the instance using subnet Id of the network interface
+                
                 RunInstancesResult result = ec2.runInstances(runInstance);
-
-                //tag the new instance
-                Instance instance = result.getReservation().getInstances().get(0);
+                
+                List<Instance> newInstances = result.getReservation().getInstances();
+                List<String> newInstanceIds = new ArrayList();
+                String vpcId = ec2Client.getVpcId(parameters[13]);
+                for(int ind =0;ind<Integer.parseInt(parameters[11]);ind++){
+                Instance instance = newInstances.get(ind);
                 ec2Client.getEc2Instances().add(instance);
-                ec2Client.instanceStatusCheck(instance.getInstanceId(), "running");
-                ec2Client.tagResource(instance.getInstanceId(), parameters[5]);
-                //modify security group as it conflicts with specified newtork interface at launch
+                newInstanceIds.add(instance.getInstanceId());
+                //vpcId = instance.getVpcId();
+                }
+                ec2Client.instanceStatusCheckBatch(newInstanceIds,"running");
+                
+                //security group setup
+                String secGroupName = null;
+                String secGroupId = null;
                 SecurityGroup secGroup = ec2Client.getSecurityGroup(parameters[4]);
                 if (secGroup != null && !secGroup.getGroupName().equals("default")) {
-                    String secGroupName = instance.getVpcId() + '-' + secGroup.getGroupName();
-                    String secGroupId = null;
+                    secGroupName = vpcId + '-' + secGroup.getGroupName();
+                    
                     DescribeSecurityGroupsResult securityGroupsResult = ec2.describeSecurityGroups();
                     List<SecurityGroup> listSecGroups = securityGroupsResult.getSecurityGroups();
                     for (SecurityGroup sg : listSecGroups) {
@@ -840,8 +862,8 @@ public class AwsPush {
                     if (secGroupId == null) {
                         CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest()
                                 .withGroupName(secGroupName)
-                                .withVpcId(instance.getVpcId())
-                                .withDescription(secGroup.getGroupName() + "-copy-to-" + instance.getVpcId());
+                                .withVpcId(vpcId)
+                                .withDescription(secGroup.getGroupName() + "-copy-to-" + vpcId);
                         CreateSecurityGroupResult csgResult = ec2.createSecurityGroup(csgr);
                         List<IpPermission> ingPermList = secGroup.getIpPermissions();
                         AuthorizeSecurityGroupIngressRequest asgir = new AuthorizeSecurityGroupIngressRequest()
@@ -862,30 +884,51 @@ public class AwsPush {
                             }
                         }
                         secGroupId = csgResult.getGroupId();
-                    }
+                    }}
+                   
+                ec2Client.tagBatchResources(newInstanceIds, parameters[5]);                
+                //tag the new instance
+                
+                for(int ind =0;ind<Integer.parseInt(parameters[11]);ind++){
+                Instance instance = newInstances.get(ind);
+                //modify security group as it conflicts with specified newtork interface at launch
+                if (secGroup != null && !secGroup.getGroupName().equals("default")) {
                     ec2.modifyInstanceAttribute((new ModifyInstanceAttributeRequest()
                             .withInstanceId(instance.getInstanceId())
                             .withGroups(secGroupId)));
                 }
+                //tag default network interface
+                List <InstanceNetworkInterface> networkInterfaces = instance.getNetworkInterfaces();
+                String instancePortId = networkInterfaces.get(0).getNetworkInterfaceId();
+                ec2Client.tagResource(instancePortId, parameters[12].split("withbatchorder_")[0]);
+                
+                if (Integer.parseInt(parameters[11])>1) {
+                    String batchTag = parameters[12];
+                    CreateTagsRequest tagRequest = new CreateTagsRequest();
+                    tagRequest.withTags(new Tag("batch", batchTag));
+                    tagRequest.withResources(networkInterfaces.get(0).getNetworkInterfaceId());
+                    ec2.createTags(tagRequest);
+                }
+                
                 //suport for batch
-                if (parameters[5].matches("(.*)(batch)(\\d{1,19}$)")) {
-                    String batchTag = parameters[5].split("batch")[0] + "batch";
+                if (Integer.parseInt(parameters[11])>1) {
+                    String batchTag = parameters[5]+ "batchusingsubnetidingroupof"+parameters[11];
                     CreateTagsRequest tagRequest = new CreateTagsRequest();
                     tagRequest.withTags(new Tag("batch", batchTag));
                     tagRequest.withResources(instance.getInstanceId());
                     ec2.createTags(tagRequest);
                 }
 
-                if (!parameters[6].equalsIgnoreCase("any")) {
-                    String volumeTag = parameters[9];
+                if (!parameters[7].equalsIgnoreCase("any")) {
+                    String volumeTag = parameters[10];
                     Volume volume = ec2Client.getInstanceRootDevice(instance);
                     String volumeId = volume.getVolumeId();
                     ec2Client.tagResource(volumeId, volumeTag);
                     ec2Client.getVolumes().add(volume);
 
                     //suport for batch
-                    if (volumeTag.matches("(.*)(batch)(\\d{1,19}$)")) {
-                        String batchTag = volumeTag.split("batch")[0] + "batch";
+                    if (Integer.parseInt(parameters[11])>1) {
+                        String batchTag = volumeTag + "batch";
                         CreateTagsRequest tagRequest = new CreateTagsRequest();
                         tagRequest.withTags(new Tag("batch", batchTag));
                         tagRequest.withResources(volumeId);
@@ -899,9 +942,8 @@ public class AwsPush {
                     ec2Client.getVolumes().add(volume);
 
                     //case of batch instance
-                    if (parameters[5].matches("(.*)(batch)(\\d{1,19}$)")) {
-                        String split[] = parameters[5].split("batch");
-                        volumeTag = split[0] + ":volume+rootbatch" + split[1];
+                    if (Integer.parseInt(parameters[11])>1) {                  
+                        volumeTag = parameters[5]+ ":volume+root" + parameters[10];
                         ec2Client.tagResource(volumeId, volumeTag);
                         String batchTag = volumeTag.split("batch")[0] + "batch";
                         CreateTagsRequest tagRequest = new CreateTagsRequest();
@@ -913,17 +955,26 @@ public class AwsPush {
                         ec2Client.tagResource(volumeId, volumeTag);
                     }
                 }
-            } else if (request.contains("AttachVolumeRequest")) {
+                }
+            } 
+            
+            else if (request.contains("AttachVolumeRequest")) {
                 String[] parameters = request.split("\\s+");
-
+                List<String> batchVolumeIds = ec2Client.getBatchVolumeId(parameters[2]);
+                List<String> batchnodes = ec2Client.getBatchInstanceIds(parameters[1]);
                 AttachVolumeRequest volumeRequest = new AttachVolumeRequest();
-                volumeRequest.withInstanceId(ec2Client.getInstanceId(parameters[1]))
-                        .withVolumeId(ec2Client.getVolumeId(parameters[2]))
+                
+                for(int cnt = 0 ;cnt<batchnodes.size();cnt++){
+                volumeRequest.withInstanceId(batchnodes.get(cnt))
+                        .withVolumeId(batchVolumeIds.get(cnt))
                         .withDevice(parameters[3]);
 
                 ec2.attachVolume(volumeRequest);
-                ec2Client.volumeAttachmentCheck(ec2Client.getVolumeId(parameters[2]));
-            } else if (request.contains("AssociateElasticIpRequest")) {
+                ec2Client.volumeAttachmentCheck(batchVolumeIds.get(cnt));
+                }
+            } 
+            
+            else if (request.contains("AssociateElasticIpRequest")) {
                 String[] parameters = request.split("\\s+");
 
                 AssociateAddressRequest elasticIpRequest = new AssociateAddressRequest();
@@ -1165,7 +1216,12 @@ public class AwsPush {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
             String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), awsPrefix.nic());
-            String portId = ec2Client.getResourceId(portIdTagValue);
+            List<String> batchPortIds = ec2Client.getBatchNetworkInterfacesForDeletion(portIdTagValue);
+            
+            
+            String portId = null;
+            for(int cnt = 0 ; cnt<batchPortIds.size();cnt++){
+            portId = batchPortIds.get(cnt);
 
             NetworkInterface p = ec2Client.getNetworkInterface(portId);
             if (p == null) //network interface does not exist, need to create a network interface
@@ -1207,8 +1263,10 @@ public class AwsPush {
                             + "is not found in the reference model", subnetId));
                 }
                 //create the network interface 
-                requests += String.format("DeleteNetworkInterfaceRequest %s \n", portId);
-            }
+                //requests += String.format("DeleteNetworkInterfaceRequest %s \n", portId);
+                requests += String.format(" %s ", portId);
+            }}
+            requests = (requests.equals(""))?"":"DeleteNetworkInterfaceRequest" + requests + " \n";
         }
         return requests;
     }
@@ -1282,15 +1340,21 @@ public class AwsPush {
             }
 
             String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(), awsPrefix.instance());
-            String nodeId = ec2Client.getInstanceId(nodeIdTagValue);
-
+            //String nodeId = ec2Client.getInstanceId(nodeIdTagValue);
+            List<String> batchnodes = ec2Client.getBatchInstanceIds(nodeIdTagValue);
+                //to support batch VMs check for batch parameter[3]
+            String nodeId = null;
+            for(int cnt = 0 ; cnt<batchnodes.size();cnt++){
+            nodeId = batchnodes.get(cnt);
             Instance instance = ec2Client.getInstance(nodeId);
             if (instance == null) //instance does not exists
             {
                 throw logger.error_throwing(method, String.format("Node to delete: %s does not exist", node));
             } else {
-                requests += String.format("TerminateInstancesRequest %s \n", nodeId);
-            }
+                //requests += String.format("TerminateInstancesRequest %s \n", nodeId);
+                requests += String.format("%s ", nodeId); // to support batch deletion of instances
+            }}
+            requests = "TerminateInstancesRequest_" + requests + "\n";
         }
         return requests;
     }
@@ -1367,7 +1431,12 @@ public class AwsPush {
             QuerySolution querySolution = r.next();
             RDFNode volume = querySolution.get("volume");
             String volumeIdTagValue = ResourceTool.getResourceName(volume.asResource().toString(), awsPrefix.volume());
-            String volumeId = ec2Client.getVolumeId(volumeIdTagValue);
+            //String volumeId = ec2Client.getVolumeId(volumeIdTagValue);
+            List<String> batchVolumeIds = ec2Client.getBatchVolumeId(volumeIdTagValue);
+            
+            String volumeId = null;
+            for(int cnt = 0 ; cnt<batchVolumeIds.size();cnt++){
+            volumeId = batchVolumeIds.get(cnt);
 
             Volume v = ec2Client.getVolume(volumeId);
 
@@ -1383,7 +1452,7 @@ public class AwsPush {
                 }
 
                 //find out the type of the volume
-                query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:value ?type}";
+                query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:type ?type}";
                 r1 = executeQuery(query, emptyModel, modelReduct);
                 if (!r1.hasNext()) {
                     throw logger.error_throwing(method, String.format("model reduction does not specify new type of volume: %s", volume));
@@ -1409,7 +1478,7 @@ public class AwsPush {
                     requests += String.format("DeleteVolumeRequest %s \n", volumeId);
                 }
             }
-        }
+        }}
 
         return requests;
     }
@@ -2655,14 +2724,24 @@ public class AwsPush {
         String requests = "";
         String query;
 
-        query = "SELECT ?volume WHERE {?volume a mrs:Volume}";
+        query = "SELECT ?volume ?node WHERE {?volume a mrs:Volume ."
+                + "OPTIONAL{?node mrs:hasVolume ?volume}}";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        //ResultSet r = executeQuery(query, model, modelAdd);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode volume = querySolution.get("volume");
             String volumeIdTagValue = ResourceTool.getResourceName(volume.asResource().toString(), awsPrefix.volume());
             String volumeId = ec2Client.getVolumeId(volumeIdTagValue);
-
+            
+            //to get the batched request of volumes for VMs
+            int batchVal = 1;
+            RDFNode node = querySolution.get("node");
+            if(node!=null){
+                Resource queryResource = node.asResource();
+                batchVal = getNumberOfBatchResources(queryResource,modelAdd);
+            }
+            
             Volume v = ec2Client.getVolume(volumeId);
 
             if (v != null) //volume exists, no need to create a volume
@@ -2678,7 +2757,7 @@ public class AwsPush {
                 }
 
                 //find out the type of the volume
-                query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:value ?type}";
+                query = "SELECT ?type WHERE {<" + volume.asResource() + "> mrs:type ?type}";
                 r1 = executeQuery(query, emptyModel, modelAdd);
                 if (!r1.hasNext()) {
                     throw logger.error_throwing(method, String.format("model addition does not specify new type of volume: %s", volume));
@@ -2704,13 +2783,14 @@ public class AwsPush {
                     String deviceName = querySolution1.get("deviceName").asLiteral().toString();
 
                     if (!deviceName.equals("/dev/sda1") && !deviceName.equals("/dev/xvda")) {
-                        requests += String.format("CreateVolumeRequest %s %s %s  %s  \n", type.asLiteral().getString(),
+                        requests += String.format("CreateVolumeRequest %s %s %s %s ", type.asLiteral().getString(),
                                 size.asLiteral().getString(), region.getName() + "e", volumeIdTagValue);
                     }
                 } else {
-                    requests += String.format("CreateVolumeRequest %s %s %s %s  \n", type.asLiteral().getString(),
+                    requests += String.format("CreateVolumeRequest %s %s %s %s ", type.asLiteral().getString(),
                             size.asLiteral().getString(), Regions.US_EAST_1.getName() + "e", volumeIdTagValue);
                 }
+                requests += String.format("%d \n",batchVal);
             }
         }
 
@@ -2722,21 +2802,52 @@ public class AwsPush {
      * Function to create network interfaces from a model
      * ****************************************************************
      */
+    
     private String createPortsRequests(OntModel model, OntModel modelAdd) {
         String method = "createPortsRequests";
         String requests = "";
         String query;
 
         //query for the port 
-        query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort ."
-                + "FILTER (NOT EXISTS {?port mrs:type ?type})} ";
+        query = "SELECT ?port ?nodE ?order WHERE {?port a  nml:BidirectionalPort "
+                + "FILTER (NOT EXISTS {?port mrs:type ?type})"
+                + "OPTIONAL {?port mrs:order ?order}}"
+                + "ORDER BY ?order ";
+                //+ "FILTER (NOT EXISTS {?node nml:hasBidirectionalPort ?port})} ";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        int loopCount = 0;
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
+            RDFNode order = querySolution.get("order");
+            
+            //to extract batch value from nodes/VMs
+            query = "SELECT ?batch ?subnet WHERE {?node nml:hasBidirectionalPort <" + port.asResource() + "> ."
+                        + "?node mrs:batch ?batch }";
+            int batch = 1;
+            ResultSet rbatch = executeQuery(query, emptyModel, modelAdd);
+            
+            //check if the ports have order property
+            if(rbatch.hasNext() &&  order == null){
+                throw logger.error_throwing(method, String.format("Network interface %s does not have the order property", port.asResource().toString()));
+            }
+            
+            while(rbatch.hasNext()){
+                querySolution = rbatch.next();
+                batch += Integer.parseInt(querySolution.get("batch").asLiteral().toString());
+                batch += -1; //since 1 is already assigned
+            }
+            //if(batch>1 && order.toString().equals("0"))
+            if(batch>1 && loopCount == 0)
+            {
+                loopCount++;
+                continue;
+            }
+            
             String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), awsPrefix.nic());
+            
             String portId = ec2Client.getResourceId(portIdTagValue);
-
+            
             NetworkInterface p = ec2Client.getNetworkInterface(portId);
 
             if (p != null) //network interface  exists, no need to create a network interface
@@ -2778,13 +2889,16 @@ public class AwsPush {
                     throw logger.error_throwing(method, String.format("model additions subnet for port %s"
                             + "is not found in the reference model", subnetId));
                 }
+                portIdTagValue = portIdTagValue+"withbatchorder_"+order.toString();
                 //create the network interface 
-                requests += String.format("CreateNetworkInterfaceRequest  %s %s %s \n", privateAddress, subnetId, portIdTagValue);
+                requests += String.format("CreateNetworkInterfaceRequest  %s %s %s ", privateAddress, subnetId, portIdTagValue);
             }
+            requests += String.format("%d \n",batch);
+            loopCount++;
         }
         return requests;
     }
-
+    
     /**
      * ****************************************************************
      * Function to associate an address with a network interface
@@ -2830,33 +2944,51 @@ public class AwsPush {
         String requests = "";
         String query = "";
 
-        query = "SELECT ?node ?port WHERE {?node nml:hasBidirectionalPort ?port}";
+        query = "SELECT ?node ?port ?order WHERE {?node nml:hasBidirectionalPort ?port ."
+                + "OPTIONAL {?port mrs:order ?order}}"
+                + "ORDER BY ?order";
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        int orderFlag = 0;
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode port = q.get("port");
             RDFNode node = q.get("node");
+            RDFNode order = q.get("order");
+            
             String nodeIdTag = ResourceTool.getResourceName(node.asResource().toString(), awsPrefix.instance());
-            query = "SELECT ?node WHERE {<" + node.asResource() + "> a nml:Node}";
-            ResultSet r1 = executeQuery(query, model, emptyModel);
+            query = "SELECT ?node ?batch WHERE {<" + node.asResource() + "> a nml:Node ."
+                    + "OPTIONAL {?node mrs:batch ?batch}}";
+            //ResultSet r1 = executeQuery(query, model, emptyModel);
+            ResultSet r1 = executeQuery(query, model, modelAdd);
             Instance i = null;
-            int index = 0;
             if (r1.hasNext()) {
                 String nodeId = ec2Client.getInstanceId(nodeIdTag);
                 i = ec2Client.getInstance(nodeId);
-                index = i.getNetworkInterfaces().size();
+                if(order != null && orderFlag == 0 && nodeId != null){
+                orderFlag = 1;
+                continue;
+             }
             }
+            
             while (r1.hasNext()) {
-                r1.next();
+                QuerySolution querySolutionbatch = r1.next();
                 String portIdTag = ResourceTool.getResourceName(port.asResource().toString(), awsPrefix.nic());
 
-                query = "SELECT ?tag WHERE {<" + port.asResource() + "> a nml:BidirectionalPort ."
-                        + "FILTER (NOT EXISTS {<" + port.asResource() + ">  mrs:type ?type})}";
+                query = "SELECT ?tag ?order WHERE {<" + port.asResource() + "> a nml:BidirectionalPort ."
+                        + "OPTIONAL{<" + port.asResource() + ">  mrs:order ?order}"
+                        + "FILTER (NOT EXISTS {<" + port.asResource() + ">  mrs:type ?type})}"
+                        + "ORDER BY ?order ";
                 ResultSet r2 = executeQuery(query, model, modelAdd);
                 if (!r2.hasNext()) {
                     throw logger.error_throwing(method, String.format("bidirectional port %s to be attached to intsnace does not specify a network interface type", port));
                 }
-
+                
+                //check if the request is for a batch of VMs
+                int batchVal = 1;
+                if(querySolutionbatch.get("batch")!=null&&Integer.parseInt(querySolutionbatch.get("batch").asLiteral().toString())>1){
+                    batchVal = Integer.parseInt(querySolutionbatch.get("batch").asLiteral().toString());
+                }
+                
                 //see if the network interface is already atatched
                 NetworkInterface eni = ec2Client.getNetworkInterface(ec2Client.getResourceId(portIdTag));
                 if (eni != null) {
@@ -2865,8 +2997,9 @@ public class AwsPush {
                                 + " attached to an instance", port));
                     }
                 }
-                requests += String.format("AttachNetworkInterfaceRequest %s %s %s \n", portIdTag, nodeIdTag, Integer.toString(index));
-                index++;
+                
+                requests += String.format("AttachNetworkInterfaceRequest %s %s ", portIdTag, nodeIdTag);
+                requests += String.format("%d \n",batchVal);
             }
 
         }
@@ -2878,6 +3011,7 @@ public class AwsPush {
      * Function to create Instances
      * ****************************************************************
      */
+    
     private String createInstancesRequests(OntModel model, OntModel modelAdd) {
         String method = "createInstancesRequests";
         String requests = "";
@@ -2890,7 +3024,12 @@ public class AwsPush {
             RDFNode node = querySolution.get("node");
             String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(), awsPrefix.instance());
             String nodeId = ec2Client.getInstanceId(nodeIdTagValue);
-
+            
+            
+            // to get the number of resources that needs to be created in batch
+            Resource queryResource = node.asResource();
+            int numRequestedInBatch = getNumberOfBatchResources(queryResource,modelAdd);
+            
             Instance instance = ec2Client.getInstance(nodeId);
             List<Instance> i = ec2Client.getEc2Instances();
             if (instance != null) //instance does not be to be created
@@ -2913,24 +3052,42 @@ public class AwsPush {
                 QuerySolution querySolution1 = r1.next();
                 RDFNode vpc = querySolution1.get("vpc");
                 String vpcId = ResourceTool.getResourceName(vpc.asResource().toString(), awsPrefix.vpc());
+                String vpcID = ec2Client.getResourceId(vpcId);
+                vpcId = vpcID;
+                
+                String subnetId = null;
+                String portId = null;
 
-                //to find the subnet the node is in first  find the port the node uses
-                query = "SELECT ?port WHERE {<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
-                ResultSet r2 = executeQuery(query, model, modelAdd);
+                query = "SELECT ?port ?order ?subnet WHERE {<" + node.asResource() + "> nml:hasBidirectionalPort ?port ."
+                        + "OPTIONAL {?port mrs:order ?order }"
+                        + "?subnet  nml:hasBidirectionalPort ?port ."
+                        + "?subnet a  mrs:SwitchingSubnet} ORDER BY ?order ?port ";
+              
+                ResultSet r2 = executeQueryUnion(query, model, modelAdd);
                 if (!r2.hasNext()) {
                     throw logger.error_throwing(method, String.format("model addition does not specify the subnet that the node is: %s", node));
                 }
-                List<String> portsId = new ArrayList();
-                RDFNode lastPort = null;
-                while (r2.hasNext())//there could be multiple network interfaces attached to the instance
+
+                while (r2.hasNext())//Select the order "0" in case of multiple network interfaces attached to the instance
                 {
                     QuerySolution querySolution2 = r2.next();
+                    RDFNode order = querySolution2.get("order");
+                    
+                    if(order!=null)
+                    {            
+                    RDFNode subnet = querySolution2.get("subnet");
+                    String subnetID = ResourceTool.getResourceName(subnet.asResource().toString(), awsPrefix.subnet());
                     RDFNode port = querySolution2.get("port");
-                    String id = ResourceTool.getResourceName(port.asResource().toString(), awsPrefix.nic());
-                    portsId.add(ec2Client.getResourceId(id));
-                    lastPort = port;
+                    String portID = ResourceTool.getResourceName(port.asResource().toString(), awsPrefix.nic());
+                    subnetId = subnetID;
+                    portId = portID+"withbatchorder_"+order.toString();//break;}
+                    }
+                    else{
+                      throw logger.error_throwing(method, String.format("Network interface %s does not have the order property", querySolution2.get("port").asResource().toString())); 
+                    }
+                    break;
                 }
-
+                
                 //find the EBS volumes that the instance uses
                 query = "SELECT ?volume WHERE {<" + node.asResource() + ">  mrs:hasVolume  ?volume}";
                 ResultSet r4 = executeQuery(query, model, modelAdd);
@@ -2986,15 +3143,17 @@ public class AwsPush {
                 if (keypairName == null) {
                     throw logger.error_throwing(method, "Key Pair is unknown - cannot build instance: " + nodeIdTagValue);
                 }
+                
+                //flavorID = "m4.xlarge"; //for testing instances with more than 3 network interfaces
                 //put request for new instance
-                requests += String.format("RunInstancesRequest %s %s %s %s %s ", imageID, flavorID, keypairName, secgroupName, nodeIdTagValue);
+                requests += String.format("RunInstancesRequest %s %s %s %s %s %s ", imageID, flavorID, keypairName, secgroupName, nodeIdTagValue, subnetId);
 
                 //put the root device of the instance
                 query = "SELECT ?volume ?deviceName ?size ?type  WHERE {"
                         + "<" + node.asResource() + ">  mrs:hasVolume  ?volume ."
                         + "?volume mrs:target_device ?deviceName ."
                         + "?volume mrs:disk_gb ?size ."
-                        + "?volume mrs:value ?type}";
+                        + "?volume mrs:type ?type}";
                 ResultSet r6 = executeQuery(query, model, modelAdd);
                 boolean hasRootVolume = false;
                 while (r6.hasNext()) {
@@ -3012,19 +3171,14 @@ public class AwsPush {
                 if (hasRootVolume == false) {
                     requests += "any any any any ";
                 }
-                int index = 0;
-                //put the networ interfaces 
-                requests += "NetworkInterfaceSpecification ";
-                for (String id : portsId) {
-                    requests += String.format("%s %d ", id, index);
-                    index++; //increment the device index
-                }
+                requests += String.format("%d %s %s ",numRequestedInBatch,portId,vpcId);
                 requests += "\n";
             }
         }
         return requests;
     }
-
+    
+    
     /**
      * ****************************************************************
      * Attach a volume to an existing instance AWS
@@ -3301,7 +3455,17 @@ public class AwsPush {
             requests  +=  String.format("AssociateElasticIpRequest %s %s \n", instanceId, floatingIp);
         }
         return requests;
-    }
+    }   
+    
+    private int getNumberOfBatchResources(Resource queryResource, OntModel modelAdd){
+        String query = "SELECT ?n WHERE {<"+queryResource+"> mrs:batch ?n}";
+         ResultSet r = executeQuery(query, emptyModel, modelAdd); 
+         if(r.hasNext()){
+            QuerySolution q1 = r.next();
+            int n = Integer.parseInt(q1.get("n").asLiteral().toString());
+            return n;}
+         else {return 1;}
+     }
     
     public String createVPNConnectionRequests(OntModel model, OntModel modelAdd) {
         String method = "createVPNConnectionRequests";
