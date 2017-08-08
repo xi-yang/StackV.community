@@ -219,6 +219,28 @@ function initMeta(meta) {
     $("#intent-save").click(function () {
         submitIntent(true);
     });
+
+    $("#button-profile-save").click(function () {
+        var scaffManifest = {};
+        scaffManifest["name"] = $("#profile-name").val();
+        scaffManifest["description"] = $("#profile-description").val();
+        scaffManifest["username"] = "admin";
+        scaffManifest["data"] = manifest;
+
+        // Save to DB
+        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+        $.ajax({
+            url: apiUrl,
+            type: 'PUT',
+            data: JSON.stringify(scaffManifest),
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            success: function (result) {
+                console.log("Saved!");
+            }
+        });
+    });
 }
 
 function renderInputs(arr, $parent) {
@@ -611,7 +633,7 @@ function submitIntent(save) {
 
             // Check for saving
             if (save) {
-                saveManifest();
+                openSaveModal();
             } else {
                 // Submit to templating engine
             }
@@ -987,7 +1009,7 @@ function parseManifestIntoJSON() {
 
     // Step 3: Trim leaves
     trimLeaves(manifest);
-    
+
     // Step 4: Finishing touches
     var newManifest = {};
     newManifest["intent"] = manifest;
@@ -1129,26 +1151,8 @@ function isEnabledInput($input) {
     return true;
 }
 
-function saveManifest() {
-    var scaffManifest = {};
-    scaffManifest["name"] = "testName";
-    scaffManifest["description"] = "testDescription";
-    scaffManifest["username"] = "admin";
-    scaffManifest["data"] = manifest;  
-
-    // Save to DB
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        data: JSON.stringify(scaffManifest),
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            console.log("Saved!");
-        }
-    });
+function openSaveModal() {
+    $("#saveModal").modal();
 }
 
 // TESTING

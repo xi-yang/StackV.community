@@ -38,6 +38,26 @@
                         <img class="intent-controls" id="intent-prev" alt="Prev" src="/StackV-web/img/prev_arrow.png" />
                         <img class="intent-controls" id="intent-next" alt="Next" src="/StackV-web/img/next_arrow.png" />                        
                     </div>
+                    <div class="modal fade" id="saveModal" tabindex="-1" role="dialog" aria-labelledby="saveModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="saveModalLabel">Save Intent to Profile</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <input id="profile-name" name="profile-name" placeholder="Profile Name" />
+                                    <textarea id="profile-description" name="profile-description" placeholder="Profile Description"></textarea>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button id="button-profile-save" type="button" data-dismiss="modal" class="btn btn-primary">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

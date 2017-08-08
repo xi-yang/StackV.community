@@ -242,6 +242,14 @@ button:focus {
 #intent-save {
     
 }
+#saveModalLabel {
+    display: inline-block;
+}
+#profile-name, #profile-description {
+    display: block;
+    margin: auto;
+    margin-bottom: 5px;
+}
 
 .conditional { 
     display: none !important; 
