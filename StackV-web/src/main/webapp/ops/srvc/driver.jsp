@@ -37,7 +37,7 @@
             </div>
 
             <div id="driver-add-panel">
-                <div style="width: 100%; height: 85%; overflow: auto; display: block;" id="driver-tab1" class="tab-pane fadeIn">
+                <div style="width: 100%; height: 85%;display: block;" id="driver-tab1" class="tab-pane fadeIn">
                     <table class="management-table">
                         <thead>
                             <tr>
@@ -136,9 +136,8 @@
                     </div>
                     <div class ="modal-body " style="background-color:#FFFFFF">
                         <div class="tab-content" style="background-color:#FFFFFF">                                    
-                            <div id="install-content" class="tab-pane fadeIn" style="background-color:#FFFFFF">
-                                <div id='install-type' style="background-color:#FFFFFF"></div>
-                                <div id='install-type-right' style="background-color:#FFFFFF"></div>
+                            <div id="info-panel-body" class="tab-pane fadeIn" style="background-color:#FFFFFF">
+                                
                                 <div id = "info-panel-button"class = "modal-footer">
                                     <div id='install-options'>
                                         <button onclick="clearPanel(); closeContentPanel();">Close</button>

@@ -662,10 +662,10 @@ function submitIntent(save) {
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
-                        
-                        setTimeout(function () {
-                            window.location.href = "/StackV-web/ops/catalog.jsp";
-                        }, 500);
+                        window.location.href = "/StackV-web/ops/catalog.jsp";
+                    },
+                    error: function (result) {
+                        window.location.href = "/StackV-web/ops/catalog.jsp";
                     }
                 });
             }

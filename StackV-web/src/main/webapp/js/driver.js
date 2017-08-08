@@ -940,16 +940,20 @@ function removeDriver(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function () {
-            updateDrivers(URI);
+            updateDrivers(topUri);
             reloadData();
         },
         error: function(result){
             clearPanel();
             activateSide();
             changeNameDet();
-            //add method here to list all the service instances.
+            
             $("#info-panel-title").text("Failed Due to Service Instances:");
-            alert(result);
+            var body = $("#info-panel-body");
+            for (var i = 1; i < result.length; i++) {
+                body.text(body.text() + result[i] + "\n");
+            }
+                        
             openContentPanel();
             
         }
