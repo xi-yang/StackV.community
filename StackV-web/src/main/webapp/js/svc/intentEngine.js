@@ -30,6 +30,7 @@ var gsap = {};
 var intent;
 var intentType;
 var manifest;
+var package = {};
 var transit = false;
 var proceeding = false;
 var activeStage;
@@ -644,13 +645,31 @@ function submitIntent(save) {
             // Check for saving
             if (save) {
                 openSaveModal();
+                setTimeout(function () {
+                    gsap["intent"].play();
+                }, 1000);
             } else {
-                // Submit to templating engine
+                // Submit to backend
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'POST',
+                    data: JSON.stringify(package),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        
+                        setTimeout(function () {
+                            window.location.href = "/StackV-web/ops/catalog.jsp";
+                        }, 500);
+                    }
+                });
             }
         }
-    }, 500);
-    setTimeout(function () {
-        gsap["intent"].play();
     }, 500);
 }
 
@@ -1023,12 +1042,13 @@ function parseManifestIntoJSON() {
     // Step 4: Finishing and initialization
     var newManifest = {};
     newManifest["data"] = manifest;
-    manifest = newManifest;    
+    manifest = newManifest;
     manifest["service"] = intentType;
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         dataType: "text",
         beforeSend: function (xhr) {
@@ -1037,12 +1057,12 @@ function parseManifestIntoJSON() {
         },
         success: function (result) {
             manifest["uuid"] = result;
-            
+
             // Render template
             var rendered = render(manifest);
-            // Send to backend
+
             console.log(rendered);
-            var package = {};
+
             package["service"] = intentType;
             package["alias"] = $("#meta-alias").val();
             package["delta"] = rendered;
@@ -1050,7 +1070,7 @@ function parseManifestIntoJSON() {
         }
     });
 
-    
+
 }
 
 

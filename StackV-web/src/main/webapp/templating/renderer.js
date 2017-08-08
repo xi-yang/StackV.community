@@ -1,4 +1,4 @@
-/* global Handlebars */
+/* global Handlebars, baseUrl */
 
 /**
  * nodejs handlebars .ttl template rendering service
@@ -60,6 +60,11 @@
  *                                     (useful for loading handlebars helpers)
  * @returns {object} |extensionless filename, contents|
  */
+var directory = {
+    'helpers': ["DNC-Type.js", "toJSON.js"],
+    'partials': ["DNC-PolicyData.hb"],
+    'templates': ["dnc.hb"]
+};
 function load_dir(dir, evaluate = false) {
     /*var file_strings = {};
      fs.readdirSync(dir).forEach(function(file) {
@@ -72,62 +77,27 @@ function load_dir(dir, evaluate = false) {
      });
      return file_strings;*/
     var file_strings = {};
-    switch (dir) {
-        case "templates":
-            $.ajax({
-                type: "GET",
-                async: false,
-                url: "/StackV-web/templating/templates/dnc.hb",
-                dataType: "text",
-                success: function (text) {
-                    file_strings['dnc'] = text;
-                },
-                error: function (err) {
-                    console.log('Error Loading Template! \n' + err);
+    for (var i = 0; i < directory[dir].length; i++) {
+        var file = directory[dir][i];
+        var prop_name = file.slice(0, file.indexOf('.'));
+
+        $.ajax({
+            type: "GET",
+            async: false,
+            url: "/StackV-web/templating/" + dir + "/" + file,
+            dataType: "text",
+            success: function (text) {
+                file_strings[prop_name] = text;
+                if (evaluate) {
+                    file_strings[prop_name] = eval(file_strings[prop_name]);
                 }
-            });
-            break;
-        case "partials":            
-            $.ajax({
-                type: "GET",
-                async: false,
-                url: "/StackV-web/templating/partials/DNC-PolicyData.hb",
-                dataType: "text",
-                success: function (text) {
-                    file_strings['DNC-PolicyData'] = text;
-                },
-                error: function (err) {
-                    console.log('Error Loading PolicyData! \n' + err);
-                }
-            });
-            break;
-        case "helpers":
-            $.ajax({
-                type: "GET",
-                async: false,
-                url: "/StackV-web/templating/helpers/DNC-Type.js",
-                dataType: "text",
-                success: function (text) {
-                    file_strings['DNC-Type'] = eval(text);
-                },
-                error: function (err) {
-                    console.log('Error Loading DNC-Type! \n' + err);
-                }
-            });
-            $.ajax({
-                type: "GET",
-                async: false,
-                url: "/StackV-web/templating/helpers/toJSON.js",
-                dataType: "text",
-                success: function (text) {
-                    file_strings['toJSON'] = eval(text);
-                },
-                error: function (err) {
-                    console.log('Error Loading toJSON! \n' + err);
-                }
-            });
-            break;
+            },
+            error: function (err) {
+                console.log('Error Loading File' + file + '! \n' + err);
+            }
+        });
     }
+
     return file_strings;
 }
 

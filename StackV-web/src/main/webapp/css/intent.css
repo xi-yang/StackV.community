@@ -48,12 +48,12 @@ button:focus {
 }
 
 #intent-panel-body {
-    height: calc(100% - 50px);
+    height: calc(100% - 60px);
     width: calc(100% - 150px);
     padding: 30px 30px 20px 10px;
     overflow: scroll;
     border-radius: 0 0 15px 0;
-
+    margin-bottom: 10px;
     background: linear-gradient(to right, rgba(255,255,255,0.01) 0%,rgba(255,255,255,1) 5%,rgba(255,255,255,1) 95%,rgba(255,255,255,0.01) 100%), url('/StackV-web/img/hex-back.png');
 }
 

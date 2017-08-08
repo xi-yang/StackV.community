@@ -59,9 +59,12 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -2883,17 +2886,7 @@ public class WebResource {
             return null;
         }
     }
-    /**
-     * @api {get} /app/service Initialize Service
-     * @apiVersion 1.0.0
-     * @apiDescription Initialize a service in the backend, and return new UUID.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X GET http://localhost:8080/StackV-web/restapi/app/service
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
+
     @GET
     @Path(value = "/service/uuid")
     @RolesAllowed("Services")
@@ -2933,7 +2926,7 @@ public class WebResource {
         });
         logger.trace_end(method);
     }
-
+   
     // Async Methods -----------------------------------------------------------
     private String doCreateService(JSONObject inputJSON, TokenHandler token) {
         ServiceHandler instance = new ServiceHandler(inputJSON, token);
