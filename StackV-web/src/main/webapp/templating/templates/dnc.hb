@@ -5,31 +5,31 @@
 
 <modelAddition>
 
-@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix owl:   <http://www.w3.org/2002/07/owl#> .
-@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
-@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .
-@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .
-@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .
-@prefix spa:   <http://schemas.ogf.org/mrs/2015/02/spa#> .
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
 
-<urn:ogf:network:vo1.maxgigapop.net:link=abstract>
+&lt;urn:ogf:network:vo1.maxgigapop.net:link=abstract&gt;
 	a            nml:Link ;
 	spa:type     spa:Abstraction ;
-	spa:dependOn <x-policy-annotation:action:create-path>.
+	spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.
 
-<x-policy-annotation:action:create-path>
+&lt;x-policy-annotation:action:create-path&gt;
 	a            spa:PolicyAction ;
     spa:type     "{{DNC-Type type}}" ;
-	spa:importFrom <x-policy-annotation:data:conn-criteria> ;
-	spa:exportTo <x-policy-annotation:data:conn-criteriaexport> .
+	spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;
+	spa:exportTo &lt;x-policy-annotation:data:conn-criteriaexport&gt; .
 
-<x-policy-annotation:data:conn-criteria>
+&lt;x-policy-annotation:data:conn-criteria&gt;
 	a            spa:PolicyData;
 	spa:type     "JSON";
     spa:value    """{ {{~>DNC-PolicyData}}    }""".
 
-<x-policy-annotation:data:conn-criteriaexport>
+&lt;x-policy-annotation:data:conn-criteriaexport&gt;
     a            spa:PolicyData.
 
 </modelAddition>
