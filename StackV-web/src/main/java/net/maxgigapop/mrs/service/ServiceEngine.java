@@ -63,7 +63,7 @@ class ServiceEngine {
     private final static String rains_db_pass = "root";
 
     // OPERATION FUNCTIONS    
-    private static void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, TokenHandler token) {
+    static void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, TokenHandler token) {
         String method = "orchestrateInstance";
         String result;
         String lastState = "INIT";

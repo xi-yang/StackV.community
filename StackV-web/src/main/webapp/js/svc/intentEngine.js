@@ -30,6 +30,7 @@ var gsap = {};
 var intent;
 var intentType;
 var manifest;
+var package = {};
 var transit = false;
 var proceeding = false;
 var activeStage;
@@ -54,7 +55,17 @@ function loadIntent(type) {
             intent = xml.children[0];
             renderIntent();
             parseSchemaIntoManifest(intent);
-            preloadAHC();
+            switch (type) {
+                case "dnc":
+                    preloadDNC();
+                    break;
+                case "hybridcloud":
+                    preloadAHC();
+                    break;
+                case "vcn":
+                    preloadAWSVCN();
+                    break;
+            }
         },
         error: function (err) {
             console.log('Error Loading XML! \n' + err);
@@ -634,13 +645,31 @@ function submitIntent(save) {
             // Check for saving
             if (save) {
                 openSaveModal();
+                setTimeout(function () {
+                    gsap["intent"].play();
+                }, 1000);
             } else {
-                // Submit to templating engine
+                // Submit to backend
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'POST',
+                    data: JSON.stringify(package),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        
+                        setTimeout(function () {
+                            window.location.href = "/StackV-web/ops/catalog.jsp";
+                        }, 500);
+                    }
+                });
             }
         }
-    }, 500);
-    setTimeout(function () {
-        gsap["intent"].play();
     }, 500);
 }
 
@@ -1010,12 +1039,38 @@ function parseManifestIntoJSON() {
     // Step 3: Trim leaves
     trimLeaves(manifest);
 
-    // Step 4: Finishing touches
+    // Step 4: Finishing and initialization
     var newManifest = {};
-    newManifest["intent"] = manifest;
+    newManifest["data"] = manifest;
     manifest = newManifest;
-    manifest["name"] = $("#meta-alias").val();
-    manifest["type"] = intentType;
+    manifest["service"] = intentType;
+
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
+    $.ajax({
+        url: apiUrl,
+        async: false,
+        type: 'GET',
+        dataType: "text",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            manifest["uuid"] = result;
+
+            // Render template
+            var rendered = render(manifest);
+
+            console.log(rendered);
+
+            package["service"] = intentType;
+            package["alias"] = $("#meta-alias").val();
+            package["delta"] = rendered;
+            package["uuid"] = result;
+        }
+    });
+
+
 }
 
 
@@ -1157,7 +1212,28 @@ function openSaveModal() {
 
 // TESTING
 
+function preloadDNC() {
+    $("button[data-factory=connections-connection-terminal]").click();
+    $("button[data-factory=connections-connection-terminal]").click();
+
+    $("#meta-alias").val("Preloaded DNC Test");
+
+    $("#connections-type").val("Multi-Point VLAN Bridge");
+    $("#connections-connection_num1-name").val("mpvb1");
+
+    $("#connections-connection_num1-terminal_num1-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_1:port=openflow_1_1");
+    $("#connections-connection_num1-terminal_num1-vlan_tag").val("101");
+
+    $("#connections-connection_num1-terminal_num2-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_2:port=openflow_2_1");
+    $("#connections-connection_num1-terminal_num2-vlan_tag").val("102");
+    $("#connections-connection_num1-terminal_num2-mac_address_list").val("02:50:f2:00:00:01,02:50:f2:00:00:04");
+
+    $("#connections-connection_num1-terminal_num3-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_3:port=openflow_3_1");
+    $("#connections-connection_num1-terminal_num3-vlan_tag").val("103");
+}
 function preloadAWSVCN() {
+    $("#meta-alias").val("Preloaded VCN AWS Test");
+
     $("#details-network-parent").val("urn:ogf:network:aws.amazon.com:aws-cloud");
     $("#details-network-type").val("internal");
     $("#details-network-cidr").val("10.0.0.0/24");
@@ -1179,8 +1255,9 @@ function preloadAWSVCN() {
     $("#gateways-gateway_num1-name").val("TestGate");
     $("#gateways-gateway_num1-route_num1-to").val("TestTo");
 }
-
 function preloadAHC() {
+    $("#meta-alias").val("Preloaded AHC Test");
+
     $("#network-aws-parent").val("urn:ogf:network:aws.amazon.com:aws-cloud");
     $("#network-aws-cidr").val("10.0.0.0/16");
 

@@ -87,11 +87,12 @@ public class ServiceHandler {
         try {
             logger.start(method);
 
-            type = (String) inputJSON.get("type");
+            type = (String) inputJSON.get("service");
             alias = (String) inputJSON.get("alias");
             owner = (String) inputJSON.get("username");
 
-            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
+            String delta = (String) inputJSON.get("delta");
+            String deltaUUID = (String) inputJSON.get("uuid");
 
             // Find user ID.
             try {
@@ -112,11 +113,7 @@ public class ServiceHandler {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
             logger.refuuid(refUUID);
-
-            // Create Parameter Map
-            ServiceParser paraParser = new ServiceParser(type);
-            HashMap<String, String> paraMap = paraParser.parse(dataJSON, refUUID);
-
+           
             // Initialize service parameters.
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
@@ -154,7 +151,8 @@ public class ServiceHandler {
             logger.init();
 
             // Execute service creation.
-            switch (type) {
+            ServiceEngine.orchestrateInstance(refUUID, delta, deltaUUID, token);
+            /*switch (type) {
                 case "netcreate":
                     ServiceEngine.createNetwork(paraMap, token);
                     break;
@@ -168,7 +166,7 @@ public class ServiceHandler {
                     ServiceEngine.createDNC(dataJSON, token, refUUID);
                     break;
                 default:
-            }
+            }*/
 
             // Return instance UUID
             logger.end(method);

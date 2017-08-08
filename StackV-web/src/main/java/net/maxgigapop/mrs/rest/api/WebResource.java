@@ -59,8 +59,12 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -70,6 +74,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -602,7 +608,7 @@ public class WebResource {
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+uri+"\'");
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + uri + "\'");
 //        prep.setString(1, username);
 //        prep.setString(2, uri);
         ResultSet rs = prep.executeQuery();
@@ -642,7 +648,7 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("DELETE FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+topuri+"\'");
+            prep = front_conn.prepareStatement("DELETE FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
 //            prep.setString(1, username);
 //            prep.setString(2, topuri);
             prep.executeUpdate();
@@ -683,7 +689,7 @@ public class WebResource {
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 prop);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'"+username + "\' AND TopUri = \'"+topuri+"\'");
+        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
 //        prep.setString(1, username);
 //        prep.setString(2, topuri);
         ResultSet rs = prep.executeQuery();
@@ -2525,7 +2531,7 @@ public class WebResource {
         }
     }
 
-        // >Profiles
+    // >Profiles
     /**
      * @api {get} /app/profile/:wizardID Get Profile
      * @apiVersion 1.0.0
@@ -2643,7 +2649,7 @@ public class WebResource {
         try {
             String method = "newProfile";
             logger.start(method);
-            
+
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -2819,7 +2825,7 @@ public class WebResource {
             final TokenHandler token = new TokenHandler(refresh);
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
-            String serviceType = (String) inputJSON.get("type");
+            String serviceType = (String) inputJSON.get("service");
 
             // Authorize service.
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
@@ -2846,6 +2852,46 @@ public class WebResource {
             logger.catching(method, ex);
         }
         logger.end(method);
+    }
+
+    /**
+     * @api {get} /app/service Initialize Service
+     * @apiVersion 1.0.0
+     * @apiDescription Initialize a service in the backend, and return new UUID.
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X GET http://localhost:8080/StackV-web/restapi/app/service
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
+    @GET
+    @Path(value = "/service")
+    @RolesAllowed("Services")
+    public String initService() {
+        String method = "initService";
+        logger.trace_start(method);
+        try {
+            final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+            final TokenHandler token = new TokenHandler(refresh);
+
+            URL url = new URL(String.format("%s/service/instance", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
+
+            logger.trace_end(method);
+            return refUUID;
+        } catch (IOException ex) {
+            logger.catching(method, ex);
+            return null;
+        }
+    }
+
+    @GET
+    @Path(value = "/service/uuid")
+    @RolesAllowed("Services")
+    public String generateUUID() {
+        return UUID.randomUUID().toString();
     }
 
     /**
@@ -2880,7 +2926,7 @@ public class WebResource {
         });
         logger.trace_end(method);
     }
-
+   
     // Async Methods -----------------------------------------------------------
     private String doCreateService(JSONObject inputJSON, TokenHandler token) {
         ServiceHandler instance = new ServiceHandler(inputJSON, token);
