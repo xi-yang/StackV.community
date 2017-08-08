@@ -71,10 +71,11 @@ button:focus {
     margin-left: 5px;
 }
 #intent-panel-meta #meta-alias {
-    width: 100%;
+    width: 100px;
     margin: auto;
-    height: 25px;
+    height: 75px;
     padding: 5px;
+    resize: none;
 }
 #intent-panel-meta-block {
     height: calc(100% - 225px);
@@ -240,7 +241,7 @@ button:focus {
     border-radius: 0;
 }
 #intent-save {
-    
+
 }
 #saveModalLabel {
     display: inline-block;

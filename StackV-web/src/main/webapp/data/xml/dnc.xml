@@ -27,7 +27,7 @@
             <name>Type</name>
             <type>select</type>
             <options>
-                <option>Multi-Path P2P VLAN</option>
+                <option default="true">Multi-Path P2P VLAN</option>
                 <option>Multi-Point VLAN Bridge</option>
             </options>
         </input>
@@ -37,7 +37,7 @@
                 <type>text</type>
                 <valid>string</valid>
             </input>
-            <group factory="true" name="terminal">
+            <group factory="true" name="terminal" default="2">
                 <input required="true">
                     <name>URI</name>
                     <type>text</type>

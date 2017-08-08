@@ -55,16 +55,18 @@ function loadIntent(type) {
             intent = xml.children[0];
             renderIntent();
             parseSchemaIntoManifest(intent);
-            switch (type) {
-                case "dnc":
-                    preloadDNC();
-                    break;
-                case "hybridcloud":
-                    preloadAHC();
-                    break;
-                case "vcn":
-                    preloadAWSVCN();
-                    break;
+            if (!getURLParameter("preload")) {
+                switch (type) {
+                    case "dnc":
+                        preloadDNC();
+                        break;
+                    case "hybridcloud":
+                        preloadAHC();
+                        break;
+                    case "vcn":
+                        preloadAWSVCN();
+                        break;
+                }
             }
         },
         error: function (err) {
@@ -248,7 +250,7 @@ function initMeta(meta) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
             success: function (result) {
-                console.log("Saved!");
+                window.location.href = "/StackV-web/ops/catalog.jsp";
             }
         });
     });
@@ -262,6 +264,8 @@ function renderInputs(arr, $parent) {
             var factory = ele.getAttribute("factory");
             var label = ele.getAttribute("label");
             var condition = ele.getAttribute("condition");
+            var start = ele.getAttribute("start");
+            var def = ele.getAttribute("default");
             var collapsible = ele.getAttribute("collapsible");
             var block = ele.getAttribute("block");
             var str = name.charAt(0).toUpperCase() + name.slice(1);
@@ -289,6 +293,12 @@ function renderInputs(arr, $parent) {
                 factObj["count"] = 1;
                 factObj["block"] = block;
                 factories[constructID(ele)] = factObj;
+            }
+            if (start) {
+                $div.attr("data-start", start);
+            }
+            if (def) {
+                $div.attr("data-default", def);
             }
 
             if (label === "false") {
@@ -413,8 +423,8 @@ function renderInputs(arr, $parent) {
                 $input = $("<select>", {id: name, class: "intent-input"});
                 var selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
-                var $default = $("<option>", {selected: true}).text("");
-                $input.append($default);
+                var $null = $("<option>").text("N/A").val("");
+                $input.append($null);
 
                 for (var j = 0; j < options.length; j++) {
                     var $option;
@@ -423,6 +433,11 @@ function renderInputs(arr, $parent) {
                         $option.attr("data-condition-select", options[j].getAttribute("condition"));
                     } else {
                         $option = $("<option>");
+                    }
+
+                    if (options[j].getAttribute("default") !== null) {
+                        $option.attr("selected", true);
+                        def = true;
                     }
 
                     $option.text(options[j].innerHTML);
@@ -529,8 +544,25 @@ function factorizeRendering() {
         factories[key]["clone"] = $clone;
     }
 
+    // Step 5: Expand defaults
+    var defArr = $("[data-default]");
+    for (var i = 0; i < defArr.length; i++) {
+        var def = defArr[i];
+        var factoryBtn = $(def.children[0]).find(".intent-button-factory");
+        var count = 1;
+        while ($(def).length > 0 && count < $(def).data("default")) {
+            factoryBtn.click();
+            count++;
+        }        
+        
+        var key = factoryBtn.data("factory");
+        //retroReclone(); // TODO Retroactively reclone factories including expanded defaults
+    }
+
+    // Step 6: Finishing work    
     initializeInputs();
     refreshLinks();
+    expandStarters();
 }
 function recursivelyFactor(id, ele) {
     if (ele) {
@@ -846,7 +878,7 @@ function buildClone(key, target, button) {
     });
     $clone.find("[data-factory=" + key + "]").replaceWith($button);
 
-    $target.append($clone);
+    $parent.append($clone);
 
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
@@ -1195,6 +1227,17 @@ function initializeInputs() {
     }
 }
 
+function expandStarters() {
+    var $arr = $("[data-start]");
+    for (var i = 0; i < $arr.length; i++) {
+        var $input = $($arr[i]);
+        var val = $input.data("start");
+        var count = 1;
+
+        // TODO
+    }
+}
+
 function isEnabledInput($input) {
     var cond = $input.parents('.conditional').length;
     if (cond > 0 && $input.parents('.conditioned').length < cond) {
@@ -1213,7 +1256,6 @@ function openSaveModal() {
 // TESTING
 
 function preloadDNC() {
-    $("button[data-factory=connections-connection-terminal]").click();
     $("button[data-factory=connections-connection-terminal]").click();
 
     $("#meta-alias").val("Preloaded DNC Test");

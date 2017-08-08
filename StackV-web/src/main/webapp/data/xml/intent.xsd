@@ -48,6 +48,8 @@ IN THE WORK.
     <xs:attribute name="condition" type="xs:string"/>
     <xs:attribute name="type" type="xs:string"/>
     <xs:attribute name="block" type="xs:string"/>
+    <xs:attribute name="start" type="xs:string"/>
+    <xs:attribute name="default" type="xs:string"/>
     
     <xs:element name="name" type="xs:string"/>
     <xs:element name="type" type="xs:string"/>
@@ -119,6 +121,8 @@ IN THE WORK.
             <xs:attribute ref="block"/>
             <xs:attribute ref="collapsible" default="false"/>
             <xs:attribute ref="label" default="true"/>
+            <xs:attribute ref="group"/>
+            <xs:attribute ref="start"/>
         </xs:complexType>
     </xs:element>
     
