@@ -264,7 +264,7 @@ public class ServiceManifest {
         }
         if (jo.containsKey("varmap")) {
             varMap = (JSONObject)jo.get("varmap");
-            jo.remove("keymap");
+            jo.remove("varmap");
         } else {
             varMap = new JSONObject();
         }

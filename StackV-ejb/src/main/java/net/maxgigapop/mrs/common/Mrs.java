@@ -81,6 +81,10 @@ public class Mrs {
     public static final Property disk_gb = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#disk_gb");
 
     public static final Property hasBatch = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasBatch");
+    
+    public static final Property batch = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#batch");
+    
+//    public static final Property order = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#order");
 
     public static final Property flowAction = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#flowAction");
 

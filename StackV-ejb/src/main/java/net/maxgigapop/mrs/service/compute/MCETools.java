@@ -956,7 +956,38 @@ public class MCETools {
         return vlanSubnetModel;
     }
 
-
+    public static void tagPathHops(MCETools.Path l2path, String tag) {
+        OntModel model = l2path.getOntModel();
+        String sparql = String.format("SELECT DISTINCT ?bp ?subnet  WHERE {"
+                + " ?bp a nml:BidirectionalPort. "
+                + " ?bp nml:hasLabel ?vlan."
+                + " ?vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan> "
+                + " OPTIONAL {?subnet nml:hasBidirectionalPort ?bp. ?subnet a mrs:SwitchingSubnet.} "
+                + "}");
+        ResultSet r = ModelUtil.sparqlQuery(model, sparql);
+        List<Statement> addStmts = new ArrayList<>();
+        while (r.hasNext()) {
+            QuerySolution solution = r.next();
+            Resource resSubport = solution.getResource("bp");
+            addStmts.add(model.createStatement(resSubport, Mrs.tag, tag));
+            if (solution.contains("subnet")) {
+                Resource resSubnet = solution.getResource("subnet");
+                addStmts.add(model.createStatement(resSubnet, Mrs.tag, tag));
+            }
+        }
+        sparql = String.format("SELECT DISTINCT ?flow  WHERE {"
+                + " ?flow a mrs:Flow. "
+                + " ?of mrs:providesFlow ?flow."
+                + "}");
+        r = ModelUtil.sparqlQuery(model, sparql);
+        while (r.hasNext()) {
+            QuerySolution solution = r.next();
+            Resource resFlow = solution.getResource("flow");
+            addStmts.add(model.createStatement(resFlow, Mrs.tag, tag));
+        }
+        model.add(addStmts);
+    }
+    
     public static List<QuerySolution> getTerminalVlanLabels(MCETools.Path l2path) {
         OntModel model = l2path.getOntModel();
         String sparql = String.format("SELECT ?bp ?vlan ?tag WHERE {"
@@ -1033,12 +1064,12 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
-
+            /*
             Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "A"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
-            
+            */
             //$$ add new flow with action output to currentHop + swap suggestedVlan VLAN 
             String outFlowId = currentHop.getURI() + ":flow=output_vlan"+flowNameVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
@@ -1071,12 +1102,12 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
-
+            /*
             Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "A"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
-
+            */
             String outFlowId = lastPort.getURI() + ":flow=input_vlan" + flowNameVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
 
@@ -1228,66 +1259,5 @@ public class MCETools {
             }
         }
         return vlanRange;
-    }
-    
-    public static void removeResolvedAnnotation(OntModel spaModel, Resource res) {
-        List<Statement> listStmtsToRemove = new ArrayList<>();
-        Resource resLink = spaModel.getResource(res.getURI());
-        ModelUtil.listRecursiveDownTree(resLink, Spa.getURI(), listStmtsToRemove);
-        if (listStmtsToRemove.isEmpty()) {
-            return;
-        }
-
-        String sparql = "SELECT ?anyOther ?policyAction WHERE { {"
-                + String.format("<%s> spa:dependOn ?policyAction .", res.getURI())
-                + "?policyAction a spa:PolicyAction. "
-                + "?anyOther spa:dependOn ?policyAction . "
-                + "} UNION {"
-                + "?policyAction a spa:PolicyAction. "
-                + "?anyOther spa:dependOn ?policyAction . "
-                + String.format("FILTER (?policyAction = <%s>)", res.getURI())
-                + "}}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-
-        for (QuerySolution querySolution : solutions) {
-            Resource resAnyOther = querySolution.get("anyOther").asResource();
-            Resource resPolicy = querySolution.get("policyAction").asResource();
-            spaModel.remove(resAnyOther, Spa.dependOn, resPolicy);
-        }
-        //spaModel.remove(listStmtsToRemove);
-    }
-    
-    public static String formatJsonExport(String jsonExport, String formatOutput) throws Exception  {
-        // get all format patterns
-        Matcher m = Pattern.compile("\\%[^\\%]+\\%").matcher(formatOutput);
-        List<String> jsonPathList = new ArrayList();
-        while (m.find()) {
-            String jsonPath = m.group();
-            jsonPathList.add(jsonPath);
-        }
-        for (String jsonPath : jsonPathList) {
-            try {
-                String jsonPattern = null;
-                Object r = JsonPath.parse(jsonExport).read(jsonPath.substring(1, jsonPath.length() - 1));
-                if (r instanceof net.minidev.json.JSONArray) {
-                    if (((net.minidev.json.JSONArray)r).size() == 1 && (((net.minidev.json.JSONArray)r).get(0) instanceof String))
-                        jsonPattern = (String)((net.minidev.json.JSONArray)r).get(0);
-                    else 
-                        jsonPattern = ((net.minidev.json.JSONArray)r).toJSONString();
-                } else {
-                    jsonPattern = r.toString();
-                }
-                formatOutput = formatOutput.replace(jsonPath, jsonPattern);
-            } catch (Exception ex) {
-                throw new Exception(String.format("MCETools.formatJsonExport failed to export with JsonPath('%s') from:\n %s",
-                        jsonPath.substring(1, jsonPath.length() - 1), jsonExport));
-            }
-
-        }
-        return formatOutput;
     }
 }

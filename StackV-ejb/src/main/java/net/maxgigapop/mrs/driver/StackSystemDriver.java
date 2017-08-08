@@ -232,7 +232,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || !DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().containsKey(driverInstance.getTopologyUri())) {
             logger.warning(method, "driver instance is initializing");
-            return new AsyncResult<>("INITIALIZING");
+            return new AsyncResult<>("INIT");
         }
         String authServer = driverInstance.getProperty("authServer");
         String credential = driverInstance.getProperty("credential");

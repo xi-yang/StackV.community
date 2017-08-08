@@ -183,6 +183,9 @@ public class OpenflowModelBuilder {
                 Resource resOpenflow = model.getResource(URI_node(topologyURI, nodeIdEsc)+":openflow");
                 Resource resFlowTable = model.getResource(resOpenflow.getURI()+":table=0");
                 JSONArray jFlows = (JSONArray)((JSONObject)jTable0.get(0)).get("flow");
+                if (jFlows == null) {
+                    continue;
+                }
                 for (Object o2: jFlows) {
                     JSONObject jFlow = (JSONObject)o2;
                     String flowId = (String)jFlow.get("id");

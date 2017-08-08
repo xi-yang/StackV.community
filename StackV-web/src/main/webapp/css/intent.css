@@ -209,7 +209,7 @@ button:focus {
     pointer-events: none;
 }
 
-#intent-submit {
+.intent-operations {
     left: 0;
     position: absolute;
     bottom: 0;
@@ -223,10 +223,10 @@ button:focus {
     -webkit-transition: all 150ms linear;
     transition: all 150ms linear;
     text-transform: uppercase;
-    width: 100%;
+    width: 50%;
     height: 30px;
 }
-#intent-submit:hover {   
+.intent-operations:hover {   
     background: #737373;
     border: 1px solid rgba(0, 0, 0, 0.05);    
     color: #a5a5a5;
@@ -234,6 +234,21 @@ button:focus {
     text-shadow: -1px -1px 0 #5f5f5f;
     -webkit-transition: all 250ms linear;
     transition: all 250ms linear;
+}
+#intent-submit {
+    left: 50%;
+    border-radius: 0;
+}
+#intent-save {
+    
+}
+#saveModalLabel {
+    display: inline-block;
+}
+#profile-name, #profile-description {
+    display: block;
+    margin: auto;
+    margin-bottom: 5px;
 }
 
 .conditional { 
