@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
@@ -63,11 +65,15 @@ import net.maxgigapop.mrs.bean.persist.ServiceDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ServiceInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.SystemInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
+import net.maxgigapop.mrs.common.EJBExceptionNegotiable;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -246,6 +252,70 @@ public class HandleServiceCall {
         return compileAddDelta(serviceInstanceUuid, workerClassPath, spaDelta);
     }
 
+    public SystemDelta recompileDeltas(String serviceInstanceUuid, String workerClassPath) {
+        String method = "recompileDelta";
+        logger.refuuid(serviceInstanceUuid);
+        logger.start(method, "COMPILING");
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
+        if (serviceInstance == null) {
+            throw logger.error_throwing(method, "cannot find the ref:ServiceInstance");
+        }
+        logger.status(method, serviceInstance.getStatus());
+        if (!serviceInstance.getStatus().equals("NEGOTIATING")) {
+            throw logger.error_throwing(method, "ref:ServiceInstance must have status=NEGOTIATING while the actual status=" + serviceInstance.getStatus());
+        }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        if (!itSD.hasNext()) {
+            throw logger.error_throwing(method, "ref:ServiceInstance has none delta to propagate.");
+        }
+        ServiceDelta spaDelta = null;
+        while (itSD.hasNext()) {
+            ServiceDelta serviceDelta = itSD.next();
+            if (serviceDelta.getSystemDelta() == null) {
+                logger.targetid(serviceDelta.getId());
+                logger.error(method, "target:ServiceDelta getSystemDelta() == null -but- continue");
+                continue;
+            } else if (serviceDelta.getStatus().equals("NEGOTIATING")) {
+                spaDelta = serviceDelta;
+            } else if (serviceDelta.getStatus().equals("FAILED")) {
+                if (spaDelta != null) {
+                    logger.warning(method, "A FAILED delta (" + serviceDelta + ") comes after NEGOTIATING delta (" + spaDelta +") - ignore the previous NEGOTIATING delta.");
+                    spaDelta = null; 
+                }
+            }
+        }
+        if (spaDelta == null) {
+            throw logger.error_throwing(method, "ref:ServiceInstance has none active delta with status=NEGOTIATING");
+        }
+        logger.targetid(spaDelta.getId());
+        WorkerBase worker = null;
+        try {
+            worker = (WorkerBase) this.getClass().getClassLoader().loadClass(workerClassPath).newInstance();
+        } catch (Exception ex) {
+            throw logger.throwing(method, ex);
+        }
+        spaDelta.setReferenceUUID(serviceInstanceUuid);
+        worker.setAnnoatedModel(spaDelta);
+        try {
+            worker.run();
+        } catch (EJBException ex) {
+            serviceInstance.setStatus("FAILED");
+            ServiceInstancePersistenceManager.merge(serviceInstance);
+            logger.status(method, "FAILED");
+            throw logger.throwing(method, ex);
+        }
+        // save serviceInstance, spaDelta and systemDelta
+        SystemDelta resultDelta = worker.getResultModelDelta();
+        resultDelta.setServiceDelta(spaDelta);
+        spaDelta.setSystemDelta(resultDelta);
+        spaDelta.setStatus("COMPILED");
+        DeltaPersistenceManager.merge(spaDelta);
+        serviceInstance.setStatus("COMPILED");
+        ServiceInstancePersistenceManager.merge(serviceInstance);
+        logger.end(method, "COMPILED");
+        return resultDelta;
+    }
+    
     // handling multiple deltas:  propagate + commit + query = transactional propagate + parallel commits
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public String propagateDeltas(String serviceInstanceUuid, boolean useCachedVG, boolean refreshForced) {
@@ -277,11 +347,25 @@ public class HandleServiceCall {
             if (serviceDelta.getSystemDelta() == null) {
                 logger.targetid(serviceDelta.getId());
                 logger.error(method, "target:ServiceDelta getSystemDelta() == null -but- continue");
-                continue; 
+                continue;
             } else if (serviceDelta.getStatus().equals("INIT")) {
                 SystemInstance systemInstance = systemCallHandler.createInstance();
                 try {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
+                } catch (EJBExceptionNegotiable ex) {
+                    JSONParser parser = new JSONParser();
+                    JSONObject jsonObj;
+                    try {
+                        jsonObj = (JSONObject) parser.parse(ex.getMessage());
+                    } catch (ParseException ex1) {
+                        throw logger.error_throwing(method, "received EJBExceptionNegotiable (" + ex  + "), but failed to parse JSON: " + ex1);
+                    }
+                    if (!jsonObj.containsKey("conflict") && !jsonObj.containsKey("markup")) {
+                        throw logger.error_throwing(method, "received EJBExceptionNegotiable (" + ex  + "), but without providing 'conflict' or 'markup' data");
+                    }
+                    serviceDelta.setNegotiationMarkup(ex.getMessage());
+                    serviceDelta.setStatus("NEGOTIATING");
+                    DeltaPersistenceManager.merge(serviceDelta);
                 } catch (EJBException ex) {
                     logger.throwing(method, ex);
                 }
@@ -298,6 +382,7 @@ public class HandleServiceCall {
         boolean hasInitiated = false;
         boolean hasPropagated = false;
         boolean isCommitting = false;
+        boolean isNegotiating = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
@@ -306,10 +391,14 @@ public class HandleServiceCall {
                 hasPropagated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("COMMITTING")) {
                 isCommitting = true;
+            } else if (serviceDelta.getStatus().equalsIgnoreCase("NEGOTIATING")) {
+                isNegotiating = true;
             }
         }
         //serviceInstance.setStatus("COMPILED");
-        if (hasInitiated && hasPropagated) {
+        if (isNegotiating) {
+            serviceInstance.setStatus("NEGOTIATING");
+        } else if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else if (hasPropagated && !isCommitting) {
             serviceInstance.setStatus("PROPAGATED");

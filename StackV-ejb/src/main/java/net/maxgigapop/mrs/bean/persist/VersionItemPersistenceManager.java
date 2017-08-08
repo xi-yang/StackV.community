@@ -98,12 +98,12 @@ public class VersionItemPersistenceManager extends PersistenceManager {
 
     public static void deleteByDriverInstance(DriverInstance di) {
         try {
-            Query q = createQuery(String.format("FROM %s WHERE driverInstanceId=%d",
+            Query q = createQuery(String.format("SELECT id FROM %s WHERE driverInstanceId=%d",
                     VersionItem.class.getSimpleName(), di.getId()));
-            List<VersionItem> listVI = (List<VersionItem>) q.getResultList();
-            Iterator<VersionItem> it = listVI.iterator();
+            List<Long> listVI = (List<Long>) q.getResultList();
+            Iterator<Long> it = listVI.iterator();
             while (it.hasNext()) {
-                VersionItem vi = it.next();
+                VersionItem vi = findById(it.next());
                 VersionItemPersistenceManager.delete(vi);
             }
         } catch (Exception e) {

@@ -66,10 +66,23 @@ import org.json.simple.parser.ParseException;
  * @author xyang
  */
 @Stateless
-public class MCE_MultiPointVlanBridge implements IModelComputationElement {
+public class MCE_MultiPointVlanBridge extends MCEBase {
     
     private static final StackLogger logger = new StackLogger(MCE_MultiPointVlanBridge.class.getName(), "MCE_MultiPointVlanBridge");
 
+    private static final String OSpec_Template
+            = "{\n"
+            + "	\"$$\": [\n"
+            + "		{\n"
+            + "			\"hop\": \"?hop?\",\n"
+            + "			\"vlan_tag\": \"?vid?\",\n"
+            + "			\"#sparql\": \"SELECT DISTINCT ?hop ?vid WHERE {?hop a nml:BidirectionalPort. "
+            + "?hop nml:hasLabel ?vlan. ?vlan nml:value ?vid. ?hop mrs:tag \\\"l2path+$$:%%\\\".}\",\n"
+            + "			\"#required\": \"false\",\n"
+            + "		}\n"
+            + "	]\n"
+            + "}";
+    
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
@@ -77,140 +90,53 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
         String method = "process";
         logger.refuuid(annotatedDelta.getReferenceUUID());
         logger.start(method);
-        if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
-            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
-        }
+        
         try {
             logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
         }
-        // importPolicyData : Link->Connection->List<PolicyData> of terminal Node/Topology
-        String sparql = "SELECT ?conn ?policy ?data ?type ?value WHERE {"
-                + "?conn spa:dependOn ?policy . "
-                + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_MultiPointVlanBridge'. "
-                + "?policy spa:importFrom ?data. "
-                + "?data spa:type ?type. ?data spa:value ?value. "
-                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
-                + "}";
+        
+        Map<Resource, JSONObject> policyResDataMap = this.preProcess(policy, systemModel, annotatedDelta);        
 
-        ResultSet r = ModelUtil.sparqlQuery(annotatedDelta.getModelAddition().getOntModel(), sparql);
-        Map<Resource, Map> connPolicyMap = new HashMap<>();
-        while (r.hasNext()) {
-            QuerySolution querySolution = r.next();
-            Resource resPolicy = querySolution.get("policy").asResource();
-            if (!connPolicyMap.containsKey(resPolicy)) {
-                Map<String, List> connMap = new HashMap<>();
-                List connList = new ArrayList<>();
-                connMap.put("connections", connList);
-                List dataList = new ArrayList<>();
-                connMap.put("imports", dataList);
-                connPolicyMap.put(resPolicy, connMap);
-            }
-            Resource resConn = querySolution.get("conn").asResource();
-            if (!((List)connPolicyMap.get(resPolicy).get("connections")).contains(resConn))
-                ((List)connPolicyMap.get(resPolicy).get("connections")).add(resConn);
-            Resource resData = querySolution.get("data").asResource();
-            RDFNode nodeDataType = querySolution.get("type");
-            RDFNode nodeDataValue = querySolution.get("value");
-            boolean existed =false;
-            for (Map dataMap: (List<Map>)connPolicyMap.get(resPolicy).get("imports")) {
-                if(dataMap.get("data").equals(resData)) {
-                    existed = true;
-                    break;
-                }
-            }
-            if (!existed) {
-                Map policyData = new HashMap<>();
-                policyData.put("data", resData);
-                policyData.put("type", nodeDataType.toString());
-                policyData.put("value", nodeDataValue.toString());
-                ((List)connPolicyMap.get(resPolicy).get("imports")).add(policyData);
+        // Specific MCE logic - compute a List<Model> of MPVlan connections
+        ServiceDelta outputDelta = annotatedDelta.clone();
+        for (Resource res: policyResDataMap.keySet()) {
+            Map<String, MCETools.Path> l2pathMap = this.doMPVBFinding(systemModel.getOntModel(), res, policyResDataMap.get(res));
+            for (String connId : l2pathMap.keySet()) {
+                outputDelta.getModelAddition().getOntModel().add(l2pathMap.get(connId).getOntModel().getBaseModel());
             }
         }
         
-        ServiceDelta outputDelta = annotatedDelta.clone();
+        this.postProcess(policy, outputDelta.getModelAddition().getOntModel(), systemModel.getOntModel(), OSpec_Template, policyResDataMap);
 
-        // compute a List<Model> of multi-point vlan bridge (MPVB) connections
-        for (Resource policyAction : connPolicyMap.keySet()) {
-            Map<String, MCETools.Path> l2pathMap = this.doMultiPathFinding(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), policyAction, connPolicyMap.get(policyAction));
-            if (l2pathMap == null) {
-                throw logger.error_throwing(method, "cannot find multi-point bridge paths for policy=" + policyAction);
-            }
-
-            //2. merge the placement satements into spaModel
-            //3. update policyData this action exportTo 
-            for (String connId: l2pathMap.keySet()) {
-                outputDelta.getModelAddition().getOntModel().add(l2pathMap.get(connId).getOntModel().getBaseModel());
-                this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), policyAction, connId, l2pathMap.get(connId));
-            }
-    
-            //4. remove policy and all related SPA statements receursively under conn from spaModel
-            //   and also remove all statements that say dependOn this 'policy'
-            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), policyAction);
-
-            //5. mark the Link as an Abstraction
-            /*
-            for (Resource resConn: (List<Resource>)((Map)connPolicyMap.get(policyAction)).get("connections")) {
-                outputDelta.getModelAddition().getOntModel().add(outputDelta.getModelAddition().getOntModel().createStatement(resConn, Spa.type, Spa.Abstraction));
-            }
-            */
-        }
         try {
             logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             logger.trace(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
         }
+
         logger.end(method);
         return new AsyncResult(outputDelta);
     }
 
-    private Map<String, MCETools.Path> doMultiPathFinding(OntModel systemModel, OntModel spaModel, Resource policyAction, Map connDataMap) {
-        String method = "doMultiPathFinding";
+    private Map<String, MCETools.Path> doMPVBFinding(OntModel systemModel, Resource resConn,  Map<String, JSONObject> connDataMap) {
+        String method = "doMPVBFinding";
+        logger.message(method, "@doMPVBFinding -> " + resConn);
         // transform network graph
         // filter out irrelevant statements (based on property type, label type, has switchingService etc.)
         OntModel transformedModel = MCETools.transformL2NetworkModel(systemModel);
+        /*
         try {
             logger.trace(method, "SystemModel=\n" + ModelUtil.marshalModel(transformedModel));
         } catch (Exception ex) {
             logger.trace(method, "marshalModel(marshalModel(transformedModel) failed -- "+ex);
         }
+        */
         Map<String, MCETools.Path> mapConnPaths = new HashMap<>();
-        //List<Resource> connList = (List<Resource>)connDataMap.get("connections");
-        List<Map> dataMapList = (List<Map>)connDataMap.get("imports");
-        // get source and destination nodes
-        JSONObject jsonConnReqs = null;
-        for (Map entry : dataMapList) {
-            if (!entry.containsKey("data") || !entry.containsKey("type") || !entry.containsKey("value")) {
-                continue;
-            }
-            if (entry.get("type").toString().equalsIgnoreCase("JSON")) {
-                JSONParser parser = new JSONParser();
-                try {
-                    JSONObject jsonObj = (JSONObject) parser.parse((String) entry.get("value"));
-                    if (jsonConnReqs == null) {
-                        jsonConnReqs = jsonObj;
-                    } else { // merge
-                        for (Object key: jsonObj.keySet()) {
-                            jsonConnReqs.put(key, jsonObj.get(key));
-                        }
-                    }
-                } catch (ParseException e) {                    
-                    throw logger.throwing(method, String.format("cannot parse json string %s", entry.get("value")), e);
-                }
-            } else {
-                throw logger.error_throwing(method, String.format("cannot import policyData of %s type", entry.get("type")));
-            }
-        }
-        if (jsonConnReqs == null || jsonConnReqs.isEmpty()) {
-            throw logger.error_throwing(method, String.format("received none connection request for policy <%s>", policyAction));
-        }
-        //Loop through multi-path requests (each for one multi-point vlan bridge (MPVB) connection)
-        for (Object connReq: jsonConnReqs.keySet()) {
-            String connId = (String) connReq;
+        for (String connId: connDataMap.keySet()) {
             List<Resource> terminals = new ArrayList<>();
-            JSONObject jsonConnReq = (JSONObject)jsonConnReqs.get(connReq);
+            JSONObject jsonConnReq = (JSONObject)connDataMap.get(connId);
             if (jsonConnReq.size() < 3) {
                 throw logger.error_throwing(method, String.format("cannot find path for connection '%s' - request must have at least 3 terminals", connId));
             }
@@ -237,6 +163,9 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
                 throw logger.error_throwing(method, String.format("cannot find initial feasible path for connection '%s' between '%s' and '%s'", connId, terminal1, terminal2));
             }
             MCETools.Path mpvbPath = MCETools.getLeastCostPath(feasibleKSP12); //(Could also be pick 2nd and 3rd for disturbing search)
+            if (((JSONObject)jsonConnReq.get(terminal1.getURI())).containsKey("mac_list") && ((JSONObject)jsonConnReq.get(terminal2.getURI())).containsKey("mac_list")) {
+                lookupMacsForOpenflowPorts(mpvbPath, transformedModel, jsonConnReq, terminal1, terminal2);
+            }
             // For 3rd through Tth terminals, connect them to one of openflow nodes in the path
             for (Resource terminalX : terminals) {
                 MCETools.Path bridgePath = connectTerminalToPath(transformedModel, mpvbPath, terminalX, jsonConnReq);
@@ -247,6 +176,7 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
                 mpvbPath.getOntModel().add(bridgePath.getOntModel().getBaseModel());
             }
 
+            MCETools.tagPathHops(mpvbPath, "l2path+"+resConn.getURI()+":"+connId+"");
             transformedModel.add(mpvbPath.getOntModel());
             mapConnPaths.put(connId, mpvbPath);
         }
@@ -256,6 +186,10 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
     private MCETools.Path connectTerminalToPath(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX, JSONObject jsonConnReq) {
         String method = "connectTerminalToPath";
         Resource bridgeOpenflowService = checkTerminalOnPath(transformedModel, mpvbPath, terminalX);
+        String bridgeMacList = null;
+        if (((JSONObject)jsonConnReq.get(terminalX.getURI())).containsKey("mac_list")) {
+            bridgeMacList = (String)((JSONObject)jsonConnReq.get(terminalX.getURI())).get("mac_list");
+        }
         if (bridgeOpenflowService != null) {
             Resource bridgePort = terminalX;
             JSONObject jsonTe = (JSONObject) jsonConnReq.get(terminalX.getURI());
@@ -267,14 +201,21 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
                 } catch (TagSet.InvalidVlanRangeExeption ex) {
                     throw logger.throwing(method, String.format("terminal <%s> -exception- ", terminalX.getURI()), ex);
                 }
-                bridgeVlanTag = Integer.toOctalString(vlanRange.getRandom());
+                bridgeVlanTag = Integer.toString(vlanRange.getRandom());
+            } else {
+                throw logger.error_throwing(method, String.format("terminal '%s' has no 'vlan_tag' parameter in request data.", terminalX));
             }
             MCETools.Path bridgePath = new MCETools.Path();
             OntModel bridgePathModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
             Statement bridgeHop = bridgePathModel.createStatement(bridgeOpenflowService, Nml.connectsTo, terminalX);
             bridgePathModel.add(bridgeHop);
             bridgePath.add(bridgeHop);
-            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag);
+            if (bridgeMacList != null) {
+                String bridgePortName = MCETools.getNameForPort(transformedModel, bridgePort);
+                jsonConnReq.put(bridgePortName, new JSONObject());
+                ((JSONObject)jsonConnReq.get(bridgePortName)).put("mac_list", bridgeMacList);
+            }
+            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag, jsonConnReq);
             if (bridgePathModel == null) {
                 throw logger.error_throwing(method, String.format("terminal '%s' is in path but cannot be bridged.", terminalX));
             }
@@ -329,7 +270,12 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
                                 continue;
                             }
                             String bridgeVlanTag = rs.next().get("vlan_in").toString();
-                            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag);
+                            if (bridgeMacList != null) {
+                                String bridgePortName = MCETools.getNameForPort(transformedModel, bridgePort);
+                                jsonConnReq.put(bridgePortName, new JSONObject());
+                                ((JSONObject)jsonConnReq.get(bridgePortName)).put("mac_list", bridgeMacList);
+                            }
+                            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag, jsonConnReq);
                             if (bridgePathModel == null) {
                                 continue;
                             }
@@ -400,15 +346,16 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
         }
         return bridgeSvc;
     }
-
+    
     private OntModel createBridgePathFlows(OntModel transformedModel, MCETools.Path mpvbPath, OntModel bridgePathModel,
-            Resource bridgeOpenflowService, Resource bridgePort, String bridgeVlanTag) {
+            Resource bridgeOpenflowService, Resource bridgePort, String bridgeVlanTag, JSONObject jsonConnReq) {
+        String method="createBridgePathFlows";
         // create VLAN bridging flows with bridgeOpenflowService and bridgePort and add to l2PathModel
         OntModel mpvbModel = mpvbPath.getOntModel();
         Map<Resource, Map> mpvpFlowMap = new HashMap();
         Resource resFlowTable = null;
         // find existing ports and flows from mpvbModel
-        String sparql_flowin = "SELECT ?table ?flow ?port_in ?vlan_in WHERE {"
+        String sparql_flowin = "SELECT DISTINCT ?table ?flow ?port_in ?vlan_in ?match_arp WHERE {"
                 + String.format("<%s> mrs:providesFlow ?flow. ", bridgeOpenflowService)
                 + "?table mrs:hasFlow ?flow. "
                 + "?flow mrs:flowMatch ?match_port. "
@@ -417,6 +364,9 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
                 + "?flow mrs:flowMatch ?match_vlan. "
                 + "?match_vlan mrs:type \"dl_vlan\". "
                 + "?match_vlan mrs:value ?vlan_in. "
+                + "OPTIONAL {?flow mrs:flowMatch ?match_arp. ?match_arp mrs:type \"dl_type\". ?match_arp mrs:value \"2054\". } "
+                + "FILTER (NOT EXISTS {?flow mrs:flowMatch ?match_src_mac. ?match_src_mac mrs:type \"dl_src\".} "
+                + "&& NOT EXISTS {?flow mrs:flowMatch ?match_dst_mac. ?match_dst_mac mrs:type \"dl_dst\".} ) "
                 + "}";
         ResultSet rs = ModelUtil.sparqlQuery(mpvbModel, sparql_flowin);
         while (rs.hasNext()) {
@@ -431,6 +381,9 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
             mpvpFlowMap.put(resFlow, flowParamMap);
             flowParamMap.put("port_in", strPort);
             flowParamMap.put("vlan_in", strVlan);
+            if (qs.contains("match_arp")) {
+                flowParamMap.put("match_arp", "true");
+            }
         }
         String sparql_flowout = "SELECT ?table ?flow ?port_out ?vlan_out WHERE {"
                 + String.format("<%s> mrs:providesFlow ?flow. ", bridgeOpenflowService)
@@ -473,6 +426,13 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
         // add new flow for match bridgePortName and bridgeVlanTag
         String bridgeFlowId = bridgePort.getURI() + ":flow=input_vlan" + bridgeVlanTag;
         String bridgePortName = MCETools.getNameForPort(transformedModel, bridgePort);
+        String[] bridgePortMacList = null;
+        if (jsonConnReq.containsKey(bridgePortName) && ((JSONObject)jsonConnReq.get(bridgePortName)).containsKey("mac_list")) {
+            bridgePortMacList = ((JSONObject)jsonConnReq.get(bridgePortName)).get("mac_list").toString().split(",");
+            if (bridgePortMacList.length == 0 || bridgePortMacList[0].length() != 17) {
+                throw logger.error_throwing(method, "invalid mac_list format in request data for port: " +  bridgePortName);
+            }
+        }
         Resource resBridgeFlow = RdfOwl.createResource(bridgePathModel, URI_flow(resFlowTable.getURI(), bridgeFlowId), Mrs.Flow);
         bridgePathModel.add(bridgePathModel.createStatement(resFlowTable, Mrs.hasFlow, resBridgeFlow));
         bridgePathModel.add(bridgePathModel.createStatement(bridgeOpenflowService, Mrs.providesFlow, resBridgeFlow));
@@ -484,19 +444,40 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
         bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowMatch, resBridgeFlowMatch2));
         bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch2, Mrs.type, "dl_vlan"));
         bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch2, Mrs.value, bridgeVlanTag));
+        if (bridgePortMacList != null) {
+            Resource resBridgeFlowMatch3 = RdfOwl.createResource(bridgePathModel, URI_match(resBridgeFlow.getURI(), "dl_type"), Mrs.FlowRule);
+            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowMatch, resBridgeFlowMatch3));
+            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch3, Mrs.type, "dl_type"));
+            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowMatch3, Mrs.value, "2054"));            
+        }
+        List<Resource> flowsInPath = new ArrayList();
+        List<String> portsInPath = new ArrayList();
+        List<String> vlansInPath = new ArrayList();
         Character bridgePortActionOrder = 'A'; // order of actions in bridgeFlow will be A-B-C-D-D
-        Resource resBridgeFlowAction = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
-        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resBridgeFlowAction));
-        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowAction, Mrs.type, "strip_vlan"));
-        bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlowAction, Mrs.value, "strip_vlan"));
         for (Resource mpvbFlow : mpvpFlowMap.keySet()) {
             Map flowParams = mpvpFlowMap.get(mpvbFlow);
             String flowInPort = (String) flowParams.get("port_in");
             String flowInVlan = (String) flowParams.get("vlan_in");
             String[] flowOutPorts = ((String) flowParams.get("port_out")).split(",");
             String[] flowOutVlans = ((String) flowParams.get("vlan_out")).split(",");
+            // insert match for ARP
+            if (bridgePortMacList != null && !flowParams.containsKey("match_arp")) {
+                Resource mpvbFlowMatchArp = RdfOwl.createResource(bridgePathModel, URI_match(mpvbFlow.getURI(), "dl_type"), Mrs.FlowRule);
+                bridgePathModel.add(bridgePathModel.createStatement(mpvbFlow, Mrs.flowMatch, mpvbFlowMatchArp));
+                bridgePathModel.add(bridgePathModel.createStatement(mpvbFlowMatchArp, Mrs.type, "dl_type"));
+                bridgePathModel.add(bridgePathModel.createStatement(mpvbFlowMatchArp, Mrs.value, "2054"));
+                flowsInPath.add(mpvbFlow);
+                portsInPath.add(flowInPort);
+                vlansInPath.add(flowInVlan);
+            }
             // order of actions in existing mpvbFlow: A-B-C-(D-E-...)->this = 'A' + flowOutPorts.length*2+1 
             Character flowActionOrder = (char) ('A' + flowOutPorts.length * 2 + 1);
+            /*
+            Resource resFlowAction0 = RdfOwl.createResource(bridgePathModel, URI_action(mpvbFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+            bridgePathModel.add(bridgePathModel.createStatement(mpvbFlow, Mrs.flowAction, resFlowAction0));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowAction0, Mrs.type, "strip_vlan"));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowAction0, Mrs.value, "any"));
+            */
             // add to mpvbFlow: actions A: set vlan id to bridgeVlanTag B: output to bridgePortName
             Resource resFlowActionA = RdfOwl.createResource(bridgePathModel, URI_action(mpvbFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
             bridgePathModel.add(bridgePathModel.createStatement(mpvbFlow, Mrs.flowAction, resFlowActionA));
@@ -506,16 +487,170 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
             bridgePathModel.add(bridgePathModel.createStatement(mpvbFlow, Mrs.flowAction, resFlowActionB));
             bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.type, "output"));
             bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.value, bridgePortName));
-            // add to bridgeFlow: actions A: to set vlan id to flowInVlan B: output to flowInPort
-            resFlowActionA = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
-            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resFlowActionA));
-            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.type, "mod_vlan_vid"));
-            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.value, flowInVlan));
-            resFlowActionB = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
-            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resFlowActionB));
-            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.type, "output"));
-            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.value, flowInPort));
+            /*
+            Resource resFlowAction1 = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
+            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resFlowAction1));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowAction1, Mrs.value, "any"));
+            */
+            // add to bridgeFlow: actions C: to set vlan id to flowInVlan D: output to flowInPort
+            Resource resFlowActionC = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
+            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resFlowActionC));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionC, Mrs.type, "mod_vlan_vid"));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionC, Mrs.value, flowInVlan));
+            Resource resFlowActionD = RdfOwl.createResource(bridgePathModel, URI_action(resBridgeFlow.getURI(), (bridgePortActionOrder++).toString()), Mrs.FlowRule);
+            bridgePathModel.add(bridgePathModel.createStatement(resBridgeFlow, Mrs.flowAction, resFlowActionD));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionD, Mrs.type, "output"));
+            bridgePathModel.add(bridgePathModel.createStatement(resFlowActionD, Mrs.value, flowInPort));
+            
+            // Add MAC flows 
+            if (bridgePortMacList != null && jsonConnReq.containsKey(flowInPort) && ((JSONObject)jsonConnReq.get(flowInPort)).containsKey("mac_list")) {
+                String[] flowInPortMacList = ((JSONObject)jsonConnReq.get(flowInPort)).get("mac_list").toString().split(",");
+                if (flowInPortMacList.length == 0 || flowInPortMacList[0].length() != 17) {
+                    throw logger.error_throwing(method, "invalid mac_list format in request data for port: " + flowInPort);
+                }
+                for (String inPortMac: flowInPortMacList) {
+                    for (String bridgePortMac: bridgePortMacList) {
+                        // MAC flow from inPort to bridgePort
+                        Resource resToBridgePortMacFlow = RdfOwl.createResource(bridgePathModel, URI_flow(resFlowTable.getURI(), bridgeFlowId+":"+inPortMac+":"+bridgePortMac), Mrs.Flow);
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowTable, Mrs.hasFlow, resToBridgePortMacFlow));
+                        bridgePathModel.add(bridgePathModel.createStatement(bridgeOpenflowService, Mrs.providesFlow, resToBridgePortMacFlow));
+                        Resource resToBridgePortMacFlowMatch1 = RdfOwl.createResource(bridgePathModel, URI_match(resToBridgePortMacFlow.getURI(), "in_port"), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlow, Mrs.flowMatch, resToBridgePortMacFlowMatch1));
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlowMatch1, Mrs.type, "in_port"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlowMatch1, Mrs.value, flowInPort));
+                        Resource resToBridgePortMacFlowMatch2 = RdfOwl.createResource(bridgePathModel, URI_match(resToBridgePortMacFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlow, Mrs.flowMatch, resToBridgePortMacFlowMatch2));
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlowMatch2, Mrs.type, "dl_vlan"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlowMatch2, Mrs.value, flowInVlan));                    
+                        Resource resToBridgePortMacFlowMatch3 = RdfOwl.createResource(bridgePathModel, URI_match(resToBridgePortMacFlow.getURI(), "dl_src"), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlow, Mrs.flowMatch, resToBridgePortMacFlowMatch3));
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlowMatch3, Mrs.type, "dl_src"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlowMatch3, Mrs.value, inPortMac));
+                        Resource resToBridgePortMacFlowMatch4 = RdfOwl.createResource(bridgePathModel, URI_match(resToBridgePortMacFlow.getURI(), "dl_dst"), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlow, Mrs.flowMatch, resToBridgePortMacFlowMatch4));
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlowMatch4, Mrs.type, "dl_dst"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlowMatch4, Mrs.value, bridgePortMac));
+                        // actions A: set vlan id to bridgeVlanTag B: output to bridgePortName
+                        flowActionOrder = 'A';
+                        resFlowActionA = RdfOwl.createResource(bridgePathModel, URI_action(resToBridgePortMacFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlow, Mrs.flowAction, resFlowActionA));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.type, "mod_vlan_vid"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.value, bridgeVlanTag));
+                        resFlowActionB = RdfOwl.createResource(bridgePathModel, URI_action(resToBridgePortMacFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resToBridgePortMacFlow, Mrs.flowAction, resFlowActionB));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.type, "output"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.value, bridgePortName));
+
+                        // MAC flow from bridgePort to inPort (reverse)
+                        Resource resFromBridgePortMacFlow = RdfOwl.createResource(bridgePathModel, URI_flow(resFlowTable.getURI(), bridgeFlowId+":"+bridgePortMac+":"+inPortMac), Mrs.Flow);
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowTable, Mrs.hasFlow, resFromBridgePortMacFlow));
+                        bridgePathModel.add(bridgePathModel.createStatement(bridgeOpenflowService, Mrs.providesFlow, resFromBridgePortMacFlow));
+                        Resource resFromBridgePortMacFlowMatch1 = RdfOwl.createResource(bridgePathModel, URI_match(resFromBridgePortMacFlow.getURI(), "in_port"), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlow, Mrs.flowMatch, resFromBridgePortMacFlowMatch1));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlowMatch1, Mrs.type, "in_port"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlowMatch1, Mrs.value, bridgePortName));
+                        Resource resFromBridgePortMacFlowMatch2 = RdfOwl.createResource(bridgePathModel, URI_match(resFromBridgePortMacFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlow, Mrs.flowMatch, resFromBridgePortMacFlowMatch2));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlowMatch2, Mrs.type, "dl_vlan"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlowMatch2, Mrs.value, bridgeVlanTag));                    
+                        Resource resFromBridgePortMacFlowMatch3 = RdfOwl.createResource(bridgePathModel, URI_match(resFromBridgePortMacFlow.getURI(), "dl_src"), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlow, Mrs.flowMatch, resFromBridgePortMacFlowMatch3));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlowMatch3, Mrs.type, "dl_src"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlowMatch3, Mrs.value, bridgePortMac));
+                        Resource resFromBridgePortMacFlowMatch4 = RdfOwl.createResource(bridgePathModel, URI_match(resFromBridgePortMacFlow.getURI(), "dl_dst"), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlow, Mrs.flowMatch, resFromBridgePortMacFlowMatch4));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlowMatch4, Mrs.type, "dl_dst"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlowMatch4, Mrs.value, inPortMac));
+                        // actions C: to set vlan id to flowInVlan D: output to flowInPort
+                        resFlowActionC = RdfOwl.createResource(bridgePathModel, URI_action(resFromBridgePortMacFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlow, Mrs.flowAction, resFlowActionC));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowActionC, Mrs.type, "mod_vlan_vid"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowActionC, Mrs.value, flowInVlan));
+                        resFlowActionD = RdfOwl.createResource(bridgePathModel, URI_action(resFromBridgePortMacFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+                        bridgePathModel.add(bridgePathModel.createStatement(resFromBridgePortMacFlow, Mrs.flowAction, resFlowActionD));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowActionD, Mrs.type, "output"));
+                        bridgePathModel.add(bridgePathModel.createStatement(resFlowActionD, Mrs.value, flowInPort));
+                    }
+                }
+            }
         }
+        // add MAC flows between two ports in the original path
+        if (mpvpFlowMap.size() == 2 && portsInPath.size() == 2) {
+            Resource inFlow = flowsInPath.get(0);
+            String flowInPort = portsInPath.get(0);
+            String flowInVlan = vlansInPath.get(0);
+            Resource outFlow = flowsInPath.get(1);
+            String flowOutPort = portsInPath.get(1);
+            String flowOutVlan = vlansInPath.get(1);
+            String[] flowInPortMacList = ((JSONObject) jsonConnReq.get(flowInPort)).get("mac_list").toString().split(",");
+            String[] flowOutPortMacList = ((JSONObject) jsonConnReq.get(flowOutPort)).get("mac_list").toString().split(",");
+            for (String inPortMac : flowInPortMacList) {
+                for (String outPortMac : flowOutPortMacList) {
+                    // MAC flow from inPort to outPort
+                    Resource resToOutPortMacFlow = RdfOwl.createResource(bridgePathModel, URI_flow(resFlowTable.getURI(), inFlow + ":" + inPortMac + ":" + outPortMac), Mrs.Flow);
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowTable, Mrs.hasFlow, resToOutPortMacFlow));
+                    bridgePathModel.add(bridgePathModel.createStatement(bridgeOpenflowService, Mrs.providesFlow, resToOutPortMacFlow));
+                    Resource resToOutPortMacFlowMatch1 = RdfOwl.createResource(bridgePathModel, URI_match(resToOutPortMacFlow.getURI(), "in_port"), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlow, Mrs.flowMatch, resToOutPortMacFlowMatch1));
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlowMatch1, Mrs.type, "in_port"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlowMatch1, Mrs.value, flowInPort));
+                    Resource resToOutPortMacFlowMatch2 = RdfOwl.createResource(bridgePathModel, URI_match(resToOutPortMacFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlow, Mrs.flowMatch, resToOutPortMacFlowMatch2));
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlowMatch2, Mrs.type, "dl_vlan"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlowMatch2, Mrs.value, flowInVlan));
+                    Resource resToOutPortMacFlowMatch3 = RdfOwl.createResource(bridgePathModel, URI_match(resToOutPortMacFlow.getURI(), "dl_src"), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlow, Mrs.flowMatch, resToOutPortMacFlowMatch3));
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlowMatch3, Mrs.type, "dl_src"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlowMatch3, Mrs.value, inPortMac));
+                    Resource resToOutPortMacFlowMatch4 = RdfOwl.createResource(bridgePathModel, URI_match(resToOutPortMacFlow.getURI(), "dl_dst"), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlow, Mrs.flowMatch, resToOutPortMacFlowMatch4));
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlowMatch4, Mrs.type, "dl_dst"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlowMatch4, Mrs.value, outPortMac));
+                    // actions A: set vlan id to flowOutVlan B: output to flowOutPort
+                    Character flowActionOrder = 'A';
+                    Resource resFlowActionA = RdfOwl.createResource(bridgePathModel, URI_action(resToOutPortMacFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlow, Mrs.flowAction, resFlowActionA));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.type, "mod_vlan_vid"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowActionA, Mrs.value, flowOutVlan));
+                    Resource resFlowActionB = RdfOwl.createResource(bridgePathModel, URI_action(resToOutPortMacFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resToOutPortMacFlow, Mrs.flowAction, resFlowActionB));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.type, "output"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowActionB, Mrs.value, flowOutPort));
+
+                    // MAC flow from outPort to inPort (reverse)
+                    Resource resFromOutPortMacFlow = RdfOwl.createResource(bridgePathModel, URI_flow(resFlowTable.getURI(), outFlow + ":" + outPortMac + ":" + inPortMac), Mrs.Flow);
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowTable, Mrs.hasFlow, resFromOutPortMacFlow));
+                    bridgePathModel.add(bridgePathModel.createStatement(bridgeOpenflowService, Mrs.providesFlow, resFromOutPortMacFlow));
+                    Resource resFromOutPortMacFlowMatch1 = RdfOwl.createResource(bridgePathModel, URI_match(resFromOutPortMacFlow.getURI(), "in_port"), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlow, Mrs.flowMatch, resFromOutPortMacFlowMatch1));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlowMatch1, Mrs.type, "in_port"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlowMatch1, Mrs.value, flowOutPort));
+                    Resource resFromOutPortMacFlowMatch2 = RdfOwl.createResource(bridgePathModel, URI_match(resFromOutPortMacFlow.getURI(), "dl_vlan"), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlow, Mrs.flowMatch, resFromOutPortMacFlowMatch2));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlowMatch2, Mrs.type, "dl_vlan"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlowMatch2, Mrs.value, flowOutVlan));
+                    Resource resFromOutPortMacFlowMatch3 = RdfOwl.createResource(bridgePathModel, URI_match(resFromOutPortMacFlow.getURI(), "dl_src"), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlow, Mrs.flowMatch, resFromOutPortMacFlowMatch3));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlowMatch3, Mrs.type, "dl_src"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlowMatch3, Mrs.value, outPortMac));
+                    Resource resFromOutPortMacFlowMatch4 = RdfOwl.createResource(bridgePathModel, URI_match(resFromOutPortMacFlow.getURI(), "dl_dst"), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlow, Mrs.flowMatch, resFromOutPortMacFlowMatch4));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlowMatch4, Mrs.type, "dl_dst"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlowMatch4, Mrs.value, inPortMac));
+                    // actions C: to set vlan id to flowInVlan D: output to flowInPort
+                    Resource resFlowActionC = RdfOwl.createResource(bridgePathModel, URI_action(resFromOutPortMacFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlow, Mrs.flowAction, resFlowActionC));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowActionC, Mrs.type, "mod_vlan_vid"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowActionC, Mrs.value, flowInVlan));
+                    Resource resFlowActionD = RdfOwl.createResource(bridgePathModel, URI_action(resFromOutPortMacFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
+                    bridgePathModel.add(bridgePathModel.createStatement(resFromOutPortMacFlow, Mrs.flowAction, resFlowActionD));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowActionD, Mrs.type, "output"));
+                    bridgePathModel.add(bridgePathModel.createStatement(resFlowActionD, Mrs.value, flowInPort));
+                }
+            }
+        }
+
         return bridgePathModel;
     }
 
@@ -591,72 +726,36 @@ public class MCE_MultiPointVlanBridge implements IModelComputationElement {
         return listNodes;
     }
 
-    private void exportPolicyData(OntModel spaModel, Resource resPolicy, String connId, MCETools.Path l2Path) {
-        String method = "exportPolicyData";
-        // find Connection policy -> exportTo -> policyData
-        String sparql = "SELECT ?data ?type ?value ?format WHERE {"
-                + String.format("<%s> a spa:PolicyAction. ", resPolicy.getURI())
-                + String.format("<%s> spa:type 'MCE_MultiPointVlanBridge'. ", resPolicy.getURI())
-                + String.format("<%s> spa:exportTo ?data . ", resPolicy.getURI())
-                + "OPTIONAL {?data spa:type ?type.} "
-                + "OPTIONAL {?data spa:value ?value.} "
-                + "OPTIONAL {?data spa:format ?format.} "
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-        for (QuerySolution querySolution : solutions) {
-            Resource resData = querySolution.get("data").asResource();
-            RDFNode dataType = querySolution.get("type");
-            RDFNode dataValue = querySolution.get("value");
-            // add to export data with references to (terminal (src/dst) vlan labels from l2Path
-            List<QuerySolution> terminalVlanSolutions = MCETools.getTerminalVlanLabels(l2Path);
-            // require two terminal vlan ports and labels.
-            if (solutions.isEmpty()) {
-                logger.error_throwing(method, "failed to find '2' terminal Vlan tags for " + l2Path);
-            }
-            if (dataType == null) {
-                spaModel.add(resData, Spa.type, "JSON");
-            } else if (!dataType.toString().equalsIgnoreCase("JSON")) {
-                continue;
-            }
-            JSONObject jsonValue = new JSONObject();
-            if (dataValue != null) {
-                JSONParser parser = new JSONParser();
-                try {
-                    jsonValue = (JSONObject)parser.parse(dataValue.toString());
-                } catch (ParseException e) {
-                    throw logger.throwing(method, String.format("cannot parse json string %s", dataValue), e);
+    private void lookupMacsForOpenflowPorts(MCETools.Path mpvbPath, OntModel refModel, JSONObject jsonConnReq, Resource terminal1, Resource terminal2) {
+        Iterator<Statement> itStmt = mpvbPath.iterator();
+        String macList1 = (String)((JSONObject)jsonConnReq.get(terminal1.getURI())).get("mac_list");
+        String macList2 = (String)((JSONObject)jsonConnReq.get(terminal2.getURI())).get("mac_list");
+        while (itStmt.hasNext()) {
+            Statement link = itStmt.next();
+            Resource res1 = link.getSubject();
+            Resource resX = link.getObject().asResource();
+            if (itStmt.hasNext()) {
+                Iterator<Statement> itStmtNext = itStmt;
+                link = itStmtNext.next();
+                Resource res2 = link.getObject().asResource();
+                if ( refModel.contains(res1, RdfOwl.type, Nml.BidirectionalPort) 
+                        && refModel.contains(res2, RdfOwl.type, Nml.BidirectionalPort)
+                        && refModel.contains(resX, RdfOwl.type, Mrs.OpenflowService) ) {
+                    String port1 = MCETools.getNameForPort(refModel, res1);
+                    String port2 = MCETools.getNameForPort(refModel, res2);
+                    if (!jsonConnReq.containsKey(port1)) {
+                        jsonConnReq.put(port1, new JSONObject());
+                    }
+                    ((JSONObject)jsonConnReq.get(port1)).put("mac_list", macList1);
+                    //((JSONObject)jsonConnReq.get(port1)).put("openflow_service", resX);
+                    if (!jsonConnReq.containsKey(port2)) {
+                        jsonConnReq.put(port2, new JSONObject());
+                    }
+                    ((JSONObject)jsonConnReq.get(port2)).put("mac_list", macList2);
+                    //((JSONObject)jsonConnReq.get(port2)).put("openflow_service", resX);
                 }
             }
-            JSONArray jsonHops = new JSONArray();
-            for (QuerySolution aSolution : terminalVlanSolutions) {
-                JSONObject hop = new JSONObject();
-                Resource bidrPort = aSolution.getResource("bp");
-                Resource vlanTag = aSolution.getResource("vlan");
-                hop.put("uri", bidrPort.toString());
-                hop.put("vlan_tag", vlanTag.toString());
-                jsonHops.add(hop);
-            }
-            jsonValue.put(connId, jsonHops);
-            //add output as spa:value of the export resrouce
-            String exportValue = jsonValue.toJSONString();
-            if (querySolution.contains("format")) {
-                String exportFormat = querySolution.get("format").toString();
-                try {
-                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
-                } catch (Exception ex) {
-                    logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
-                    continue;
-                }
-            }
-            //@TODO: common logic
-            if (dataValue != null) {
-                spaModel.remove(resData, Spa.value, dataValue);
-            }
-            spaModel.add(resData, Spa.value, exportValue);
+
         }
     }
 }

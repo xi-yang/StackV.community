@@ -223,6 +223,7 @@ public class ServiceHandler {
         logger.start(method);
         try {
             clearVerification();
+            ServiceEngine.toggleVerify(true, refUUID, token);
             switch (action) {
                 case "cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
@@ -255,7 +256,7 @@ public class ServiceHandler {
                     ServiceEngine.verify(refUUID, token);
                     break;
                 case "unverify":
-                    ServiceEngine.cancelVerify(refUUID, token);
+                    ServiceEngine.toggleVerify(false, refUUID, token);
                     break;
 
                 default:
@@ -366,7 +367,7 @@ public class ServiceHandler {
             instanceState = status();
             if (instanceState.equals("COMMITTED")) {
                 lastState = instanceState;
-                ServiceEngine.verify(refUuid, token);
+                lastState = ServiceEngine.verify(refUuid, token);
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
                 return 5;
@@ -381,11 +382,11 @@ public class ServiceHandler {
         forcePropagate(refUuid, token.auth());
         forceCommit(refUuid, token.auth());
         while (true) {
-            logger.trace("forceCancelInstance", "Verification priming check");
-
             String instanceState = status();
+            logger.trace("forceCancelInstance", "Verification priming check - " + instanceState);
             if (instanceState.equals("COMMITTED")) {
-                lastState = ServiceEngine.verify(refUuid, token);              
+                lastState = "COMMITTED";
+                lastState = ServiceEngine.verify(refUuid, token);
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
                 return 5;
@@ -430,7 +431,7 @@ public class ServiceHandler {
             prep.setString(2, refUuid);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            logger.catching("setSupereState", ex);
+            logger.catching("setSuperState", ex);
         } finally {
             commonsClose(front_conn, prep, rs);
         }

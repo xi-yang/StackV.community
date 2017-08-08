@@ -92,9 +92,10 @@ public class OpenflowPush {
                     resTable = qs2.getResource("table");
                 }
             }
-            query2 = "SELECT ?table ?matchtype ?matchvalue ?action ?actiontype ?actionvalue WHERE {"
+            query2 = "SELECT ?table ?matchtype ?matchvalue ?action ?actiontype ?actionvalue ?actionorder WHERE {"
                     + String.format("?table mrs:hasFlow <%s>. ", flow.getURI())
                     + String.format("<%s> mrs:flowAction ?action. ?action mrs:type ?actiontype. ?action mrs:value ?actionvalue. ", flow.getURI())
+                    + String.format("OPTIONAL {?action mrs:order ?actionorder.} ", flow.getURI())
                     + "}";
             r2 = ModelUtil.executeQuery(query2, null, model);
             SortedMap<String, String> sortedActions = new TreeMap();
@@ -104,7 +105,11 @@ public class OpenflowPush {
                 String actionValue = qs2.get("actionvalue").toString();
                 String actionUri = qs2.get("action").toString();
                 String strAction = (actionType + "=" + actionValue);
-                sortedActions.put(actionUri, strAction);
+                if (qs2.contains("actionorder")) {
+                    sortedActions.put(qs2.get("actionorder").toString(), strAction);
+                } else {
+                    sortedActions.put(actionUri, strAction);                    
+                }
                 if (resTable == null) {
                     resTable = qs2.getResource("table");
                 }
@@ -148,7 +153,11 @@ public class OpenflowPush {
                 logger.warning(method, "cannot delete invalid flow =" + jFlow.toJSONString());
                 continue;
             }
-            restconf.pushDeleteFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString());
+            try {
+                restconf.pushDeleteFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString());
+            } catch (Exception ex) {
+                throw logger.throwing(method, ex);
+            }
         }
         JSONArray jCreate = (JSONArray) jRequests.get("create");
         for (Object o1 : jCreate) {
@@ -157,7 +166,11 @@ public class OpenflowPush {
                 logger.warning(method, "cannot create invalid flow=" + jFlow.toJSONString());
                 continue;
             }
-            restconf.pushModFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString(), (List) jFlow.get("match"), (List) jFlow.get("action"));
+            try {
+                restconf.pushModFlow(baseUrl, user, password, jFlow.get("node").toString(), jFlow.get("table").toString(), jFlow.get("id").toString(), (List) jFlow.get("match"), (List) jFlow.get("action"));
+            } catch (Exception ex) {
+                throw logger.throwing(method, ex);
+            }
         }
     }
 
