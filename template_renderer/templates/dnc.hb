@@ -27,7 +27,7 @@
 &lt;x-policy-annotation:data:conn-criteria&gt;
 	a            spa:PolicyData;
 	spa:type     "JSON";
-    spa:value    """{ {{~&gt;DNC-PolicyData}}    }""".
+    spa:value    """{ {{~>DNC-PolicyData}}    }""".
 
 &lt;x-policy-annotation:data:conn-criteriaexport&gt;
     a            spa:PolicyData.
