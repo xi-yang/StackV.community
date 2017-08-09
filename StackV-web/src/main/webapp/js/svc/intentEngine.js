@@ -26,6 +26,7 @@
 var conditions = [];
 var factories = {};
 var initials = {};
+var bindings = {};
 var gsap = {};
 var intent;
 var intentType;
@@ -58,7 +59,7 @@ function loadIntent(type) {
             if (!getURLParameter("preload")) {
                 switch (type) {
                     case "dnc":
-                        preloadDNC();
+                        //preloadDNC();
                         break;
                     case "hybridcloud":
                         preloadAHC();
@@ -138,6 +139,7 @@ function initializeIntent() {
     }
     $progress.append($("<li>"));
     moderateControls();
+    recondition();
     setTimeout(function () {
         gsap["intent"].play();
     }, 500);
@@ -237,7 +239,7 @@ function initMeta(meta) {
         var scaffManifest = {};
         scaffManifest["name"] = $("#profile-name").val();
         scaffManifest["description"] = $("#profile-description").val();
-        scaffManifest["username"] = "admin";
+        scaffManifest["username"] = sessionStorage.getItem("username");
         scaffManifest["data"] = manifest;
 
         // Save to DB
@@ -269,8 +271,9 @@ function renderInputs(arr, $parent) {
             var collapsible = ele.getAttribute("collapsible");
             var block = ele.getAttribute("block");
             var str = name.charAt(0).toUpperCase() + name.slice(1);
+            var eleID = constructID(ele);
 
-            var $div = $("<div>", {class: "intent-group-div", id: constructID(ele)});
+            var $div = $("<div>", {class: "intent-group-div", id: eleID});
             $parent.append($div);
             var $name = $('<div class="group-header col-sm-12"><div class="group-name">' + str + "</div></div>");
             $div.append($name);
@@ -284,7 +287,7 @@ function renderInputs(arr, $parent) {
                 $div.addClass("factory");
                 var factObj = {};
                 factObj["count"] = 1;
-                factories[constructID(ele)] = factObj;
+                factories[eleID] = factObj;
             }
             if (block) {
                 $div.addClass("factory");
@@ -292,7 +295,7 @@ function renderInputs(arr, $parent) {
                 var factObj = {};
                 factObj["count"] = 1;
                 factObj["block"] = block;
-                factories[constructID(ele)] = factObj;
+                factories[eleID] = factObj;
             }
             if (start) {
                 $div.attr("data-start", start);
@@ -311,6 +314,32 @@ function renderInputs(arr, $parent) {
             if (condition) {
                 $div.addClass("conditional");
                 $div.attr("data-condition", condition);
+            }
+
+            if (ele.getElementsByTagName("bound").length > 0) {
+                var boundArr = ele.childNodes;
+                if (!(eleID in bindings)) {
+                    bindings[eleID] = {};
+                }
+                var binding = bindings[eleID];
+
+                for (var j = 0; j < boundArr.length; j++) {
+                    var name = boundArr[j].getElementsByTagName("name")[0].innerHTML;
+                    var val = boundArr[j].getElementsByTagName("value")[0].innerHTML;
+                    if (!(name in binding)) {
+                        binding[name] = [];
+                    }
+                    binding[name]["value"] = val;
+                    
+                    var minEle = boundArr[j].getElementsByTagName("min")[0];
+                    if (minEle) {
+                        binding[name]["min"] = minEle.innerHTML;
+                    }
+                    var maxEle = boundArr[j].getElementsByTagName("max")[0];
+                    if (maxEle) {
+                        binding[name]["max"] = maxEle.innerHTML;
+                    }
+                }
             }
 
             // Recurse!
@@ -426,6 +455,7 @@ function renderInputs(arr, $parent) {
                 var $null = $("<option>").text("N/A").val("");
                 $input.append($null);
 
+                var def;
                 for (var j = 0; j < options.length; j++) {
                     var $option;
                     if (options[j].getAttribute("condition") !== null) {
@@ -435,15 +465,36 @@ function renderInputs(arr, $parent) {
                         $option = $("<option>");
                     }
 
-                    if (options[j].getAttribute("default") !== null) {
-                        $option.attr("selected", true);
-                        def = true;
-                    }
-
                     $option.text(options[j].innerHTML);
                     $option.val(options[j].innerHTML);
 
+                    if (options[j].getAttribute("trigger") !== null) {
+                        $option.attr("data-trigger", options[j].getAttribute("trigger"));
+                        $input.change(function () {
+                            var sel = $(this).children(":selected");
+                            var trigger = sel.data("trigger");
+                            if (trigger) {
+                                addCondition(trigger);
+                            } else {
+                                removeCondition(trigger);
+                            }
+                        });
+                    }
+
+                    if (options[j].getAttribute("default") !== null) {
+                        def = $option.val();
+                    }
+
                     $input.append($option);
+                }
+
+                if (def) {
+                    $input.val(def);
+                    var sel = $input.children(":selected");
+                    var trigger = sel.data("trigger");
+                    if (trigger) {
+                        addCondition(trigger);
+                    }
                 }
             }
             if (trigger) {
@@ -453,9 +504,7 @@ function renderInputs(arr, $parent) {
                     case "button":
                         $label.attr("data-trigger", trigger);
                         $label.click(function () {
-                            $("[data-condition='" + $(this).data("trigger") + "']").addClass("conditioned");
-                            $("[data-condition-select='" + $(this).data("trigger") + "']").removeAttr("disabled");
-                            conditions.push($(this).data("trigger"));
+                            addCondition($(this).data("trigger"));
                         });
                         break;
                 }
@@ -522,7 +571,7 @@ function factorizeRendering() {
                 var key = $(this).data("factory");
                 var target = $(this).parent().parent().attr("id");
 
-                buildClone(key, target, true);
+                buildClone(key, target, $(this));
 
                 e.preventDefault();
             });
@@ -544,20 +593,8 @@ function factorizeRendering() {
         factories[key]["clone"] = $clone;
     }
 
-    // Step 5: Expand defaults
-    var defArr = $("[data-default]");
-    for (var i = 0; i < defArr.length; i++) {
-        var def = defArr[i];
-        var factoryBtn = $(def.children[0]).find(".intent-button-factory");
-        var count = 1;
-        while ($(def).length > 0 && count < $(def).data("default")) {
-            factoryBtn.click();
-            count++;
-        }        
-        
-        var key = factoryBtn.data("factory");
-        //retroReclone(); // TODO Retroactively reclone factories including expanded defaults
-    }
+    // Step 5: Enforce Bounds
+    enforceBounds();
 
     // Step 6: Finishing work    
     initializeInputs();
@@ -606,22 +643,22 @@ function submitIntent(save) {
             if (isEnabledInput($input)) {
                 var validRef = $input.data("valid");
                 var validEle = intent.children[0].getElementsByTagName("validation")[0];
-                var valid = null;
+                var constEle = null;
                 for (var j = 0; j < validEle.children.length; j++) {
                     var constraint = validEle.children[j];
                     if (constraint.children[0].innerHTML === validRef) {
-                        valid = constraint;
+                        constEle = constraint;
                         break;
                     }
                 }
-                if (valid) {
-                    var regex = valid.children[1].innerHTML;
+                if (constEle) {
+                    var regex = constEle.children[1].innerHTML;
                     regex = regex.replace(/\\/g, "\\");
                     regex = new RegExp(regex, "gm");
 
                     var $message = $("<div>", {class: "intent-input-message"});
-                    if (valid.getElementsByTagName("message").length > 0) {
-                        $message.text(valid.getElementsByTagName("message")[0].innerHTML);
+                    if (constEle.getElementsByTagName("message").length > 0) {
+                        $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
                     }
 
                     $input.parent().append($message);
@@ -679,7 +716,7 @@ function submitIntent(save) {
                 openSaveModal();
                 setTimeout(function () {
                     gsap["intent"].play();
-                }, 1000);
+                }, 250);
             } else {
                 // Submit to backend
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
@@ -701,6 +738,10 @@ function submitIntent(save) {
                     }
                 });
             }
+        } else {
+            setTimeout(function () {
+                gsap["intent"].play();
+            }, 500);
         }
     }, 500);
 }
@@ -832,7 +873,7 @@ function constructID(ele) {
     return retString.replace(/ /g, "_").toLowerCase();
 }
 
-function buildClone(key, target, button) {
+function buildClone(key, target, $factoryBtn) {
     var count = ++factories[key]["count"];
     var $clone = factories[key]["clone"].clone(true, true);
     var name = getName(key);
@@ -873,12 +914,20 @@ function buildClone(key, target, button) {
         var id = $btn.parent().parent().attr("id");
         gsap[id].reverse();
         setTimeout(function () {
-            $btn.parent().parent().remove();
+            var $ele = $btn.parent().parent();
+            var $first = firstOf($ele);
+
+            $ele.remove();
+            refreshNumerals($first);
         }, 500);
     });
     $clone.find("[data-factory=" + key + "]").replaceWith($button);
 
-    $parent.append($clone);
+    if ($factoryBtn) {
+        $factoryBtn.parent().parent().after($clone);
+    } else {
+        $parent.append($clone);
+    }
 
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
@@ -890,13 +939,18 @@ function buildClone(key, target, button) {
         var key = $(this).data("factory");
         var target = $(this).parent().parent().attr("id");
 
-        buildClone(key, target, true);
+        buildClone(key, target, $(this));
 
         e.preventDefault();
     });
 
     recondition();
     refreshLinks();
+    if ($factoryBtn) {
+        refreshNumerals($factoryBtn.parent().parent());
+    }
+
+    enforceBounds();
 
     if ($clone.children(".collapse").length > 0) {
         var id = "#" + $($clone.children(".collapse")[0]).attr("id");
@@ -939,6 +993,29 @@ function refreshLinks() {
 
         if (currSelection) {
             $input.val(currSelection);
+        }
+    }
+}
+
+function refreshNumerals($ele) {
+    var $name = $($ele.children()[0].children[0]);
+    if (!$name.hasClass("unlabeled")) {
+        var arr = $name.html().split("#");
+        var count = 1;
+
+        var $next = $ele.next();
+        if ($next.length > 0) {
+            var $nextName = $($next.children()[0].children[0]);
+            var nextArr = $nextName.html().split("#");
+            while (nextArr && (nextArr[0] === arr[0])) {
+                $nextName.html(arr[0] + "#" + ++count);
+
+                $next = $next.next();
+                if ($next.length === 0)
+                    break;
+                $nextName = $($next.children()[0].children[0]);
+                nextArr = $nextName.html().split("#");
+            }
         }
     }
 }
@@ -1101,10 +1178,16 @@ function parseManifestIntoJSON() {
             package["uuid"] = result;
         }
     });
+}
 
+function enforceBounds() {
 
 }
 
+function firstOf($ele) {
+    var id = $ele.attr("id");
+    return $("#" + id.slice(0, id.lastIndexOf("_num")) + "_num1");
+}
 
 // Recursive Functions
 function findKeyDeepCache(recur, key) {
@@ -1211,6 +1294,9 @@ function trimLeaves(recur) {
 }
 
 function recondition() {
+    $("[data-condition]").removeClass("conditioned");
+    $("[data-condition-select]").attr("disabled", true);
+
     for (var i = 0; i < conditions.length; i++) {
         $("[data-condition='" + conditions[i] + "']").addClass("conditioned");
         $("[data-condition-select='" + conditions[i] + "']").removeAttr("disabled");
@@ -1236,6 +1322,16 @@ function expandStarters() {
 
         // TODO
     }
+}
+
+function addCondition(trigger) {
+    conditions.push(trigger);
+    recondition();
+}
+function removeCondition(trigger) {
+    var index = conditions.indexOf(trigger);
+    conditions.splice(index, 1);
+    recondition();
 }
 
 function isEnabledInput($input) {
