@@ -120,18 +120,22 @@ ops vm data
     spa:type     "MCE_VirtualNetworkCreation" ;
     spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt;
 
-{{!--TODO
-{{#if     }}
-; spa:exportTo {{exportTo .}}
+{{#subnets}}
+{{#if vms}}
+;
+    spa: exportTo &lt;x-policy-annotation:data:vpc-export&gt;,  
+{{~#vms}}
+&lt;x-policy-annotation:data:vpc-subnet-" + vmPara[0] + "-criteria&gt;{{#unless @last}},{{/unless}}
+{{/vms}}
 {{else}}
 .
 {{/if}}
---}}
+{{/subnets}}
 
 &lt;x-policy-annotation:data:vpc-criteria&gt;
     a            spa:PolicyData;
     spa:type     nml:Topology;
-    spa:value    '{{PolicyData type=type cidr=cidr parent=parent subnets=subnets routes=gateways/routes gateways=gateways}}'.{{! TEST }}
+    spa:value    '{{PolicyData type=type cidr=cidr parent=parent subnets=subnets routes=gateways/routes gateways=gateways}}'.
 
 </modelAddition>
 
