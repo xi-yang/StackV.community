@@ -12,7 +12,11 @@
 @prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
 @prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
 
-{{!TODO refUuid}}
+{{!TODO refUuid - where }}
+{{!TODO refUuid, name references must be pathed correctly}}
+{{!TODO polish punctuation/whitespace after base templates work }}
+{{!-- should probably start nesting blocks in a more visual way, it's getting hairy. was intially
+      avoiding because of whitespace weirdness, but the actual text can just be left as is --}}
 
 &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_clouds:tag+vpc1&gt;
     a                         nml:Topology ;
@@ -171,15 +175,71 @@
 {{#if next_hop}}
       mrs:nextHop "{{next_hop}}"; {{!might have to format this differently, check networkAddressFromJson method}}
 {{/if}}
-.
      {{/routes}}
 .
 {{/if}}  {{! definitely need to trace through logic and fix punctuation/order}}
 
-{{!TODO ceph}}
-{{!TODO globus}}
-{{!TODO nfs}}
+{{#if ceph_rbd}}
+{{#ceph_rbd}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:volume+ceph{{@index}}&gt;
+   a  mrs:Volume;
+   mrs:disk_gb "{{disk_gb}}";
+   mrs:mount_point "{{mount_point}}".
+{{/ceph_rbd}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
+   mrs:hasVolume        
+{{#ceph_rbd}} {{! ensure that ceph_rbd blocks will be handled in same order regardless of when called, if not, need to make a helper}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:volume+ceph{{@index}}&gt;{{#unless @last}},{{/unless}}
+{{/ceph_rbd}}
+.
+{{/if}}
+
+{{#globus_connect}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus&gt;
+   a  mrs:EndPoint ;
+   mrs:type "globus:connect" ;
+{{#if username}}
+    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus:username&gt; ;
+{{/if}}
+{{#if password}}
+    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus:password&gt; ;
+{{/if}}
+{{#if default_directory }}
+    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus:directory&gt; ;
+{{/if}}
+{{#if data_interface}}
+    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus:interface&gt; ;
+{{/if}}
+   nml:name "{{short_name}}" .
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
+   nml:hasService       &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus&gt;.
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus:username&gt;
+   a mrs:NetworkAddress ;
+   mrs:type "globus:username";
+   mrs:value "{{username}}" .
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus:password&gt;
+   a mrs:NetworkAddress ;
+   mrs:type "globus:password";
+   mrs:value "{{password}}" .
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus:directory&gt;
+   a mrs:NetworkAddress ;
+   mrs:type "globus:directory";
+   mrs:value "{{default_directory}}" .
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus:interface&gt;
+   a mrs:NetworkAddress ;
+   mrs:type "globus:interface";
+   mrs:value "{{data_interface}}" .
+{{/globus_connect}}
+
+
+{{#if nfs}}
+{{!TODO}}
+{{/if}}
+
+
+{{! ^ all of these will be reordered, mostly done by concatentation near the end}}
 {{!TODO ops specific exports/loose-ends before general exportTo}}
+{{!TODO providesVolume (cephRBD)}}
 
 {{/vms}}
 {{/subnets}}
