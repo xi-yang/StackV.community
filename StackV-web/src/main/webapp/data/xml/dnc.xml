@@ -23,7 +23,7 @@
         </validation>
     </meta>
     <stage name="Connections">
-        <input>
+        <input required="true">
             <name>Type</name>
             <type>select</type>
             <options>

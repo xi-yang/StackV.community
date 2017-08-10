@@ -69,7 +69,9 @@ function loadCatalog() {
 
     if (getURLParameter("profiles")) {
         openCatalog();
-        $($("ul.catalog-tabs").children()[0]).children().click();
+        setTimeout(function() {
+            $($("ul.catalog-tabs").children()[0]).children().click();
+        }, 200);        
     }
 
     $("#black-screen").click(function () {

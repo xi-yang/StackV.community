@@ -617,7 +617,6 @@ function recursivelyFactor(id, ele) {
 
 function submitIntent(save) {
     gsap["intent"].reverse();
-    setTimeout(function () {
         refreshLinks();
         $(".intent-input.invalid").removeClass("invalid");
         $(".intent-input-message").remove();
@@ -730,7 +729,6 @@ function submitIntent(save) {
                 gsap["intent"].play();
             }, 500);
         }
-    }, 500);
 }
 
 // UTILITY FUNCTIONS
