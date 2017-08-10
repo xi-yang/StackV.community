@@ -387,6 +387,7 @@ function renderInputs(arr, $parent) {
             }
 
             if (ele.getElementsByTagName("default").length > 0) {
+                $input.attr("data-default",ele.getElementsByTagName("default")[0].innerHTML);
                 $input.val(ele.getElementsByTagName("default")[0].innerHTML);
             }
             if (ele.getElementsByTagName("initial").length > 0) {
@@ -948,6 +949,12 @@ function buildClone(key, target, $factoryBtn) {
 
         e.preventDefault();
     });
+    
+    var $defArr = $clone.find("[data-default]");
+    for (var i = 0; i < $defArr.length; i++) {
+        var $input = $($defArr[i]);
+        $input.val($input.data("default"));
+    }
 
     recondition();
     refreshLinks();
