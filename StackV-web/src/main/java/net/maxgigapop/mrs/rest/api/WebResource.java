@@ -2837,6 +2837,8 @@ public class WebResource {
                 String username = accessToken.getPreferredUsername();
                 inputJSON.remove("username");
                 inputJSON.put("username", username);
+                
+                System.out.println(inputJSON.toJSONString());
 
                 executorService.execute(new Runnable() {
                     @Override
@@ -2926,7 +2928,7 @@ public class WebResource {
         });
         logger.trace_end(method);
     }
-   
+
     // Async Methods -----------------------------------------------------------
     private String doCreateService(JSONObject inputJSON, TokenHandler token) {
         ServiceHandler instance = new ServiceHandler(inputJSON, token);

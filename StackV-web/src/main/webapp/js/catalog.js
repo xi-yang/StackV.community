@@ -220,24 +220,50 @@ function loadWizard() {
             });
 
             $(".button-profile-submit").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                var profile = JSON.parse($("#info-panel-text-area").val());
+                profile["alias"] = $("#profile-alias").val();
+
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
                 $.ajax({
                     url: apiUrl,
-                    type: 'POST',
-                    data: $("#info-panel-text-area").val(),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
+                    async: false,
+                    type: 'GET',
+                    dataType: "text",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                         xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                     },
                     success: function (result) {
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
+                        var manifest = profile;
+                        manifest["uuid"] = result;
+
+                        // Render template
+                        var rendered = render(manifest);
+                        delete manifest["uuid"];
+
+                        profile["data"] = rendered;
+
+                        var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                        $.ajax({
+                            url: apiUrl,
+                            type: 'POST',
+                            data: JSON.stringify(profile),
+                            contentType: "application/json; charset=utf-8",
+                            dataType: "json",
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                            },
+                            success: function (result) {
+                            },
+                            error: function (textStatus, errorThrown) {
+                                console.log(textStatus);
+                                console.log(errorThrown);
+                            }
+                        });
                     }
                 });
+
                 // reload top table and hide modal
                 reloadData();
                 $("div#profile-modal").modal("hide");

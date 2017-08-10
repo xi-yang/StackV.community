@@ -236,25 +236,7 @@ function initMeta(meta) {
     });
 
     $("#button-profile-save").click(function () {
-        var scaffManifest = {};
-        scaffManifest["name"] = $("#profile-name").val();
-        scaffManifest["description"] = $("#profile-description").val();
-        scaffManifest["username"] = sessionStorage.getItem("username");
-        scaffManifest["data"] = manifest;
-
-        // Save to DB
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
-        $.ajax({
-            url: apiUrl,
-            type: 'PUT',
-            data: JSON.stringify(scaffManifest),
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            },
-            success: function (result) {
-                window.location.href = "/StackV-web/ops/catalog.jsp?profiles=open";
-            }
-        });
+        saveManifest();
     });
 }
 
@@ -387,7 +369,7 @@ function renderInputs(arr, $parent) {
             }
 
             if (ele.getElementsByTagName("default").length > 0) {
-                $input.attr("data-default",ele.getElementsByTagName("default")[0].innerHTML);
+                $input.attr("data-default", ele.getElementsByTagName("default")[0].innerHTML);
                 $input.val(ele.getElementsByTagName("default")[0].innerHTML);
             }
             if (ele.getElementsByTagName("initial").length > 0) {
@@ -949,7 +931,7 @@ function buildClone(key, target, $factoryBtn) {
 
         e.preventDefault();
     });
-    
+
     var $defArr = $clone.find("[data-default]");
     for (var i = 0; i < $defArr.length; i++) {
         var $input = $($defArr[i]);
@@ -1180,14 +1162,13 @@ function parseManifestIntoJSON() {
             manifest["uuid"] = result;
 
             // Render template
-            var rendered = render(manifest);
-
-            console.log(rendered);
+            var rendered = render(manifest);            
+            delete manifest["uuid"];
+            delete manifest["data"]["uuid"];
 
             package["service"] = intentType;
             package["alias"] = $("#meta-alias").val();
-            package["delta"] = rendered;
-            package["uuid"] = result;
+            package["data"] = rendered;
         }
     });
 }
@@ -1425,6 +1406,27 @@ function isEnabledInput($input) {
 
 function openSaveModal() {
     $("#saveModal").modal();
+}
+function saveManifest() {
+    var scaffManifest = {};
+    scaffManifest["name"] = $("#profile-name").val();
+    scaffManifest["description"] = $("#profile-description").val();
+    scaffManifest["username"] = sessionStorage.getItem("username");
+    scaffManifest["data"] = manifest;
+
+    // Save to DB
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        data: JSON.stringify(scaffManifest),
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            window.location.href = "/StackV-web/ops/catalog.jsp?profiles=open";
+        }
+    });
 }
 
 // TESTING

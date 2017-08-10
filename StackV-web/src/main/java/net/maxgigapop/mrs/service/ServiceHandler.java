@@ -91,7 +91,7 @@ public class ServiceHandler {
             alias = (String) inputJSON.get("alias");
             owner = (String) inputJSON.get("username");
 
-            String delta = (String) inputJSON.get("delta");
+            String delta = (String) inputJSON.get("data");
             String deltaUUID = (String) inputJSON.get("uuid");
 
             // Find user ID.
