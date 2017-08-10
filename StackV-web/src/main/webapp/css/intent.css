@@ -109,6 +109,11 @@ button:focus {
     margin: auto;
     margin-top: 5px;
 }
+.intent-group-div button[disabled] {
+    opacity: .3;
+    color: #eee;
+    pointer-events: none;
+}
 .intent-input.invalid {
     border: 1px solid red;
     color: red;

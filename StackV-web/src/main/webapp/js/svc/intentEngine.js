@@ -316,28 +316,29 @@ function renderInputs(arr, $parent) {
                 $div.attr("data-condition", condition);
             }
 
-            if (ele.getElementsByTagName("bound").length > 0) {
-                var boundArr = ele.childNodes;
+            if ($(ele).children("bound").length > 0) {
+                $div.attr("data-bound", eleID);
+                var boundArr = $(ele).children("bound");
                 if (!(eleID in bindings)) {
                     bindings[eleID] = {};
                 }
                 var binding = bindings[eleID];
 
                 for (var j = 0; j < boundArr.length; j++) {
-                    var name = boundArr[j].getElementsByTagName("name")[0].innerHTML;
-                    var val = boundArr[j].getElementsByTagName("value")[0].innerHTML;
+                    var name = boundArr[j].children[0].innerHTML;
+                    var val = boundArr[j].children[1].innerHTML;
                     if (!(name in binding)) {
-                        binding[name] = [];
+                        binding[name] = {};
                     }
-                    binding[name]["value"] = val;
-                    
-                    var minEle = boundArr[j].getElementsByTagName("min")[0];
+                    binding[name][val] = {};
+
+                    var minEle = boundArr[j].children[2];
                     if (minEle) {
-                        binding[name]["min"] = minEle.innerHTML;
+                        binding[name][val]["min"] = minEle.innerHTML;
                     }
-                    var maxEle = boundArr[j].getElementsByTagName("max")[0];
+                    var maxEle = boundArr[j].children[3];
                     if (maxEle) {
-                        binding[name]["max"] = maxEle.innerHTML;
+                        binding[name][val]["max"] = maxEle.innerHTML;
                     }
                 }
             }
@@ -452,8 +453,10 @@ function renderInputs(arr, $parent) {
                 $input = $("<select>", {id: name, class: "intent-input"});
                 var selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
-                var $null = $("<option>").text("N/A").val("");
-                $input.append($null);
+                if (!ele.getAttribute("required")) {
+                    var $null = $("<option>").text("N/A").val("");
+                    $input.append($null);
+                }
 
                 var def;
                 for (var j = 0; j < options.length; j++) {
@@ -566,6 +569,9 @@ function factorizeRendering() {
             var $button = $("<button>", {class: "intent-button-factory", text: "Add " + name});
             $button.attr("data-factory", key);
             $button.attr("data-target", fact.parentElement.id);
+            if ($(fact).data("bound")) {
+                $button.attr("data-bound", $(fact).data("bound"));
+            }
             $button.click(function (e) {
                 // Modify clone for current index
                 var key = $(this).data("factory");
@@ -593,12 +599,10 @@ function factorizeRendering() {
         factories[key]["clone"] = $clone;
     }
 
-    // Step 5: Enforce Bounds
-    enforceBounds();
-
-    // Step 6: Finishing work    
+    // Step 5: Finishing work        
     initializeInputs();
     refreshLinks();
+    enforceBounds();
     expandStarters();
 }
 function recursivelyFactor(id, ele) {
@@ -919,6 +923,7 @@ function buildClone(key, target, $factoryBtn) {
 
             $ele.remove();
             refreshNumerals($first);
+            enforceBounds();
         }, 500);
     });
     $clone.find("[data-factory=" + key + "]").replaceWith($button);
@@ -1180,8 +1185,59 @@ function parseManifestIntoJSON() {
     });
 }
 
-function enforceBounds() {
+function enforceBounds() { // @TODO expand to include factorized elements
+    var arr = $("button[data-bound]");
+    for (var i = 0; i < arr.length; i++) {
+        var $button = $(arr[i]);
+        var key = $button.data("bound");
+        var $scope = $button.parent().parent().parent();
 
+        $scope.find("[data-bound=" + key + "] .intent-button-remove").removeAttr("disabled");
+        $button.removeAttr("disabled");
+
+        var eleCount = $scope.children("div[data-bound=" + key + "]").length;
+        for (var name in bindings[key]) {
+            var currVal = $("#" + name).val();
+            for (var val in bindings[key][name]) {
+                var changes = true;
+                while (changes) {
+                    changes = false;
+                    if (val === currVal) {
+                        // Check for min
+                        if ("min" in bindings[key][name][val]) {
+                            var min = bindings[key][name][val]["min"];
+                            if (eleCount <= min) {
+                                while (eleCount < min) {
+                                    $button.click();
+                                    eleCount = $scope.children("div[data-bound=" + key + "]").length;
+                                    changes = true;
+                                }
+                                $scope.find("[data-bound=" + key + "] .intent-button-remove").attr("disabled", true);
+                            }
+                        }
+
+                        // Check for max
+                        if ("max" in bindings[key][name][val]) {
+                            var max = bindings[key][name][val]["max"];
+                            if (eleCount >= max) {
+                                while (eleCount > max) {
+                                    $scope.children("[data-bound=" + key + "]").last().remove();
+                                    eleCount = $scope.children("div[data-bound=" + key + "]").length;
+                                    changes = true;
+                                }
+                                $button.attr("disabled", true);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+}
+
+function stripID($ele) {
+    return id = $ele.attr("id").replace(new RegExp("\\_num\\d*", "gm"), "");
 }
 
 function firstOf($ele) {
@@ -1310,6 +1366,21 @@ function initializeInputs() {
         var val = $input.data("initial");
         $input.val(val);
         $input.removeAttr("data-initial");
+    }
+
+    var $boundArr = $("[data-bound]");
+    for (var i = 0; i < $boundArr.length; i++) {
+        var $ele = $($boundArr[i]);
+        for (var key in bindings[$ele.data("bound")]) {
+            var $input = $("#" + key);
+            if (!$input.hasClass("binding")) {
+                $input.change(function () {
+                    enforceBounds();
+                });
+
+                $input.addClass("binding");
+            }
+        }
     }
 }
 
