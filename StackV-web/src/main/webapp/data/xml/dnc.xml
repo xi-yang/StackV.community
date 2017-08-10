@@ -23,7 +23,7 @@
         </validation>
     </meta>
     <stage name="Connections">
-        <input required="true">
+        <input>
             <name>Type</name>
             <type>select</type>
             <options>
@@ -32,7 +32,7 @@
             </options>
         </input>
         <group factory="true" name="connection" collapsible="true">
-            <input required="true">
+            <input>
                 <name>Name</name>
                 <type>text</type>
                 <valid>string</valid>
@@ -50,13 +50,13 @@
                     <min>3</min>
                 </bound>
                 
-                <input required="true">
+                <input>
                     <name>URI</name>
                     <type>text</type>
                     <size>xlarge</size>
                     <valid>string</valid>
                 </input>
-                <input required="true">
+                <input>
                     <name>VLAN Tag</name>
                     <type>text</type>
                     <size>small</size>

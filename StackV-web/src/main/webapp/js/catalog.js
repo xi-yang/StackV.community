@@ -67,6 +67,11 @@ function loadCatalog() {
     loadWizard();
     loadEditor();
 
+    if (getURLParameter("profiles")) {
+        openCatalog();
+        $($("ul.catalog-tabs").children()[0]).children().click();
+    }
+
     $("#black-screen").click(function () {
         $("#info-panel").removeClass("active");
         closeCatalog();
@@ -355,7 +360,7 @@ function loadEditor() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-            $(document).on('click', '.button-service-select', function ( evt ) {          
+            $(document).on('click', '.button-service-select', function (evt) {
                 var ref = "/StackV-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
                 window.location.href = ref;
 

@@ -252,7 +252,7 @@ function initMeta(meta) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
             success: function (result) {
-                window.location.href = "/StackV-web/ops/catalog.jsp";
+                window.location.href = "/StackV-web/ops/catalog.jsp?profiles=open";
             }
         });
     });
