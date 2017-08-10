@@ -73,7 +73,7 @@
 {{/if_eq}}
 {{/gateways}}
 
-{{#if_aws .}}
+{{#if_aws .}} {{! AWS }}
 {{#subnets}}
 {{#vms}}
 &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
@@ -109,7 +109,10 @@
 {{/vms}}
 {{/subnets}}
 {{/if_aws}}
-{{#if_ops .}}
+
+
+
+{{#if_ops .}} {{! OPS }}
 {{#subnets}}
 {{#vms}}
 &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
@@ -194,6 +197,66 @@
 .
 {{/if}}
 
+&lt;x-policy-annotation:action:create-{{name}}&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_VMFilterPlacement" ;
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+    spa:importFrom &lt;x-policy-annotation:data:{{name}}-host-criteria&gt;.
+
+&lt;x-policy-annotation:data:{{name}}-host-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
+    spa:value    """{
+       "place_into": "{{../../parent}}:host+{{host}}"
+    }""" .
+
+&lt;x-policy-annotation:action:create-{{name}}-eth0&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_VMFilterPlacement" ;
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+    spa:importFrom &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
+
+&lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
+    a           spa:PolicyData;
+    spa:type    "JSON";
+    spa:format  """{ "place_into": "%$.subnets[{{@../index}}].uri%"}""" .
+{{/vms}}
+{{/subnets}}
+
+{{#if vms}}
+&lt;x-policy-annotation:action:create-path&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_MPVlanConnection" ;
+    spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;
+    spa:exportTo   
+{{#vms}}
+&lt;x-policy-annotation:data:{{name}}-sriov" + i +{{!TODO sriov numbers, probably make a helper}} "-criteria&gt;{{#unless @last}},{{/unless}}
+{{/vms}}
+
+&lt;x-policy-annotation:data:conn-criteria&gt;\n"
+    a            spa:PolicyData;\n"
+    spa:type     \"JSON\";\n"
+    spa:value    \"\"\"" + connCriteriaValue.toString().replace("\\", "") + "\"\"\".\n\n {{!TODO connCriteriaValue (related to sriov)}}
+{{/if}}
+
+{{! svcDeltaCeph }}
+{{#vms}}
+{{#ceph_rbd}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:volume+ceph{{@index}}&gt;
+   a  mrs:Volume;
+   mrs:disk_gb "{{disk_gb}}" ;
+   mrs:mount_point "{{mount_point}}" .
+{{/ceph_rbd}}
+{{#if ceph_rbd}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
+    mrs:hasVolume       
+{{/if}}
+{{#ceph_rbd}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:volume+ceph{{@index}}&gt;{{#if @last}}.{{else}},{{/if}}
+{{/ceph_rbd}}
+{{/vms}}
+
+{{! svcDeltaEndPoints}}
 {{#globus_connect}}
 &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+globus&gt;
    a  mrs:EndPoint ;
@@ -230,19 +293,24 @@
    mrs:type "globus:interface";
    mrs:value "{{data_interface}}" .
 {{/globus_connect}}
-
-
-{{#if nfs}}
-{{!TODO}}
+{{#nfs}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+nfs&gt;
+   a  mrs:EndPoint ;
+   mrs:type "nfs";
+{{#exports}}
+mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+nfs:exports&gt; . {{! :expots  in ServiceEngine }}
+{{/exports}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
+    nml:hasService       &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+nfs&gt;.
+{{#if exports}}
+lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:service+nfs:exports&gt;
+   a mrs:NetworkAddress ;
+   mrs:type "nfs:exports";
+   mrs:value "{{exports}}".
 {{/if}}
+{{/nfs}}
+{{!TODO dependOn (also related to sriov)}}
 
-
-{{! ^ all of these will be reordered, mostly done by concatentation near the end}}
-{{!TODO ops specific exports/loose-ends before general exportTo}}
-{{!TODO providesVolume (cephRBD)}}
-
-{{/vms}}
-{{/subnets}}
 {{/if_ops}}
 
 &lt;x-policy-annotation:action:create-vpc&gt;
@@ -266,7 +334,7 @@
     a            spa:PolicyData;
     spa:type     nml:Topology;
     spa:value    """{{PolicyData type=type cidr=cidr parent=parent subnets=subnets routes=gateways/routes gateways=gateways}}""".
-{{!TODO type always internal in ServiceEngine, keep this behavior? }}
+{{! type always internal in ServiceEngine, keep this behavior? }}
 {{!TODO must add 0.0.0.0/0 and nexthop internet to routes}}
 {{!TODO gwVpn condition if gateways contains "vpn" in addition to AWS Direct Connect}}
 
