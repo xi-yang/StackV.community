@@ -136,9 +136,9 @@
 {{#routes}}
 {{!TODO this deals with from/to values that are objects with types etc, i'll have to grab an example to do this part}}
 {{#if from}}
-{{/if from}}
+{{/if }}
 {{#if to}}
-{{/if to}}
+{{/if }}
 {{/routes}}
 {{/if_eq}}
 {{/each}}
@@ -148,7 +148,34 @@
 .
 {{/if}}
 
-{{!TODO routes}}
+{{#if routes}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice&gt;
+     a   mrs:RoutingService;
+     mrs:providesRoutingTable     &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice:routingtable+linux&gt; .
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice:routingtable+linux&gt;
+     a   mrs:RoutingTable;
+     mrs:type   "linux";
+     mrs:hasRoute    
+     {{#routes}}
+     {{#unless @first}},{{/unless}}
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice:routingtable+linux:route+{{add @index 1}}&gt;
+      a  mrs:Route;
+     {{/routes}}
+     {{#routes}}
+{{#if to}}
+      mrs:routeTo "{{to}}"; {{!might have to format this differently, check networkAddressFromJson method}}
+{{/if}}
+{{#if from}}
+      mrs:routeFrom "{{from}}"; {{!might have to format this differently, check networkAddressFromJson method}}
+{{/if}}
+{{#if next_hop}}
+      mrs:nextHop "{{next_hop}}"; {{!might have to format this differently, check networkAddressFromJson method}}
+{{/if}}
+.
+     {{/routes}}
+.
+{{/if}}  {{! definitely need to trace through logic and fix punctuation/order}}
+
 {{!TODO ceph}}
 {{!TODO globus}}
 {{!TODO nfs}}
