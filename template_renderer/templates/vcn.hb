@@ -12,6 +12,8 @@
 @prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
 @prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
 
+{{!TODO refUuid}}
+
 &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_clouds:tag+vpc1&gt;
     a                         nml:Topology ;
 {{#gateways}}
@@ -38,20 +40,20 @@
 &lt;x-policy-annotation:data:vpc-export&gt;
     a            spa:PolicyData ;
     spa:type     "JSON" ;
-    spa:format   '{{PolicyData parent=../parent stitch_from="%$.gateways[?(@.type=='vpn-gateway')].uri%"}}'.
+    spa:format   """{{PolicyData parent=../parent stitch_from="%$.gateways[?(@.type=='vpn-gateway')].uri%"}}""".
 
 &lt;x-policy-annotation:data:conn-export&gt;
     a            spa:PolicyData;
     spa:type     "JSON" ;
-    spa:format   '{
+    spa:format   """{
     {{! discrepancy with wiki }}
         "to_l2path": "%$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%"
-    }' .
+    }""" .
 
 &lt;x-policy-annotation:data:conn-criteria1&gt;
     a            spa:PolicyData;
     spa:type     "JSON";
-    spa:value    '{
+    spa:value    """{
     {{! TODO }}
         "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
             "{{to}}": {
@@ -61,7 +63,7 @@
                 "vlan_tag":" + vlan + "
             }
         }
-    }'.
+    }""".
 {{else}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
 {{/if_eq}}
@@ -82,12 +84,8 @@
     {{~#interfaces}}
         {{~#if_eq type 'Ethernet'}}
         {{~#if address}} ;
-    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:eth0:floating&gt;.
-
-&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:eth0:floating&gt;
-    a            mrs:NetworkAddress;
-    mrs:type     "floating-ip";
-    mrs:value     "{{addressString name interfaces refUuid}}" .
+{{addressString name . refUuid}}
+                    {{! check addressString behavior (only last interface) }}
         {{~else}} .
         {{/if}}
         {{/if_eq}}
@@ -110,7 +108,52 @@
 {{#if_ops .}}
 {{#subnets}}
 {{#vms}}
-ops vm data
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
+    a                         nml:Node ;
+    nml:name         "{{name}}";
+{{#if type}}
+    mrs:type    "{{type}}"; {{!might also include things like image, etc}}
+{{/if}}
+    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt; ;
+{{#if routes}}
+    nml:hasService  &lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice&gt; ;
+{{/if}}
+    spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;.
+
+&lt;urn:ogf:network:service+{{refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;
+    a            nml:BidirectionalPort;
+    spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt;
+{{#if interfaces }}
+;
+{{addressString name interfaces refUuid}}  {{! check on conditional relating to blank addressString }}
+
+{{#interfaces}}
+{{#if_eq type 'SRIOV'}}
+
+
+{{#each ../../../gateways}}
+{{#if_eq name gateway}}
+{{#routes}}
+{{!TODO this deals with from/to values that are objects with types etc, i'll have to grab an example to do this part}}
+{{#if from}}
+{{/if from}}
+{{#if to}}
+{{/if to}}
+{{/routes}}
+{{/if_eq}}
+{{/each}}
+{{/if_eq}}
+{{/interfaces}}
+{{else}}
+.
+{{/if}}
+
+{{!TODO routes}}
+{{!TODO ceph}}
+{{!TODO globus}}
+{{!TODO nfs}}
+{{!TODO ops specific exports/loose-ends before general exportTo}}
+
 {{/vms}}
 {{/subnets}}
 {{/if_ops}}
@@ -135,7 +178,10 @@ ops vm data
 &lt;x-policy-annotation:data:vpc-criteria&gt;
     a            spa:PolicyData;
     spa:type     nml:Topology;
-    spa:value    '{{PolicyData type=type cidr=cidr parent=parent subnets=subnets routes=gateways/routes gateways=gateways}}'.
+    spa:value    """{{PolicyData type=type cidr=cidr parent=parent subnets=subnets routes=gateways/routes gateways=gateways}}""".
+{{!TODO type always internal in ServiceEngine, keep this behavior? }}
+{{!TODO must add 0.0.0.0/0 and nexthop internet to routes}}
+{{!TODO gwVpn condition if gateways contains "vpn" in addition to AWS Direct Connect}}
 
 </modelAddition>
 
