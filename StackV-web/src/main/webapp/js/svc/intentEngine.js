@@ -348,6 +348,11 @@ function renderInputs(arr, $parent) {
                     $input.val("Select");
                     break;
             }
+            
+            if (ele.children[0].innerHTML.toLowerCase() === "name" && ele.parentElement.tagName === "group") {
+                $input.attr("data-name", ele.parentElement.getAttribute("name") + "_1");
+                $input.val(ele.parentElement.getAttribute("name") + "_1");
+            }
 
             // Handle potential element modifiers
             if (ele.getElementsByTagName("size").length > 0) {
@@ -941,7 +946,8 @@ function buildClone(key, target, $factoryBtn) {
     if ($factoryBtn) {
         refreshNumerals($factoryBtn.parent().parent());
     }
-
+    
+    refreshNames();
     enforceBounds();
 
     if ($clone.children(".collapse").length > 0) {
@@ -1010,6 +1016,24 @@ function refreshNumerals($ele) {
             }
         }
     }
+}
+function refreshNames() {
+    var $nameArr = $("[data-name]");
+    for (var i = 0; i < $nameArr.length; i++) {
+        var $input = $($nameArr[i]);
+        var name = $input.data("name");
+        
+        var $parent = $input.parent();
+        while (!$parent.hasClass("intent-group-div")) {
+            $parent = $parent.parent();
+            if (!$parent) 
+                return;
+        }
+        var numName = $parent.children(".group-header").children(".group-name").text();
+        name = name.split("_")[0] + "_" + numName.split("#")[1];
+        $input.val(name);
+    }
+
 }
 
 function moderateControls() {

@@ -2836,9 +2836,7 @@ public class WebResource {
             if (roleSet.contains(serviceType)) {
                 String username = accessToken.getPreferredUsername();
                 inputJSON.remove("username");
-                inputJSON.put("username", username);
-                
-                System.out.println(inputJSON.toJSONString());
+                inputJSON.put("username", username);                                
 
                 executorService.execute(new Runnable() {
                     @Override
