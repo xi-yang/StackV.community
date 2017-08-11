@@ -348,7 +348,7 @@ function renderInputs(arr, $parent) {
                     $input.val("Select");
                     break;
             }
-            
+
             if (ele.children[0].innerHTML.toLowerCase() === "name" && ele.parentElement.tagName === "group") {
                 $input.attr("data-name", ele.parentElement.getAttribute("name") + "_1");
                 $input.val(ele.parentElement.getAttribute("name") + "_1");
@@ -622,118 +622,118 @@ function recursivelyFactor(id, ele) {
 
 function submitIntent(save) {
     gsap["intent"].reverse();
-        refreshLinks();
-        $(".intent-input.invalid").removeClass("invalid");
-        $(".intent-input-message").remove();
+    refreshLinks();
+    $(".intent-input.invalid").removeClass("invalid");
+    $(".intent-input-message").remove();
 
-        // Validate
-        var validation = $("[data-valid]");
-        var valid = true;
-        for (var i = 0; i < validation.length; i++) {
-            var $input = $(validation[i]);
-            if (isEnabledInput($input)) {
-                var validRef = $input.data("valid");
-                var validEle = intent.children[0].getElementsByTagName("validation")[0];
-                var constEle = null;
-                for (var j = 0; j < validEle.children.length; j++) {
-                    var constraint = validEle.children[j];
-                    if (constraint.children[0].innerHTML === validRef) {
-                        constEle = constraint;
-                        break;
-                    }
+    // Validate
+    var validation = $("[data-valid]");
+    var valid = true;
+    for (var i = 0; i < validation.length; i++) {
+        var $input = $(validation[i]);
+        if (isEnabledInput($input)) {
+            var validRef = $input.data("valid");
+            var validEle = intent.children[0].getElementsByTagName("validation")[0];
+            var constEle = null;
+            for (var j = 0; j < validEle.children.length; j++) {
+                var constraint = validEle.children[j];
+                if (constraint.children[0].innerHTML === validRef) {
+                    constEle = constraint;
+                    break;
                 }
-                if (constEle) {
-                    var regex = constEle.children[1].innerHTML;
-                    regex = regex.replace(/\\/g, "\\");
-                    regex = new RegExp(regex, "gm");
+            }
+            if (constEle) {
+                var regex = constEle.children[1].innerHTML;
+                regex = regex.replace(/\\/g, "\\");
+                regex = new RegExp(regex, "gm");
 
-                    var $message = $("<div>", {class: "intent-input-message"});
-                    if (constEle.getElementsByTagName("message").length > 0) {
-                        $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
-                    }
+                var $message = $("<div>", {class: "intent-input-message"});
+                if (constEle.getElementsByTagName("message").length > 0) {
+                    $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
+                }
 
-                    $input.parent().append($message);
+                $input.parent().append($message);
 
-                    if (($input.val() === null || $input.val() === "")) {
-                        if ($input.data("required")) {
-                            valid = false;
-                            $input.addClass("invalid");
-                            var $stage = $($input.parents(".intent-stage-div")[0]);
-                            $("#prog-" + $stage.attr("id")).addClass("invalid");
-                        }
-                    } else if ($input.val().match(regex) === null) {
+                if (($input.val() === null || $input.val() === "")) {
+                    if ($input.data("required")) {
                         valid = false;
                         $input.addClass("invalid");
                         var $stage = $($input.parents(".intent-stage-div")[0]);
                         $("#prog-" + $stage.attr("id")).addClass("invalid");
                     }
+                } else if ($input.val().match(regex) === null) {
+                    valid = false;
+                    $input.addClass("invalid");
+                    var $stage = $($input.parents(".intent-stage-div")[0]);
+                    $("#prog-" + $stage.attr("id")).addClass("invalid");
                 }
             }
         }
+    }
 
-        if (valid) {
-            // Parse manifest
-            var json = {};
-            $("#intent-panel-body .intent-input").each(function () {
-                var cond = $(this).parents('.conditional').length;
-                if (cond > 0 && $(this).parents('.conditioned').length < cond) {
-                    ;
-                } else {
-                    var arr = this.id.split("-");
-
-                    var last = json;
-                    var i;
-                    for (i = 1; i < (arr.length - 1); i++) {
-                        var key = arr[i];
-                        if (!(key in last)) {
-                            last[key] = {};
-                        }
-                        last = last[key];
-                    }
-                    var key = arr[i];
-                    if ($(this).attr("type") === "checkbox") {
-                        last[key] = $(this).is(":checked");
-                    } else {
-                        last[key] = $(this).val();
-                    }
-                }
-            });
-
-            manifest = json;
-            parseManifestIntoJSON();
-
-            // Check for saving
-            if (save) {
-                openSaveModal();
-                setTimeout(function () {
-                    gsap["intent"].play();
-                }, 250);
+    if (valid) {
+        // Parse manifest
+        var json = {};
+        $("#intent-panel-body .intent-input").each(function () {
+            var cond = $(this).parents('.conditional').length;
+            if (cond > 0 && $(this).parents('.conditioned').length < cond) {
+                ;
             } else {
-                // Submit to backend
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
-                $.ajax({
-                    url: apiUrl,
-                    type: 'POST',
-                    data: JSON.stringify(package),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function (result) {
-                        window.location.href = "/StackV-web/ops/catalog.jsp";
-                    },
-                    error: function (result) {
-                        window.location.href = "/StackV-web/ops/catalog.jsp";
+                var arr = this.id.split("-");
+
+                var last = json;
+                var i;
+                for (i = 1; i < (arr.length - 1); i++) {
+                    var key = arr[i];
+                    if (!(key in last)) {
+                        last[key] = {};
                     }
-                });
+                    last = last[key];
+                }
+                var key = arr[i];
+                if ($(this).attr("type") === "checkbox") {
+                    last[key] = $(this).is(":checked");
+                } else {
+                    last[key] = $(this).val();
+                }
             }
-        } else {
+        });
+
+        manifest = json;
+        parseManifestIntoJSON();
+
+        // Check for saving
+        if (save) {
+            openSaveModal();
             setTimeout(function () {
                 gsap["intent"].play();
-            }, 500);
+            }, 250);
+        } else {
+            // Submit to backend
+            var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+            $.ajax({
+                url: apiUrl,
+                type: 'POST',
+                data: JSON.stringify(package),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                },
+                success: function (result) {
+                    window.location.href = "/StackV-web/ops/catalog.jsp";
+                },
+                error: function (result) {
+                    window.location.href = "/StackV-web/ops/catalog.jsp";
+                }
+            });
         }
+    } else {
+        setTimeout(function () {
+            gsap["intent"].play();
+        }, 500);
+    }
 }
 
 // UTILITY FUNCTIONS
@@ -946,7 +946,7 @@ function buildClone(key, target, $factoryBtn) {
     if ($factoryBtn) {
         refreshNumerals($factoryBtn.parent().parent());
     }
-    
+
     refreshNames();
     enforceBounds();
 
@@ -1021,17 +1021,19 @@ function refreshNames() {
     var $nameArr = $("[data-name]");
     for (var i = 0; i < $nameArr.length; i++) {
         var $input = $($nameArr[i]);
-        var name = $input.data("name");
-        
-        var $parent = $input.parent();
-        while (!$parent.hasClass("intent-group-div")) {
-            $parent = $parent.parent();
-            if (!$parent) 
-                return;
+        if ($input.val().match(new RegExp(/^connection_\d+$/))) {
+            var name = $input.data("name");
+
+            var $parent = $input.parent();
+            while (!$parent.hasClass("intent-group-div")) {
+                $parent = $parent.parent();
+                if (!$parent)
+                    return;
+            }
+            var numName = $parent.children(".group-header").children(".group-name").text();
+            name = name.split("_")[0] + "_" + numName.split("#")[1];
+            $input.val(name);
         }
-        var numName = $parent.children(".group-header").children(".group-name").text();
-        name = name.split("_")[0] + "_" + numName.split("#")[1];
-        $input.val(name);
     }
 
 }
@@ -1184,7 +1186,7 @@ function parseManifestIntoJSON() {
             manifest["uuid"] = result;
 
             // Render template
-            var rendered = render(manifest);            
+            var rendered = render(manifest);
             delete manifest["uuid"];
             delete manifest["data"]["uuid"];
 
