@@ -909,6 +909,7 @@ function buildClone(key, target, $factoryBtn) {
 
             $ele.remove();
             refreshNumerals($first);
+            refreshNames();
             enforceBounds();
         }, 500);
     });
@@ -1021,7 +1022,7 @@ function refreshNames() {
     var $nameArr = $("[data-name]");
     for (var i = 0; i < $nameArr.length; i++) {
         var $input = $($nameArr[i]);
-        if ($input.val().match(new RegExp(/^connection_\d+$/))) {
+        if ($input.val() === "" || $input.val().match(new RegExp(/^connection_\d+$/))) {
             var name = $input.data("name");
 
             var $parent = $input.parent();
