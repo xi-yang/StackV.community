@@ -172,6 +172,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 if (bridgePath == null) {
                     throw logger.error_throwing(method, String.format("cannot find bridging path in connection '%s' for terminal '%s'", connId, terminalX));
                 }
+                //mark mac_list for bridgePath from path(0).object to terminalX if (path.size > 1)
+                if (bridgePath.size() > 1 && ((JSONObject)jsonConnReq.get(terminalX.getURI())).containsKey("mac_list") 
+                        && ((JSONObject)jsonConnReq.get(bridgePath.get(0).getObject().toString())).containsKey("mac_list") ) {
+                    lookupMacsForOpenflowPorts(bridgePath, transformedModel, jsonConnReq, bridgePath.get(0).getObject().asResource(), terminalX);
+                }
                 mpvbPath.addAll(bridgePath);
                 mpvbPath.getOntModel().add(bridgePath.getOntModel().getBaseModel());
             }
@@ -242,6 +247,16 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     bridgeOpenflowService = shortenBridgePath(transformedModel, mpvbPath, bridgePath);
                     Resource bridgePort = bridgePath.get(0).getSubject();
                     Resource bridgePortNext = bridgePath.get(0).getObject().asResource();
+                    // get mac_list of bridgeOpenflowService to bridgePortNext
+                    if (!jsonConnReq.containsKey(bridgeOpenflowService.getURI())) {
+                        throw logger.error_throwing(method, "no mac_list for bridgeOpenflowService"+bridgeOpenflowService);
+                    }
+                    String bridgeOfMacList = (String)((JSONObject)jsonConnReq.get(bridgeOpenflowService.getURI())).get("mac_list");
+                    if (!jsonConnReq.containsKey(bridgePortNext.getURI())) {
+                        jsonConnReq.put(bridgePortNext.getURI(), new JSONObject());
+                    }
+                    ((JSONObject)jsonConnReq.get(bridgePortNext.getURI())).put("mac_list", bridgeOfMacList);
+                    ((JSONObject)jsonConnReq.get(bridgeOpenflowService.getURI())).put("mac_list", bridgeOfMacList+bridgeMacList);
                     // initial vlanRange in of bridgePort could be full range but will eventually constrained by terminalX
                     boolean verified;
                     try {
@@ -279,7 +294,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                             if (bridgePathModel == null) {
                                 continue;
                             }
-                            // return the first feasible bridge path @TODO: picking with optimization criteria
+                            // return the first feasible bridge path of KSP from the first feasible openflowPort of openflowPorts 
+                            // @TODO: picking with optimization criteria OR random from all of the openflowPorts and their KSPs
                             bridgePath.setOntModel(bridgePathModel);
                             return bridgePath;
                         }
@@ -314,6 +330,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         Resource bridgeSvc = bridgePath.get(0).getObject().asResource();
         Iterator<Statement> itStmt = bridgePath.iterator();
         itStmt.next();
+        //find the fartherest bridgePort on bridgePath that diverges from connPath (share OfSvc with another port)
         while (itStmt.hasNext()) {
             Statement stmt = itStmt.next();
             Resource resDiverge = stmt.getSubject();
@@ -334,6 +351,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 }
             }
         }
+        //remove segment before the divergence (remaning segment still in port-port-ofsvc-... form) 
         itStmt = bridgePath.iterator();
         while (itStmt.hasNext()) {
             Statement stmt = itStmt.next();
@@ -734,13 +752,14 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             Statement link = itStmt.next();
             Resource res1 = link.getSubject();
             Resource resX = link.getObject().asResource();
+            if (!refModel.contains(res1, RdfOwl.type, Nml.BidirectionalPort)
+                    || !refModel.contains(resX, RdfOwl.type, Mrs.OpenflowService)) {
+                continue;
+            }
             if (itStmt.hasNext()) {
-                Iterator<Statement> itStmtNext = itStmt;
-                link = itStmtNext.next();
+                link = itStmt.next();
                 Resource res2 = link.getObject().asResource();
-                if ( refModel.contains(res1, RdfOwl.type, Nml.BidirectionalPort) 
-                        && refModel.contains(res2, RdfOwl.type, Nml.BidirectionalPort)
-                        && refModel.contains(resX, RdfOwl.type, Mrs.OpenflowService) ) {
+                if (refModel.contains(res2, RdfOwl.type, Nml.BidirectionalPort) ) {
                     String port1 = MCETools.getNameForPort(refModel, res1);
                     String port2 = MCETools.getNameForPort(refModel, res2);
                     if (!jsonConnReq.containsKey(port1)) {
@@ -753,6 +772,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     }
                     ((JSONObject)jsonConnReq.get(port2)).put("mac_list", macList2);
                     //((JSONObject)jsonConnReq.get(port2)).put("openflow_service", resX);
+                    //combine mac addresses from two pors and put them to openflow_service
+                    if (!jsonConnReq.containsKey(resX.getURI())) {
+                        jsonConnReq.put(resX.getURI(), new JSONObject());
+                    }
+                    ((JSONObject)jsonConnReq.get(resX.getURI())).put("mac_list", macList1+macList2);
                 }
             }
 
