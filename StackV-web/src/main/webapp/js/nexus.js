@@ -33,7 +33,7 @@ var dataTable;
 $(function () {
     $.ajaxSetup({
         cache: false,
-        timeout: 15000
+        timeout: 60000
     });
 
     keycloak.init().success(function (authenticated) {
