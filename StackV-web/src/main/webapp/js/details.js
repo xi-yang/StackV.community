@@ -442,8 +442,7 @@ function buildDeltaTable(type) {
 }
 
 function loadVisualization() {
-    if (subState === "INIT") {
-
+    if (subState !== "INIT") {
         $("#details-viz").load("/StackV-web/details_viz.html", function () {
             document.getElementById("visual-panel").innerHTML = "";
 
