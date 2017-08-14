@@ -822,7 +822,7 @@ function instructionModerate() {
                         + verificationRun + ")";
                 break;
             case "FAILED":
-                if (verificationRun > 0) {
+                if (verificationRun > 0 && verificationRun < 30) {
                     blockString = "Service has failed. Please see logging for more information. (Run "
                             + verificationRun + ")";
                 } else {
@@ -907,7 +907,7 @@ function buttonModerate() {
             break;
     }
 
-    if (verificationRun > 0) {
+    if (verificationRun > 0 && verificationRun < 30) {
         $("#verify").html("Cancel Verification");
         $("#verify").attr("id", "unverify");
     }
