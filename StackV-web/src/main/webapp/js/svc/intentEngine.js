@@ -629,6 +629,11 @@ function submitIntent(save) {
     // Validate
     var validation = $("[data-valid]");
     var valid = true;
+    if (!$("#meta-alias").val()) {
+        valid = false;
+        $("#meta-alias").addClass("invalid");
+    }
+
     for (var i = 0; i < validation.length; i++) {
         var $input = $(validation[i]);
         if (isEnabledInput($input)) {
@@ -1188,7 +1193,6 @@ function parseManifestIntoJSON() {
 
             // Render template
             var rendered = render(manifest);
-            delete manifest["uuid"];
             delete manifest["data"]["uuid"];
 
             package["service"] = intentType;
@@ -1457,22 +1461,23 @@ function saveManifest() {
 // TESTING
 
 function preloadDNC() {
-    $("button[data-factory=connections-connection-terminal]").click();
-
     $("#meta-alias").val("Preloaded DNC Test");
-
     $("#connections-type").val("Multi-Point VLAN Bridge");
-    $("#connections-connection_num1-name").val("mpvb1");
 
-    $("#connections-connection_num1-terminal_num1-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_1:port=openflow_1_1");
-    $("#connections-connection_num1-terminal_num1-vlan_tag").val("101");
+    setTimeout(function () {
+        $("button[data-factory=connections-connection-terminal]").click();
+        $("#connections-connection_num1-name").val("mpvb1");
 
-    $("#connections-connection_num1-terminal_num2-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_2:port=openflow_2_1");
-    $("#connections-connection_num1-terminal_num2-vlan_tag").val("102");
-    $("#connections-connection_num1-terminal_num2-mac_address_list").val("02:50:f2:00:00:01,02:50:f2:00:00:04");
+        $("#connections-connection_num1-terminal_num1-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_1:port=openflow_1_1");
+        $("#connections-connection_num1-terminal_num1-vlan_tag").val("101");
 
-    $("#connections-connection_num1-terminal_num3-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_3:port=openflow_3_1");
-    $("#connections-connection_num1-terminal_num3-vlan_tag").val("103");
+        $("#connections-connection_num1-terminal_num2-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_2:port=openflow_2_1");
+        $("#connections-connection_num1-terminal_num2-vlan_tag").val("102");
+        $("#connections-connection_num1-terminal_num2-mac_address_list").val("02:50:f2:00:00:01,02:50:f2:00:00:04");
+
+        $("#connections-connection_num1-terminal_num3-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_3:port=openflow_3_1");
+        $("#connections-connection_num1-terminal_num3-vlan_tag").val("103");
+    }, 200);
 }
 function preloadAWSVCN() {
     $("#meta-alias").val("Preloaded VCN AWS Test");

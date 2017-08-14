@@ -64,17 +64,14 @@ public class ServiceHandler {
     public ServiceHandler(JSONObject input, TokenHandler initToken) {
         token = initToken;
 
-        logger.trace("ServiceHandler", "Service Handler initialized");
         createInstance(input);
     }
 
     public ServiceHandler(String refUUID, TokenHandler initToken) {
         this.refUUID = refUUID;
         logger.refuuid(refUUID);
-
         token = initToken;
 
-        logger.trace("ServiceHandler", "Service Handler initialized: " + refUUID);
         loadInstance(refUUID);
     }
 
@@ -85,7 +82,7 @@ public class ServiceHandler {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            logger.start(method);
+            logger.start(method, inputJSON.toJSONString());
 
             type = (String) inputJSON.get("service");
             alias = (String) inputJSON.get("alias");
@@ -183,8 +180,6 @@ public class ServiceHandler {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            logger.trace_start(method);
-
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);

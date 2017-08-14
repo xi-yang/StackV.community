@@ -114,7 +114,7 @@ button:focus {
     color: #eee;
     pointer-events: none;
 }
-.intent-input.invalid {
+.intent-input.invalid, #meta-alias.invalid {
     border: 1px solid red;
     color: red;
 }

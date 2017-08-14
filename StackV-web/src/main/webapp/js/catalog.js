@@ -389,7 +389,7 @@ function loadEditor() {
                 tbody.appendChild(row);
             }
             $(document).on('click', '.button-service-select', function (evt) {
-                var ref = "/StackV-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
+                var ref = "/StackV-web/ops/intent_test.html?intent=" + this.id.toLowerCase();
                 window.location.href = ref;
 
                 evt.preventDefault();
