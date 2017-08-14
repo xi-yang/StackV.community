@@ -92,6 +92,7 @@ class ServiceEngine {
                 sleep(5000);//wait for 5 seconds and check again later        
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());                
+                lastState = result;
             }
             logger.trace_end(method);
             result = verify(refUuid, token);
@@ -106,7 +107,7 @@ class ServiceEngine {
             }
             logger.catching(method, ex);
         } finally {
-            logger.trace_start("updateLastState");
+            logger.trace_start("updateLastState", lastState);
 
             Connection front_conn = null;
             PreparedStatement prep = null;
