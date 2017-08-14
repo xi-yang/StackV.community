@@ -94,7 +94,7 @@ class ServiceEngine {
                 result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());                
                 lastState = result;
             }
-            logger.trace_end(method);
+            logger.trace(method, "Committed");
             result = verify(refUuid, token);
 
             lastState = result;
