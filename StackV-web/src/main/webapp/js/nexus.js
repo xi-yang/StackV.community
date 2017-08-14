@@ -727,8 +727,8 @@ function forceReinstateInstance(uuid) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
-            window.location.reload(true);
-        }
+            window.location.reload(true); 
+       }
     });
     //window.location.replace('/StackV-web/ops/catalog.jsp');
 }
