@@ -67,7 +67,7 @@ class ServiceEngine {
         String method = "orchestrateInstance";
         String result;
         String lastState = "INIT";
-        logger.start(method);
+        logger.start(method, svcDelta);
         try {
             // Cache serviceDelta.
             int results = cacheServiceDelta(refUuid, svcDelta, deltaUUID);

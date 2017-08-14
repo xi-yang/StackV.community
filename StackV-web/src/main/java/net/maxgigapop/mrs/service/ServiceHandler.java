@@ -82,7 +82,7 @@ public class ServiceHandler {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            logger.start(method, inputJSON.toJSONString());
+            logger.start(method);
 
             type = (String) inputJSON.get("service");
             alias = (String) inputJSON.get("alias");

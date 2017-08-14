@@ -1161,7 +1161,7 @@ function formatChild(d) {
     if (d.referenceUUID !== "") {
         retString += '<tr>' +
                 '<td>UUID:</td>' +
-                '<td><textarea class="dataTables-child">' + d.referenceUUID + '</textarea></td>' +
+                '<td>' + d.referenceUUID + '</td>' +
                 '</tr>';
     }
     retString += '<tr>' +
