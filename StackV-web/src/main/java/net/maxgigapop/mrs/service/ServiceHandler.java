@@ -90,6 +90,12 @@ public class ServiceHandler {
 
             String delta = (String) inputJSON.get("data");
             String deltaUUID = (String) inputJSON.get("uuid");
+            
+            if (deltaUUID == null) {
+                deltaUUID = delta.split("<uuid>")[1].split("</uuid>")[0];
+            }
+            
+            System.out.println("TESTME: " + deltaUUID);
 
             // Find user ID.
             try {

@@ -69,9 +69,9 @@ function loadCatalog() {
 
     if (getURLParameter("profiles")) {
         openCatalog();
-        setTimeout(function() {
+        setTimeout(function () {
             $($("ul.catalog-tabs").children()[0]).children().click();
-        }, 200);        
+        }, 200);
     }
 
     $("#black-screen").click(function () {
@@ -222,56 +222,62 @@ function loadWizard() {
             });
 
             $(".button-profile-submit").on("click", function (evt) {
-                var profile = JSON.parse($("#info-panel-text-area").val());
-                profile["alias"] = $("#profile-alias").val();
+                if ($("#profile-alias").val()) {
+                    var profile = JSON.parse($("#info-panel-text-area").val());
+                    profile["alias"] = $("#profile-alias").val();
 
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
-                $.ajax({
-                    url: apiUrl,
-                    async: false,
-                    type: 'GET',
-                    dataType: "text",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function (result) {
-                        var manifest = profile;
-                        manifest["uuid"] = result;
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
+                    $.ajax({
+                        url: apiUrl,
+                        async: false,
+                        type: 'GET',
+                        dataType: "text",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        },
+                        success: function (result) {
+                            var manifest = profile;
+                            manifest["uuid"] = result;
 
-                        // Render template
-                        var rendered = render(manifest);
-                        delete manifest["uuid"];
+                            // Render template
+                            var rendered = render(manifest);
+                            delete manifest["uuid"];
 
-                        profile["data"] = rendered;
+                            profile["data"] = rendered;
 
-                        var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
-                        $.ajax({
-                            url: apiUrl,
-                            type: 'POST',
-                            data: JSON.stringify(profile),
-                            contentType: "application/json; charset=utf-8",
-                            dataType: "json",
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                            },
-                            success: function (result) {
-                            },
-                            error: function (textStatus, errorThrown) {
-                                console.log(textStatus);
-                                console.log(errorThrown);
-                            }
-                        });
-                    }
-                });
-
-                // reload top table and hide modal
-                reloadData();
-                $("div#profile-modal").modal("hide");
-                $("#black-screen").addClass("off");
-                $("#info-panel").removeClass("active");
-                evt.preventDefault();
+                            var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                            $.ajax({
+                                url: apiUrl,
+                                type: 'POST',
+                                data: JSON.stringify(profile),
+                                contentType: "application/json; charset=utf-8",
+                                dataType: "json",
+                                beforeSend: function (xhr) {
+                                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                                    xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                                },
+                                success: function (result) {
+                                },
+                                error: function (textStatus, errorThrown) {
+                                    console.log(textStatus);
+                                    console.log(errorThrown);
+                                }
+                            });
+                        }
+                    });
+                    // reload top table and hide modal
+                    reloadData();
+                    $("div#profile-modal").modal("hide");
+                    $("#black-screen").addClass("off");
+                    $("#info-panel").removeClass("active");
+                    evt.preventDefault();
+                } else {
+                    $("#profile-alias").addClass("invalid");
+                    $("#profile-alias").onChange(function() {
+                        $(this).removeClass("invalid");
+                    });
+                }
             });
 
             // Hide the regular buttons and reveal the save as box
