@@ -110,7 +110,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
         	Map<String, String> properties = driverInstance.getProperties();
             String
     				topologyURI = DriverPropertyValidator.validateAndReturn("topologyUri", properties, DriverPropertyType.Generic),
-            		pullInvokePattern = DriverPropertyValidator.validateAndReturn("retrieval-cmd-pattern", properties, DriverPropertyType.Command),
+            		pullInvokePattern = DriverPropertyValidator.validateAndReturn("retrieval-pattern", properties, DriverPropertyType.Command),
             		endpoint = DriverPropertyValidator.validateAndReturn("src-endpoint", properties, DriverPropertyType.Generic),
             		addressStr = DriverPropertyValidator.validateAndReturn("addresses", properties, DriverPropertyType.DottedQuad, DriverPropertyType.DottedQuadList);
             Map<String, String[]> pullCommandArgMap = new HashMap<>();

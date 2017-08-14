@@ -60,15 +60,14 @@ public class CCSNDriver implements IHandleDriverSystemCall {
     @Asynchronous
     public Future<String> pullModel(Long driverInstanceId) {
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
-        if (driverInstance == null) {
+        if (driverInstance == null)
             throw new EJBException(String.format("pullModel cannot find driverInstance(id=%d)", driverInstanceId));
-        }
 
         try {
         	// Retrieve instance configuration properties and package pull command parameters for CCSNPull module
             Map<String, String> configs = driverInstance.getProperties();
             String topologyURI = DriverPropertyValidator.validateAndReturn("topologyUri", configs, DriverPropertyType.Generic),
-            	   executable = DriverPropertyValidator.validateAndReturn("retrieval-cmd-pattern", configs, DriverPropertyType.Command);
+            	   executable = DriverPropertyValidator.validateAndReturn("retrieval-pattern", configs, DriverPropertyType.Command);
             
             List<String> executableParams = extractCmdParamNames(executable);
             Map<String, String[]> pullUtilArgMap = new HashMap<>();
@@ -85,21 +84,21 @@ public class CCSNDriver implements IHandleDriverSystemCall {
             
             // Map login node IDs, IPs and associated cluster IDs configs to login node, assemble pull utility command params on per-node basis and associate with node configs
             String[]
-            		ids = idStr.split(delimiterPattern),
-            		loginNodeIPs = loginNodeIPStr.split(delimiterPattern),
-            		clusterNames = clusterNameStr.split(delimiterPattern);
+                    ids = idStr.split(delimiterPattern),
+                    loginNodeIPs = loginNodeIPStr.split(delimiterPattern),
+                    clusterNames = clusterNameStr.split(delimiterPattern);
             for (int i = 0; i < ids.length; ++i) {
             	// Splitting on delimiter pattern [\(\)] will create empty matches between consecutive ) and ( in all cases, so skip iteration
             	if (ids[i].isEmpty())
-            		continue;
+                    continue;
             	List<Object> mapped = new ArrayList<>();
             	mapped.add(loginNodeIPs[i]);
             	mapped.add(clusterNames[i]);
             	
             	Map<String, String> pullUtilParams = new HashMap<>();
             	for (String key : pullUtilArgMap.keySet()) {
-            		String[] propertyVals = pullUtilArgMap.get(key);
-            		pullUtilParams.put(key, propertyVals.length > 1 ? propertyVals[i] : propertyVals[0]);
+                    String[] propertyVals = pullUtilArgMap.get(key);
+                    pullUtilParams.put(key, propertyVals.length > 1 ? propertyVals[i] : propertyVals[0]);
             	}
             	mapped.add(pullUtilParams);
             	endpointConfigurationMap.put(ids[i], mapped);
@@ -128,11 +127,11 @@ public class CCSNDriver implements IHandleDriverSystemCall {
         return new AsyncResult<>("SUCCESS");
     }
     
-	private static List<String> extractCmdParamNames(String cmdPattern) {
-		List<String> params = new ArrayList<>();
-		Matcher matcher = Pattern.compile("(?<=@|#|\\$|%)[\\w\\-_]+").matcher(cmdPattern);
-		while(matcher.find())
-			params.add(matcher.group(0));
-		return params;
-	}
+    private static List<String> extractCmdParamNames(String cmdPattern) {
+        List<String> params = new ArrayList<>();
+        Matcher matcher = Pattern.compile("(?<=@|#|\\$|%)[\\w\\-_]+").matcher(cmdPattern);
+        while(matcher.find())
+            params.add(matcher.group(0));
+        return params;
+    }
 }
