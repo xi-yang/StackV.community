@@ -17,8 +17,8 @@
 
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_clouds:tag+vpc1&gt;
     a                         nml:Topology ;
-{{#gateways}}
-    {{#if_eq type 'AWS Direct Connect'}}
+{{#if_directConnect gateways}}
+    {{#gateways}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;, &lt;x-policy-annotation:action:create-mce_dc1&gt; .
 
 &lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;
@@ -64,11 +64,10 @@
             }
         }
     }""".
+    {{/gateways}}
     {{else}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
-    {{/if_eq}}
-{{/gateways}}
-
+{{/if_directConnect}}
 {{#if_aws .}} {{! AWS }}
     {{#subnets}}
         {{#vms}}
@@ -81,16 +80,7 @@
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;
     a           nml:BidirectionalPort;
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;
-            {{~#interfaces}}
-                {{~#if_eq type 'Ethernet'}}
-                    {{~#if address}} ;
-{{addressString name . @root.refUuid}}
-                    {{!TODO create address for every }}
-                    {{! check addressString behavior (only first interface) }}
-                    {{~else}} .
-                    {{/if}}
-                {{/if_eq}}
-            {{/interfaces}}
+{{addressString name interfaces @root.refUuid}}
 
 &lt;x-policy-annotation:action:create-{{@root.refUuid}}&gt;
     a            spa:PolicyAction ;
@@ -259,7 +249,7 @@
     spa:exportTo   
         {{#vms}}
             {{#sriovs}}
-&lt;x-policy-annotation:data:{{../name}}-sriov"{{@index}}"-criteria&gt;{{#unless @../last}},{{/unless}}
+&lt;x-policy-annotation:data:{{../name}}-sriov{{@index}}-criteria&gt;{{#unless @../last}},{{/unless}}
             {{/sriovs}}
         {{/vms}}
 
@@ -268,7 +258,6 @@
     a            spa:PolicyData;
     spa:type     "JSON";
     spa:value    """ {
-    {{/if_createPathExportTo}}
             {{#vms}}
                 {{#if interfaces }}
                     {{#sriovs}}
@@ -284,8 +273,9 @@
                     {{/sriovs}}
                 {{/if}}
             {{/vms}}
-    {{/if}}
     } """ .
+    {{/if_createPathExportTo}}
+    {{/if}}
 
 {{! svcDeltaCeph }}
     {{#vms}}
@@ -357,7 +347,7 @@ mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+vir
 lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs:exports&gt;
    a mrs:NetworkAddress ;
    mrs:type "nfs:exports";
-   mrs:value "{{exports}}".
+   mrs:value "{{{exports}}}".
             {{/if}}
         {{/nfs}}
     {{/vms}}
@@ -380,8 +370,6 @@ lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../
         {{/sriovs}}
     {{/vms}}
     {{/subnets}}
-{{/if_ops}}
-
 &lt;x-policy-annotation:action:create-vpc&gt;
     a           spa:PolicyAction ;
     spa:type     "MCE_VirtualNetworkCreation" ;
@@ -398,6 +386,7 @@ lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../
 .
     {{/if}}
 {{/subnets}}
+{{/if_ops}}
 
 &lt;x-policy-annotation:data:vpc-criteria&gt;
     a            spa:PolicyData;
