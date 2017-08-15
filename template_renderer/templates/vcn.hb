@@ -12,14 +12,13 @@
 @prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
 @prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
 
-{{!TODO polish punctuation/whitespace after base templates work }}
-{{!-- should probably start nesting blocks in a more visual way, it's getting hairy. was intially
-      avoiding because of whitespace weirdness, but the actual text can just be left as is --}}
+{{!TODO polish punctuation/whitespace/order after base templates are working}}
+{{! check ServiceEngine logic for if_eq, some ignore case}}
 
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_clouds:tag+vpc1&gt;
     a                         nml:Topology ;
 {{#gateways}}
-{{#if_eq type 'AWS Direct Connect'}}
+    {{#if_eq type 'AWS Direct Connect'}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;, &lt;x-policy-annotation:action:create-mce_dc1&gt; .
 
 &lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;
@@ -65,14 +64,14 @@
             }
         }
     }""".
-{{else}}
+    {{else}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
-{{/if_eq}}
+    {{/if_eq}}
 {{/gateways}}
 
 {{#if_aws .}} {{! AWS }}
-{{#subnets}}
-{{#vms}}
+    {{#subnets}}
+        {{#vms}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
     a           nml:Node ;
     nml:name    "{{name}}";
@@ -82,16 +81,16 @@
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;
     a           nml:BidirectionalPort;
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;
-    {{~#interfaces}}
-        {{~#if_eq type 'Ethernet'}}
-        {{~#if address}} ;
+            {{~#interfaces}}
+                {{~#if_eq type 'Ethernet'}}
+                    {{~#if address}} ;
 {{addressString name . @root.refUuid}}
                     {{!TODO create address for every }}
                     {{! check addressString behavior (only first interface) }}
-        {{~else}} .
-        {{/if}}
-        {{/if_eq}}
-    {{/interfaces}}
+                    {{~else}} .
+                    {{/if}}
+                {{/if_eq}}
+            {{/interfaces}}
 
 &lt;x-policy-annotation:action:create-{{@root.refUuid}}&gt;
     a            spa:PolicyAction ;
@@ -104,40 +103,63 @@
     spa:type    "JSON";
     spa:format  """{
         "place_into": "%$.subnets[{{@index}}].uri%"}""" .
-{{/vms}}
-{{/subnets}}
+        {{/vms}}
+    {{/subnets}}
 {{/if_aws}}
 
-
-
 {{#if_ops .}} {{! OPS }}
-{{#subnets}}
-{{#vms}}
+    {{#subnets}}
+        {{#vms}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
     a                         nml:Node ;
     nml:name         "{{name}}";
-{{#if type}}
-    mrs:type    "{{type}}"; {{!might also include things like image, etc}} {{!TODO ASK}}
-{{/if}}
+            {{#if type}}
+    mrs:type    "{{type}}"; {{!TODO includes other pieces (image, etc) }}
+            {{/if}}
     nml:hasBidirectionalPort   &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt; ;
-{{#if routes}}
+            {{#if routes}}
     nml:hasService  &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice&gt; ;
-{{/if}}
+            {{/if}}
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;.
 
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;
     a            nml:BidirectionalPort;
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt;
-{{#if interfaces }}
+            {{#if interfaces }}
 ;
 {{addressString name interfaces @root.refUuid}}  {{! check on conditional relating to blank addressString }}
-{{else}}
+            {{#sriovs}}
+                {{#each ../../../gateways}}
+                    {{#if_eq name ../gateway}}
+                        {{#if_eq routes.0.type 'port_profile'}}
+                            {{#if routes.0.from}}
+&lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{../../name}}-sriov{{@../index}}&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_UcsSriovStitching" ;
+    spa:dependOn &lt;x-policy-annotation:action:create-{{../../name}}&gt;, &lt;x-policy-annotation:action:create-{{../../name}}-eth0&gt;;
+    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{../../name}}-sriov{{@../index}}&gt;.
+
+&lt;x-policy-annotation:data:sriov-criteria-external-{{../../name}}-sriov{{@../index}}&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
+    spa:value    """ {
+        "stitch_from": "urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../../name}}",
+        "to_port_profile": "{{routes.0.from}}",
+        "mac_address": "{{sriovMac ../address}}"
+        {{sriovIP ../address}}
+                                {{#if routes}}
+        ,   "routes" : {{toJSON routes}} {{!TODO check if desired format/data, can be changed to routes.[0] }}
+                                {{/if}}
+        } """ .
+                            {{/if}}
+                        {{/if_eq}}
+                    {{/if_eq}}
+                {{/each}}
+            {{/sriovs}}
+            {{else}}
 .
-{{/if}}
-{{/vms}}
-{{SRIOV @root.refUuid @root.parent @root.routes @root.gateways name interfaces 'sriov'}}
-{{#vms}}
-{{#if routes}}
+            {{/if}}
+            {{#if routes}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice&gt;
      a   mrs:RoutingService;
      mrs:providesRoutingTable     &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice:routingtable+linux&gt; .
@@ -145,39 +167,39 @@
      a   mrs:RoutingTable;
      mrs:type   "linux";
      mrs:hasRoute    
-     {{#routes}}
+                {{#routes}}
      {{#unless @first}},{{/unless}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:routingservice:routingtable+linux:route+{{add @index 1}}&gt;
       a  mrs:Route;
-     {{/routes}}
-     {{#routes}}
-{{#if to}}
+                {{/routes}}
+                {{#routes}}
+                    {{#if to}}
       mrs:routeTo "{{to}}"; {{!might have to format this differently, check networkAddressFromJson method}}
-{{/if}}
-{{#if from}}
+                    {{/if}}
+                    {{#if from}}
       mrs:routeFrom "{{from}}"; {{!might have to format this differently, check networkAddressFromJson method}}
-{{/if}}
-{{#if next_hop}}
+                    {{/if}}
+                    {{#if next_hop}}
       mrs:nextHop "{{next_hop}}"; {{!might have to format this differently, check networkAddressFromJson method}}
-{{/if}}
-     {{/routes}}
+                    {{/if}}
+                {{/routes}}
 .
-{{/if}}  {{! definitely need to trace through logic and fix punctuation/order}}
+            {{/if}}
 
-{{#if ceph_rbd}}
-{{#ceph_rbd}}
+            {{#if ceph_rbd}}
+                {{#ceph_rbd}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;
    a  mrs:Volume;
    mrs:disk_gb "{{disk_gb}}";
    mrs:mount_point "{{mount_point}}".
-{{/ceph_rbd}}
+                {{/ceph_rbd}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}&gt;
    mrs:hasVolume        
-{{#ceph_rbd}} {{! ensure that ceph_rbd blocks will be handled in same order regardless of when called, if not, need to make a helper}}
+                {{#ceph_rbd}} {{! ensure that ceph_rbd blocks will be handled in same order regardless of when called, if not, need to make a helper}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;{{#unless @last}},{{/unless}}
-{{/ceph_rbd}}
+                {{/ceph_rbd}}
 .
-{{/if}}
+            {{/if}}
 
 &lt;x-policy-annotation:action:create-{{name}}&gt;
     a            spa:PolicyAction ;
@@ -202,60 +224,62 @@
     a           spa:PolicyData;
     spa:type    "JSON";
     spa:format  """{ "place_into": "%$.subnets[{{@../index}}].uri%"}""" .
-{{/vms}}
-{{/subnets}}
+        {{/vms}}
+    {{/subnets}}
 
-{{#if vms}}
+    {{#if vms}}
 &lt;x-policy-annotation:action:create-path&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_MPVlanConnection" ;
     spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;
     spa:exportTo   
-{{#vms}}
-&lt;x-policy-annotation:data:{{name}}-sriov" + i +{{!TODO sriov numbers, probably make a helper}} "-criteria&gt;{{#unless @last}},{{/unless}}
-{{/vms}}
+        {{#vms}}
+            {{#sriovs}}
+&lt;x-policy-annotation:data:{{../name}}-sriov"{{@index}}"-criteria&gt;{{#unless @../last}},{{/unless}}
+            {{/sriovs}}
+        {{/vms}}
 
 &lt;x-policy-annotation:data:conn-criteria&gt;\n"
     a            spa:PolicyData;\n"
     spa:type     \"JSON\";\n"
     spa:value    \"\"\"" + connCriteriaValue.toString().replace("\\", "") + "\"\"\".\n\n {{!TODO connCriteriaValue (related to sriov)}}
-{{/if}}
+    {{/if}}
 
 {{! svcDeltaCeph }}
-{{#vms}}
-{{#ceph_rbd}}
+    {{#vms}}
+        {{#ceph_rbd}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;
    a  mrs:Volume;
    mrs:disk_gb "{{disk_gb}}" ;
    mrs:mount_point "{{mount_point}}" .
-{{/ceph_rbd}}
-{{#if ceph_rbd}}
+        {{/ceph_rbd}}
+        {{#if ceph_rbd}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
     mrs:hasVolume       
-{{/if}}
-{{#ceph_rbd}}
+        {{/if}}
+        {{#ceph_rbd}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;{{#if @last}}.{{else}},{{/if}}
-{{/ceph_rbd}}
-{{/vms}}
+        {{/ceph_rbd}}
+    {{/vms}}
 
 {{! svcDeltaEndPoints}}
-{{#vms}}
-{{#globus_connect}}
+    {{#vms}}
+        {{#globus_connect}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus&gt;
    a  mrs:EndPoint ;
    mrs:type "globus:connect" ;
-{{#if username}}
+            {{#if username}}
     mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:username&gt; ;
-{{/if}}
-{{#if password}}
+            {{/if}}
+            {{#if password}}
     mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:password&gt; ;
-{{/if}}
-{{#if default_directory }}
+            {{/if}}
+            {{#if default_directory }}
     mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:directory&gt; ;
-{{/if}}
-{{#if data_interface}}
+            {{/if}}
+            {{#if data_interface}}
     mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:interface&gt; ;
-{{/if}}
+            {{/if}}
    nml:name "{{short_name}}" .
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}&gt;
    nml:hasService       &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus&gt;.
@@ -275,29 +299,44 @@
    a mrs:NetworkAddress ;
    mrs:type "globus:interface";
    mrs:value "{{data_interface}}" .
-{{/globus_connect}}
-{{/vms}}
-{{#vms}}
-{{#nfs}}
+        {{/globus_connect}}
+    {{/vms}}
+    {{#vms}}
+        {{#nfs}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs&gt;
    a  mrs:EndPoint ;
    mrs:type "nfs";
-{{#exports}}
+            {{#exports}}
 mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../../name}}:service+nfs:exports&gt; .
-{{/exports}}
+            {{/exports}}
 &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}&gt;
     nml:hasService       &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs&gt;.
-{{#if exports}}
+            {{#if exports}}
 lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs:exports&gt;
    a mrs:NetworkAddress ;
    mrs:type "nfs:exports";
    mrs:value "{{exports}}".
-{{/if}}
-{{/nfs}}
-{{/vms}}
-{{!TODO dependOn (also related to sriov)}}
-{{SRIOV @root.refUuid @root.parent @root.routes @root.gateways name interfaces 'dependOn'}}
+            {{/if}}
+        {{/nfs}}
+    {{/vms}}
 
+{{! dependOn }}
+    {{#vms}}
+        {{#sriovs}}
+            {{#each ../../../gateways}}
+                {{#if routes.0.from}}
+                    {{#if_eq type 'port_profile'}}
+&lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{../name}}-sriov{{@index}}&gt;,
+                    {{/if_eq}}
+                {{/if}}
+                {{#if routes.0.to}}
+                    {{#if_eq type 'stitch_port'}}
+&lt;x-policy-annotation:action:ucs-{{../name}}-sriov{{@index}}-stitch&gt;,
+                    {{/if_eq}}
+                {{/if}}
+            {{/each}}
+        {{/sriovs}}
+    {{/vms}}
 {{/if_ops}}
 
 &lt;x-policy-annotation:action:create-vpc&gt;
@@ -306,15 +345,15 @@ lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../
     spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt;
 
 {{#subnets}}
-{{#if vms}}
+    {{#if vms}}
 ;
     spa: exportTo &lt;x-policy-annotation:data:vpc-export&gt;,  
-{{~#vms}}
-&lt;x-policy-annotation:data:vpc-subnet-" + vmPara[0] + "-criteria&gt;{{#unless @last}},{{/unless}}
-{{/vms}}
-{{else}}
+        {{~#vms}}
+&lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;{{#unless @last}},{{/unless}}
+        {{/vms}}
+    {{else}}
 .
-{{/if}}
+    {{/if}}
 {{/subnets}}
 
 &lt;x-policy-annotation:data:vpc-criteria&gt;
