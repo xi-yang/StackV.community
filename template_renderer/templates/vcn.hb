@@ -131,8 +131,9 @@
             {{#sriovs}}
                 {{#each ../../../gateways}}
                     {{#if_eq name ../gateway}}
-                        {{#if_eq routes.0.type 'port_profile'}}
-                            {{#if routes.0.from}}
+
+                        {{#if routes.0.from}}
+                            {{#if_eq routes.0.type 'port_profile'}}
 &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{../../name}}-sriov{{@../index}}&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_UcsSriovStitching" ;
@@ -151,8 +152,30 @@
         ,   "routes" : {{toJSON routes}} {{!TODO check if desired format/data, can be changed to routes.[0] }}
                                 {{/if}}
         } """ .
-                            {{/if}}
-                        {{/if_eq}}
+                            {{/if_eq}}
+                        {{/if}}
+                        {{#if routes.0.to}}
+                            {{#if_eq routes.0.type 'stitch_port'}}
+&lt;x-policy-annotation:action:ucs-{{../../name}}-sriov{{@../index}}-stitch&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_UcsSriovStitching" ;
+    spa:dependOn &lt;x-policy-annotation:action:create-{{../../name}}&gt;, &lt;x-policy-annotation:action:create-path&gt;;
+    spa:importFrom &lt;x-policy-annotation:data:{{../../name}}-sriov{{@../index}}-criteria&gt; .
+
+&lt;x-policy-annotation:data:{{../../name}}-sriov{{@../index}}-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
+    spa:format   """ {
+       "stitch_from": "urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../../name}}", {{!TODO ensure every reference to 'name' is in correct context}}
+       "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{../name}}%,
+       "mac_address": "{{sriovMac ../address}}"
+        {{sriovIP ../address}}
+                                {{#if routes}}
+        ,   "routes" : {{toJSON routes}} {{!TODO same as above }}
+                                {{/if}}
+        } """ .
+                            {{/if_eq}}
+                        {{/if}}
                     {{/if_eq}}
                 {{/each}}
             {{/sriovs}}
@@ -227,6 +250,7 @@
         {{/vms}}
     {{/subnets}}
 
+    {{#subnets}}
     {{#if vms}}
 &lt;x-policy-annotation:action:create-path&gt;
     a            spa:PolicyAction ;
@@ -239,11 +263,29 @@
             {{/sriovs}}
         {{/vms}}
 
-&lt;x-policy-annotation:data:conn-criteria&gt;\n"
-    a            spa:PolicyData;\n"
-    spa:type     \"JSON\";\n"
-    spa:value    \"\"\"" + connCriteriaValue.toString().replace("\\", "") + "\"\"\".\n\n {{!TODO connCriteriaValue (related to sriov)}}
+    {{#if_createPathExportTo @root}}
+&lt;x-policy-annotation:data:conn-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
+    spa:value    """ {
+    {{/if_createPathExportTo}}
+            {{#vms}}
+                {{#if interfaces }}
+                    {{#sriovs}}
+                        {{#each ../../../gateways}}
+                            {{#if_eq name ../gateway}}
+                                {{#if routes.0.to}}
+                                    {{#if_eq routes.0.type 'stitch_port'}}
+                                    {{!TODO example JSON doesn't use this piece yet }}
+                                    {{/if_eq}}
+                                {{/if}}
+                            {{/if_eq}}
+                        {{/each}}
+                    {{/sriovs}}
+                {{/if}}
+            {{/vms}}
     {{/if}}
+    } """ .
 
 {{! svcDeltaCeph }}
     {{#vms}}
@@ -337,6 +379,7 @@ lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../
             {{/each}}
         {{/sriovs}}
     {{/vms}}
+    {{/subnets}}
 {{/if_ops}}
 
 &lt;x-policy-annotation:action:create-vpc&gt;
