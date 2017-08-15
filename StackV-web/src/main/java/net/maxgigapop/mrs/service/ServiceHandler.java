@@ -527,7 +527,7 @@ public class ServiceHandler {
             prep = front_conn.prepareStatement("UPDATE service_verification V "
                     + "INNER JOIN service_instance I "
                     + "ON V.service_instance_id = I.service_instance_id AND I.referenceUUID = ? "
-                    + "SET V.verification_state = ?, V.verification_run = 0");
+                    + "SET V.verification_state = ?, V.verification_run = 0, V.enabled = 1");
             prep.setString(1, refUUID);
             prep.setNull(2, java.sql.Types.INTEGER);
             prep.executeUpdate();
