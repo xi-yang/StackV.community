@@ -47,7 +47,7 @@ div#instance-panel {
     height: calc(90% - 42px);
     width: calc(100% - 80px);
     position: absolute;
-    overflow-y: scroll;
+    overflow-y: auto;
     top: calc(-90% + 42px);
 }
 

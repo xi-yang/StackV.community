@@ -118,7 +118,7 @@ public class WebResource {
                 "Driver Management",
                 "Installation and Uninstallation of Driver Instances."));
 
-        result.put("netcreate", Arrays.asList(
+        result.put("vcn", Arrays.asList(
                 "Virtual Cloud Network",
                 "Network Creation Pilot Testbed."));
 

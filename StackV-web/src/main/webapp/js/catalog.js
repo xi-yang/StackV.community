@@ -274,7 +274,7 @@ function loadWizard() {
                     evt.preventDefault();
                 } else {
                     $("#profile-alias").addClass("invalid");
-                    $("#profile-alias").onChange(function() {
+                    $("#profile-alias").change(function() {
                         $(this).removeClass("invalid");
                     });
                 }

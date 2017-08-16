@@ -65,7 +65,7 @@ function loadIntent(type) {
                         preloadAHC();
                         break;
                     case "vcn":
-                        preloadAWSVCN();
+                        preloadOPSVCN();
                         break;
                 }
             }
@@ -74,6 +74,10 @@ function loadIntent(type) {
             console.log('Error Loading XML! \n' + err);
         }
     });
+
+    refreshTimer = setInterval(function () {
+        keycloak.updateToken(90);
+    }, (60000));
 }
 
 function renderIntent() {
@@ -130,6 +134,7 @@ function initializeIntent() {
             $activeStage = $div;
             gsap[id].play();
             $prog.addClass("active");
+            $activeStage.addClass("active");
         }
 
         $progress.append($prog);
@@ -151,6 +156,9 @@ function initMeta(meta) {
     // Render service tag
     var $panel = $("#intent-panel-meta");
     $("#meta-title").text(meta.children[0].innerHTML);
+    $("#meta-alias").change(function () {
+        $(this).removeClass("invalid");        
+    });
 
     // Render blocks
     var $blockDiv = $("<div>").attr("id", "intent-panel-meta-block");
@@ -787,9 +795,11 @@ function prevStage() {
         $activeProg.prev().addClass("active");
 
         var currID = $activeStage.attr("id");
+        $activeStage.removeClass("active");
         var prevID = $prev.attr("id");
         gsap[currID].reverse();
         $activeStage = $prev;
+        $activeStage.addClass("active");
 
         moderateControls();
 
@@ -826,9 +836,11 @@ function nextStage(flag) {
         $activeProg.next().addClass("active");
 
         var currID = $activeStage.attr("id");
+        $activeStage.removeClass("active");
         var nextID = $next.attr("id");
         gsap[currID].reverse();
         $activeStage = $next;
+        $activeStage.addClass("active");
 
         moderateControls();
 
@@ -923,7 +935,7 @@ function buildClone(key, target, $factoryBtn) {
     if ($factoryBtn) {
         $factoryBtn.parent().parent().after($clone);
     } else {
-        $parent.append($clone);
+        $target.append($clone);
     }
 
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
@@ -1476,7 +1488,7 @@ function preloadDNC() {
 
         $("#connections-connection_num1-terminal_num3-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_3:port=openflow_3_1");
         $("#connections-connection_num1-terminal_num3-vlan_tag").val("103");
-    }, 200);
+    }, 500);
 }
 function preloadAWSVCN() {
     $("#meta-alias").val("Preloaded VCN AWS Test");
@@ -1501,6 +1513,48 @@ function preloadAWSVCN() {
 
     $("#gateways-gateway_num1-name").val("TestGate");
     $("#gateways-gateway_num1-route_num1-to").val("TestTo");
+}
+function preloadOPSVCN() {
+    $("#meta-alias").val("Preloaded VCN OPS Test");
+    //$("[name=block-gateways]").val(2);
+    //$("[name=block-sriovs]").val(2);
+
+    setTimeout(function () {
+        $("#details-network-parent").val("urn:ogf:network:aws.amazon.com:openstack-cloud");
+        $("#details-network-type").val("internal");
+        $("#details-network-cidr").val("10.0.0.0/16");
+
+        $("#subnets-subnet_num1-name").val("subnet1");
+        $("#subnets-subnet_num1-cidr").val("10.0.0.0/24");
+        $("#subnets-subnet_num1-default_routing").prop("checked", true);
+
+        $("#vms-vm_num1-name").val("ops-vtn1-vm1");
+        $("#vms-vm_num1-subnet_host").val("subnet_num1");
+        $("#vms-vm_num1-keypair_name").val("demo-key");
+        $("#vms-vm_num1-security_group").val("rains");
+        $("#vms-vm_num1-route_num1-to").val("0.0.0.0/0");
+        $("#vms-vm_num1-route_num1-next_hop").val("206.196.179.145");
+
+        $("#gateways-gateway_num1-name").val("ceph-net");
+        $("#gateways-gateway_num1-type").val("UCS Port Profile");
+        $("#gateways-gateway_num1-route_num1-from").val("Ceph-Storage");
+        $("#gateways-gateway_num1-route_num1-type").val("port_profile");
+        $("#gateways-gateway_num2-name").val("ext-net");
+        $("#gateways-gateway_num2-type").val("UCS Port Profile");
+        $("#gateways-gateway_num2-route_num1-from").val("External-Access");
+        $("#gateways-gateway_num2-route_num1-type").val("port_profile");
+
+        $("#sriovs-sriov_num1-hosting_gateway").val("gateway_num1");
+        $("#sriovs-sriov_num1-hosting_vm").val("vm_num1");
+        $("#sriovs-sriov_num1-name").val("ops-vtn1:vm2:eth2");
+        $("#sriovs-sriov_num1-ip_address").val("10.10.200.164");
+        $("#sriovs-sriov_num1-mac_address").val("aa:bb:cc:ff:01:12");
+        $("#sriovs-sriov_num2-hosting_gateway").val("gateway_num2");
+        $("#sriovs-sriov_num2-hosting_vm").val("vm_num1");
+        $("#sriovs-sriov_num2-name").val("ops-vtn1:vm1:eth1");
+        $("#sriovs-sriov_num2-ip_address").val("206.196.179.157");
+        $("#sriovs-sriov_num2-mac_address").val("aa:bb:cc:dd:01:57");
+    }, 500);
 }
 function preloadAHC() {
     $("#meta-alias").val("Preloaded AHC Test");
