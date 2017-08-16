@@ -100,11 +100,6 @@ class ServiceEngine {
             lastState = result;
             logger.end(method, "Verified");
         } catch (EJBException | IOException | InterruptedException | SQLException ex) {
-            try {
-                verify(refUuid, token);
-            } catch (SQLException | IOException | InterruptedException ex2) {
-                logger.catching(method, ex2);
-            }
             logger.catching(method, ex);
         } finally {
             logger.trace_start("updateLastState", lastState);
