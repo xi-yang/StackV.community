@@ -69,6 +69,9 @@ function loadIntent(type) {
                         break;
                 }
             }
+            if (getURLParameter("fullTest")) {
+                parseTestManifest();
+            }
         },
         error: function (err) {
             console.log('Error Loading XML! \n' + err);
@@ -157,7 +160,7 @@ function initMeta(meta) {
     var $panel = $("#intent-panel-meta");
     $("#meta-title").text(meta.children[0].innerHTML);
     $("#meta-alias").change(function () {
-        $(this).removeClass("invalid");        
+        $(this).removeClass("invalid");
     });
 
     // Render blocks
@@ -237,10 +240,10 @@ function initMeta(meta) {
         nextStage();
     });
     $("#intent-submit").click(function () {
-        submitIntent(false);
+        submitIntent(0);
     });
     $("#intent-save").click(function () {
-        submitIntent(true);
+        submitIntent(1);
     });
 
     $("#button-profile-save").click(function () {
@@ -628,7 +631,7 @@ function recursivelyFactor(id, ele) {
     }
 }
 
-function submitIntent(save) {
+function submitIntent(mode) {
     gsap["intent"].reverse();
     refreshLinks();
     $(".intent-input.invalid").removeClass("invalid");
@@ -637,7 +640,7 @@ function submitIntent(save) {
     // Validate
     var validation = $("[data-valid]");
     var valid = true;
-    if (!$("#meta-alias").val()) {
+    if (!($("#meta-alias").val()) && mode === 0) {
         valid = false;
         $("#meta-alias").addClass("invalid");
     }
@@ -684,7 +687,7 @@ function submitIntent(save) {
         }
     }
 
-    if (valid) {
+    if (valid || mode === 2) {
         // Parse manifest
         var json = {};
         $("#intent-panel-body .intent-input").each(function () {
@@ -716,11 +719,13 @@ function submitIntent(save) {
         parseManifestIntoJSON();
 
         // Check for saving
-        if (save) {
+        if (mode === 1) {
             openSaveModal();
             setTimeout(function () {
                 gsap["intent"].play();
             }, 250);
+        } else if (mode === 2) {
+            console.log(JSON.stringify(manifest));
         } else {
             // Submit to backend
             var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
@@ -1201,10 +1206,12 @@ function parseManifestIntoJSON() {
         },
         success: function (result) {
             manifest["uuid"] = result;
+            manifest["conditions"] = conditions;
 
-            // Render template
+            // Render template            
             var rendered = render(manifest);
             delete manifest["data"]["uuid"];
+            delete manifest["data"]["conditions"];
 
             package["service"] = intentType;
             package["alias"] = $("#meta-alias").val();
@@ -1467,6 +1474,36 @@ function saveManifest() {
             window.location.href = "/StackV-web/ops/catalog.jsp?profiles=open";
         }
     });
+}
+function parseTestManifest() {
+    // Get all inputs.
+    $(".conditional").removeClass("conditional");
+    $(".intent-input").each(function () {
+        var tag = this.tagName;
+        var id = $(this).attr("id");
+        switch (tag) {
+            case "INPUT":
+                $(this).val(id);
+                break;
+            case "SELECT":
+                $(this).val($(this).children('option[value!=""][value]').first().val());
+                break;
+        }
+    });
+
+    // Render inputs.
+    submitIntent(2);
+
+    // Get all conditions.
+    var conArr = [];
+    $("[data-condition]").each(function () {
+        conArr.push($(this).data("condition"));
+    });
+    conArr = $.unique(conArr);
+    manifest["conditions"] = conArr;
+
+    $("body").css("background", "white");
+    $("body").html(JSON.stringify(manifest));
 }
 
 // TESTING
