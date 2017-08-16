@@ -2,7 +2,7 @@
     var addressMRL = '';
     interfaces.forEach(function(i) {
         var addressString = undefined;
-        if (i.type == 'Ethernet' && i.hasOwnProperty('address')) {
+        if (i.type.toUpperCase() === 'ETHERNET' && i.hasOwnProperty('address')) {
             addressString = i.address;
             addressString = addressString.includes('ipv') ? addressString.substring(addressString.indexOf('ipv') + 5) : addresString;
             addressString = addressString.includes('/') ? addressString.substring(0, addressString.indexOf('/')) : addressString;

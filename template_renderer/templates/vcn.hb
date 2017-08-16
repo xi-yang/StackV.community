@@ -15,7 +15,7 @@
 {{!TODO polish punctuation/whitespace/order after base templates are working}}
 {{! check ServiceEngine logic for if_eq, some ignore case}}
 
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_clouds:tag+vpc1&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_clouds:tag+vpc1&gt;
     a                         nml:Topology ;
 {{#if_directConnect gateways}}
     {{#gateways}}
@@ -71,24 +71,24 @@
 {{#if_aws .}} {{! AWS }}
     {{#subnets}}
         {{#vms}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
     a           nml:Node ;
     nml:name    "{{name}}";
-    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;;
+    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;;
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt; .
 
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;
     a           nml:BidirectionalPort;
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;
-{{addressString name interfaces @root.refUuid}}
+{{addressString name interfaces @root.uuid}}
 
-&lt;x-policy-annotation:action:create-{{@root.refUuid}}&gt;
+&lt;x-policy-annotation:action:create-{{@root.uuid}}&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_VMFilterPlacement" ;
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
-    spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-{{@root.refUuid}}-criteria&gt;.
+    spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-{{@root.uuid}}-criteria&gt;.
 
-&lt;x-policy-annotation:data:vpc-subnet-{{@root.refUuid}}-criteria&gt;
+&lt;x-policy-annotation:data:vpc-subnet-{{@root.uuid}}-criteria&gt;
     a           spa:PolicyData;
     spa:type    "JSON";
     spa:format  """{
@@ -100,27 +100,27 @@
 {{#if_ops .}} {{! OPS }}
     {{#subnets}}
         {{#vms}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
     a                         nml:Node ;
     nml:name         "{{name}}";
             {{#if type}}
     mrs:type    "{{type}}"; {{!TODO includes other pieces (image, etc) }}
             {{/if}}
-    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt; ;
+    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt; ;
             {{#if routes}}
-    nml:hasService  &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice&gt; ;
+    nml:hasService  &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:routingservice&gt; ;
             {{/if}}
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;.
 
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt;
     a            nml:BidirectionalPort;
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt;
             {{#if interfaces }}
 ;
-{{addressString name interfaces @root.refUuid}}  {{! check on conditional relating to blank addressString }}
+{{addressString name interfaces @root.uuid}}  {{! check on conditional relating to blank addressString }}
             {{#sriovs}}
                 {{#each ../../../gateways}}
-                    {{#if_eq name ../gateway}}
+                    {{#if_eq name ../hosting_gateway}}
 
                         {{#if routes.0.from}}
                             {{#if_eq routes.0.type 'port_profile'}}
@@ -134,10 +134,10 @@
     a            spa:PolicyData;
     spa:type     "JSON";
     spa:value    """ {
-        "stitch_from": "urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../../name}}",
+        "stitch_from": "urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../../name}}",
         "to_port_profile": "{{routes.0.from}}",
-        "mac_address": "{{sriovMac ../address}}"
-        {{sriovIP ../address}}
+        "mac_address": "{{../mac_address}}"
+        {{sriovIP ../ip_address}}
                                 {{#if routes}}
         ,   "routes" : {{toJSON routes}} {{!TODO check if desired format/data, can be changed to routes.[0] }}
                                 {{/if}}
@@ -156,7 +156,7 @@
     a            spa:PolicyData;
     spa:type     "JSON";
     spa:format   """ {
-       "stitch_from": "urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../../name}}", {{!TODO ensure every reference to 'name' is in correct context}}
+       "stitch_from": "urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../../name}}", {{!TODO ensure every reference to 'name' is in correct context}}
        "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{../name}}%,
        "mac_address": "{{sriovMac ../address}}"
         {{sriovIP ../address}}
@@ -173,16 +173,16 @@
 .
             {{/if}}
             {{#if routes}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:routingservice&gt;
      a   mrs:RoutingService;
-     mrs:providesRoutingTable     &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice:routingtable+linux&gt; .
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}:routingservice:routingtable+linux&gt;
+     mrs:providesRoutingTable     &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:routingservice:routingtable+linux&gt; .
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:routingservice:routingtable+linux&gt;
      a   mrs:RoutingTable;
      mrs:type   "linux";
      mrs:hasRoute    
                 {{#routes}}
      {{#unless @first}},{{/unless}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:routingservice:routingtable+linux:route+{{add @index 1}}&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:routingservice:routingtable+linux:route+{{add @index 1}}&gt;
       a  mrs:Route;
                 {{/routes}}
                 {{#routes}}
@@ -201,15 +201,15 @@
 
             {{#if ceph_rbd}}
                 {{#ceph_rbd}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;
    a  mrs:Volume;
    mrs:disk_gb "{{disk_gb}}";
    mrs:mount_point "{{mount_point}}".
                 {{/ceph_rbd}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}&gt;
    mrs:hasVolume        
                 {{#ceph_rbd}} {{! ensure that ceph_rbd blocks will be handled in same order regardless of when called, if not, need to make a helper}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;{{#unless @last}},{{/unless}}
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;{{#unless @last}},{{/unless}}
                 {{/ceph_rbd}}
 .
             {{/if}}
@@ -262,7 +262,7 @@
                 {{#if interfaces }}
                     {{#sriovs}}
                         {{#each ../../../gateways}}
-                            {{#if_eq name ../gateway}}
+                            {{#if_eq name ../hosting_gateway}}
                                 {{#if routes.0.to}}
                                     {{#if_eq routes.0.type 'stitch_port'}}
                                     {{!TODO example JSON doesn't use this piece yet }}
@@ -280,54 +280,54 @@
 {{! svcDeltaCeph }}
     {{#vms}}
         {{#ceph_rbd}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;
    a  mrs:Volume;
    mrs:disk_gb "{{disk_gb}}" ;
    mrs:mount_point "{{mount_point}}" .
         {{/ceph_rbd}}
         {{#if ceph_rbd}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{name}}&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
     mrs:hasVolume       
         {{/if}}
         {{#ceph_rbd}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;{{#if @last}}.{{else}},{{/if}}
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;{{#if @last}}.{{else}},{{/if}}
         {{/ceph_rbd}}
     {{/vms}}
 
 {{! svcDeltaEndPoints}}
     {{#vms}}
         {{#globus_connect}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus&gt;
    a  mrs:EndPoint ;
    mrs:type "globus:connect" ;
             {{#if username}}
-    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:username&gt; ;
+    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:username&gt; ;
             {{/if}}
             {{#if password}}
-    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:password&gt; ;
+    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:password&gt; ;
             {{/if}}
             {{#if default_directory }}
-    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:directory&gt; ;
+    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:directory&gt; ;
             {{/if}}
             {{#if data_interface}}
-    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:interface&gt; ;
+    mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:interface&gt; ;
             {{/if}}
    nml:name "{{short_name}}" .
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}&gt;
-   nml:hasService       &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus&gt;.
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:username&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}&gt;
+   nml:hasService       &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus&gt;.
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:username&gt;
    a mrs:NetworkAddress ;
    mrs:type "globus:username";
    mrs:value "{{username}}" .
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:password&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:password&gt;
    a mrs:NetworkAddress ;
    mrs:type "globus:password";
    mrs:value "{{password}}" .
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:directory&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:directory&gt;
    a mrs:NetworkAddress ;
    mrs:type "globus:directory";
    mrs:value "{{default_directory}}" .
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:interface&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+globus:interface&gt;
    a mrs:NetworkAddress ;
    mrs:type "globus:interface";
    mrs:value "{{data_interface}}" .
@@ -335,16 +335,16 @@
     {{/vms}}
     {{#vms}}
         {{#nfs}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs&gt;
    a  mrs:EndPoint ;
    mrs:type "nfs";
             {{#exports}}
-mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../../name}}:service+nfs:exports&gt; .
+mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../../name}}:service+nfs:exports&gt; .
             {{/exports}}
-&lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}&gt;
-    nml:hasService       &lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs&gt;.
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}&gt;
+    nml:hasService       &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs&gt;.
             {{#if exports}}
-lt;urn:ogf:network:service+{{@root.refUuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs:exports&gt;
+lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs:exports&gt;
    a mrs:NetworkAddress ;
    mrs:type "nfs:exports";
    mrs:value "{{{exports}}}".
