@@ -131,11 +131,7 @@ function compile_templates() {
 function render(intent) {
     try {
         intent.data.uuid = intent.uuid;
-        var render = templates[intent.service](intent.data);
-        if (!render) {
-            console.log("Template " + intent.service + "could not be rendered.\nPlease check filelist!");
-        }
-        return render;
+        return templates[intent.service](intent.data);
     } catch (err) {
         //log.error(err);
     }
