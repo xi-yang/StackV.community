@@ -13,7 +13,6 @@
 @prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
 
 {{!TODO polish punctuation/whitespace/order after base templates are working}}
-{{! check ServiceEngine logic for if_eq, some ignore case}}
 
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_clouds:tag+vpc1&gt;
     a                         nml:Topology ;
@@ -68,7 +67,7 @@
     {{else}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
 {{/if_directConnect}}
-{{#if_aws .}} {{! AWS }}
+{{#if_aws conditions}} {{! AWS }}
     {{#subnets}}
         {{#vms}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
@@ -97,7 +96,7 @@
     {{/subnets}}
 {{/if_aws}}
 
-{{#if_ops .}} {{! OPS }}
+{{#if_ops conditions}} {{! OPS }}
     {{#subnets}}
         {{#vms}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;

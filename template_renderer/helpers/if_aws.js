@@ -1,6 +1,10 @@
-(function(context, opts) {
-    if (context.parent == 'urn:ogf:network:aws.amazon.com:aws-cloud')
+(function(conditions, opts) {
+    function isAWS(condition) {
+        return condition == 'aws-form';
+    }
+    if (conditions.some(isAWS)) {
         return opts.fn(this);
-    else
+    } else {
         return opts.inverse(this);
+    }
 });

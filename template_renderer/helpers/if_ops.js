@@ -1,6 +1,10 @@
-(function(context, opts) {
-    if (context.parent == 'urn:ogf:network:openstack.com:openstack-cloud')
+(function(conditions, opts) {
+    function isOPS(condition) {
+        return condition == 'openstack-form';
+    }
+    if (conditions.some(isOPS)) {
         return opts.fn(this);
-    else
+    } else {
         return opts.inverse(this);
+    }
 });
