@@ -339,6 +339,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         return bridgeSvc;
     }
     
+    //@TODO: use action name and value for URI, add mrs:order 
     private OntModel createBridgePathFlows(OntModel transformedModel, MCETools.Path mpvbPath, OntModel bridgePathModel,
             Resource bridgeOpenflowService, Resource bridgePort, String bridgeVlanTag, JSONObject jsonConnReq, Map portVlanMap) {
         String method="createBridgePathFlows";
@@ -451,7 +452,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         List<Resource> flowsInPath = new ArrayList();
         List<String> portsInPath = new ArrayList();
         List<String> vlansInPath = new ArrayList();
-        Character bridgePortActionOrder = 'A'; // order of actions in bridgeFlow will be A-B-C-D-D
+        Character bridgePortActionOrder = '0'; // order of actions in bridgeFlow will be A-B-C-D-D
         for (Resource mpvbFlow : mpvpFlowMap.keySet()) {
             Map flowParams = mpvpFlowMap.get(mpvbFlow);
             String flowInPort = (String) flowParams.get("port_in");
@@ -468,8 +469,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 portsInPath.add(flowInPort);
                 vlansInPath.add(flowInVlan);
             }
-            // order of actions in existing mpvbFlow: A-B-C-(D-E-...)->this = 'A' + flowOutPorts.length*2+1 
-            Character flowActionOrder = (char) ('A' + flowOutPorts.length * 2 + 1);
+            // order of actions in existing mpvbFlow: 0-1-(2-3)-(...)->this = '0' + flowOutPorts.length*2 
+            Character flowActionOrder = (char) ('0' + flowOutPorts.length * 2);
             /*
             Resource resFlowAction0 = RdfOwl.createResource(bridgePathModel, URI_action(mpvbFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
             bridgePathModel.add(bridgePathModel.createStatement(mpvbFlow, Mrs.flowAction, resFlowAction0));
@@ -660,6 +661,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         }
     }
     
+    //@TODO: use action name and value for URI, add mrs:order 
     private void createBridgeMacFlows(MCETools.Path mpvbPath, OntModel refModel, Resource resOfSvc,
             Resource resPortIn, String macListIn, Resource resPortOut, String macListOut, Map portVlanMap) {
         OntModel mpvbModel = mpvbPath.getOntModel();
@@ -708,7 +710,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 mpvbModel.add(mpvbModel.createStatement(resMacFlowMatch4, Mrs.type, "dl_dst"));
                 mpvbModel.add(mpvbModel.createStatement(resMacFlowMatch4, Mrs.value, outPortMac));
                 // actions A: set vlan id to bridgeVlanTag B: output to bridgePortName
-                Character flowActionOrder = 'A';
+                Character flowActionOrder = '0';
                 Resource resFlowActionA = RdfOwl.createResource(mpvbModel, URI_action(resMacFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
                 mpvbModel.add(mpvbModel.createStatement(resMacFlow, Mrs.flowAction, resFlowActionA));
                 mpvbModel.add(mpvbModel.createStatement(resFlowActionA, Mrs.type, "mod_vlan_vid"));
