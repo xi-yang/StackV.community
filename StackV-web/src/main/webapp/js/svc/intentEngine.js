@@ -160,7 +160,7 @@ function initMeta(meta) {
     var $panel = $("#intent-panel-meta");
     $("#meta-title").text(meta.children[0].innerHTML);
     $("#meta-alias").change(function () {
-        $(this).removeClass("invalid");        
+        $(this).removeClass("invalid");
     });
 
     // Render blocks
@@ -726,8 +726,7 @@ function submitIntent(mode) {
             }, 250);
         } else if (mode === 2) {
             console.log(JSON.stringify(manifest));
-        }
-        else {
+        } else {
             // Submit to backend
             var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
             $.ajax({
@@ -1476,34 +1475,34 @@ function saveManifest() {
         }
     });
 }
-function parseTestManifest() {    
+function parseTestManifest() {
     // Get all inputs.
-    $(".intent-input").each(function() {
+    $(".conditional").removeClass("conditional");
+    $(".intent-input").each(function () {
         var tag = this.tagName;
         var id = $(this).attr("id");
         switch (tag) {
             case "INPUT":
                 $(this).val(id);
                 break;
-            case "SELECT":                
+            case "SELECT":
                 $(this).val($(this).children('option[value!=""][value]').first().val());
-                break;            
-        }        
+                break;
+        }
     });
-    
+
     // Render inputs.
     submitIntent(2);
-    
-    // Get all conditions
-    $(".conditional").removeClass("conditional");
+
+    // Get all conditions.
     var conArr = [];
-    $("[data-condition]").each(function() {
+    $("[data-condition]").each(function () {
         conArr.push($(this).data("condition"));
     });
     conArr = $.unique(conArr);
-    manifest["conditions"] = conArr;    
-    
-    $("body").css("background","white");
+    manifest["conditions"] = conArr;
+
+    $("body").css("background", "white");
     $("body").html(JSON.stringify(manifest));
 }
 
