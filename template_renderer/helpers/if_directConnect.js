@@ -1,8 +1,10 @@
 (function(gateways, opts) {
-    gateways.forEach(function(g) {
-        if (g.type === 'AWS Direct Connect') {
-            return opts.fn(this);
-        }
-    });
-    return opts.inverse(this);
+    function isDC(gateway) {
+        return gateway === 'AWS Direct Connect';
+    }
+    if (gateways.some(isDC)) {
+        return opts.fn(this);
+    } else {
+        return opts.inverse(this);
+    }
 });
