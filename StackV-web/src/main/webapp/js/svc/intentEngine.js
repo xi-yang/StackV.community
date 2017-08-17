@@ -62,10 +62,11 @@ function loadIntent(type) {
                         //preloadDNC();
                         break;
                     case "hybridcloud":
-                        preloadAHC();
+                        //preloadAHC();
                         break;
                     case "vcn":
-                        preloadOPSVCN();
+                        //preloadAWSVCN();
+                        //preloadOPSVCN();
                         break;
                 }
             }
@@ -1207,6 +1208,7 @@ function parseManifestIntoJSON() {
         success: function (result) {
             manifest["uuid"] = result;
             manifest["conditions"] = conditions;
+            manifest["data"]["conditions"] = conditions;
 
             // Render template            
             var rendered = render(manifest);
@@ -1551,13 +1553,40 @@ function preloadAWSVCN() {
     $("#gateways-gateway_num1-name").val("TestGate");
     $("#gateways-gateway_num1-route_num1-to").val("TestTo");
 }
+function preloadAWSVCN() {
+    $("#meta-alias").val("Preloaded VCN AWS Test");
+    //$("[name=block-gateways]").val(2);
+    //$("[name=block-sriovs]").val(2);
+
+    setTimeout(function () {
+        $("#details-network-parent").val("urn:ogf:network:aws.amazon.com:aws-cloud");
+        $("#details-network-type").val("internal");
+        $("#details-network-cidr").val("10.0.0.0/16");
+
+        $("#subnets-subnet_num1-name").val("subnet1");
+        $("#subnets-subnet_num1-cidr").val("10.0.0.0/24");       
+
+        $("#vms-vm_num1-name").val("ops-vtn1-vm1");
+        $("#vms-vm_num1-subnet_host").val("subnet_num1");
+        $("#vms-vm_num1-instance_type").val("m4.large");
+        $("#vms-vm_num1-keypair_name").val("driver_key");
+        $("#vms-vm_num1-security_group").val("geni");
+        $("#vms-vm_num1-image").val("ami-0d1bf860");
+        $("#vms-vm_num1-interface_num1-type").val("Ethernet");
+
+        $("#gateways-gateway_num1-name").val("l2path-aws-dc1");
+        $("#gateways-gateway_num1-type").val("AWS Direct Connect");
+        $("#gateways-gateway_num1-route_num1-to").val("urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*");
+        $("#gateways-gateway_num1-route_num1-type").val("stitch_port");
+    }, 500);
+}
 function preloadOPSVCN() {
     $("#meta-alias").val("Preloaded VCN OPS Test");
     //$("[name=block-gateways]").val(2);
     //$("[name=block-sriovs]").val(2);
 
     setTimeout(function () {
-        $("#details-network-parent").val("urn:ogf:network:aws.amazon.com:openstack-cloud");
+        $("#details-network-parent").val("urn:ogf:network:openstack.com:openstack-cloud");
         $("#details-network-type").val("internal");
         $("#details-network-cidr").val("10.0.0.0/16");
 

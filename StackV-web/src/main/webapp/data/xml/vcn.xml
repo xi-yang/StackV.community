@@ -152,19 +152,26 @@
             <input>
                 <name>Security Group</name>
                 <type>text</type>
-                <size>small</size>
                 <valid>string</valid>
             </input>
             <input>
                 <name>Keypair Name</name>
                 <type>text</type>
-                <size>small</size>
                 <valid>string</valid>
             </input>
-            <input>
-                <name>Host</name>
+            <input condition ="aws-form">
+                <name>Instance Type</name>
+                <type>text</type>                
+                <valid>string</valid>
+            </input>
+            <input condition="aws-form">
+                <name>Image</name>
                 <type>text</type>
-                <size>small</size>                
+                <valid>string</valid>
+            </input>
+            <input condition ="openstack-form">
+                <name>Host</name>
+                <type>text</type>               
                 <default>any</default>
                 <valid>string</valid>
             </input>

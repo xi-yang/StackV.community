@@ -1,6 +1,6 @@
 (function(conditions, opts) {
     function isAWS(condition) {
-        return condition == 'aws-form';
+        return condition === 'aws-form';
     }
     if (conditions.some(isAWS)) {
         return opts.fn(this);

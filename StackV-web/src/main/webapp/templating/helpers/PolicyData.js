@@ -1,3 +1,3 @@
 (function(data) {
-    return new handlebars.SafeString(JSON.stringify(data.hash));
-})
+    return new Handlebars.SafeString(JSON.stringify(data.hash));
+});

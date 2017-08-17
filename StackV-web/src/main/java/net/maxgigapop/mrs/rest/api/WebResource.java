@@ -126,7 +126,7 @@ public class WebResource {
                 "Dynamic Network Connection",
                 "Creation of new network connections."));
 
-        result.put("hybridcloud", Arrays.asList(
+        result.put("ahc", Arrays.asList(
                 "Advanced Hybrid Cloud",
                 "Advanced Hybrid Cloud Service."));
 

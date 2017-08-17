@@ -4,7 +4,7 @@
         var addressString = undefined;
         if (i.type.toUpperCase() === 'ETHERNET' && i.hasOwnProperty('address')) {
             addressString = i.address;
-            addressString = addressString.includes('ipv') ? addressString.substring(addressString.indexOf('ipv') + 5) : addresString;
+            addressString = addressString.includes('ipv') ? addressString.substring(addressString.indexOf('ipv') + 5) : addressString;
             addressString = addressString.includes('/') ? addressString.substring(0, addressString.indexOf('/')) : addressString;
         }
         if (addressString) {
@@ -13,5 +13,5 @@
                 '    a        mrs:NetworkAddress;\n    mrs:type   "floating-ip";\n' + '    mrs:value       "' + addressString + '" .\n\n';
         }
     });
-    return new handlebars.SafeString(addressMRL);
+    return new Handlebars.SafeString(addressMRL);
 });

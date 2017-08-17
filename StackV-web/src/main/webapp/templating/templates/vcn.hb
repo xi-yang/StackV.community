@@ -20,6 +20,8 @@
     {{#gateways}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;, &lt;x-policy-annotation:action:create-mce_dc1&gt; .
 
+{{log "A"}}
+
 &lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;
     a            mrs:SwitchingSubnet;
     spa:type     spa:Abstraction;
@@ -37,10 +39,14 @@
     spa:importFrom &lt;x-policy-annotation:data:vpc-export&gt;, &lt;x-policy-annotation:data:conn-export&gt; ;
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;, &lt;x-policy-annotation:action:create-path&gt;.
 
+{{log "B"}}
+
 &lt;x-policy-annotation:data:vpc-export&gt;
     a            spa:PolicyData ;
     spa:type     "JSON" ;
     spa:format   """{{PolicyData parent=../parent stitch_from="%$.gateways[?(@.type=='vpn-gateway')].uri%"}}""".
+
+{{log "C"}}
 
 &lt;x-policy-annotation:data:conn-export&gt;
     a            spa:PolicyData;
@@ -49,6 +55,8 @@
     {{! discrepancy with wiki }}
         "to_l2path": "%$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%"
     }""" .
+
+{{log "D"}}
 
 &lt;x-policy-annotation:data:conn-criteria1&gt;
     a            spa:PolicyData;
@@ -95,6 +103,10 @@
         {{/vms}}
     {{/subnets}}
 {{/if_aws}}
+
+
+{{log "E"}}
+
 
 {{#if_ops conditions}} {{! OPS }}
     {{#subnets}}
@@ -212,6 +224,10 @@
                 {{/ceph_rbd}}
 .
             {{/if}}
+
+
+{{log "F"}}
+
 
 &lt;x-policy-annotation:action:create-{{name}}&gt;
     a            spa:PolicyAction ;
@@ -351,6 +367,10 @@ lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../nam
         {{/nfs}}
     {{/vms}}
 
+
+{{log "G"}}
+
+
 {{! dependOn }}
     {{#vms}}
         {{#sriovs}}
@@ -386,6 +406,8 @@ lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../nam
     {{/if}}
 {{/subnets}}
 {{/if_ops}}
+
+{{log "H"}}
 
 &lt;x-policy-annotation:data:vpc-criteria&gt;
     a            spa:PolicyData;
