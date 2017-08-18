@@ -298,9 +298,14 @@ function renderInputs(arr, $parent) {
                 $div.attr("data-default", def);
             }
 
-            if (label === "false") {
-                var $groupName = $div.find(".group-name").addClass("unlabeled");
-                $groupName.text($groupName.text().split("#")[0]);
+            if (label) {
+                var $groupName = $div.find(".group-name");
+                if (label === "off") {
+                    $groupName.addClass("unlabeled");
+                    $groupName.text($groupName.text().split("#")[0]);
+                } else {
+                    $groupName.text(label + " #1");
+                }
             } else {
                 $div.addClass("labeled");
             }
@@ -386,7 +391,14 @@ function renderInputs(arr, $parent) {
             }
 
             if (ele.getElementsByTagName("default").length > 0) {
-                $input.attr("data-default", ele.getElementsByTagName("default")[0].innerHTML);
+                if (type === "checkbox") {
+                    if (ele.getElementsByTagName("default")[0].innerHTML === "true") {
+                        $input.attr("checked", true);
+                    }
+                }
+                if (!ele.getElementsByTagName("default")[0].getAttribute("first_only")) {
+                    $input.attr("data-default", ele.getElementsByTagName("default")[0].innerHTML);
+                }
                 $input.val(ele.getElementsByTagName("default")[0].innerHTML);
             }
             if (ele.getElementsByTagName("initial").length > 0) {
@@ -493,11 +505,14 @@ function renderInputs(arr, $parent) {
 
                 if (def) {
                     $input.val(def);
-                    var sel = $input.children(":selected");
-                    var trigger = sel.data("trigger");
-                    if (trigger) {
-                        addCondition(trigger);
-                    }
+                } else {
+                    $input.val($input.children("option:not(:disabled):first").val());
+                }
+
+                var sel = $input.children(":selected");
+                var trigger = sel.data("trigger");
+                if (trigger) {
+                    addCondition(trigger);
                 }
             }
             if (trigger) {
@@ -1391,8 +1406,8 @@ function recondition() {
     $("[data-condition-select]").attr("disabled", true);
 
     for (var i = 0; i < conditions.length; i++) {
-        $("[data-condition='" + conditions[i] + "']").addClass("conditioned");
-        $("[data-condition-select='" + conditions[i] + "']").removeAttr("disabled");
+        $("[data-condition~='" + conditions[i] + "']").addClass("conditioned");
+        $("[data-condition-select~='" + conditions[i] + "']").removeAttr("disabled");
     }
 }
 
@@ -1564,7 +1579,7 @@ function preloadAWSVCN() {
         $("#details-network-cidr").val("10.0.0.0/16");
 
         $("#subnets-subnet_num1-name").val("subnet1");
-        $("#subnets-subnet_num1-cidr").val("10.0.0.0/24");       
+        $("#subnets-subnet_num1-cidr").val("10.0.0.0/24");
 
         $("#vms-vm_num1-name").val("ops-vtn1-vm1");
         $("#vms-vm_num1-subnet_host").val("subnet_num1");
