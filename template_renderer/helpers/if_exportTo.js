@@ -3,7 +3,7 @@
         for (var vm in subnet.vms) {
             for (var sriov in vm.sriovs) {
                 for (var gateway in context.gateways) {
-                    if (sriov.gateway === gateway.name && gateway.type === 'L2 Stitch Port') {
+                    if (sriov.gateway === gateway.name && gateway.type === 'UCS Port Profile') {
                         return opts.fn(this);
                     }
                 }

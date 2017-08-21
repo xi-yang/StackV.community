@@ -1,6 +1,6 @@
 (function(gateways, opts) {
     function isDC(gateway) {
-        return gateway === 'AWS Direct Connect';
+        return gateway.type === 'AWS Direct Connect';
     }
     if (gateways.some(isDC)) {
         return opts.fn(this);
