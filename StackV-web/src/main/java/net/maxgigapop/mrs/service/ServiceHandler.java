@@ -139,9 +139,10 @@ public class ServiceHandler {
             rs = prep.executeQuery();
             rs.next();
             int instanceID = rs.getInt("service_instance_id");
-
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`, `instanceUUID`, `state`) VALUES (?,?,'INIT')");
+            
+            System.out.println("instanceUUID: " + refUUID);
+            
+            prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?, ?)");
             prep.setInt(1, instanceID);
             prep.setString(2, refUUID);
             prep.executeUpdate();
