@@ -298,9 +298,9 @@ function loadWizard() {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
                 var data = {
                     name: $("#new-profile-name").val(),
-                    userID: keycloak.subject,
+                    username: keycloak.tokenParsed.preferred_username,
                     description: $("#new-profile-description").val(),
-                    data: $("#info-panel-text-area").val()
+                    data: JSON.parse($("#info-panel-text-area").val())
                 };
 
                 $.ajax({

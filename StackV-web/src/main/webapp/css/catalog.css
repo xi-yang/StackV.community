@@ -59,10 +59,10 @@ div.tab-content {
 
 div#catalog-panel {
     padding: 10px 10px 0 10px;
-    bottom: calc(-45% + 42px);
+    bottom: calc(-60% + 42px);
     left: 0;
     /*overflow: scroll;*/
-    height: 45%;
+    height: 60%;
     width: 80%;
     position: fixed;
     z-index: 5;
