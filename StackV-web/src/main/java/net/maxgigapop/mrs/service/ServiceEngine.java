@@ -63,30 +63,30 @@ class ServiceEngine {
     private final static String rains_db_pass = "root";
 
     // OPERATION FUNCTIONS    
-    static void orchestrateInstance(String refUuid, String svcDelta, String deltaUUID, TokenHandler token) {
+    static void orchestrateInstance(String refUUID, String svcDelta, String deltaUUID, TokenHandler token) {
         String method = "orchestrateInstance";
         String result;
         String lastState = "INIT";
         logger.start(method, svcDelta);
         try {
             // Cache serviceDelta.
-            int results = cacheServiceDelta(refUuid, svcDelta, deltaUUID);
+            int results = cacheServiceDelta(refUUID, svcDelta, deltaUUID);
             int instanceID = results;
 
-            result = initInstance(refUuid, svcDelta, token.auth());
+            result = initInstance(refUUID, svcDelta, token.auth());
             lastState = result;
             logger.trace(method, "Initialized");
             cacheSystemDelta(instanceID, result);
 
-            result = propagateInstance(refUuid, token.auth());
+            result = propagateInstance(refUUID, token.auth());
             lastState = result;
             logger.trace(method, "Propagated");
 
-            result = commitInstance(refUuid, token.auth());
+            result = commitInstance(refUUID, token.auth());
             lastState = result;
             logger.trace(method, "Committing");
 
-            URL url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            URL url = new URL(String.format("%s/service/%s/status", host, refUUID));
             while (!result.equals("COMMITTED") && !result.equals("FAILED")) {
                 logger.trace(method, "Waiting on instance: " + result);
                 sleep(5000);//wait for 5 seconds and check again later        
@@ -94,12 +94,13 @@ class ServiceEngine {
                 result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());                
                 lastState = result;
             }
-            logger.trace(method, "Committed");
-            result = verify(refUuid, token);
+            logger.trace(method, "Committed");            
 
-            lastState = result;
-            logger.end(method, "Verified");
-        } catch (EJBException | IOException | InterruptedException | SQLException ex) {
+            VerificationHandler verify = new VerificationHandler(refUUID, token);
+            verify.startVerification();
+            
+            logger.end(method);
+        } catch (EJBException | IOException | InterruptedException ex) {
             logger.catching(method, ex);
         } finally {
             logger.trace_start("updateLastState", lastState);
@@ -117,7 +118,7 @@ class ServiceEngine {
 
                 prep = front_conn.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
                 prep.setString(1, lastState);
-                prep.setString(2, refUuid);
+                prep.setString(2, refUUID);
                 prep.executeUpdate();
 
                 logger.trace_end("updateLastState");
@@ -129,7 +130,7 @@ class ServiceEngine {
         }
     }
 
-    static String verify(String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
+    /*static String verify(String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
         ResultSet rs;
         String method = "verify";
         Properties front_connectionProps = new Properties();
@@ -227,9 +228,9 @@ class ServiceEngine {
         logger.end(method, "Failure");
         WebResource.commonsClose(front_conn, prep, rs);
         return "READY";
-    }
+    }*/
       
-    static void toggleVerify(boolean enabled, String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
+    /*static void toggleVerify(boolean enabled, String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
         ResultSet rs;
         String method = "cancelVerify";
         Properties front_connectionProps = new Properties();
@@ -254,7 +255,7 @@ class ServiceEngine {
 
         logger.trace_end(method);
         WebResource.commonsClose(front_conn, prep, rs);
-    }
+    }*/
 
     // UTILITY FUNCTIONS    
     private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {

@@ -90,11 +90,11 @@ public class ServiceHandler {
 
             String delta = (String) inputJSON.get("data");
             String deltaUUID = (String) inputJSON.get("uuid");
-            
+
             if (deltaUUID == null) {
                 deltaUUID = delta.split("<uuid>")[1].split("</uuid>")[0];
             }
-            
+
             System.out.println("TESTME: " + deltaUUID);
 
             // Find user ID.
@@ -116,7 +116,7 @@ public class ServiceHandler {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
             logger.refuuid(refUUID);
-           
+
             // Initialize service parameters.
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
@@ -222,8 +222,7 @@ public class ServiceHandler {
         logger.refuuid(refUUID);
         logger.start(method);
         try {
-            clearVerification();
-            ServiceEngine.toggleVerify(true, refUUID, token);
+            VerificationHandler verify = new VerificationHandler(refUUID, token);
             switch (action) {
                 case "cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
@@ -252,11 +251,11 @@ public class ServiceHandler {
                     deleteInstance(refUUID, token);
                     break;
 
-                case "verify":
-                    ServiceEngine.verify(refUUID, token);
+                case "verify":                    
+                    verify.startVerification();
                     break;
-                case "unverify":
-                    ServiceEngine.toggleVerify(false, refUUID, token);
+                case "unverify":                    
+                    verify.stopVerification();
                     break;
 
                 default:
@@ -367,7 +366,8 @@ public class ServiceHandler {
             instanceState = status();
             if (instanceState.equals("COMMITTED")) {
                 lastState = instanceState;
-                lastState = ServiceEngine.verify(refUuid, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                verify.startVerification();
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
                 return 5;
@@ -386,7 +386,9 @@ public class ServiceHandler {
             logger.trace("forceCancelInstance", "Verification priming check - " + instanceState);
             if (instanceState.equals("COMMITTED")) {
                 lastState = "COMMITTED";
-                lastState = ServiceEngine.verify(refUuid, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                verify.clearVerification();
+                verify.startVerification();
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
                 return 5;
@@ -403,7 +405,9 @@ public class ServiceHandler {
 
             String instanceState = status();
             if (instanceState.equals("COMMITTED")) {
-                ServiceEngine.verify(refUuid, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                verify.clearVerification();
+                verify.startVerification();
 
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {

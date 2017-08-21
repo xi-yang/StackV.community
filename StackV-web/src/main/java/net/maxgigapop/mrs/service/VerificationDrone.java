@@ -29,8 +29,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.WebResource;
@@ -46,7 +44,7 @@ public class VerificationDrone implements Runnable {
 
     private final static String host = "http://127.0.0.1:8080/StackV-web/restapi";
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "VerificationDrone");
-    private TokenHandler token;
+    private final TokenHandler token;
     Connection conn;
     PreparedStatement prep;
     ResultSet rs;
@@ -102,9 +100,14 @@ public class VerificationDrone implements Runnable {
         switch (state) {
             case "FINISHED":
                 resetVerification();
+                verify();
+                break;
             case "INIT":
             case "PAUSED":
                 verify();
+                break;
+            case "RUNNING":
+                logger.status("run", "Verification attempted to start, but already started");            
         }
         WebResource.commonsClose(conn, prep, rs);
     }

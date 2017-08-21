@@ -38,7 +38,7 @@ import net.maxgigapop.mrs.common.TokenHandler;
 public class VerificationHandler {
 
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "VerificationHandler");
-    private TokenHandler token;
+    private final TokenHandler token;
     Connection conn;
     PreparedStatement prep;
     ResultSet rs;
@@ -52,7 +52,6 @@ public class VerificationHandler {
         instanceUUID = _instanceUUID;
         logger.refuuid(instanceUUID);
         try {
-            String host = "http://127.0.0.1:8080/StackV-web/restapi";
             String front_db_user = "front_view";
             String front_db_pass = "frontuser";
             Properties front_connectionProps = new Properties();
@@ -67,6 +66,10 @@ public class VerificationHandler {
         }
     }
 
+    public void startVerification() {
+        new Thread(new VerificationDrone(instanceUUID, token, conn, 30, 10)).start();
+    }
+
     public void pauseVerification() {
         sendAction("PAUSE");
     }
@@ -75,13 +78,28 @@ public class VerificationHandler {
         sendAction("STOP");
     }
 
-    public void startVerification() {
-        String method = "startVerification";
-        updateState();
-        if (state.equals("INIT")) {
+    public void clearVerification() {
+        try {
+            int instanceID = -1;
+            prep = conn.prepareStatement("SELECT service_instance_id FROM service_verification"
+                    + "WHERE instanceUUID = ?");
+            prep.setString(1, instanceUUID);
+            rs = prep.executeQuery();
+            if (rs.next()) {
+                instanceID = rs.getInt("service_instance_id");
+            }
 
-        } else {
-            logger.status(method, "Verification attempted to start, but already started");
+            prep = conn.prepareStatement("DELETE FROM service_verification WHERE instanceUUID = ?");
+            prep.setString(1, instanceUUID);
+            prep.executeUpdate();
+
+            prep = conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
+                    + "(`service_instance_id`, `instanceUUID`, `state`) VALUES (?,?,'INIT')");
+            prep.setInt(1, instanceID);
+            prep.setString(2, instanceUUID);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("resetVerification", ex);
         }
     }
 
