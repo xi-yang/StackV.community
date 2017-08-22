@@ -241,7 +241,7 @@
                 </options>
                 <valid>select</valid>
             </input>                        
-            <group name="Route" label="Connect">  
+            <group factory="true" name="Connect">  
                 <bound>
                     <name>gateways-gateway-type</name>
                     <value>AWS Direct Connect</value>
@@ -250,6 +250,11 @@
                 <bound>
                     <name>gateways-gateway-type</name>
                     <value>UCS Port Profile</value>
+                    <max>1</max>
+                </bound>              
+                <bound>
+                    <name>gateways-gateway-type</name>
+                    <value>L2 Stitch Port</value>
                     <max>1</max>
                 </bound>              
                 <input condition="ucs-port">

@@ -331,11 +331,11 @@ function renderInputs(arr, $parent) {
                     }
                     binding[name][val] = {};
 
-                    var minEle = boundArr[j].children[2];
+                    var minEle = $(boundArr[j]).children("min")[0];
                     if (minEle) {
                         binding[name][val]["min"] = minEle.innerHTML;
                     }
-                    var maxEle = boundArr[j].children[3];
+                    var maxEle = $(boundArr[j]).children("max")[0];
                     if (maxEle) {
                         binding[name][val]["max"] = maxEle.innerHTML;
                     }
@@ -489,10 +489,12 @@ function renderInputs(arr, $parent) {
                             var sel = $(this).children(":selected");
                             var trigger = sel.data("trigger");
                             if (trigger) {
+                                if ($input.data("prev-value")) {
+                                    removeCondition($input.data("prev-value"));
+                                }
                                 addCondition(trigger);
-                            } else {
-                                removeCondition(trigger);
                             }
+                            $input.attr("data-prev-value", sel.val());
                         });
                     }
 
@@ -1244,47 +1246,50 @@ function enforceBounds() {
         var key = $button.data("bound");
         var $scope = $button.parent().parent().parent();
 
+        // Reset addition and removal buttons.
         $scope.find("[data-bound=" + key + "] .intent-button-remove").removeAttr("disabled");
         $button.removeAttr("disabled");
 
         var eleCount = $scope.children("div[data-bound=" + key + "]").length;
         for (var name in bindings[key]) {
-            var currVal = $("#" + name).val();
-            for (var val in bindings[key][name]) {
-                var changes = true;
-                while (changes) {
-                    changes = false;
-                    if (val === currVal) {
-                        // Check for min
-                        if ("min" in bindings[key][name][val]) {
-                            var min = bindings[key][name][val]["min"];
-                            if (eleCount <= min) {
-                                while (eleCount < min) {
-                                    $button.click();
-                                    eleCount = $scope.children("div[data-bound=" + key + "]").length;
-                                    changes = true;
+            var $famInput = findFamilyInput($button.parent().parent(), name);
+            if ($famInput) {
+                var currVal = $famInput.val();
+                for (var val in bindings[key][name]) {
+                    var changes = true;
+                    while (changes) {
+                        changes = false;
+                        if (val === currVal) {
+                            // Check for min
+                            if ("min" in bindings[key][name][val]) {
+                                var min = bindings[key][name][val]["min"];
+                                if (eleCount <= min) {
+                                    while (eleCount < min) {
+                                        $button.click();
+                                        eleCount = $scope.children("div[data-bound=" + key + "]").length;
+                                        changes = true;
+                                    }
+                                    $scope.find("[data-bound=" + key + "] .intent-button-remove").attr("disabled", true);
                                 }
-                                $scope.find("[data-bound=" + key + "] .intent-button-remove").attr("disabled", true);
                             }
-                        }
 
-                        // Check for max
-                        if ("max" in bindings[key][name][val]) {
-                            var max = bindings[key][name][val]["max"];
-                            if (eleCount >= max) {
-                                while (eleCount > max) {
-                                    $scope.children("[data-bound=" + key + "]").last().remove();
-                                    eleCount = $scope.children("div[data-bound=" + key + "]").length;
-                                    changes = true;
+                            // Check for max
+                            if ("max" in bindings[key][name][val]) {
+                                var max = bindings[key][name][val]["max"];
+                                if (eleCount >= max) {
+                                    while (eleCount > max) {
+                                        $scope.children("[data-bound=" + key + "]").last().remove();
+                                        eleCount = $scope.children("div[data-bound=" + key + "]").length;
+                                        changes = true;
+                                    }
+                                    $button.attr("disabled", true);
                                 }
-                                $button.attr("disabled", true);
                             }
                         }
                     }
                 }
             }
         }
-
     }
 }
 
@@ -1401,8 +1406,36 @@ function trimLeaves(recur) {
     }
 }
 
-function findFamilyInput(recur, key) {
+function findFamilyInput($recur, key) {
+    var $childArr;
+    // Check if element has collapse element
+    var $coll = $recur.children(".collapse");
+    if ($coll.length > 0) {
+        $childArr = $coll.children("label");
+    } else {
+        $childArr = $recur.children("label");
+    }
     
+    // Check for a match
+    for (var i = 0; i < $childArr.length; i++) {
+        var child = $($childArr[i])[0].children[0];
+        var id = generalizeID(child.id);
+        
+        if (id === key) {
+            return $(child);
+        }
+    }
+    
+    // No match found, recurse upwards    
+    if ($recur.hasClass("intent-stage-div")) {
+        return null;
+    }
+    
+    var $parent = $recur.parent();
+    while (!$parent.hasClass("intent-group-div") && !$parent.hasClass("intent-stage-div")) {
+        $parent = $parent.parent();
+    }
+    return findFamilyInput($parent, key);
 }
 
 function recondition() {
@@ -1428,8 +1461,8 @@ function initializeInputs() {
     for (var i = 0; i < $boundArr.length; i++) {
         var $ele = $($boundArr[i]);
         for (var key in bindings[$ele.data("bound")]) {
-            var $input = $("#" + key);
-            if (!$input.hasClass("binding")) {
+            var $input = findFamilyInput($ele, key);
+            if ($input && !$input.hasClass("binding")) {
                 $input.change(function () {
                     enforceBounds();
                 });
@@ -1470,6 +1503,10 @@ function isEnabledInput($input) {
         return false;
     }
     return true;
+}
+
+function generalizeID(id) {
+    return id.replace(new RegExp("\\_num\\d*", "gm"), "");
 }
 
 function openSaveModal() {
