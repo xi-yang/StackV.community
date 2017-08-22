@@ -1239,7 +1239,7 @@ function parseManifestIntoJSON() {
     });
 }
 
-function enforceBounds() { // @TODO expand to include factorized elements
+function enforceBounds() {
     var arr = $("button[data-bound]");
     for (var i = 0; i < arr.length; i++) {
         var $button = $(arr[i]);

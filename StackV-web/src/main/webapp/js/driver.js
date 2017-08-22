@@ -223,10 +223,10 @@ function activateSide() {
 }
 
 function closeSide() {
-    
+
     $("#driver-content-panel").removeClass("active");
     $("#driver-content-panel").addClass("hidden");
-    
+
     document.getElementById("driver-panel-right").className = "inactive";
     $('#install-tab').removeClass = "active";
     $('#install-content').removeClass('active');
@@ -286,7 +286,7 @@ function installAWS() {
     var fourth = document.createElement("input");
     var fifth = document.createElement("p");
     var sixth = document.createElement("input");
-    
+
     //Instance Type
     //Image
     //Key Pair
@@ -299,9 +299,9 @@ function installAWS() {
     var keyPairInput = document.createElement("input");
     var secGroup = document.createElement("p");
     var secGroupInput = document.createElement("input");
-    
-    
-    
+
+
+
     var seventh = document.createElement("p");
     var eighth = document.createElement("SELECT");
     var option1 = document.createElement("option");
@@ -316,7 +316,7 @@ function installAWS() {
     var option10 = document.createElement("option");
     var divContent = document.getElementById("install-type");
 
-    
+
     $("#info-panel-title").text("AWS Driver");
 
 
@@ -337,29 +337,29 @@ function installAWS() {
 
     sixth.type = "text";
     sixth.id = "aws_secret_access_key";
-    
-   
+
+
     instance.innerHTML = "Default Instance";
     instance.style.color = "#333";
-    
+
     instanceInput.type = "text";
     instanceInput.id = "instance";
-    
+
     image.innerHTML = "Default Image";
     image.style.color = "#333";
-    
+
     imageInput.type = "text";
     imageInput.id = "image";
-    
+
     keyPair.innerHTML = "Default Key Pair";
     keyPair.style.color = "#333";
-    
+
     keyPairInput.type = "text";
     keyPairInput.id = "key-pair";
-    
+
     secGroup.innerHTML = "Default Sec Group";
     secGroup.style.color = "#333";
-    
+
     secGroupInput.type = "text";
     secGroupInput.id = "sec-group";
 
@@ -388,7 +388,7 @@ function installAWS() {
     eighth.add(option9);
     eighth.add(option10);
     eighth.id = "region";
-    
+
     divContent.appendChild(first);
     divContent.appendChild(second);
     divContent.appendChild(third);
@@ -450,7 +450,7 @@ function installOpenstack() {
     content[23].id = "key-pair";
     content[24].innerHTML = "Default Sec Group";
     content[25].id = "sec-group";
-    
+
 
 
 
@@ -465,7 +465,7 @@ function installOpenstack() {
         divContent.appendChild(content[i]);
     }
 
-   
+
 
 
     divContent.appendChild(extName);
@@ -684,7 +684,7 @@ function addDriver() {
             updateDrivers(URI);
             reloadData();
         },
-        error: function(){
+        error: function () {
         }
     });
 }
@@ -703,7 +703,7 @@ function removeDriverProfile(clickID) {
             updateDrivers(topuri);
             reloadData();
         },
-        error: function(result){
+        error: function (result) {
         }
     });
 }
@@ -731,10 +731,10 @@ function updateDrivers(URI) {
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
                 var edButton = document.createElement("button");
-                
+
                 detButton.className = "button-profile-select btn btn-default";
                 detButton.style.width = "64px";
-                
+
                 delButton.className = "button-profile-select btn btn-default";
                 delButton.style.width = "64px";
 
@@ -749,16 +749,16 @@ function updateDrivers(URI) {
                     getDetailsProfile(URI);
                     openContentPanel();
                 };
-                
-                    
-               
+
+
+
                 detButton.id = result[i + 3];
 
                 delButton.innerHTML = "Delete";
                 delButton.onclick = function () {
                     removeDriverProfile(URI);
                 };
-               
+
                 delButton.id = result[i + 3];
 
                 edButton.innerHTML = "Edit";
@@ -770,13 +770,13 @@ function updateDrivers(URI) {
                     $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
-                    
+
                     changeNameDet();
                     editDriverProfile(URI);
-                    
+
                     openContentPanel();
                 };
-                
+
                 edButton.id = result[i + 3];
 
 
@@ -847,19 +847,19 @@ function getDetailsProfile(clickID) {
                     table.appendChild(row);
                 }
             }
-            
+
             var instDetailsButton = document.createElement("button");
             instDetailsButton.className = "button-profile-select btn btn-default";
             instDetailsButton.innerHTML = "Install";
             instDetailsButton.className = "button-profile-select btn btn-default";
-            
+
             instDetailsButton.onclick = function () {
                 plugDriver(result["TOPURI"]);
             };
             instDetailsButton.className = "button-profile-select btn btn-default";
             botpanel.appendChild(instDetailsButton);
         },
-        error: function(){
+        error: function () {
             alert("Failure");
         }
     });
@@ -897,7 +897,7 @@ function getAllDetails() {
                     getDetails(this.id);
                     openContentPanel();
                 };
-                
+
                 detButton.id = result[i];
 
                 delButton.innerHTML = "Delete";
@@ -907,7 +907,7 @@ function getAllDetails() {
                     removeDriver(this.id);
                     reloadData();
                 };
-             
+
                 delButton.id = result[i + 2];
 
 
@@ -943,19 +943,19 @@ function removeDriver(clickID) {
             updateDrivers(topUri);
             reloadData();
         },
-        error: function(result){
+        error: function (result) {
             clearPanel();
             activateSide();
             changeNameDet();
-            
+
             $("#info-panel-title").text("Failed Due to Service Instances:");
             var body = $("#info-panel-body");
             for (var i = 1; i < result.length; i++) {
                 body.text(body.text() + result[i] + "\n");
             }
-                        
+
             openContentPanel();
-            
+
         }
     });
 }
@@ -994,18 +994,17 @@ function getDetails(clickID) {
                 row.appendChild(tempkey);
                 row.appendChild(tempval);
                 table.appendChild(row);
-
+                panel.appendChild(table);
             }
         }
     });
-    panel.appendChild(table);
 }
 function plugDriver(topuri) {
     var URI = topuri;
     var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/install/' + URI;
     var panel = document.getElementById("install-type");
-    
+
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -1073,7 +1072,7 @@ function installDriver() {
             getAllDetails();
         },
         error: function (textStatus, errorThrown) {
-            
+
         }
     });
 }

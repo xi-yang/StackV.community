@@ -2659,14 +2659,20 @@ public class WebResource {
             JSONObject inputJSON = (JSONObject) obj;
 
             String name = (String) inputJSON.get("name");
-            String description = (String) inputJSON.get("description");
-            String inputData = ((JSONObject) inputJSON.get("data")).toJSONString();
+            String description = (String) inputJSON.get("description");            
             String username = (String) inputJSON.get("username");
+            
+            JSONObject inputData = (JSONObject) inputJSON.get("data");
+            inputData.remove("uuid");            
+            if(inputData.containsKey("conditions") && ((JSONArray) inputData.get("conditions")).isEmpty()) {
+                inputData.remove("conditions");
+            }            
+            String inputDataString = inputData.toJSONString();
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?)");
             prep.setString(1, username);
             prep.setString(2, name);
-            prep.setString(3, inputData);
+            prep.setString(3, inputDataString);
             prep.setString(4, description);
             prep.setInt(5, 0);
             prep.executeUpdate();
