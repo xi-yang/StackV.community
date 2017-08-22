@@ -86,7 +86,7 @@ public class ServiceHandler {
 
             type = (String) inputJSON.get("service");
             alias = (String) inputJSON.get("alias");
-            owner = (String) inputJSON.get("username");
+            owner = (String) inputJSON.get("username");            
 
             String delta = (String) inputJSON.get("data");
             String deltaUUID = (String) inputJSON.get("uuid");
@@ -94,8 +94,6 @@ public class ServiceHandler {
             if (deltaUUID == null) {
                 deltaUUID = delta.split("<uuid>")[1].split("</uuid>")[0];
             }
-
-            System.out.println("TESTME: " + deltaUUID);
 
             // Find user ID.
             try {
@@ -138,9 +136,7 @@ public class ServiceHandler {
             prep.setString(1, refUUID);
             rs = prep.executeQuery();
             rs.next();
-            int instanceID = rs.getInt("service_instance_id");
-            
-            System.out.println("instanceUUID: " + refUUID);
+            int instanceID = rs.getInt("service_instance_id");           
             
             prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?, ?)");
             prep.setInt(1, instanceID);

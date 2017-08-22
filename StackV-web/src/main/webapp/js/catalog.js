@@ -239,6 +239,8 @@ function loadWizard() {
                         success: function (result) {
                             var manifest = profile;
                             manifest["uuid"] = result;
+                            manifest["data"]["conditions"] = manifest["conditions"];
+                            //manifest["data"] = JSON.parse($("#info-panel-text-area").val());
 
                             // Render template
                             var rendered = render(manifest);
