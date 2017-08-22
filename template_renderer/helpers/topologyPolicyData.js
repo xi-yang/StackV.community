@@ -1,4 +1,12 @@
 (function(root) {
+    function nextHop(routes) {
+        routes.map((route) => {
+            if (route.next_hop) {
+                route.nextHop = route.next_hop;
+                delete route.next_hop;
+            }
+        });
+    }
     var subnets = [];
     var routes = [];
     var gwVpn = false;
@@ -6,7 +14,7 @@
         subnets.push({
             name: subnet.name,
             cidr: subnet.cidr,
-            routes: subnet.routes
+            routes: nextHop(subnet.routes)
         });
         routes.push(...subnet.routes);
         if (subnet.vpn_route_propagation) {
@@ -20,11 +28,22 @@
         });
     }
     var gateways = [];
-    root.gateways.forEach(function(gateway) {
-        gateways.push({
-            type: gateway.type // TODO
+    if (root.conditions.includes('aws-form')) {
+        gateways = [
+            {
+                type: 'internet'
+            },
+            {
+                type: 'vpn'
+            }
+        ];
+    } else {
+        root.gateways.forEach(function(gateway) {
+            gateways.push({
+                type: gateway.type // TODO OPS criteria
+            });
         });
-    });
+    }
     var network = {
         type: 'internal',
         cidr: root.cidr,

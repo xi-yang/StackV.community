@@ -12,7 +12,10 @@
 @prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
 @prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
 
-{{!TODO polish punctuation/whitespace/order after base templates are working}}
+&lt;x-policy-annotation:data:vpc-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     nml:Topology;
+    spa:value    """{{topologyPolicyData @root}}""".
 
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_clouds:tag+vpc1&gt;
     a                         nml:Topology ;
@@ -47,6 +50,7 @@
     spa:type     "JSON" ;
     spa:format   """{
         "to_l2path": "%%$.conn1%%"
+        "to_l2path": %%$. urn:ogf:network:vo1_maxgigapop_net:link=conn1%%
     }""" .
 
 &lt;x-policy-annotation:data:conn-criteria1&gt;
@@ -84,9 +88,9 @@
     a            spa:PolicyAction ;
     spa:type     "MCE_VMFilterPlacement" ;
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
-    spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-{{@root.uuid}}-criteria&gt;.
+    spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
 
-&lt;x-policy-annotation:data:vpc-subnet-{{@root.uuid}}-criteria&gt;
+&lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
     a           spa:PolicyData;
     spa:type    "JSON";
     spa:format  """{
@@ -365,7 +369,8 @@ lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../nam
         {{/sriovs}}
     {{/vms}}
     {{/subnets}}
-{{#if_createPathExportTo @root}}
+{{/if_ops}}
+
 &lt;x-policy-annotation:action:create-vpc&gt;
     a           spa:PolicyAction ;
     spa:type     "MCE_VirtualNetworkCreation" ;
@@ -383,13 +388,10 @@ lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../nam
 .
     {{/if}}
 {{/subnets}}
-{{/if_createPathExportTo}}
-{{/if_ops}}
-&lt;x-policy-annotation:data:vpc-criteria&gt;
-    a            spa:PolicyData;
-    spa:type     nml:Topology;
-    spa:value    """{{topologyPolicyData @root}}""".
 
 </modelAddition>
 
 </serviceDelta>
+
+
+{{!TODO polish punctuation/whitespace/order after base templates are working}}
