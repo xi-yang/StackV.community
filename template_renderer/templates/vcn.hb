@@ -58,11 +58,11 @@
     spa:type     "JSON";
     spa:value    """{
         "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
-            "{{directConnDest routes.[0].to}}": {
-                "vlan_tag":"{{directConnVlan routes.[0].to}}"
+            "{{directConnDest connects.[0].to}}": {
+                "vlan_tag":"{{directConnVlan connects.[0].to}}"
             },
             "{{../parent}}": {
-                "vlan_tag":"{{directConnVlan routes.[0].to}}"
+                "vlan_tag":"{{directConnVlan connects.[0].to}}"
             }
         }
     }""".
@@ -135,11 +135,11 @@
     spa:type     "JSON";
     spa:value    """ {
         "stitch_from": "urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../../name}}",
-        "to_port_profile": "{{routes.0.from}}",
+        "to_port_profile": "{{connects.0.from}}",
         "mac_address": "{{../mac_address}}"
         {{sriovIP ../ip_address}}
-                                {{#if routes}}
-        ,   "routes" : {{toJSON routes}} {{!TODO check if desired format/data, can be changed to routes.[0] }}
+                                {{#if connects}}
+        ,   "routes" : {{toJSON connects}} {{!TODO check if desired format/data, can be changed to connects.[0] }}
                                 {{/if}}
         } """ .
                         {{/if_eq}}
@@ -158,8 +158,8 @@
        "to_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{../name}}%%,
        "mac_address": "{{sriovMac ../address}}"
         {{sriovIP ../address}}
-                                {{#if routes}}
-        ,   "routes" : {{toJSON routes}} {{!TODO same as above }}
+                                {{#if connects}}
+        ,   "routes" : {{toJSON connects}} {{!TODO same as above }}
                                 {{/if}}
         } """ .
                         {{/if_eq}}
@@ -263,11 +263,7 @@
                     {{#sriovs}}
                         {{#each ../../../gateways}}
                             {{#if_eq name ../hosting_gateway}}
-                                {{#if routes.0.to}}
-                                    {{#if_eq routes.0.type 'stitch_port'}}
                                     {{!TODO example JSON doesn't use this piece yet }}
-                                    {{/if_eq}}
-                                {{/if}}
                             {{/if_eq}}
                         {{/each}}
                     {{/sriovs}}
@@ -355,12 +351,12 @@ lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../nam
     {{#vms}}
         {{#sriovs}}
             {{#each ../../../gateways}}
-                {{#if routes.0.from}}
+                {{#if connects.0.from}}
                     {{#if_eq type 'port_profile'}}
 &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{../name}}-sriov{{@index}}&gt;,
                     {{/if_eq}}
                 {{/if}}
-                {{#if routes.0.to}}
+                {{#if connects.0.to}}
                     {{#if_eq type 'stitch_port'}}
 &lt;x-policy-annotation:action:ucs-{{../name}}-sriov{{@index}}-stitch&gt;,
                     {{/if_eq}}

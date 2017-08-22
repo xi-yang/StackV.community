@@ -37,13 +37,7 @@
                 type: 'vpn'
             }
         ];
-    } else {
-        root.gateways.forEach(function(gateway) {
-            gateways.push({
-                type: gateway.type // TODO OPS criteria
-            });
-        });
-    }
+    } 
     var network = {
         type: 'internal',
         cidr: root.cidr,
