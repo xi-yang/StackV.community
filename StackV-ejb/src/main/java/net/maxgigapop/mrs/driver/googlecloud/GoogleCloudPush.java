@@ -7,28 +7,22 @@ package net.maxgigapop.mrs.driver.googlecloud;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import java.util.List;
+import java.util.ArrayList;
+import java.io.IOException;
 import org.json.simple.JSONObject;
 
-import com.google.api.services.compute.Compute;
 import com.google.api.services.compute.model.AttachedDisk;
 import com.google.api.services.compute.model.AttachedDiskInitializeParams;
 import com.google.api.services.compute.model.Instance;
 import com.google.api.services.compute.model.NetworkInterface;
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.services.compute.model.NetworkInterface;
 import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import java.util.ArrayList;
+import com.google.api.services.compute.model.AccessConfig;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -68,42 +62,52 @@ public class GoogleCloudPush {
         for (JSONObject request : requests) {
             switch (request.get("type").toString()) {
             case "vm":
-                String name = request.get("name").toString();
-                String subnetIP = request.get("subnetIP").toString();
-                String machineType = "zones/"+region+"/machineTypes/";
-                machineType += request.get("machineType").toString();
-                long diskSizeGb = Integer.parseInt(request.get("diskSizeGb").toString());
+                if (request.get("add") != null) {
+                    String name = request.get("name").toString();
+                    String ip = request.get("ip").toString();
+                    String subnetIP = request.get("subnetIP").toString();
+                    String machineType = "zones/"+region+"/machineTypes/";
+                    machineType += request.get("machineType").toString();
+                    long diskSizeGb = Integer.parseInt(request.get("diskSizeGb").toString());
                 
-                
-                NetworkInterface netiface = new NetworkInterface()
-                    .setNetwork("projects/elegant-works-176420/global/networks/default")
-                    .setSubnetwork("projects/elegant-works-176420/regions/us-central1/subnetworks/default")
-                    .setNetworkIP(subnetIP);
-                    //.setAccessConfigs(null);
-                ArrayList<NetworkInterface> netifaces = new ArrayList<>();
-                netifaces.add(netiface);
+                    AccessConfig access = new AccessConfig()
+                        .setName("External Nat")
+                        .setNatIP(ip)
+                        .setType("ONE_TO_ONE_NAT");
+                    ArrayList<AccessConfig> accessList = new ArrayList<>();
+                    accessList.add(access);
+                    NetworkInterface netiface = new NetworkInterface()
+                        .setNetwork("projects/elegant-works-176420/global/networks/default")
+                        .setSubnetwork("projects/elegant-works-176420/regions/us-central1/subnetworks/default")
+                        .setNetworkIP(subnetIP)
+                        .setAccessConfigs(accessList);
+                    ArrayList<NetworkInterface> netifaces = new ArrayList<>();
+                    netifaces.add(netiface);
                     
-                AttachedDiskInitializeParams init = new AttachedDiskInitializeParams()
-                    .setDiskSizeGb(diskSizeGb)
-                    .setSourceImage("projects/debian-cloud/global/images/debian-9-stretch-v20170717")
-                    .setDiskType("projects/elegant-works-176420/zones/us-central1-c/diskTypes/pd-standard");
-                AttachedDisk disk = new AttachedDisk()
-                    .setBoot(true)
-                    .setInitializeParams(init);
-                ArrayList<AttachedDisk> disks = new ArrayList<AttachedDisk>();
-                disks.add(disk);
-                Instance instance = new Instance()
-                    .setName(name)
-                    .setMachineType(machineType)
-                    .setNetworkInterfaces(netifaces)
-                    .setDisks(disks);
-            
-                HttpRequest httpRequest;
-                try {
-                    httpRequest = computeGet.getComputeClient().instances().insert(projectID, region, instance).buildHttpRequest();
-                    httpRequest.execute();
-                } catch (IOException ex) {
-                    //todo
+                    AttachedDiskInitializeParams init = new AttachedDiskInitializeParams()
+                        .setDiskSizeGb(diskSizeGb)
+                        .setSourceImage("projects/debian-cloud/global/images/debian-9-stretch-v20170717")
+                        .setDiskType("projects/elegant-works-176420/zones/us-central1-c/diskTypes/pd-standard");
+                    AttachedDisk disk = new AttachedDisk()
+                        .setBoot(true)
+                        .setAutoDelete(true)
+                        .setInitializeParams(init);
+                    ArrayList<AttachedDisk> disks = new ArrayList<AttachedDisk>();
+                    disks.add(disk);
+                    Instance instance = new Instance()
+                        .setName(name)
+                        .setMachineType(machineType)
+                        .setNetworkInterfaces(netifaces)
+                        .setDisks(disks);
+                    
+                    try {
+                        HttpRequest httpRequest = computeGet.getComputeClient().instances().insert(projectID, region, instance).buildHttpRequest();
+                        httpRequest.execute();
+                    } catch (IOException ex) {
+                        //todo
+                    }
+                } else {
+                    
                 }
             break;
             }

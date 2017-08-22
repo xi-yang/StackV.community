@@ -5,15 +5,19 @@
  */
 package net.maxgigapop.mrs.driver.googlecloud;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
+
 import com.google.api.services.compute.Compute;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.HttpRequest;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import java.io.IOException;
 
-//import com.google.cloud.compute.*;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -25,6 +29,7 @@ public class GoogleCloudGet {
     private Compute computeClient = null;
     private String projectID;
     private String region;
+    private JSONParser parser = new JSONParser();
     
     public GoogleCloudGet(String jsonAuth, String projectID, String region) {
         authenticate = new GoogleCloudAuthenticate(jsonAuth);
@@ -40,15 +45,34 @@ public class GoogleCloudGet {
         } catch (IOException ex) {
             
         }
-        
     }
     
-    public String getAllInstances() {
-        String output = null;
+    public JSONObject getVPCs() {
+        JSONObject output = null;
+        HttpRequest request = null;
+        
         try {
-            output = computeClient.instances().list(projectID, region).buildHttpRequest().execute().getContent().toString();
-            System.out.print(output);
+            request = computeClient.networks().list(projectID).buildHttpRequest();
+            output = (JSONObject) parser.parse(request.execute().parseAsString());
         } catch (IOException ex) {
+            
+        } catch (ParseException ex) {
+            
+        }
+        
+        return output;
+    }
+    
+    public JSONObject getVmInstances() {
+        JSONObject output = null;
+        HttpRequest request = null;
+        
+        try {
+            request = computeClient.instances().list(projectID, region).buildHttpRequest();
+            output = (JSONObject) parser.parse(request.execute().parseAsString());
+        } catch (IOException ex) {
+            
+        } catch (ParseException ex) {
             
         }
         

@@ -163,7 +163,7 @@ public class GoogleCloudDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
-
+        
         try {
             String jsonAuth = driverInstance.getProperty("gcp_access_json");
             String projectID = driverInstance.getProperty("projectID");

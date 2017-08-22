@@ -17,7 +17,7 @@ public class GoogleCloudAuthenticate {
     /*
     This class creates and stores a GoogleCredential from a String or JSON object.
     */
-    public static final StackLogger logger = GoogleCloudDriver.logger;
+    //public static final StackLogger logger = GoogleCloudDriver.logger;
     private GoogleCredential credential = null;
     
     public GoogleCloudAuthenticate (JSONObject jsonInput) {
@@ -33,7 +33,7 @@ public class GoogleCloudAuthenticate {
             scopes.add("https://www.googleapis.com/auth/cloud-platform");
             credential.createScoped(scopes);
         } catch (IOException e) {
-            logger.error(method, "error while authenticating: "+e.getMessage());
+            //logger.error(method, "error while authenticating: "+e.getMessage());
         }
     }
     
