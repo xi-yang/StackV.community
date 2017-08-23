@@ -2664,8 +2664,8 @@ public class WebResource {
             
             JSONObject inputData = (JSONObject) inputJSON.get("data");
             inputData.remove("uuid");            
-            if(inputData.containsKey("conditions") && ((JSONArray) inputData.get("conditions")).isEmpty()) {
-                inputData.remove("conditions");
+            if(inputData.containsKey("options") && ((JSONArray) inputData.get("options")).isEmpty()) {
+                inputData.remove("options");
             }            
             String inputDataString = inputData.toJSONString();
 

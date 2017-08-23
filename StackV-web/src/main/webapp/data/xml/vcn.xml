@@ -235,9 +235,9 @@
                 <name>Type</name>
                 <type>select</type>
                 <options>
-                    <option condition="aws-form" trigger="direct-connect">AWS Direct Connect</option>
-                    <option condition="openstack-form" trigger="ucs-port">UCS Port Profile</option>
-                    <option condition="openstack-form" trigger="stitch-port">L2 Stitch Port</option>
+                    <option condition="aws-form">AWS Direct Connect</option>
+                    <option condition="openstack-form">UCS Port Profile</option>
+                    <option condition="openstack-form">L2 Stitch Port</option>
                 </options>
                 <valid>select</valid>
             </input>                        
@@ -257,12 +257,12 @@
                     <value>L2 Stitch Port</value>
                     <max>1</max>
                 </bound>              
-                <input condition="ucs-port">
+                <input condition="type::ucs_port_profile">
                     <name>From</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
-                <input condition="direct-connect stitch-port">
+                <input condition="type::aws_direct_connect,type::l2_stitch_port">
                     <name>To</name>
                     <type>text</type>
                     <valid>string</valid>

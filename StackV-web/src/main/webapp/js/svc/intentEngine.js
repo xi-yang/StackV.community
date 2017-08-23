@@ -23,7 +23,7 @@
 
 /* global Mousetrap, keycloak, Power2, baseUrl */
 
-var conditions = [];
+var options = [];
 var factories = {};
 var initials = {};
 var bindings = {};
@@ -56,16 +56,16 @@ function loadIntent(type) {
             intent = xml.children[0];
             renderIntent();
             parseSchemaIntoManifest(intent);
-            if (!getURLParameter("preload")) {
+            if (getURLParameter("preload")) {
                 switch (type) {
                     case "dnc":
-                        //preloadDNC();
+                        preloadDNC();
                         break;
                     case "hybridcloud":
-                        //preloadAHC();
+                        preloadAHC();
                         break;
                     case "vcn":
-                        //preloadAWSVCN();
+                        preloadAWSVCN();
                         //preloadOPSVCN();
                         break;
                 }
@@ -479,25 +479,12 @@ function renderInputs(arr, $parent) {
                     } else {
                         $option = $("<option>");
                     }
+                    $input.change(function () {
+                        recondition();
+                    });
 
                     $option.text(options[j].innerHTML);
                     $option.val(options[j].innerHTML);
-
-                    if (options[j].getAttribute("trigger") !== null) {
-                        $option.attr("data-trigger", options[j].getAttribute("trigger"));
-                        $input.change(function () {
-                            var sel = $(this).children(":selected");
-                            var trigger = sel.data("trigger");
-                            if (trigger) {
-                                if ($input.data("prev-value")) {
-                                    removeCondition($input.data("prev-value"));
-                                }
-                                addCondition(trigger);
-                            }
-                            $input.attr("data-prev-value", sel.val());
-                        });
-                    }
-
                     if (options[j].getAttribute("default") !== null) {
                         def = $option.val();
                     }
@@ -506,15 +493,9 @@ function renderInputs(arr, $parent) {
                 }
 
                 if (def) {
-                    $input.val(def);
+                    $input.val(def).change();
                 } else {
-                    $input.val($input.children("option:not(:disabled):first").val());
-                }
-
-                var sel = $input.children(":selected");
-                var trigger = sel.data("trigger");
-                if (trigger) {
-                    addCondition(trigger);
+                    $input.val($input.children("option:not(:disabled):first").val()).change();
                 }
             }
             if (trigger) {
@@ -524,7 +505,7 @@ function renderInputs(arr, $parent) {
                     case "button":
                         $label.attr("data-trigger", trigger);
                         $label.click(function () {
-                            addCondition($(this).data("trigger"));
+                            addOption($(this).data("trigger"));
                         });
                         break;
                 }
@@ -979,7 +960,7 @@ function buildClone(key, target, $factoryBtn) {
     var $defArr = $clone.find("[data-default]");
     for (var i = 0; i < $defArr.length; i++) {
         var $input = $($defArr[i]);
-        $input.val($input.data("default"));
+        $input.val($input.data("default")).change();
     }
 
     recondition();
@@ -1224,13 +1205,14 @@ function parseManifestIntoJSON() {
         },
         success: function (result) {
             manifest["uuid"] = result;
-            manifest["conditions"] = conditions;
-            manifest["data"]["conditions"] = conditions;
-
+            if (options.length > 0) {
+                manifest["options"] = options;
+                manifest["data"]["options"] = options;
+            }
             // Render template            
             var rendered = render(manifest);
             delete manifest["data"]["uuid"];
-            delete manifest["data"]["conditions"];
+            delete manifest["data"]["options"];
 
             package["service"] = intentType;
             package["alias"] = $("#meta-alias").val();
@@ -1406,6 +1388,7 @@ function trimLeaves(recur) {
     }
 }
 
+// Find closest input with generic name matching key
 function findFamilyInput($recur, key) {
     var $childArr;
     // Check if element has collapse element
@@ -1415,22 +1398,22 @@ function findFamilyInput($recur, key) {
     } else {
         $childArr = $recur.children("label");
     }
-    
+
     // Check for a match
     for (var i = 0; i < $childArr.length; i++) {
         var child = $($childArr[i])[0].children[0];
         var id = generalizeID(child.id);
-        
-        if (id === key) {
+
+        if (id === key || getName(id) === key) {
             return $(child);
         }
     }
-    
+
     // No match found, recurse upwards    
+    // If at stage level and no match, no match found
     if ($recur.hasClass("intent-stage-div")) {
         return null;
     }
-    
     var $parent = $recur.parent();
     while (!$parent.hasClass("intent-group-div") && !$parent.hasClass("intent-stage-div")) {
         $parent = $parent.parent();
@@ -1439,12 +1422,56 @@ function findFamilyInput($recur, key) {
 }
 
 function recondition() {
-    $("[data-condition]").removeClass("conditioned");
-    $("[data-condition-select]").attr("disabled", true);
+    // Iterate over all conditional standard elements
+    $(".conditional").removeClass("conditioned");
+    var $conArr = $(".conditional");
+    for (var i = 0; i < $conArr.length; i++) {
+        var $ele = $($conArr[i]);
+        var conArr = $ele.data("condition").split(",");
+        // Parse each condition from element
+        for (var j = 0; j < conArr.length; j++) {
+            var con = conArr[j];
+            if (con.split("::").length > 1) {
+                // Reference value
+                var splitArr = con.split("::");
+                var $ref = findFamilyInput($ele, splitArr[0]);
+                var key = splitArr[1].toLowerCase().replace(/ /g, "_");
+                if ($ref && $ref.val() && ($ref.val().toLowerCase().replace(/ /g, "_") === key)) {
+                    $ele.addClass("conditioned");
+                }
+            } else {
+                // Option value
+                if (options.indexOf(con) > -1) {
+                    $ele.addClass("conditioned");
+                }
+            }
+        }
+    }
 
-    for (var i = 0; i < conditions.length; i++) {
-        $("[data-condition~='" + conditions[i] + "']").addClass("conditioned");
-        $("[data-condition-select~='" + conditions[i] + "']").removeAttr("disabled");
+    // Iterate over all conditional options
+    $("[data-condition-select]").attr("disabled", true);
+    $conArr = $("[data-condition-select]");
+    for (var i = 0; i < $conArr.length; i++) {
+        var $ele = $($conArr[i]);
+        var conArr = $ele.data("condition-select").split(",");
+        // Parse each condition from element
+        for (var j = 0; j < conArr.length; j++) {
+            var con = conArr[j];
+            if (con.split("::").length > 1) {
+                // Reference value
+                var splitArr = con.split("::");
+                var $ref = findFamilyInput($ele, splitArr[0]);
+                var key = splitArr[1].toLowerCase().replace(/ /g, "_");
+                if ($ref && $ref.val() && ($ref.val().toLowerCase().replace(/ /g, "_") === key)) {
+                    $ele.removeAttr("disabled");
+                }
+            } else {
+                // Option value
+                if (options.indexOf(con) > -1) {
+                    $ele.removeAttr("disabled");
+                }
+            }
+        }
     }
 }
 
@@ -1484,13 +1511,10 @@ function expandStarters() {
     }
 }
 
-function addCondition(trigger) {
-    conditions.push(trigger);
-    recondition();
-}
-function removeCondition(trigger) {
-    var index = conditions.indexOf(trigger);
-    conditions.splice(index, 1);
+function addOption(trigger) {
+    if (options.indexOf(trigger) === -1) {
+        options.push(trigger);
+    }
     recondition();
 }
 
@@ -1558,7 +1582,7 @@ function parseTestManifest() {
         conArr.push($(this).data("condition"));
     });
     conArr = $.unique(conArr);
-    manifest["conditions"] = conArr;
+    manifest["options"] = conArr;
 
     $("body").css("background", "white");
     $("body").html(JSON.stringify(manifest));
@@ -1568,10 +1592,9 @@ function parseTestManifest() {
 
 function preloadDNC() {
     $("#meta-alias").val("Preloaded DNC Test");
-    $("#connections-type").val("Multi-Point VLAN Bridge");
+    $("#connections-type").val("Multi-Point VLAN Bridge").change();
 
     setTimeout(function () {
-        $("button[data-factory=connections-connection-terminal]").click();
         $("#connections-connection_num1-name").val("mpvb1");
 
         $("#connections-connection_num1-terminal_num1-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_1:port=openflow_1_1");
@@ -1587,32 +1610,8 @@ function preloadDNC() {
 }
 function preloadAWSVCN() {
     $("#meta-alias").val("Preloaded VCN AWS Test");
-
-    $("#details-network-parent").val("urn:ogf:network:aws.amazon.com:aws-cloud");
-    $("#details-network-type").val("internal");
-    $("#details-network-cidr").val("10.0.0.0/24");
-
-    $("#subnets-subnet_num1-name").val("TestSub1");
-    $("#subnets-subnet_num1-cidr_block").val("10.0.0.0/24");
-    $("#subnets-subnet_num1-route_num1-from").val("TestFrom");
-    $("#subnets-subnet_num1-route_num1-to").val("TestTo");
-    $("#subnets-subnet_num1-route_num1-next_hop").val("TestNext");
-
-    $("#vms-vm_num1-name").val("TestVM1");
-    $("#vms-vm_num1-subnet_host").val("subnet_num1");
-    $("#vms-vm_num1-keypair_name").val("driver_key");
-    $("#vms-vm_num1-security_group").val("geni");
-    $("#vms-vm_num1-route_num1-from").val("TestFrom");
-    $("#vms-vm_num1-route_num1-to").val("TestTo");
-    $("#vms-vm_num1-route_num1-next_hop").val("TestNext");
-
-    $("#gateways-gateway_num1-name").val("TestGate");
-    $("#gateways-gateway_num1-route_num1-to").val("TestTo");
-}
-function preloadAWSVCN() {
-    $("#meta-alias").val("Preloaded VCN AWS Test");
-    //$("[name=block-gateways]").val(2);
-    //$("[name=block-sriovs]").val(2);
+    $("[name=block-gateways]").val(2).change();
+    $("[name=block-sriovs]").val(2).change();
 
     setTimeout(function () {
         $("#details-network-parent").val("urn:ogf:network:aws.amazon.com:aws-cloud");
@@ -1628,18 +1627,18 @@ function preloadAWSVCN() {
         $("#vms-vm_num1-keypair_name").val("driver_key");
         $("#vms-vm_num1-security_group").val("geni");
         $("#vms-vm_num1-image").val("ami-0d1bf860");
-        $("#vms-vm_num1-interface_num1-type").val("Ethernet");
+        $("#vms-vm_num1-interface_num1-type").val("Ethernet").change();
 
         $("#gateways-gateway_num1-name").val("l2path-aws-dc1");
-        $("#gateways-gateway_num1-type").val("AWS Direct Connect");
+        $("#gateways-gateway_num1-type").val("AWS Direct Connect").change();
         $("#gateways-gateway_num1-route_num1-to").val("urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*");
         $("#gateways-gateway_num1-route_num1-type").val("stitch_port");
     }, 500);
 }
 function preloadOPSVCN() {
     $("#meta-alias").val("Preloaded VCN OPS Test");
-    //$("[name=block-gateways]").val(2);
-    //$("[name=block-sriovs]").val(2);
+    $("[name=block-gateways]").val(2).change();
+    $("[name=block-sriovs]").val(2).change();
 
     setTimeout(function () {
         $("#details-network-parent").val("urn:ogf:network:openstack.com:openstack-cloud");

@@ -28,7 +28,7 @@
             <type>select</type>
             <options>
                 <option default="true">Multi-Path P2P VLAN</option>
-                <option trigger="bridge">Multi-Point VLAN Bridge</option>
+                <option>Multi-Point VLAN Bridge</option>
             </options>
         </input>
         <group factory="true" name="connection" collapsible="true">
@@ -63,7 +63,7 @@
                     <default>any</default>
                     <valid>vlan</valid>
                 </input>
-                <input condition="bridge">
+                <input condition="type::Multi-Point VLAN Bridge">
                     <name>MAC Address List</name>
                     <type>text</type>
                     <size>large</size>
