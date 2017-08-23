@@ -75,7 +75,7 @@
     {{else}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
 {{/if_directConnect}}
-{{#if_aws conditions}} {{! AWS }}
+{{#if_aws options}} {{! AWS }}
     {{#subnets}}
         {{#vms}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
@@ -108,7 +108,7 @@
 {{log "E"}}
 
 
-{{#if_ops conditions}} {{! OPS }}
+{{#if_ops options}} {{! OPS }}
     {{#subnets}}
         {{#vms}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
