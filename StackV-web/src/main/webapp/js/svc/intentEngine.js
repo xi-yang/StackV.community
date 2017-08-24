@@ -525,6 +525,9 @@ function renderInputs(arr, $parent) {
                     if ($stage.find(".invalid").length === 0) {
                         $("#prog-" + $stage.attr("id")).removeClass("invalid");
                     }
+                    if ($(".intent-input.invalid").length === 0) {
+                        $(".intent-operations").removeClass("blocked");
+                    }
                 });
             }
 
@@ -631,125 +634,132 @@ function recursivelyFactor(id, ele) {
 }
 
 function submitIntent(mode) {
-    gsap["intent"].reverse();
-    refreshLinks();
-    $(".intent-input.invalid").removeClass("invalid");
-    $(".intent-input-message").remove();
+    //gsap["intent"].reverse();
+    refreshLinks();    
+    if ($(".intent-input.invalid").length === 0) {
+        // Validate
+        var validation = $("[data-valid]");
+        var valid = true;
+        if (!($("#meta-alias").val()) && mode === 0) {
+            valid = false;
+            $("#meta-alias").addClass("invalid");
+        }
 
-    // Validate
-    var validation = $("[data-valid]");
-    var valid = true;
-    if (!($("#meta-alias").val()) && mode === 0) {
-        valid = false;
-        $("#meta-alias").addClass("invalid");
-    }
-
-    for (var i = 0; i < validation.length; i++) {
-        var $input = $(validation[i]);
-        if (isEnabledInput($input)) {
-            var validRef = $input.data("valid");
-            var validEle = intent.children[0].getElementsByTagName("validation")[0];
-            var constEle = null;
-            for (var j = 0; j < validEle.children.length; j++) {
-                var constraint = validEle.children[j];
-                if (constraint.children[0].innerHTML === validRef) {
-                    constEle = constraint;
-                    break;
+        for (var i = 0; i < validation.length; i++) {
+            var $input = $(validation[i]);
+            if (isEnabledInput($input)) {
+                var validRef = $input.data("valid");
+                var validEle = intent.children[0].getElementsByTagName("validation")[0];
+                var constEle = null;
+                for (var j = 0; j < validEle.children.length; j++) {
+                    var constraint = validEle.children[j];
+                    if (constraint.children[0].innerHTML === validRef) {
+                        constEle = constraint;
+                        break;
+                    }
                 }
-            }
-            if (constEle) {
-                var regex = constEle.children[1].innerHTML;
-                regex = regex.replace(/\\/g, "\\");
-                regex = new RegExp(regex, "gm");
+                if (constEle) {
+                    var regex = constEle.children[1].innerHTML;
+                    regex = regex.replace(/\\/g, "\\");
+                    regex = new RegExp(regex, "gm");
 
-                var $message = $("<div>", {class: "intent-input-message"});
-                if (constEle.getElementsByTagName("message").length > 0) {
-                    $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
-                }
+                    var $message = $("<div>", {class: "intent-input-message"});
+                    if (constEle.getElementsByTagName("message").length > 0) {
+                        $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
+                    }
 
-                $input.parent().append($message);
+                    $input.parent().append($message);
 
-                if (($input.val() === null || $input.val() === "")) {
-                    if ($input.data("required")) {
+                    if (($input.val() === null || $input.val() === "")) {
+                        if ($input.data("required")) {
+                            valid = false;
+                            $input.addClass("invalid");
+                            var $stage = $($input.parents(".intent-stage-div")[0]);
+                            $("#prog-" + $stage.attr("id")).addClass("invalid");
+                        }
+                    } else if ($input.val().match(regex) === null) {
                         valid = false;
                         $input.addClass("invalid");
                         var $stage = $($input.parents(".intent-stage-div")[0]);
                         $("#prog-" + $stage.attr("id")).addClass("invalid");
                     }
-                } else if ($input.val().match(regex) === null) {
-                    valid = false;
-                    $input.addClass("invalid");
-                    var $stage = $($input.parents(".intent-stage-div")[0]);
-                    $("#prog-" + $stage.attr("id")).addClass("invalid");
                 }
             }
         }
-    }
 
-    if (valid || mode === 2) {
-        // Parse manifest
-        var json = {};
-        $("#intent-panel-body .intent-input").each(function () {
-            var cond = $(this).parents('.conditional').length;
-            if (cond > 0 && $(this).parents('.conditioned').length < cond) {
-                ;
-            } else {
-                var arr = this.id.split("-");
-
-                var last = json;
-                var i;
-                for (i = 1; i < (arr.length - 1); i++) {
-                    var key = arr[i];
-                    if (!(key in last)) {
-                        last[key] = {};
-                    }
-                    last = last[key];
-                }
-                var key = arr[i];
-                if ($(this).attr("type") === "checkbox") {
-                    last[key] = $(this).is(":checked");
+        if (valid || mode === 2) {
+            // Parse manifest
+            var json = {};
+            $("#intent-panel-body .intent-input").each(function () {
+                var cond = $(this).parents('.conditional').length;
+                if (cond > 0 && $(this).parents('.conditioned').length < cond) {
+                    ;
                 } else {
-                    last[key] = $(this).val();
-                }
-            }
-        });
+                    var arr = this.id.split("-");
 
-        manifest = json;
-        parseManifestIntoJSON();
-
-        // Check for saving
-        if (mode === 1) {
-            openSaveModal();
-            setTimeout(function () {
-                gsap["intent"].play();
-            }, 250);
-        } else if (mode === 2) {
-            console.log(JSON.stringify(manifest));
-        } else {
-            // Submit to backend
-            var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
-            $.ajax({
-                url: apiUrl,
-                type: 'POST',
-                data: JSON.stringify(package),
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                    xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                },
-                success: function (result) {
-                    window.location.href = "/StackV-web/ops/catalog.jsp";
-                },
-                error: function (result) {
-                    window.location.href = "/StackV-web/ops/catalog.jsp";
+                    var last = json;
+                    var i;
+                    for (i = 1; i < (arr.length - 1); i++) {
+                        var key = arr[i];
+                        if (!(key in last)) {
+                            last[key] = {};
+                        }
+                        last = last[key];
+                    }
+                    var key = arr[i];
+                    if ($(this).attr("type") === "checkbox") {
+                        last[key] = $(this).is(":checked");
+                    } else {
+                        last[key] = $(this).val();
+                    }
                 }
             });
+
+            manifest = json;
+            parseManifestIntoJSON();
+            // Check if rendering failed
+            if (manifest !== null) {
+                // Check for saving
+                if (mode === 1) {
+                    openSaveModal();
+                    setTimeout(function () {
+                        gsap["intent"].play();
+                    }, 250);
+                } else if (mode === 2) {
+                    console.log(JSON.stringify(manifest));
+                } else {
+                    // Submit to backend
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'POST',
+                        data: JSON.stringify(package),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        },
+                        success: function (result) {
+                            window.location.href = "/StackV-web/ops/catalog.jsp";
+                        },
+                        error: function (result) {
+                            window.location.href = "/StackV-web/ops/catalog.jsp";
+                        }
+                    });
+                }
+            } else {
+                /*setTimeout(function () {
+                 gsap["intent"].play();
+                 }, 500);*/
+            }
+        } else {
+            $(".intent-operations").addClass("blocked");
+            swal("Input Error", "Invalid Inputs. Please review marked fields and correct them.", "error");
+            /*setTimeout(function () {
+             gsap["intent"].play();
+             }, 500);*/
         }
-    } else {
-        setTimeout(function () {
-            gsap["intent"].play();
-        }, 500);
     }
 }
 
@@ -1211,6 +1221,12 @@ function parseManifestIntoJSON() {
             }
             // Render template            
             var rendered = render(manifest);
+            if (!rendered) {
+                swal("Render Error", "The manifest submitted could not be properly rendered. Please recheck your inputs.", "error");
+                manifest = null;
+                return;
+            }
+
             delete manifest["data"]["uuid"];
             delete manifest["data"]["options"];
 

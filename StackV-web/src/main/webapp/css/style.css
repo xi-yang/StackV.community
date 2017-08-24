@@ -40,6 +40,7 @@ black-screen: 3
 @import "animate.min.css";
 @import "font-awesome.min.css";
 @import "bootstrap.min.css";
+@import "sweetalert.css";
 
 /*Custom styles*/
 @import "global.css";

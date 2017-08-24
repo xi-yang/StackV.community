@@ -219,7 +219,7 @@ button:focus {
     left: 0;
     position: absolute;
     bottom: 0;
-    border-radius: 0 0 0 20px;
+    border-radius: 0 0 0 15px;
     background: #7f7f7f;
     color: white;
     border: 1px solid #6d6d6d;
@@ -241,6 +241,11 @@ button:focus {
     -webkit-transition: all 250ms linear;
     transition: all 250ms linear;
 }
+.intent-controls.blocked, .intent-operations.blocked {    
+    color: #afafaf;
+    pointer-events: none;    
+}
+
 #intent-submit {
     left: 50%;
     border-radius: 0;
@@ -248,6 +253,7 @@ button:focus {
 #intent-save {
 
 }
+
 #saveModalLabel {
     display: inline-block;
 }
