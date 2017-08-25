@@ -1,8 +1,6 @@
-(function(conditions, opts) {
-    function isOPS(condition) {
-        return condition == 'openstack-form';
-    }
-    if (conditions.some(isOPS)) {
+(function(root, opts) {
+    if (root.options.includes('openstack-form') ||   // array
+            root.parent.includes('openstack')) {        // string
         return opts.fn(this);
     } else {
         return opts.inverse(this);

@@ -13,8 +13,8 @@
 @prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
 
 &lt;x-policy-annotation:data:vpc-criteria&gt;
-    a            spa:PolicyData;
-    spa:type     nml:Topology;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
     spa:value    """{{topologyPolicyData @root}}""".
 
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_clouds:tag+vpc1&gt;
@@ -49,8 +49,7 @@
     a            spa:PolicyData;
     spa:type     "JSON" ;
     spa:format   """{
-        "to_l2path": "%%$.conn1%%"
-        "to_l2path": %%$. urn:ogf:network:vo1_maxgigapop_net:link=conn1%%
+        "to_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%%
     }""" .
 
 &lt;x-policy-annotation:data:conn-criteria1&gt;
@@ -70,7 +69,7 @@
     {{else}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
 {{/if_directConnect}}
-{{#if_aws conditions}} {{! AWS }}
+{{#if_aws @root}} {{! AWS }}
     {{#subnets}}
         {{#vms}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
@@ -84,7 +83,7 @@
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;
 {{addressString name interfaces @root.uuid}}
 
-&lt;x-policy-annotation:action:create-{{@root.uuid}}&gt;
+&lt;x-policy-annotation:action:create-{{name}}&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_VMFilterPlacement" ;
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
@@ -99,7 +98,7 @@
     {{/subnets}}
 {{/if_aws}}
 
-{{#if_ops conditions}} {{! OPS }}
+{{#if_ops @root}} {{! OPS }}
     {{#subnets}}
         {{#vms}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
@@ -121,9 +120,10 @@
 ;
 {{addressString name interfaces @root.uuid}}  {{! check on conditional relating to blank addressString }}
             {{#sriovs}}
-                {{#each ../../../gateways}}
+                {{#each @root.gateways}}
                     {{#if_eq name ../hosting_gateway}}
                         {{#if_eq type 'UCS Port Profile'}}
+                        {{log this}}
 &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{../../name}}-sriov{{@../index}}&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_UcsSriovStitching" ;
@@ -242,6 +242,7 @@
     {{#subnets}}
 
     {{#if_createPathExportTo @root}}
+    {{log this}}
 &lt;x-policy-annotation:action:create-path&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_MPVlanConnection" ;
@@ -261,9 +262,9 @@
             {{#vms}}
                 {{#if interfaces }}
                     {{#sriovs}}
-                        {{#each ../../../gateways}}
+                        {{#each @root.gateways}}
                             {{#if_eq name ../hosting_gateway}}
-                                    {{!TODO example JSON doesn't use this piece yet }}
+
                             {{/if_eq}}
                         {{/each}}
                     {{/sriovs}}
@@ -339,7 +340,7 @@ mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtua
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}&gt;
     nml:hasService       &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs&gt;.
             {{#if exports}}
-lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs:exports&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs:exports&gt;
    a mrs:NetworkAddress ;
    mrs:type "nfs:exports";
    mrs:value "{{{exports}}}".
