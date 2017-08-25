@@ -29,9 +29,10 @@ public class GoogleCloudAuthenticate {
         try {
             InputStream resourceAsStream = new ByteArrayInputStream(jsonString.getBytes());
             credential = GoogleCredential.fromStream(resourceAsStream);
-            ArrayList<String> scopes = new ArrayList<>();
+            ArrayList<String> scopes = new ArrayList<String>();
             scopes.add("https://www.googleapis.com/auth/cloud-platform");
-            credential.createScoped(scopes);
+            //scopes.add("https://www.googleapis.com/auth/compute");
+            credential = credential.createScoped(scopes);
         } catch (IOException e) {
             //logger.error(method, "error while authenticating: "+e.getMessage());
         }
