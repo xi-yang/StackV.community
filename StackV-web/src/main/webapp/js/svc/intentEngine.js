@@ -161,7 +161,10 @@ function initMeta(meta) {
     var $panel = $("#intent-panel-meta");
     $("#meta-title").text(meta.children[0].innerHTML);
     $("#meta-alias").change(function () {
-        $(this).removeClass("invalid");
+        $(this).removeClass("invalid-input");        
+        if ($(".invalid-input").length === 0) {
+            $(".intent-operations").removeClass("blocked");
+        }
     });
 
     // Render blocks
@@ -520,12 +523,12 @@ function renderInputs(arr, $parent) {
                 $input.attr("data-valid", validRef);
 
                 $input.change(function () {
-                    $(this).removeClass("invalid");
+                    $(this).removeClass("invalid-input");
                     var $stage = $($(this).parents(".intent-stage-div")[0]);
-                    if ($stage.find(".invalid").length === 0) {
-                        $("#prog-" + $stage.attr("id")).removeClass("invalid");
+                    if ($stage.find(".invalid-input").length === 0) {
+                        $("#prog-" + $stage.attr("id")).removeClass("invalid-input");
                     }
-                    if ($(".intent-input.invalid").length === 0) {
+                    if ($(".invalid-input").length === 0) {
                         $(".intent-operations").removeClass("blocked");
                     }
                 });
@@ -635,14 +638,14 @@ function recursivelyFactor(id, ele) {
 
 function submitIntent(mode) {
     //gsap["intent"].reverse();
-    refreshLinks();    
-    if ($(".intent-input.invalid").length === 0) {
+    refreshLinks();
+    if ($(".invalid-input").length === 0) {
         // Validate
         var validation = $("[data-valid]");
         var valid = true;
         if (!($("#meta-alias").val()) && mode === 0) {
             valid = false;
-            $("#meta-alias").addClass("invalid");
+            $("#meta-alias").addClass("invalid-input");
         }
 
         for (var i = 0; i < validation.length; i++) {
@@ -673,15 +676,15 @@ function submitIntent(mode) {
                     if (($input.val() === null || $input.val() === "")) {
                         if ($input.data("required")) {
                             valid = false;
-                            $input.addClass("invalid");
+                            $input.addClass("invalid-input");
                             var $stage = $($input.parents(".intent-stage-div")[0]);
-                            $("#prog-" + $stage.attr("id")).addClass("invalid");
+                            $("#prog-" + $stage.attr("id")).addClass("invalid-input");
                         }
                     } else if ($input.val().match(regex) === null) {
                         valid = false;
-                        $input.addClass("invalid");
+                        $input.addClass("invalid-input");
                         var $stage = $($input.parents(".intent-stage-div")[0]);
-                        $("#prog-" + $stage.attr("id")).addClass("invalid");
+                        $("#prog-" + $stage.attr("id")).addClass("invalid-input");
                     }
                 }
             }
@@ -1646,9 +1649,8 @@ function preloadAWSVCN() {
         $("#vms-vm_num1-interface_num1-type").val("Ethernet").change();
 
         $("#gateways-gateway_num1-name").val("l2path-aws-dc1");
-        $("#gateways-gateway_num1-type").val("AWS Direct Connect").change();
+        //$("#gateways-gateway_num1-type").val("AWS Direct Connect").change();
         $("#gateways-gateway_num1-route_num1-to").val("urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*");
-        $("#gateways-gateway_num1-route_num1-type").val("stitch_port");
     }, 500);
 }
 function preloadOPSVCN() {
