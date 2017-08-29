@@ -942,7 +942,7 @@ function reloadData() {
                     $("#body-" + this.id).toggleClass("hide");
                 });
                 refreshSync(refreshed, timerSetting);
-            }, 1000);
+            }, 500);
         } else {
             reloadLogs();
             subloadDetails();

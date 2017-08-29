@@ -32,6 +32,7 @@ import java.sql.SQLException;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.WebResource;
+import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -51,6 +52,7 @@ public class VerificationDrone implements Runnable {
 
     String state;
     String instanceUUID;
+    String instanceSubstate;
     String pending;
     int runs;
     int delay;
@@ -69,9 +71,6 @@ public class VerificationDrone implements Runnable {
         conn = _conn;
         runs = _runs;
         delay = _delay;
-
-        logger.refuuid(instanceUUID);
-
         /*try {
             prep = conn.prepareStatement("SELECT * FROM service_verification"
                     + "WHERE instanceUUID = ?");
@@ -96,6 +95,7 @@ public class VerificationDrone implements Runnable {
     @Override
     public void run() {
         // Double check for INIT state.
+        logger.refuuid(instanceUUID);
         initData();
         switch (state) {
             case "FINISHED":
@@ -107,88 +107,100 @@ public class VerificationDrone implements Runnable {
                 verify();
                 break;
             case "RUNNING":
-                logger.status("run", "Verification attempted to start, but already started");            
+                logger.status("run", "Verification attempted to start, but already started");
         }
         WebResource.commonsClose(conn, prep, rs);
     }
 
     private void verify() {
         String method = "verify";
-        logger.start("Verification drone starting");
+        logger.start(method, "Verification drone starting");
         state = "RUNNING";
         currentRun++;
         try {
             while (currentRun <= runs) {
                 // Step 1: Check for pending actions
-                updateActions();
+                updateData();
                 if (!pending.isEmpty()) {
                     switch (pending) {
                         case "PAUSE":
                             logger.trace(method, "Pause signal received. Drone ending operation");
+                            prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `state` = 'PAUSED' "
+                                    + "WHERE `instanceUUID` = ? ");
+                            prep.setString(1, instanceUUID);
+                            prep.executeUpdate();
                             return;
                         case "STOP":
                             logger.trace(method, "Stop signal received. Drone ending operation");
                             return;
                     }
                 }
-                
-                logger.trace(method, "Run: " + currentRun);
-                
-                // Step 2: Update state
-                boolean redVerified = true, addVerified = true;
+                if (!instanceSubstate.equals("FAILED")) {
+                    logger.trace(method, "Run " + currentRun + "/" + runs + " | Instance in " + instanceSubstate);
 
-                URL url = new URL(String.format("%s/service/verify/%s", host, instanceUUID));
-                HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
-                String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, token.auth());
+                    // Step 2: Update state
+                    boolean redVerified = true, addVerified = true;
 
-                // Pull data from JSON.
-                JSONParser parser = new JSONParser();
-                Object obj = parser.parse(result);
-                JSONObject verifyJSON = (JSONObject) obj;
+                    URL url = new URL(String.format("%s/service/verify/%s", host, instanceUUID));
+                    HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
+                    String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, token.auth());
 
-                if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null)
-                        && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
-                    redVerified = false;
-                }
-                if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null)
-                        && ((String) verifyJSON.get("additionVerified")).equals("false")) {
-                    addVerified = false;
-                }
+                    // Pull data from JSON.
+                    JSONParser parser = new JSONParser();
+                    Object obj = parser.parse(result);
+                    JSONObject verifyJSON = (JSONObject) obj;
 
-                // Step 3: Update verification data
-                prep = conn.prepareStatement("UPDATE `service_verification` SET `state`=?,`delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,"
-                        + "`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? "
-                        + "WHERE `instanceUUID`= ? ");
-                prep.setString(1, (String) verifyJSON.get("referenceUUID"));
-                prep.setString(2, (String) verifyJSON.get("creationTime"));
-                prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
-                prep.setString(4, (String) verifyJSON.get("verifiedModelAddition"));
-                prep.setString(5, (String) verifyJSON.get("unverifiedModelReduction"));
-                prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
-                prep.setString(7, (String) verifyJSON.get("reductionVerified"));
-                prep.setString(8, (String) verifyJSON.get("additionVerified"));
-                prep.setInt(9, currentRun);
-                prep.setString(10, instanceUUID);
-                prep.executeUpdate();
+                    if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null)
+                            && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
+                        redVerified = false;
+                    }
+                    if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null)
+                            && ((String) verifyJSON.get("additionVerified")).equals("false")) {
+                        addVerified = false;
+                    }
 
-                // Step 4: Check for success
-                if (redVerified && addVerified) {
-                    state = "FINISHED";
-                    prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1', `state` = 'FINISHED' "
+                    // Step 3: Update verification data
+                    prep = conn.prepareStatement("UPDATE `service_verification` SET `state`='RUNNING',`delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,"
+                            + "`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? "
+                            + "WHERE `instanceUUID`= ? ");
+                    prep.setString(1, (String) verifyJSON.get("referenceUUID"));
+                    prep.setString(2, (String) verifyJSON.get("creationTime"));
+                    prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
+                    prep.setString(4, (String) verifyJSON.get("verifiedModelAddition"));
+                    prep.setString(5, (String) verifyJSON.get("unverifiedModelReduction"));
+                    prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
+                    prep.setString(7, (String) verifyJSON.get("reductionVerified"));
+                    prep.setString(8, (String) verifyJSON.get("additionVerified"));
+                    prep.setInt(9, currentRun);
+                    prep.setString(10, instanceUUID);
+                    prep.executeUpdate();
+
+                    // Step 4: Check for success
+                    if (redVerified && addVerified) {
+                        state = "FINISHED";
+                        prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1', `state` = 'FINISHED' "
+                                + "WHERE `instanceUUID` = ? ");
+                        prep.setString(1, instanceUUID);
+                        prep.executeUpdate();
+
+                        logger.end(method, "Verification success");
+                        return;
+                    }
+
+                    // Step 5: Delay until next run
+                    Thread.sleep(delay * 1000);
+                    currentRun++;
+                } else {
+                    state = "FAILED";
+                    prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1', `state` = 'FAILED' "
                             + "WHERE `instanceUUID` = ? ");
                     prep.setString(1, instanceUUID);
                     prep.executeUpdate();
 
-                    logger.end(method, "Verification success");
+                    logger.end(method, "Instance in Failed state, terminating early.");
                     return;
                 }
-
-                // Step 5: Delay until next run
-                Thread.sleep(delay * 1000);
-                currentRun++;
-
             }
-
             // Step 4.1 If hit max runs without success, verification has failed
             state = "FINISHED";
             prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1', `state` = 'FINISHED' "
@@ -219,7 +231,7 @@ public class VerificationDrone implements Runnable {
         }
     }
 
-    private void updateActions() {
+    private void updateData() {
         try {
             prep = conn.prepareStatement("SELECT pending_action FROM service_verification "
                     + "WHERE instanceUUID = ?");
@@ -228,7 +240,11 @@ public class VerificationDrone implements Runnable {
             if (rs.next()) {
                 pending = rs.getString("pending_action");
             }
-        } catch (SQLException ex) {
+
+            URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+            HttpURLConnection status = (HttpURLConnection) url.openConnection();
+            instanceSubstate = executeHttpMethod(url, status, "GET", null, token.auth());
+        } catch (SQLException | IOException ex) {
             logger.catching("updateActions", ex);
         }
     }

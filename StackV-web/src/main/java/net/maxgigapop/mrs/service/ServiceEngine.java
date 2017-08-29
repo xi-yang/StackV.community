@@ -74,16 +74,15 @@ class ServiceEngine {
             int instanceID = results;
 
             result = initInstance(refUUID, svcDelta, token.auth());
-            lastState = result;
             logger.trace(method, "Initialized");
             cacheSystemDelta(instanceID, result);
 
-            result = propagateInstance(refUUID, token.auth());
-            lastState = result;
+            propagateInstance(refUUID, token.auth());
+            lastState = "PROPAGATED";
             logger.trace(method, "Propagated");
 
             result = commitInstance(refUUID, token.auth());
-            lastState = result;
+            lastState = "COMMITTING";
             logger.trace(method, "Committing");
 
             URL url = new URL(String.format("%s/service/%s/status", host, refUUID));
@@ -92,8 +91,8 @@ class ServiceEngine {
                 sleep(5000);//wait for 5 seconds and check again later        
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
                 result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());                
-                lastState = result;
             }
+            lastState = "COMMITTED";
             logger.trace(method, "Committed");            
 
             VerificationHandler verify = new VerificationHandler(refUUID, token);

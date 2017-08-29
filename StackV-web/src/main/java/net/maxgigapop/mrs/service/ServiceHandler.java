@@ -350,11 +350,13 @@ public class ServiceHandler {
         }
 
         result = propagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
         if (!result) {
             return 3;
         }
 
         result = commit(refUuid, token.auth());
+        lastState = "COMMITTING";
         if (!result) {
             return 4;
         }
@@ -362,7 +364,7 @@ public class ServiceHandler {
         while (true) {
             instanceState = status();
             if (instanceState.equals("COMMITTED")) {
-                lastState = instanceState;
+                lastState = "COMMITTED";
                 VerificationHandler verify = new VerificationHandler(refUUID, token);
                 verify.startVerification();
                 return 0;
@@ -445,7 +447,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Propagate Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        lastState = result;
+        lastState = "PROPAGATED";
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
@@ -456,7 +458,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Forced Propagate Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        lastState = result;
+        lastState = "PROPAGATED";
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
@@ -467,7 +469,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Commit Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        lastState = result;
+        lastState = "COMMITTING";
         return result.equalsIgnoreCase("COMMITTING");
     }
 
@@ -478,7 +480,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Forced Commit Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        lastState = result;
+        lastState = "COMMITTING";
         return result.equalsIgnoreCase("COMMITTING");
     }
 
@@ -544,8 +546,8 @@ public class ServiceHandler {
     }
 
     void updateLastState(String lastState, String refUUID) {
+        
         String method = "updateLastState";
-        logger.trace_start(method);
 
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -568,6 +570,6 @@ public class ServiceHandler {
             commonsClose(front_conn, prep, rs);
         }
 
-        logger.trace_end(method);
+        logger.trace_end(method, lastState);
     }
 }

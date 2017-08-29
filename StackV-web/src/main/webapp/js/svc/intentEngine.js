@@ -742,14 +742,9 @@ function submitIntent(mode) {
                         beforeSend: function (xhr) {
                             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                        },
-                        success: function (result) {
-                            window.location.href = "/StackV-web/ops/catalog.jsp";
-                        },
-                        error: function (result) {
-                            window.location.href = "/StackV-web/ops/catalog.jsp";
-                        }
+                        }                        
                     });
+                    window.location.href = "/StackV-web/ops/catalog.jsp";
                 }
             } else {
                 /*setTimeout(function () {
