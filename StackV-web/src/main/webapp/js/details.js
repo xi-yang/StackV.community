@@ -286,18 +286,18 @@ function subloadVerification() {
         },
         success: function (verification) {
             /*  verification mapping:
-             *      0 - verification_run
-             *      1 - creation_time
-             *      2 - addition
-             *      3 - reduction
-             *      4 - service_instance_id 
-             *      5 - enabled */
+             *      1 - state
+             *      1 - verification_run
+             *      2 - creation_time
+             *      3 - addition
+             *      4 - reduction
+             *      5 - service_instance_id  */
 
-            verificationRun = verification[0];
-            verificationTime = verification[1];
-            verificationAddition = verification[2];
-            verificationReduction = verification[3];
-            verificationEnabled = verification[5];
+            verifyState = verification[0];
+            verificationRun = verification[1];
+            verificationTime = verification[2];
+            verificationAddition = verification[3];
+            verificationReduction = verification[4];
 
             instructionModerate();
             buttonModerate();
@@ -865,6 +865,10 @@ function buttonModerate() {
         case "COMMITTED":
             $("#verify").removeClass("hide");
             break;
+        case "COMMITTING":
+            $("#verify").removeClass("hide");
+            $("#force_cancel").removeClass("hide");
+            break;
         case "FAILED":
             // Error case
             if (lastState === "INIT") {
@@ -906,7 +910,7 @@ function buttonModerate() {
             break;
     }
 
-    if (verificationRun > 0 && verificationRun < 30) {
+    if (verifyState === "RUNNING") {
         $("#verify").html("Cancel Verification");
         $("#verify").attr("id", "unverify");
     }

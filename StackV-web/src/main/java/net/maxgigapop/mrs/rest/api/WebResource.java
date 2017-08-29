@@ -2381,12 +2381,12 @@ public class WebResource {
 
             rs = prep.executeQuery();
             while (rs.next()) {
+                retList.add(rs.getString("state"));
                 retList.add(rs.getString("verification_run"));
                 retList.add(rs.getString("creation_time"));
                 retList.add(rs.getString("addition"));
                 retList.add(rs.getString("reduction"));
                 retList.add(rs.getString("service_instance_id"));
-                retList.add(String.valueOf(rs.getBoolean("enabled")));
             }
 
             return retList;

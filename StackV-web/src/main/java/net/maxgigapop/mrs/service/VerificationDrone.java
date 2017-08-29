@@ -114,7 +114,7 @@ public class VerificationDrone implements Runnable {
 
     private void verify() {
         String method = "verify";
-        logger.start("Verification commencing");
+        logger.start("Verification drone starting");
         state = "RUNNING";
         currentRun++;
         try {
@@ -124,12 +124,16 @@ public class VerificationDrone implements Runnable {
                 if (!pending.isEmpty()) {
                     switch (pending) {
                         case "PAUSE":
+                            logger.trace(method, "Pause signal received. Drone ending operation");
                             return;
                         case "STOP":
+                            logger.trace(method, "Stop signal received. Drone ending operation");
                             return;
                     }
                 }
-
+                
+                logger.trace(method, "Run: " + currentRun);
+                
                 // Step 2: Update state
                 boolean redVerified = true, addVerified = true;
 
@@ -208,9 +212,10 @@ public class VerificationDrone implements Runnable {
             if (rs.next()) {
                 state = rs.getString("state");
                 currentRun = rs.getInt("verification_run");
+                logger.trace("initData", "Drone initialized");
             }
         } catch (SQLException ex) {
-            logger.catching("updateData", ex);
+            logger.catching("initData", ex);
         }
     }
 
