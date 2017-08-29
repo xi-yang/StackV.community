@@ -205,7 +205,7 @@ public class VerificationDrone implements Runnable {
     // UTILITY
     private void initData() {
         try {
-            prep = conn.prepareStatement("SELECT state, verification_run FROM service_verification"
+            prep = conn.prepareStatement("SELECT state, verification_run FROM service_verification "
                     + "WHERE instanceUUID = ?");
             prep.setString(1, instanceUUID);
             rs = prep.executeQuery();
@@ -221,7 +221,7 @@ public class VerificationDrone implements Runnable {
 
     private void updateActions() {
         try {
-            prep = conn.prepareStatement("SELECT pending_action FROM service_verification"
+            prep = conn.prepareStatement("SELECT pending_action FROM service_verification "
                     + "WHERE instanceUUID = ?");
             prep.setString(1, instanceUUID);
             rs = prep.executeQuery();
@@ -229,14 +229,14 @@ public class VerificationDrone implements Runnable {
                 pending = rs.getString("pending_action");
             }
         } catch (SQLException ex) {
-            logger.catching("updateData", ex);
+            logger.catching("updateActions", ex);
         }
     }
 
     private void resetVerification() {
         try {
             int instanceID = -1;
-            prep = conn.prepareStatement("SELECT service_instance_id FROM service_verification"
+            prep = conn.prepareStatement("SELECT service_instance_id FROM service_verification "
                     + "WHERE instanceUUID = ?");
             prep.setString(1, instanceUUID);
             rs = prep.executeQuery();
