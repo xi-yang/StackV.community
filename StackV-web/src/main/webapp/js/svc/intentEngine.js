@@ -1220,7 +1220,7 @@ function parseManifestIntoJSON() {
             // Render template            
             var rendered = render(manifest);
             if (!rendered) {
-                swal("Render Error", "The manifest submitted could not be properly rendered. Please recheck your inputs.", "error");
+                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
                 manifest = null;
                 return;
             }

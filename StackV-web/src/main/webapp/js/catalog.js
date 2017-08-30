@@ -239,11 +239,15 @@ function loadWizard() {
                         success: function (result) {
                             var manifest = profile;
                             manifest["uuid"] = result;
-                            manifest["data"]["conditions"] = manifest["conditions"];
+                            manifest["data"]["options"] = manifest["options"];
                             //manifest["data"] = JSON.parse($("#info-panel-text-area").val());
 
                             // Render template
                             var rendered = render(manifest);
+                            if (!rendered) {
+                                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
+                                return;
+                            }
                             delete manifest["uuid"];
 
                             profile["data"] = rendered;
@@ -276,7 +280,7 @@ function loadWizard() {
                     evt.preventDefault();
                 } else {
                     $("#profile-alias").addClass("invalid");
-                    $("#profile-alias").change(function() {
+                    $("#profile-alias").change(function () {
                         $(this).removeClass("invalid");
                     });
                 }
