@@ -12,9 +12,13 @@ package net.maxgigapop.mrs.driver.googlecloud;
 public class GoogleCloudPrefix {
     public static String prefix = "google.com:google-cloud";
     
-    public static String project =  prefix+":project+%s";
-    public static String vpc =      prefix+":project+%s:vpc+%s";
-    public static String subnet =   prefix+":project+%s:vpc+%s:subnet+%s";
-    public static String instance = prefix+":project+%s:vpc+%s:subnet+%s:instance+%s";
+    public static String computeService = prefix+":computeService+%s";
+    public static String vpcService =     prefix+":vpcService+%s";
+    public static String storageService = prefix+":storageService+%s";
+    public static String vpc =      prefix+":vpc+%s";
+    public static String subnet =   prefix+":vpc+%s:region+%s:subnet+%s";
+    public static String instance = prefix+":vpc+%s:subnet+%s:instance+%s";
+    public static String volume =   prefix+":instance+%s:volume+%s";
     
+
 }

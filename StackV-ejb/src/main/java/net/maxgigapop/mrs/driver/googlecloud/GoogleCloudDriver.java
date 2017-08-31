@@ -63,7 +63,7 @@ import org.json.simple.JSONObject;
 //truly get deleted.
 @Stateless
 public class GoogleCloudDriver implements IHandleDriverSystemCall {
-
+    
     public static final StackLogger logger = new StackLogger(GoogleCloudDriver.class.getName(), "GoogleCloudDriver");
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
@@ -125,6 +125,7 @@ public class GoogleCloudDriver implements IHandleDriverSystemCall {
             throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
         }
         String jsonAuth = driverInstance.getProperty("gcp_access_json");
+        
         String projectID =  driverInstance.getProperty("projectID");
         String region = driverInstance.getProperty("region");
         String topologyURI = driverInstance.getProperty("topologyUri");
@@ -188,7 +189,7 @@ public class GoogleCloudDriver implements IHandleDriverSystemCall {
         } catch (IOException e) {
             throw logger.throwing(method, driverInstance + " failed GoogleCloudModelBuilder.createOntology", e);
         } catch (Exception ex) {
-            throw logger.throwing(method, driverInstance + " failed pull model", ex);
+            throw logger.throwing(method, driverInstance + " failed pull model due to "+ex.getMessage(), ex);
         }
         logger.trace_end(method);
         return new AsyncResult<>("SUCCESS");
