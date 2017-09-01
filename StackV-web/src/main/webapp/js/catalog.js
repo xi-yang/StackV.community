@@ -250,8 +250,8 @@ function loadWizard() {
                             }
                             delete manifest["uuid"];
 
-                            profile["data"] = rendered;
-
+                            profile["data"] = rendered;                            
+                            profile['proceed'] = "true";
                             var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
                             $.ajax({
                                 url: apiUrl,

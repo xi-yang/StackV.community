@@ -59,12 +59,8 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -75,7 +71,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -95,6 +90,7 @@ import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jboss.resteasy.spi.UnhandledException;
+
 
 /**
  * REST Web Service
@@ -2659,14 +2655,14 @@ public class WebResource {
             JSONObject inputJSON = (JSONObject) obj;
 
             String name = (String) inputJSON.get("name");
-            String description = (String) inputJSON.get("description");            
+            String description = (String) inputJSON.get("description");
             String username = (String) inputJSON.get("username");
-            
+
             JSONObject inputData = (JSONObject) inputJSON.get("data");
-            inputData.remove("uuid");            
-            if(inputData.containsKey("options") && ((JSONArray) inputData.get("options")).isEmpty()) {
+            inputData.remove("uuid");
+            if (inputData.containsKey("options") && ((JSONArray) inputData.get("options")).isEmpty()) {
                 inputData.remove("options");
-            }            
+            }
             String inputDataString = inputData.toJSONString();
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?)");
@@ -2842,14 +2838,24 @@ public class WebResource {
             if (roleSet.contains(serviceType)) {
                 String username = accessToken.getPreferredUsername();
                 inputJSON.remove("username");
-                inputJSON.put("username", username);                                
+                inputJSON.put("username", username);
 
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        asyncResponse.resume(doCreateService(inputJSON, token));
-                    }
-                });
+                String proceed = (String) inputJSON.get("proceed");
+                if (proceed != null && proceed.equals("true")) {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            asyncResponse.resume(doCreateService(inputJSON, token, true));
+                        }
+                    });
+                } else {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            asyncResponse.resume(doCreateService(inputJSON, token, false));
+                        }
+                    });
+                }
             } else {
                 logger.warning(method, "User not allowed access to " + serviceType);
             }
@@ -2934,8 +2940,8 @@ public class WebResource {
     }
 
     // Async Methods -----------------------------------------------------------
-    private String doCreateService(JSONObject inputJSON, TokenHandler token) {
-        ServiceHandler instance = new ServiceHandler(inputJSON, token);
+    private String doCreateService(JSONObject inputJSON, TokenHandler token, boolean autoProceed) {
+        ServiceHandler instance = new ServiceHandler(inputJSON, token, autoProceed);
         return instance.refUUID;
     }
 

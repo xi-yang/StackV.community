@@ -732,6 +732,7 @@ function submitIntent(mode) {
                     console.log(JSON.stringify(manifest));
                 } else {
                     // Submit to backend
+                    package['proceed'] = "true";
                     var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
                     $.ajax({
                         url: apiUrl,

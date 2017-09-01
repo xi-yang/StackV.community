@@ -61,10 +61,10 @@ public class ServiceHandler {
     String alias;
     String lastState = "INIT";
 
-    public ServiceHandler(JSONObject input, TokenHandler initToken) {
+    public ServiceHandler(JSONObject input, TokenHandler initToken, boolean autoProceed) {
         token = initToken;
 
-        createInstance(input);
+        createInstance(input, autoProceed);
     }
 
     public ServiceHandler(String refUUID, TokenHandler initToken) {
@@ -76,7 +76,7 @@ public class ServiceHandler {
     }
 
     // INIT METHODS
-    private void createInstance(JSONObject inputJSON) {
+    private void createInstance(JSONObject inputJSON, boolean autoProceed) {
         String method = "createInstance";
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -152,7 +152,7 @@ public class ServiceHandler {
             logger.init();
 
             // Execute service creation.
-            ServiceEngine.orchestrateInstance(refUUID, delta, deltaUUID, token);
+            ServiceEngine.orchestrateInstance(refUUID, delta, deltaUUID, token, autoProceed);
             /*switch (type) {
                 case "netcreate":
                     ServiceEngine.createNetwork(paraMap, token);
