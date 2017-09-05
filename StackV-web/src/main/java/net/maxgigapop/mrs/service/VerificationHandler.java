@@ -47,7 +47,7 @@ public class VerificationHandler {
     String instanceUUID;
 
     public VerificationHandler(String _instanceUUID, TokenHandler _token) {
-        String method = "VerificationHandler init";
+        String method = "init";
         token = _token;
         instanceUUID = _instanceUUID;
         logger.refuuid(instanceUUID);
@@ -109,7 +109,7 @@ public class VerificationHandler {
         updateState();
         try {
             if (state.equals("RUNNING")) {
-                prep = conn.prepareStatement("UPDATE service_verification SET pending_action = ?"
+                prep = conn.prepareStatement("UPDATE service_verification SET pending_action = ? "
                         + "WHERE instanceUUID = ?");
                 prep.setString(1, action);
                 prep.setString(2, instanceUUID);
