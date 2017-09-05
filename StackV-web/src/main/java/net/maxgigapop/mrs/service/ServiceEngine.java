@@ -72,7 +72,7 @@ class ServiceEngine {
 
             if (autoProceed) {
                 logger.trace(method, "Proceeding automatically");
-                
+
                 propagateInstance(refUUID, token.auth());
                 lastState = "PROPAGATED";
                 logger.trace(method, "Propagated");
@@ -91,8 +91,12 @@ class ServiceEngine {
                 lastState = "COMMITTED";
                 logger.trace(method, "Committed");
 
-                VerificationHandler verify = new VerificationHandler(refUUID, token);
-                verify.startVerification();
+                if (!result.equals("FAILED")) {
+                    VerificationHandler verify = new VerificationHandler(refUUID, token);
+                    verify.startVerification();
+                } else {
+                    logger.trace(method, "Automatic verification skipped due to FAILED state");
+                }
             }
 
             logger.end(method);
@@ -119,7 +123,7 @@ class ServiceEngine {
 
                 logger.trace_end("updateLastState");
             } catch (SQLException ex) {
-                logger.catching("cacheSystemDelta", ex);
+                logger.catching(method, ex);
             } finally {
                 commonsClose(front_conn, prep, rs);
             }

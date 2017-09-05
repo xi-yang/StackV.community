@@ -865,9 +865,17 @@ function buttonModerate() {
         case "COMMITTED":
             $("#verify").removeClass("hide");
             break;
-        case "COMMITTING":
-            $("#verify").removeClass("hide");
-            $("#force_cancel").removeClass("hide");
+        case "COMMITTING":            
+            switch (superState) {
+                case "CREATE":
+                case "REINSTATE":
+                    $("#force_cancel").removeClass("hide");
+                    break;
+                case "CANCEL":
+                    $("#force_reinstate").removeClass("hide");
+                    break;
+            }
+            
             break;
         case "FAILED":
             // Error case
@@ -913,7 +921,7 @@ function buttonModerate() {
     if (verifyState === "RUNNING") {
         $("#verify").html("Cancel Verification");
         $("#verify").attr("id", "unverify");
-    }
+    }        
 }
 
 

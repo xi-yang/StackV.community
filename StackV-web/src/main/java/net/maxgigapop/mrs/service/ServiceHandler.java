@@ -218,6 +218,7 @@ public class ServiceHandler {
 
         logger.refuuid(refUUID);
         logger.start(method);
+        updateLastState(null, refUUID);
         try {
             VerificationHandler verify = new VerificationHandler(refUUID, token);
             switch (action) {
@@ -545,9 +546,9 @@ public class ServiceHandler {
         }
     }
 
-    void updateLastState(String lastState, String refUUID) {
-        
+    void updateLastState(String lastState, String refUUID) {        
         String method = "updateLastState";
+        logger.trace_start(method, lastState);
 
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -565,11 +566,9 @@ public class ServiceHandler {
             prep.setString(2, refUUID);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            logger.catching("cacheSystemDelta", ex);
+            logger.catching("updateLastState", ex);
         } finally {
             commonsClose(front_conn, prep, rs);
         }
-
-        logger.trace_end(method, lastState);
     }
 }
