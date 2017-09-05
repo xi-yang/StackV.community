@@ -81,7 +81,7 @@ public class VerificationHandler {
     public void clearVerification() {
         try {
             int instanceID = -1;
-            prep = conn.prepareStatement("SELECT service_instance_id FROM service_verification"
+            prep = conn.prepareStatement("SELECT service_instance_id FROM service_verification "
                     + "WHERE instanceUUID = ?");
             prep.setString(1, instanceUUID);
             rs = prep.executeQuery();
@@ -99,7 +99,7 @@ public class VerificationHandler {
             prep.setString(2, instanceUUID);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            logger.catching("resetVerification", ex);
+            logger.catching("clearVerification", ex);
         }
     }
 
