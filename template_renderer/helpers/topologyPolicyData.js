@@ -29,6 +29,15 @@
                 nextHop: 'vpn',
             });
         }
+        if (subnet.vpn_route_propagation) {
+            if (!net.routes) {
+                net.routes = [];
+            }
+            net.routes.push({
+                to: '0.0.0.0/0',
+                nextHop: 'internet',
+            });
+        }
         subnets.push(net)
     });
     var network = {
