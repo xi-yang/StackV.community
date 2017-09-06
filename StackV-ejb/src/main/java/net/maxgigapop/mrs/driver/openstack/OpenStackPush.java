@@ -1931,7 +1931,7 @@ public class OpenStackPush {
                             continue;
                         }
                         if (typename.startsWith("image")) {
-                            imageID = "6da4f9b9-af53-4b28-bb0a-5797cae16c81";//value;
+                            imageID = value;//"6da4f9b9-af53-4b28-bb0a-5797cae16c81";
                         } else if (typename.startsWith("flavor") || typename.startsWith("instance")) {
                             flavorID = "3";//value;
                         } else if (typename.startsWith("keypair")) {
