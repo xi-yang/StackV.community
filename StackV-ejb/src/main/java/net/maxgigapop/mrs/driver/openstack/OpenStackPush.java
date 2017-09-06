@@ -1591,17 +1591,26 @@ public class OpenStackPush {
             String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
             String order = null;
             
+            //find the number of ports that have to be attached to the VM
+               int numPorts = 0;
+               query = "SELECT ?port WHERE {<"+server.asResource()+"> nml:hasBidirectionalPort ?port}";
+               ResultSet rNumPorts = executeQuery(query, emptyModel, modelDelta); 
+               while(rNumPorts.hasNext()){
+                  rNumPorts.next();
+                  numPorts++;
+               }
+            
             
             //check for "Order" property
             query = "SELECT ?order WHERE {<" + port.asResource() + "> mrs:order ?order}";
             ResultSet rOrder = executeQuery(query, modelRef, modelDelta);
-            if(!rOrder.hasNext() && creation)
+            if(!rOrder.hasNext() && creation && numPorts > 1)
             {
                 throw logger.error_throwing(method, "there is no Order Porperty for the port -  "+port.toString());
             }
             else{
                 if(creation){
-                order = rOrder.next().get("order").toString();}
+                order = (numPorts > 1 )? rOrder.next().get("order").toString() : "default";}
             }
 
             //1.1 get the server name, if no server is found, it means the port is not being attached to a server
@@ -1624,9 +1633,9 @@ public class OpenStackPush {
                 RDFNode batch = q.get("batch");
                 String batchVal = (batch!=null)? batch.toString() : "1";
                 
-                if(Integer.parseInt(batchVal)>1 && creation){count = (count == 0)? 1:count+1;}
+                if(Integer.parseInt(batchVal)>=1 && creation){count = (count == 0)? 1:count+1;}
             
-                if(Integer.parseInt(batchVal)>1 && count == 1&& creation){continue;}
+                if(Integer.parseInt(batchVal)>=1 && count == 1&& creation){continue;}
 
                 //1.2 check that the port has a tag
                 /*
@@ -1932,13 +1941,23 @@ public class OpenStackPush {
                         }
                     }
                 }
+                
+                
+                 //find the number of ports that have to be attached to the VM
+                int numPorts = 0;
+                query = "SELECT ?port WHERE {<"+vm.asResource()+"> nml:hasBidirectionalPort ?port}";
+                ResultSet rNumPorts = executeQuery(query, emptyModel, modelDelta); 
+                while(rNumPorts.hasNext()){
+                   rNumPorts.next();
+                   numPorts++;
+                }
 
                 //1.7 (creation==true) find the subnet the server is in first  find the port the server uses
                 query = "SELECT ?port ?order WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port ."
-                        + "?port mrs:order ?order"
+                        + "OPTIONAL {?port mrs:order ?order}"
                         + "} ORDER BY ?order ?port";
                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
-                if (creation && !r2.hasNext()) {
+                if (creation && !r2.hasNext() && numPorts > 1) {
                     throw logger.error_throwing(method, String.format("Vm %s does not specify the attached network interface or the Order property "
                             + "of the port is not specified", vm));
                 }
@@ -1948,7 +1967,8 @@ public class OpenStackPush {
                 {
                     QuerySolution q2 = r2.next();
                     RDFNode port = q2.get("port");
-                    portOrder = q2.get("order").toString();
+                    //get the order if the port if the server has multiple port requests or else assign the "default" order for single port
+                    portOrder = (numPorts > 1 )? q2.get("order").toString(): "default";
                     String Name = port.asResource().toString();
                     String name = ResourceTool.getResourceName(Name, OpenstackPrefix.PORT);
                     portNames.add(name);
