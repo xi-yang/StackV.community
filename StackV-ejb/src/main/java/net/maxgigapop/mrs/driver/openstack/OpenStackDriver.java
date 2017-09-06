@@ -120,7 +120,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         if (requests.isEmpty()) {
             driverInstance.getProperties().remove(requestId);
             DriverInstancePersistenceManager.merge(driverInstance);
-            throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
+            logger.warning(method, "requests.isEmpty - no change to commit, requestId="+requestId);
         }        
         String username = driverInstance.getProperty("username");
         String password = driverInstance.getProperty("password");

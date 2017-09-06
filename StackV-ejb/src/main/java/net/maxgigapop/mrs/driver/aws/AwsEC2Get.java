@@ -2,6 +2,7 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Miguel Uzcategui 2015
  * Modified by: Xi Yang 2015-2016
+ * Modified by: Adam Smith 2017
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -59,6 +60,7 @@ public class AwsEC2Get {
     private List<NetworkInterface> networkInterfaces = null;
     private List<InternetGateway> internetGateways = null;
     private List<VpnGateway> virtualPrivateGateways = null;
+    private List<VpnConnection> vpnConnections = null;
     
     final private long delayMax = 32000L;
 
@@ -84,7 +86,7 @@ public class AwsEC2Get {
                 }
             }
         }
-
+        
         //get all the subnets in the account
         DescribeSubnetsResult subnetsResult = this.client.describeSubnets();
         this.subnets = subnetsResult.getSubnets();
@@ -121,6 +123,11 @@ public class AwsEC2Get {
         DescribeVpnGatewaysResult vpnGatewaysResult = this.client.describeVpnGateways();
         virtualPrivateGateways = vpnGatewaysResult.getVpnGateways();
 
+        //Added 6/7
+        //get all the vpnConnctions under the account
+        DescribeVpnConnectionsResult vpnConnectionResult = this.client.describeVpnConnections();
+        vpnConnections = vpnConnectionResult.getVpnConnections();
+        
         //get all the volumes under the account
         DescribeVolumesResult volumesResult = this.client.describeVolumes();
         volumes = volumesResult.getVolumes();
@@ -394,7 +401,22 @@ public class AwsEC2Get {
         }
         return null;
     }
+    
+    //Added 6/7/17
+    //get the VPN Connections
+    public List<VpnConnection> getVpnConnections() {
+        return vpnConnections;
+    }
 
+    public VpnConnection getVpnConnection(String id) {
+        for (VpnConnection v : vpnConnections) {
+            if (v.getVpnConnectionId().equals(id)) {
+                return v;
+            }
+        }
+        return null;
+    }
+    
     //get all the volumes under the aws account
     public List<Volume> getVolumes() {
         return this.volumes;
@@ -728,7 +750,10 @@ public class AwsEC2Get {
             }
         }
     }
-
+    
+    //TODO: add wait functions for vpn connection addition and deletion. 6/9
+    
+    
     /**
      * ****************************************************************
      * function to wait for Vpn gateway addition
@@ -1186,6 +1211,76 @@ public class AwsEC2Get {
         }
     }
 
+    //Method to wait for vpn Connection created status
+    public void vpnCreationCheck(String id) {
+        DescribeVpnConnectionsRequest request = new DescribeVpnConnectionsRequest();
+        request.withVpnConnectionIds(id);
+        
+        long delay = 1000L;
+        while (true) {
+            delay *= 2;
+            try {
+                VpnConnection resource = client.describeVpnConnections(request).getVpnConnections().get(0);
+                if (resource != null) {
+                    break;
+                }
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
+            }
+        }
+    }
+    
+    //Method to wait for vpn Connection deleted status
+    public void vpnDeletionCheck(String id) {
+        DescribeVpnConnectionsRequest request = new DescribeVpnConnectionsRequest();
+        request.withVpnConnectionIds(id);
+        
+        long delay = 1000L;
+        while (true) {
+            delay *= 2;
+            try {
+                VpnConnection resource = client.describeVpnConnections(request).getVpnConnections().get(0);
+                if (resource == null || resource.getState().equals(VpnState.Deleted.toString()) ) {
+                    break;
+                }
+                
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
+            }
+        }
+    }
+    
+    //9/21
+    //returns a VpnConnection if vgw is attached to one, else returns null 
+    public VpnConnection vgwGetVpn(String vgwId) {
+        String deleting = VpnState.Deleting.toString();
+        String deleted = VpnState.Deleted.toString();
+        for (VpnConnection v : vpnConnections) {
+            if (v.getVpnGatewayId().equals(vgwId)) {
+                    if (v.getState().equals(deleted)) continue;
+                    if (v.getState().equals(deleting)) continue;
+                    return v;
+                }
+            }
+        return null;
+    }
+    
     /*
      *******************************************************************
      * Method to find root volume of instance 
@@ -1220,11 +1315,11 @@ public class AwsEC2Get {
 
     /**
      * ****************************************************************
-     * //function that checks if the id provided is a tag; if it is, it will
-     * return //the resource id, otherwise it will return the input parameter
-     * which is the //id of the resource //NOTE: does not work with volumes and
-     * instances because sometimes the tags // persist for a while in this
-     * resources, therefore we need to check if the // instance or volume
+     * function that checks if the id provided is a tag; if it is, it will
+     * return the resource id, otherwise it will return the input parameter
+     * which is the id of the resource NOTE: does not work with volumes and
+     * instances because sometimes the tags persist for a while in this
+     * resources, therefore we need to check if the instance or volume
      * actually exists
      * ****************************************************************
      */
@@ -1415,7 +1510,7 @@ public class AwsEC2Get {
 
     /**
      * ****************************************************************
-     * //function to get the Id from a volume tag
+     * function to get the Id from a volume tag
      * ****************************************************************
      */
     public String getTableId(String tag) {
@@ -1482,9 +1577,57 @@ public class AwsEC2Get {
                 }
             }
         }
+        
+        /* 9/16/17
+        Sometimes, if the vgw was created manually the id tag will be absent but
+        the vgwID can still be recovered from the URI. If the vgw was created manually,
+        the URI should have the id appended near the end.
+        
+        the id has the form vgw-XXXXXXXX
+        */
+        int pos;
+        pos = tag.indexOf("vgw-");
+        if (pos != -1) {
+            return tag.substring(pos, pos+12);
+        }
+        
         return tag;
     }
 
+    /**
+     * ****************************************************************
+     * Function to get the Id from a vpnConnection tag - added 6/9
+     * ****************************************************************
+     */
+    
+    public String getVpnConnectionId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value").withValues(tag);
+        
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+        if (!descriptions.isEmpty()) {
+            for (TagDescription desc : descriptions) {
+                VpnConnection vpnc = getVpnConnection(desc.getResourceId());
+                if (vpnc != null) {
+                    return desc.getResourceId();
+                }
+
+            }
+        }
+        
+        int pos;
+        pos = tag.indexOf("vpn-");
+        if (pos != -1) {
+            return tag.substring(pos, pos+12);
+        }
+        
+        return tag;
+    }
+    
+    
+    
     /**
      * ****************************************************************
      * function to tag a resource

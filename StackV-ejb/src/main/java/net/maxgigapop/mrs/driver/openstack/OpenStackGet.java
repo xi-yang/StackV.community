@@ -474,17 +474,17 @@ public class OpenStackGet {
         if (name.isEmpty()) {
             return r.getId();
         } else {
-            return r.getName();
+            return r.getName().replace(" ", "_");
         }
     }
     
     //get the name of a server 
-    public String getServereName(Server r) {
+    public String getServerName(Server r) {
         String name = r.getName();
         if (name ==null || name.isEmpty()) {
             return r.getId();
         } else {
-            return r.getName();
+            return r.getName().replace(" ", "_");
         }
     }
     
@@ -494,7 +494,7 @@ public class OpenStackGet {
         if (name == null || name.isEmpty()) {
             return r.getId();
         } else {
-            return r.getName();
+            return r.getName().replace(" ", "_");
         }
     }
     public String getInterfaceSubnetID(NeutronRouterInterface i){

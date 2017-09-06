@@ -175,7 +175,7 @@ public class ServiceResource {
         logger.trace_end(method);
         return apiSysDelta;
     }
-
+    
     @POST
     @Consumes({"application/xml", "application/json"})
     @Produces("application/json")
@@ -220,6 +220,93 @@ public class ServiceResource {
         return apiSysDelta;
     }
 
+    @PUT
+    @Consumes({"application/xml", "application/json"})
+    @Produces("application/xml")
+    @Path("/{siUUID}")
+    public ApiDeltaBase recompile(@PathParam("siUUID") String svcInstanceUUID) throws Exception {
+        String method = "recompile";
+        logger.refuuid(svcInstanceUUID);
+        logger.trace_start(method);
+        String workerClassPath = "net.maxgigapop.mrs.service.orchestrate.NegotiableWorker";
+        SystemDelta sysDelta;
+        try {
+            sysDelta = serviceCallHandler.recompileDeltas(svcInstanceUUID, workerClassPath);
+        } catch (Exception ex) {
+            serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+            throw ex;
+        }
+        if (sysDelta == null) {
+            serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+            throw logger.error_throwing(method, "failed to compile target:ServiceDelta");
+        }
+        ApiDeltaBase apiSysDelta = new ApiDeltaBase();
+        apiSysDelta.setId(sysDelta.getId().toString());
+        java.util.Date now = new java.util.Date();
+        apiSysDelta.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        apiSysDelta.setReferenceVersion(sysDelta.getReferenceVersionGroup().getRefUuid());
+        if (sysDelta.getModelAddition() != null) {
+            String modelAddition = sysDelta.getModelAddition().getTtlModel();
+            if (modelAddition == null) {
+                modelAddition = ModelUtil.marshalOntModel(sysDelta.getModelAddition().getOntModel());
+            }
+            apiSysDelta.setModelAddition(modelAddition);
+        }
+        if (sysDelta.getModelReduction() != null) {
+            String modelReduction = sysDelta.getModelReduction().getTtlModel();
+            if (modelReduction == null) {
+                modelReduction = ModelUtil.marshalOntModel(sysDelta.getModelReduction().getOntModel());
+            }
+            apiSysDelta.setModelReduction(modelReduction);
+        }
+        logger.trace_end(method);
+        return apiSysDelta;
+    }
+
+    
+    @PUT
+    @Consumes({"application/xml", "application/json"})
+    @Produces("application/json")
+    @Path("/{siUUID}")
+    public ApiDeltaBase recompileJson(@PathParam("siUUID") String svcInstanceUUID, ServiceApiDelta svcApiDelta) throws Exception {
+        String method = "recompileJson";
+        logger.refuuid(svcInstanceUUID);
+        logger.trace_start(method);
+        String workerClassPath = "net.maxgigapop.mrs.service.orchestrate.NegotiableWorker";
+        SystemDelta sysDelta;
+        try {
+            sysDelta = serviceCallHandler.recompileDeltas(svcInstanceUUID, workerClassPath);
+        } catch (Exception ex) {
+            serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+            throw ex;
+        }
+        if (sysDelta == null) {
+            serviceCallHandler.updateStatus(svcInstanceUUID, "FAILED");
+            throw logger.error_throwing(method, "failed to compile target:ServiceDelta");
+        }
+        ApiDeltaBase apiSysDelta = new ApiDeltaBase();
+        apiSysDelta.setId(sysDelta.getId().toString());
+        java.util.Date now = new java.util.Date();
+        apiSysDelta.setCreationTime(new java.sql.Date(now.getTime()).toString());
+        apiSysDelta.setReferenceVersion(sysDelta.getReferenceVersionGroup().getRefUuid());
+        if (sysDelta.getModelAddition() != null) {
+            String modelAddition = sysDelta.getModelAddition().getTtlModel();
+            if (modelAddition == null) {
+                modelAddition = ModelUtil.marshalOntModelJson(sysDelta.getModelAddition().getOntModel());
+            }
+            apiSysDelta.setModelAddition(modelAddition);
+        }
+        if (sysDelta.getModelReduction() != null) {
+            String modelReduction = sysDelta.getModelReduction().getTtlModel();
+            if (modelReduction == null) {
+                modelReduction = ModelUtil.marshalOntModelJson(sysDelta.getModelReduction().getOntModel());
+            }
+            apiSysDelta.setModelReduction(modelReduction);
+        }
+        logger.trace_end(method);
+        return apiSysDelta;
+    }
+    
     //PUT to push and sync deltas
     //Propagate:
     // propagate_through (default): use cached VG + no refresh
