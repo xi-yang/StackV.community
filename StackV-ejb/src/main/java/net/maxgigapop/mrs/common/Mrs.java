@@ -180,6 +180,12 @@ public class Mrs {
     
     public static final Property source = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#source");
     
+    public static final Property maximumCapacity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#maximumCapacity");
+
+    public static final Property availableCapacity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#availableCapacity");
+
+    public static final Property reservableCapacity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#reservableCapacity");
+
     public static final Resource Batch = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#Batch");
 
     public static final Resource BlockStorageService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#BlockStorageService");
@@ -239,4 +245,6 @@ public class Mrs {
     public static final Resource Volume = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#Volume");
 
     public static final Resource EndPoint = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#EndPoint");
+    
+    public static final Resource BandwidthService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#BandwidthService");
 }

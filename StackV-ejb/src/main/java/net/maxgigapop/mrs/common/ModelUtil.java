@@ -338,7 +338,7 @@ public class ModelUtil {
                 model.getBaseModel().write(writer1, "TURTLE");                
             }
             if (!writer1.getBuffer().toString().isEmpty()) {
-                throw new Exception("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects - " + (delta == null ? "" : delta));
+                throw new Exception("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects - " + (delta == null ? "" : writer1.getBuffer().toString()));
             }
         }
         return topoModelMap;

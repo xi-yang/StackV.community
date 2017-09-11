@@ -78,12 +78,34 @@ public class MCETools {
 
     private static final StackLogger logger = new StackLogger(MCETools.class.getName(), "MCETools");
 
-    public static class Path extends com.hp.hpl.jena.ontology.OntTools.Path {
+    public static class BandwidthProfile {
+        public Long maximumCapacity = null;
+        public Long availableCapacity = null;
+        public Long reservableCapacity = null;
+        public Long granularity = null;
+        public String priority = null;
+        public String qosClass = null;
 
-        private HashSet<Statement> maskedLinks = null;
+        public BandwidthProfile(Long capacity) {
+            this.maximumCapacity = capacity;
+            this.availableCapacity = capacity;
+            this.reservableCapacity = capacity;
+            this.qosClass = "hardCapped";
+        }
+        
+        public BandwidthProfile(Long maximumCapacity, Long availableCapacity, Long reservableCapacity) {
+            this.maximumCapacity = maximumCapacity;
+            this.availableCapacity = availableCapacity;
+            this.reservableCapacity = reservableCapacity;
+        }
+    }
+    
+    public static class Path extends com.hp.hpl.jena.ontology.OntTools.Path {
+        HashSet<Statement> maskedLinks = null;
         Resource deviationNode = null;
         OntModel ontModel = null;
         double failureProb = 0.0;
+        BandwidthProfile bandwithProfile = null;
 
         public Path() {
             super();
@@ -115,6 +137,14 @@ public class MCETools {
 
         public void setOntModel(OntModel ontModel) {
             this.ontModel = ontModel;
+        }
+
+        public BandwidthProfile getBandwithProfile() {
+            return bandwithProfile;
+        }
+
+        public void setBandwithProfile(BandwidthProfile bandwithProfile) {
+            this.bandwithProfile = bandwithProfile;
         }
     }
 
@@ -254,11 +284,22 @@ public class MCETools {
                 } catch (Exception ex) {
                     throw new Exception("MCETools.computeFeasibleL2KSP cannot verifyL2Path", ex);
                 }
+                if (verified && jsonConnReq.containsKey("bandwidth")) {
+                    JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
+                    Long maximum = jsonBw.containsKey("maximum") ? Long.getLong(jsonBw.get("maximum").toString()) : null;
+                    Long available = jsonBw.containsKey("available") ? Long.getLong(jsonBw.get("available").toString()) : null;
+                    Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+                    candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
+                    candidatePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+                    candidatePath.bandwithProfile.qosClass = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "hardCapped"; //default = "hardCapped"
+                    candidatePath.bandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
+                    verified = MCETools.verifyPathBandwidthProfile(transformedModel, candidatePath);
+                }
                 if (!verified) {
                     itP.remove();
                 } else {
                     // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-                    OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, jsonConnReq);
+                    OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, (JSONObject)jsonConnReq.get("terminals"));
                     if (l2PathModel == null) {
                         itP.remove();
                     } else {
@@ -589,6 +630,94 @@ public class MCETools {
         return true;
     }
 
+    public static boolean verifyPathBandwidthProfile(Model model, Path path) {
+        if (path.getBandwithProfile() == null) {
+            return true;
+        }
+        BandwidthProfile pathBwProfile = null;
+        Iterator<Statement> itS = path.iterator();
+        while (itS.hasNext()) {
+            Statement link = itS.next();
+            if (pathBwProfile == null) {
+                pathBwProfile = getHopBandwidthPorfile(model, link.getSubject());
+            } else {
+                BandwidthProfile hopBwProfile = getHopBandwidthPorfile(model, link.getObject().asResource());
+                if (pathBwProfile.maximumCapacity == null || pathBwProfile.maximumCapacity > hopBwProfile.maximumCapacity) {
+                    pathBwProfile.maximumCapacity = hopBwProfile.maximumCapacity;
+                }
+                if (pathBwProfile.availableCapacity == null || pathBwProfile.availableCapacity > hopBwProfile.availableCapacity) {
+                    pathBwProfile.availableCapacity = hopBwProfile.availableCapacity;
+                }
+                if (pathBwProfile.reservableCapacity == null || pathBwProfile.reservableCapacity > hopBwProfile.reservableCapacity) {
+                    pathBwProfile.reservableCapacity = hopBwProfile.reservableCapacity;
+                }
+                if (pathBwProfile.granularity == null || pathBwProfile.granularity < hopBwProfile.granularity) {
+                    pathBwProfile.granularity = hopBwProfile.granularity;
+                }
+                //@TODO: diffrentiatial handling based priority and/or qosClass 
+            } 
+            // compare avaialble bandwidth profile to requested badnwidth profile
+            if (pathBwProfile != null && canProvideBandwith(pathBwProfile, path.getBandwithProfile())) {
+                return false;
+            }
+        }
+        path.setBandwithProfile(pathBwProfile); // replace requested with available profile
+        return true;
+    }
+    
+    private static BandwidthProfile getHopBandwidthPorfile(Model model, Resource hop) {
+        String sparql = "SELECT $maximum $available $reservable $granularity $qos_class $priority WHERE {"
+                + String.format("<%s> a nml:BidirectionalPort. ", hop.getURI())
+                + String.format("<%s> nml:hasService $bw_svc. ", hop.getURI())
+                + "$bw_svc mrs:maximumCapacity $maximum. "
+                + "$bw_svc mrs:maximumCapacity $available. "
+                + "$bw_svc mrs:maximumCapacity $reservable. "
+                + "OPTIONAL {$bw_svc mrs:maximumCapacity $granularity } "
+                + "OPTIONAL {$bw_svc mrs:maximumCapacity $qos_class } "
+                + "OPTIONAL {$bw_svc mrs:maximumCapacity $priority } "
+                + "}";
+        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+        BandwidthProfile bwProfile = null;
+        if (rs.hasNext()) {
+            QuerySolution solution = rs.next();
+            String maximumBw = solution.get("maximum").toString();
+            String availableBw = solution.get("available").toString();
+            String reservableBw = solution.get("reservable").toString();
+            bwProfile = new BandwidthProfile(Long.parseLong(maximumBw), Long.parseLong(availableBw), Long.parseLong(reservableBw));
+            if (solution.contains("granularity")) {
+                bwProfile.granularity = Long.parseLong(solution.get("granularity").toString());
+            }
+            if (solution.contains("priority")) {
+                bwProfile.priority = solution.get("priority").toString();
+            }
+            if (solution.contains("qos_class")) {
+                bwProfile.qosClass = solution.get("qos_class").toString();
+            }
+        }
+        return bwProfile;
+    }
+    
+    //@TODO: fine tuning the comparison criteria
+    private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
+        if (bwpfRequest.qosClass != null 
+                &&  ( bwpfRequest.qosClass.equalsIgnoreCase("hardCapped") 
+                || bwpfRequest.qosClass.equalsIgnoreCase("softCapped") )
+                ) {
+            if (bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity 
+                    && bwpfAvailable.reservableCapacity > bwpfRequest.availableCapacity) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (bwpfAvailable.maximumCapacity > bwpfRequest.maximumCapacity 
+                    && bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity) {
+            return true;
+        } else {
+            return false;
+        }
+        
+    }
+    
     public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) throws Exception {
         for (String sparql : constraints) {
             if (ModelUtil.evaluateStatement(model, stmt, sparql)) {
@@ -598,6 +727,9 @@ public class MCETools {
         return false;
     }
 
+    //@TODO: create bandwidth service for all sub-level (client) BidirectionalPort
+        //@@ inherit granularity if available
+        //@@ "any" (max available) bandwidth handling - similar to "any" VLAN
     public static OntModel createL2PathVlanSubnets(Model model, Path path, JSONObject portTeMap) {
         String method = "createL2PathVlanSubnets";
         HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
