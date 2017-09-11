@@ -43,8 +43,13 @@ public class GoogleCloudGet {
         try {
             HttpTransport trans = GoogleNetHttpTransport.newTrustedTransport();
             JsonFactory j = new JacksonFactory();
-            computeClient = new Compute(trans, j, authenticate.getCredentials());
-            storageClient = new Storage(trans, j, authenticate.getCredentials());
+            
+            Compute.Builder cb = new Compute.Builder(trans, j, authenticate.getCredentials());
+            Storage.Builder sb = new Storage.Builder(trans, j, authenticate.getCredentials());
+            cb.setApplicationName("gcp-cloud");
+            sb.setApplicationName("gcp-cloud");
+            computeClient = cb.build();
+            storageClient = sb.build();
         } catch (GeneralSecurityException e) {
            
         } catch (IOException e) {
@@ -107,6 +112,16 @@ public class GoogleCloudGet {
         }
     }
     
+    public JSONObject getBuckets() {
+        try {
+            return makeRequest(storageClient.buckets().list(projectID).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+    
+    //Static functions follow
     public static String getVPCName (String vpc) {
         /*
         gets the name of a vpc from the url.
