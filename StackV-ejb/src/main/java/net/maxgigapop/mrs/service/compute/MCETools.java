@@ -35,6 +35,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.InfModel;
+import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
@@ -83,6 +84,7 @@ public class MCETools {
         public Long availableCapacity = null;
         public Long reservableCapacity = null;
         public Long granularity = null;
+        public String unit = null;
         public String priority = null;
         public String qosClass = null;
 
@@ -91,12 +93,15 @@ public class MCETools {
             this.availableCapacity = capacity;
             this.reservableCapacity = capacity;
             this.qosClass = "hardCapped";
+            this.unit = "bps";
         }
         
         public BandwidthProfile(Long maximumCapacity, Long availableCapacity, Long reservableCapacity) {
             this.maximumCapacity = maximumCapacity;
             this.availableCapacity = availableCapacity;
             this.reservableCapacity = reservableCapacity;
+            this.qosClass = "hardCapped";
+            this.unit = "bps";
         }
     }
     
@@ -809,7 +814,7 @@ public class MCETools {
                 if (portParamMap.get(currentHop).containsKey("openflowService")) {
                     subnetModel = createVlanFlowsOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                 } else {
-                    subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                    subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, path.getBandwithProfile());
                 }
                 if (subnetModel != null) {
                     l2PathModel.add(subnetModel.getBaseModel());
@@ -826,7 +831,7 @@ public class MCETools {
                     if (portParamMap.get(currentHop).containsKey("openflowService")) {
                         subnetModel = createVlanFlowsOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                     } else {
-                        subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                        subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, path.getBandwithProfile());
                     }
                     if (subnetModel != null) {
                         l2PathModel.add(subnetModel.getBaseModel());
@@ -950,7 +955,7 @@ public class MCETools {
         portParamMap.put(currentHop, paramMap);
     }
 
-    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap) {
+    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, BandwidthProfile bwProfile) {
         String method = "createVlanSubnetOnHop";
         HashMap paramMap = (HashMap) portParamMap.get(currentHop);
         if (!paramMap.containsKey("vlanRange")) {
@@ -1084,10 +1089,41 @@ public class MCETools {
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet));
         }
-
+        
+        // add BandwidthService to vlan port if applicable
+        if (bwProfile != null) {
+            String vlanBwServiceUrn = vlanPortUrn + ":service+bw";
+            Resource resVlanBwService = RdfOwl.createResource(vlanSubnetModel, vlanBwServiceUrn, Mrs.BandwidthService);
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasService, resVlanBwService));
+            if (bwProfile.maximumCapacity != null) {
+                Literal lMaxBw = model.createTypedLiteral(bwProfile.maximumCapacity);
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.maximumCapacity, lMaxBw));
+            }
+            if (bwProfile.availableCapacity != null) {
+                Literal lAvailBw = model.createTypedLiteral(bwProfile.availableCapacity);
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.availableCapacity, lAvailBw));
+            }
+            if (bwProfile.reservableCapacity != null) {
+                Literal lResvBw = model.createTypedLiteral(bwProfile.availableCapacity);
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.reservableCapacity, lResvBw));
+            }
+            if (bwProfile.granularity != null) {
+                Literal lGranularity = model.createTypedLiteral(bwProfile.granularity);
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.granularity, lGranularity));
+            }
+            if (bwProfile.priority != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.priority, bwProfile.priority));
+            }
+            if (bwProfile.qosClass != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.qosClass, bwProfile.qosClass));
+            }
+            if (bwProfile.unit != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.unit, bwProfile.unit));
+            }
+        }
         return vlanSubnetModel;
     }
-
+    
     public static void tagPathHops(MCETools.Path l2path, String tag) {
         OntModel model = l2path.getOntModel();
         String sparql = String.format("SELECT DISTINCT ?bp ?subnet  WHERE {"
