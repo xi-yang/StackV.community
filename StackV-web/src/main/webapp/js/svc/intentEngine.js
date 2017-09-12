@@ -1218,6 +1218,8 @@ function parseManifestIntoJSON() {
                 manifest["options"] = options;
                 manifest["data"]["options"] = options;
             }
+            manifest["data"]["uuid"] = result;
+            
             // Render template            
             var rendered = render(manifest);
             if (!rendered) {

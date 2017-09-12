@@ -239,6 +239,7 @@ function loadWizard() {
                         success: function (result) {
                             var manifest = profile;
                             manifest["uuid"] = result;
+                            manifest["data"]["uuid"] = result;
                             manifest["data"]["options"] = manifest["options"];
                             //manifest["data"] = JSON.parse($("#info-panel-text-area").val());
 
@@ -248,7 +249,6 @@ function loadWizard() {
                                 swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
                                 return;
                             }
-                            delete manifest["uuid"];
 
                             profile["data"] = rendered;                            
                             profile['proceed'] = "true";
