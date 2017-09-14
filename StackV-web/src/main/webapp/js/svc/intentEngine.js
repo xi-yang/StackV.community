@@ -161,7 +161,7 @@ function initMeta(meta) {
     var $panel = $("#intent-panel-meta");
     $("#meta-title").text(meta.children[0].innerHTML);
     $("#meta-alias").change(function () {
-        $(this).removeClass("invalid-input");        
+        $(this).removeClass("invalid-input");
         if ($(".invalid-input").length === 0) {
             $(".intent-operations").removeClass("blocked");
         }
@@ -460,7 +460,7 @@ function renderInputs(arr, $parent) {
                 $input.attr("data-link", link);
                 var $default = $("<option>", {selected: true}).text("");
                 $input.append($default);
-                var nameVal = ele.getElementsByTagName("link")[0].getAttribute("name");
+                var nameVal = ele.getElementsByTagName("link")[0].getAttribute("nameVal");
                 if (nameVal) {
                     $input.addClass("nameVal");
                 }
@@ -592,6 +592,7 @@ function factorizeRendering() {
         }
     }
 
+    initializeInputs();
     // Step 4: Cache schemas
     for (var i = 0; i < factoryArr.length; i++) {
         var fact = factoryArr[i];
@@ -604,7 +605,6 @@ function factorizeRendering() {
     }
 
     // Step 5: Finishing work        
-    initializeInputs();
     refreshLinks();
     enforceBounds();
     expandStarters();
@@ -743,7 +743,7 @@ function submitIntent(mode) {
                         beforeSend: function (xhr) {
                             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                        }                        
+                        }
                     });
                     window.location.href = "/StackV-web/ops/catalog.jsp";
                 }
@@ -964,6 +964,14 @@ function buildClone(key, target, $factoryBtn) {
         buildClone(key, target, $(this));
 
         e.preventDefault();
+    });
+    $clone.find("select").each(function () {
+        if ($(this).hasClass("binding")) {
+            $(this).change(function () {
+                enforceBounds();
+                recondition();
+            });
+        }
     });
 
     var $defArr = $clone.find("[data-default]");
@@ -1219,7 +1227,7 @@ function parseManifestIntoJSON() {
                 manifest["data"]["options"] = options;
             }
             manifest["data"]["uuid"] = result;
-            
+
             // Render template            
             var rendered = render(manifest);
             if (!rendered) {

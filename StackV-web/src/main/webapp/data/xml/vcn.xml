@@ -278,7 +278,7 @@
             <input>
                 <name>Hosting Gateway</name>
                 <type>select</type>
-                <link>gateways</link>
+                <link nameVal="true">gateways</link>
                 <valid>select</valid>
             </input>  
             <input>
