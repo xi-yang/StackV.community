@@ -704,23 +704,25 @@ public class MCETools {
     
     //@TODO: fine tuning the comparison criteria
     private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
-        if (bwpfRequest.qosClass != null 
-                &&  ( bwpfRequest.qosClass.equalsIgnoreCase("hardCapped") 
-                || bwpfRequest.qosClass.equalsIgnoreCase("softCapped") )
-                ) {
-            if (bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity 
+        if (bwpfRequest.qosClass != null
+                && (bwpfRequest.qosClass.equalsIgnoreCase("hardCapped")
+                || bwpfRequest.qosClass.equalsIgnoreCase("softCapped"))) {
+            if (bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity
                     && bwpfAvailable.reservableCapacity > bwpfRequest.availableCapacity) {
                 return true;
             } else {
                 return false;
             }
-        } else if (bwpfAvailable.maximumCapacity > bwpfRequest.maximumCapacity 
-                    && bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity) {
+        } else if (bwpfRequest.qosClass != null
+                && bwpfRequest.qosClass.equalsIgnoreCase("anyAvailable")) {
+            return true;
+        } else if (bwpfAvailable.maximumCapacity > bwpfRequest.maximumCapacity
+                && bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity) {
             return true;
         } else {
             return false;
         }
-        
+
     }
     
     public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) throws Exception {
