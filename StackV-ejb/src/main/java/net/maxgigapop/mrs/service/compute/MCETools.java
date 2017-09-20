@@ -87,6 +87,7 @@ public class MCETools {
         public Long maximumCapacity = null; // required
         public Long availableCapacity = null; // required
         public Long reservableCapacity = null; // required
+        public Long individualCapacity = null;  // optional
         public Long minimumCapacity = null; // optional
         public Long usedCapacity = null;  // optional
 
@@ -299,8 +300,11 @@ public class MCETools {
                     Long available = jsonBw.containsKey("available") ? Long.getLong(jsonBw.get("available").toString()) : null;
                     Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
                     candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
+                    candidatePath.bandwithProfile.minimumCapacity = jsonBw.containsKey("minimum") ? Long.getLong(jsonBw.get("minimum").toString()) : null; //default = null
+                    candidatePath.bandwithProfile.individualCapacity = jsonBw.containsKey("individual") ? Long.getLong(jsonBw.get("individual").toString()) : null; //default = null
                     candidatePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
                     candidatePath.bandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+                    candidatePath.bandwithProfile.unit = jsonBw.containsKey("unit") ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
                     candidatePath.bandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
                     verified = MCETools.verifyPathBandwidthProfile(transformedModel, candidatePath);
                 }
@@ -661,10 +665,16 @@ public class MCETools {
                 if (pathBwProfile.reservableCapacity == null || pathBwProfile.reservableCapacity > hopBwProfile.reservableCapacity) {
                     pathBwProfile.reservableCapacity = hopBwProfile.reservableCapacity;
                 }
+                if (pathBwProfile.individualCapacity == null || pathBwProfile.individualCapacity > hopBwProfile.individualCapacity) {
+                    pathBwProfile.individualCapacity = hopBwProfile.individualCapacity;
+                }
+                if (pathBwProfile.minimumCapacity == null || pathBwProfile.minimumCapacity < hopBwProfile.minimumCapacity) {
+                    pathBwProfile.minimumCapacity = hopBwProfile.minimumCapacity;
+                }
                 if (pathBwProfile.granularity == null || pathBwProfile.granularity < hopBwProfile.granularity) {
                     pathBwProfile.granularity = hopBwProfile.granularity;
                 }
-                //@TODO: diffrentiatial handling based priority and/or type 
+                //@TODO: differential handling based priority and/or type 
             } 
             // compare avaialble bandwidth profile to requested badnwidth profile
             if (pathBwProfile != null && canProvideBandwith(pathBwProfile, path.getBandwithProfile())) {
@@ -676,7 +686,7 @@ public class MCETools {
     }
     
     private static BandwidthProfile getHopBandwidthPorfile(Model model, Resource hop) {
-        String sparql = "SELECT $maximum $available $reservable $granularity $qos_class $unit $minimum $priority WHERE {"
+        String sparql = "SELECT $maximum $available $reservable $granularity $qos_class $unit $minimum $individual $priority WHERE {"
                 + String.format("<%s> a nml:BidirectionalPort. ", hop.getURI())
                 + String.format("<%s> nml:hasService $bw_svc. ", hop.getURI())
                 + "$bw_svc mrs:maximumCapacity $maximum. "
@@ -686,6 +696,7 @@ public class MCETools {
                 + "OPTIONAL {$bw_svc mrs:unit unit } "
                 + "OPTIONAL {$bw_svc mrs:granularity $granularity } "
                 + "OPTIONAL {$bw_svc mrs:minimumCapacity $minimum } "
+                + "OPTIONAL {$bw_svc mrs:individualCapacity $individual } "
                 + "OPTIONAL {$bw_svc mrs:priority $priority } "
                 + "}";
         ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
@@ -701,6 +712,9 @@ public class MCETools {
             }
             if (solution.contains("minimum")) {
                 bwProfile.minimumCapacity = Long.parseLong(solution.get("minimum").toString());
+            }
+            if (solution.contains("individual")) {
+                bwProfile.individualCapacity = Long.parseLong(solution.get("individual").toString());
             }
             if (solution.contains("unit")) {
                 bwProfile.unit = solution.get("unit").toString();
@@ -720,7 +734,7 @@ public class MCETools {
         if (bwpfRequest.type != null 
                 && (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped"))) {
             if (bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity
-                    && bwpfAvailable.reservableCapacity > bwpfRequest.availableCapacity) {
+                    && (bwpfAvailable.individualCapacity == null || bwpfAvailable.individualCapacity > bwpfRequest.availableCapacity)) {
                 return true;
             } else {
                 return false;
