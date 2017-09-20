@@ -172,7 +172,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 Long available = (jsonBw.containsKey("available") ? Long.parseLong((String)jsonBw.get("available")) : null);
                 Long reservable = (jsonBw.containsKey("reservable") ? Long.parseLong((String)jsonBw.get("reservable")) : null);
                 mpvbPath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
-                // candidatePath.bandwithProfile.qosClass = "hardCapped"; //default
+                // candidatePath.bandwithProfile.type = "guaranteedCapped"; //default
             }
             // For 3rd through Tth terminals, connect them to one of openflow nodes in the path
             for (Resource terminalX : terminals) {
@@ -260,7 +260,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                         Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
                         bridgePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
                         bridgePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
-                        bridgePath.bandwithProfile.qosClass = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "hardCapped"; //default = "hardCapped"
+                        bridgePath.bandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
                         bridgePath.bandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
                         verified = MCETools.verifyPathBandwidthProfile(transformedModel, bridgePath);
                     }

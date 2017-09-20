@@ -190,8 +190,6 @@ public class Mrs {
 
     public static final Property priority = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#priority");
 
-    public static final Property qosClass = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#qosClass");
-
     public static final Property unit = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#unit");
 
     public static final Resource Batch = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#Batch");

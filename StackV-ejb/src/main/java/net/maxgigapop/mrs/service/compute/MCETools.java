@@ -80,28 +80,30 @@ public class MCETools {
     private static final StackLogger logger = new StackLogger(MCETools.class.getName(), "MCETools");
 
     public static class BandwidthProfile {
+        public String type = null;
+        public String unit = null;
+        public String priority = null;
         public Long maximumCapacity = null;
         public Long availableCapacity = null;
         public Long reservableCapacity = null;
         public Long granularity = null;
-        public String unit = null;
-        public String priority = null;
-        public String qosClass = null;
 
         public BandwidthProfile(Long capacity) {
             this.maximumCapacity = capacity;
             this.availableCapacity = capacity;
             this.reservableCapacity = capacity;
-            this.qosClass = "hardCapped";
+            this.type = "guaranteedCapped";
             this.unit = "bps";
+            this.granularity = 1L;
         }
         
         public BandwidthProfile(Long maximumCapacity, Long availableCapacity, Long reservableCapacity) {
             this.maximumCapacity = maximumCapacity;
             this.availableCapacity = availableCapacity;
             this.reservableCapacity = reservableCapacity;
-            this.qosClass = "hardCapped";
+            this.type = "guaranteedCapped";
             this.unit = "bps";
+            this.granularity = 1L;
         }
     }
     
@@ -296,7 +298,7 @@ public class MCETools {
                     Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
                     candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
                     candidatePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
-                    candidatePath.bandwithProfile.qosClass = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "hardCapped"; //default = "hardCapped"
+                    candidatePath.bandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
                     candidatePath.bandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
                     verified = MCETools.verifyPathBandwidthProfile(transformedModel, candidatePath);
                 }
@@ -659,7 +661,7 @@ public class MCETools {
                 if (pathBwProfile.granularity == null || pathBwProfile.granularity < hopBwProfile.granularity) {
                     pathBwProfile.granularity = hopBwProfile.granularity;
                 }
-                //@TODO: diffrentiatial handling based priority and/or qosClass 
+                //@TODO: diffrentiatial handling based priority and/or type 
             } 
             // compare avaialble bandwidth profile to requested badnwidth profile
             if (pathBwProfile != null && canProvideBandwith(pathBwProfile, path.getBandwithProfile())) {
@@ -696,7 +698,7 @@ public class MCETools {
                 bwProfile.priority = solution.get("priority").toString();
             }
             if (solution.contains("qos_class")) {
-                bwProfile.qosClass = solution.get("qos_class").toString();
+                bwProfile.type = solution.get("qos_class").toString();
             }
         }
         return bwProfile;
@@ -704,17 +706,17 @@ public class MCETools {
     
     //@TODO: fine tuning the comparison criteria
     private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
-        if (bwpfRequest.qosClass != null
-                && (bwpfRequest.qosClass.equalsIgnoreCase("hardCapped")
-                || bwpfRequest.qosClass.equalsIgnoreCase("softCapped"))) {
+        if (bwpfRequest.type != null
+                && (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped")
+                || bwpfRequest.type.equalsIgnoreCase("softCapped"))) {
             if (bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity
                     && bwpfAvailable.reservableCapacity > bwpfRequest.availableCapacity) {
                 return true;
             } else {
                 return false;
             }
-        } else if (bwpfRequest.qosClass != null
-                && bwpfRequest.qosClass.equalsIgnoreCase("anyAvailable")) {
+        } else if (bwpfRequest.type != null
+                && bwpfRequest.type.equalsIgnoreCase("anyAvailable")) {
             return true;
         } else if (bwpfAvailable.maximumCapacity > bwpfRequest.maximumCapacity
                 && bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity) {
@@ -1097,6 +1099,15 @@ public class MCETools {
             String vlanBwServiceUrn = vlanPortUrn + ":service+bw";
             Resource resVlanBwService = RdfOwl.createResource(vlanSubnetModel, vlanBwServiceUrn, Mrs.BandwidthService);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasService, resVlanBwService));
+            if (bwProfile.type != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.type, bwProfile.type));
+            }
+            if (bwProfile.unit != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.unit, bwProfile.unit));
+            }
+            if (bwProfile.priority != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.priority, bwProfile.priority));
+            }
             if (bwProfile.maximumCapacity != null) {
                 Literal lMaxBw = model.createTypedLiteral(bwProfile.maximumCapacity);
                 vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.maximumCapacity, lMaxBw));
@@ -1112,15 +1123,6 @@ public class MCETools {
             if (bwProfile.granularity != null) {
                 Literal lGranularity = model.createTypedLiteral(bwProfile.granularity);
                 vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.granularity, lGranularity));
-            }
-            if (bwProfile.priority != null) {
-                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.priority, bwProfile.priority));
-            }
-            if (bwProfile.qosClass != null) {
-                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.qosClass, bwProfile.qosClass));
-            }
-            if (bwProfile.unit != null) {
-                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.unit, bwProfile.unit));
             }
         }
         return vlanSubnetModel;
