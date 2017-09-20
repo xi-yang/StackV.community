@@ -80,13 +80,15 @@ public class MCETools {
     private static final StackLogger logger = new StackLogger(MCETools.class.getName(), "MCETools");
 
     public static class BandwidthProfile {
-        public String type = null;
-        public String unit = null;
-        public String priority = null;
-        public Long maximumCapacity = null;
-        public Long availableCapacity = null;
-        public Long reservableCapacity = null;
-        public Long granularity = null;
+        public String type = null; // default  "guaranteedCapped"
+        public String unit = null; // default "bps"
+        public String priority = null; // default "0"
+        public Long granularity = null; // default 1L
+        public Long maximumCapacity = null; // required
+        public Long availableCapacity = null; // required
+        public Long reservableCapacity = null; // required
+        public Long minimumCapacity = null; // optional
+        public Long usedCapacity = null;  // optional
 
         public BandwidthProfile(Long capacity) {
             this.maximumCapacity = capacity;
@@ -637,6 +639,7 @@ public class MCETools {
         return true;
     }
 
+    //@TODO: unit conversion?
     public static boolean verifyPathBandwidthProfile(Model model, Path path) {
         if (path.getBandwithProfile() == null) {
             return true;
@@ -673,15 +676,17 @@ public class MCETools {
     }
     
     private static BandwidthProfile getHopBandwidthPorfile(Model model, Resource hop) {
-        String sparql = "SELECT $maximum $available $reservable $granularity $qos_class $priority WHERE {"
+        String sparql = "SELECT $maximum $available $reservable $granularity $qos_class $unit $minimum $priority WHERE {"
                 + String.format("<%s> a nml:BidirectionalPort. ", hop.getURI())
                 + String.format("<%s> nml:hasService $bw_svc. ", hop.getURI())
                 + "$bw_svc mrs:maximumCapacity $maximum. "
-                + "$bw_svc mrs:maximumCapacity $available. "
-                + "$bw_svc mrs:maximumCapacity $reservable. "
-                + "OPTIONAL {$bw_svc mrs:maximumCapacity $granularity } "
-                + "OPTIONAL {$bw_svc mrs:maximumCapacity $qos_class } "
-                + "OPTIONAL {$bw_svc mrs:maximumCapacity $priority } "
+                + "$bw_svc mrs:availableCapacity $available. "
+                + "$bw_svc mrs:reservableCapacity $reservable. "
+                + "OPTIONAL {$bw_svc mrs:type $qos_class } "
+                + "OPTIONAL {$bw_svc mrs:unit unit } "
+                + "OPTIONAL {$bw_svc mrs:granularity $granularity } "
+                + "OPTIONAL {$bw_svc mrs:minimumCapacity $minimum } "
+                + "OPTIONAL {$bw_svc mrs:priority $priority } "
                 + "}";
         ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
         BandwidthProfile bwProfile = null;
@@ -694,30 +699,44 @@ public class MCETools {
             if (solution.contains("granularity")) {
                 bwProfile.granularity = Long.parseLong(solution.get("granularity").toString());
             }
-            if (solution.contains("priority")) {
-                bwProfile.priority = solution.get("priority").toString();
+            if (solution.contains("minimum")) {
+                bwProfile.minimumCapacity = Long.parseLong(solution.get("minimum").toString());
+            }
+            if (solution.contains("unit")) {
+                bwProfile.unit = solution.get("unit").toString();
             }
             if (solution.contains("qos_class")) {
                 bwProfile.type = solution.get("qos_class").toString();
+            }
+            if (solution.contains("priority")) {
+                bwProfile.priority = solution.get("priority").toString();
             }
         }
         return bwProfile;
     }
     
-    //@TODO: fine tuning the comparison criteria
+    //@TODO: fine tuning the comparison criteria by types | granularity % constraint | unit
     private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
-        if (bwpfRequest.type != null
-                && (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped")
-                || bwpfRequest.type.equalsIgnoreCase("softCapped"))) {
+        if (bwpfRequest.type != null 
+                && (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped"))) {
             if (bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity
                     && bwpfAvailable.reservableCapacity > bwpfRequest.availableCapacity) {
                 return true;
             } else {
                 return false;
             }
-        } else if (bwpfRequest.type != null
-                && bwpfRequest.type.equalsIgnoreCase("anyAvailable")) {
-            return true;
+        } else if (bwpfRequest.type != null && bwpfRequest.type.equalsIgnoreCase("anyAvailable")) {
+            if (bwpfAvailable.availableCapacity < bwpfAvailable.reservableCapacity) {
+                return false;
+            } else if (bwpfRequest.minimumCapacity != null && bwpfRequest.minimumCapacity > bwpfAvailable.availableCapacity) {
+                return false;
+            } else if (bwpfRequest.granularity != null && bwpfRequest.granularity > bwpfAvailable.availableCapacity) {
+                return false;
+            } else if (bwpfAvailable.availableCapacity  > 0) {
+                return true;
+            } else {
+                return false;
+            }
         } else if (bwpfAvailable.maximumCapacity > bwpfRequest.maximumCapacity
                 && bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity) {
             return true;

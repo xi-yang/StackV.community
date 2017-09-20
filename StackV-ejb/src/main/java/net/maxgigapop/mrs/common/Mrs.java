@@ -182,8 +182,12 @@ public class Mrs {
     
     public static final Property maximumCapacity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#maximumCapacity");
 
+    public static final Property minimumCapacity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#minimumCapacity");
+
     public static final Property availableCapacity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#availableCapacity");
 
+    public static final Property usedCapacity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#usedCapacity");
+    
     public static final Property reservableCapacity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#reservableCapacity");
     
     public static final Property granularity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#granularity");
