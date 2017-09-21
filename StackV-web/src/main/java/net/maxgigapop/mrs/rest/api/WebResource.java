@@ -59,12 +59,8 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -75,7 +71,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -95,6 +90,7 @@ import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jboss.resteasy.spi.UnhandledException;
+
 
 /**
  * REST Web Service
@@ -118,7 +114,7 @@ public class WebResource {
                 "Driver Management",
                 "Installation and Uninstallation of Driver Instances."));
 
-        result.put("netcreate", Arrays.asList(
+        result.put("vcn", Arrays.asList(
                 "Virtual Cloud Network",
                 "Network Creation Pilot Testbed."));
 
@@ -126,7 +122,7 @@ public class WebResource {
                 "Dynamic Network Connection",
                 "Creation of new network connections."));
 
-        result.put("hybridcloud", Arrays.asList(
+        result.put("ahc", Arrays.asList(
                 "Advanced Hybrid Cloud",
                 "Advanced Hybrid Cloud Service."));
 
@@ -2381,12 +2377,12 @@ public class WebResource {
 
             rs = prep.executeQuery();
             while (rs.next()) {
+                retList.add(rs.getString("state"));
                 retList.add(rs.getString("verification_run"));
                 retList.add(rs.getString("creation_time"));
                 retList.add(rs.getString("addition"));
                 retList.add(rs.getString("reduction"));
                 retList.add(rs.getString("service_instance_id"));
-                retList.add(String.valueOf(rs.getBoolean("enabled")));
             }
 
             return retList;
@@ -2660,13 +2656,19 @@ public class WebResource {
 
             String name = (String) inputJSON.get("name");
             String description = (String) inputJSON.get("description");
-            String inputData = ((JSONObject) inputJSON.get("data")).toJSONString();
             String username = (String) inputJSON.get("username");
+
+            JSONObject inputData = (JSONObject) inputJSON.get("data");
+            inputData.remove("uuid");
+            if (inputData.containsKey("options") && ((JSONArray) inputData.get("options")).isEmpty()) {
+                inputData.remove("options");
+            }
+            String inputDataString = inputData.toJSONString();
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?)");
             prep.setString(1, username);
             prep.setString(2, name);
-            prep.setString(3, inputData);
+            prep.setString(3, inputDataString);
             prep.setString(4, description);
             prep.setInt(5, 0);
             prep.executeUpdate();
@@ -2838,12 +2840,22 @@ public class WebResource {
                 inputJSON.remove("username");
                 inputJSON.put("username", username);
 
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        asyncResponse.resume(doCreateService(inputJSON, token));
-                    }
-                });
+                String proceed = (String) inputJSON.get("proceed");
+                if (proceed != null && proceed.equals("true")) {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            asyncResponse.resume(doCreateService(inputJSON, token, true));
+                        }
+                    });
+                } else {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            asyncResponse.resume(doCreateService(inputJSON, token, false));
+                        }
+                    });
+                }
             } else {
                 logger.warning(method, "User not allowed access to " + serviceType);
             }
@@ -2926,10 +2938,10 @@ public class WebResource {
         });
         logger.trace_end(method);
     }
-   
+
     // Async Methods -----------------------------------------------------------
-    private String doCreateService(JSONObject inputJSON, TokenHandler token) {
-        ServiceHandler instance = new ServiceHandler(inputJSON, token);
+    private String doCreateService(JSONObject inputJSON, TokenHandler token, boolean autoProceed) {
+        ServiceHandler instance = new ServiceHandler(inputJSON, token, autoProceed);
         return instance.refUUID;
     }
 

@@ -25,7 +25,9 @@ div#driver-template-panel {
     z-index: 10;
 }
 
-
+#install-content input {
+    width: 80%;
+}
 
 .driver-panel {
     padding: 10px 10px 0 10px;

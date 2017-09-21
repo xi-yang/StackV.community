@@ -93,9 +93,9 @@ public class MCE_MPVlanConnection extends MCEBase {
         this.postProcess(policy, outputDelta.getModelAddition().getOntModel(), systemModel.getOntModel(), OSpec_Template, policyResDataMap);
         
         try {
-            logger.message(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
+            logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
-            logger.message(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
+            logger.trace(method, "marshalOntModel(outputDelta.additionModel) -exception-"+ex);
         }
         logger.end(method);        
         return new AsyncResult(outputDelta);

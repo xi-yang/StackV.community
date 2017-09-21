@@ -279,7 +279,9 @@ public class AwsBatchResourcesTool {
         }
         
         for (String key : portbatches.keySet()) {
+            if(!((orderNumber.get(portbatches.get(key)).toString()).equals("default"))){
             model.add(model.createStatement(model.getResource(key), Mrs.order, orderNumber.get(portbatches.get(key)).toString()));
+            }
         }
 
         //eliminate the network addresses of those network interfaces that are batches

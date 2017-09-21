@@ -61,9 +61,11 @@
  * @returns {object} |extensionless filename, contents|
  */
 var directory = {
-    'helpers': ["DNC-Type.js", "toJSON.js"],
+    'helpers': ["DNC-Type.js", "PolicyData.js", "add.js", "addressString.js", "directConnDest.js", "if_aws.js",
+        "if_createPathExportTo.js", "if_directConnect.js", "if_eq.js", "if_ops.js", "sriovIP.js", "sriovMac.js",
+        "toJSON.js"],
     'partials': ["DNC-PolicyData.hb"],
-    'templates': ["dnc.hb"]
+    'templates': ["dnc.hb", "ahc.hb", "vcn.hb"]
 };
 function load_dir(dir, evaluate = false) {
     /*var file_strings = {};

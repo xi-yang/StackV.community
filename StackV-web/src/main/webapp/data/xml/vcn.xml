@@ -77,13 +77,9 @@
                 <valid>select</valid>
             </input>
             <input>
-                <name>Type</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
                 <name>CIDR</name>
                 <type>text</type>
+                <default>10.0.0.0/16</default>
                 <valid>cidr</valid>
             </input>
         </group>        
@@ -99,17 +95,19 @@
                 <name>CIDR</name>
                 <type>text</type>
                 <valid>cidr</valid>
+                <default first_only="true">10.0.0.0/24</default>
             </input>
             <input condition="aws-form">
                 <name>VPN Route Propagation</name>
                 <type>checkbox</type>
+                <default>true</default>
             </input>
-            <input condition="openstack-form">
-                <name>Default Routing</name>
+            <input>
+                <name>Internet Routable</name>
                 <type>checkbox</type>
             </input>
             
-            <group factory="true" name="route" label="false">
+            <group factory="true" name="route" label="off">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -152,19 +150,26 @@
             <input>
                 <name>Security Group</name>
                 <type>text</type>
-                <size>small</size>
                 <valid>string</valid>
             </input>
             <input>
                 <name>Keypair Name</name>
                 <type>text</type>
-                <size>small</size>
                 <valid>string</valid>
             </input>
-            <input>
-                <name>Host</name>
+            <input condition ="aws-form">
+                <name>Instance Type</name>
+                <type>text</type>                
+                <valid>string</valid>
+            </input>
+            <input condition="aws-form">
+                <name>Image</name>
                 <type>text</type>
-                <size>small</size>                
+                <valid>string</valid>
+            </input>
+            <input condition ="openstack-form">
+                <name>Host</name>
+                <type>text</type>               
                 <default>any</default>
                 <valid>string</valid>
             </input>
@@ -175,7 +180,7 @@
             </input>
             
             <group factory="true" condition="aws-form" name="Interface">
-                <input>
+                <input required="true">
                     <name>Type</name>
                     <type>select</type>
                     <size>small</size>
@@ -226,18 +231,32 @@
                 <type>text</type>
                 <valid>string</valid>
             </input>
-            <input>
+            <input required="true">
                 <name>Type</name>
                 <type>select</type>
                 <options>
                     <option condition="aws-form">AWS Direct Connect</option>
-                    <option condition="openstack-form">UCS Port Profile</option>
-                    <option condition="openstack-form">L2 Stitch Port</option>
+                    <option condition="openstack-form">UCS Port Profile</option>                    
                 </options>
                 <valid>select</valid>
             </input>                        
-            <group factory="true" name="Route" label="false">                
-                <input>
+            <group factory="true" name="Connect">  
+                <bound>
+                    <name>gateways-gateway-type</name>
+                    <value>AWS Direct Connect</value>
+                    <max>1</max>
+                </bound>
+                <bound>
+                    <name>gateways-gateway-type</name>
+                    <value>UCS Port Profile</value>
+                    <max>1</max>
+                </bound>              
+                <bound>
+                    <name>gateways-gateway-type</name>
+                    <value>L2 Stitch Port</value>
+                    <max>1</max>
+                </bound>              
+                <input condition="type::ucs_port_profile">
                     <name>From</name>
                     <type>text</type>
                     <valid>string</valid>
@@ -246,15 +265,6 @@
                     <name>To</name>
                     <type>text</type>
                     <valid>string</valid>
-                </input>
-                <input>
-                    <name>Next Hop</name>
-                    <type>text</type>
-                    <valid>string</valid>
-                </input>
-                <input>
-                    <name>Type</name>
-                    <type>text</type>
                 </input>
             </group>
         </group>
@@ -268,7 +278,7 @@
             <input>
                 <name>Hosting Gateway</name>
                 <type>select</type>
-                <link>gateways</link>
+                <link nameVal="true">gateways</link>
                 <valid>select</valid>
             </input>  
             <input>

@@ -561,11 +561,10 @@ public class AwsPush {
 
             } else if (request.contains("AssociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
-
-                String routeTableId = ec2Client.getTableId(parameters[1]);
+                String routeTableId = parameters[1];
                 String subnetId = ec2Client.getResourceId(parameters[2]);
                 for (int retry = 0; retry < 6; retry++) {
-                    String resId = ec2Client.getResourceId(routeTableId);
+                    String resId = ec2Client.getTableId(parameters[1]);
                     if (routeTableId != resId) {
                         routeTableId = resId;
                         break;
@@ -1218,7 +1217,6 @@ public class AwsPush {
             String portIdTagValue = ResourceTool.getResourceName(port.asResource().toString(), awsPrefix.nic());
             List<String> batchPortIds = ec2Client.getBatchNetworkInterfacesForDeletion(portIdTagValue);
             
-            
             String portId = null;
             for(int cnt = 0 ; cnt<batchPortIds.size();cnt++){
             portId = batchPortIds.get(cnt);
@@ -1266,8 +1264,9 @@ public class AwsPush {
                 //requests += String.format("DeleteNetworkInterfaceRequest %s \n", portId);
                 requests += String.format(" %s ", portId);
             }}
-            requests = (requests.equals(""))?"":"DeleteNetworkInterfaceRequest" + requests + " \n";
         }
+        //return an empty request or return a single request by accumulating all the eni ids that need to be deleted
+        requests = (requests.equals(""))?"":"DeleteNetworkInterfaceRequest" + requests + " \n";
         return requests;
     }
 
@@ -2807,7 +2806,7 @@ public class AwsPush {
         String method = "createPortsRequests";
         String requests = "";
         String query;
-
+        
         //query for the port 
         query = "SELECT ?port ?nodE ?order WHERE {?port a  nml:BidirectionalPort "
                 + "FILTER (NOT EXISTS {?port mrs:type ?type})"
@@ -2822,23 +2821,31 @@ public class AwsPush {
             RDFNode order = querySolution.get("order");
             
             //to extract batch value from nodes/VMs
-            query = "SELECT ?batch ?subnet WHERE {?node nml:hasBidirectionalPort <" + port.asResource() + "> ."
+            query = "SELECT ?batch ?node WHERE {?node nml:hasBidirectionalPort <" + port.asResource() + "> ."
                         + "?node mrs:batch ?batch }";
             int batch = 1;
             ResultSet rbatch = executeQuery(query, emptyModel, modelAdd);
             
-            //check if the ports have order property
-            if(rbatch.hasNext() &&  order == null){
+            if(rbatch.hasNext()){
+                int numPorts = 0;
+                while(rbatch.hasNext()){
+                querySolution = rbatch.next();
+            
+                RDFNode node = querySolution.get("node");
+                query = "SELECT ?node WHERE {<" + node.asResource() + "> nml:hasBidirectionalPort ?port}";
+                ResultSet rPortNum = executeQuery(query, emptyModel, modelAdd);
+                while(rPortNum.hasNext()){rPortNum.next();numPorts++;}
+                
+                if(numPorts>1 && order == null){
                 throw logger.error_throwing(method, String.format("Network interface %s does not have the order property", port.asResource().toString()));
+                }
+                
+                batch += Integer.parseInt(querySolution.get("batch").asLiteral().toString());
+                batch += -1; //since 1 is already assigned}
+                }
             }
             
-            while(rbatch.hasNext()){
-                querySolution = rbatch.next();
-                batch += Integer.parseInt(querySolution.get("batch").asLiteral().toString());
-                batch += -1; //since 1 is already assigned
-            }
-            //if(batch>1 && order.toString().equals("0"))
-            if(batch>1 && loopCount == 0)
+            if((batch >= 1 && loopCount == 0))
             {
                 loopCount++;
                 continue;
@@ -2889,7 +2896,8 @@ public class AwsPush {
                     throw logger.error_throwing(method, String.format("model additions subnet for port %s"
                             + "is not found in the reference model", subnetId));
                 }
-                portIdTagValue = portIdTagValue+"withbatchorder_"+order.toString();
+                if(order!=null){portIdTagValue = portIdTagValue+"withbatchorder_"+order.toString();}
+                else{portIdTagValue = portIdTagValue+"withbatchorder_default";}
                 //create the network interface 
                 requests += String.format("CreateNetworkInterfaceRequest  %s %s %s ", privateAddress, subnetId, portIdTagValue);
             }
@@ -2964,7 +2972,14 @@ public class AwsPush {
             if (r1.hasNext()) {
                 String nodeId = ec2Client.getInstanceId(nodeIdTag);
                 i = ec2Client.getInstance(nodeId);
-                if(order != null && orderFlag == 0 && nodeId != null){
+                //check if the VM has multiple port attachments or not
+                query = "SELECT ?port WHERE {<" + node.asResource() + "> nml:hasBidirectionalPort ?port }";
+                int numPorts = 0;
+                ResultSet rPorts = executeQuery(query, emptyModel, modelAdd);
+                while(rPorts.hasNext()){ rPorts.next(); numPorts++;}
+
+                
+                if((order != null && orderFlag == 0 && nodeId != null) ||numPorts ==1){
                 orderFlag = 1;
                 continue;
              }
@@ -3067,23 +3082,43 @@ public class AwsPush {
                 if (!r2.hasNext()) {
                     throw logger.error_throwing(method, String.format("model addition does not specify the subnet that the node is: %s", node));
                 }
-
+                
+                //find the number of ports that have to be attached to the VM
+                int numPorts = 0;
+                query = "SELECT ?port WHERE {<"+queryResource+"> nml:hasBidirectionalPort ?port}";
+                ResultSet rNumPorts = executeQuery(query, emptyModel, modelAdd); 
+                while(rNumPorts.hasNext()){
+                   rNumPorts.next();
+                   numPorts++;
+                }
+                
+                
                 while (r2.hasNext())//Select the order "0" in case of multiple network interfaces attached to the instance
                 {
                     QuerySolution querySolution2 = r2.next();
                     RDFNode order = querySolution2.get("order");
-                    
-                    if(order!=null)
-                    {            
-                    RDFNode subnet = querySolution2.get("subnet");
-                    String subnetID = ResourceTool.getResourceName(subnet.asResource().toString(), awsPrefix.subnet());
-                    RDFNode port = querySolution2.get("port");
-                    String portID = ResourceTool.getResourceName(port.asResource().toString(), awsPrefix.nic());
-                    subnetId = subnetID;
-                    portId = portID+"withbatchorder_"+order.toString();//break;}
+                    //order property becomes a requirement when there are multiple ports
+                    if(numPorts > 1)
+                    { 
+                        if(order!=null){
+                            RDFNode subnet = querySolution2.get("subnet");
+                            String subnetID = ResourceTool.getResourceName(subnet.asResource().toString(), awsPrefix.subnet());
+                            RDFNode port = querySolution2.get("port");
+                            String portID = ResourceTool.getResourceName(port.asResource().toString(), awsPrefix.nic());
+                            subnetId = subnetID;
+                            portId = portID+"withbatchorder_"+order.toString();//break;}
+                        }
+                        else{
+                            throw logger.error_throwing(method, String.format("Network interface %s does not have the order property", querySolution2.get("port").asResource().toString()));
+                        }
                     }
                     else{
-                      throw logger.error_throwing(method, String.format("Network interface %s does not have the order property", querySolution2.get("port").asResource().toString())); 
+                        RDFNode subnet = querySolution2.get("subnet");
+                        String subnetID = ResourceTool.getResourceName(subnet.asResource().toString(), awsPrefix.subnet());
+                        RDFNode port = querySolution2.get("port");
+                        String portID = ResourceTool.getResourceName(port.asResource().toString(), awsPrefix.nic());
+                        subnetId = subnetID;
+                        portId = (numRequestedInBatch>1)? portID+"withbatchorder_default" : portID;
                     }
                     break;
                 }
@@ -3466,7 +3501,7 @@ public class AwsPush {
             return n;}
          else {return 1;}
      }
-    
+  
     public String createVPNConnectionRequests(OntModel model, OntModel modelAdd) {
         String method = "createVPNConnectionRequests";
         String requests = "";

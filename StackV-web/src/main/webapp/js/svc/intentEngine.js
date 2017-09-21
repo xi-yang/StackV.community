@@ -23,9 +23,10 @@
 
 /* global Mousetrap, keycloak, Power2, baseUrl */
 
-var conditions = [];
+var options = [];
 var factories = {};
 var initials = {};
+var bindings = {};
 var gsap = {};
 var intent;
 var intentType;
@@ -55,22 +56,32 @@ function loadIntent(type) {
             intent = xml.children[0];
             renderIntent();
             parseSchemaIntoManifest(intent);
-            switch (type) {
-                case "dnc":
-                    preloadDNC();
-                    break;
-                case "hybridcloud":
-                    preloadAHC();
-                    break;
-                case "vcn":
-                    preloadAWSVCN();
-                    break;
+            if (getURLParameter("preload")) {
+                switch (type) {
+                    case "dnc":
+                        preloadDNC();
+                        break;
+                    case "hybridcloud":
+                        preloadAHC();
+                        break;
+                    case "vcn":
+                        preloadAWSVCN();
+                        //preloadOPSVCN();
+                        break;
+                }
+            }
+            if (getURLParameter("fullTest")) {
+                parseTestManifest();
             }
         },
         error: function (err) {
             console.log('Error Loading XML! \n' + err);
         }
     });
+
+    refreshTimer = setInterval(function () {
+        keycloak.updateToken(90);
+    }, (60000));
 }
 
 function renderIntent() {
@@ -127,6 +138,7 @@ function initializeIntent() {
             $activeStage = $div;
             gsap[id].play();
             $prog.addClass("active");
+            $activeStage.addClass("active");
         }
 
         $progress.append($prog);
@@ -136,6 +148,7 @@ function initializeIntent() {
     }
     $progress.append($("<li>"));
     moderateControls();
+    recondition();
     setTimeout(function () {
         gsap["intent"].play();
     }, 500);
@@ -147,6 +160,12 @@ function initMeta(meta) {
     // Render service tag
     var $panel = $("#intent-panel-meta");
     $("#meta-title").text(meta.children[0].innerHTML);
+    $("#meta-alias").change(function () {
+        $(this).removeClass("invalid-input");
+        if ($(".invalid-input").length === 0) {
+            $(".intent-operations").removeClass("blocked");
+        }
+    });
 
     // Render blocks
     var $blockDiv = $("<div>").attr("id", "intent-panel-meta-block");
@@ -225,32 +244,14 @@ function initMeta(meta) {
         nextStage();
     });
     $("#intent-submit").click(function () {
-        submitIntent(false);
+        submitIntent(0);
     });
     $("#intent-save").click(function () {
-        submitIntent(true);
+        submitIntent(1);
     });
 
     $("#button-profile-save").click(function () {
-        var scaffManifest = {};
-        scaffManifest["name"] = $("#profile-name").val();
-        scaffManifest["description"] = $("#profile-description").val();
-        scaffManifest["username"] = "admin";
-        scaffManifest["data"] = manifest;
-
-        // Save to DB
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
-        $.ajax({
-            url: apiUrl,
-            type: 'PUT',
-            data: JSON.stringify(scaffManifest),
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            },
-            success: function (result) {
-                console.log("Saved!");
-            }
-        });
+        saveManifest();
     });
 }
 
@@ -262,11 +263,14 @@ function renderInputs(arr, $parent) {
             var factory = ele.getAttribute("factory");
             var label = ele.getAttribute("label");
             var condition = ele.getAttribute("condition");
+            var start = ele.getAttribute("start");
+            var def = ele.getAttribute("default");
             var collapsible = ele.getAttribute("collapsible");
             var block = ele.getAttribute("block");
             var str = name.charAt(0).toUpperCase() + name.slice(1);
+            var eleID = constructID(ele);
 
-            var $div = $("<div>", {class: "intent-group-div", id: constructID(ele)});
+            var $div = $("<div>", {class: "intent-group-div", id: eleID});
             $parent.append($div);
             var $name = $('<div class="group-header col-sm-12"><div class="group-name">' + str + "</div></div>");
             $div.append($name);
@@ -280,7 +284,7 @@ function renderInputs(arr, $parent) {
                 $div.addClass("factory");
                 var factObj = {};
                 factObj["count"] = 1;
-                factories[constructID(ele)] = factObj;
+                factories[eleID] = factObj;
             }
             if (block) {
                 $div.addClass("factory");
@@ -288,12 +292,23 @@ function renderInputs(arr, $parent) {
                 var factObj = {};
                 factObj["count"] = 1;
                 factObj["block"] = block;
-                factories[constructID(ele)] = factObj;
+                factories[eleID] = factObj;
+            }
+            if (start) {
+                $div.attr("data-start", start);
+            }
+            if (def) {
+                $div.attr("data-default", def);
             }
 
-            if (label === "false") {
-                var $groupName = $div.find(".group-name").addClass("unlabeled");
-                $groupName.text($groupName.text().split("#")[0]);
+            if (label) {
+                var $groupName = $div.find(".group-name");
+                if (label === "off") {
+                    $groupName.addClass("unlabeled");
+                    $groupName.text($groupName.text().split("#")[0]);
+                } else {
+                    $groupName.text(label + " #1");
+                }
             } else {
                 $div.addClass("labeled");
             }
@@ -301,6 +316,33 @@ function renderInputs(arr, $parent) {
             if (condition) {
                 $div.addClass("conditional");
                 $div.attr("data-condition", condition);
+            }
+
+            if ($(ele).children("bound").length > 0) {
+                $div.attr("data-bound", eleID);
+                var boundArr = $(ele).children("bound");
+                if (!(eleID in bindings)) {
+                    bindings[eleID] = {};
+                }
+                var binding = bindings[eleID];
+
+                for (var j = 0; j < boundArr.length; j++) {
+                    var name = boundArr[j].children[0].innerHTML;
+                    var val = boundArr[j].children[1].innerHTML;
+                    if (!(name in binding)) {
+                        binding[name] = {};
+                    }
+                    binding[name][val] = {};
+
+                    var minEle = $(boundArr[j]).children("min")[0];
+                    if (minEle) {
+                        binding[name][val]["min"] = minEle.innerHTML;
+                    }
+                    var maxEle = $(boundArr[j]).children("max")[0];
+                    if (maxEle) {
+                        binding[name][val]["max"] = maxEle.innerHTML;
+                    }
+                }
             }
 
             // Recurse!
@@ -327,6 +369,11 @@ function renderInputs(arr, $parent) {
                     break;
             }
 
+            if (ele.children[0].innerHTML.toLowerCase() === "name" && ele.parentElement.tagName === "group") {
+                $input.attr("data-name", ele.parentElement.getAttribute("name") + "_1");
+                $input.val(ele.parentElement.getAttribute("name") + "_1");
+            }
+
             // Handle potential element modifiers
             if (ele.getElementsByTagName("size").length > 0) {
                 switch (ele.getElementsByTagName("size")[0].innerHTML) {
@@ -347,6 +394,14 @@ function renderInputs(arr, $parent) {
             }
 
             if (ele.getElementsByTagName("default").length > 0) {
+                if (type === "checkbox") {
+                    if (ele.getElementsByTagName("default")[0].innerHTML === "true") {
+                        $input.attr("checked", true);
+                    }
+                }
+                if (!ele.getElementsByTagName("default")[0].getAttribute("first_only")) {
+                    $input.attr("data-default", ele.getElementsByTagName("default")[0].innerHTML);
+                }
                 $input.val(ele.getElementsByTagName("default")[0].innerHTML);
             }
             if (ele.getElementsByTagName("initial").length > 0) {
@@ -405,7 +460,7 @@ function renderInputs(arr, $parent) {
                 $input.attr("data-link", link);
                 var $default = $("<option>", {selected: true}).text("");
                 $input.append($default);
-                var nameVal = ele.getElementsByTagName("link")[0].getAttribute("name");
+                var nameVal = ele.getElementsByTagName("link")[0].getAttribute("nameVal");
                 if (nameVal) {
                     $input.addClass("nameVal");
                 }
@@ -413,9 +468,12 @@ function renderInputs(arr, $parent) {
                 $input = $("<select>", {id: name, class: "intent-input"});
                 var selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
-                var $default = $("<option>", {selected: true}).text("");
-                $input.append($default);
+                if (!ele.getAttribute("required")) {
+                    var $null = $("<option>").text("N/A").val("");
+                    $input.append($null);
+                }
 
+                var def;
                 for (var j = 0; j < options.length; j++) {
                     var $option;
                     if (options[j].getAttribute("condition") !== null) {
@@ -424,11 +482,23 @@ function renderInputs(arr, $parent) {
                     } else {
                         $option = $("<option>");
                     }
+                    $input.change(function () {
+                        recondition();
+                    });
 
                     $option.text(options[j].innerHTML);
                     $option.val(options[j].innerHTML);
+                    if (options[j].getAttribute("default") !== null) {
+                        def = $option.val();
+                    }
 
                     $input.append($option);
+                }
+
+                if (def) {
+                    $input.val(def).change();
+                } else {
+                    $input.val($input.children("option:not(:disabled):first").val()).change();
                 }
             }
             if (trigger) {
@@ -438,9 +508,7 @@ function renderInputs(arr, $parent) {
                     case "button":
                         $label.attr("data-trigger", trigger);
                         $label.click(function () {
-                            $("[data-condition='" + $(this).data("trigger") + "']").addClass("conditioned");
-                            $("[data-condition-select='" + $(this).data("trigger") + "']").removeAttr("disabled");
-                            conditions.push($(this).data("trigger"));
+                            addOption($(this).data("trigger"));
                         });
                         break;
                 }
@@ -455,10 +523,13 @@ function renderInputs(arr, $parent) {
                 $input.attr("data-valid", validRef);
 
                 $input.change(function () {
-                    $(this).removeClass("invalid");
+                    $(this).removeClass("invalid-input");
                     var $stage = $($(this).parents(".intent-stage-div")[0]);
-                    if ($stage.find(".invalid").length === 0) {
-                        $("#prog-" + $stage.attr("id")).removeClass("invalid");
+                    if ($stage.find(".invalid-input").length === 0) {
+                        $("#prog-" + $stage.attr("id")).removeClass("invalid-input");
+                    }
+                    if ($(".invalid-input").length === 0) {
+                        $(".intent-operations").removeClass("blocked");
                     }
                 });
             }
@@ -502,12 +573,15 @@ function factorizeRendering() {
             var $button = $("<button>", {class: "intent-button-factory", text: "Add " + name});
             $button.attr("data-factory", key);
             $button.attr("data-target", fact.parentElement.id);
+            if ($(fact).data("bound")) {
+                $button.attr("data-bound", $(fact).data("bound"));
+            }
             $button.click(function (e) {
                 // Modify clone for current index
                 var key = $(this).data("factory");
                 var target = $(this).parent().parent().attr("id");
 
-                buildClone(key, target, true);
+                buildClone(key, target, $(this));
 
                 e.preventDefault();
             });
@@ -518,6 +592,7 @@ function factorizeRendering() {
         }
     }
 
+    initializeInputs();
     // Step 4: Cache schemas
     for (var i = 0; i < factoryArr.length; i++) {
         var fact = factoryArr[i];
@@ -529,8 +604,10 @@ function factorizeRendering() {
         factories[key]["clone"] = $clone;
     }
 
-    initializeInputs();
+    // Step 5: Finishing work        
     refreshLinks();
+    enforceBounds();
+    expandStarters();
 }
 function recursivelyFactor(id, ele) {
     if (ele) {
@@ -559,37 +636,39 @@ function recursivelyFactor(id, ele) {
     }
 }
 
-function submitIntent(save) {
-    gsap["intent"].reverse();
-    setTimeout(function () {
-        refreshLinks();
-        $(".intent-input.invalid").removeClass("invalid");
-        $(".intent-input-message").remove();
-
+function submitIntent(mode) {
+    //gsap["intent"].reverse();
+    refreshLinks();
+    if ($(".invalid-input").length === 0) {
         // Validate
         var validation = $("[data-valid]");
         var valid = true;
+        if (!($("#meta-alias").val()) && mode === 0) {
+            valid = false;
+            $("#meta-alias").addClass("invalid-input");
+        }
+
         for (var i = 0; i < validation.length; i++) {
             var $input = $(validation[i]);
             if (isEnabledInput($input)) {
                 var validRef = $input.data("valid");
                 var validEle = intent.children[0].getElementsByTagName("validation")[0];
-                var valid = null;
+                var constEle = null;
                 for (var j = 0; j < validEle.children.length; j++) {
                     var constraint = validEle.children[j];
                     if (constraint.children[0].innerHTML === validRef) {
-                        valid = constraint;
+                        constEle = constraint;
                         break;
                     }
                 }
-                if (valid) {
-                    var regex = valid.children[1].innerHTML;
+                if (constEle) {
+                    var regex = constEle.children[1].innerHTML;
                     regex = regex.replace(/\\/g, "\\");
                     regex = new RegExp(regex, "gm");
 
                     var $message = $("<div>", {class: "intent-input-message"});
-                    if (valid.getElementsByTagName("message").length > 0) {
-                        $message.text(valid.getElementsByTagName("message")[0].innerHTML);
+                    if (constEle.getElementsByTagName("message").length > 0) {
+                        $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
                     }
 
                     $input.parent().append($message);
@@ -597,21 +676,21 @@ function submitIntent(save) {
                     if (($input.val() === null || $input.val() === "")) {
                         if ($input.data("required")) {
                             valid = false;
-                            $input.addClass("invalid");
+                            $input.addClass("invalid-input");
                             var $stage = $($input.parents(".intent-stage-div")[0]);
-                            $("#prog-" + $stage.attr("id")).addClass("invalid");
+                            $("#prog-" + $stage.attr("id")).addClass("invalid-input");
                         }
                     } else if ($input.val().match(regex) === null) {
                         valid = false;
-                        $input.addClass("invalid");
+                        $input.addClass("invalid-input");
                         var $stage = $($input.parents(".intent-stage-div")[0]);
-                        $("#prog-" + $stage.attr("id")).addClass("invalid");
+                        $("#prog-" + $stage.attr("id")).addClass("invalid-input");
                     }
                 }
             }
         }
 
-        if (valid) {
+        if (valid || mode === 2) {
             // Parse manifest
             var json = {};
             $("#intent-panel-body .intent-input").each(function () {
@@ -641,36 +720,46 @@ function submitIntent(save) {
 
             manifest = json;
             parseManifestIntoJSON();
-
-            // Check for saving
-            if (save) {
-                openSaveModal();
-                setTimeout(function () {
-                    gsap["intent"].play();
-                }, 1000);
+            // Check if rendering failed
+            if (manifest !== null) {
+                // Check for saving
+                if (mode === 1) {
+                    openSaveModal();
+                    setTimeout(function () {
+                        gsap["intent"].play();
+                    }, 250);
+                } else if (mode === 2) {
+                    console.log(JSON.stringify(manifest));
+                } else {
+                    // Submit to backend
+                    package['proceed'] = "true";
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'POST',
+                        data: JSON.stringify(package),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        }
+                    });
+                    window.location.href = "/StackV-web/ops/catalog.jsp";
+                }
             } else {
-                // Submit to backend
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
-                $.ajax({
-                    url: apiUrl,
-                    type: 'POST',
-                    data: JSON.stringify(package),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function (result) {
-                        
-                        setTimeout(function () {
-                            window.location.href = "/StackV-web/ops/catalog.jsp";
-                        }, 500);
-                    }
-                });
+                /*setTimeout(function () {
+                 gsap["intent"].play();
+                 }, 500);*/
             }
+        } else {
+            $(".intent-operations").addClass("blocked");
+            swal("Input Error", "Invalid Inputs. Please review marked fields and correct them.", "error");
+            /*setTimeout(function () {
+             gsap["intent"].play();
+             }, 500);*/
         }
-    }, 500);
+    }
 }
 
 // UTILITY FUNCTIONS
@@ -719,9 +808,11 @@ function prevStage() {
         $activeProg.prev().addClass("active");
 
         var currID = $activeStage.attr("id");
+        $activeStage.removeClass("active");
         var prevID = $prev.attr("id");
         gsap[currID].reverse();
         $activeStage = $prev;
+        $activeStage.addClass("active");
 
         moderateControls();
 
@@ -758,9 +849,11 @@ function nextStage(flag) {
         $activeProg.next().addClass("active");
 
         var currID = $activeStage.attr("id");
+        $activeStage.removeClass("active");
         var nextID = $next.attr("id");
         gsap[currID].reverse();
         $activeStage = $next;
+        $activeStage.addClass("active");
 
         moderateControls();
 
@@ -800,7 +893,7 @@ function constructID(ele) {
     return retString.replace(/ /g, "_").toLowerCase();
 }
 
-function buildClone(key, target, button) {
+function buildClone(key, target, $factoryBtn) {
     var count = ++factories[key]["count"];
     var $clone = factories[key]["clone"].clone(true, true);
     var name = getName(key);
@@ -841,12 +934,22 @@ function buildClone(key, target, button) {
         var id = $btn.parent().parent().attr("id");
         gsap[id].reverse();
         setTimeout(function () {
-            $btn.parent().parent().remove();
+            var $ele = $btn.parent().parent();
+            var $first = firstOf($ele);
+
+            $ele.remove();
+            refreshNumerals($first);
+            refreshNames();
+            enforceBounds();
         }, 500);
     });
     $clone.find("[data-factory=" + key + "]").replaceWith($button);
 
-    $target.append($clone);
+    if ($factoryBtn) {
+        $factoryBtn.parent().parent().after($clone);
+    } else {
+        $target.append($clone);
+    }
 
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
@@ -858,13 +961,33 @@ function buildClone(key, target, button) {
         var key = $(this).data("factory");
         var target = $(this).parent().parent().attr("id");
 
-        buildClone(key, target, true);
+        buildClone(key, target, $(this));
 
         e.preventDefault();
     });
+    $clone.find("select").each(function () {
+        if ($(this).hasClass("binding")) {
+            $(this).change(function () {
+                enforceBounds();
+                recondition();
+            });
+        }
+    });
+
+    var $defArr = $clone.find("[data-default]");
+    for (var i = 0; i < $defArr.length; i++) {
+        var $input = $($defArr[i]);
+        $input.val($input.data("default")).change();
+    }
 
     recondition();
     refreshLinks();
+    if ($factoryBtn) {
+        refreshNumerals($factoryBtn.parent().parent());
+    }
+
+    refreshNames();
+    enforceBounds();
 
     if ($clone.children(".collapse").length > 0) {
         var id = "#" + $($clone.children(".collapse")[0]).attr("id");
@@ -909,6 +1032,49 @@ function refreshLinks() {
             $input.val(currSelection);
         }
     }
+}
+
+function refreshNumerals($ele) {
+    var $name = $($ele.children()[0].children[0]);
+    if (!$name.hasClass("unlabeled")) {
+        var arr = $name.html().split("#");
+        var count = 1;
+
+        var $next = $ele.next();
+        if ($next.length > 0) {
+            var $nextName = $($next.children()[0].children[0]);
+            var nextArr = $nextName.html().split("#");
+            while (nextArr && (nextArr[0] === arr[0])) {
+                $nextName.html(arr[0] + "#" + ++count);
+
+                $next = $next.next();
+                if ($next.length === 0)
+                    break;
+                $nextName = $($next.children()[0].children[0]);
+                nextArr = $nextName.html().split("#");
+            }
+        }
+    }
+}
+function refreshNames() {
+    var $nameArr = $("[data-name]");
+    for (var i = 0; i < $nameArr.length; i++) {
+        var $input = $($nameArr[i]);
+        if ($input.val() === "" || $input.val().match(new RegExp(/^connection_\d+$/))) {
+            var name = $input.data("name");
+
+            var $parent = $input.parent();
+            while (!$parent.hasClass("intent-group-div")) {
+                $parent = $parent.parent();
+                if (!$parent)
+                    return;
+            }
+            var numName = $parent.children(".group-header").children(".group-name").text();
+            name = name.split("_")[0] + "_" + numName.split("#")[1];
+            $input.val(name);
+        }
+    }
+
 }
 
 function moderateControls() {
@@ -1024,7 +1190,6 @@ function parseManifestIntoJSON() {
                     }
                 }
             }
-
         }
     });
 
@@ -1057,22 +1222,92 @@ function parseManifestIntoJSON() {
         },
         success: function (result) {
             manifest["uuid"] = result;
+            if (options.length > 0) {
+                manifest["options"] = options;
+                manifest["data"]["options"] = options;
+            }
+            manifest["data"]["uuid"] = result;
 
-            // Render template
+            // Render template            
             var rendered = render(manifest);
+            if (!rendered) {
+                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
+                manifest = null;
+                return;
+            }
 
-            console.log(rendered);
+            delete manifest["data"]["uuid"];
+            delete manifest["data"]["options"];
 
             package["service"] = intentType;
             package["alias"] = $("#meta-alias").val();
-            package["delta"] = rendered;
-            package["uuid"] = result;
+            package["data"] = rendered;
         }
     });
-
-
 }
 
+function enforceBounds() {
+    var arr = $("button[data-bound]");
+    for (var i = 0; i < arr.length; i++) {
+        var $button = $(arr[i]);
+        var key = $button.data("bound");
+        var $scope = $button.parent().parent().parent();
+
+        // Reset addition and removal buttons.
+        $scope.find("[data-bound=" + key + "] .intent-button-remove").removeAttr("disabled");
+        $button.removeAttr("disabled");
+
+        var eleCount = $scope.children("div[data-bound=" + key + "]").length;
+        for (var name in bindings[key]) {
+            var $famInput = findFamilyInput($button.parent().parent(), name);
+            if ($famInput) {
+                var currVal = $famInput.val();
+                for (var val in bindings[key][name]) {
+                    var changes = true;
+                    while (changes) {
+                        changes = false;
+                        if (val === currVal) {
+                            // Check for min
+                            if ("min" in bindings[key][name][val]) {
+                                var min = bindings[key][name][val]["min"];
+                                if (eleCount <= min) {
+                                    while (eleCount < min) {
+                                        $button.click();
+                                        eleCount = $scope.children("div[data-bound=" + key + "]").length;
+                                        changes = true;
+                                    }
+                                    $scope.find("[data-bound=" + key + "] .intent-button-remove").attr("disabled", true);
+                                }
+                            }
+
+                            // Check for max
+                            if ("max" in bindings[key][name][val]) {
+                                var max = bindings[key][name][val]["max"];
+                                if (eleCount >= max) {
+                                    while (eleCount > max) {
+                                        $scope.children("[data-bound=" + key + "]").last().remove();
+                                        eleCount = $scope.children("div[data-bound=" + key + "]").length;
+                                        changes = true;
+                                    }
+                                    $button.attr("disabled", true);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+function stripID($ele) {
+    return id = $ele.attr("id").replace(new RegExp("\\_num\\d*", "gm"), "");
+}
+
+function firstOf($ele) {
+    var id = $ele.attr("id");
+    return $("#" + id.slice(0, id.lastIndexOf("_num")) + "_num1");
+}
 
 // Recursive Functions
 function findKeyDeepCache(recur, key) {
@@ -1178,10 +1413,90 @@ function trimLeaves(recur) {
     }
 }
 
+// Find closest input with generic name matching key
+function findFamilyInput($recur, key) {
+    var $childArr;
+    // Check if element has collapse element
+    var $coll = $recur.children(".collapse");
+    if ($coll.length > 0) {
+        $childArr = $coll.children("label");
+    } else {
+        $childArr = $recur.children("label");
+    }
+
+    // Check for a match
+    for (var i = 0; i < $childArr.length; i++) {
+        var child = $($childArr[i])[0].children[0];
+        var id = generalizeID(child.id);
+
+        if (id === key || getName(id) === key) {
+            return $(child);
+        }
+    }
+
+    // No match found, recurse upwards    
+    // If at stage level and no match, no match found
+    if ($recur.hasClass("intent-stage-div")) {
+        return null;
+    }
+    var $parent = $recur.parent();
+    while (!$parent.hasClass("intent-group-div") && !$parent.hasClass("intent-stage-div")) {
+        $parent = $parent.parent();
+    }
+    return findFamilyInput($parent, key);
+}
+
 function recondition() {
-    for (var i = 0; i < conditions.length; i++) {
-        $("[data-condition='" + conditions[i] + "']").addClass("conditioned");
-        $("[data-condition-select='" + conditions[i] + "']").removeAttr("disabled");
+    // Iterate over all conditional standard elements
+    $(".conditional").removeClass("conditioned");
+    var $conArr = $(".conditional");
+    for (var i = 0; i < $conArr.length; i++) {
+        var $ele = $($conArr[i]);
+        var conArr = $ele.data("condition").split(",");
+        // Parse each condition from element
+        for (var j = 0; j < conArr.length; j++) {
+            var con = conArr[j];
+            if (con.split("::").length > 1) {
+                // Reference value
+                var splitArr = con.split("::");
+                var $ref = findFamilyInput($ele, splitArr[0]);
+                var key = splitArr[1].toLowerCase().replace(/ /g, "_");
+                if ($ref && $ref.val() && ($ref.val().toLowerCase().replace(/ /g, "_") === key)) {
+                    $ele.addClass("conditioned");
+                }
+            } else {
+                // Option value
+                if (options.indexOf(con) > -1) {
+                    $ele.addClass("conditioned");
+                }
+            }
+        }
+    }
+
+    // Iterate over all conditional options
+    $("[data-condition-select]").attr("disabled", true);
+    $conArr = $("[data-condition-select]");
+    for (var i = 0; i < $conArr.length; i++) {
+        var $ele = $($conArr[i]);
+        var conArr = $ele.data("condition-select").split(",");
+        // Parse each condition from element
+        for (var j = 0; j < conArr.length; j++) {
+            var con = conArr[j];
+            if (con.split("::").length > 1) {
+                // Reference value
+                var splitArr = con.split("::");
+                var $ref = findFamilyInput($ele, splitArr[0]);
+                var key = splitArr[1].toLowerCase().replace(/ /g, "_");
+                if ($ref && $ref.val() && ($ref.val().toLowerCase().replace(/ /g, "_") === key)) {
+                    $ele.removeAttr("disabled");
+                }
+            } else {
+                // Option value
+                if (options.indexOf(con) > -1) {
+                    $ele.removeAttr("disabled");
+                }
+            }
+        }
     }
 }
 
@@ -1193,6 +1508,39 @@ function initializeInputs() {
         $input.val(val);
         $input.removeAttr("data-initial");
     }
+
+    var $boundArr = $("[data-bound]");
+    for (var i = 0; i < $boundArr.length; i++) {
+        var $ele = $($boundArr[i]);
+        for (var key in bindings[$ele.data("bound")]) {
+            var $input = findFamilyInput($ele, key);
+            if ($input && !$input.hasClass("binding")) {
+                $input.change(function () {
+                    enforceBounds();
+                });
+
+                $input.addClass("binding");
+            }
+        }
+    }
+}
+
+function expandStarters() {
+    var $arr = $("[data-start]");
+    for (var i = 0; i < $arr.length; i++) {
+        var $input = $($arr[i]);
+        var val = $input.data("start");
+        var count = 1;
+
+        // TODO
+    }
+}
+
+function addOption(trigger) {
+    if (options.indexOf(trigger) === -1) {
+        options.push(trigger);
+    }
+    recondition();
 }
 
 function isEnabledInput($input) {
@@ -1206,54 +1554,152 @@ function isEnabledInput($input) {
     return true;
 }
 
+function generalizeID(id) {
+    return id.replace(new RegExp("\\_num\\d*", "gm"), "");
+}
+
 function openSaveModal() {
     $("#saveModal").modal();
+}
+function saveManifest() {
+    var scaffManifest = {};
+    scaffManifest["name"] = $("#profile-name").val();
+    scaffManifest["description"] = $("#profile-description").val();
+    scaffManifest["username"] = sessionStorage.getItem("username");
+    scaffManifest["data"] = manifest;
+
+    // Save to DB
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        data: JSON.stringify(scaffManifest),
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            window.location.href = "/StackV-web/ops/catalog.jsp?profiles=open";
+        }
+    });
+}
+function parseTestManifest() {
+    // Get all inputs.
+    $(".conditional").removeClass("conditional");
+    $(".intent-input").each(function () {
+        var tag = this.tagName;
+        var id = $(this).attr("id");
+        switch (tag) {
+            case "INPUT":
+                $(this).val(id);
+                break;
+            case "SELECT":
+                $(this).val($(this).children('option[value!=""][value]').first().val());
+                break;
+        }
+    });
+
+    // Render inputs.
+    submitIntent(2);
+
+    // Get all conditions.
+    var conArr = [];
+    $("[data-condition]").each(function () {
+        conArr.push($(this).data("condition"));
+    });
+    conArr = $.unique(conArr);
+    manifest["options"] = conArr;
+
+    $("body").css("background", "white");
+    $("body").html(JSON.stringify(manifest));
 }
 
 // TESTING
 
 function preloadDNC() {
-    $("button[data-factory=connections-connection-terminal]").click();
-    $("button[data-factory=connections-connection-terminal]").click();
-
     $("#meta-alias").val("Preloaded DNC Test");
+    $("#connections-type").val("Multi-Point VLAN Bridge").change();
 
-    $("#connections-type").val("Multi-Point VLAN Bridge");
-    $("#connections-connection_num1-name").val("mpvb1");
+    setTimeout(function () {
+        $("#connections-connection_num1-name").val("mpvb1");
 
-    $("#connections-connection_num1-terminal_num1-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_1:port=openflow_1_1");
-    $("#connections-connection_num1-terminal_num1-vlan_tag").val("101");
+        $("#connections-connection_num1-terminal_num1-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_1:port=openflow_1_1");
+        $("#connections-connection_num1-terminal_num1-vlan_tag").val("101");
 
-    $("#connections-connection_num1-terminal_num2-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_2:port=openflow_2_1");
-    $("#connections-connection_num1-terminal_num2-vlan_tag").val("102");
-    $("#connections-connection_num1-terminal_num2-mac_address_list").val("02:50:f2:00:00:01,02:50:f2:00:00:04");
+        $("#connections-connection_num1-terminal_num2-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_2:port=openflow_2_1");
+        $("#connections-connection_num1-terminal_num2-vlan_tag").val("102");
+        $("#connections-connection_num1-terminal_num2-mac_address_list").val("02:50:f2:00:00:01,02:50:f2:00:00:04");
 
-    $("#connections-connection_num1-terminal_num3-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_3:port=openflow_3_1");
-    $("#connections-connection_num1-terminal_num3-vlan_tag").val("103");
+        $("#connections-connection_num1-terminal_num3-uri").val("urn:ogf:network:odl.maxgigapop.net:network:node=openflow_3:port=openflow_3_1");
+        $("#connections-connection_num1-terminal_num3-vlan_tag").val("103");
+    }, 500);
 }
 function preloadAWSVCN() {
     $("#meta-alias").val("Preloaded VCN AWS Test");
+    $("[name=block-gateways]").val(2).change();
+    $("[name=block-sriovs]").val(2).change();
 
-    $("#details-network-parent").val("urn:ogf:network:aws.amazon.com:aws-cloud");
-    $("#details-network-type").val("internal");
-    $("#details-network-cidr").val("10.0.0.0/24");
+    setTimeout(function () {
+        $("#details-network-parent").val("urn:ogf:network:aws.amazon.com:aws-cloud");
+        $("#details-network-type").val("internal");
+        $("#details-network-cidr").val("10.0.0.0/16");
 
-    $("#subnets-subnet_num1-name").val("TestSub1");
-    $("#subnets-subnet_num1-cidr_block").val("10.0.0.0/24");
-    $("#subnets-subnet_num1-route_num1-from").val("TestFrom");
-    $("#subnets-subnet_num1-route_num1-to").val("TestTo");
-    $("#subnets-subnet_num1-route_num1-next_hop").val("TestNext");
+        $("#subnets-subnet_num1-name").val("subnet1");
+        $("#subnets-subnet_num1-cidr").val("10.0.0.0/24");
 
-    $("#vms-vm_num1-name").val("TestVM1");
-    $("#vms-vm_num1-subnet_host").val("subnet_num1");
-    $("#vms-vm_num1-keypair_name").val("driver_key");
-    $("#vms-vm_num1-security_group").val("geni");
-    $("#vms-vm_num1-route_num1-from").val("TestFrom");
-    $("#vms-vm_num1-route_num1-to").val("TestTo");
-    $("#vms-vm_num1-route_num1-next_hop").val("TestNext");
+        $("#vms-vm_num1-name").val("ops-vtn1-vm1");
+        $("#vms-vm_num1-subnet_host").val("subnet_num1");
+        $("#vms-vm_num1-instance_type").val("m4.large");
+        $("#vms-vm_num1-keypair_name").val("driver_key");
+        $("#vms-vm_num1-security_group").val("geni");
+        $("#vms-vm_num1-image").val("ami-0d1bf860");
+        $("#vms-vm_num1-interface_num1-type").val("Ethernet").change();
 
-    $("#gateways-gateway_num1-name").val("TestGate");
-    $("#gateways-gateway_num1-route_num1-to").val("TestTo");
+        $("#gateways-gateway_num1-name").val("l2path-aws-dc1");
+        //$("#gateways-gateway_num1-type").val("AWS Direct Connect").change();
+        $("#gateways-gateway_num1-route_num1-to").val("urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*");
+    }, 500);
+}
+function preloadOPSVCN() {
+    $("#meta-alias").val("Preloaded VCN OPS Test");
+    $("[name=block-gateways]").val(2).change();
+    $("[name=block-sriovs]").val(2).change();
+
+    setTimeout(function () {
+        $("#details-network-parent").val("urn:ogf:network:openstack.com:openstack-cloud");
+        $("#details-network-type").val("internal");
+        $("#details-network-cidr").val("10.0.0.0/16");
+
+        $("#subnets-subnet_num1-name").val("subnet1");
+        $("#subnets-subnet_num1-cidr").val("10.0.0.0/24");
+        $("#subnets-subnet_num1-default_routing").prop("checked", true);
+
+        $("#vms-vm_num1-name").val("ops-vtn1-vm1");
+        $("#vms-vm_num1-subnet_host").val("subnet_num1");
+        $("#vms-vm_num1-keypair_name").val("demo-key");
+        $("#vms-vm_num1-security_group").val("rains");
+        $("#vms-vm_num1-route_num1-to").val("0.0.0.0/0");
+        $("#vms-vm_num1-route_num1-next_hop").val("206.196.179.145");
+
+        $("#gateways-gateway_num1-name").val("ceph-net");
+        $("#gateways-gateway_num1-type").val("UCS Port Profile");
+        $("#gateways-gateway_num1-route_num1-from").val("Ceph-Storage");
+        $("#gateways-gateway_num1-route_num1-type").val("port_profile");
+        $("#gateways-gateway_num2-name").val("ext-net");
+        $("#gateways-gateway_num2-type").val("UCS Port Profile");
+        $("#gateways-gateway_num2-route_num1-from").val("External-Access");
+        $("#gateways-gateway_num2-route_num1-type").val("port_profile");
+
+        $("#sriovs-sriov_num1-hosting_gateway").val("gateway_num1");
+        $("#sriovs-sriov_num1-hosting_vm").val("vm_num1");
+        $("#sriovs-sriov_num1-name").val("ops-vtn1:vm2:eth2");
+        $("#sriovs-sriov_num1-ip_address").val("10.10.200.164");
+        $("#sriovs-sriov_num1-mac_address").val("aa:bb:cc:ff:01:12");
+        $("#sriovs-sriov_num2-hosting_gateway").val("gateway_num2");
+        $("#sriovs-sriov_num2-hosting_vm").val("vm_num1");
+        $("#sriovs-sriov_num2-name").val("ops-vtn1:vm1:eth1");
+        $("#sriovs-sriov_num2-ip_address").val("206.196.179.157");
+        $("#sriovs-sriov_num2-mac_address").val("aa:bb:cc:dd:01:57");
+    }, 500);
 }
 function preloadAHC() {
     $("#meta-alias").val("Preloaded AHC Test");

@@ -93,7 +93,10 @@
                         <h3 id="info-panel-title"></h3>
                     </div>
                     <div class="modal-body">
-                        <div id="info-panel-text">
+                        <div id="info-panel-input">
+                            <input id="profile-alias" placeholder="Instance Alias"/>
+                        </div>
+                        <div id="info-panel-text">                            
                             <textarea id="info-panel-text-area"></textarea>
                         </div>
                     </div>
@@ -130,6 +133,7 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
@@ -140,6 +144,8 @@
         <script src="/StackV-web/js/catalog.js"></script>
         
         <script src="/StackV-web/js/svc/intentEngine.js"></script>
+        <script src="/StackV-web/js/svc/handlebars.js"></script>        
+        <script src="/StackV-web/templating/renderer.js"></script>
 
     </body>
 </html>
