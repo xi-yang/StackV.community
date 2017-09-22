@@ -28,5 +28,9 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>StackV</name>
-    <modules></modules>
+    <modules>
+        <module>StackV-ear</module>
+        <module>StackV-ejb</module>
+        <module>StackV-web</module>
+    </modules>
 </project>
