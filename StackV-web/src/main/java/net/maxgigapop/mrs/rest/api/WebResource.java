@@ -90,6 +90,7 @@ import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jboss.resteasy.spi.UnhandledException;
+import templateengine.TemplateEngine;
 
 
 /**
@@ -377,7 +378,7 @@ public class WebResource {
                 if (sqlList.contains(username)) {
                     ArrayList<String> userList = new ArrayList<>();
                     userList.add(username);
-
+                    
                     if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
                         userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
                     } else {
@@ -2940,7 +2941,16 @@ public class WebResource {
     }
 
     // Async Methods -----------------------------------------------------------
-    private String doCreateService(JSONObject inputJSON, TokenHandler token, boolean autoProceed) {
+    private String doCreateService(JSONObject inputJSON, TokenHandler token, boolean autoProceed) {        
+        TemplateEngine template = new TemplateEngine();
+        
+        System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
+        String retString = template.apply(inputJSON);
+        retString = retString.replace("&lt;", "<").replace("&gt;", ">");
+        System.out.println("\n\n\nResult:\n" + retString);
+        
+        inputJSON.put("data", retString);
+        
         ServiceHandler instance = new ServiceHandler(inputJSON, token, autoProceed);
         return instance.refUUID;
     }

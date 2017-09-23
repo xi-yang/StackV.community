@@ -244,19 +244,18 @@ function loadWizard() {
                             //manifest["data"] = JSON.parse($("#info-panel-text-area").val());
 
                             // Render template
-                            var rendered = render(manifest);
-                            if (!rendered) {
-                                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
-                                return;
-                            }
+//                            var rendered = render(manifest);
+//                            if (!rendered) {
+//                                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
+//                                return;
+//                            }
 
-                            profile["data"] = rendered;                            
-                            profile['proceed'] = "true";
+                            manifest['proceed'] = "true";
                             var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
                             $.ajax({
                                 url: apiUrl,
                                 type: 'POST',
-                                data: JSON.stringify(profile),
+                                data: JSON.stringify(manifest),
                                 contentType: "application/json; charset=utf-8",
                                 dataType: "json",
                                 beforeSend: function (xhr) {
