@@ -1,5 +1,8 @@
 (function(root) {
     function nextHop(routes) {
+        if (!routes) {
+            return;
+        }
         routes.map((route) => {
             if (route.next_hop) {
                 route.nextHop = route.next_hop;
@@ -47,8 +50,8 @@
         subnets: subnets,
         routes: routes,
     };
-    if (root.options.includes('aws-form') ||
-            root.parent.includes('amazon')) {
+    if (root.options && root.options.includes('aws-form') ||
+            root.parent && root.parent.includes('amazon')) {
         var gateways = [
             {
                 type: 'internet'
