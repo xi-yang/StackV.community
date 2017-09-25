@@ -72,6 +72,7 @@
 {{/unless !ifVCNGateways}}
 {{$if !isAWS}} {{/ AWS }}
     {{#subnets}}
+        {{*SubnetIndex @index}}
         {{#vms}}
             &lt;{{*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}&gt;
                 a           nml:Node ;
@@ -94,7 +95,7 @@
                 a           spa:PolicyData;
                 spa:type    "JSON";
                 spa:format  """{
-                    "place_into": "%%$.subnets[{{@index}}].uri%%"}""" .
+                    "place_into": "%%$.subnets[{{SubnetIndex}}].uri%%"}""" .
         {{/vms}}
     {{/subnets}}
 {{/if !isAWS}}
@@ -314,15 +315,22 @@
         {{/ dependOn }}
         {{#vms}}
             {{#sriovs}}
+                {{*SRIOVIndex @index}}
                 {{#@gateways}}
                     {{$if connects.0/from}}
                         {{$if type = "UCS Port Profile"}}
-                            &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-sriov{{@index}}&gt;,
+                            &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
+                               a  nml:Topology;
+                               spa:type spa:Abstraction;
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-sriov{{SRIOVIndex}}&gt;.                                                                        
                         {{/if type}}
                     {{/if connects.0/from}}
                     {{$if connects.0/to}}
                         {{$if type = "stitch_port"}}
-                            &lt;x-policy-annotation:action:ucs-{{name}}-sriov{{@index}}-stitch&gt;,
+                            &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
+                               a  nml:Topology;
+                               spa:type spa:Abstraction;
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-{{name}}-sriov{{SRIOVIndex}}-stitch&gt;.                                             
                         {{/if type}}
                     {{/if connects.0/to}}
                 {{/@gateways}}

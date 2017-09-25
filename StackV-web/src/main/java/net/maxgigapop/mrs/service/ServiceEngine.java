@@ -68,6 +68,7 @@ class ServiceEngine {
         String newModel = model.replace("<", "&lt;");
         newModel = newModel.replace(">", "&gt;");
         svcDelta = svcDelta.replace(model, newModel);
+        svcDelta = svcDelta.replace("\\/", "/");
         
         try {
             // Cache serviceDelta.

@@ -32,7 +32,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.HashMap;
 import java.util.Properties;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;

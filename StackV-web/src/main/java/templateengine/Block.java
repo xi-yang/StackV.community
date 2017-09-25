@@ -337,7 +337,7 @@ public class Block {
             // Check for context commands
             switch (keyArr[0]) {
                 case "index":
-                    return context.get("progress").split("/")[0];
+                    return String.valueOf(Integer.parseInt(context.get("progress").split("/")[0]) - 1);
                 case "root":
                     return input;
             }
