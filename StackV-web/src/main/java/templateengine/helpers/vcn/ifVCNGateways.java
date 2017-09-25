@@ -12,7 +12,7 @@ public class ifVCNGateways implements Helper {
         JSONArray arr = (JSONArray) obj.get(0);
         for (Object eleObj : arr) {
             JSONObject ele = (JSONObject) eleObj;
-            if (ele.get("type").equals("AWS Direct Connect")) {
+            if (ele.get("type") != null && ele.get("type").equals("AWS Direct Connect")) {
                 return "true";
             }
         }

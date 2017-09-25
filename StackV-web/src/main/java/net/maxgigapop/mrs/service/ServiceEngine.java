@@ -61,6 +61,10 @@ class ServiceEngine {
         String result;
         String lastState = "INIT";
         logger.start(method, svcDelta);
+        
+        svcDelta = svcDelta.replace("&lt;serviceDelta&gt;", "<serviceDelta>");
+        svcDelta = svcDelta.replace("&lt;/serviceDelta&gt;", "</serviceDelta>");
+        
         try {
             // Cache serviceDelta.
             int results = cacheServiceDelta(refUUID, svcDelta, deltaUUID);

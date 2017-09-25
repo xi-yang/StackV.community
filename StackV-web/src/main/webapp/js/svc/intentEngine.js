@@ -1221,27 +1221,24 @@ function parseManifestIntoJSON() {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            manifest["uuid"] = result;
+            package["uuid"] = result;
+            manifest["data"]["uuid"] = result;
             if (options.length > 0) {
-                manifest["options"] = options;
+                package["options"] = options;
                 manifest["data"]["options"] = options;
             }
-            manifest["data"]["uuid"] = result;
 
             // Render template            
-            var rendered = render(manifest);
-            if (!rendered) {
-                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
-                manifest = null;
-                return;
-            }
-
-            delete manifest["data"]["uuid"];
-            delete manifest["data"]["options"];
+//            var rendered = render(manifest);
+//            if (!rendered) {
+//                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
+//                manifest = null;
+//                return;
+//            }
 
             package["service"] = intentType;
             package["alias"] = $("#meta-alias").val();
-            package["data"] = rendered;
+            package["data"] = manifest["data"];
         }
     });
 }
