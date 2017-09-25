@@ -45,14 +45,14 @@
             spa:type     "JSON" ;
             spa:format   """{
                 "parent": "{{@parent}}",
-                "stitch_from": "%%$.gateways[?(@.type=='vpn-gateway')].uri%%",
+                "stitch_from": "%$.gateways[?(@.type=='vpn-gateway')].uri%",
             }""" .
 
         &lt;x-policy-annotation:data:conn-export&gt;
             a            spa:PolicyData;
             spa:type     "JSON" ;
             spa:format   """{
-                "to_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%%
+                "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%
             }""" .
 
         &lt;x-policy-annotation:data:conn-criteria1&gt;
@@ -98,7 +98,7 @@
                 a           spa:PolicyData;
                 spa:type    "JSON";
                 spa:format  """{
-                    "place_into": "%%$.subnets[{{SubnetIndex}}].uri%%"}""" .
+                    "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
         {{/vms}}
     {{/subnets}}
 {{/if !isAWS}}
@@ -158,7 +158,7 @@
                             spa:type     "JSON";
                             spa:format   """ {
                                "stitch_from": "{{VMTag}}",
-                               "to_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{name}}%%,
+                               "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{name}}%,
                                "mac_address": "{{mac_address}}"
                                 {{ip_address}}
                                 {{$if connects}}
@@ -232,7 +232,7 @@
             &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
                 a           spa:PolicyData;
                 spa:type    "JSON";
-                spa:format  """{ "place_into": "%%$.subnets[{{SubnetIndex}}].uri%%"}""" .
+                spa:format  """{ "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
         {{/vms}}
     {{/subnets}}
     {{~#subnets}}       
