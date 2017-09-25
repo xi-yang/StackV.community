@@ -85,7 +85,7 @@ public class ServiceHandler {
 
             type = (String) inputJSON.get("service");
             alias = (String) inputJSON.get("alias");
-            owner = (String) inputJSON.get("username");            
+            owner = (String) inputJSON.get("username");
 
             String delta = (String) inputJSON.get("data");
             String deltaUUID = (String) inputJSON.get("uuid");
@@ -135,8 +135,8 @@ public class ServiceHandler {
             prep.setString(1, refUUID);
             rs = prep.executeQuery();
             rs.next();
-            int instanceID = rs.getInt("service_instance_id");           
-            
+            int instanceID = rs.getInt("service_instance_id");
+
             prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?, ?)");
             prep.setInt(1, instanceID);
             prep.setString(2, refUUID);
@@ -248,13 +248,20 @@ public class ServiceHandler {
                     deleteInstance(refUUID, token);
                     break;
 
-                case "verify":                    
+                case "verify":
                     verify.startVerification();
                     break;
-                case "unverify":                    
+                case "unverify":
                     verify.stopVerification();
                     break;
 
+                // Subcommands
+                case "propagate":
+                    ServiceEngine.propagateInstance(refUUID, token.auth());
+                    break;
+                case "commit":
+                    ServiceEngine.commitInstance(refUUID, token.auth());
+                    break;
                 default:
                     logger.warning(method, "Invalid action");
             }
@@ -545,7 +552,7 @@ public class ServiceHandler {
         }
     }
 
-    void updateLastState(String lastState, String refUUID) {        
+    void updateLastState(String lastState, String refUUID) {
         String method = "updateLastState";
         logger.trace_start(method, lastState);
 

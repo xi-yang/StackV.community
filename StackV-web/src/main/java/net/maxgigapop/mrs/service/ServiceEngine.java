@@ -61,7 +61,7 @@ class ServiceEngine {
         String result;
         String lastState = "INIT";
         logger.start(method, svcDelta);
-        
+
         int start = svcDelta.indexOf("<modelAddition>") + 15;
         int end = svcDelta.indexOf("</modelAddition>");
         String model = svcDelta.substring(start, end);
@@ -69,7 +69,7 @@ class ServiceEngine {
         newModel = newModel.replace(">", "&gt;");
         svcDelta = svcDelta.replace(model, newModel);
         svcDelta = svcDelta.replace("\\/", "/");
-        
+
         try {
             // Cache serviceDelta.
             int results = cacheServiceDelta(refUUID, svcDelta, deltaUUID);
@@ -353,7 +353,7 @@ class ServiceEngine {
         return String.format("[a    mrs:NetworkAddress; mrs:type    \"%s\"; mrs:value   \"%s\"]", type, jsonAddr.get("value").toString());
     }
 
-    private static String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
+    static String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s", host, refUuid));
         HttpURLConnection compile = (HttpURLConnection) url.openConnection();
         String result = WebResource.executeHttpMethod(url, compile, "POST", svcDelta, auth);
@@ -363,7 +363,7 @@ class ServiceEngine {
         return result;
     }
 
-    private static String propagateInstance(String refUuid, String auth) throws MalformedURLException, IOException {
+    static String propagateInstance(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = WebResource.executeHttpMethod(url, propagate, "PUT", null, auth);
@@ -373,7 +373,7 @@ class ServiceEngine {
         return result;
     }
 
-    private static String commitInstance(String refUuid, String auth) throws MalformedURLException, IOException {
+    static String commitInstance(String refUuid, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
         HttpURLConnection commit = (HttpURLConnection) url.openConnection();
         String result = WebResource.executeHttpMethod(url, commit, "PUT", null, auth);
