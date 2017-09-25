@@ -43,7 +43,10 @@
         &lt;x-policy-annotation:data:vpc-export&gt;
             a            spa:PolicyData ;
             spa:type     "JSON" ;
-            spa:format   """parent=../parent stitch_from="%%$.gateways[?(@.type=='vpn-gateway')].uri%%"""".
+            spa:format   """{
+                "parent": "{{@parent}}",
+                "stitch_from": "%%$.gateways[?(@.type=='vpn-gateway')].uri%%",
+            }""" .
 
         &lt;x-policy-annotation:data:conn-export&gt;
             a            spa:PolicyData;
