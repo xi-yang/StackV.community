@@ -62,8 +62,12 @@ class ServiceEngine {
         String lastState = "INIT";
         logger.start(method, svcDelta);
         
-        svcDelta = svcDelta.replace("&lt;serviceDelta&gt;", "<serviceDelta>");
-        svcDelta = svcDelta.replace("&lt;/serviceDelta&gt;", "</serviceDelta>");
+        int start = svcDelta.indexOf("<modelAddition>") + 15;
+        int end = svcDelta.indexOf("</modelAddition>");
+        String model = svcDelta.substring(start, end);
+        String newModel = model.replace("<", "&lt;");
+        newModel = newModel.replace(">", "&gt;");
+        svcDelta = svcDelta.replace(model, newModel);
         
         try {
             // Cache serviceDelta.
