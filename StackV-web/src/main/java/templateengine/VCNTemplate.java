@@ -23,6 +23,7 @@ public class VCNTemplate extends Template {
         helpers.put("DirectConnVLAN", new DirectConnVLAN());
         helpers.put("isAWS", new isAWS());
         helpers.put("isOPS", new isOPS());
+        helpers.put("VMType", new VMType());
         helpers.put("AddressString", new AddressString());
         helpers.put("LinkedGatewayType", new LinkedGatewayType());
         helpers.put("LinkedGatewayFrom", new LinkedGatewayFrom());

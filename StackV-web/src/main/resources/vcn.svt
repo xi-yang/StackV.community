@@ -80,6 +80,7 @@
             &lt;{{*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}&gt;
                 a           nml:Node ;
                 nml:name    "{{name}}";
+                {{!VMType}}
                 nml:hasBidirectionalPort   &lt;{{VMTag}}:eth0&gt;;
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt; .
 
@@ -108,11 +109,9 @@
         {{*SubnetIndex @index}}
         {{#vms}}
             &lt;{{*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}&gt;
-                a                         nml:Node ;
-                nml:name         "{{name}}";
-                        {{$if type}}
-                mrs:type    "internal"; {{/ TODO includes other pieces (image, etc) }}
-                        {{/if type}}
+                a           nml:Node ;
+                nml:name    "{{*VMName}}{{name}}{{/VMName}}";
+                {{!VMType}}
                 nml:hasBidirectionalPort   &lt;{{VMTag}}:eth0&gt; ;
                         {{$if routes}}
                 nml:hasService  &lt;{{VMTag}}:routingservice&gt; ;
@@ -130,8 +129,7 @@
                         &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-sriov{{@index}}&gt;
                             a            spa:PolicyAction ;
                             spa:type     "MCE_UcsSriovStitching" ;
-                            spa:dependOn &lt;x-policy-annotation:action:create-{{hosting_gateway}}&gt;, &lt;x-policy-annotation:action:create-{{hosting_gateway}}-eth0&gt;;
-                            spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;.
+                            spa:importFrom  &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-{{VMName}}-eth0&gt; .
 
                         &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;
                             a            spa:PolicyData;
@@ -195,6 +193,14 @@
                     .
                 {{/routes}}
             {{/if routes}}
+
+            {{$if floating_ip}}
+                &lt;{{VMTag}}:eth0floatingip&gt;            
+                    a            mrs:NetworkAddress;
+                    mrs:type     "floating-ip";
+                    mrs:value     "{{floating_ip}}".
+            {{/if floating_ip}}
+
             {{$if ceph_rbd}} {{/ CEPH Needs to be included in portal manifest }}
                 {{#ceph_rbd}}
                     &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
@@ -228,6 +234,8 @@
                 spa:type     "MCE_VMFilterPlacement" ;
                 spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
                 spa:importFrom &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
+
+
 
             &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
                 a           spa:PolicyData;
