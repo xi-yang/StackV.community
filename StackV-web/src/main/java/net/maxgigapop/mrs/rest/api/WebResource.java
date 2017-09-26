@@ -92,7 +92,6 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.jboss.resteasy.spi.UnhandledException;
 import templateengine.TemplateEngine;
 
-
 /**
  * REST Web Service
  *
@@ -378,7 +377,7 @@ public class WebResource {
                 if (sqlList.contains(username)) {
                     ArrayList<String> userList = new ArrayList<>();
                     userList.add(username);
-                    
+
                     if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
                         userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
                     } else {
@@ -2823,6 +2822,7 @@ public class WebResource {
             final AsyncResponse asyncResponse, final String inputString) {
         String method = "createService";
         try {
+            System.out.println("Creation Input: " + inputString);
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
@@ -2941,17 +2941,27 @@ public class WebResource {
     }
 
     // Async Methods -----------------------------------------------------------
-    private String doCreateService(JSONObject inputJSON, TokenHandler token, boolean autoProceed) {        
+    private String doCreateService(JSONObject inputJSON, TokenHandler token, boolean autoProceed) {
         TemplateEngine template = new TemplateEngine();
-        
+
         System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
         String retString = template.apply(inputJSON);
         retString = retString.replace("&lt;", "<").replace("&gt;", ">");
         System.out.println("\n\n\nResult:\n" + retString);
-        
+
         inputJSON.put("data", retString);
-        
-        ServiceHandler instance = new ServiceHandler(inputJSON, token, autoProceed);
+
+        // Instance Creation
+        String refUUID;
+        try {
+            URL url = new URL(String.format("%s/service/instance", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
+        } catch (IOException ex) {
+            logger.catching("doCreateService", ex);
+            return null;
+        }
+        ServiceHandler instance = new ServiceHandler(inputJSON, token, refUUID, autoProceed);
         return instance.refUUID;
     }
 
