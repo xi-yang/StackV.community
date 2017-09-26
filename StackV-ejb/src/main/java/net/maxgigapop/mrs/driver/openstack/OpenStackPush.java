@@ -1625,7 +1625,9 @@ public class OpenStackPush {
             
             //find the number of ports that have to be attached to the VM
                int numPorts = 0;
-               query = "SELECT ?port WHERE {<"+server.asResource()+"> nml:hasBidirectionalPort ?port}";
+               query = "SELECT ?port WHERE {<"+server.asResource()+"> nml:hasBidirectionalPort ?port "
+                        + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
+                        + "}";
                ResultSet rNumPorts = executeQuery(query, emptyModel, modelDelta); 
                while(rNumPorts.hasNext()){
                   rNumPorts.next();
@@ -1977,7 +1979,9 @@ public class OpenStackPush {
                 
                  //find the number of ports that have to be attached to the VM
                 int numPorts = 0;
-                query = "SELECT ?port WHERE {<"+vm.asResource()+"> nml:hasBidirectionalPort ?port}";
+                query = "SELECT ?port WHERE {<"+vm.asResource()+"> nml:hasBidirectionalPort ?port "
+                        + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
+                        + "}";
                 ResultSet rNumPorts = executeQuery(query, emptyModel, modelDelta); 
                 while(rNumPorts.hasNext()){
                    rNumPorts.next();
