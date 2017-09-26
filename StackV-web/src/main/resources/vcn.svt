@@ -86,6 +86,9 @@
 
             &lt;{{VMTag}}:eth0&gt;
                 a           nml:BidirectionalPort;
+                {{$if elastic_ip}}
+                    mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
+                {{/if elastic_ip}}                
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;
             {{!AddressString name interfaces @uuid}}
 
@@ -120,6 +123,9 @@
 
             &lt;{{VMTag}}:eth0&gt;
                 a            nml:BidirectionalPort;
+                {{$if floating_ip}}
+                    mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
+                {{/if floating_ip}}                
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt;
 
                 ;.
