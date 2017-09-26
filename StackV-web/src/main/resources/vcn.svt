@@ -129,7 +129,8 @@
                         &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-sriov{{@index}}&gt;
                             a            spa:PolicyAction ;
                             spa:type     "MCE_UcsSriovStitching" ;
-                            spa:importFrom  &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-{{VMName}}-eth0&gt; .
+                            spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-{{VMName}}-eth0&gt;;
+                            spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;.
 
                         &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;
                             a            spa:PolicyData;
@@ -138,7 +139,7 @@
                                 "stitch_from": "{{VMTag}}",
                                 "to_port_profile": "{{!LinkedGatewayFrom @gateways}}",
                                 "mac_address": "{{mac_address}}",
-                                {{ip_address}}
+                                "ip_address": "{{ip_address}}"
                                 {{$if connects}}
                                     ,   "routes" : {{connects}} {{/ TODO check if desired format/data, can be changed to connects.[0] }}
                                 {{/if connects}}
@@ -158,7 +159,7 @@
                                "stitch_from": "{{VMTag}}",
                                "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{name}}%,
                                "mac_address": "{{mac_address}}"
-                                {{ip_address}}
+                               "ip_address": "{{ip_address}}"
                                 {{$if connects}}
                                     ,   "routes" : {{connects}}
                                 {{/if connects}}
