@@ -60,10 +60,10 @@ public class ServiceHandler {
     String alias;
     String lastState = "INIT";
 
-    public ServiceHandler(JSONObject input, TokenHandler initToken, boolean autoProceed) {
+    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) {
         token = initToken;
 
-        createInstance(input, autoProceed);
+        createInstance(input, refUUID, autoProceed);
     }
 
     public ServiceHandler(String refUUID, TokenHandler initToken) {
@@ -75,8 +75,9 @@ public class ServiceHandler {
     }
 
     // INIT METHODS
-    private void createInstance(JSONObject inputJSON, boolean autoProceed) {
+    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) {
         String method = "createInstance";
+        logger.refuuid(refUUID);
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -107,12 +108,6 @@ public class ServiceHandler {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
-            // Instance Creation
-            URL url = new URL(String.format("%s/service/instance", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
-            logger.refuuid(refUUID);
 
             // Initialize service parameters.
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
@@ -170,7 +165,7 @@ public class ServiceHandler {
 
             // Return instance UUID
             logger.end(method);
-        } catch (EJBException | SQLException | IOException ex) {
+        } catch (EJBException | SQLException ex) {
             logger.catching(method, ex);
         } finally {
             commonsClose(front_conn, prep, rs);
