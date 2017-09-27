@@ -2848,6 +2848,8 @@ public class WebResource {
                 String username = accessToken.getPreferredUsername();
                 inputJSON.remove("username");
                 inputJSON.put("username", username);
+                inputJSON.put("uuid", refUUID);
+                ((JSONObject) inputJSON.get("data")).put("uuid", refUUID);
 
                 String proceed = (String) inputJSON.get("proceed");
                 if (proceed != null && proceed.equals("true")) {

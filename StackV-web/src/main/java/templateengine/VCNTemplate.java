@@ -18,6 +18,7 @@ public class VCNTemplate extends Template {
         
         // Load helpers
         helpers.put("TopologyPolicyData", new TopologyPolicyData());
+        helpers.put("VPCSubnetData", new VPCSubnetData());
         helpers.put("ifVCNGateways", new ifVCNGateways());
         helpers.put("DirectConnDest", new DirectConnDest());
         helpers.put("DirectConnVLAN", new DirectConnVLAN());
