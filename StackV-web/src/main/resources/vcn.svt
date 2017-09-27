@@ -90,7 +90,9 @@
                     mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
                 {{/if elastic_ip}}                
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;
-            {{!AddressString name interfaces @uuid}}
+            {{$if interfaces}}
+                {{!AddressString name interfaces @uuid}}
+            {{/if interfaces}}
 
             &lt;x-policy-annotation:action:create-{{name}}&gt;
                 a            spa:PolicyAction ;
@@ -363,7 +365,7 @@
     spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt;
 
 {{#subnets}}
-    {{$if vms}}
+    {{$if vms}}                
         ;
         spa:exportTo &lt;x-policy-annotation:data:vpc-export&gt;,
         {{~#vms}}
