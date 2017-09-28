@@ -250,7 +250,7 @@ function loadWizard() {
 //                                return;
 //                            }
 
-                            //manifest['proceed'] = "true";
+                            manifest['proceed'] = "true";
                             var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
                             $.ajax({
                                 url: apiUrl,
