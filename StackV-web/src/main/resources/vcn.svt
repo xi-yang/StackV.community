@@ -130,7 +130,6 @@
                 {{/if floating_ip}}                
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt; .
 
-                ;.
                 {{/ !AddressString name interfaces @uuid}}  {{/ TODO check on conditional relating to blank addressString }}
                 {{#sriovs}}
                     {{$if !LinkedGatewayType @gateways = "UCS Port Profile"}}
