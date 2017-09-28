@@ -954,7 +954,7 @@ function buildClone(key, target, $factoryBtn) {
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
 
-    // Reset button listeners  
+    // Reset listeners  
     $(".intent-button-factory").off("click");
     $(".intent-button-factory").click(function (e) {
         // Modify clone for current index
@@ -972,6 +972,18 @@ function buildClone(key, target, $factoryBtn) {
                 recondition();
             });
         }
+    });
+    $clone.find("input[data-valid]").each(function () {
+        $(this).change(function () {
+            $(this).removeClass("invalid-input");
+            var $stage = $($(this).parents(".intent-stage-div")[0]);
+            if ($stage.find(".invalid-input").length === 0) {
+                $("#prog-" + $stage.attr("id")).removeClass("invalid-input");
+            }
+            if ($(".invalid-input").length === 0) {
+                $(".intent-operations").removeClass("blocked");
+            }
+        });
     });
 
     var $defArr = $clone.find("[data-default]");

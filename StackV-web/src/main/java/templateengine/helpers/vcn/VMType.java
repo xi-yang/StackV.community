@@ -18,6 +18,10 @@ public class VMType implements Helper {
         if (vm.containsKey("instance_type")) {
             paramArr.add("instance+" + (String) vm.get("instance_type"));
         }
+        else if (vm.containsKey("flavor")) {
+            paramArr.add("instance+" + (String) vm.get("flavor"));
+        }
+                
         if (vm.containsKey("image")) {
             paramArr.add("image+" + (String) vm.get("image"));
         }
