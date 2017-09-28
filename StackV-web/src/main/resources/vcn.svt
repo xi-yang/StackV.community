@@ -89,7 +89,7 @@
                 {{$if elastic_ip}}
                     mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
                 {{/if elastic_ip}}                
-                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt; .
             {{$if interfaces}}
                 {{!AddressString name interfaces @uuid}}
             {{/if interfaces}}
@@ -128,7 +128,7 @@
                 {{$if floating_ip}}
                     mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
                 {{/if floating_ip}}                
-                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt;
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt; .
 
                 ;.
                 {{/ !AddressString name interfaces @uuid}}  {{/ TODO check on conditional relating to blank addressString }}
