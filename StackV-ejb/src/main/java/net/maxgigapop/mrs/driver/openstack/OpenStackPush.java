@@ -1625,7 +1625,9 @@ public class OpenStackPush {
             
             //find the number of ports that have to be attached to the VM
                int numPorts = 0;
-               query = "SELECT ?port WHERE {<"+server.asResource()+"> nml:hasBidirectionalPort ?port}";
+               query = "SELECT ?port WHERE {<"+server.asResource()+"> nml:hasBidirectionalPort ?port "
+                        + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
+                        + "}";
                ResultSet rNumPorts = executeQuery(query, emptyModel, modelDelta); 
                while(rNumPorts.hasNext()){
                   rNumPorts.next();
@@ -1932,7 +1934,9 @@ public class OpenStackPush {
                 RDFNode subnet = q1.get("subnet");
                 String subnetId = subnet.asResource().toString();
                 //find the port
-                query = "SELECT ?port WHERE {<" + subnet.asResource() + "> nml:hasBidirectionalPort ?port}";
+                query = "SELECT ?port WHERE {<" + subnet.asResource() + "> nml:hasBidirectionalPort ?port "
+                        + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
+                        + "}";
                 ResultSet r5 = executeQuery(query, modelRef, modelDelta);
                 if (!r5.hasNext()) {
                     throw logger.error_throwing(method, String.format("Vm %s does not specify the attached network interface", vm));
@@ -1977,7 +1981,9 @@ public class OpenStackPush {
                 
                  //find the number of ports that have to be attached to the VM
                 int numPorts = 0;
-                query = "SELECT ?port WHERE {<"+vm.asResource()+"> nml:hasBidirectionalPort ?port}";
+                query = "SELECT ?port WHERE {<"+vm.asResource()+"> nml:hasBidirectionalPort ?port "
+                        + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
+                        + "}";
                 ResultSet rNumPorts = executeQuery(query, emptyModel, modelDelta); 
                 while(rNumPorts.hasNext()){
                    rNumPorts.next();
@@ -1986,7 +1992,8 @@ public class OpenStackPush {
 
                 //1.7 (creation==true) find the subnet the server is in first  find the port the server uses
                 query = "SELECT ?port ?order WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port ."
-                        + "OPTIONAL {?port mrs:order ?order}"
+                        + "OPTIONAL {?port mrs:order ?order} "
+                        + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
                         + "} ORDER BY ?order ?port";
                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
                 if (creation && !r2.hasNext() && numPorts > 1) {

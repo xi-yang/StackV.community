@@ -242,20 +242,22 @@ public class AwsPush {
         logger.start(method);
         String[] requests = r.split("[\\n]");
         for (String request : requests) {
-            logger.trace_start(method+"."+request);
+            logger.trace_start(method + "." + request);
             if (request.contains("TerminateInstancesRequest")) {
-                String[] parameters = (request.split("TerminateInstancesRequest_")[1]).split("\\s+");
+                String[] parameters = request.split("\\s+");
                 List<String> instanceIds = new ArrayList();
-                for(String id: parameters){
-                String instanceId = ec2Client.getInstanceId(id);
-                instanceIds.add(instanceId);}
+                for (int i = 1; i < parameters.length; i++) {
+                    String instanceId = ec2Client.getInstanceId(parameters[i]);
+                    instanceIds.add(instanceId);
+                }
                 TerminateInstancesRequest del = new TerminateInstancesRequest();
                 del.withInstanceIds(instanceIds);
                 DeleteTagsRequest tagRequest = new DeleteTagsRequest();
                 ec2.terminateInstances(del);
-                for(String instanceId: instanceIds){
-                ec2Client.getEc2Instances().remove(ec2Client.getInstance(instanceId));}
-                ec2Client.instanceStatusCheckBatch(Arrays.asList(parameters),"terminated");
+                for (String instanceId : instanceIds) {
+                    ec2Client.getEc2Instances().remove(ec2Client.getInstance(instanceId));
+                }
+                ec2Client.instanceStatusCheckBatch(instanceIds, "terminated");
 
             } else if (request.contains("DetachNetworkInterfaceRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -1341,19 +1343,22 @@ public class AwsPush {
             String nodeIdTagValue = ResourceTool.getResourceName(node.asResource().toString(), awsPrefix.instance());
             //String nodeId = ec2Client.getInstanceId(nodeIdTagValue);
             List<String> batchnodes = ec2Client.getBatchInstanceIds(nodeIdTagValue);
-                //to support batch VMs check for batch parameter[3]
+            //to support batch VMs check for batch parameter[3]
             String nodeId = null;
-            for(int cnt = 0 ; cnt<batchnodes.size();cnt++){
-            nodeId = batchnodes.get(cnt);
-            Instance instance = ec2Client.getInstance(nodeId);
-            if (instance == null) //instance does not exists
-            {
-                throw logger.error_throwing(method, String.format("Node to delete: %s does not exist", node));
-            } else {
-                //requests += String.format("TerminateInstancesRequest %s \n", nodeId);
-                requests += String.format("%s ", nodeId); // to support batch deletion of instances
-            }}
-            requests = "TerminateInstancesRequest_" + requests + "\n";
+            for (int cnt = 0; cnt < batchnodes.size(); cnt++) {
+                nodeId = batchnodes.get(cnt);
+                Instance instance = ec2Client.getInstance(nodeId);
+                if (instance == null) //instance does not exists
+                {
+                    throw logger.error_throwing(method, String.format("Node to delete: %s does not exist", node));
+                } else {
+                    //requests += String.format("TerminateInstancesRequest %s \n", nodeId);
+                    requests += String.format("%s ", nodeId); // to support batch deletion of instances
+                }
+            }
+        }
+        if (!requests.isEmpty()) {
+            requests = "TerminateInstancesRequest " + requests + "\n";
         }
         return requests;
     }
