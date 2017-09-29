@@ -257,7 +257,7 @@
             {{#ceph_rbd}}
                 &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
                    a  mrs:Volume;
-                   mrs:disk_gb "{{disk_gb}}" ;
+                   mrs:disk_gb "{{size}}" ;
                    mrs:mount_point "{{mount_point}}" .
             {{/ceph_rbd}}
             {{$if ceph_rbd}}
@@ -284,9 +284,9 @@
             {{$if default_directory}}
                 mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:directory&gt; ;
             {{/if default_directory}}
-            {{$if data_interface}}
+            {{$if data_interface_ip}}
                 mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
-            {{/if data_interface}}
+            {{/if data_interface_ip}}
                 nml:name "{{short_name}}" .
             &lt;{{VMTag}}&gt;
                nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
@@ -305,7 +305,7 @@
             &lt;{{VMTag}}:service+globus:interface&gt;
                a mrs:NetworkAddress ;
                mrs:type "globus:interface";
-               mrs:value "{{data_interface}}" .            
+               mrs:value "{{data_interface_ip}}" .            
             {{/globus_connect}}
         {{/vms}}
         {{#vms}}

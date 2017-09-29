@@ -229,7 +229,7 @@
             </group>
             <group factory="true" name="Ceph RBD">
                 <input>
-                    <name>Disk</name>
+                    <name>Size</name>
                     <type>text</type>
                     <hint>(in GB)</hint>
                     <valid>string</valid>
@@ -237,6 +237,7 @@
                 <input>
                     <name>Mount Point</name>
                     <type>text</type>
+                    <default>/mnt/ceph1</default>
                     <valid>string</valid>
                 </input>
             </group>
@@ -257,9 +258,9 @@
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>Data Interface</name>
+                    <name>Data Interface IP</name>
                     <type>text</type>
-                    <valid>string</valid>
+                    <valid>ip</valid>
                 </input>
                 <input>
                     <name>Default Directory</name>
