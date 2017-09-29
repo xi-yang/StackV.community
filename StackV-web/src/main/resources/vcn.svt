@@ -312,19 +312,21 @@
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#nfs}}
                 &lt;{{VMTag}}:service+nfs&gt;
-                   a  mrs:EndPoint ;
-                   mrs:type "nfs";
-                            {{#exports}}
-                mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{../../name}}:service+nfs:exports&gt; .
-                            {{/exports}}
+                    a  mrs:EndPoint ;
+                    mrs:type "nfs";
+                {{$if exports}}
+                    mrs:hasNetworkAddress &lt;{{VMTag}}:service+nfs:exports&gt; .
+                {{/if exports}}
+                
                 &lt;{{VMTag}}&gt;
-                    nml:hasService       &lt;{{VMTag}}:service+nfs&gt;.
-                    {{$if exports}}
-                        &lt;{{VMTag}}:service+nfs:exports&gt;
-                           a mrs:NetworkAddress ;
-                           mrs:type "nfs:exports";
-                           mrs:value "{{!ExportData}}".
-                    {{/if exports}}
+                    nml:hasService &lt;{{VMTag}}:service+nfs&gt;.
+
+                {{$if exports}}
+                    &lt;{{VMTag}}:service+nfs:exports&gt;
+                        a mrs:NetworkAddress ;
+                        mrs:type "nfs:exports";
+                        mrs:value "{{!ExportData}}".
+                {{/if exports}}
             {{/nfs}}
         {{/vms}}
 
