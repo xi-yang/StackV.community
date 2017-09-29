@@ -620,7 +620,7 @@ function recursivelyFactor(id, ele) {
         var label = $(ele).hasClass("labeled");
         // Replace any matching IDs
         var eleID = ele.id;
-        if (eleID) {
+        if (eleID && $(ele).hasClass("factory")) {
             var index = eleID.indexOf(id);
             if (index >= 0) {
                 ele.id = eleID.replace(id, id + "_num1");

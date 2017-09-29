@@ -206,7 +206,7 @@
                     <size>small</size>                    
                 </input>                
             </group>
-            <group factory="true" name="Route">
+            <group factory="true" name="Route" label="off">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -240,7 +240,7 @@
                     <valid>string</valid>
                 </input>
             </group>
-            <group factory="true" name="Globus Connect">
+            <group name="Globus Connect">
                 <input>
                     <name>Username</name>
                     <type>text</type>
@@ -267,7 +267,7 @@
                     <valid>string</valid>
                 </input>
             </group>
-            <group factory="true" name="NFS">
+            <group name="NFS">
                 <group factory="true" name="Export">                    
                     <input>
                         <name>Value</name>

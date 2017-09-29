@@ -134,7 +134,18 @@
                     <name>Networks</name>
                     <type>text</type>
                     <valid>cidr-csv</valid>
-                </input>                            
+                </input>   
+                <input>
+                    <name>IP Address</name>
+                    <type>text</type>
+                    <valid>ip</valid>
+                </input> 
+                <input>
+                    <name>Hosting VM</name>
+                    <type>select</type>
+                    <link>ops-vms</link>
+                    <valid>select</valid>
+                </input>                         
             </group>
         </group>
     </stage>
@@ -341,7 +352,6 @@
                 <options>
                     <option>UCS Port Profile</option>
                     <option>L2 Stitch Port</option>
-                    <option>Inter Cloud Network</option>
                 </options>
                 <valid>select</valid>
             </input>
