@@ -263,10 +263,13 @@
             {{$if ceph_rbds}}
                 &lt;{{VMTag}}&gt;
                     mrs:hasVolume
-            {{/if ceph_rbds}}
-            {{#ceph_rbds}}
-                &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
-            {{/ceph_rbds}}
+
+                &lt;{{@parent}}:ceph-rbd&gt;
+                    mrs:providesVolume 
+                    {{#ceph_rbds}}
+                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
+                    {{/ceph_rbds}}
+            {{/if ceph_rbds}}            
         {{/vms}}
 
         {{#vms}}
