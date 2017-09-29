@@ -1,13 +1,9 @@
 package templateengine.helpers.vcn;
 
 import java.util.ArrayList;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import templateengine.helpers.Helper;
 
 public class VPCSubnetData implements Helper {

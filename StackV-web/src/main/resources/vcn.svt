@@ -252,8 +252,6 @@
         {{/vms}}
     {{/subnets}}
     {{~#subnets}}       
-        {{/ TODO: policyData }}
-        {{/ svcDeltaCeph }}
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#ceph_rbd}}
@@ -271,44 +269,43 @@
             {{/ceph_rbd}}
         {{/vms}}
 
-        {{/ svcDeltaEndPoints }}
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#globus_connect}}
-                &lt;{{VMTag}}:service+globus&gt;
-                   a  mrs:EndPoint ;
-                   mrs:type "globus:connect" ;
-                            {{$if username}}
-                    mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:username&gt; ;
-                            {{/if username}}
-                            {{$if password}}
-                    mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:password&gt; ;
-                            {{/if password}}
-                            {{$if default_directory}}
-                    mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:directory&gt; ;
-                            {{/if default_directory }}
-                            {{$if data_interface}}
-                    mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
-                            {{/if data_interface}}
-                   nml:name "{{short_name}}" .
-                &lt;{{VMTag}}&gt;
-                   nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
-                &lt;{{VMTag}}:service+globus:username&gt;
-                   a mrs:NetworkAddress ;
-                   mrs:type "globus:username";
-                   mrs:value "{{username}}" .
-                &lt;{{VMTag}}:service+globus:password&gt;
-                   a mrs:NetworkAddress ;
-                   mrs:type "globus:password";
-                   mrs:value "{{password}}" .
-                &lt;{{VMTag}}:service+globus:directory&gt;
-                   a mrs:NetworkAddress ;
-                   mrs:type "globus:directory";
-                   mrs:value "{{default_directory}}" .
-                &lt;{{VMTag}}:service+globus:interface&gt;
-                   a mrs:NetworkAddress ;
-                   mrs:type "globus:interface";
-                   mrs:value "{{data_interface}}" .
+            &lt;{{VMTag}}:service+globus&gt;
+                a  mrs:EndPoint ;
+                mrs:type "globus:connect" ;
+            {{$if username}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:username&gt; ;
+            {{/if username}}
+            {{$if password}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:password&gt; ;
+            {{/if password}}
+            {{$if default_directory}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:directory&gt; ;
+            {{/if default_directory}}
+            {{$if data_interface}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
+            {{/if data_interface}}
+                nml:name "{{short_name}}" .
+            &lt;{{VMTag}}&gt;
+               nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
+            &lt;{{VMTag}}:service+globus:username&gt;
+               a mrs:NetworkAddress ;
+               mrs:type "globus:username";
+               mrs:value "{{username}}" .
+            &lt;{{VMTag}}:service+globus:password&gt;
+               a mrs:NetworkAddress ;
+               mrs:type "globus:password";
+               mrs:value "{{password}}" .
+            &lt;{{VMTag}}:service+globus:directory&gt;
+               a mrs:NetworkAddress ;
+               mrs:type "globus:directory";
+               mrs:value "{{default_directory}}" .
+            &lt;{{VMTag}}:service+globus:interface&gt;
+               a mrs:NetworkAddress ;
+               mrs:type "globus:interface";
+               mrs:value "{{data_interface}}" .            
             {{/globus_connect}}
         {{/vms}}
         {{#vms}}
@@ -326,7 +323,7 @@
                         &lt;{{VMTag}}:service+nfs:exports&gt;
                            a mrs:NetworkAddress ;
                            mrs:type "nfs:exports";
-                           mrs:value "{{{exports}}}".
+                           mrs:value "{{!ExportData}}".
                     {{/if exports}}
             {{/nfs}}
         {{/vms}}

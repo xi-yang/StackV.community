@@ -104,7 +104,7 @@ public class Block {
                 // Flow block
                 boolean eval = evaluateFlow();
                 if (eval) {
-                    return finalize(blockRunner());
+                    return finalize(blockRunner(scopedInput));
                 } else {
                     return "";
                 }
@@ -129,11 +129,10 @@ public class Block {
                             }
 
                             JSONObject data = (JSONObject) obj2;
-                            scopedInput = data;
                             if (context.get("whitespace") != null) {
-                                retString += "\n" + finalize(blockRunner());
+                                retString += "\n" + finalize(blockRunner(data));
                             } else {
-                                retString += finalize(blockRunner());
+                                retString += finalize(blockRunner(data));
                             }
                             count++;
                         }
@@ -141,7 +140,7 @@ public class Block {
                     } else if (dataObj instanceof JSONObject) {
                         // Object
                         JSONObject data = (JSONObject) dataObj;
-                        return finalize(blockRunner());
+                        return finalize(blockRunner(data));
                     }
                 } else {
                     return "";
@@ -150,7 +149,7 @@ public class Block {
                 // Partial
                 String retString;
                 if (param == null) {
-                    retString = finalize(blockRunner());
+                    retString = finalize(blockRunner(scopedInput));
                     template.partials.put(tag, retString);
                     if (context.containsKey("hidden")) {
                         return "";
@@ -167,11 +166,11 @@ public class Block {
                 return "";
             default:
                 // Basic variable substitution
-                return finalize((String) retrieveInput(body));
+                return finalize(retrieveInput(body).toString());
         }
     }
 
-    private String blockRunner() {
+    private String blockRunner(JSONObject newScope) {
         String recurBody = body;
         int start = recurBody.indexOf("{{");
         while (start > -1) {
@@ -206,7 +205,7 @@ public class Block {
                 }
             }
 
-            Block block = new Block(blockStr, input, scopedInput, template, (HashMap<String, String>) context.clone());
+            Block block = new Block(blockStr, input, newScope, template, (HashMap<String, String>) context.clone());
             recurBody = recurBody.replace(blockStr, block.render());
 
             start = recurBody.indexOf("{{");
