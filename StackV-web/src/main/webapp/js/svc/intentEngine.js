@@ -353,9 +353,14 @@ function renderInputs(arr, $parent) {
             var trigger = ele.getAttribute("trigger");
             var condition = ele.getAttribute("condition");
             var required = ele.getAttribute("required");
-
+            
             var $label = $("<label>").text(ele.children[0].innerHTML);
             var $input = $("<input>", {type: type, class: "intent-input", id: name});
+            
+            if (ele.getElementsByTagName("hint").length > 0) {
+                $label.text($label.text() + " " + ele.getElementsByTagName("hint")[0].innerHTML);
+            }
+            
             var $message = null;
             switch (type) {
                 case "button":
