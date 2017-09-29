@@ -121,31 +121,35 @@
                     <valid>select</valid>
                 </input>
                 <input>
-                    <name>ASN</name>
+                    <name>Amazon ASN</name>
                     <type>text</type>
+                    <default>7224</default>
                     <valid>string</valid>
                 </input>                        
                 <input>
                     <name>Authentication Key</name>
                     <type>text</type>
+                    <default>versastack</default>
                     <valid>string</valid>
                 </input>
                 <input>
                     <name>Networks</name>
                     <type>text</type>
+                    <default>10.10.0.0/16</default>
                     <valid>cidr-csv</valid>
                 </input>   
                 <input>
-                    <name>IP Address</name>
+                    <name>VM Interface IP</name>
                     <type>text</type>
-                    <valid>ip</valid>
+                    <default>10.10.0.1/24</default>
+                    <valid>cidr-csv</valid>
                 </input> 
                 <input>
-                    <name>Hosting VM</name>
-                    <type>select</type>
-                    <link>ops-vms</link>
-                    <valid>select</valid>
-                </input>                         
+                    <name>VM Interface MAC</name>
+                    <type>text</type>
+                    <default>aa:bb:cc:dd:10:01</default>
+                    <valid>mac</valid>
+                </input>                                 
             </group>
         </group>
     </stage>
@@ -205,7 +209,7 @@
             <input>
                 <name>CIDR</name>
                 <type>text</type>
-                <default first_only="true">10.0.0.0/24</default>
+                <default first_only="true">10.1.0.0/16</default>
                 <valid>cidr</valid>
             </input>
             <group factory="true" name="route" label="off">
@@ -345,16 +349,7 @@
             <path>
                 <parent>openstack</parent>                
             </path>
-                        
-            <input>
-                <name>Type</name>
-                <type>select</type>
-                <options>
-                    <option>UCS Port Profile</option>
-                    <option>L2 Stitch Port</option>
-                </options>
-                <valid>select</valid>
-            </input>
+                                    
             <input>
                 <name>Name</name>
                 <type>text</type>
