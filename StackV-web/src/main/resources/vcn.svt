@@ -254,19 +254,19 @@
     {{~#subnets}}       
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
-            {{#ceph_rbd}}
+            {{#ceph_rbds}}
                 &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
                    a  mrs:Volume;
                    mrs:disk_gb "{{size}}" ;
                    mrs:mount_point "{{mount_point}}" .
-            {{/ceph_rbd}}
-            {{$if ceph_rbd}}
+            {{/ceph_rbds}}
+            {{$if ceph_rbds}}
                 &lt;{{VMTag}}&gt;
                     mrs:hasVolume
-            {{/if ceph_rbd}}
-            {{#ceph_rbd}}
+            {{/if ceph_rbds}}
+            {{#ceph_rbds}}
                 &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
-            {{/ceph_rbd}}
+            {{/ceph_rbds}}
         {{/vms}}
 
         {{#vms}}
