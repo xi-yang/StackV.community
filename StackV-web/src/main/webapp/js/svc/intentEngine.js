@@ -89,7 +89,7 @@ function renderIntent() {
     initializeIntent();
 
     // Stage 2: Factorization
-    factorizeRendering();
+    factorizeRendering();   
 }
 
 function initializeIntent() {
@@ -278,7 +278,7 @@ function renderInputs(arr, $parent) {
             // Handle potential element modifiers            
             var $targetDiv = $div;
             if (collapsible === "true") {
-                $targetDiv = collapseDiv($name, $div);
+                $div.addClass("collapsing");
             }
             if (factory === "true") {
                 $div.addClass("factory");
@@ -556,18 +556,9 @@ function factorizeRendering() {
         var id = fact.id;
         recursivelyFactor(id, fact);
     }
-
-    // Step 2: Check for collapsible elements
-    var collapseArr = $("#intent-panel-body").find(".group-collapse-toggle");
-    for (var i = 0; i < collapseArr.length; i++) {
-        var toggle = collapseArr[i];
-        toggle.setAttribute("data-target", toggle.getAttribute("data-target") + "_num1");
-
-        var collapse = toggle.parentElement.nextSibling;
-        //collapse.id += "_num1";
-    }
-
-    // Step 3: Insert user elements
+    
+    
+    // Step 2: Insert user elements
     for (var i = 0; i < factoryArr.length; i++) {
         var fact = factoryArr[i];
         var id = fact.id;
@@ -596,6 +587,9 @@ function factorizeRendering() {
             $(fact).attr("data-target", fact.parentElement.id);
         }
     }
+    
+    // Step 3: Check for collapsible elements
+    collapseGroups();
 
     initializeInputs();
     // Step 4: Cache schemas
@@ -768,6 +762,28 @@ function submitIntent(mode) {
 }
 
 // UTILITY FUNCTIONS
+function collapseGroups() {
+    $(".collapsing").each(function () {
+        var $div = $(this);
+        var collapseStr = "collapse-" + $div.attr("id");
+        var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});
+        var $toggle = $("<a>").attr("data-toggle", "collapse")
+            .attr("data-target", "#" + collapseStr)
+            .addClass("group-collapse-toggle");
+    
+        $($($div.children()[0]).children()[0]).after($toggle);        
+        $div.children().each(function () {
+            var $this = $(this);
+            if (!$this.hasClass("group-header")) {
+                $this.appendTo($collapseDiv);
+            }
+        });
+        $div.append($collapseDiv);        
+        
+        $div.removeClass("collapsing");
+    });
+}
+
 function collapseDiv($name, $div) {
     var name = $name.text().toLowerCase();
     var parent = getParentName($div.attr("id"));

@@ -107,7 +107,7 @@
                 <type>checkbox</type>
             </input>
             
-            <group factory="true" name="route" label="off">
+            <group factory="true" name="route" label="off" collapsible="true">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -184,7 +184,7 @@
                 <default>any</default>
             </input>
             
-            <group factory="true" condition="aws-form" name="Interface">
+            <group factory="true" condition="aws-form" name="Interface"  collapsible="true">
                 <input required="true">
                     <name>Type</name>
                     <type>select</type>
@@ -206,7 +206,7 @@
                     <size>small</size>                    
                 </input>                
             </group>
-            <group factory="true" name="Route" label="off">
+            <group factory="true" name="Route" label="off" collapsible="true">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -227,7 +227,7 @@
                     <type>text</type>
                 </input>
             </group>
-            <group factory="true" name="Ceph RBD">
+            <group factory="true" name="Ceph RBD" collapsible="true">
                 <input>
                     <name>Size</name>
                     <type>text</type>
@@ -241,7 +241,7 @@
                     <valid>string</valid>
                 </input>
             </group>
-            <group name="Globus Connect">
+            <group name="Globus Connect" collapsible="true">
                 <input>
                     <name>Username</name>
                     <type>text</type>
@@ -268,7 +268,7 @@
                     <valid>string</valid>
                 </input>
             </group>
-            <group name="NFS">
+            <group name="NFS" collapsible="true">
                 <group factory="true" name="Export">                    
                     <input>
                         <name>Value</name>
@@ -295,7 +295,7 @@
                 </options>
                 <valid>select</valid>
             </input>                        
-            <group factory="true" name="Connect">  
+            <group factory="true" name="Connect" collapsible="true">  
                 <bound>
                     <name>gateways-gateway-type</name>
                     <value>AWS Direct Connect</value>
