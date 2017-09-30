@@ -30,6 +30,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
@@ -50,6 +51,7 @@ import net.maxgigapop.mrs.common.EJBExceptionNegotiable;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.logging.log4j.core.net.Severity;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -256,14 +258,16 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         synchronized (syncOnDriverInstance) {
             String version = null;
             String ttlModel = null;
-            String creationTimestamp = null;
+            String creationTimeStr = null;
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+            dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT"));
             try {
                 String lastModified = null;
                 if (driverInstance.getHeadVersionItem() != null) {
-                    lastModified = driverInstance.getHeadVersionItem().getModelRef().getCreationTime().toString();
+                    lastModified = dateFormatter.format(driverInstance.getHeadVersionItem().getModelRef().getCreationTime());
                 }
                 // pull model from REST API
-                URL url = new URL(subsystemBaseUrl + "/models");
+                URL url = new URL(subsystemBaseUrl + "/models?current=true");
                 HttpURLConnection conn;
                 if (url.toString().startsWith("https:")) {
                     conn = (HttpURLConnection) url.openConnection();
@@ -291,7 +295,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 } else if (!response[1].equals("200")) { // handle other HTTP code
                     throw logger.error_throwing(method, driverInstance + " Unexpected HTTP return code: " + response[1]);
                 }
-                JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(response[0]);
+                JSONObject responseJSON = (JSONObject) ((JSONArray) JSONValue.parseWithException(response[0])).get(0);
                 version = responseJSON.get("id").toString();
                 if (version == null || version.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty id in pulled model from SENSE-RM");
@@ -300,8 +304,8 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 if (ttlModel == null || ttlModel.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty model content from SENSE-RM");
                 }
-                creationTimestamp = responseJSON.get("creationTime").toString();
-                if (creationTimestamp == null || creationTimestamp.isEmpty()) {
+                creationTimeStr = responseJSON.get("creationTime").toString();
+                if (creationTimeStr == null || creationTimeStr.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty creationTime from SENSE-RM");
                 }
             } catch (IOException ex) {
@@ -322,7 +326,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 dm = new DriverModel();
                 dm.setCommitted(true);
                 dm.setOntModel(ontModel);
-                Date creationTime = new Date(Long.parseLong(creationTimestamp));
+                Date creationTime = dateFormatter.parse(creationTimeStr);
                 dm.setCreationTime(creationTime);
                 ModelPersistenceManager.save(dm);
                 vi = new VersionItem();
