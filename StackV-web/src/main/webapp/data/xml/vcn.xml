@@ -136,53 +136,55 @@
                 <parent>subnet host</parent>                
             </path>
             
-            <input>
-                <name>Subnet Host</name>
-                <type>select</type>
-                <link>subnets</link>
-                <valid>select</valid>
-            </input>
-            <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>                                    
-            <input>
-                <name>Security Group</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Keypair Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input condition="aws-form">
-                <name>Instance Type</name>
-                <type>text</type>                
-                <valid>string</valid>
-            </input>
-            <input condition="openstack-form">
-                <name>Flavor</name>
-                <type>text</type>                
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Image</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input condition="openstack-form">
-                <name>Host</name>
-                <type>text</type>               
-                <default>any</default>
-                <valid>string</valid>
-            </input>
-            <input condition="openstack-form">
-                <name>Floating IP</name>
-                <type>text</type>
-                <default>any</default>
-            </input>
+            <group name="Details" passthrough="true" collapsible="true">
+                <input>
+                    <name>Subnet Host</name>
+                    <type>select</type>
+                    <link>subnets</link>
+                    <valid>select</valid>
+                </input>
+                <input>
+                    <name>Name</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>                                    
+                <input>
+                    <name>Security Group</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Keypair Name</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input condition="aws-form">
+                    <name>Instance Type</name>
+                    <type>text</type>                
+                    <valid>string</valid>
+                </input>
+                <input condition="openstack-form">
+                    <name>Flavor</name>
+                    <type>text</type>                
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Image</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input condition="openstack-form">
+                    <name>Host</name>
+                    <type>text</type>               
+                    <default>any</default>
+                    <valid>string</valid>
+                </input>
+                <input condition="openstack-form">
+                    <name>Floating IP</name>
+                    <type>text</type>
+                    <default>any</default>
+                </input>
+            </group>
             
             <group factory="true" condition="aws-form" name="Interface"  collapsible="true">
                 <input required="true">
@@ -206,40 +208,28 @@
                     <size>small</size>                    
                 </input>                
             </group>
-            <group factory="true" name="Route" label="off" collapsible="true">
-                <input>
-                    <name>From</name>
-                    <type>text</type>
-                    <valid>string</valid>
-                </input>
-                <input>
-                    <name>To</name>
-                    <type>text</type>
-                    <valid>string</valid>
-                </input>
-                <input>
-                    <name>Next Hop</name>
-                    <type>text</type>
-                    <valid>string</valid>
-                </input>
-                <input>
-                    <name>Type</name>
-                    <type>text</type>
-                </input>
-            </group>
-            <group factory="true" name="Ceph RBD" collapsible="true">
-                <input>
-                    <name>Size</name>
-                    <type>text</type>
-                    <hint>(in GB)</hint>
-                    <valid>string</valid>
-                </input>
-                <input>
-                    <name>Mount Point</name>
-                    <type>text</type>
-                    <default>/mnt/ceph1</default>
-                    <valid>string</valid>
-                </input>
+            <group name="Routes" passthrough="true" collapsible="true">
+                <group factory="true" name="Route" label="off">
+                    <input>
+                        <name>From</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>To</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Next Hop</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Type</name>
+                        <type>text</type>
+                    </input>
+                </group>
             </group>
             <group name="Globus Connect" collapsible="true">
                 <input>
@@ -268,6 +258,20 @@
                     <valid>string</valid>
                 </input>
             </group>
+            <group factory="true" name="Ceph RBD" collapsible="true">
+                <input>
+                    <name>Size</name>
+                    <type>text</type>
+                    <hint>(in GB)</hint>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Mount Point</name>
+                    <type>text</type>
+                    <default>/mnt/ceph1</default>
+                    <valid>string</valid>
+                </input>
+            </group>            
             <group name="NFS" collapsible="true">
                 <group factory="true" name="Export">                    
                     <input>

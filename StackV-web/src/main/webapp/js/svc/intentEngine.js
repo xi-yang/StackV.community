@@ -89,7 +89,7 @@ function renderIntent() {
     initializeIntent();
 
     // Stage 2: Factorization
-    factorizeRendering();   
+    factorizeRendering();
 }
 
 function initializeIntent() {
@@ -353,14 +353,14 @@ function renderInputs(arr, $parent) {
             var trigger = ele.getAttribute("trigger");
             var condition = ele.getAttribute("condition");
             var required = ele.getAttribute("required");
-            
+
             var $label = $("<label>").text(ele.children[0].innerHTML);
             var $input = $("<input>", {type: type, class: "intent-input", id: name});
-            
+
             if (ele.getElementsByTagName("hint").length > 0) {
                 $label.text($label.text() + " " + ele.getElementsByTagName("hint")[0].innerHTML);
             }
-            
+
             var $message = null;
             switch (type) {
                 case "button":
@@ -375,8 +375,15 @@ function renderInputs(arr, $parent) {
             }
 
             if (ele.children[0].innerHTML.toLowerCase() === "name" && ele.parentElement.tagName === "group") {
-                $input.attr("data-name", ele.parentElement.getAttribute("name") + "_1");
-                $input.val(ele.parentElement.getAttribute("name") + "_1");
+                var parentName;
+                if (ele.parentElement.getAttribute("passthrough") === null && ele.parentElement.parentElement) {
+                    parentName = ele.parentElement.getAttribute("name");
+                } else {
+                    parentName = ele.parentElement.parentElement.getAttribute("name");
+                }
+                
+                $input.attr("data-name", parentName + "_1");
+                $input.val(parentName + "_1");
             }
 
             // Handle potential element modifiers
@@ -556,8 +563,8 @@ function factorizeRendering() {
         var id = fact.id;
         recursivelyFactor(id, fact);
     }
-    
-    
+
+
     // Step 2: Insert user elements
     for (var i = 0; i < factoryArr.length; i++) {
         var fact = factoryArr[i];
@@ -587,7 +594,7 @@ function factorizeRendering() {
             $(fact).attr("data-target", fact.parentElement.id);
         }
     }
-    
+
     // Step 3: Check for collapsible elements
     collapseGroups();
 
@@ -768,18 +775,18 @@ function collapseGroups() {
         var collapseStr = "collapse-" + $div.attr("id");
         var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});
         var $toggle = $("<a>").attr("data-toggle", "collapse")
-            .attr("data-target", "#" + collapseStr)
-            .addClass("group-collapse-toggle");
-    
-        $($($div.children()[0]).children()[0]).after($toggle);        
+                .attr("data-target", "#" + collapseStr)
+                .addClass("group-collapse-toggle");
+
+        $($($div.children()[0]).children()[0]).after($toggle);
         $div.children().each(function () {
             var $this = $(this);
             if (!$this.hasClass("group-header")) {
                 $this.appendTo($collapseDiv);
             }
         });
-        $div.append($collapseDiv);        
-        
+        $div.append($collapseDiv);
+
         $div.removeClass("collapsing");
     });
 }
@@ -904,12 +911,14 @@ function getName(key) {
 function constructID(ele) {
     var retString = ele.getAttribute("name");
     if (ele.nodeName === "input") {
-        retString = ele.parentElement.getAttribute("name") + "-" + ele.children[0].innerHTML;
-        ele = ele.parentElement;
+        retString = ele.children[0].innerHTML;
     }
+        
     while (ele.nodeName !== "stage") {
-        retString = ele.parentElement.getAttribute("name") + "-" + retString;
         ele = ele.parentElement;
+        if (ele.getAttribute("passthrough") === null) {
+            retString = ele.getAttribute("name") + "-" + retString;
+        }        
     }
     return retString.replace(/ /g, "_").toLowerCase();
 }
