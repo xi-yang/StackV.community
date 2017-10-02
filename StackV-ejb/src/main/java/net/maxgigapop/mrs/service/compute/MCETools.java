@@ -296,13 +296,13 @@ public class MCETools {
                 }
                 if (verified && jsonConnReq.containsKey("bandwidth")) {
                     JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
-                    Long maximum = jsonBw.containsKey("maximum") ? Long.getLong(jsonBw.get("maximum").toString()) : null;
-                    Long available = jsonBw.containsKey("available") ? Long.getLong(jsonBw.get("available").toString()) : null;
-                    Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+                    Long maximum = jsonBw.containsKey("maximum") ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
+                    Long available = jsonBw.containsKey("available") ? Long.parseLong(jsonBw.get("available").toString()) : null;
+                    Long reservable = jsonBw.containsKey("reservable") ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
                     candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
-                    candidatePath.bandwithProfile.minimumCapacity = jsonBw.containsKey("minimum") ? Long.getLong(jsonBw.get("minimum").toString()) : null; //default = null
-                    candidatePath.bandwithProfile.individualCapacity = jsonBw.containsKey("individual") ? Long.getLong(jsonBw.get("individual").toString()) : null; //default = null
-                    candidatePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+                    candidatePath.bandwithProfile.minimumCapacity = jsonBw.containsKey("minimum") ? Long.parseLong(jsonBw.get("minimum").toString()) : null; //default = null
+                    candidatePath.bandwithProfile.individualCapacity = jsonBw.containsKey("individual") ? Long.parseLong(jsonBw.get("individual").toString()) : null; //default = null
+                    candidatePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
                     candidatePath.bandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
                     candidatePath.bandwithProfile.unit = jsonBw.containsKey("unit") ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
                     candidatePath.bandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
@@ -648,40 +648,31 @@ public class MCETools {
         if (path.getBandwithProfile() == null) {
             return true;
         }
-        BandwidthProfile pathBwProfile = null;
+        BandwidthProfile pathAvailBwProfile = null;
         Iterator<Statement> itS = path.iterator();
         while (itS.hasNext()) {
             Statement link = itS.next();
-            if (pathBwProfile == null) {
-                pathBwProfile = getHopBandwidthPorfile(model, link.getSubject());
-            } else {
-                BandwidthProfile hopBwProfile = getHopBandwidthPorfile(model, link.getObject().asResource());
-                if (pathBwProfile.maximumCapacity == null || pathBwProfile.maximumCapacity > hopBwProfile.maximumCapacity) {
-                    pathBwProfile.maximumCapacity = hopBwProfile.maximumCapacity;
+            BandwidthProfile hopBwProfile = getHopBandwidthPorfile(model, link.getSubject().asResource());
+            if (pathAvailBwProfile == null && hopBwProfile != null) {
+                pathAvailBwProfile = hopBwProfile;
+            }
+            if (hopBwProfile != null) {
+                handleBandwidthProfile(pathAvailBwProfile, hopBwProfile);
+            }
+            if (!itS.hasNext()) {
+                hopBwProfile = getHopBandwidthPorfile(model, link.getObject().asResource());
+                if ( hopBwProfile != null) {
+                    handleBandwidthProfile(pathAvailBwProfile, hopBwProfile);
                 }
-                if (pathBwProfile.availableCapacity == null || pathBwProfile.availableCapacity > hopBwProfile.availableCapacity) {
-                    pathBwProfile.availableCapacity = hopBwProfile.availableCapacity;
-                }
-                if (pathBwProfile.reservableCapacity == null || pathBwProfile.reservableCapacity > hopBwProfile.reservableCapacity) {
-                    pathBwProfile.reservableCapacity = hopBwProfile.reservableCapacity;
-                }
-                if (pathBwProfile.individualCapacity == null || pathBwProfile.individualCapacity > hopBwProfile.individualCapacity) {
-                    pathBwProfile.individualCapacity = hopBwProfile.individualCapacity;
-                }
-                if (pathBwProfile.minimumCapacity == null || pathBwProfile.minimumCapacity < hopBwProfile.minimumCapacity) {
-                    pathBwProfile.minimumCapacity = hopBwProfile.minimumCapacity;
-                }
-                if (pathBwProfile.granularity == null || pathBwProfile.granularity < hopBwProfile.granularity) {
-                    pathBwProfile.granularity = hopBwProfile.granularity;
-                }
-                //@TODO: differential handling based priority and/or type 
-            } 
-            // compare avaialble bandwidth profile to requested badnwidth profile
-            if (pathBwProfile != null && canProvideBandwith(pathBwProfile, path.getBandwithProfile())) {
-                return false;
             }
         }
-        path.setBandwithProfile(pathBwProfile); // replace requested with available profile
+        // compare avaialble bandwidth profile to requested badnwidth profile
+        if (pathAvailBwProfile != null && !canProvideBandwith(pathAvailBwProfile, path.getBandwithProfile())) {
+            return false;
+        }
+        if (pathAvailBwProfile != null && path.getBandwithProfile().type.equalsIgnoreCase("anyAvailable")) {
+            path.setBandwithProfile(pathAvailBwProfile); // replace requested with available profile
+        }
         return true;
     }
     
@@ -693,7 +684,7 @@ public class MCETools {
                 + "$bw_svc mrs:availableCapacity $available. "
                 + "$bw_svc mrs:reservableCapacity $reservable. "
                 + "OPTIONAL {$bw_svc mrs:type $qos_class } "
-                + "OPTIONAL {$bw_svc mrs:unit unit } "
+                + "OPTIONAL {$bw_svc mrs:unit $unit } "
                 + "OPTIONAL {$bw_svc mrs:granularity $granularity } "
                 + "OPTIONAL {$bw_svc mrs:minimumCapacity $minimum } "
                 + "OPTIONAL {$bw_svc mrs:individualCapacity $individual } "
@@ -703,38 +694,60 @@ public class MCETools {
         BandwidthProfile bwProfile = null;
         if (rs.hasNext()) {
             QuerySolution solution = rs.next();
-            String maximumBw = solution.get("maximum").toString();
-            String availableBw = solution.get("available").toString();
-            String reservableBw = solution.get("reservable").toString();
-            bwProfile = new BandwidthProfile(Long.parseLong(maximumBw), Long.parseLong(availableBw), Long.parseLong(reservableBw));
+            Long maximumBw = solution.get("maximum").asLiteral().getLong();
+            Long availableBw = solution.get("available").asLiteral().getLong();
+            Long reservableBw = solution.get("reservable").asLiteral().getLong();
+            bwProfile = new BandwidthProfile(maximumBw, availableBw, reservableBw);
             if (solution.contains("granularity")) {
-                bwProfile.granularity = Long.parseLong(solution.get("granularity").toString());
+                bwProfile.granularity = solution.get("granularity").asLiteral().getLong();
             }
             if (solution.contains("minimum")) {
-                bwProfile.minimumCapacity = Long.parseLong(solution.get("minimum").toString());
+                bwProfile.minimumCapacity = solution.get("minimum").asLiteral().getLong();
             }
             if (solution.contains("individual")) {
-                bwProfile.individualCapacity = Long.parseLong(solution.get("individual").toString());
+                bwProfile.individualCapacity = solution.get("individual").asLiteral().getLong();
             }
             if (solution.contains("unit")) {
-                bwProfile.unit = solution.get("unit").toString();
+                bwProfile.unit = solution.get("unit").asLiteral().getString();
             }
             if (solution.contains("qos_class")) {
-                bwProfile.type = solution.get("qos_class").toString();
+                bwProfile.type = solution.get("qos_class").asLiteral().getString();
             }
             if (solution.contains("priority")) {
-                bwProfile.priority = solution.get("priority").toString();
+                bwProfile.priority = solution.get("priority").asLiteral().getString();
             }
         }
         return bwProfile;
     }
     
+    //@TODO: differential handling based priority and/or type 
+    private static void handleBandwidthProfile(BandwidthProfile pathBwProfile, BandwidthProfile hopBwProfile) {
+            if (pathBwProfile.maximumCapacity == null || pathBwProfile.maximumCapacity > hopBwProfile.maximumCapacity) {
+                pathBwProfile.maximumCapacity = hopBwProfile.maximumCapacity;
+            }
+            if (pathBwProfile.availableCapacity == null || pathBwProfile.availableCapacity > hopBwProfile.availableCapacity) {
+                pathBwProfile.availableCapacity = hopBwProfile.availableCapacity;
+            }
+            if (pathBwProfile.reservableCapacity == null || pathBwProfile.reservableCapacity > hopBwProfile.reservableCapacity) {
+                pathBwProfile.reservableCapacity = hopBwProfile.reservableCapacity;
+            }
+            if (pathBwProfile.individualCapacity == null || pathBwProfile.individualCapacity > hopBwProfile.individualCapacity) {
+                pathBwProfile.individualCapacity = hopBwProfile.individualCapacity;
+            }
+            if (pathBwProfile.minimumCapacity == null || pathBwProfile.minimumCapacity < hopBwProfile.minimumCapacity) {
+                pathBwProfile.minimumCapacity = hopBwProfile.minimumCapacity;
+            }
+            if (pathBwProfile.granularity == null || pathBwProfile.granularity < hopBwProfile.granularity) {
+                pathBwProfile.granularity = hopBwProfile.granularity;
+            }
+    }
+
     //@TODO: fine tuning the comparison criteria by types | granularity % constraint | unit
     private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
         if (bwpfRequest.type != null 
                 && (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped"))) {
-            if (bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity
-                    && (bwpfAvailable.individualCapacity == null || bwpfAvailable.individualCapacity > bwpfRequest.availableCapacity)) {
+            if (bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity
+                    && (bwpfAvailable.individualCapacity == null || bwpfAvailable.individualCapacity >= bwpfRequest.availableCapacity)) {
                 return true;
             } else {
                 return false;
@@ -751,8 +764,8 @@ public class MCETools {
             } else {
                 return false;
             }
-        } else if (bwpfAvailable.maximumCapacity > bwpfRequest.maximumCapacity
-                && bwpfAvailable.availableCapacity > bwpfRequest.availableCapacity) {
+        } else if (bwpfAvailable.maximumCapacity >= bwpfRequest.maximumCapacity
+                && bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity) {
             return true;
         } else {
             return false;
