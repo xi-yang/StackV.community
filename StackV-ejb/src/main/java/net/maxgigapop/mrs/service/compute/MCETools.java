@@ -654,20 +654,24 @@ public class MCETools {
             Statement link = itS.next();
             BandwidthProfile hopBwProfile = getHopBandwidthPorfile(model, link.getSubject().asResource());
             if (pathAvailBwProfile == null && hopBwProfile != null) {
+                hopBwProfile = normalizeBandwidthPorfile(hopBwProfile);
                 pathAvailBwProfile = hopBwProfile;
             }
             if (hopBwProfile != null) {
-                handleBandwidthProfile(pathAvailBwProfile, hopBwProfile);
+                hopBwProfile = normalizeBandwidthPorfile(hopBwProfile);
+                pathAvailBwProfile = handleBandwidthProfile(pathAvailBwProfile, hopBwProfile);
             }
             if (!itS.hasNext()) {
                 hopBwProfile = getHopBandwidthPorfile(model, link.getObject().asResource());
                 if ( hopBwProfile != null) {
-                    handleBandwidthProfile(pathAvailBwProfile, hopBwProfile);
+                    hopBwProfile = normalizeBandwidthPorfile(hopBwProfile);
+                    pathAvailBwProfile = handleBandwidthProfile(pathAvailBwProfile, hopBwProfile);
                 }
             }
         }
         // compare avaialble bandwidth profile to requested badnwidth profile
-        if (pathAvailBwProfile != null && !canProvideBandwith(pathAvailBwProfile, path.getBandwithProfile())) {
+        BandwidthProfile pathRequestBwProfile = normalizeBandwidthPorfile(path.getBandwithProfile());
+        if (pathAvailBwProfile != null && !canProvideBandwith(pathAvailBwProfile, pathRequestBwProfile)) {
             return false;
         }
         if (pathAvailBwProfile != null && path.getBandwithProfile().type.equalsIgnoreCase("anyAvailable")) {
@@ -720,31 +724,67 @@ public class MCETools {
         return bwProfile;
     }
     
-    //@TODO: differential handling based priority and/or type 
-    private static void handleBandwidthProfile(BandwidthProfile pathBwProfile, BandwidthProfile hopBwProfile) {
-            if (pathBwProfile.maximumCapacity == null || pathBwProfile.maximumCapacity > hopBwProfile.maximumCapacity) {
-                pathBwProfile.maximumCapacity = hopBwProfile.maximumCapacity;
-            }
-            if (pathBwProfile.availableCapacity == null || pathBwProfile.availableCapacity > hopBwProfile.availableCapacity) {
-                pathBwProfile.availableCapacity = hopBwProfile.availableCapacity;
-            }
-            if (pathBwProfile.reservableCapacity == null || pathBwProfile.reservableCapacity > hopBwProfile.reservableCapacity) {
-                pathBwProfile.reservableCapacity = hopBwProfile.reservableCapacity;
-            }
-            if (pathBwProfile.individualCapacity == null || pathBwProfile.individualCapacity > hopBwProfile.individualCapacity) {
-                pathBwProfile.individualCapacity = hopBwProfile.individualCapacity;
-            }
-            if (pathBwProfile.minimumCapacity == null || pathBwProfile.minimumCapacity < hopBwProfile.minimumCapacity) {
-                pathBwProfile.minimumCapacity = hopBwProfile.minimumCapacity;
-            }
-            if (pathBwProfile.granularity == null || pathBwProfile.granularity < hopBwProfile.granularity) {
-                pathBwProfile.granularity = hopBwProfile.granularity;
-            }
+    private static BandwidthProfile normalizeBandwidthPorfile(BandwidthProfile bwProfile) {
+        if (bwProfile.unit == null || bwProfile.unit.equalsIgnoreCase("bps")) {
+            return bwProfile;
+        } 
+        long factor = 1;
+        if (bwProfile.unit.equalsIgnoreCase("kbps")) {
+            factor = 1000;
+        } else if (bwProfile.unit.equalsIgnoreCase("mbps")) {
+            factor = 1000000;
+        } else if (bwProfile.unit.equalsIgnoreCase("gbps")) {
+            factor = 1000000000;
+        }
+        if (bwProfile.maximumCapacity != null) {
+            bwProfile.maximumCapacity *= factor;
+        }
+        if (bwProfile.availableCapacity != null) {
+            bwProfile.availableCapacity *= factor;
+        }
+        if (bwProfile.reservableCapacity != null) {
+            bwProfile.reservableCapacity *= factor;
+        }
+        if (bwProfile.individualCapacity != null) {
+            bwProfile.individualCapacity *= factor;
+        }
+        if (bwProfile.usedCapacity != null) {
+            bwProfile.usedCapacity *= factor;
+        } 
+        if (bwProfile.minimumCapacity != null) {
+            bwProfile.minimumCapacity *= factor;
+        }
+        if (bwProfile.granularity != null) {
+            bwProfile.granularity *= factor;
+        }
+        return bwProfile;
+    }
+
+    private static BandwidthProfile handleBandwidthProfile(BandwidthProfile pathBwProfile, BandwidthProfile hopBwProfile) {
+        if (pathBwProfile.maximumCapacity == null || pathBwProfile.maximumCapacity > hopBwProfile.maximumCapacity) {
+            pathBwProfile.maximumCapacity = hopBwProfile.maximumCapacity;
+        }
+        if (pathBwProfile.availableCapacity == null || pathBwProfile.availableCapacity > hopBwProfile.availableCapacity) {
+            pathBwProfile.availableCapacity = hopBwProfile.availableCapacity;
+        }
+        if (pathBwProfile.reservableCapacity == null || pathBwProfile.reservableCapacity > hopBwProfile.reservableCapacity) {
+            pathBwProfile.reservableCapacity = hopBwProfile.reservableCapacity;
+        }
+        if (pathBwProfile.individualCapacity == null || pathBwProfile.individualCapacity > hopBwProfile.individualCapacity) {
+            pathBwProfile.individualCapacity = hopBwProfile.individualCapacity;
+        }
+        if (pathBwProfile.minimumCapacity == null || pathBwProfile.minimumCapacity < hopBwProfile.minimumCapacity) {
+            pathBwProfile.minimumCapacity = hopBwProfile.minimumCapacity;
+        }
+        if (pathBwProfile.granularity == null || pathBwProfile.granularity < hopBwProfile.granularity) {
+            pathBwProfile.granularity = hopBwProfile.granularity;
+        }
+        return pathBwProfile;
     }
 
     //@TODO: fine tuning the comparison criteria by types | granularity % constraint | unit
     private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
-        if (bwpfRequest.type != null 
+        if (bwpfRequest.type != null
                 && (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped"))) {
             if (bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity
                     && (bwpfAvailable.individualCapacity == null || bwpfAvailable.individualCapacity >= bwpfRequest.availableCapacity)) {
@@ -764,8 +804,14 @@ public class MCETools {
             } else {
                 return false;
             }
-        } else if (bwpfAvailable.maximumCapacity >= bwpfRequest.maximumCapacity
-                && bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity) {
+        } else if (bwpfRequest.type != null && bwpfRequest.type.equalsIgnoreCase("bestEffort")) { 
+            if (bwpfAvailable.availableCapacity  > 0) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (bwpfRequest.maximumCapacity == null || bwpfAvailable.maximumCapacity >= bwpfRequest.maximumCapacity
+                && bwpfRequest.availableCapacity == null || bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity) {
             return true;
         } else {
             return false;
@@ -1141,7 +1187,7 @@ public class MCETools {
         }
         
         // add BandwidthService to vlan port if applicable
-        if (bwProfile != null) {
+        if (bwProfile != null && bwProfile.type != null && !bwProfile.type.equalsIgnoreCase("bestEffort")) {
             String vlanBwServiceUrn = vlanPortUrn + ":service+bw";
             Resource resVlanBwService = RdfOwl.createResource(vlanSubnetModel, vlanBwServiceUrn, Mrs.BandwidthService);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasService, resVlanBwService));
