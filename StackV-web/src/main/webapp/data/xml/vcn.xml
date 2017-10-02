@@ -94,8 +94,8 @@
             <input>
                 <name>CIDR</name>
                 <type>text</type>
-                <valid>cidr</valid>
                 <default first_only="true">10.0.0.0/24</default>
+                <valid>cidr</valid>                
             </input>
             <input condition="aws-form">
                 <name>VPN Route Propagation</name>
@@ -189,12 +189,12 @@
             <group factory="true" condition="aws-form" name="Interface"  collapsible="true">
                 <input required="true">
                     <name>Type</name>
-                    <type>select</type>
-                    <size>small</size>
+                    <type>select</type>                    
                     <options>
                         <option>Ethernet</option>
                         <option condition="openstack-form">SRIOV</option>
-                    </options>     
+                    </options>   
+                    <size>small</size>  
                     <valid>select</valid>               
                 </input>
                 <input>

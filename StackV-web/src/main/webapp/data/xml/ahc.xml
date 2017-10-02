@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="intent.xsd"
-        simplify="true">
+        xsi:noNamespaceSchemaLocation="intent.xsd">
     <meta>
         <name>Advanced Hybrid Cloud</name>
         <block>
