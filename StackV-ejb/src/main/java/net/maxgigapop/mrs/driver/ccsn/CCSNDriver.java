@@ -31,6 +31,8 @@ import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.common.validation.DriverPropertyType;
+import net.maxgigapop.mrs.common.validation.DriverPropertyValidator;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 /**

@@ -1,4 +1,4 @@
-package net.maxgigapop.mrs.driver.ccsn;
+package net.maxgigapop.mrs.common.validation;
 
 import java.util.Map;
 
@@ -34,7 +34,7 @@ public class DottedQuadListSemanticChecker implements IDriverPropertySemanticChe
     public IReturnCode run(String propertyName, Map<String, String> properties) {
         ERC erc = ERC.PASS;
         String propertyVal = properties.get(propertyName);
-        String[] dottedQuads = propertyVal.split(CCSNDriver.delimiterPattern);
+        String[] dottedQuads = propertyVal.split(DriverPropertyValidator.getDelimPattern());
         for (String dottedQuad : dottedQuads) {
             // Some delimiter patterns may create empty matches when splitting between symbols (e.g., ')' and '('),
             // so skip iteration

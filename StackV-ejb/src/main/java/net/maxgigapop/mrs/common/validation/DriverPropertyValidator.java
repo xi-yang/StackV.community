@@ -1,8 +1,17 @@
-package net.maxgigapop.mrs.driver.ccsn;
+package net.maxgigapop.mrs.common.validation;
 import java.util.Map;
 
 public class DriverPropertyValidator {
     private DriverPropertyValidator() {}
+    private static String delimPattern = "[\\(\\)]";
+    
+    public static void setDelimPattern(String delimPattern) {
+        DriverPropertyValidator.delimPattern = delimPattern;
+    }
+    static String getDelimPattern() {
+        return DriverPropertyValidator.delimPattern;
+    }
+    
     public static String validateAndReturn(String propertyName, Map<String, String> properties, DriverPropertyType... types) {
         // Perform basic format checks
         String propertyVal = properties.get(propertyName);

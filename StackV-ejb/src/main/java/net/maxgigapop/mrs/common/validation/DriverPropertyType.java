@@ -1,4 +1,4 @@
-package net.maxgigapop.mrs.driver.ccsn;
+package net.maxgigapop.mrs.common.validation;
 import java.util.regex.Pattern;
 
 public enum DriverPropertyType {
