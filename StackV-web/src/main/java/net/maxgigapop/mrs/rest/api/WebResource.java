@@ -47,8 +47,6 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -90,7 +88,7 @@ import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jboss.resteasy.spi.UnhandledException;
-
+import templateengine.TemplateEngine;
 
 /**
  * REST Web Service
@@ -894,7 +892,7 @@ public class WebResource {
 
             // Construct array
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
-                String actual = inputString.toString();
+                String actual = inputString;
                 Object obj = parser.parse(actual);
                 final JSONArray roleArr = (JSONArray) obj;
 
@@ -938,7 +936,7 @@ public class WebResource {
             }
 
             Object obj = parser.parse(responseStr.toString());
-            HashMap<String, ArrayList<String>> search = new HashMap<String, ArrayList<String>>();
+            HashMap<String, ArrayList<String>> search = new HashMap<>();
             JSONArray groupArr = (JSONArray) obj;
             for (Object group : groupArr) {
                 ArrayList<String> groupList = new ArrayList<>();
@@ -2818,10 +2816,10 @@ public class WebResource {
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("Services")
-    public void createService(@Suspended
-            final AsyncResponse asyncResponse, final String inputString) {
+    public String createService(final String inputString) {
         String method = "createService";
         try {
+            System.out.println("Creation Input: " + inputString);
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
@@ -2835,35 +2833,50 @@ public class WebResource {
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
 
+            // Instance Creation
+            final String refUUID;
+            try {
+                URL url = new URL(String.format("%s/service/instance", host));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
+            } catch (IOException ex) {
+                logger.catching("doCreateService", ex);
+                return null;
+            }
+
             if (roleSet.contains(serviceType)) {
                 String username = accessToken.getPreferredUsername();
                 inputJSON.remove("username");
                 inputJSON.put("username", username);
+                inputJSON.put("uuid", refUUID);
+                ((JSONObject) inputJSON.get("data")).put("uuid", refUUID);
 
                 String proceed = (String) inputJSON.get("proceed");
                 if (proceed != null && proceed.equals("true")) {
                     executorService.execute(new Runnable() {
                         @Override
                         public void run() {
-                            asyncResponse.resume(doCreateService(inputJSON, token, true));
+                            doCreateService(inputJSON, token, refUUID, true);
                         }
                     });
                 } else {
                     executorService.execute(new Runnable() {
                         @Override
                         public void run() {
-                            asyncResponse.resume(doCreateService(inputJSON, token, false));
+                            doCreateService(inputJSON, token, refUUID, false);
                         }
                     });
                 }
             } else {
                 logger.warning(method, "User not allowed access to " + serviceType);
+                return null;
             }
-
+            logger.end(method);
+            return "Reference UUID: " + refUUID + "\n";
         } catch (ParseException ex) {
             logger.catching(method, ex);
-        }
-        logger.end(method);
+            return null;
+        }        
     }
 
     /**
@@ -2922,8 +2935,7 @@ public class WebResource {
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
     @RolesAllowed("Services")
-    public void operate(@Suspended
-            final AsyncResponse asyncResponse, @PathParam(value = "siUUID")
+    public void operate(@PathParam(value = "siUUID")
             final String refUuid, @PathParam(value = "action")
             final String action) {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
@@ -2933,23 +2945,31 @@ public class WebResource {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                asyncResponse.resume(doOperate(refUuid, action, token));
+                doOperate(refUuid, action, token);
             }
         });
         logger.trace_end(method);
     }
 
     // Async Methods -----------------------------------------------------------
-    private String doCreateService(JSONObject inputJSON, TokenHandler token, boolean autoProceed) {
-        ServiceHandler instance = new ServiceHandler(inputJSON, token, autoProceed);
-        return instance.refUUID;
+    private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) {
+        TemplateEngine template = new TemplateEngine();
+
+        System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
+        String retString = template.apply(inputJSON);
+        retString = retString.replace("&lt;", "<").replace("&gt;", ">");
+        System.out.println("\n\n\nResult:\n" + retString);
+
+        inputJSON.put("data", retString);
+
+        ServiceHandler instance = new ServiceHandler(inputJSON, token, refUUID, autoProceed);
     }
 
     private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, TokenHandler token) {
         ServiceHandler instance = new ServiceHandler(refUUID, token);
         instance.operate(action);
 
-        return instance.superState.name();
+        return instance.superState.name() + " -- " + instance.status();
     }
 
     @GET

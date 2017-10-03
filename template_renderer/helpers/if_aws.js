@@ -1,10 +1,8 @@
-(function(conditions, opts) {
-    function isAWS(condition) {
-        return condition == 'aws-form';
-    }
-    if (conditions.some(isAWS)) {
+(function(root, opts) {
+    if (root.options.includes('aws-form') || // array
+            root.parent.includes('amazon')) {   // string
         return opts.fn(this);
-    } else {
-        return opts.inverse(this);
     }
+    
+    return opts.inverse(this);
 });

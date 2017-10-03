@@ -32,7 +32,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.HashMap;
 import java.util.Properties;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -61,10 +60,10 @@ public class ServiceHandler {
     String alias;
     String lastState = "INIT";
 
-    public ServiceHandler(JSONObject input, TokenHandler initToken, boolean autoProceed) {
+    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) {
         token = initToken;
 
-        createInstance(input, autoProceed);
+        createInstance(input, refUUID, autoProceed);
     }
 
     public ServiceHandler(String refUUID, TokenHandler initToken) {
@@ -76,8 +75,9 @@ public class ServiceHandler {
     }
 
     // INIT METHODS
-    private void createInstance(JSONObject inputJSON, boolean autoProceed) {
+    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) {
         String method = "createInstance";
+        logger.refuuid(refUUID);
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -86,7 +86,7 @@ public class ServiceHandler {
 
             type = (String) inputJSON.get("service");
             alias = (String) inputJSON.get("alias");
-            owner = (String) inputJSON.get("username");            
+            owner = (String) inputJSON.get("username");
 
             String delta = (String) inputJSON.get("data");
             String deltaUUID = (String) inputJSON.get("uuid");
@@ -109,12 +109,6 @@ public class ServiceHandler {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            // Instance Creation
-            URL url = new URL(String.format("%s/service/instance", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
-            logger.refuuid(refUUID);
-
             // Initialize service parameters.
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
@@ -136,8 +130,8 @@ public class ServiceHandler {
             prep.setString(1, refUUID);
             rs = prep.executeQuery();
             rs.next();
-            int instanceID = rs.getInt("service_instance_id");           
-            
+            int instanceID = rs.getInt("service_instance_id");
+
             prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?, ?)");
             prep.setInt(1, instanceID);
             prep.setString(2, refUUID);
@@ -171,7 +165,7 @@ public class ServiceHandler {
 
             // Return instance UUID
             logger.end(method);
-        } catch (EJBException | SQLException | IOException ex) {
+        } catch (EJBException | SQLException ex) {
             logger.catching(method, ex);
         } finally {
             commonsClose(front_conn, prep, rs);
@@ -249,13 +243,20 @@ public class ServiceHandler {
                     deleteInstance(refUUID, token);
                     break;
 
-                case "verify":                    
+                case "verify":
                     verify.startVerification();
                     break;
-                case "unverify":                    
+                case "unverify":
                     verify.stopVerification();
                     break;
 
+                // Subcommands
+                case "propagate":
+                    ServiceEngine.propagateInstance(refUUID, token.auth());
+                    break;
+                case "commit":
+                    ServiceEngine.commitInstance(refUUID, token.auth());
+                    break;
                 default:
                     logger.warning(method, "Invalid action");
             }
@@ -546,7 +547,7 @@ public class ServiceHandler {
         }
     }
 
-    void updateLastState(String lastState, String refUUID) {        
+    void updateLastState(String lastState, String refUUID) {
         String method = "updateLastState";
         logger.trace_start(method, lastState);
 

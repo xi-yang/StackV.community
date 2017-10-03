@@ -161,7 +161,7 @@ function initMeta(meta) {
     var $panel = $("#intent-panel-meta");
     $("#meta-title").text(meta.children[0].innerHTML);
     $("#meta-alias").change(function () {
-        $(this).removeClass("invalid-input");        
+        $(this).removeClass("invalid-input");
         if ($(".invalid-input").length === 0) {
             $(".intent-operations").removeClass("blocked");
         }
@@ -278,7 +278,7 @@ function renderInputs(arr, $parent) {
             // Handle potential element modifiers            
             var $targetDiv = $div;
             if (collapsible === "true") {
-                $targetDiv = collapseDiv($name, $div);
+                $div.addClass("collapsing");
             }
             if (factory === "true") {
                 $div.addClass("factory");
@@ -356,6 +356,11 @@ function renderInputs(arr, $parent) {
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
             var $input = $("<input>", {type: type, class: "intent-input", id: name});
+
+            if (ele.getElementsByTagName("hint").length > 0) {
+                $label.text($label.text() + " " + ele.getElementsByTagName("hint")[0].innerHTML);
+            }
+
             var $message = null;
             switch (type) {
                 case "button":
@@ -370,8 +375,15 @@ function renderInputs(arr, $parent) {
             }
 
             if (ele.children[0].innerHTML.toLowerCase() === "name" && ele.parentElement.tagName === "group") {
-                $input.attr("data-name", ele.parentElement.getAttribute("name") + "_1");
-                $input.val(ele.parentElement.getAttribute("name") + "_1");
+                var parentName;
+                if (ele.parentElement.getAttribute("passthrough") === null && ele.parentElement.parentElement) {
+                    parentName = ele.parentElement.getAttribute("name");
+                } else {
+                    parentName = ele.parentElement.parentElement.getAttribute("name");
+                }
+                
+                $input.attr("data-name", parentName + "_1");
+                $input.val(parentName + "_1");
             }
 
             // Handle potential element modifiers
@@ -460,7 +472,7 @@ function renderInputs(arr, $parent) {
                 $input.attr("data-link", link);
                 var $default = $("<option>", {selected: true}).text("");
                 $input.append($default);
-                var nameVal = ele.getElementsByTagName("link")[0].getAttribute("name");
+                var nameVal = ele.getElementsByTagName("link")[0].getAttribute("nameVal");
                 if (nameVal) {
                     $input.addClass("nameVal");
                 }
@@ -552,17 +564,8 @@ function factorizeRendering() {
         recursivelyFactor(id, fact);
     }
 
-    // Step 2: Check for collapsible elements
-    var collapseArr = $("#intent-panel-body").find(".group-collapse-toggle");
-    for (var i = 0; i < collapseArr.length; i++) {
-        var toggle = collapseArr[i];
-        toggle.setAttribute("data-target", toggle.getAttribute("data-target") + "_num1");
 
-        var collapse = toggle.parentElement.nextSibling;
-        //collapse.id += "_num1";
-    }
-
-    // Step 3: Insert user elements
+    // Step 2: Insert user elements
     for (var i = 0; i < factoryArr.length; i++) {
         var fact = factoryArr[i];
         var id = fact.id;
@@ -592,6 +595,10 @@ function factorizeRendering() {
         }
     }
 
+    // Step 3: Check for collapsible elements
+    collapseGroups();
+
+    initializeInputs();
     // Step 4: Cache schemas
     for (var i = 0; i < factoryArr.length; i++) {
         var fact = factoryArr[i];
@@ -604,7 +611,6 @@ function factorizeRendering() {
     }
 
     // Step 5: Finishing work        
-    initializeInputs();
     refreshLinks();
     enforceBounds();
     expandStarters();
@@ -620,7 +626,7 @@ function recursivelyFactor(id, ele) {
             if (index >= 0) {
                 ele.id = eleID.replace(id, id + "_num1");
                 if (label && ele.children[0] && ele.children[0].children[0]) {
-                    if (ele.children[0].children[0].innerText.indexOf("#1") < 0) {
+                    if (ele.children[0].children[0].innerText.indexOf("#1") < 0 && $(ele).hasClass("factory")) {
                         ele.children[0].children[0].innerText += " #1";
                     }
                 }
@@ -743,7 +749,7 @@ function submitIntent(mode) {
                         beforeSend: function (xhr) {
                             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                        }                        
+                        }
                     });
                     window.location.href = "/StackV-web/ops/catalog.jsp";
                 }
@@ -763,6 +769,28 @@ function submitIntent(mode) {
 }
 
 // UTILITY FUNCTIONS
+function collapseGroups() {
+    $(".collapsing").each(function () {
+        var $div = $(this);
+        var collapseStr = "collapse-" + $div.attr("id");
+        var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});
+        var $toggle = $("<a>").attr("data-toggle", "collapse")
+                .attr("data-target", "#" + collapseStr)
+                .addClass("group-collapse-toggle");
+
+        $($($div.children()[0]).children()[0]).after($toggle);
+        $div.children().each(function () {
+            var $this = $(this);
+            if (!$this.hasClass("group-header")) {
+                $this.appendTo($collapseDiv);
+            }
+        });
+        $div.append($collapseDiv);
+
+        $div.removeClass("collapsing");
+    });
+}
+
 function collapseDiv($name, $div) {
     var name = $name.text().toLowerCase();
     var parent = getParentName($div.attr("id"));
@@ -883,12 +911,14 @@ function getName(key) {
 function constructID(ele) {
     var retString = ele.getAttribute("name");
     if (ele.nodeName === "input") {
-        retString = ele.parentElement.getAttribute("name") + "-" + ele.children[0].innerHTML;
-        ele = ele.parentElement;
+        retString = ele.children[0].innerHTML;
     }
+        
     while (ele.nodeName !== "stage") {
-        retString = ele.parentElement.getAttribute("name") + "-" + retString;
         ele = ele.parentElement;
+        if (ele.getAttribute("passthrough") === null) {
+            retString = ele.getAttribute("name") + "-" + retString;
+        }        
     }
     return retString.replace(/ /g, "_").toLowerCase();
 }
@@ -954,7 +984,7 @@ function buildClone(key, target, $factoryBtn) {
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
 
-    // Reset button listeners  
+    // Reset listeners  
     $(".intent-button-factory").off("click");
     $(".intent-button-factory").click(function (e) {
         // Modify clone for current index
@@ -964,6 +994,26 @@ function buildClone(key, target, $factoryBtn) {
         buildClone(key, target, $(this));
 
         e.preventDefault();
+    });
+    $clone.find("select").each(function () {
+        if ($(this).hasClass("binding")) {
+            $(this).change(function () {
+                enforceBounds();
+                recondition();
+            });
+        }
+    });
+    $clone.find("input[data-valid]").each(function () {
+        $(this).change(function () {
+            $(this).removeClass("invalid-input");
+            var $stage = $($(this).parents(".intent-stage-div")[0]);
+            if ($stage.find(".invalid-input").length === 0) {
+                $("#prog-" + $stage.attr("id")).removeClass("invalid-input");
+            }
+            if ($(".invalid-input").length === 0) {
+                $(".intent-operations").removeClass("blocked");
+            }
+        });
     });
 
     var $defArr = $clone.find("[data-default]");
@@ -1213,25 +1263,24 @@ function parseManifestIntoJSON() {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            manifest["uuid"] = result;
+            package["uuid"] = result;
+            manifest["data"]["uuid"] = result;
             if (options.length > 0) {
-                manifest["options"] = options;
+                package["options"] = options;
                 manifest["data"]["options"] = options;
             }
-            // Render template            
-            var rendered = render(manifest);
-            if (!rendered) {
-                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
-                manifest = null;
-                return;
-            }
 
-            delete manifest["data"]["uuid"];
-            delete manifest["data"]["options"];
+            // Render template            
+//            var rendered = render(manifest);
+//            if (!rendered) {
+//                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
+//                manifest = null;
+//                return;
+//            }
 
             package["service"] = intentType;
             package["alias"] = $("#meta-alias").val();
-            package["data"] = rendered;
+            package["data"] = manifest["data"];
         }
     });
 }

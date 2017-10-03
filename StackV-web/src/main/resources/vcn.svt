@@ -1,0 +1,375 @@
+<serviceDelta>
+<uuid>{{uuid}}</uuid>
+<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
+
+<modelAddition>
+
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
+
+&lt;x-policy-annotation:data:vpc-criteria&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:value    """{{!TopologyPolicyData}}""".
+
+&lt;urn:ogf:network:service+{{uuid}}:resource+virtual_clouds:tag+vpc1&gt;
+    a nml:Topology ;
+{{$if !ifVCNGateways gateways}}
+    {{#gateways}}
+        spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;, &lt;x-policy-annotation:action:create-mce_dc1&gt; .
+
+        &lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;
+            a            mrs:SwitchingSubnet;
+            spa:type     spa:Abstraction;
+            spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.
+
+        &lt;x-policy-annotation:action:create-path&gt;
+            a            spa:PolicyAction ;
+            spa:type     "MCE_MPVlanConnection" ;
+            spa:importFrom &lt;x-policy-annotation:data:conn-criteria1&gt; ;
+            spa:exportTo &lt;x-policy-annotation:data:conn-export&gt; .
+
+        &lt;x-policy-annotation:action:create-mce_dc1&gt;
+            a            spa:PolicyAction ;
+            spa:type     "MCE_AwsDxStitching" ;
+            spa:importFrom &lt;x-policy-annotation:data:vpc-export&gt;, &lt;x-policy-annotation:data:conn-export&gt; ;
+            spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;, &lt;x-policy-annotation:action:create-path&gt;.
+
+        &lt;x-policy-annotation:data:vpc-export&gt;
+            a            spa:PolicyData ;
+            spa:type     "JSON" ;
+            spa:format   """{
+                "parent": "{{@parent}}",
+                "stitch_from": "%$.gateways[?(@.type=='vpn-gateway')].uri%",
+            }""" .
+
+        &lt;x-policy-annotation:data:conn-export&gt;
+            a            spa:PolicyData;
+            spa:type     "JSON" ;
+            spa:format   """{
+                "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%
+            }""" .
+
+        &lt;x-policy-annotation:data:conn-criteria1&gt;
+            a            spa:PolicyData;
+            spa:type     "JSON";
+            spa:value    """{
+                "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
+                    "{{!DirectConnDest @gateways}}": {
+                        "vlan_tag":"{{!DirectConnVLAN @gateways}}"
+                    },
+                    "{{@parent}}": {
+                        "vlan_tag":"{{!DirectConnVLAN @gateways}}"
+                    }
+                }
+            }""".
+    {{/gateways}}        
+{{/if !ifVCNGateways}}
+{{$unless !ifVCNGateways gateways}}
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
+{{/unless !ifVCNGateways}}
+{{$if !isAWS}} {{/ AWS }}
+    {{#subnets}}
+        {{*SubnetIndex @index}}
+        {{#vms}}
+            &lt;{{*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}&gt;
+                a           nml:Node ;
+                nml:name    "{{name}}";
+                {{!VMType}}
+                nml:hasBidirectionalPort   &lt;{{VMTag}}:eth0&gt;;
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt; .
+
+            &lt;{{VMTag}}:eth0&gt;
+                a           nml:BidirectionalPort;
+                {{$if elastic_ip}}
+                    mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
+                {{/if elastic_ip}}                
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt; .
+            {{$if interfaces}}
+                {{!AddressString name interfaces @uuid}}
+            {{/if interfaces}}
+
+            &lt;x-policy-annotation:action:create-{{name}}&gt;
+                a            spa:PolicyAction ;
+                spa:type     "MCE_VMFilterPlacement" ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+                spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
+
+            &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
+                a           spa:PolicyData;
+                spa:type    "JSON";
+                spa:format  """{
+                    "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
+        {{/vms}}
+    {{/subnets}}
+{{/if !isAWS}}
+
+{{$if !isOPS}} {{/ OPS }}
+    {{~#subnets}}
+        {{*SubnetIndex @index}}
+        {{#vms}}
+            &lt;{{*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}&gt;
+                a           nml:Node ;
+                nml:name    "{{*VMName}}{{name}}{{/VMName}}";
+                {{!VMType}}
+                nml:hasBidirectionalPort   &lt;{{VMTag}}:eth0&gt; ;
+                        {{$if routes}}
+                nml:hasService  &lt;{{VMTag}}:routingservice&gt; ;
+                        {{/if routes}}
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;.
+
+            &lt;{{VMTag}}:eth0&gt;
+                a            nml:BidirectionalPort;
+                {{$if floating_ip}}
+                    mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
+                {{/if floating_ip}}                
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt; .
+
+                {{/ !AddressString name interfaces @uuid}}  {{/ TODO check on conditional relating to blank addressString }}
+                {{#sriovs}}
+                    {{$if !LinkedGatewayType @gateways = "UCS Port Profile"}}
+                        &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-sriov{{@index}}&gt;
+                            a            spa:PolicyAction ;
+                            spa:type     "MCE_UcsSriovStitching" ;
+                            spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-{{VMName}}-eth0&gt;;
+                            spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;.
+
+                        &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;
+                            a            spa:PolicyData;
+                            spa:type     "JSON";
+                            spa:value    """ {
+                                "stitch_from": "{{VMTag}}",
+                                "to_port_profile": "{{!LinkedGatewayFrom @gateways}}",
+                                "mac_address": "{{mac_address}}",
+                                "ip_address": "{{ip_address}}"
+                                {{$if connects}}
+                                    ,   "routes" : {{connects}} {{/ TODO check if desired format/data, can be changed to connects.[0] }}
+                                {{/if connects}}
+                                } """ .
+                    {{/if !LinkedGatewayType}}
+                    {{$if !LinkedGatewayType @gateways = "L2 Stitch Port"}}
+                        &lt;x-policy-annotation:action:ucs-{{hosting_gateway}}-sriov{{@index}}-stitch&gt;
+                            a            spa:PolicyAction ;
+                            spa:type     "MCE_UcsSriovStitching" ;
+                            spa:dependOn &lt;x-policy-annotation:action:create-{{hosting_gateway}}&gt;, &lt;x-policy-annotation:action:create-path&gt;;
+                            spa:importFrom &lt;x-policy-annotation:data:{{hosting_gateway}}-sriov{{@index}}-criteria&gt; .
+
+                        &lt;x-policy-annotation:data:{{hosting_gateway}}-sriov{{@index}}-criteria&gt;
+                            a            spa:PolicyData;
+                            spa:type     "JSON";
+                            spa:format   """ {
+                               "stitch_from": "{{VMTag}}",
+                               "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{name}}%,
+                               "mac_address": "{{mac_address}}"
+                               "ip_address": "{{ip_address}}"
+                                {{$if connects}}
+                                    ,   "routes" : {{connects}}
+                                {{/if connects}}
+                                } """ .
+                    {{/if !LinkedGatewayType}}              
+                {{/sriovs}}               
+                {{$if routes}}
+                    &lt;{{VMTag}}:routingservice&gt;
+                         a   mrs:RoutingService;
+                         mrs:providesRoutingTable     &lt;{{VMTag}}:routingservice:routingtable+linux&gt; .
+                    &lt;{{VMTag}}:routingservice:routingtable+linux&gt;
+                         a   mrs:RoutingTable;
+                         mrs:type   "linux";
+                         mrs:hasRoute
+                    {{#routes}}
+                        {{$unless ^first}},{{/unless ^first}}
+                        &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
+                        {{$if ^last}}.{{/if ^last}}
+                {{/routes}}
+                {{#routes}}
+                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
+                          a  mrs:Route;
+                                        {{$if to}}
+                          mrs:routeTo "{{to}}"; {{/ might have to format this differently, check networkAddressFromJson method}}
+                                        {{/if to}}
+                                        {{$if from}}
+                          mrs:routeFrom "{{from}}"; {{/ might have to format this differently, check networkAddressFromJson method}}
+                                        {{/if from}}
+                                        {{$if next_hop}}
+                          mrs:nextHop "{{next_hop}}"; {{/ might have to format this differently, check networkAddressFromJson method}}
+                                        {{/if next_hop}}
+                    .
+                {{/routes}}
+            {{/if routes}}
+
+            {{$if floating_ip}}
+                &lt;{{VMTag}}:eth0floatingip&gt;            
+                    a            mrs:NetworkAddress;
+                    mrs:type     "floating-ip";
+                    mrs:value     "{{floating_ip}}".
+            {{/if floating_ip}}
+
+            {{$if ceph_rbd}} {{/ CEPH Needs to be included in portal manifest }}
+                {{#ceph_rbd}}
+                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
+                       a  mrs:Volume;
+                       mrs:disk_gb "{{disk_gb}}";
+                       mrs:mount_point "{{mount_point}}".
+                {{/ceph_rbd}}
+                &lt;{{VMTag}}&gt;
+                   mrs:hasVolume
+                {{#ceph_rbd}} {{/ ensure that ceph_rbd blocks will be handled in same order regardless of when called, if not, need to make a helper}}
+                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$unless ^last}},{{/unless ^last}}
+                {{/ceph_rbd}}
+                .
+            {{/if ceph_rbd}}
+
+            &lt;x-policy-annotation:action:create-{{name}}&gt;
+                a            spa:PolicyAction ;
+                spa:type     "MCE_VMFilterPlacement" ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+                spa:importFrom &lt;x-policy-annotation:data:{{name}}-host-criteria&gt;.
+
+            &lt;x-policy-annotation:data:{{name}}-host-criteria&gt;
+                a            spa:PolicyData;
+                spa:type     "JSON";
+                spa:value    """{
+                   "place_into": "{{@parent}}:host+{{host}}"
+                }""" .
+
+            &lt;x-policy-annotation:action:create-{{name}}-eth0&gt;
+                a            spa:PolicyAction ;
+                spa:type     "MCE_VMFilterPlacement" ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+                spa:importFrom &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
+
+
+
+            &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
+                a           spa:PolicyData;
+                spa:type    "JSON";
+                spa:format  """{ "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
+        {{/vms}}
+    {{/subnets}}
+    {{~#subnets}}       
+        {{#vms}}
+            {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
+            {{#ceph_rbds}}
+                &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
+                   a  mrs:Volume;
+                   mrs:disk_gb "{{size}}" ;
+                   mrs:mount_point "{{mount_point}}" .
+            {{/ceph_rbds}}
+            {{$if ceph_rbds}}
+                &lt;{{VMTag}}&gt;
+                    mrs:hasVolume
+                    {{#ceph_rbds}}
+                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
+                    {{/ceph_rbds}}
+
+                &lt;{{@parent}}:ceph-rbd&gt;
+                    mrs:providesVolume 
+                    {{#ceph_rbds}}
+                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
+                    {{/ceph_rbds}}
+            {{/if ceph_rbds}}            
+        {{/vms}}
+
+        {{#vms}}
+            {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
+            {{#globus_connect}}
+            &lt;{{VMTag}}:service+globus&gt;
+                a  mrs:EndPoint ;
+                mrs:type "globus:connect" ;
+            {{$if username}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:username&gt; ;
+            {{/if username}}
+            {{$if password}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:password&gt; ;
+            {{/if password}}
+            {{$if default_directory}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:directory&gt; ;
+            {{/if default_directory}}
+            {{$if data_interface_ip}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
+            {{/if data_interface_ip}}
+                nml:name "{{short_name}}" .
+            &lt;{{VMTag}}&gt;
+               nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
+            &lt;{{VMTag}}:service+globus:username&gt;
+               a mrs:NetworkAddress ;
+               mrs:type "globus:username";
+               mrs:value "{{username}}" .
+            &lt;{{VMTag}}:service+globus:password&gt;
+               a mrs:NetworkAddress ;
+               mrs:type "globus:password";
+               mrs:value "{{password}}" .
+            &lt;{{VMTag}}:service+globus:directory&gt;
+               a mrs:NetworkAddress ;
+               mrs:type "globus:directory";
+               mrs:value "{{default_directory}}" .
+            &lt;{{VMTag}}:service+globus:interface&gt;
+               a mrs:NetworkAddress ;
+               mrs:type "globus:interface";
+               mrs:value "{{data_interface_ip}}" .            
+            {{/globus_connect}}
+        {{/vms}}
+        {{#vms}}
+            {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
+            {{#nfs}}
+                &lt;{{VMTag}}:service+nfs&gt;
+                    a  mrs:EndPoint ;
+                    mrs:type "nfs";
+                {{$if exports}}
+                    mrs:hasNetworkAddress &lt;{{VMTag}}:service+nfs:exports&gt; .
+                {{/if exports}}
+                
+                &lt;{{VMTag}}&gt;
+                    nml:hasService &lt;{{VMTag}}:service+nfs&gt;.
+
+                {{$if exports}}
+                    &lt;{{VMTag}}:service+nfs:exports&gt;
+                        a mrs:NetworkAddress ;
+                        mrs:type "nfs:exports";
+                        mrs:value "{{!ExportData}}".
+                {{/if exports}}
+            {{/nfs}}
+        {{/vms}}
+
+        {{/ dependOn }}
+        {{#vms}}
+            {{#sriovs}}
+                {{*SRIOVIndex @index}}
+                {{#@gateways}}
+                    {{$if connects.0/from}}
+                        {{$if type = "UCS Port Profile"}}
+                            &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
+                               a  nml:Topology;
+                               spa:type spa:Abstraction;
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-sriov{{SRIOVIndex}}&gt;.                                                                        
+                        {{/if type}}
+                    {{/if connects.0/from}}
+                    {{$if connects.0/to}}
+                        {{$if type = "stitch_port"}}
+                            &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
+                               a  nml:Topology;
+                               spa:type spa:Abstraction;
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-{{name}}-sriov{{SRIOVIndex}}-stitch&gt;.                                             
+                        {{/if type}}
+                    {{/if connects.0/to}}
+                {{/@gateways}}
+            {{/sriovs}}
+        {{/vms}}
+    {{/subnets}}
+{{/if !isOPS}}
+
+&lt;x-policy-annotation:action:create-vpc&gt;
+    a           spa:PolicyAction ;
+    spa:type     "MCE_VirtualNetworkCreation" ;
+    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt;;
+    spa:exportTo &lt;x-policy-annotation:data:vpc-export&gt;,
+{{!VPCSubnetData subnets}}
+
+</modelAddition>
+
+</serviceDelta>
