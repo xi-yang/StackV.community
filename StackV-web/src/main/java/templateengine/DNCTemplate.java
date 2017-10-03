@@ -3,7 +3,7 @@ package templateengine;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
-import templateengine.helpers.dnc.DNCType;
+import templateengine.helpers.dnc.*;
 
 public class DNCTemplate extends Template {
 
@@ -18,5 +18,6 @@ public class DNCTemplate extends Template {
 
         // Load helpers
         helpers.put("DNCType", new DNCType());
+        helpers.put("DNCPolicyData", new DNCPolicyData());
     }
 }
