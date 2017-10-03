@@ -157,7 +157,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         }
         // commit through PUT
         try {
-            URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getId(), aDelta.getId()));
+            URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getId()));
             HttpURLConnection conn;
             if (url.toString().startsWith("https:")) {
                 conn = (HttpURLConnection) url.openConnection();
