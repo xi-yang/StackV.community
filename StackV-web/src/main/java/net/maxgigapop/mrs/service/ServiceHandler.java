@@ -36,6 +36,7 @@ import java.util.Properties;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
+import net.maxgigapop.mrs.rest.api.WebResource;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import static net.maxgigapop.mrs.rest.api.WebResource.SuperState;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
@@ -256,6 +257,9 @@ public class ServiceHandler {
                     break;
                 case "commit":
                     ServiceEngine.commitInstance(refUUID, token.auth());
+                    break;
+                case "call_verify":
+                    ServiceEngine.verifyInstance(refUUID, token.auth());
                     break;
                 default:
                     logger.warning(method, "Invalid action");
@@ -517,34 +521,6 @@ public class ServiceHandler {
 
         lastState = result;
         return result;
-    }
-
-    private boolean clearVerification() {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("UPDATE service_verification V "
-                    + "INNER JOIN service_instance I "
-                    + "ON V.service_instance_id = I.service_instance_id AND I.referenceUUID = ? "
-                    + "SET V.verification_state = ?, V.verification_run = 0, V.enabled = 1");
-            prep.setString(1, refUUID);
-            prep.setNull(2, java.sql.Types.INTEGER);
-            prep.executeUpdate();
-
-            return true;
-        } catch (SQLException ex) {
-            logger.catching("clearVerification", ex);
-            return false;
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
     }
 
     void updateLastState(String lastState, String refUUID) {

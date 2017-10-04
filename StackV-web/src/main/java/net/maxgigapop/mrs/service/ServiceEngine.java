@@ -383,6 +383,14 @@ class ServiceEngine {
         return result;
     }
 
+    static String verifyInstance(String refUUID, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/verify/%s", host, refUUID));
+        HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
+        String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, auth);
+
+        return result;
+    }
+
     // -------------------------- SERVICE FUNCTIONS --------------------------------    
     static int createOperationModelModification(Map<String, String> paraMap, TokenHandler token) {
         String method = "createOperationModelModification";

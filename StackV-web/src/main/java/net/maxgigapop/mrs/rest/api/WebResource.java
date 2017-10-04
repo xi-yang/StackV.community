@@ -2872,7 +2872,7 @@ public class WebResource {
                 return null;
             }
             logger.end(method);
-            return "Reference UUID: " + refUUID + "\n";
+            return refUUID;
         } catch (ParseException ex) {
             logger.catching(method, ex);
             return null;
@@ -2946,6 +2946,35 @@ public class WebResource {
             @Override
             public void run() {
                 doOperate(refUuid, action, token);
+            }
+        });
+        logger.trace_end(method);
+    }
+    
+    /**
+     * @api {delete} /app/service/:siUUID/ Delete Service
+     * @apiVersion 1.0.0
+     * @apiDescription Delete the specified service instance.
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {String} siUUID instance UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
+    @DELETE
+    @Path(value = "/service/{siUUID}/{action}")
+    @RolesAllowed("Services")
+    public void delete(@PathParam(value = "siUUID") final String refUuid) {
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
+        String method = "operate";
+        logger.trace_start(method, "Thread:" + Thread.currentThread());
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                doOperate(refUuid, "delete", token);
             }
         });
         logger.trace_end(method);
