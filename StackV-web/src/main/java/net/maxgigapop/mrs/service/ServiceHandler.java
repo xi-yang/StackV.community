@@ -36,7 +36,6 @@ import java.util.Properties;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
-import net.maxgigapop.mrs.rest.api.WebResource;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import static net.maxgigapop.mrs.rest.api.WebResource.SuperState;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
@@ -61,13 +60,13 @@ public class ServiceHandler {
     String alias;
     String lastState = "INIT";
 
-    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) {
+    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) throws EJBException, SQLException {
         token = initToken;
 
         createInstance(input, refUUID, autoProceed);
     }
 
-    public ServiceHandler(String refUUID, TokenHandler initToken) {
+    public ServiceHandler(String refUUID, TokenHandler initToken) throws SQLException {
         this.refUUID = refUUID;
         logger.refuuid(refUUID);
         token = initToken;
@@ -76,7 +75,7 @@ public class ServiceHandler {
     }
 
     // INIT METHODS
-    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) {
+    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) throws EJBException, SQLException {
         String method = "createInstance";
         logger.refuuid(refUUID);
         Connection front_conn = null;
@@ -168,12 +167,13 @@ public class ServiceHandler {
             logger.end(method);
         } catch (EJBException | SQLException ex) {
             logger.catching(method, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
     }
 
-    private void loadInstance(String refUUID) {
+    private void loadInstance(String refUUID) throws SQLException {
         String method = "loadInstance";
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -199,13 +199,14 @@ public class ServiceHandler {
             logger.trace_end(method);
         } catch (SQLException ex) {
             logger.catching(method, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
     }
 
     // OPERATION METHODS
-    public void operate(String action) {
+    public void operate(String action) throws SQLException, IOException, InterruptedException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -214,8 +215,8 @@ public class ServiceHandler {
         logger.refuuid(refUUID);
         logger.start(method);
         updateLastState(null, refUUID);
-        try {
-            VerificationHandler verify = new VerificationHandler(refUUID, token);
+        VerificationHandler verify = new VerificationHandler(refUUID, token);
+        try {            
             switch (action) {
                 case "cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
@@ -267,20 +268,9 @@ public class ServiceHandler {
 
             logger.end(method);
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
-            try {
-                Properties front_connectionProps = new Properties();
-                front_connectionProps.put("user", front_db_user);
-                front_connectionProps.put("password", front_db_pass);
-                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                        front_connectionProps);
-
-                prep = front_conn.prepareStatement("UPDATE service_verification V INNER JOIN service_instance I SET V.verification_state = '-1' WHERE V.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
-                prep.setString(1, refUUID);
-                prep.executeUpdate();
-            } catch (SQLException ex2) {
-                logger.catching(method, ex2);
-            }
+            verify.stopVerification();            
             logger.catching(method, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
             if (lastState != null) {
@@ -289,7 +279,7 @@ public class ServiceHandler {
         }
     }
 
-    public String status() {
+    public String status() throws IOException {
         try {
             URL url = new URL(String.format("%s/service/%s/status", host, refUUID));
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
@@ -298,7 +288,7 @@ public class ServiceHandler {
             return result;
         } catch (IOException ex) {
             logger.catching("status", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -423,7 +413,7 @@ public class ServiceHandler {
     }
 
     // Utility Methods ---------------------------------------------------------
-    private void setSuperState(String refUuid, SuperState superState) {
+    private void setSuperState(String refUuid, SuperState superState) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -441,6 +431,7 @@ public class ServiceHandler {
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("setSuperState", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -523,7 +514,7 @@ public class ServiceHandler {
         return result;
     }
 
-    void updateLastState(String lastState, String refUUID) {
+    void updateLastState(String lastState, String refUUID) throws SQLException {
         String method = "updateLastState";
         logger.trace_start(method, lastState);
 
@@ -544,6 +535,7 @@ public class ServiceHandler {
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("updateLastState", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }

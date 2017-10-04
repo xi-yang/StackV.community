@@ -49,14 +49,14 @@ import org.json.simple.JSONObject;
 class ServiceEngine {
 
     private final static StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceEngine");
-    private final static String host = "http://127.0.0.1:8080/StackV-web/restapi";
-    private final static String front_db_user = "front_view";
-    private final static String front_db_pass = "frontuser";
-    private final static String rains_db_user = "root";
-    private final static String rains_db_pass = "root";
+    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
+    private final static String FRONT_DB_USER = "front_view";
+    private final static String FRONT_DB_PASS = "frontuser";
+    private final static String RAINS_DB_USER = "root";
+    private final static String RAINS_DB_PASS = "root";
 
     // OPERATION FUNCTIONS    
-    static void orchestrateInstance(String refUUID, String svcDelta, String deltaUUID, TokenHandler token, boolean autoProceed) {
+    static void orchestrateInstance(String refUUID, String svcDelta, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
         String method = "orchestrateInstance";
         String result;
         String lastState = "INIT";
@@ -90,7 +90,7 @@ class ServiceEngine {
                 lastState = "COMMITTING";
                 logger.trace(method, "Committing");
 
-                URL url = new URL(String.format("%s/service/%s/status", host, refUUID));
+                URL url = new URL(String.format("%s/service/%s/status", HOST, refUUID));
                 while (!result.equals("COMMITTED") && !result.equals("FAILED")) {
                     logger.trace(method, "Waiting on instance: " + result);
                     sleep(5000);//wait for 5 seconds and check again later        
@@ -111,6 +111,7 @@ class ServiceEngine {
             logger.end(method);
         } catch (EJBException | IOException | InterruptedException ex) {
             logger.catching(method, ex);
+            throw ex;
         } finally {
             logger.trace_start("updateLastState", lastState);
 
@@ -119,8 +120,8 @@ class ServiceEngine {
             ResultSet rs = null;
             try {
                 Properties front_connectionProps = new Properties();
-                front_connectionProps.put("user", front_db_user);
-                front_connectionProps.put("password", front_db_pass);
+                front_connectionProps.put("user", FRONT_DB_USER);
+                front_connectionProps.put("password", FRONT_DB_PASS);
 
                 front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                         front_connectionProps);
@@ -138,134 +139,9 @@ class ServiceEngine {
             }
         }
     }
-
-    /*static String verify(String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
-        ResultSet rs;
-        String method = "verify";
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        ThreadContext.put("refUUID", refUuid);
-        logger.start(method);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");
-        prep.setString(1, refUuid);
-        rs = prep.executeQuery();
-        rs.next();
-        int instanceID = rs.getInt("service_instance_id");
-
-        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = 0, `verification_run` = '0', `delta_uuid` = NULL, `creation_time` = NULL, `verified_addition` = NULL, `unverified_addition` = NULL, `addition` = NULL WHERE `service_verification`.`service_instance_id` = ?");
-        prep.setInt(1, instanceID);
-        prep.executeUpdate();
-
-        for (int run = 1; run <= 30; run++) {
-            prep = front_conn.prepareStatement("SELECT V.enabled"
-                    + " FROM service_instance I, service_verification V"
-                    + " WHERE referenceUUID = ? AND I.service_instance_id = V.service_instance_id");
-            prep.setString(1, refUuid);
-            rs = prep.executeQuery();
-            rs.next();
-            boolean enabled = rs.getBoolean("enabled");
-            if (!enabled) {
-                logger.end(method, "Disabled");
-                WebResource.commonsClose(front_conn, prep, rs);
-                return "READY";
-            }
-
-            logger.trace(method, "Verification Attempt: " + run + "/30");
-
-            boolean redVerified = true, addVerified = true;
-            URL url = new URL(String.format("%s/service/verify/%s", host, refUuid));
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            String result = WebResource.executeHttpMethod(url, conn, "GET", null, token.auth());
-
-            // Pull data from JSON.
-            JSONParser parser = new JSONParser();
-            JSONObject verifyJSON = new JSONObject();
-            try {
-                Object obj = parser.parse(result);
-                verifyJSON = (JSONObject) obj;
-            } catch (ParseException ex) {
-                throw new IOException("Parse Error within Verification: " + ex.getMessage());
-            }
-
-            // Update verification results cache.
-            prep = front_conn.prepareStatement("UPDATE `service_verification` SET `delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? WHERE `service_instance_id`=?");
-            prep.setString(1, (String) verifyJSON.get("referenceUUID"));
-            prep.setString(2, (String) verifyJSON.get("creationTime"));
-            prep.setString(3, (String) verifyJSON.get("verifiedModelReduction"));
-            prep.setString(4, (String) verifyJSON.get("verifiedModelAddition"));
-            prep.setString(5, (String) verifyJSON.get("unverifiedModelReduction"));
-            prep.setString(6, (String) verifyJSON.get("unverifiedModelAddition"));
-            prep.setString(7, (String) verifyJSON.get("reductionVerified"));
-            prep.setString(8, (String) verifyJSON.get("additionVerified"));
-            prep.setInt(9, run);
-            prep.setInt(10, instanceID);
-            prep.executeUpdate();
-
-            if (verifyJSON.containsKey("reductionVerified") && (verifyJSON.get("reductionVerified") != null) && ((String) verifyJSON.get("reductionVerified")).equals("false")) {
-                redVerified = false;
-            }
-            if (verifyJSON.containsKey("additionVerified") && (verifyJSON.get("additionVerified") != null) && ((String) verifyJSON.get("additionVerified")).equals("false")) {
-                addVerified = false;
-            }
-
-            if (redVerified && addVerified) {
-                prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1' WHERE `service_verification`.`service_instance_id` = ?");
-                prep.setInt(1, instanceID);
-                prep.executeUpdate();
-
-                logger.end(method, "Success");
-                WebResource.commonsClose(front_conn, prep, rs);
-                return "READY";
-            }
-
-            prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '0' WHERE `service_verification`.`service_instance_id` = ?");
-            prep.setInt(1, instanceID);
-            prep.executeUpdate();
-
-            Thread.sleep(10000);
-        }
-
-        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1' WHERE `service_verification`.`service_instance_id` = ?");
-        prep.setInt(1, instanceID);
-        prep.executeUpdate();
-
-        logger.end(method, "Failure");
-        WebResource.commonsClose(front_conn, prep, rs);
-        return "READY";
-    }*/
- /*static void toggleVerify(boolean enabled, String refUuid, TokenHandler token) throws MalformedURLException, IOException, InterruptedException, SQLException {
-        ResultSet rs;
-        String method = "cancelVerify";
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
-
-        ThreadContext.put("refUUID", refUuid);
-        logger.trace_start(method);
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");
-        prep.setString(1, refUuid);
-        rs = prep.executeQuery();
-        rs.next();
-        int instanceID = rs.getInt("service_instance_id");
-
-        prep = front_conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `enabled` = ? WHERE `service_verification`.`service_instance_id` = ?");
-        prep.setBoolean(1, enabled);
-        prep.setInt(2, instanceID);
-        prep.executeUpdate();
-
-        logger.trace_end(method);
-        WebResource.commonsClose(front_conn, prep, rs);
-    }*/
+    
     // UTILITY FUNCTIONS    
-    private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) {
+    private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) throws SQLException {
         String method = "cacheServiceDelta";
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -301,6 +177,7 @@ class ServiceEngine {
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching(method, ex);
+            throw ex;
         } finally {
             WebResource.commonsClose(front_conn, prep, rs);
         }
@@ -309,7 +186,7 @@ class ServiceEngine {
         return instanceID;
     }
 
-    private static void cacheSystemDelta(int instanceID, String result) {
+    private static void cacheSystemDelta(int instanceID, String result) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -337,24 +214,14 @@ class ServiceEngine {
 
         } catch (SQLException ex) {
             logger.catching("cacheSystemDelta", ex);
+            throw ex;
         } finally {
             WebResource.commonsClose(front_conn, prep, rs);
         }
     }
 
-    private static String networkAddressFromJson(JSONObject jsonAddr) {
-        if (!jsonAddr.containsKey("value")) {
-            return "";
-        }
-        String type = "ipv4-address";
-        if (jsonAddr.containsKey("type")) {
-            type = jsonAddr.get("type").toString();
-        }
-        return String.format("[a    mrs:NetworkAddress; mrs:type    \"%s\"; mrs:value   \"%s\"]", type, jsonAddr.get("value").toString());
-    }
-
     static String initInstance(String refUuid, String svcDelta, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s", HOST, refUuid));
         HttpURLConnection compile = (HttpURLConnection) url.openConnection();
         String result = WebResource.executeHttpMethod(url, compile, "POST", svcDelta, auth);
         if (!result.contains("referenceVersion")) {
@@ -364,7 +231,7 @@ class ServiceEngine {
     }
 
     static String propagateInstance(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/propagate", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = WebResource.executeHttpMethod(url, propagate, "PUT", null, auth);
         if (!result.equals("PROPAGATED")) {
@@ -374,7 +241,7 @@ class ServiceEngine {
     }
 
     static String commitInstance(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/commit", HOST, refUuid));
         HttpURLConnection commit = (HttpURLConnection) url.openConnection();
         String result = WebResource.executeHttpMethod(url, commit, "PUT", null, auth);
         if (!result.equals("COMMITTING")) {
@@ -384,7 +251,7 @@ class ServiceEngine {
     }
 
     static String verifyInstance(String refUUID, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/verify/%s", host, refUUID));
+        URL url = new URL(String.format("%s/service/verify/%s", HOST, refUUID));
         HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
         String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, auth);
 
@@ -392,7 +259,7 @@ class ServiceEngine {
     }
 
     // -------------------------- SERVICE FUNCTIONS --------------------------------    
-    static int createOperationModelModification(Map<String, String> paraMap, TokenHandler token) {
+    static int createOperationModelModification(Map<String, String> paraMap, TokenHandler token) throws IOException, InterruptedException, SQLException {
         String method = "createOperationModelModification";
         String refUuid = paraMap.get("instanceUUID");
         String deltaUUID = UUID.randomUUID().toString();
@@ -431,7 +298,7 @@ class ServiceEngine {
         int instanceID = results;
 
         try {
-            URL url = new URL(String.format("%s/service/%s", host, refUuid));
+            URL url = new URL(String.format("%s/service/%s", HOST, refUuid));
             HttpURLConnection compile = (HttpURLConnection) url.openConnection();
             result = WebResource.executeHttpMethod(url, compile, "POST", delta, token.auth());
             if (!result.contains("referenceVersion")) {
@@ -441,19 +308,19 @@ class ServiceEngine {
             // Cache System Delta
             cacheSystemDelta(instanceID, result);
 
-            url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+            url = new URL(String.format("%s/service/%s/propagate", HOST, refUuid));
             HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
             result = WebResource.executeHttpMethod(url, propagate, "PUT", null, token.auth());
             if (!result.equals("PROPAGATED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+            url = new URL(String.format("%s/service/%s/commit", HOST, refUuid));
             HttpURLConnection commit = (HttpURLConnection) url.openConnection();
             result = WebResource.executeHttpMethod(url, commit, "PUT", null, token.auth());
             if (!result.equals("COMMITTED")) {
                 return 2;//Error occurs when interacting with back-end system
             }
-            url = new URL(String.format("%s/service/%s/status", host, refUuid));
+            url = new URL(String.format("%s/service/%s/status", HOST, refUuid));
             while (!result.equals("READY")) {
                 sleep(5000);//wait for 5 seconds and check again later
                 HttpURLConnection status = (HttpURLConnection) url.openConnection();
@@ -466,7 +333,7 @@ class ServiceEngine {
             return 0;
         } catch (IOException | InterruptedException ex) {
             logger.catching(method, ex);
-            return 1;//connection error
+            throw ex;
         }
     }
 }

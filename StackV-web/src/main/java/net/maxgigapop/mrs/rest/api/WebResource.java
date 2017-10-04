@@ -69,6 +69,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -212,7 +213,7 @@ public class WebResource {
     @Path(value = "/acl/{refUUID}")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("ACL")
-    public void addACLEntry(@PathParam("refUUID") String refUUID, final String subject) {
+    public void addACLEntry(@PathParam("refUUID") String refUUID, final String subject) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -239,6 +240,7 @@ public class WebResource {
             logger.end(method);
         } catch (SQLException ex) {
             logger.catching("addACLEntry", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -262,7 +264,7 @@ public class WebResource {
     @Path(value = "/acl/{refUUID}")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("ACL")
-    public void removeACLEntry(@PathParam("refUUID") String refUUID, final String subject) {
+    public void removeACLEntry(@PathParam("refUUID") String refUUID, final String subject) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -288,6 +290,7 @@ public class WebResource {
             logger.end(method);
         } catch (SQLException ex) {
             logger.catching("removeACLEntry", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -318,7 +321,7 @@ public class WebResource {
     @Path("/acl/{refUuid}")
     @Produces("application/json")
     @RolesAllowed("ACL")
-    public ArrayList<ArrayList<String>> getACLwithInfo(@PathParam("refUuid") String refUUID) {
+    public ArrayList<ArrayList<String>> getACLwithInfo(@PathParam("refUuid") String refUUID) throws SQLException, IOException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -343,6 +346,7 @@ public class WebResource {
                 }
             } catch (SQLException ex) {
                 logger.catching("getACLwithInfo", ex);
+                throw ex;
             } finally {
                 commonsClose(front_conn, prep, rs);
             }
@@ -390,7 +394,7 @@ public class WebResource {
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getACLwithInfo", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -419,7 +423,7 @@ public class WebResource {
     @Consumes("application/json")
     @Produces("text/plain")
     @RolesAllowed("Drivers")
-    public String installDriver(final String dataInput) throws SQLException, ParseException {
+    public String installDriver(final String dataInput) throws SQLException, IOException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
@@ -444,7 +448,7 @@ public class WebResource {
             }
         } catch (IOException ex) {
             logger.catching("installDriver", ex);
-            return "PLUGIN FAILED: Exception" + ex;
+            throw ex;
         }
 
         return "PLUGIN SUCCEEDED";
@@ -470,7 +474,7 @@ public class WebResource {
     @Path("/driver/{user}/install/{topuri}")
     @Produces("text/plain")
     @RolesAllowed("Drivers")
-    public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
+    public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, IOException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
@@ -509,7 +513,7 @@ public class WebResource {
             }
         } catch (IOException ex) {
             logger.catching("installDriverProfile", ex);
-            return "PLUGIN FAILED: Exception" + ex;
+            throw ex;
         }
 
         return "PLUGIN SUCCEEDED";
@@ -539,7 +543,7 @@ public class WebResource {
     @Path("/driver/{user}/add")
     @Consumes(value = {"application/json"})
     @RolesAllowed("Drivers")
-    public void addDriver(@PathParam("user") String username, final String dataInput) {
+    public void addDriver(@PathParam("user") String username, final String dataInput) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -587,6 +591,7 @@ public class WebResource {
             }
         } catch (SQLException ex) {
             logger.catching("addDriver", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -631,7 +636,7 @@ public class WebResource {
     @DELETE
     @Path(value = "driver/{username}/delete/{topuri}")
     @RolesAllowed("Drivers")
-    public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) {
+    public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -650,7 +655,7 @@ public class WebResource {
             return "Deleted";
         } catch (SQLException ex) {
             logger.catching("deleteDriverProfile", ex);
-            return "Failed";
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -720,7 +725,7 @@ public class WebResource {
     @Path("/driver/{user}/get")
     @Produces("application/json")
     @RolesAllowed("Drivers")
-    public ArrayList<String> getDriver(@PathParam("user") String username) {
+    public ArrayList<String> getDriver(@PathParam("user") String username) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -747,7 +752,7 @@ public class WebResource {
             return list;
         } catch (SQLException ex) {
             logger.catching("getDriver", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -779,7 +784,7 @@ public class WebResource {
     @Path("/keycloak/users")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getUsers() {
+    public ArrayList<ArrayList<String>> getUsers() throws IOException, ParseException {
         try {
             String method = "getUsers";
             logger.trace_start(method);
@@ -828,7 +833,7 @@ public class WebResource {
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getUsers", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -837,7 +842,7 @@ public class WebResource {
     @Path("/keycloak/groups/{group}")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public void addGroupRole(@PathParam("group") String subject, final String inputString) {
+    public void addGroupRole(@PathParam("group") String subject, final String inputString) throws IOException, ParseException {
         try {
             String method = "addGroupRole";
             logger.start(method);
@@ -867,6 +872,7 @@ public class WebResource {
             logger.trace("addGroupRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("addGroupRole", ex);
+            throw ex;
         }
     }
 
@@ -875,7 +881,7 @@ public class WebResource {
     @Path("keycloak/groups/{group}")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public void removeGroupRole(@PathParam("group") String subject, final String inputString) {
+    public void removeGroupRole(@PathParam("group") String subject, final String inputString) throws IOException, ParseException {
         try {
             String method = "removeGroupRole";
             logger.start(method);
@@ -902,6 +908,7 @@ public class WebResource {
             logger.trace("removeGroupRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("removeGroupRole", ex);
+            throw ex;
         }
     }
 
@@ -910,7 +917,7 @@ public class WebResource {
     @Path("keycloak/roles/{role}")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject) {
+    public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject) throws IOException, ParseException {
         String name = subject;
         try {
             String method = "getRoleData";
@@ -956,7 +963,7 @@ public class WebResource {
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getRoleData", ex);
-            return null;
+            throw ex;
         }
 
     }
@@ -966,7 +973,7 @@ public class WebResource {
     @Path("/keycloak/groups/{group}")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getGroupRoles(@PathParam("group") String subject) {
+    public ArrayList<ArrayList<String>> getGroupRoles(@PathParam("group") String subject) throws IOException, ParseException {
         try {
             String method = "getGroupRoles";
             logger.trace_start(method);
@@ -1004,7 +1011,7 @@ public class WebResource {
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getGroupRoles", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -1030,7 +1037,7 @@ public class WebResource {
     @Path("/keycloak/groups")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getGroups() {
+    public ArrayList<ArrayList<String>> getGroups() throws IOException, ParseException {
         try {
             String method = "getGroups";
             logger.trace_start(method);
@@ -1068,7 +1075,7 @@ public class WebResource {
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getGroups", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -1094,7 +1101,7 @@ public class WebResource {
     @Path("/keycloak/roles")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getRoles() {
+    public ArrayList<ArrayList<String>> getRoles() throws IOException, ParseException {
         try {
             String method = "getRoles";
             logger.trace_start(method);
@@ -1133,7 +1140,7 @@ public class WebResource {
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getRoles", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -1160,7 +1167,7 @@ public class WebResource {
     @Path("/keycloak/users/{user}/groups")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getUserGroups(@PathParam("user") String subject) {
+    public ArrayList<ArrayList<String>> getUserGroups(@PathParam("user") String subject) throws IOException, ParseException {
         try {
             String method = "getUserGroups";
             logger.trace_start(method);
@@ -1198,7 +1205,7 @@ public class WebResource {
             return retList;
         } catch (IOException | ParseException ex) {
             logger.catching("getUserGroups", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -1222,7 +1229,7 @@ public class WebResource {
     @Path("/keycloak/users/{user}/groups")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public void addUserGroup(@PathParam("user") String subject, final String inputString) {
+    public void addUserGroup(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
         try {
             String method = "addUserGroup";
             logger.start(method);
@@ -1250,6 +1257,7 @@ public class WebResource {
             logger.trace("addUserGroup", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("addUserGroup", ex);
+            throw ex;
         }
     }
 
@@ -1273,7 +1281,7 @@ public class WebResource {
     @Path("/keycloak/users/{user}/groups")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public void removeUserGroup(@PathParam("user") String subject, final String inputString) {
+    public void removeUserGroup(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
         try {
             String method = "removeUserGroup";
             logger.start(method);
@@ -1301,6 +1309,7 @@ public class WebResource {
             logger.trace("removeUserGroup", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("removeUserGroup", ex);
+            throw ex;
         }
     }
 
@@ -1328,7 +1337,7 @@ public class WebResource {
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public ArrayList<ArrayList<String>> getUserRoles(@PathParam("user") String subject) {
+    public ArrayList<ArrayList<String>> getUserRoles(@PathParam("user") String subject) throws IOException, ParseException {
         try {
             String method = "getUserRoles";
             logger.trace_start(method);
@@ -1426,7 +1435,7 @@ public class WebResource {
 
         } catch (IOException | ParseException ex) {
             logger.catching("getUserRoles", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -1450,7 +1459,7 @@ public class WebResource {
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public void addUserRole(@PathParam("user") String subject, final String inputString) {
+    public void addUserRole(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
         try {
             String method = "addUserRole";
             logger.start(method);
@@ -1478,6 +1487,7 @@ public class WebResource {
             logger.trace("addUserRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("addUserRole", ex);
+            throw ex;
         }
     }
 
@@ -1501,7 +1511,7 @@ public class WebResource {
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
     @RolesAllowed("Keycloak")
-    public void removeUserRole(@PathParam("user") String subject, final String inputString) {
+    public void removeUserRole(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
         try {
             String method = "removeUserRole";
             logger.start(method);
@@ -1529,6 +1539,7 @@ public class WebResource {
             logger.trace("removeUserRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
             logger.catching("removeUserRole", ex);
+            throw ex;
         }
     }
 
@@ -1552,7 +1563,7 @@ public class WebResource {
     @Path("/label/{user}")
     @Produces("application/json")
     @RolesAllowed("Labels")
-    public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) {
+    public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -1581,7 +1592,7 @@ public class WebResource {
             return retList;
         } catch (SQLException ex) {
             logger.catching("getLabels", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -1607,7 +1618,7 @@ public class WebResource {
     @Path(value = "/label")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("Labels")
-    public String label(final String inputString) {
+    public String label(final String inputString) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -1645,7 +1656,7 @@ public class WebResource {
             return "Added";
         } catch (SQLException ex) {
             logger.catching("label", ex);
-            return "Failed";
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -1670,7 +1681,7 @@ public class WebResource {
     @DELETE
     @Path(value = "/label/{username}/delete/{identifier}")
     @RolesAllowed("Labels")
-    public String deleteLabel(@PathParam(value = "username") String username, @PathParam(value = "identifier") String identifier) {
+    public String deleteLabel(@PathParam(value = "username") String username, @PathParam(value = "identifier") String identifier) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -1692,7 +1703,7 @@ public class WebResource {
             return "Deleted";
         } catch (SQLException ex) {
             logger.catching("deleteLabel", ex);
-            return "Failed";
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -1716,7 +1727,7 @@ public class WebResource {
     @DELETE
     @Path(value = "/label/{username}/clearall")
     @RolesAllowed("Labels")
-    public String clearLabels(@PathParam(value = "username") String username) {
+    public String clearLabels(@PathParam(value = "username") String username) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -1737,7 +1748,7 @@ public class WebResource {
             return "Labels Cleared";
         } catch (SQLException ex) {
             logger.catching("clearLabels", ex);
-            return "Failed";
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -1848,7 +1859,7 @@ public class WebResource {
     @Path("/logging/logs")
     @Produces("application/json")
     @RolesAllowed("Logging")
-    public String getLogs(@QueryParam("refUUID") String refUUID, @QueryParam("level") String level) {
+    public String getLogs(@QueryParam("refUUID") String refUUID, @QueryParam("level") String level) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -1927,7 +1938,7 @@ public class WebResource {
             return null;
         } catch (SQLException ex) {
             logger.catching(method, ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -1953,7 +1964,7 @@ public class WebResource {
     @Path("/manifest/{svcUUID}")
     @Produces("application/json")
     @RolesAllowed("Manifests")
-    public String getManifest(@PathParam("svcUUID") String svcUUID) {
+    public String getManifest(@PathParam("svcUUID") String svcUUID) throws SQLException {
         logger.refuuid(svcUUID);
         String method = "getManifest";
         logger.trace_start(method);
@@ -1979,7 +1990,7 @@ public class WebResource {
                 serviceType = rs.getString("name");
             }
         } catch (SQLException ex) {
-            //Logger.getLogger(WebResource.class.getName()).log(Level.SEVERE, null, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2035,7 +2046,7 @@ public class WebResource {
     @Path("/manifest/{svcUUID}")
     @Produces("application/xml")
     @RolesAllowed("Manifests")
-    public String getManifestXml(@PathParam("svcUUID") String svcUUID) {
+    public String getManifestXml(@PathParam("svcUUID") String svcUUID) throws SQLException {
         logger.refuuid(svcUUID);
         String manifestJStr = getManifest(svcUUID);
         org.json.JSONObject obj = new org.json.JSONObject(manifestJStr);
@@ -2048,7 +2059,7 @@ public class WebResource {
     @Path("/panel/{userId}/instances")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public ArrayList<ArrayList<String>> loadInstances(@PathParam("userId") String userId) {
+    public ArrayList<ArrayList<String>> loadInstances(@PathParam("userId") String userId) throws SQLException, IOException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2105,6 +2116,7 @@ public class WebResource {
                         retList.add(instanceList);
                     } catch (IOException ex) {
                         logger.catching("loadInstances", ex);
+                        throw ex;
                     }
                 }
             }
@@ -2112,7 +2124,7 @@ public class WebResource {
             return retList;
         } catch (SQLException ex) {
             logger.catching("loadInstances", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2122,7 +2134,7 @@ public class WebResource {
     @Path("/panel/{userId}/wizard")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public ArrayList<ArrayList<String>> loadWizard(@PathParam("userId") String userId) {
+    public ArrayList<ArrayList<String>> loadWizard(@PathParam("userId") String userId) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2165,7 +2177,7 @@ public class WebResource {
             return retList;
         } catch (SQLException ex) {
             logger.catching("loadWizard", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2201,7 +2213,7 @@ public class WebResource {
     @Path("/panel/{refUuid}/acl")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public ArrayList<String> loadObjectACL(@PathParam("refUuid") String refUuid) {
+    public ArrayList<String> loadObjectACL(@PathParam("refUuid") String refUuid) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2224,7 +2236,7 @@ public class WebResource {
             return retList;
         } catch (SQLException ex) {
             logger.catching("loadObjectACL", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2234,7 +2246,7 @@ public class WebResource {
     @Path("/panel/acl")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public ArrayList<String> loadSubjectACL() {
+    public ArrayList<String> loadSubjectACL() throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2261,7 +2273,7 @@ public class WebResource {
             return retList;
         } catch (SQLException ex) {
             logger.catching("loadObjectACL", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2271,7 +2283,7 @@ public class WebResource {
     @Path("/details/{uuid}/instance")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public ArrayList<String> loadInstanceDetails(@PathParam("uuid") String uuid) {
+    public ArrayList<String> loadInstanceDetails(@PathParam("uuid") String uuid) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2303,7 +2315,7 @@ public class WebResource {
             return retList;
         } catch (SQLException ex) {
             logger.catching("loadInstanceDetails", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2345,7 +2357,7 @@ public class WebResource {
             return retList;
         } catch (SQLException ex) {
             logger.catching("loadInstanceDelta", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2354,7 +2366,7 @@ public class WebResource {
     @Path("/details/{uuid}/verification")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public ArrayList<String> loadInstanceVerification(@PathParam("uuid") String uuid) {
+    public ArrayList<String> loadInstanceVerification(@PathParam("uuid") String uuid) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2386,7 +2398,7 @@ public class WebResource {
             return retList;
         } catch (SQLException ex) {
             logger.catching("loadInstanceVerification", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2396,7 +2408,7 @@ public class WebResource {
     @Path("/details/{uuid}/acl")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public ArrayList<String> loadInstanceACL(@PathParam("uuid") String uuid) {
+    public ArrayList<String> loadInstanceACL(@PathParam("uuid") String uuid) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2420,7 +2432,7 @@ public class WebResource {
             return retList;
         } catch (SQLException ex) {
             logger.catching("loadInstanceACL", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2430,7 +2442,7 @@ public class WebResource {
     @Path("/service/lastverify/{siUUID}")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public HashMap<String, String> getVerificationResults(@PathParam("siUUID") String serviceUUID) {
+    public HashMap<String, String> getVerificationResults(@PathParam("siUUID") String serviceUUID) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2461,7 +2473,7 @@ public class WebResource {
 
         } catch (SQLException ex) {
             logger.catching("getVerificationResults", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2519,7 +2531,7 @@ public class WebResource {
 
         } catch (SQLException ex) {
             logger.catching("getVerificationResultsUnion", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2546,7 +2558,7 @@ public class WebResource {
     @Path("/profile/{wizardID}")
     @Produces("application/json")
     @RolesAllowed("Profiles")
-    public String getProfile(@PathParam("wizardID") int wizardID) {
+    public String getProfile(@PathParam("wizardID") int wizardID) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2570,7 +2582,7 @@ public class WebResource {
             return "";
         } catch (SQLException ex) {
             logger.catching("getProfile", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2593,7 +2605,7 @@ public class WebResource {
     @PUT
     @Path("/profile/{wizardID}/edit")
     @RolesAllowed("Profiles")
-    public void editProfile(@PathParam("wizardID") int wizardId, final String inputString) {
+    public void editProfile(@PathParam("wizardID") int wizardId, final String inputString) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2615,6 +2627,7 @@ public class WebResource {
             logger.end(method);
         } catch (SQLException ex) {
             logger.catching("editProfile", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2636,7 +2649,7 @@ public class WebResource {
     @PUT
     @Path("/profile/new")
     @RolesAllowed("Profiles")
-    public String newProfile(final String inputString) {
+    public String newProfile(final String inputString) throws SQLException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2675,7 +2688,7 @@ public class WebResource {
             return null;
         } catch (SQLException | ParseException ex) {
             logger.catching("newProfile", ex);
-            return ex.toString();
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -2696,7 +2709,7 @@ public class WebResource {
     @DELETE
     @Path("/profile/{wizardId}")
     @RolesAllowed("Profiles")
-    public void deleteProfile(@PathParam("wizardId") int wizardId) {
+    public void deleteProfile(@PathParam("wizardId") int wizardId) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2716,31 +2729,21 @@ public class WebResource {
             logger.end(method);
         } catch (SQLException ex) {
             logger.catching("deleteProfile", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
     }
 
-    // >Services
-    /**
-     * @api {get} /app/intent/drivers Get Drivers
-     * @apiVersion 1.0.0
-     * @apiDescription Retrieve list of available drivers for the intent layer
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     *
-     */
+    // >Services   
     @GET
-    @Path("/intent/drivers")
+    @Path("/test")
     @Produces("application/json")
     @RolesAllowed("Services")
-    public ArrayList<String> getDrivers() {
+    public ArrayList<String> serviceTest() throws IOException {
         ArrayList<String> retList = new ArrayList<>();
 
-        retList.add("test1");
-        retList.add("test2");
-
-        return retList;
+        throw new IOException();
     }
 
     /**
@@ -2762,7 +2765,7 @@ public class WebResource {
     @GET
     @Path("/service/{siUUID}/status")
     @RolesAllowed("Services")
-    public String checkStatus(@PathParam("siUUID") String refUUID) {
+    public String checkStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
 
@@ -2790,7 +2793,7 @@ public class WebResource {
     @GET
     @Path("/service/{siUUID}/substatus")
     @RolesAllowed("Services")
-    public String subStatus(@PathParam("siUUID") String refUUID) {
+    public String subStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
 
@@ -2816,8 +2819,8 @@ public class WebResource {
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("Services")
-    public String createService(final String inputString) {
-        String method = "createService";
+    public String createService(final String inputString) throws IOException, EJBException, SQLException {
+        final String method = "createService";
         try {
             System.out.println("Creation Input: " + inputString);
             logger.start(method, "Thread:" + Thread.currentThread());
@@ -2841,7 +2844,7 @@ public class WebResource {
                 refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
             } catch (IOException ex) {
                 logger.catching("doCreateService", ex);
-                return null;
+                throw ex;
             }
 
             if (roleSet.contains(serviceType)) {
@@ -2851,19 +2854,34 @@ public class WebResource {
                 inputJSON.put("uuid", refUUID);
                 ((JSONObject) inputJSON.get("data")).put("uuid", refUUID);
 
+                String sync = (String) inputJSON.get("synchronous");
                 String proceed = (String) inputJSON.get("proceed");
-                if (proceed != null && proceed.equals("true")) {
+                if (sync != null && sync.equals("true")) {
+                    if (proceed != null && proceed.equals("true")) {
+                        doCreateService(inputJSON, token, refUUID, true);
+                    } else {
+                        doCreateService(inputJSON, token, refUUID, false);
+                    }
+                } else if (proceed != null && proceed.equals("true")) {
                     executorService.execute(new Runnable() {
                         @Override
                         public void run() {
-                            doCreateService(inputJSON, token, refUUID, true);
+                            try {
+                                doCreateService(inputJSON, token, refUUID, true);
+                            } catch (SQLException ex) {
+                                logger.catching(method, ex);
+                            }
                         }
                     });
                 } else {
                     executorService.execute(new Runnable() {
                         @Override
                         public void run() {
-                            doCreateService(inputJSON, token, refUUID, false);
+                            try {
+                                doCreateService(inputJSON, token, refUUID, false);
+                            } catch (SQLException ex) {
+                                logger.catching(method, ex);
+                            }
                         }
                     });
                 }
@@ -2876,7 +2894,7 @@ public class WebResource {
         } catch (ParseException ex) {
             logger.catching(method, ex);
             return null;
-        }        
+        }
     }
 
     /**
@@ -2893,7 +2911,7 @@ public class WebResource {
     @GET
     @Path(value = "/service")
     @RolesAllowed("Services")
-    public String initService() {
+    public String initService() throws IOException {
         String method = "initService";
         logger.trace_start(method);
         try {
@@ -2908,7 +2926,7 @@ public class WebResource {
             return refUUID;
         } catch (IOException ex) {
             logger.catching(method, ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -2940,17 +2958,35 @@ public class WebResource {
             final String action) {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
-        String method = "operate";
+        final String method = "operate";
         logger.trace_start(method, "Thread:" + Thread.currentThread());
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-                doOperate(refUuid, action, token);
+                try {
+                    doOperate(refUuid, action, token);
+                } catch (SQLException | IOException | InterruptedException ex) {
+                    logger.catching(method, ex);
+                }
             }
         });
         logger.trace_end(method);
     }
-    
+
+    @PUT
+    @Path(value = "/service/{siUUID}/{action}/sync")
+    @RolesAllowed("Services")
+    public void operateSync(@PathParam(value = "siUUID")
+            final String refUuid, @PathParam(value = "action")
+            final String action) throws SQLException, InterruptedException, IOException {
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
+        String method = "operate";
+        logger.trace_start(method, "Thread:" + Thread.currentThread());
+        doOperate(refUuid, action, token);
+        logger.trace_end(method);
+    }
+
     /**
      * @api {delete} /app/service/:siUUID/ Delete Service
      * @apiVersion 1.0.0
@@ -2966,22 +3002,17 @@ public class WebResource {
     @DELETE
     @Path(value = "/service/{siUUID}/{action}")
     @RolesAllowed("Services")
-    public void delete(@PathParam(value = "siUUID") final String refUuid) {
+    public void delete(@PathParam(value = "siUUID") final String refUuid) throws SQLException, IOException, InterruptedException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         String method = "operate";
         logger.trace_start(method, "Thread:" + Thread.currentThread());
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                doOperate(refUuid, "delete", token);
-            }
-        });
+        doOperate(refUuid, "delete", token);
         logger.trace_end(method);
     }
 
     // Async Methods -----------------------------------------------------------
-    private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) {
+    private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) throws EJBException, SQLException {
         TemplateEngine template = new TemplateEngine();
 
         System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
@@ -2994,7 +3025,7 @@ public class WebResource {
         ServiceHandler instance = new ServiceHandler(inputJSON, token, refUUID, autoProceed);
     }
 
-    private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, TokenHandler token) {
+    private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, TokenHandler token) throws SQLException, IOException, InterruptedException {
         ServiceHandler instance = new ServiceHandler(refUUID, token);
         instance.operate(action);
 
@@ -3005,7 +3036,7 @@ public class WebResource {
     @Path("/delta/{siUUID}")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public String getDeltaBacked(@PathParam("siUUID") String serviceUUID) {
+    public String getDeltaBacked(@PathParam("siUUID") String serviceUUID) throws IOException, SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -3033,7 +3064,7 @@ public class WebResource {
             }
         } catch (IOException | SQLException ex) {
             logger.catching("getDeltaBacked", ex);
-            return null;
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }

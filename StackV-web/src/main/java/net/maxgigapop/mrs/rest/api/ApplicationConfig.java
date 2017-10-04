@@ -24,12 +24,8 @@
 package net.maxgigapop.mrs.rest.api;
 
 import java.util.Set;
-import javax.ejb.EJBException;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
 
 /**
  *
@@ -48,16 +44,19 @@ public class ApplicationConfig extends Application {
 
 
     private void addExceptionMapperClasses(Set<Class<?>> resources) {
-        resources.add(net.maxgigapop.mrs.rest.api.EJBExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);
     }
 
     private void addRestResourceClasses(Set<Class<?>> resources) {
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
-        resources.add(net.maxgigapop.mrs.rest.api.EJBExceptionMapper.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.SecurityInterceptor.class);
         resources.add(net.maxgigapop.mrs.rest.api.ServiceResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.WebResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.IOExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.ParseExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.SQLExceptionMapper.class);
     }
 }
