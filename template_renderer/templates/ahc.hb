@@ -149,14 +149,30 @@
     a            spa:PolicyData;
     spa:type     "JSON";
     spa:format   """ {
-       "stitch_from": "urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../../name}}", {{!TODO ensure every reference to 'name' is in correct context}}
+       "stitch_from": "urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../../name}}",
        "to_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{../name}}%%,
        "mac_address": "{{sriovMac ../address}}"
         {{sriovIP ../address}}
                                 {{#if connects}}
-        ,   "routes" : {{toJSON connects}} {{!TODO same as above }}
+        ,   "routes" : {{toJSON connects}} 
                                 {{/if}}
         } """ .
+
+                            {{#if_eq type 'peer_cloud'}}
+&lt;x-policy-annotation:data:aws-ops-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
+    spa:value    """{
+        "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
+        "{{@root.parent}}":{"vlan_tag":"any"},
+
+        {{!TODO peer_cloud (helper?) }}
+
+        }
+    }""".
+                            {{/if_eq}}
+
+        {{!TODO quagga}}
                         {{/if_eq}}
                         {{#if_eq type 'UCS Port Profile'}}
                         {{log this}}
