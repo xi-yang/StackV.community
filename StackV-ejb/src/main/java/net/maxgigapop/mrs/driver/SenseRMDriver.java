@@ -259,12 +259,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             String version = null;
             String ttlModel = null;
             String creationTimeStr = null;
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
-            dateFormatter.setTimeZone(TimeZone.getTimeZone("GMT"));
+            SimpleDateFormat r1123Formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+            r1123Formatter.setTimeZone(TimeZone.getTimeZone("GMT"));
             try {
                 String lastModified = null;
                 if (driverInstance.getHeadVersionItem() != null) {
-                    lastModified = dateFormatter.format(driverInstance.getHeadVersionItem().getModelRef().getCreationTime());
+                    lastModified = r1123Formatter.format(driverInstance.getHeadVersionItem().getModelRef().getCreationTime());
                 }
                 // pull model from REST API
                 URL url = new URL(subsystemBaseUrl + "/models?current=true");
@@ -326,7 +326,8 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 dm = new DriverModel();
                 dm.setCommitted(true);
                 dm.setOntModel(ontModel);
-                Date creationTime = dateFormatter.parse(creationTimeStr);
+                SimpleDateFormat iso8601Formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+                Date creationTime = iso8601Formatter.parse(creationTimeStr);
                 dm.setCreationTime(creationTime);
                 ModelPersistenceManager.save(dm);
                 vi = new VersionItem();
