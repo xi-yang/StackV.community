@@ -326,7 +326,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 dm = new DriverModel();
                 dm.setCommitted(true);
                 dm.setOntModel(ontModel);
-                SimpleDateFormat iso8601Formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+                SimpleDateFormat iso8601Formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
                 Date creationTime = iso8601Formatter.parse(creationTimeStr);
                 dm.setCreationTime(creationTime);
                 ModelPersistenceManager.save(dm);
