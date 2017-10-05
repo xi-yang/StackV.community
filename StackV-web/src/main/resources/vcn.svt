@@ -209,21 +209,6 @@
                     mrs:value     "{{floating_ip}}".
             {{/if floating_ip}}
 
-            {{$if ceph_rbd}} {{/ CEPH Needs to be included in portal manifest }}
-                {{#ceph_rbd}}
-                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
-                       a  mrs:Volume;
-                       mrs:disk_gb "{{disk_gb}}";
-                       mrs:mount_point "{{mount_point}}".
-                {{/ceph_rbd}}
-                &lt;{{VMTag}}&gt;
-                   mrs:hasVolume
-                {{#ceph_rbd}} {{/ ensure that ceph_rbd blocks will be handled in same order regardless of when called, if not, need to make a helper}}
-                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$unless ^last}},{{/unless ^last}}
-                {{/ceph_rbd}}
-                .
-            {{/if ceph_rbd}}
-
             &lt;x-policy-annotation:action:create-{{name}}&gt;
                 a            spa:PolicyAction ;
                 spa:type     "MCE_VMFilterPlacement" ;
@@ -255,22 +240,28 @@
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#ceph_rbds}}
-                &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
-                   a  mrs:Volume;
-                   mrs:disk_gb "{{size}}" ;
-                   mrs:mount_point "{{mount_point}}" .
+                {{$if size}}
+                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
+                       a  mrs:Volume;
+                       mrs:disk_gb "{{size}}" ;
+                       mrs:mount_point "{{mount_point}}" .
+                {{/if size}}
             {{/ceph_rbds}}
             {{$if ceph_rbds}}
                 &lt;{{VMTag}}&gt;
                     mrs:hasVolume
                     {{#ceph_rbds}}
-                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
+                        {{$if size}}
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
+                        {{/if size}}
                     {{/ceph_rbds}}
 
                 &lt;{{@parent}}:ceph-rbd&gt;
                     mrs:providesVolume 
                     {{#ceph_rbds}}
-                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
+                        {{$if size}}
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
+                        {{/if size}}
                     {{/ceph_rbds}}
             {{/if ceph_rbds}}            
         {{/vms}}
