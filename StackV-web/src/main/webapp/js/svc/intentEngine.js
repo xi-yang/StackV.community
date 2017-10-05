@@ -381,7 +381,7 @@ function renderInputs(arr, $parent) {
                 } else {
                     parentName = ele.parentElement.parentElement.getAttribute("name");
                 }
-                
+
                 $input.attr("data-name", parentName + "_1");
                 $input.val(parentName + "_1");
             }
@@ -913,12 +913,12 @@ function constructID(ele) {
     if (ele.nodeName === "input") {
         retString = ele.children[0].innerHTML;
     }
-        
+
     while (ele.nodeName !== "stage") {
         ele = ele.parentElement;
         if (ele.getAttribute("passthrough") === null) {
             retString = ele.getAttribute("name") + "-" + retString;
-        }        
+        }
     }
     return retString.replace(/ /g, "_").toLowerCase();
 }
@@ -1106,7 +1106,8 @@ function refreshNames() {
             var name = $input.data("name");
 
             var $parent = $input.parent();
-            while (!$parent.hasClass("intent-group-div")) {
+            var nameReg = new RegExp("_num\\d+$");
+            while (!$parent.hasClass("intent-group-div") || !nameReg.test($parent.attr("id"))) {
                 $parent = $parent.parent();
                 if (!$parent)
                     return;
@@ -1195,41 +1196,40 @@ function parseManifestIntoJSON() {
     // Step 1: Reorg hierarchy
     $(intent).find("path").each(function () {
         var arr = this.children;
-        for (var i = 0; i < arr.length; i++) {
-            var target = arr[i].innerHTML.toLowerCase().replace(/ /g, "_");
-            var eleName = this.parentElement.getAttribute("name");
 
-            // Find element(s) in manifest
-            recurCache = [];
-            findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+        var target = arr[0].innerHTML.toLowerCase().replace(/ /g, "_");
+        var eleName = this.parentElement.getAttribute("name");
 
-            for (var key in recurCache) {
-                var ele = recurCache[key];
-                // Find target
-                if (target === "root") {
-                    for (var child in ele) {
-                        manifest[child] = ele[child];
-                    }
+        // Find element(s) in manifest
+        recurCache = [];
+        findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+
+        for (var key in recurCache) {
+            var ele = recurCache[key];
+            // Find target
+            if (target === "root") {
+                for (var child in ele) {
+                    manifest[child] = ele[child];
+                }
+            } else {
+                var targetEle = findKeyDeep(manifest, ele[target]);
+                if (targetEle) {
+                    // Input link path
+                    delete ele[target];
+                    targetEle[key] = ele;
                 } else {
-                    var targetEle = findKeyDeep(manifest, ele[target]);
-                    if (targetEle) {
-                        // Input link path
-                        delete ele[target];
-                        targetEle[key] = ele;
-                    } else {
-                        // Explicit JSON path
-                        var pathArr = target.split("/");
+                    // Explicit JSON path
+                    var pathArr = target.split("/");
 
-                        var obj = manifest;
-                        for (var j = 0; j < pathArr.length; j++) {
-                            if (!(pathArr[j] in obj)) {
-                                obj[pathArr[j]] = {};
-                            }
-                            obj = obj[pathArr[j]];
+                    var obj = manifest;
+                    for (var j = 0; j < pathArr.length; j++) {
+                        if (!(pathArr[j] in obj)) {
+                            obj[pathArr[j]] = {};
                         }
-
-                        obj[key] = ele;
+                        obj = obj[pathArr[j]];
                     }
+
+                    obj[key] = ele;
                 }
             }
         }
@@ -1247,6 +1247,8 @@ function parseManifestIntoJSON() {
     trimLeaves(manifest);
 
     // Step 4: Finishing and initialization
+    renamePathing();
+
     var newManifest = {};
     newManifest["data"] = manifest;
     manifest = newManifest;
@@ -1450,6 +1452,15 @@ function trimLeaves(recur) {
             delete recur[prop];
         }
     }
+}
+
+function renamePathing() {
+    $(intent).find("path").each(function () {
+        if (this.getElementsByTagName("name").length > 0) {
+            var nameArr = this.getElementsByTagName("name")[0].innerHTML.split("::");
+            manifest = JSON.parse(JSON.stringify(manifest).replace(nameArr[0],nameArr[1]));
+        }
+    });
 }
 
 // Find closest input with generic name matching key

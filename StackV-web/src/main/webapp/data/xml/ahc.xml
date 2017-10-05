@@ -156,7 +156,8 @@
         <group name="AWS" passthrough="true">
             <group name="AWS Subnet" block="aws-subnets" collapsible="true" >
                 <path>
-                    <parent>aws</parent>                
+                    <parent>aws</parent>  
+                    <name>aws_subnet::subnet</name>                                                  
                 </path>
             
                 <input>
@@ -200,7 +201,8 @@
         <group name="Openstack" passthrough="true">
             <group name="OpenStack Subnet" block="ops-subnets" collapsible="true">
                 <path>
-                    <parent>openstack</parent>                                    
+                    <parent>openstack</parent>
+                    <name>openstack_subnet::subnet</name>                                    
                 </path>
             
                 <input>
@@ -282,7 +284,8 @@
         <group name="Openstack" passthrough="true">   
             <group block="ops-vms" name="OpenStack VM" collapsible="true">
                 <path>
-                    <parent>subnet host</parent>                
+                    <parent>subnet host</parent>  
+                    <name>openstack_vm::vm</name>                             
                 </path>
             
                 <input>
@@ -400,7 +403,7 @@
             <input>
                 <name>Hosting Gateway</name>
                 <type>select</type>
-                <link>gateways</link>
+                <link nameVal="true">gateways</link>
                 <valid>select</valid>
             </input>  
             <input>
