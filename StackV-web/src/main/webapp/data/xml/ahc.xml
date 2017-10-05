@@ -111,7 +111,7 @@
                 <valid>cidr</valid>
             </input>
         </group>
-        <group name="Inter-Cloud">
+        <group name="Intercloud">
             <group name="BGP" collapsible="true">                            
                 <input>
                     <name>VM Host</name>
@@ -153,193 +153,202 @@
         </group>
     </stage>
     <stage name="Subnets">
-        <group name="AWS Subnet" block="aws-subnets" collapsible="true" >
-            <path>
-                <parent>aws</parent>                
-            </path>
+        <group name="AWS" passthrough="true">
+            <group name="AWS Subnet" block="aws-subnets" collapsible="true" >
+                <path>
+                    <parent>aws</parent>                
+                </path>
             
-            <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>CIDR</name>
-                <type>text</type>
-                <default first_only="true">10.0.0.0/24</default>
-                <valid>cidr</valid>
-            </input>
-            <input>
-                <name>Internet Routable</name>
-                <type>checkbox</type>
-            </input>
-            <group factory="true" name="route" label="off">
                 <input>
-                    <name>From</name>
+                    <name>Name</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>To</name>
+                    <name>CIDR</name>
                     <type>text</type>
-                    <valid>string</valid>
+                    <default first_only="true">10.0.0.0/24</default>
+                    <valid>cidr</valid>
                 </input>
                 <input>
-                    <name>Next Hop</name>
-                    <type>text</type>
-                    <valid>string</valid>
+                    <name>Internet Routable</name>
+                    <type>checkbox</type>
                 </input>
-                <input>
-                    <name>Type</name>
-                    <type>text</type>
-                </input>
+                <group factory="true" name="route" label="off">
+                    <input>
+                        <name>From</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>To</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Next Hop</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Type</name>
+                        <type>text</type>
+                    </input>
+                </group>
             </group>
         </group>
-        <group name="OpenStack Subnet" block="ops-subnets" collapsible="true">
-            <path>
-                <parent>openstack</parent>                
-            </path>
+        <group name="Openstack" passthrough="true">
+            <group name="OpenStack Subnet" block="ops-subnets" collapsible="true">
+                <path>
+                    <parent>openstack</parent>                                    
+                </path>
             
-            <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>CIDR</name>
-                <type>text</type>
-                <default first_only="true">10.1.0.0/16</default>
-                <valid>cidr</valid>
-            </input>
-            <group factory="true" name="route" label="off">
                 <input>
-                    <name>From</name>
+                    <name>Name</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>To</name>
+                    <name>CIDR</name>
                     <type>text</type>
-                    <valid>string</valid>
+                    <default first_only="true">10.1.0.0/16</default>
+                    <valid>cidr</valid>
                 </input>
-                <input>
-                    <name>Next Hop</name>
-                    <type>text</type>
-                    <valid>string</valid>
-                </input>
-                <input>
-                    <name>Type</name>
-                    <type>text</type>
-                </input>
+                <group factory="true" name="route" label="off">
+                    <input>
+                        <name>From</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>To</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Next Hop</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Type</name>
+                        <type>text</type>
+                    </input>
+                </group>
             </group>
         </group>
     </stage>        
     <stage name="VMs">
-        <group block="aws-vms" name="AWS VM" collapsible="true">
-            <path>
-                <parent>subnet host</parent>                
-            </path>
+        <group name="AWS" passthrough="true">
+            <group block="aws-vms" name="AWS VM" collapsible="true">
+                <path>
+                    <parent>subnet host</parent> 
+                    <name>aws_vm::vm</name>               
+                </path>
             
-            <input>
-                <name>Subnet Host</name>
-                <type>select</type>
-                <link>aws-subnets</link>
-                <valid>select</valid>
-            </input>      
-            <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>                              
-            <input>
-                <name>Keypair Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Security Group</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Image</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Instance Type</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>           
-        </group>        
-        <group block="ops-vms" name="OpenStack VM" collapsible="true">
-            <path>
-                <parent>subnet host</parent>                
-            </path>
+                <input>
+                    <name>Subnet Host</name>
+                    <type>select</type>
+                    <link>aws-subnets</link>
+                    <valid>select</valid>
+                </input>      
+                <input>
+                    <name>Name</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>                              
+                <input>
+                    <name>Keypair Name</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Security Group</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Image</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Instance Type</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>           
+            </group>     
+        </group>
+        <group name="Openstack" passthrough="true">   
+            <group block="ops-vms" name="OpenStack VM" collapsible="true">
+                <path>
+                    <parent>subnet host</parent>                
+                </path>
             
-            <input>
-                <name>Subnet Host</name>
-                <type>select</type>
-                <link>ops-subnets</link>
-                <valid>select</valid>
-            </input>
-            <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>                        
-            <input>
-                <name>Keypair Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Security Group</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Image</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Instance Type</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Host</name>
-                <type>text</type>               
-                <default>any</default>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Floating IP</name>
-                <type>text</type>
-                <default>any</default>
-                <valid>string</valid>
-            </input>            
-            <group factory="true" name="Route" label="off">
                 <input>
-                    <name>From</name>
+                    <name>Subnet Host</name>
+                    <type>select</type>
+                    <link>ops-subnets</link>
+                    <valid>select</valid>
+                </input>
+                <input>
+                    <name>Name</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>                        
+                <input>
+                    <name>Keypair Name</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>To</name>
+                    <name>Security Group</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>Next Hop</name>
+                    <name>Image</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>Type</name>
+                    <name>Instance Type</name>
                     <type>text</type>
+                    <valid>string</valid>
                 </input>
+                <input>
+                    <name>Host</name>
+                    <type>text</type>               
+                    <default>any</default>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Floating IP</name>
+                    <type>text</type>
+                    <default>any</default>
+                    <valid>string</valid>
+                </input>            
+                <group factory="true" name="Route" label="off">
+                    <input>
+                        <name>From</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>To</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Next Hop</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Type</name>
+                        <type>text</type>
+                    </input>
+                </group>
             </group>
         </group>
     </stage>

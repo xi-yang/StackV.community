@@ -60,7 +60,7 @@ public class ServiceHandler {
     String alias;
     String lastState = "INIT";
 
-    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) throws EJBException, SQLException {
+    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         token = initToken;
 
         createInstance(input, refUUID, autoProceed);
@@ -75,7 +75,7 @@ public class ServiceHandler {
     }
 
     // INIT METHODS
-    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) throws EJBException, SQLException {
+    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         String method = "createInstance";
         logger.refuuid(refUUID);
         Connection front_conn = null;

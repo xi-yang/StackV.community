@@ -2819,7 +2819,7 @@ public class WebResource {
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("Services")
-    public String createService(final String inputString) throws IOException, EJBException, SQLException {
+    public String createService(final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
         final String method = "createService";
         try {
             System.out.println("Creation Input: " + inputString);
@@ -2868,7 +2868,7 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, true);
-                            } catch (SQLException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -2879,7 +2879,7 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, false);
-                            } catch (SQLException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -3012,7 +3012,7 @@ public class WebResource {
     }
 
     // Async Methods -----------------------------------------------------------
-    private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) throws EJBException, SQLException {
+    private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         TemplateEngine template = new TemplateEngine();
 
         System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
