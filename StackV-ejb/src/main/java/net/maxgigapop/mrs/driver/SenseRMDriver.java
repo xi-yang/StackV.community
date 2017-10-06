@@ -267,7 +267,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     lastModified = r1123Formatter.format(driverInstance.getHeadVersionItem().getModelRef().getCreationTime());
                 }
                 // pull model from REST API
-                URL url = new URL(subsystemBaseUrl + "/models?current=true");
+                URL url = new URL(subsystemBaseUrl + "/models?current=true&summary=false&encode=false");
                 HttpURLConnection conn;
                 if (url.toString().startsWith("https:")) {
                     conn = (HttpsURLConnection) url.openConnection();
