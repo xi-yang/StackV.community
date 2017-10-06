@@ -270,9 +270,9 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 URL url = new URL(subsystemBaseUrl + "/models?current=true");
                 HttpURLConnection conn;
                 if (url.toString().startsWith("https:")) {
-                    conn = (HttpURLConnection) url.openConnection();
-                } else {
                     conn = (HttpsURLConnection) url.openConnection();
+                } else {
+                    conn = (HttpURLConnection) url.openConnection();
                 }
                 if (lastModified != null) {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
@@ -327,6 +327,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 dm.setCommitted(true);
                 dm.setOntModel(ontModel);
                 SimpleDateFormat iso8601Formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                iso8601Formatter.setTimeZone(TimeZone.getTimeZone("GMT"));
                 Date creationTime = iso8601Formatter.parse(creationTimeStr);
                 dm.setCreationTime(creationTime);
                 ModelPersistenceManager.save(dm);
