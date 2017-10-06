@@ -296,15 +296,21 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     throw logger.error_throwing(method, driverInstance + " Unexpected HTTP return code: " + response[1]);
                 }
                 JSONObject responseJSON = (JSONObject) ((JSONArray) JSONValue.parseWithException(response[0])).get(0);
-                version = responseJSON.get("id").toString();
+                if (responseJSON.containsKey("id")) {
+                    version = responseJSON.get("id").toString();
+                }
                 if (version == null || version.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty id in pulled model from SENSE-RM");
                 }
-                ttlModel = responseJSON.get("model").toString();
+                if (responseJSON.containsKey("model")) {
+                    ttlModel = responseJSON.get("model").toString();
+                }
                 if (ttlModel == null || ttlModel.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty model content from SENSE-RM");
                 }
-                creationTimeStr = responseJSON.get("creationTime").toString();
+                if (responseJSON.containsKey("creationTime")) {
+                    creationTimeStr = responseJSON.get("creationTime").toString();
+                }
                 if (creationTimeStr == null || creationTimeStr.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty creationTime from SENSE-RM");
                 }
