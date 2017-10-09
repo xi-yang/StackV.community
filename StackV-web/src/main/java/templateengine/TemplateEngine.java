@@ -1,6 +1,8 @@
 package templateengine;
 
 import java.util.HashMap;
+import java.util.regex.Pattern;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.json.simple.JSONObject;
 
 public class TemplateEngine {
@@ -59,7 +61,12 @@ public class TemplateEngine {
             }
 
             Block block = new Block(blockStr, (JSONObject) input.get("data"), (JSONObject) input.get("data"), template, new HashMap<String, String>());
-            recurBody = recurBody.replace(blockStr, block.render());
+            if (block.isInput()) {
+                recurBody = recurBody.replaceFirst(Pattern.quote(blockStr), block.render());
+            }
+            else {
+                recurBody = recurBody.replace(blockStr, block.render());
+            }
 
             start = recurBody.indexOf("{{");
         }

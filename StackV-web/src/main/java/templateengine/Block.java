@@ -2,12 +2,15 @@ package templateengine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.regex.Pattern;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 public class Block {
 
     char flag;
+    boolean isInput;
     String str;
     String body;
     String tag;
@@ -45,15 +48,18 @@ public class Block {
                 tag = body.substring(1, body.indexOf("}}"));
                 if (body.contains("{{/" + tag + "}}")) {
                     body = body.substring(tag.length() + 3, body.indexOf("{{/" + tag + "}}"));
+                    isInput = false;
                 } else {
                     arr = tag.split(" ", 2);
                     tag = arr[0];
                     param = arr[1];
-                }
+                    isInput = true;
+                }                
                 break;
             case '#':
                 tag = body.substring(1, body.indexOf("}}"));
                 body = body.substring(tag.length() + 3, body.indexOf("{{/" + tag + "}}"));
+                isInput = false;
                 break;
             case '$':
                 arr = body.substring(1, body.indexOf("}}")).split(" ", 3);
@@ -67,14 +73,19 @@ public class Block {
 
                 body = body.substring(body.indexOf("}}") + 2, body.indexOf("{{/" + tag));
                 body = body.trim();
+                isInput = false;
                 break;
             case '{':
                 body = body.substring(1, body.length() - 2);
+                isInput = true;
                 break;
             case '/':
                 body = body.substring(1, body.length() - 2);
+                isInput = false;
+                break;
             default:
                 body = body.substring(0, body.length() - 2);
+                isInput = true;
         }
 
         input = _input;
@@ -206,7 +217,12 @@ public class Block {
             }
 
             Block block = new Block(blockStr, input, newScope, template, (HashMap<String, String>) context.clone());
-            recurBody = recurBody.replace(blockStr, block.render());
+            if (block.isInput()) {                
+                recurBody = recurBody.replaceFirst(Pattern.quote(blockStr), block.render());
+            }
+            else {
+                recurBody = recurBody.replace(blockStr, block.render());
+            }
 
             start = recurBody.indexOf("{{");
         }
@@ -400,5 +416,9 @@ public class Block {
                 || str.charAt(0) == '/'
                 || str.charAt(0) == '*');
 
+    }
+    
+    boolean isInput() {
+        return isInput;
     }
 }

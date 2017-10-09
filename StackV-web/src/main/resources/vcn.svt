@@ -130,16 +130,15 @@
                 {{/if floating_ip}}                
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt; .
 
-                {{/ !AddressString name interfaces @uuid}}  {{/ TODO check on conditional relating to blank addressString }}
                 {{#sriovs}}
                     {{$if !LinkedGatewayType @gateways = "UCS Port Profile"}}
-                        &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-sriov{{@index}}&gt;
+                        &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;
                             a            spa:PolicyAction ;
                             spa:type     "MCE_UcsSriovStitching" ;
                             spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-{{VMName}}-eth0&gt;;
-                            spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;.
+                            spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;.
 
-                        &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;
+                        &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;
                             a            spa:PolicyData;
                             spa:type     "JSON";
                             spa:value    """ {
@@ -153,13 +152,13 @@
                                 } """ .
                     {{/if !LinkedGatewayType}}
                     {{$if !LinkedGatewayType @gateways = "L2 Stitch Port"}}
-                        &lt;x-policy-annotation:action:ucs-{{hosting_gateway}}-sriov{{@index}}-stitch&gt;
+                        &lt;x-policy-annotation:action:ucs-{{hosting_gateway}}-{{name}}-stitch&gt;
                             a            spa:PolicyAction ;
                             spa:type     "MCE_UcsSriovStitching" ;
                             spa:dependOn &lt;x-policy-annotation:action:create-{{hosting_gateway}}&gt;, &lt;x-policy-annotation:action:create-path&gt;;
-                            spa:importFrom &lt;x-policy-annotation:data:{{hosting_gateway}}-sriov{{@index}}-criteria&gt; .
+                            spa:importFrom &lt;x-policy-annotation:data:{{hosting_gateway}}-{{name}}&gt; .
 
-                        &lt;x-policy-annotation:data:{{hosting_gateway}}-sriov{{@index}}-criteria&gt;
+                        &lt;x-policy-annotation:data:{{hosting_gateway}}-{{name}}&gt;
                             a            spa:PolicyData;
                             spa:type     "JSON";
                             spa:format   """ {
@@ -330,14 +329,14 @@
         {{/ dependOn }}
         {{#vms}}
             {{#sriovs}}
-                {{*SRIOVIndex @index}}
+                {{*SRIOVName name}}
                 {{#@gateways}}
                     {{$if connects.0/from}}
                         {{$if type = "UCS Port Profile"}}
                             &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
                                a  nml:Topology;
                                spa:type spa:Abstraction;
-                               spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-sriov{{SRIOVIndex}}&gt;.                                                                        
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-{{SRIOVName}}&gt;.                                                                        
                         {{/if type}}
                     {{/if connects.0/from}}
                     {{$if connects.0/to}}
@@ -345,7 +344,7 @@
                             &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
                                a  nml:Topology;
                                spa:type spa:Abstraction;
-                               spa:dependOn  &lt;x-policy-annotation:action:ucs-{{name}}-sriov{{SRIOVIndex}}-stitch&gt;.                                             
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-{{name}}-{{SRIOVName}}-stitch&gt;.                                             
                         {{/if type}}
                     {{/if connects.0/to}}
                 {{/@gateways}}
