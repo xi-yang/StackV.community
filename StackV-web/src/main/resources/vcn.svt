@@ -240,29 +240,21 @@
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#ceph_rbds}}
                 {{$if size}}
-                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
-                       a  mrs:Volume;
-                       mrs:disk_gb "{{size}}" ;
-                       mrs:mount_point "{{mount_point}}" .
+                    &lt;{{VMTag}}&gt;
+                        mrs:hasVolume
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                        
+
+                    &lt;{{@parent}}:ceph-rbd&gt;
+                        mrs:providesVolume 
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                            
+
+                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
+                           a  mrs:Volume;
+                           mrs:disk_gb "{{size}}" ;
+                           mrs:mount_point "{{mount_point}}" .
+
                 {{/if size}}
             {{/ceph_rbds}}
-            {{$if ceph_rbds}}
-                &lt;{{VMTag}}&gt;
-                    mrs:hasVolume
-                    {{#ceph_rbds}}
-                        {{$if size}}
-                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
-                        {{/if size}}
-                    {{/ceph_rbds}}
-
-                &lt;{{@parent}}:ceph-rbd&gt;
-                    mrs:providesVolume 
-                    {{#ceph_rbds}}
-                        {{$if size}}
-                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
-                        {{/if size}}
-                    {{/ceph_rbds}}
-            {{/if ceph_rbds}}            
         {{/vms}}
 
         {{#vms}}
