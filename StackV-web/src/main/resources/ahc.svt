@@ -12,13 +12,33 @@
 @prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
 @prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
 
-&lt;x-policy-annotation:data:vpc-criteria&gt;
+&lt;urn:ogf:network:service+{{uuid}}:resource+virtual_clouds:tag+vpc1&gt;
+    a nml:Topology ;
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;, &lt;x-policy-annotation:action:create-dc1&gt;.
+
+&lt;urn:ogf:network:service+{{uuid}}:resource+virtual_clouds:tag+vpc2&gt;
+    a nml:Topology ;
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc2&gt;.
+
+&lt;x-policy-annotation:action:create-vpc1&gt;
+    a           spa:PolicyAction ;
+    spa:type     "MCE_VirtualNetworkCreation" ;
+    spa:importFrom &lt;x-policy-annotation:data:vpc-aws-criteria&gt;.
+
+&lt;x-policy-annotation:action:create-vpc2&gt;
+    a           spa:PolicyAction ;
+    spa:type     "MCE_VirtualNetworkCreation" ;
+    spa:importFrom &lt;x-policy-annotation:data:vpc-openstack-criteria&gt;.
+
+&lt;x-policy-annotation:data:vpc-aws-criteria&gt;
     a            spa:PolicyData ;
     spa:type     "JSON" ;
     spa:value    """{{!TopologyPolicyData aws}}""".
 
-&lt;urn:ogf:network:service+{{uuid}}:resource+virtual_clouds:tag+vpc1&gt;
-    a nml:Topology ;
+&lt;x-policy-annotation:data:vpc-openstack-criteria&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:value    """{{!TopologyPolicyData openstack}}""".
 
 {{#gateways}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;, &lt;x-policy-annotation:action:create-mce_dc1&gt; .
@@ -90,11 +110,6 @@
                     "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
         {{/vms}}
     {{/subnets}}
-
-    &lt;x-policy-annotation:action:create-vpc&gt;
-        a           spa:PolicyAction ;
-        spa:type     "MCE_VirtualNetworkCreation" ;
-        spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt;
 
     {{#subnets}}
         {{#if vms}}
@@ -337,11 +352,6 @@
             {{/sriovs}}
         {{/vms}}
     {{/subnets}}
-
-    &lt;x-policy-annotation:action:create-vpc&gt;
-        a           spa:PolicyAction ;
-        spa:type     "MCE_VirtualNetworkCreation" ;
-        spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt;
 
     {{#subnets}}
         {{#if vms}}

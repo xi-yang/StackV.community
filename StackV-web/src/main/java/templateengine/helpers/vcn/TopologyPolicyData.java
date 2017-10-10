@@ -45,7 +45,7 @@ public class TopologyPolicyData implements Helper {
                         ((JSONArray) net.get("routes")).add(parser.parse("{\"from\":\"vpn\",\"to\":\"0.0.0.0/0\",\"nextHop\":\"vpn\"}"));
                         ((JSONArray) net.get("routes")).add(parser.parse("{\"to\":\"0.0.0.0/0\",\"nextHop\":\"internet\"}"));
                     }
-                    if (subnet.get("internet_routable").equals(true)) {
+                    if (subnet.containsKey("internet_routable") && subnet.get("internet_routable").equals(true)) {
                         if (!net.containsKey("routes")) {
                             net.put("routes", new JSONArray());
                         }

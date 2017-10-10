@@ -382,8 +382,8 @@ function renderInputs(arr, $parent) {
                     parentName = ele.parentElement.parentElement.getAttribute("name");
                 }
 
-                $input.attr("data-name", parentName + "_1");
-                $input.val(parentName + "_1");
+                $input.attr("data-name", parentName + " 1");
+                $input.val(parentName + " 1");
             }
 
             // Handle potential element modifiers

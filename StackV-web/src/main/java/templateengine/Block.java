@@ -54,7 +54,7 @@ public class Block {
                     tag = arr[0];
                     param = arr[1];
                     isInput = true;
-                }                
+                }
                 break;
             case '#':
                 tag = body.substring(1, body.indexOf("}}"));
@@ -217,10 +217,9 @@ public class Block {
             }
 
             Block block = new Block(blockStr, input, newScope, template, (HashMap<String, String>) context.clone());
-            if (block.isInput()) {                
+            if (block.isInput()) {
                 recurBody = recurBody.replaceFirst(Pattern.quote(blockStr), block.render());
-            }
-            else {
+            } else {
                 recurBody = recurBody.replace(blockStr, block.render());
             }
 
@@ -282,10 +281,10 @@ public class Block {
                     String prog[] = context.get("progress").split("/");
                     // Context option
                     switch (param) {
-                        case "^first":                            
+                        case "^first":
                             eval = prog[0].equals("1");
                             break;
-                        case "^last":                            
+                        case "^last":
                             eval = prog[0].equals(prog[1]);
                             break;
                     }
@@ -371,14 +370,19 @@ public class Block {
             }
         }
         if (recur.containsKey(keyArr[keyArr.length - 1])) {
-            return recur.get(keyArr[keyArr.length - 1]);
+            Object obj = recur.get(keyArr[keyArr.length - 1]);
+            if (obj instanceof String) {
+                return ((String) obj).replaceAll(" ", "_");
+            } else {
+                return recur.get(keyArr[keyArr.length - 1]);
+            }
         } else {
             System.out.println("ERROR: Input not found - " + keyStr);
             // logger.error("Input not found: " + keyStr);
             return keyStr;
         }
     }
-    
+
     private boolean inputExists(String keyStr) {
         String keyArr[] = keyStr.split("/");
         JSONObject recur;
@@ -417,7 +421,7 @@ public class Block {
                 || str.charAt(0) == '*');
 
     }
-    
+
     boolean isInput() {
         return isInput;
     }
