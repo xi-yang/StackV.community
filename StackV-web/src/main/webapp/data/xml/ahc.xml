@@ -134,6 +134,15 @@
                 </input>                  
             </group>
         </group>
+        
+        <note>
+            <location>footer</location>
+            <size>medium</size>
+            <text>
+                BGP peering is through the Intercloud Network gateway that binds to the `SRIOV # 1` interface by default.
+                Input IP and MAC addresses of the local interface on the SRIOVs page.
+            </text>
+        </note>
     </stage>
     <stage name="Subnets">
         <group name="AWS" passthrough="true">
@@ -386,7 +395,7 @@
                     </group>
                 </group>
             </group>
-        </group>
+        </group>             
     </stage>
     <stage name="Gateways">
         <group block="gateways" name="Gateway" collapsible="true">            
@@ -408,7 +417,7 @@
                 </options>
                 <valid>select</valid>
             </input>                        
-            <group factory="true" name="Connect" collapsible="true">     
+            <group factory="true" name="Connect" condition="type::ucs_port_profile" collapsible="true">     
                 <bound>
                     <name>gateways-gateway-type</name>
                     <value>Intercloud Network</value>
@@ -420,7 +429,7 @@
                     <type>text</type>
                     <valid>string</valid>
                 </input>
-                <input condition="type::ucs_port_profile">
+                <input>
                     <name>To</name>
                     <type>text</type>
                     <valid>string</valid>
