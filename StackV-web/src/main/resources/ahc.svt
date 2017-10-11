@@ -58,13 +58,13 @@
         a            spa:PolicyAction ;
         spa:type     "MCE_AwsDxStitching" ;
         spa:importFrom &lt;x-policy-annotation:data:vpc-export&gt;, &lt;x-policy-annotation:data:conn-export&gt; ;
-        spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt;, &lt;x-policy-annotation:action:create-path&gt;.
+        spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;, &lt;x-policy-annotation:action:create-path&gt;.
 
     &lt;x-policy-annotation:data:vpc-export&gt;
         a            spa:PolicyData ;
         spa:type     "JSON" ;
         spa:format   """{
-            "parent": "{{@parent}}",
+            "parent": "{{@aws/parent}}",
             "stitch_from": "%$.gateways[?(@.type=='vpn-gateway')].uri%",
         }""" .
 
@@ -100,7 +100,7 @@
             &lt;x-policy-annotation:action:create-{{name}}&gt;
                 a            spa:PolicyAction ;
                 spa:type     "MCE_VMFilterPlacement" ;
-                spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt; ;
                 spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
 
             &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
@@ -146,16 +146,16 @@
 
                 {{*VMRoutes routes}}
                 {{#sriovs}}
-                    &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-sriov{{@index}}&gt;
+                    &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;
                         a            spa:PolicyAction ;
                         spa:type     "MCE_UcsSriovStitching" ;
-                        spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-{{VMName}}-eth0&gt;;
-                        spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;.
+                        spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-aws-ops-path&gt;;
+                        spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;.
 
-                    &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;
+                    &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;
                         a            spa:PolicyData;
                         spa:type     "JSON";
-                        spa:value    """ {
+                        spa:format    """ {
                             "stitch_from": "{{VMTag}}",                            
                             "mac_address": "{{mac_address}}",
                             "ip_address": "{{ip_address}}",
@@ -163,7 +163,37 @@
                             {{$if VMRoutes}}
                                 , "routes": {{VMRoutes}}
                             {{/if VMRoutes}}
-                            } """ .                           
+                            } """ .         
+                    
+                    {{$if type = "Intercloud Network"}}
+                        &lt;x-policy-annotation:data:quagga-bgp-remote&gt;
+                            a            spa:PolicyData ;
+                            spa:type     "JSON" ;
+                            spa:format   """{
+                               "neighbors":[{"remote_ip":"%%$..amazon_ip%%","remote_asn":"{{@intercloud/bgp/amazon_asn}}","bgp_authkey":"versastack","local_ip":"%%$..customer_ip%%"}],
+                               "router_id":"%%$..customer_ip%%",
+                               "as_number":"%%$..customer_asn%%"
+                            }""" .
+
+                        &lt;x-policy-annotation:data:quagga-bgp-local&gt;
+                            a            spa:PolicyData ;
+                            spa:type     "JSON" ;
+                            spa:value   """{
+                               "parent": "{{VMTag}}",
+                               "networks":[{{intercloud/bgp/networks}}]
+                            }""" .
+
+                        &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;
+                            a            spa:PolicyAction ;
+                            spa:type     "MCE_NfvBgpRouting";
+                            spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;, &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;;
+                            spa:importFrom &lt;x-policy-annotation:data:quagga-bgp-remote&gt;, &lt;x-policy-annotation:data:quagga-bgp-local&gt;.
+
+                        &lt;urn:ogf:network:openstack.com:openstack-cloud:vt1&gt;
+                           a  nml:Topology;
+                           spa:type spa:Abstraction;
+                           spa:dependOn  &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;, &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;.
+                    {{/if type}}
                 {{/sriovs}}               
                 {{$if routes}}
                     &lt;{{VMTag}}:routingservice&gt;
@@ -219,20 +249,20 @@
             &lt;x-policy-annotation:action:create-{{name}}&gt;
                 a            spa:PolicyAction ;
                 spa:type     "MCE_VMFilterPlacement" ;
-                spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc2&gt; ;
                 spa:importFrom &lt;x-policy-annotation:data:{{name}}-host-criteria&gt;.
 
             &lt;x-policy-annotation:data:{{name}}-host-criteria&gt;
                 a            spa:PolicyData;
                 spa:type     "JSON";
                 spa:value    """{
-                   "place_into": "{{@parent}}:host+{{host}}"
+                   "place_into": "{{@openstack/parent}}:host+{{host}}"
                 }""" .
 
             &lt;x-policy-annotation:action:create-{{name}}-eth0&gt;
                 a            spa:PolicyAction ;
                 spa:type     "MCE_VMFilterPlacement" ;
-                spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc2&gt; ;
                 spa:importFrom &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
 
 
@@ -247,24 +277,22 @@
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#ceph_rbds}}
-                &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
-                   a  mrs:Volume;
-                   mrs:disk_gb "{{size}}" ;
-                   mrs:mount_point "{{mount_point}}" .
-            {{/ceph_rbds}}
-            {{$if ceph_rbds}}
-                &lt;{{VMTag}}&gt;
-                    mrs:hasVolume
-                    {{#ceph_rbds}}
-                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
-                    {{/ceph_rbds}}
+                {{$if size}}
+                    &lt;{{VMTag}}&gt;
+                        mrs:hasVolume
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                        
 
-                &lt;{{@parent}}:ceph-rbd&gt;
-                    mrs:providesVolume 
-                    {{#ceph_rbds}}
-                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
-                    {{/ceph_rbds}}
-            {{/if ceph_rbds}}            
+                    &lt;{{@parent}}:ceph-rbd&gt;
+                        mrs:providesVolume 
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                            
+
+                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
+                           a  mrs:Volume;
+                           mrs:disk_gb "{{size}}" ;
+                           mrs:mount_point "{{mount_point}}" .
+
+                {{/if size}}
+            {{/ceph_rbds}}
         {{/vms}}
 
         {{#vms}}
@@ -366,16 +394,15 @@
     {{/subnets}}
 {{/openstack}}
 
-
-{{/ awsDxStitching}}
 {{#aws}}
     &lt;x-policy-annotation:action:create-dc1&gt;
         a            spa:PolicyAction ;
         spa:type     "MCE_AwsDxStitching" ;
-        spa:importFrom &lt;x-policy-annotation:data:{{name}}-export&gt;,
-    &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; ;
-        spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;,
-    &lt;x-policy-annotation:action:create-aws-ops-path&gt;.
+        spa:importFrom &lt;x-policy-annotation:data:vpc-aws-export&gt;,
+            &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; ;
+        spa:exportTo &lt;x-policy-annotation:data:quagga-bgp-remote&gt; ;
+        spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;,
+            &lt;x-policy-annotation:action:create-aws-ops-path&gt;.
 {{/aws}}
 
 &lt;x-policy-annotation:action:create-aws-ops-path&gt;
