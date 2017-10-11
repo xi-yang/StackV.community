@@ -168,7 +168,7 @@ public class Block {
                         return retString;
                     }
                 } else {
-                    retString = (String) retrieveInput(param);
+                    retString = retrieveInput(param).toString();
                     template.partials.put(tag, retString);
                     return "";
                 }
@@ -405,7 +405,9 @@ public class Block {
             }
         }
         if (recur.containsKey(keyArr[keyArr.length - 1])) {
-            return recur.containsKey(keyArr[keyArr.length - 1]);
+            return true;
+        } else if (template.partials.containsKey(keyArr[keyArr.length - 1])) {
+            return true;
         } else {
             System.out.println("ERROR: Input not found - " + keyStr);
             // logger.error("Input not found: " + keyStr);

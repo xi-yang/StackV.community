@@ -114,12 +114,6 @@
         <group name="Intercloud">
             <group name="BGP" collapsible="true">                            
                 <input>
-                    <name>VM Host</name>
-                    <type>select</type>
-                    <link>ops-vms</link>
-                    <valid>select</valid>
-                </input>
-                <input>
                     <name>Amazon ASN</name>
                     <type>text</type>
                     <default>7224</default>
@@ -136,19 +130,7 @@
                     <type>text</type>
                     <default>10.10.0.0/16</default>
                     <valid>cidr-csv</valid>
-                </input>   
-                <input>
-                    <name>VM Interface IP</name>
-                    <type>text</type>
-                    <default>10.10.0.1/24</default>
-                    <valid>cidr-csv</valid>
-                </input> 
-                <input>
-                    <name>VM Interface MAC</name>
-                    <type>text</type>
-                    <default>aa:bb:cc:dd:10:01</default>
-                    <valid>mac</valid>
-                </input>                                 
+                </input>                  
             </group>
         </group>
     </stage>
