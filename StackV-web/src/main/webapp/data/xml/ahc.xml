@@ -126,9 +126,10 @@
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>Networks</name>
+                    <name>Networks</name>                   
                     <type>text</type>
                     <default>10.10.0.0/16</default>
+                    <hint> Advertised to Amazon</hint>
                     <valid>cidr-csv</valid>
                 </input>                  
             </group>
@@ -333,6 +334,56 @@
                         <name>Type</name>
                         <type>text</type>
                     </input>
+                </group>
+                <group name="Globus Connect" collapsible="true">
+                    <input>
+                        <name>Username</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Password</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Short Name</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Data Interface IP</name>
+                        <type>text</type>
+                        <valid>ip</valid>
+                    </input>
+                    <input>
+                        <name>Default Directory</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                </group>
+                <group factory="true" name="Ceph RBD" collapsible="true">
+                    <input>
+                        <name>Size</name>
+                        <type>text</type>
+                        <hint>(in GB)</hint>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Mount Point</name>
+                        <type>text</type>
+                        <default>/mnt/ceph1</default>
+                        <valid>string</valid>
+                    </input>
+                </group>            
+                <group name="NFS" collapsible="true">
+                    <group factory="true" name="Export">                    
+                        <input>
+                            <name>Value</name>
+                            <type>text</type>
+                            <valid>string</valid>
+                        </input>
+                    </group>
                 </group>
             </group>
         </group>
