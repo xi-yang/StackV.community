@@ -356,44 +356,45 @@
         </group>
     </stage>
     <stage name="Gateways">
-        <group block="gateways" name="Gateway" collapsible="true">
+        <group block="gateways" name="Gateway" collapsible="true">            
             <path>
                 <parent>openstack</parent>                
-            </path>
-                                    
+            </path>            
+            
             <input>
                 <name>Name</name>
                 <type>text</type>
                 <valid>string</valid>
-            </input>                                    
-            <input>
-                <name>Value</name>
-                <type>text</type>
-                <valid>string</valid>
             </input>
-            <group factory="true" name="Route" label="false" >
+            <input required="true">
+                <name>Type</name>
+                <type>select</type>
+                <options>
+                    <option>Intercloud Network</option>
+                    <option>UCS Port Profile</option>                    
+                </options>
+                <valid>select</valid>
+            </input>                        
+            <group factory="true" name="Connect" collapsible="true">     
+                <bound>
+                    <name>gateways-gateway-type</name>
+                    <value>Intercloud Network</value>
+                    <max>1</max>
+                </bound>
+                                           
                 <input>
                     <name>From</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
-                <input>
+                <input condition="type::ucs_port_profile">
                     <name>To</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
-                <input>
-                    <name>Next Hop</name>
-                    <type>text</type>
-                    <valid>string</valid>
-                </input>
-                <input>
-                    <name>Type</name>
-                    <type>text</type>
-                </input>
             </group>
         </group>
-    </stage>    
+    </stage>
     <stage name="SRIOVs">
         <group block="sriovs" name="SRIOV" collapsible="true">
             <path>
