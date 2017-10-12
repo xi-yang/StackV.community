@@ -116,7 +116,7 @@
                 <input>
                     <name>VM Host</name>
                     <type>select</type>
-                    <link>ops-vms</link>
+                    <link nameVal="true">ops-vms</link>
                     <valid>select</valid>
                 </input>                           
                 <input>

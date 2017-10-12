@@ -14,23 +14,23 @@
 
 &lt;urn:ogf:network:service+{{uuid}}:resource+virtual_clouds:tag+vpc1&gt;
     a nml:Topology ;
-    spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;, &lt;x-policy-annotation:action:create-dc1&gt;.
-    {{!VPCExport aws}}
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;, &lt;x-policy-annotation:action:create-dc1&gt;.    
 
 &lt;urn:ogf:network:service+{{uuid}}:resource+virtual_clouds:tag+vpc2&gt;
     a nml:Topology ;
-    spa:dependOn &lt;x-policy-annotation:action:create-vpc2&gt;.
-    {{!VPCExport openstack}}
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc2&gt;.    
 
 &lt;x-policy-annotation:action:create-vpc1&gt;
     a           spa:PolicyAction ;
     spa:type     "MCE_VirtualNetworkCreation" ;
-    spa:importFrom &lt;x-policy-annotation:data:vpc-aws-criteria&gt;.
+    spa:importFrom &lt;x-policy-annotation:data:vpc-aws-criteria&gt;;
+    {{!VPCExport aws}}
 
 &lt;x-policy-annotation:action:create-vpc2&gt;
     a           spa:PolicyAction ;
     spa:type     "MCE_VirtualNetworkCreation" ;
-    spa:importFrom &lt;x-policy-annotation:data:vpc-openstack-criteria&gt;.
+    spa:importFrom &lt;x-policy-annotation:data:vpc-openstack-criteria&gt;;
+    {{!VPCExport openstack}}
 
 &lt;x-policy-annotation:data:vpc-aws-criteria&gt;
     a            spa:PolicyData ;
@@ -171,7 +171,7 @@
                         "to_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%%                            
                         } """ .         
 
-                {{$if type = "Intercloud Network"}}
+                {{$if !isDCHost}}
                     &lt;x-policy-annotation:data:quagga-bgp-remote&gt;
                         a            spa:PolicyData ;
                         spa:type     "JSON" ;
@@ -199,7 +199,7 @@
                        a  nml:Topology;
                        spa:type spa:Abstraction;
                        spa:dependOn  &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;, &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;.
-                {{/if type}}
+                {{/if !isDCHost}}
             {{/sriovs}}               
             {{$if routes}}
                 &lt;{{VMTag}}:routingservice&gt;
@@ -424,7 +424,8 @@
     a            spa:PolicyAction ;
     spa:type     "MCE_MPVlanConnection" ;
     spa:importFrom &lt;x-policy-annotation:data:aws-ops-criteria&gt; ;
-    spa:exportTo &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; .
+    spa:exportTo &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt;,
+        &lt;x-policy-annotation:data:sriov-criteria-external-{{!DCGatewayName}}-{{!DCSRIOVName}}&gt; .
 
 &lt;x-policy-annotation:data:aws-ops-criteria&gt;
     a            spa:PolicyData;

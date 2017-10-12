@@ -9,19 +9,28 @@ public class isDCHost implements Helper {
 
     @Override
     public String apply(ArrayList<Object> obj) {
-        JSONObject vm = (JSONObject) obj.get(1);
-        JSONArray sriovs = (JSONArray) vm.get("sriovs");        
-        for (Object sriovObj : sriovs) {
-            JSONObject sriov = (JSONObject) sriovObj;
+        if (!((JSONObject) obj.get(1)).containsKey("hosting_gateway")) {
+            JSONObject vm = (JSONObject) obj.get(1);
+            JSONArray sriovs = (JSONArray) vm.get("sriovs");
+            for (Object sriovObj : sriovs) {
+                JSONObject sriov = (JSONObject) sriovObj;
+                JSONObject gateway = getGateway((JSONObject) obj.get(0), (String) sriov.get("hosting_gateway"));
+
+                if (gateway.get("type").equals("Intercloud Network")) {
+                    return "true";
+                }
+            }
+        } else {
+            JSONObject sriov = (JSONObject) obj.get(1);
             JSONObject gateway = getGateway((JSONObject) obj.get(0), (String) sriov.get("hosting_gateway"));
-            
             if (gateway.get("type").equals("Intercloud Network")) {
                 return "true";
             }
-        }                       
+        }
+
         return "false";
     }
-    
+
     private JSONObject getGateway(JSONObject root, String name) {
         JSONArray gateways = (JSONArray) ((JSONObject) root.get("openstack")).get("gateways");
         for (Object gatewayObj : gateways) {

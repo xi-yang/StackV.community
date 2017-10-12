@@ -25,13 +25,13 @@ public class VPCExport implements Helper {
         }
         
         if (((String) vpc.get("parent")).contains("amazon")) {
-            retString += "&lt;x-policy-annotation:data:vpc-aws-export>&lt;,\n\t";
+            retString += "&lt;x-policy-annotation:data:vpc-aws-export&gt;,\n\t";
         }
 
         for (int i = 0;
                 i < names.size();
                 i++) {
-            String name = names.get(i);
+            String name = names.get(i).replace(" ", "_");
             retString += "&lt;x-policy-annotation:data:vpc-subnet-" + name + "-criteria&gt;";
             if (i < names.size() - 1) {
                 retString += ",\n";
