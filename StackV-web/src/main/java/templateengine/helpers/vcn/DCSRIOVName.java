@@ -22,7 +22,7 @@ public class DCSRIOVName implements Helper {
                     JSONObject gateway = getGateway(root, (String) sriov.get("hosting_gateway"));
 
                     if (gateway.get("type").equals("Intercloud Network")) {
-                        return (String) sriov.get("name");
+                        return ((String) sriov.get("name")).replace(" ", "_");
                     }
                 }
             }

@@ -80,7 +80,7 @@ public class TopologyPolicyData implements Helper {
             network.put("subnets", subnets);
             network.put("routes", routes);
 
-            if (root.containsKey("options") && contains((JSONArray) root.get("options"), "aws-form")
+            if ((root.containsKey("options") && contains((JSONArray) root.get("options"), "aws-form"))
                     || ((String) root.get("parent")).contains("amazon")) {
                 network.put("gateways", parser.parse("[{\"type\":\"internet\"},{\"type\":\"vpn\"}]"));
             }

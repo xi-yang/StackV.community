@@ -47,7 +47,7 @@
     spa:type     "JSON" ;
     spa:format   """{
        "parent":"urn:ogf:network:aws.amazon.com:aws-cloud",
-       "stitch_from": "%%$.gateways[?(@.type=='vpn-gateway')].uri%%",
+       "stitch_from": "%$.gateways[?(@.type=='vpn-gateway')].uri%",
     }""" .
 
 {{#gateways}}
@@ -168,7 +168,7 @@
                         "stitch_from": "{{VMTag}}",                            
                         "mac_address": "{{mac_address}}",
                         "ip_address": "{{ip_address}}",
-                        "to_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%%                            
+                        "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%                            
                         } """ .         
 
                 {{$if !isDCHost}}
@@ -176,9 +176,9 @@
                         a            spa:PolicyData ;
                         spa:type     "JSON" ;
                         spa:format   """{
-                           "neighbors":[{"remote_ip":"%%$..amazon_ip%%","remote_asn":"{{@intercloud/bgp/amazon_asn}}","bgp_authkey":"versastack","local_ip":"%%$..customer_ip%%"}],
-                           "router_id":"%%$..customer_ip%%",
-                           "as_number":"%%$..customer_asn%%"
+                           "neighbors":[{"remote_ip":"%$..amazon_ip%","remote_asn":"{{@intercloud/bgp/amazon_asn}}","bgp_authkey":"versastack","local_ip":"%$..customer_ip%"}],
+                           "router_id":"%$..customer_ip%",
+                           "as_number":"%$..customer_asn%"
                         }""" .
 
                     &lt;x-policy-annotation:data:quagga-bgp-local&gt;
@@ -186,7 +186,7 @@
                         spa:type     "JSON" ;
                         spa:value   """{
                            "parent": "{{VMTag}}",
-                           "networks":[{{intercloud/bgp/networks}}]
+                           "networks":["{{@intercloud/bgp/networks}}"]
                         }""" .
 
                     &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;

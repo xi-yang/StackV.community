@@ -14,7 +14,7 @@ public class DCGatewayName implements Helper {
         for (Object gatewayObj : gateways) {
             JSONObject gateway = (JSONObject) gatewayObj;
             if (gateway.get("type").equals("Intercloud Network")) {
-                return (String) gateway.get("name");
+                return ((String) gateway.get("name")).replace(" ", "_");
             }
         }
         return null;
