@@ -112,7 +112,13 @@
             </input>
         </group>
         <group name="Intercloud">
-            <group name="BGP" collapsible="true">                            
+            <group name="BGP" collapsible="true"> 
+                <input>
+                    <name>VM Host</name>
+                    <type>select</type>
+                    <link>ops-vms</link>
+                    <valid>select</valid>
+                </input>                           
                 <input>
                     <name>Amazon ASN</name>
                     <type>text</type>

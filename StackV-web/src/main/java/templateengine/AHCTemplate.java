@@ -23,8 +23,10 @@ public class AHCTemplate extends Template {
         helpers.put("ifVCNGateways", new ifVCNGateways());
         helpers.put("DirectConnDest", new DirectConnDest());
         helpers.put("DirectConnVLAN", new DirectConnVLAN());
+        helpers.put("VPCExport", new VPCExport());
         helpers.put("isAWS", new isAWS());
         helpers.put("isOPS", new isOPS());
+        helpers.put("isDCHost", new isDCHost());
         helpers.put("VMType", new VMType());
         helpers.put("AddressString", new AddressString());
         helpers.put("LinkedGatewayType", new LinkedGatewayType());
