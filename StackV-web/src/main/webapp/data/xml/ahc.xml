@@ -469,11 +469,13 @@
             <input>
                 <name>IP Address</name>
                 <type>text</type>
+                <default first_only="true">10.10.0.1/24</default>
                 <valid>ip</valid>
             </input>       
             <input>
                 <name>MAC Address</name>
                 <type>text</type>
+                <default first_only="true">aa:bb:cc:10.10.01</default>
                 <valid>mac</valid>
             </input>               
         </group>
