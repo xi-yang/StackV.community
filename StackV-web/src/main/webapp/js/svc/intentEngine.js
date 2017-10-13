@@ -1193,6 +1193,29 @@ function parseSchemaIntoManifest(schema) {
 
 var recurCache = {};
 function parseManifestIntoJSON() {
+    // Step 0: Trim unfulfilled groups
+//    $(intent).find("fulfilled").each(function () {
+//        var nameArr = [];
+//        $(this).children().each(function () {
+//            nameArr.push(this.innerHTML);
+//        });
+//            
+//        var eleName = this.parentElement.getAttribute("name");
+//        // Find element(s) in manifest
+//        recurCache = {};
+//        findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+//        
+//        for (var key in recurCache) {
+//            var ele = recurCache[key];
+//            for (var i = 0; i < nameArr.length; i++) {
+//                var name = nameArr[i];
+//                if (ele[name] === null || ele[name] === "") {
+//                    delete ele;
+//                }
+//            }
+//        }
+//    });
+    
     // Step 1: Reorg hierarchy
     $(intent).find("path").each(function () {
         var arr = this.children;
@@ -1201,7 +1224,7 @@ function parseManifestIntoJSON() {
         var eleName = this.parentElement.getAttribute("name");
 
         // Find element(s) in manifest
-        recurCache = [];
+        recurCache = {};
         findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
 
         for (var key in recurCache) {

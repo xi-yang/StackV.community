@@ -41,7 +41,7 @@
                 <message>Please select a valid option.</message>
             </constraint>
             <constraint>
-                <name>cidr</name>
+                <name>ip</name>
                 <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}$</regex>
                 <message>Please enter a valid CIDR.</message>
             </constraint>
@@ -49,11 +49,6 @@
                 <name>cidr-csv</name>
                 <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}(,\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2})*$</regex>
                 <message>Please enter valid CIDR values. (Comma-separated)</message>
-            </constraint>
-            <constraint>
-                <name>ip</name>
-                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$</regex>
-                <message>Please enter a valid IP Address.</message>
             </constraint>
             <constraint>
                 <name>mac</name>
@@ -84,7 +79,7 @@
                 <name>CIDR</name>
                 <type>text</type>
                 <default>10.0.0.0/16</default>
-                <valid>cidr</valid>
+                <valid>ip</valid>
             </input>
             <input>
                 <name>Direct Connect VLAN</name>
@@ -108,7 +103,8 @@
             <input>
                 <name>CIDR</name>
                 <type>text</type>
-                <valid>cidr</valid>
+                <default>10.1.0.0/16</default>
+                <valid>ip</valid>
             </input>
         </group>
         <group name="Intercloud">
@@ -167,7 +163,7 @@
                     <name>CIDR</name>
                     <type>text</type>
                     <default first_only="true">10.0.0.0/24</default>
-                    <valid>cidr</valid>
+                    <valid>ip</valid>
                 </input>
                 <input>
                     <name>Internet Routable</name>
@@ -211,8 +207,8 @@
                 <input>
                     <name>CIDR</name>
                     <type>text</type>
-                    <default first_only="true">10.1.0.0/16</default>
-                    <valid>cidr</valid>
+                    <default first_only="true">10.1.0.0/24</default>
+                    <valid>ip</valid>
                 </input>
                 <group factory="true" name="route" label="off">
                     <input>
@@ -378,9 +374,13 @@
                     </input>
                 </group>
                 <group factory="true" name="Ceph RBD" collapsible="true">
+                    <fulfilled>
+                        <name>size</name>
+                    </fulfilled>
+                    
                     <input>
                         <name>Size</name>
-                        <type>text</type>
+                        <type>text</type>                        
                         <hint>(in GB)</hint>
                         <valid>string</valid>
                     </input>
@@ -475,7 +475,7 @@
             <input>
                 <name>MAC Address</name>
                 <type>text</type>
-                <default first_only="true">aa:bb:cc:10.10.01</default>
+                <default first_only="true">aa:bb:cc:10:10:01</default>
                 <valid>mac</valid>
             </input>               
         </group>
