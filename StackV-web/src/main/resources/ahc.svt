@@ -155,21 +155,35 @@
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt; .
 
             {{#sriovs}}
+
                 &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;
                     a            spa:PolicyAction ;
                     spa:type     "MCE_UcsSriovStitching" ;
                     spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-aws-ops-path&gt;;
                     spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;.
 
-                &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;
+                {{$if !LinkedGatewayType @openstack/gateways = "UCS Port Profile"}}
+                    &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;
                     a            spa:PolicyData;
                     spa:type     "JSON";
-                    spa:format    """ {
+                    spa:value    """ {
                         "stitch_from": "{{VMTag}}",                            
                         "mac_address": "{{mac_address}}",
                         "ip_address": "{{ip_address}}",
-                        "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%                            
+                        "to_port_profile": "{{!LinkedGatewayFrom @openstack/gateways}}"                            
                         } """ .         
+                {{/if !LinkedGatewayType}}
+                {{$unless !LinkedGatewayType @openstack/gateways = "UCS Port Profile"}}
+                    &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;
+                        a            spa:PolicyData;
+                        spa:type     "JSON";
+                        spa:format    """ {
+                            "stitch_from": "{{VMTag}}",                            
+                            "mac_address": "{{mac_address}}",
+                            "ip_address": "{{ip_address}}",
+                            "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%                            
+                            } """ .         
+                {{/unless !LinkedGatewayType}}
 
                 {{$if !isDCHost}}
                     &lt;x-policy-annotation:data:quagga-bgp-remote&gt;
@@ -185,7 +199,7 @@
                         a            spa:PolicyData ;
                         spa:type     "JSON" ;
                         spa:value   """{
-                           "parent": "{{VMTag}}",
+                           "parent": "urn:ogf:network:service+6fedf9e6-c5d5-44b4-b603-9fc8d05cd030:resource+virtual_machines:tag+{{@intercloud/bgp/vm_host}}",
                            "networks":["{{@intercloud/bgp/networks}}"]
                         }""" .
 
@@ -424,8 +438,8 @@
     a            spa:PolicyAction ;
     spa:type     "MCE_MPVlanConnection" ;
     spa:importFrom &lt;x-policy-annotation:data:aws-ops-criteria&gt; ;
-    spa:exportTo &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt;,
-        &lt;x-policy-annotation:data:sriov-criteria-external-{{!DCGatewayName}}-{{!DCSRIOVName}}&gt; .
+    spa:exportTo &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt;
+        {{!DCSRIOVs}}
 
 &lt;x-policy-annotation:data:aws-ops-criteria&gt;
     a            spa:PolicyData;

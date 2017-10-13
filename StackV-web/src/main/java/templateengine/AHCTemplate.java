@@ -29,6 +29,7 @@ public class AHCTemplate extends Template {
         helpers.put("isDCHost", new isDCHost());
         helpers.put("DCGatewayName", new DCGatewayName());
         helpers.put("DCSRIOVName", new DCSRIOVName());
+        helpers.put("DCSRIOVs", new DCSRIOVs());
         helpers.put("VMType", new VMType());
         helpers.put("AddressString", new AddressString());
         helpers.put("LinkedGatewayType", new LinkedGatewayType());
