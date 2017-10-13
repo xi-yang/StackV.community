@@ -215,6 +215,11 @@
                     <default first_only="true">10.1.0.0/24</default>
                     <valid>ip</valid>
                 </input>
+                <input hidden="true">
+                    <name>Internet Routable</name>
+                    <type>checkbox</type>
+                    <default>true</default>
+                </input>
                 <group factory="true" name="route" label="off">
                     <input>
                         <name>From</name>
