@@ -165,6 +165,11 @@
                     <default first_only="true">10.0.0.0/24</default>
                     <valid>ip</valid>
                 </input>
+                <input hidden="true">
+                    <name>VPN Route Propagation</name>
+                    <type>checkbox</type>
+                    <default>true</default>
+                </input>
                 <input>
                     <name>Internet Routable</name>
                     <type>checkbox</type>

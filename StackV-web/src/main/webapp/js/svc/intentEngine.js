@@ -352,6 +352,7 @@ function renderInputs(arr, $parent) {
             var name = constructID(ele);
             var trigger = ele.getAttribute("trigger");
             var condition = ele.getAttribute("condition");
+            var hidden = ele.getAttribute("hidden");
             var required = ele.getAttribute("required");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
@@ -545,12 +546,16 @@ function renderInputs(arr, $parent) {
                     }
                 });
             }
+            
+            if (hidden) {
+                $label.addClass("hidden");
+            }
 
             $label.append($input);
             if ($message) {
                 $label.append($message);
             }
-            $parent.append($label);
+            $parent.append($label);            
         }
     }
 }
@@ -1224,7 +1229,7 @@ function parseManifestIntoJSON() {
         var eleName = this.parentElement.getAttribute("name");
 
         // Find element(s) in manifest
-        recurCache = {};
+        recurCache = [];
         findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
 
         for (var key in recurCache) {
