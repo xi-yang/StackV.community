@@ -155,7 +155,6 @@
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt; .
 
             {{#sriovs}}
-
                 &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;
                     a            spa:PolicyAction ;
                     spa:type     "MCE_UcsSriovStitching" ;
@@ -212,8 +211,13 @@
                     &lt;urn:ogf:network:openstack.com:openstack-cloud:vt1&gt;
                        a  nml:Topology;
                        spa:type spa:Abstraction;
-                       spa:dependOn  &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;, &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;.
+                       spa:dependOn  &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;.
                 {{/if !isDCHost}}
+
+                &lt;urn:ogf:network:openstack.com:openstack-cloud:vt1&gt;
+                   a  nml:Topology;
+                   spa:type spa:Abstraction;
+                   spa:dependOn     &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;.
             {{/sriovs}}               
             {{$if routes}}
                 &lt;{{VMTag}}:routingservice&gt;

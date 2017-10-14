@@ -272,7 +272,12 @@ public class Block {
 
             if (resultArr.get(0) instanceof String) {
                 eval = resultArr.get(0).equals(resultArr.get(1));
-                return eval;
+                switch (tag.split(" ")[0]) {
+                    case "if":
+                        return eval;
+                    case "unless":
+                        return !eval;
+                }
             }
         } else {
             // Check parameter
