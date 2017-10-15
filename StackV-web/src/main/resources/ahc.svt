@@ -182,37 +182,7 @@
                             "ip_address": "{{ip_address}}",
                             "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%                            
                             } """ .         
-                {{/unless !LinkedGatewayType}}
-
-                {{$if !isDCHost}}
-                    &lt;x-policy-annotation:data:quagga-bgp-remote&gt;
-                        a            spa:PolicyData ;
-                        spa:type     "JSON" ;
-                        spa:format   """{
-                           "neighbors":[{"remote_ip":"%$..amazon_ip%","remote_asn":"{{@intercloud/bgp/amazon_asn}}","bgp_authkey":"versastack","local_ip":"%$..customer_ip%"}],
-                           "router_id":"%$..customer_ip%",
-                           "as_number":"%$..customer_asn%"
-                        }""" .
-
-                    &lt;x-policy-annotation:data:quagga-bgp-local&gt;
-                        a            spa:PolicyData ;
-                        spa:type     "JSON" ;
-                        spa:value   """{
-                           "parent": "urn:ogf:network:service+6fedf9e6-c5d5-44b4-b603-9fc8d05cd030:resource+virtual_machines:tag+{{@intercloud/bgp/vm_host}}",
-                           "networks":["{{@intercloud/bgp/networks}}"]
-                        }""" .
-
-                    &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;
-                        a            spa:PolicyAction ;
-                        spa:type     "MCE_NfvBgpRouting";
-                        spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;, &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;;
-                        spa:importFrom &lt;x-policy-annotation:data:quagga-bgp-remote&gt;, &lt;x-policy-annotation:data:quagga-bgp-local&gt;.
-
-                    &lt;urn:ogf:network:openstack.com:openstack-cloud:vt1&gt;
-                       a  nml:Topology;
-                       spa:type spa:Abstraction;
-                       spa:dependOn  &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;.
-                {{/if !isDCHost}}
+                {{/unless !LinkedGatewayType}}                
 
                 &lt;urn:ogf:network:openstack.com:openstack-cloud:vt1&gt;
                    a  nml:Topology;
@@ -437,6 +407,35 @@
         spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;,
             &lt;x-policy-annotation:action:create-aws-ops-path&gt;.
 {{/aws}}
+
+&lt;x-policy-annotation:data:quagga-bgp-remote&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:format   """{
+       "neighbors":[{"remote_ip":"%$..amazon_ip%","remote_asn":"{{@intercloud/bgp/amazon_asn}}","bgp_authkey":"versastack","local_ip":"%$..customer_ip%"}],
+       "router_id":"%$..customer_ip%",
+       "as_number":"%$..customer_asn%"
+    }""" .
+
+&lt;x-policy-annotation:data:quagga-bgp-local&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:value   """{
+       "parent": "urn:ogf:network:service+{{uuid}}:resource+virtual_machines:tag+{{@intercloud/bgp/vm_host}}",
+       "networks":["{{@intercloud/bgp/networks}}"]
+    }""" .
+
+&lt;x-policy-annotation:action:nfv-quagga-bgp&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_NfvBgpRouting";
+    spa:importFrom &lt;x-policy-annotation:data:quagga-bgp-remote&gt;, &lt;x-policy-annotation:data:quagga-bgp-local&gt;;
+    spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;
+        {{!DCSRIOVs}}
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:vt1&gt;
+   a  nml:Topology;
+   spa:type spa:Abstraction;
+   spa:dependOn  &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;.
 
 &lt;x-policy-annotation:action:create-aws-ops-path&gt;
     a            spa:PolicyAction ;
