@@ -7,6 +7,8 @@ package net.maxgigapop.mrs.driver.googlecloud;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.google.api.services.compute.Compute;
 import com.google.api.services.storage.Storage;
@@ -15,7 +17,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import java.util.Set;
+import com.google.api.services.compute.model.*;
 
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
@@ -120,37 +122,109 @@ public class GoogleCloudGet {
         }
     }
     
+    public JSONObject getVolume(String zone, String name) {
+        try {
+            return makeRequest(computeClient.disks().get(projectID, zone, name).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
+    }
     
-    //Static functions follow
-    public static String getVPCName (String vpc) {
+    public JSONObject getProject() {
+        try {
+            return makeRequest(computeClient.projects().get(projectID).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+    public HashMap getCommonMetadata() {
         /*
-        gets the name of a vpc from the url.
-        the url should look like this
-        https://www.googleapis.com/compute/v1/projects/elegant-works-176420/global/networks/default
-        We want the part at the end.
+        this makes a get project request, and then extracts the commonInstanceMetadata
+        from the result and places it in a hashmap.
         */
-        return vpc.replaceAll(".*networks/", "");
+        JSONObject projectMetadata = (JSONObject) getProject().get("commonInstanceMetadata");
+        JSONArray items = (JSONArray) projectMetadata.get("items");
+        JSONObject item;
+        HashMap<String, String> output = new HashMap();
+        
+        
+        for (Object o : items) {
+            item = (JSONObject) o;
+            output.put(item.get("key").toString(), item.get("value").toString());
+        }
+        
+        return output;
     }
     
-    public static String getSubnetName (String subnet) {
+    public JSONObject modifyCommonMetadata(String key, String value) {
         /*
-        gets the name of a subnet from the url.
-        the url should look like this
-        https://www.googleapis.com/compute/v1/projects/elegant-works-176420/regions/us-central1/subnetworks/default
-        We want the part at the end.
+        This function is used to add or remove keys from common instance metadata
+        When both key and value are set, the entry pair will be added to the metadata
+        When value is null and key is present in metadata, the key will be removed.
+        If key is null or an exception is thrown, or key cannot be deleted, null is returned.
+        Otherwise, the result of the setCommonInstanceMetadata request is returned.
         */
-        return subnet.replaceAll(".*subnetworks/", "");
+        
+        if (key == null) return null;
+        
+        Metadata meta = new Metadata();
+        Metadata.Items newItem;
+        ArrayList newItems = new ArrayList();
+        //project is a JSONObject with field commonInstanceMetadata, which in turn is a JSONObject with a JSONArray items
+        JSONArray oldItems = (JSONArray) ( (JSONObject) getProject().get("commonInstanceMetadata")).get("items");
+        String oldKey;
+        
+        if (value != null) {
+            newItem = new Metadata.Items();
+            newItem.setKey(key);
+            newItem.setValue(value);
+            newItems.add(newItem);
+        }
+        
+        for (Object o: oldItems) {
+            JSONObject oldItem = (JSONObject) o;
+            newItem = new Metadata.Items();
+            newItem.setKey(oldItem.get("key").toString());
+            newItem.setValue(oldItem.get("value").toString());
+            //if the value is null and key matches, exclude this entry
+            //set key to null so we know that an entry was excluded
+            if (value == null && newItem.getKey().equals(key)) {
+                key = null;
+            } else {
+                newItems.add(newItem);
+            }
+        }
+        
+        //return null, as key to be deleted was not found
+        if (value == null && key != null) return null;
+        
+        meta.setItems(newItems);
+        
+        try {
+            return makeRequest(computeClient.projects().setCommonInstanceMetadata(projectID, meta).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
     }
     
-    public static String getSubnetRegion (String subnet) {
-        return subnet.replaceAll(".*regions/", "").replaceAll("/subnetworks.*", "");
+    public static String parseGoogleURI(String uri, String key) {
+        /*
+        retrieves strong content from a relevant section of a google URI
+        for example, if key is "regions" and uri is:
+        https://www.googleapis.com/compute/v1/projects/elegant-works-176420/regions/southamerica-east1/subnetworks/default
+        the result would be "southamerica-east1"
+        We do this by replacing everything up to and including "key/" and then clearing everything after the final "/"
+        */
+        return uri.replaceAll(".*"+key+"/", "").replaceAll("/.*", "");
     }
-    
+
     public static String getInstancePublicIP(JSONObject netiface) {
         if (netiface == null) return "none";
         JSONArray accessConfigs = (JSONArray) netiface.get("accessConfigs");
         if (accessConfigs == null) return "none";
         JSONObject config = (JSONObject) accessConfigs.get(0);
+        if (config == null) return "none";
         return config.get("natIP").toString();
     }
 }

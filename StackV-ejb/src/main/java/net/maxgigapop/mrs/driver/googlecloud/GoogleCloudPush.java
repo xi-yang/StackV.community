@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
 
 import com.google.api.services.compute.model.AttachedDisk;
 import com.google.api.services.compute.model.AttachedDiskInitializeParams;
@@ -23,7 +24,6 @@ import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-
 
 /**
  *
@@ -53,9 +53,10 @@ public class GoogleCloudPush {
         this.defaultSecGroup = defaultSecGroup;
     }
     
-    public List<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
-        
-        return null;
+    public JSONArray propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
+        JSONArray requests = new JSONArray();
+
+        return requests;
     }
     
     public void commit(List<JSONObject> requests) throws InterruptedException {
@@ -92,7 +93,7 @@ public class GoogleCloudPush {
                         .setBoot(true)
                         .setAutoDelete(true)
                         .setInitializeParams(init);
-                    ArrayList<AttachedDisk> disks = new ArrayList<AttachedDisk>();
+                    ArrayList<AttachedDisk> disks = new ArrayList<>();
                     disks.add(disk);
                     Instance instance = new Instance()
                         .setName(name)
