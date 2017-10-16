@@ -430,7 +430,7 @@
     spa:type     "MCE_NfvBgpRouting";
     spa:importFrom &lt;x-policy-annotation:data:quagga-bgp-remote&gt;, &lt;x-policy-annotation:data:quagga-bgp-local&gt;;
     spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;
-        {{!DCSRIOVs}}
+        {{!DCSRIOVs action}}
 
 &lt;urn:ogf:network:openstack.com:openstack-cloud:vt1&gt;
    a  nml:Topology;
@@ -442,7 +442,7 @@
     spa:type     "MCE_MPVlanConnection" ;
     spa:importFrom &lt;x-policy-annotation:data:aws-ops-criteria&gt; ;
     spa:exportTo &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt;
-        {{!DCSRIOVs}}
+        {{!DCSRIOVs data}}
 
 &lt;x-policy-annotation:data:aws-ops-criteria&gt;
     a            spa:PolicyData;

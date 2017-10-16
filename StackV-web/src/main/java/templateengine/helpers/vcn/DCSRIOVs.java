@@ -10,7 +10,7 @@ public class DCSRIOVs implements Helper {
     @Override
     public String apply(ArrayList<Object> obj) {
         String retString = "";
-        JSONObject root = (JSONObject) obj.get(0);
+        JSONObject root = (JSONObject) obj.get(1);
         JSONArray subnets = (JSONArray) ((JSONObject) root.get("openstack")).get("subnets");
         for (Object subnetObj : subnets) {
             JSONObject subnet = (JSONObject) subnetObj;
@@ -23,8 +23,14 @@ public class DCSRIOVs implements Helper {
                     JSONObject gateway = getGateway(root, (String) sriov.get("hosting_gateway"));
 
                     if (gateway.get("type").equals("Intercloud Network")) {
-                        retString += ", &lt;x-policy-annotation:data:sriov-criteria-external-" 
-                                + ((String) gateway.get("name")).replace(" ", "_") 
+                        String mode = (String) obj.get(0);
+                        if (mode.equals("action")) {
+                            retString += ", &lt;x-policy-annotation:action:sriov-criteria-external-"; 
+                        } else {
+                            retString += ", &lt;x-policy-annotation:data:sriov-criteria-external-";
+                        }
+                        
+                        retString += ((String) gateway.get("name")).replace(" ", "_") 
                                 + "-" + ((String) sriov.get("name")).replace(" ", "_")  +"&gt;\n\t";
                     }
                 }
