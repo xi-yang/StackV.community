@@ -82,6 +82,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
+import net.maxgigapop.mrs.service.ServiceEngine;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.logging.log4j.Level;
 import org.jboss.resteasy.spi.HttpRequest;
@@ -2953,24 +2954,31 @@ public class WebResource {
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
     @RolesAllowed("Services")
-    public void operate(@PathParam(value = "siUUID")
+    public String operate(@PathParam(value = "siUUID")
             final String refUuid, @PathParam(value = "action")
-            final String action) {
+            final String action) throws IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         final String method = "operate";
         logger.trace_start(method, "Thread:" + Thread.currentThread());
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    doOperate(refUuid, action, token);
-                } catch (SQLException | IOException | InterruptedException ex) {
-                    logger.catching(method, ex);
+        if (action.equals("call_verify")) {
+            String retString = ServiceEngine.verifyInstance(refUuid, token.auth());
+            logger.trace_end(method);
+            return retString;
+        } else {
+            executorService.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        doOperate(refUuid, action, token);
+                    } catch (SQLException | IOException | InterruptedException ex) {
+                        logger.catching(method, ex);
+                    }
                 }
-            }
-        });
-        logger.trace_end(method);
+            });
+            logger.trace_end(method);
+            return null;
+        }
     }
 
     @PUT

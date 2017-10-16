@@ -30,7 +30,7 @@ public class VPCSubnetData implements Helper {
                 i < names.size();
                 i++) {
             String name = names.get(i);
-            retString += "&lt;x-policy-annotation:data:vpc-subnet-" + name + "-criteria&gt;";
+            retString += "&lt;x-policy-annotation:data:vpc-subnet-" + name.replace(" ", "_") + "-criteria&gt;";
             if (i < names.size() - 1) {
                 retString += ",\n";
             } else {

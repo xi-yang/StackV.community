@@ -46,7 +46,7 @@ import org.json.simple.JSONObject;
  *
  * @author rikenavadur
  */
-class ServiceEngine {
+public class ServiceEngine {
 
     private final static StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceEngine");
     private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
@@ -250,7 +250,7 @@ class ServiceEngine {
         return result;
     }
 
-    static String verifyInstance(String refUUID, String auth) throws MalformedURLException, IOException {
+    public static String verifyInstance(String refUUID, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/verify/%s", HOST, refUUID));
         HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
         String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, auth);
