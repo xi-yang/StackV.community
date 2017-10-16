@@ -266,6 +266,7 @@ function renderInputs(arr, $parent) {
             var start = ele.getAttribute("start");
             var def = ele.getAttribute("default");
             var collapsible = ele.getAttribute("collapsible");
+            var opened = ele.getAttribute("opened");
             var block = ele.getAttribute("block");
             var str = name.charAt(0).toUpperCase() + name.slice(1);
             var eleID = constructID(ele);
@@ -278,7 +279,12 @@ function renderInputs(arr, $parent) {
             // Handle potential element modifiers            
             var $targetDiv = $div;
             if (collapsible === "true") {
-                $div.addClass("collapsing");
+                if (opened === "true") {
+                    $div.addClass("collapsing");
+                }                
+                else {
+                    $div.addClass("collapsed");
+                }
             }
             if (factory === "true") {
                 $div.addClass("factory");
@@ -794,6 +800,25 @@ function collapseGroups() {
 
         $div.removeClass("collapsing");
     });
+    $(".collapsed").each(function () {
+        var $div = $(this);
+        var collapseStr = "collapse-" + $div.attr("id");
+        var $collapseDiv = $("<div>", {class: "collapse", id: collapseStr});
+        var $toggle = $("<a>").attr("data-toggle", "collapse")
+                .attr("data-target", "#" + collapseStr)
+                .addClass("group-collapse-toggle collapsed");
+
+        $($($div.children()[0]).children()[0]).after($toggle);
+        $div.children().each(function () {
+            var $this = $(this);
+            if (!$this.hasClass("group-header")) {
+                $this.appendTo($collapseDiv);
+            }
+        });
+        $div.append($collapseDiv);
+
+        $div.removeClass("collapsed");
+    });
 }
 
 function collapseDiv($name, $div) {
@@ -1034,18 +1059,7 @@ function buildClone(key, target, $factoryBtn) {
     }
 
     refreshNames();
-    enforceBounds();
-
-    if ($clone.children(".collapse").length > 0) {
-        var id = "#" + $($clone.children(".collapse")[0]).attr("id");
-        var arr = $clone.find(".group-collapse-toggle");
-        for (var i = 0; i < arr.length; i++) {
-            if ($(arr[i]).data("target") === id) {
-                $(arr[i]).click();
-                break;
-            }
-        }
-    }
+    enforceBounds();    
 }
 
 function refreshLinks() {
@@ -1074,9 +1088,13 @@ function refreshLinks() {
 
             $input.append($option);
         }
-
-        if (currSelection) {
+        
+        if (currSelection && currSelection !== "") {
             $input.val(currSelection);
+        } else {
+            if ($input.find("option:not(:empty)").length > 0) {
+                $input.val($input.find("option:not(:empty)").val());
+            }
         }
     }
 }
