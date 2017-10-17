@@ -206,24 +206,50 @@
                     {{$if ^last}}.{{/if ^last}}
                 {{/routes}}
                 {{#routes}}
-                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
+                    &lt;{{*RouteTag}}{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}{{/RouteTag}}&gt;
                         a  mrs:Route;
                         {{$if to}}
-                            mrs:routeTo "{{to}}";
+                            mrs:routeTo &lt;{{RouteTag}}:route_to&gt;;
                         {{/if to}}
                         {{$if from}}
-                            mrs:routeFrom "{{from}}";
+                            mrs:routeFrom &lt;{{RouteTag}}:route_from&gt;;
                         {{/if from}}
                         {{$if next_hop}}
-                            mrs:nextHop "{{next_hop}}";
+                            mrs:nextHop &lt;{{RouteTag}}:next_hop&gt;;
                         {{/if next_hop}}
                     .
+
+                    {{$if to}}
+                        &lt;{{RouteTag}}:route_to&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-prefix";
+                                mrs:value   "{{to}}".
+                    {{/if to}}
+                    {{$if from}}
+                        &lt;{{RouteTag}}:route_from&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-prefix";
+                                mrs:value   "{{from}}".
+                    {{/if from}}
+                    {{$if next_hop}}
+                        &lt;{{RouteTag}}:next_hop&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-address";
+                                mrs:value   "{{next_hop}}".
+                    {{/if next_hop}}
+                    
                 {{/routes}}
                 {{$if !isDCHost}}
                     &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;
-                          a  mrs:Route;                                        
+                        a  mrs:Route;                                        
                             mrs:routeTo "%$..amazon_ip%";                                        
-                            mrs:nextHop "{{@aws/cidr}}";.
+                            mrs:nextHop &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;;.
+
+                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;
+                        a  mrs:NetworkAddress;
+                            mrs:type    "ipv4-address";
+                            mrs:value   "{{@aws/cidr}}".
+                        
                 {{/if !isDCHost}}
             {{/if routes}}
 

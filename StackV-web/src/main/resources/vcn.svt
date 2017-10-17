@@ -186,18 +186,38 @@
                         {{$if ^last}}.{{/if ^last}}
                 {{/routes}}
                 {{#routes}}
-                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
-                          a  mrs:Route;
-                                        {{$if to}}
-                          mrs:routeTo "{{to}}"; {{/ might have to format this differently, check networkAddressFromJson method}}
-                                        {{/if to}}
-                                        {{$if from}}
-                          mrs:routeFrom "{{from}}"; {{/ might have to format this differently, check networkAddressFromJson method}}
-                                        {{/if from}}
-                                        {{$if next_hop}}
-                          mrs:nextHop "{{next_hop}}"; {{/ might have to format this differently, check networkAddressFromJson method}}
-                                        {{/if next_hop}}
+                    &lt;{{*RouteTag}}{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}{{/RouteTag}}&gt;
+                        a  mrs:Route;
+                        {{$if to}}
+                            mrs:routeTo &lt;{{RouteTag}}:route_to&gt;;
+                        {{/if to}}
+                        {{$if from}}
+                            mrs:routeFrom &lt;{{RouteTag}}:route_from&gt;;
+                        {{/if from}}
+                        {{$if next_hop}}
+                            mrs:nextHop &lt;{{RouteTag}}:next_hop&gt;;
+                        {{/if next_hop}}
                     .
+
+                    {{$if to}}
+                        &lt;{{RouteTag}}:route_to&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-prefix";
+                                mrs:value   "{{to}}".
+                    {{/if to}}
+                    {{$if from}}
+                        &lt;{{RouteTag}}:route_from&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-prefix";
+                                mrs:value   "{{from}}".
+                    {{/if from}}
+                    {{$if next_hop}}
+                        &lt;{{RouteTag}}:next_hop&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-address";
+                                mrs:value   "{{next_hop}}".
+                    {{/if next_hop}}
+                    
                 {{/routes}}
             {{/if routes}}
 
