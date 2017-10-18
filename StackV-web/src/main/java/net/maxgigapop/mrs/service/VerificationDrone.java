@@ -193,7 +193,7 @@ public class VerificationDrone implements Runnable {
             }
             // Step 4.1 If hit max runs without success, verification has failed
             state = "FINISHED";
-            prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '-1', `state` = 'FINISHED' "
+            prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED' "
                     + "WHERE `instanceUUID` = ? ");
             prep.setString(1, instanceUUID);
             prep.executeUpdate();

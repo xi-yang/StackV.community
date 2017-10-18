@@ -195,8 +195,6 @@ public class ServiceHandler {
                 type = rs1.getString("type");
                 lastState = rs1.getString("last_state");
             }
-
-            logger.trace_end(method);
         } catch (SQLException ex) {
             logger.catching(method, ex);
             throw ex;
