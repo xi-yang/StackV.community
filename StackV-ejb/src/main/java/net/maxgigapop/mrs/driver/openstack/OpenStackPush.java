@@ -2712,7 +2712,7 @@ public class OpenStackPush {
                     + "OPTIONAL {?route mrs:nextHop ?next_hop. "
                     + "     ?next_hop mrs:type ?next_hop_type. "
                     + "     ?next_hop mrs:value ?next_hop_value. } "
-                    + "}";
+                    + "} ORDER BY (?route)";
             ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
             int routeNum = 1;
             while (r3.hasNext()) {
