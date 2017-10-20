@@ -824,9 +824,10 @@ function instructionModerate() {
                         + verificationRun + ")";
                         break;
                     case "-1":
-                        blockString = "Service has been constructed, but could not be verified. Please attempt verification again.";
+                        blockString = "Service has been constructed, but could not be verified. Please attempt verification again.";                
                         break;
-                }                
+                }       
+                break;
             case "FAILED":
                 if (verificationRun > 0 && verificationRun < 30) {
                     blockString = "Service has failed. Please see logging for more information. (Run "
