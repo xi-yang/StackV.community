@@ -12,7 +12,10 @@
 @prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
 @prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
 
-{{!TODO polish punctuation/whitespace/order after base templates are working}}
+&lt;x-policy-annotation:data:vpc-criteria&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:value    """{{topologyPolicyData @root}}""".
 
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_clouds:tag+vpc1&gt;
     a                         nml:Topology ;
@@ -40,14 +43,13 @@
 &lt;x-policy-annotation:data:vpc-export&gt;
     a            spa:PolicyData ;
     spa:type     "JSON" ;
-    spa:format   """{{PolicyData parent=../parent stitch_from="%$.gateways[?(@.type=='vpn-gateway')].uri%"}}""".
+    spa:format   """{{PolicyData parent=../parent stitch_from="%%$.gateways[?(@.type=='vpn-gateway')].uri%%"}}""".
 
 &lt;x-policy-annotation:data:conn-export&gt;
     a            spa:PolicyData;
     spa:type     "JSON" ;
     spa:format   """{
-    {{! discrepancy with wiki }}
-        "to_l2path": "%$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%"
+        "to_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%%
     }""" .
 
 &lt;x-policy-annotation:data:conn-criteria1&gt;
@@ -55,11 +57,11 @@
     spa:type     "JSON";
     spa:value    """{
         "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
-            "{{directConnDest routes/to}}": {
-                "vlan_tag":"{{directConnVlan routes/to}}"
+            "{{directConnDest connects.[0].to}}": {
+                "vlan_tag":"{{directConnVlan connects.[0].to}}"
             },
             "{{../parent}}": {
-                "vlan_tag":"{{directConnVlan routes/to}}"
+                "vlan_tag":"{{directConnVlan connects.[0].to}}"
             }
         }
     }""".
@@ -67,7 +69,7 @@
     {{else}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
 {{/if_directConnect}}
-{{#if_aws conditions}} {{! AWS }}
+{{#if_aws @root}} {{! AWS }}
     {{#subnets}}
         {{#vms}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
@@ -81,29 +83,29 @@
     spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;
 {{addressString name interfaces @root.uuid}}
 
-&lt;x-policy-annotation:action:create-{{@root.uuid}}&gt;
+&lt;x-policy-annotation:action:create-{{name}}&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_VMFilterPlacement" ;
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
-    spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-{{@root.uuid}}-criteria&gt;.
+    spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
 
-&lt;x-policy-annotation:data:vpc-subnet-{{@root.uuid}}-criteria&gt;
+&lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
     a           spa:PolicyData;
     spa:type    "JSON";
     spa:format  """{
-        "place_into": "%$.subnets[{{@index}}].uri%"}""" .
+        "place_into": "%%$.subnets[{{@index}}].uri%%"}""" .
         {{/vms}}
     {{/subnets}}
 {{/if_aws}}
 
-{{#if_ops conditions}} {{! OPS }}
+{{#if_ops @root}} {{! OPS }}
     {{#subnets}}
         {{#vms}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
     a                         nml:Node ;
     nml:name         "{{name}}";
             {{#if type}}
-    mrs:type    "{{type}}"; {{!TODO includes other pieces (image, etc) }}
+    mrs:type    "internal"; {{!TODO includes other pieces (image, etc) }}
             {{/if}}
     nml:hasBidirectionalPort   &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:eth0&gt; ;
             {{#if routes}}
@@ -118,11 +120,10 @@
 ;
 {{addressString name interfaces @root.uuid}}  {{! check on conditional relating to blank addressString }}
             {{#sriovs}}
-                {{#each ../../../gateways}}
+                {{#each @root.gateways}}
                     {{#if_eq name ../hosting_gateway}}
-
-                        {{#if routes.0.from}}
-                            {{#if_eq routes.0.type 'port_profile'}}
+                        {{#if_eq type 'UCS Port Profile'}}
+                        {{log this}}
 &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{../../name}}-sriov{{@../index}}&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_UcsSriovStitching" ;
@@ -134,17 +135,15 @@
     spa:type     "JSON";
     spa:value    """ {
         "stitch_from": "urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../../name}}",
-        "to_port_profile": "{{routes.0.from}}",
+        "to_port_profile": "{{connects.0.from}}",
         "mac_address": "{{../mac_address}}"
         {{sriovIP ../ip_address}}
-                                {{#if routes}}
-        ,   "routes" : {{toJSON routes}} {{!TODO check if desired format/data, can be changed to routes.[0] }}
+                                {{#if connects}}
+        ,   "routes" : {{toJSON connects}} {{!TODO check if desired format/data, can be changed to connects.[0] }}
                                 {{/if}}
         } """ .
-                            {{/if_eq}}
-                        {{/if}}
-                        {{#if routes.0.to}}
-                            {{#if_eq routes.0.type 'stitch_port'}}
+                        {{/if_eq}}
+                        {{#if_eq type 'L2 Stitch Port'}}
 &lt;x-policy-annotation:action:ucs-{{../../name}}-sriov{{@../index}}-stitch&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_UcsSriovStitching" ;
@@ -156,15 +155,14 @@
     spa:type     "JSON";
     spa:format   """ {
        "stitch_from": "urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../../name}}", {{!TODO ensure every reference to 'name' is in correct context}}
-       "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{../name}}%,
+       "to_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{../name}}%%,
        "mac_address": "{{sriovMac ../address}}"
         {{sriovIP ../address}}
-                                {{#if routes}}
-        ,   "routes" : {{toJSON routes}} {{!TODO same as above }}
+                                {{#if connects}}
+        ,   "routes" : {{toJSON connects}} {{!TODO same as above }}
                                 {{/if}}
         } """ .
-                            {{/if_eq}}
-                        {{/if}}
+                        {{/if_eq}}
                     {{/if_eq}}
                 {{/each}}
             {{/sriovs}}
@@ -178,13 +176,15 @@
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}:routingservice:routingtable+linux&gt;
      a   mrs:RoutingTable;
      mrs:type   "linux";
-     mrs:hasRoute    
+     mrs:hasRoute
                 {{#routes}}
      {{#unless @first}},{{/unless}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:routingservice:routingtable+linux:route+{{add @index 1}}&gt;
-      a  mrs:Route;
+     {{#if @last}}.{{/if}}
                 {{/routes}}
                 {{#routes}}
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:routingservice:routingtable+linux:route+{{add @index 1}}&gt;
+      a  mrs:Route;
                     {{#if to}}
       mrs:routeTo "{{to}}"; {{!might have to format this differently, check networkAddressFromJson method}}
                     {{/if}}
@@ -194,8 +194,8 @@
                     {{#if next_hop}}
       mrs:nextHop "{{next_hop}}"; {{!might have to format this differently, check networkAddressFromJson method}}
                     {{/if}}
-                {{/routes}}
 .
+                {{/routes}}
             {{/if}}
 
             {{#if ceph_rbd}}
@@ -206,7 +206,7 @@
    mrs:mount_point "{{mount_point}}".
                 {{/ceph_rbd}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}&gt;
-   mrs:hasVolume        
+   mrs:hasVolume
                 {{#ceph_rbd}} {{! ensure that ceph_rbd blocks will be handled in same order regardless of when called, if not, need to make a helper}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;{{#unless @last}},{{/unless}}
                 {{/ceph_rbd}}
@@ -235,24 +235,26 @@
 &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
     a           spa:PolicyData;
     spa:type    "JSON";
-    spa:format  """{ "place_into": "%$.subnets[{{@../index}}].uri%"}""" .
+    spa:format  """{ "place_into": "%%$.subnets[{{@../index}}].uri%%"}""" .
         {{/vms}}
     {{/subnets}}
 
     {{#subnets}}
-    {{#if vms}}
+
+    {{#if_createPathExportTo @root}}
+    {{log this}}
 &lt;x-policy-annotation:action:create-path&gt;
     a            spa:PolicyAction ;
     spa:type     "MCE_MPVlanConnection" ;
     spa:importFrom &lt;x-policy-annotation:data:conn-criteria&gt; ;
-    spa:exportTo   
+    spa:exportTo
         {{#vms}}
             {{#sriovs}}
-&lt;x-policy-annotation:data:{{../name}}-sriov{{@index}}-criteria&gt;{{#unless @../last}},{{/unless}}
+&lt;x-policy-annotation:data:{{../name}}-sriov{{@index}}-criteria&gt;{{#unless @last}},{{/unless}}
             {{/sriovs}}
+            .
         {{/vms}}
 
-    {{#if_createPathExportTo @root}}
 &lt;x-policy-annotation:data:conn-criteria&gt;
     a            spa:PolicyData;
     spa:type     "JSON";
@@ -260,13 +262,9 @@
             {{#vms}}
                 {{#if interfaces }}
                     {{#sriovs}}
-                        {{#each ../../../gateways}}
+                        {{#each @root.gateways}}
                             {{#if_eq name ../hosting_gateway}}
-                                {{#if routes.0.to}}
-                                    {{#if_eq routes.0.type 'stitch_port'}}
-                                    {{!TODO example JSON doesn't use this piece yet }}
-                                    {{/if_eq}}
-                                {{/if}}
+
                             {{/if_eq}}
                         {{/each}}
                     {{/sriovs}}
@@ -274,7 +272,6 @@
             {{/vms}}
     } """ .
     {{/if_createPathExportTo}}
-    {{/if}}
 
 {{! svcDeltaCeph }}
     {{#vms}}
@@ -286,7 +283,7 @@
         {{/ceph_rbd}}
         {{#if ceph_rbd}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{name}}&gt;
-    mrs:hasVolume       
+    mrs:hasVolume
         {{/if}}
         {{#ceph_rbd}}
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:volume+ceph{{@index}}&gt;{{#if @last}}.{{else}},{{/if}}
@@ -343,7 +340,7 @@ mrs:hasNetworkAddress &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtua
 &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}&gt;
     nml:hasService       &lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs&gt;.
             {{#if exports}}
-lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs:exports&gt;
+&lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../name}}:service+nfs:exports&gt;
    a mrs:NetworkAddress ;
    mrs:type "nfs:exports";
    mrs:value "{{{exports}}}".
@@ -355,12 +352,12 @@ lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../nam
     {{#vms}}
         {{#sriovs}}
             {{#each ../../../gateways}}
-                {{#if routes.0.from}}
+                {{#if connects.0.from}}
                     {{#if_eq type 'port_profile'}}
 &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{../name}}-sriov{{@index}}&gt;,
                     {{/if_eq}}
                 {{/if}}
-                {{#if routes.0.to}}
+                {{#if connects.0.to}}
                     {{#if_eq type 'stitch_port'}}
 &lt;x-policy-annotation:action:ucs-{{../name}}-sriov{{@index}}-stitch&gt;,
                     {{/if_eq}}
@@ -369,6 +366,8 @@ lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../nam
         {{/sriovs}}
     {{/vms}}
     {{/subnets}}
+{{/if_ops}}
+
 &lt;x-policy-annotation:action:create-vpc&gt;
     a           spa:PolicyAction ;
     spa:type     "MCE_VirtualNetworkCreation" ;
@@ -377,24 +376,19 @@ lt;urn:ogf:network:service+{{@root.uuid}}:resource+virtual_machines:tag+{{../nam
 {{#subnets}}
     {{#if vms}}
 ;
-    spa: exportTo &lt;x-policy-annotation:data:vpc-export&gt;,  
+    spa:exportTo &lt;x-policy-annotation:data:vpc-export&gt;,
         {{~#vms}}
 &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;{{#unless @last}},{{/unless}}
         {{/vms}}
+        .
     {{else}}
 .
     {{/if}}
 {{/subnets}}
-{{/if_ops}}
-
-&lt;x-policy-annotation:data:vpc-criteria&gt;
-    a            spa:PolicyData;
-    spa:type     nml:Topology;
-    spa:value    """{{PolicyData type='internal' cidr=cidr parent=parent subnets=subnets routes=gateways/routes gateways=gateways}}""".
-{{! type always internal in ServiceEngine, keep this behavior? }}
-{{!TODO must add 0.0.0.0/0 and nexthop internet to routes}}
-{{!TODO gwVpn condition if gateways contains "vpn" in addition to AWS Direct Connect}}
 
 </modelAddition>
 
 </serviceDelta>
+
+
+{{!TODO polish punctuation/whitespace/order after base templates are working}}

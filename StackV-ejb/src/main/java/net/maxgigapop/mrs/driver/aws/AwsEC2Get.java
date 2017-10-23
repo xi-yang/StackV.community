@@ -1165,7 +1165,9 @@ public class AwsEC2Get {
             try {
                 List<InstanceStatus> stats = client.describeInstanceStatus(request).getInstanceStatuses();
                 List<InstanceStatus> instanceIds = client.describeInstanceStatus(request2).getInstanceStatuses();
-                if(instanceIds.containsAll(stats)){break;}  
+                if (instanceIds.containsAll(stats)) {
+                    break;
+                }
             } catch (com.amazonaws.AmazonServiceException ex) {
                 if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
                     try {
@@ -1173,7 +1175,7 @@ public class AwsEC2Get {
                     } catch (InterruptedException ex1) {
                         ;
                     }
-                } 
+                }
             } catch (NullPointerException ex2) {
                 ;
             }

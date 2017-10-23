@@ -1,6 +1,6 @@
 (function(name, interfaces, refUuid){
     var addressMRL = '';
-    for (var i in interfaces) {
+    interfaces.forEach(function(i) {
         var addressString = undefined;
         if (i.type.toUpperCase() === 'ETHERNET' && i.hasOwnProperty('address')) {
             addressString = i.address;
@@ -11,7 +11,9 @@
             addressMRL += '    mrs:hasNetworkAddress    ' + '&lt;urn:ogf:network:service+' + refUuid + ':resource+virtual_machines:tag+' + name + ':eth0:floating&gt;.\n\n' +
                 '&lt;urn:ogf:network:service+' + refUuid + ':resource+virtual_machines:tag+' + name + ':eth0:floating&gt;\n' +
                 '    a        mrs:NetworkAddress;\n    mrs:type   "floating-ip";\n' + '    mrs:value       "' + addressString + '" .\n\n';
+        } else {
+            addressMRL = ' .\n\n';
         }
-    }
+    });
     return new handlebars.SafeString(addressMRL);
 });

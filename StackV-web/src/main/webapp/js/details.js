@@ -458,17 +458,17 @@ function loadVisualization() {
             var tabs = [
                 {
                     "name": "Service",
-                    "state": "COMPILED",
+                    "state": "READY",
                     "createContent": createVizTab.bind(undefined, "Service")
                 },
                 {
                     "name": "System",
-                    "state": "COMPILED",
+                    "state": "READY",
                     "createContent": createVizTab.bind(undefined, "System")
                 },
                 {
                     "name": "Verification",
-                    "state": "COMMITTING",
+                    "state": "READY",
                     "createContent": createVizTab.bind(undefined, "Verification")
                 }
             ];
@@ -817,8 +817,16 @@ function instructionModerate() {
                 blockString = "Service is currently being constructed.";
                 break;
             case "COMMITTED":
-                blockString = "Service has been constructed, and is now being verified. (Run "
+                switch (verificationState) {
+                    case "null":
+                    case "0":
+                        blockString = "Service has been constructed, and is now being verified. (Run "
                         + verificationRun + ")";
+                        break;
+                    case "-1":
+                        blockString = "Service has been constructed, but could not be verified. Please attempt verification again.";                
+                        break;
+                }       
                 break;
             case "FAILED":
                 if (verificationRun > 0 && verificationRun < 30) {
@@ -864,6 +872,17 @@ function buttonModerate() {
     switch (subState) {
         case "COMMITTED":
             $("#verify").removeClass("hide");
+            switch (superState) {
+                case "CREATE":
+                case "REINSTATE":
+                    $("#force_cancel").removeClass("hide");
+                    break;
+                case "CANCEL":
+                    $("#force_reinstate").removeClass("hide");
+                    break;
+            }
+            $("#delete").removeClass("hide");
+            
             break;
         case "COMMITTING":            
             switch (superState) {
@@ -950,7 +969,7 @@ function reloadData() {
                     $("#body-" + this.id).toggleClass("hide");
                 });
                 refreshSync(refreshed, timerSetting);
-            }, 500);
+            }, 250);
         } else {
             reloadLogs();
             subloadDetails();

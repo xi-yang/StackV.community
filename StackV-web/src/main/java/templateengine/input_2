@@ -1,0 +1,48 @@
+{
+  "data": {
+    "uuid": "c9841734-6006-4acc-8c53-3385908b8371",
+    "cidr": "10.0.0.0/16",
+    "gateways": [
+      {
+        "connects": [
+          {
+            "to": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*"
+          }
+        ],
+        "name": "l2path-aws-dc1",
+        "type": "AWS Direct Connect"
+      }
+    ],
+    "options": [
+      "aws-form"
+    ],
+    "parent": "urn:ogf:network:sdn.maxgigapop.net:network",
+    "subnets": [
+      {
+        "cidr": "10.0.0.0/24",
+        "name": "subnet1",
+        "vms": [
+          {
+            "image": "ami-0d1bf860",
+            "instance_type": "m4.large",
+            "interfaces": [
+              {
+                "public": false,
+                "type": "Ethernet"
+              }
+            ],
+            "keypair_name": "driver_key",
+            "name": "vm1",
+            "security_group": "geni"
+          }
+        ],
+        "vpn_route_propagation": true
+      }
+    ]
+  },
+  "options": [
+    "aws-form"
+  ],
+  "service": "vcn",
+  "uuid": "c9841734-6006-4acc-8c53-3385908b8371"
+}

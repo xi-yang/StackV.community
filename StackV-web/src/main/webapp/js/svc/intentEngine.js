@@ -266,6 +266,7 @@ function renderInputs(arr, $parent) {
             var start = ele.getAttribute("start");
             var def = ele.getAttribute("default");
             var collapsible = ele.getAttribute("collapsible");
+            var opened = ele.getAttribute("opened");
             var block = ele.getAttribute("block");
             var str = name.charAt(0).toUpperCase() + name.slice(1);
             var eleID = constructID(ele);
@@ -278,7 +279,12 @@ function renderInputs(arr, $parent) {
             // Handle potential element modifiers            
             var $targetDiv = $div;
             if (collapsible === "true") {
-                $targetDiv = collapseDiv($name, $div);
+                if (opened === "true") {
+                    $div.addClass("collapsing");
+                }                
+                else {
+                    $div.addClass("collapsed");
+                }
             }
             if (factory === "true") {
                 $div.addClass("factory");
@@ -352,10 +358,16 @@ function renderInputs(arr, $parent) {
             var name = constructID(ele);
             var trigger = ele.getAttribute("trigger");
             var condition = ele.getAttribute("condition");
+            var hidden = ele.getAttribute("hidden");
             var required = ele.getAttribute("required");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
             var $input = $("<input>", {type: type, class: "intent-input", id: name});
+
+            if (ele.getElementsByTagName("hint").length > 0) {
+                $label.text($label.text() + " " + ele.getElementsByTagName("hint")[0].innerHTML);
+            }
+
             var $message = null;
             switch (type) {
                 case "button":
@@ -370,8 +382,15 @@ function renderInputs(arr, $parent) {
             }
 
             if (ele.children[0].innerHTML.toLowerCase() === "name" && ele.parentElement.tagName === "group") {
-                $input.attr("data-name", ele.parentElement.getAttribute("name") + "_1");
-                $input.val(ele.parentElement.getAttribute("name") + "_1");
+                var parentName;
+                if (ele.parentElement.getAttribute("passthrough") === null && ele.parentElement.parentElement) {
+                    parentName = ele.parentElement.getAttribute("name");
+                } else {
+                    parentName = ele.parentElement.parentElement.getAttribute("name");
+                }
+
+                $input.attr("data-name", parentName + " 1");
+                $input.val(parentName + " 1");
             }
 
             // Handle potential element modifiers
@@ -533,12 +552,16 @@ function renderInputs(arr, $parent) {
                     }
                 });
             }
+            
+            if (hidden) {
+                $label.addClass("hidden");
+            }
 
             $label.append($input);
             if ($message) {
                 $label.append($message);
             }
-            $parent.append($label);
+            $parent.append($label);            
         }
     }
 }
@@ -552,17 +575,8 @@ function factorizeRendering() {
         recursivelyFactor(id, fact);
     }
 
-    // Step 2: Check for collapsible elements
-    var collapseArr = $("#intent-panel-body").find(".group-collapse-toggle");
-    for (var i = 0; i < collapseArr.length; i++) {
-        var toggle = collapseArr[i];
-        toggle.setAttribute("data-target", toggle.getAttribute("data-target") + "_num1");
 
-        var collapse = toggle.parentElement.nextSibling;
-        //collapse.id += "_num1";
-    }
-
-    // Step 3: Insert user elements
+    // Step 2: Insert user elements
     for (var i = 0; i < factoryArr.length; i++) {
         var fact = factoryArr[i];
         var id = fact.id;
@@ -592,6 +606,9 @@ function factorizeRendering() {
         }
     }
 
+    // Step 3: Check for collapsible elements
+    collapseGroups();
+
     initializeInputs();
     // Step 4: Cache schemas
     for (var i = 0; i < factoryArr.length; i++) {
@@ -620,7 +637,7 @@ function recursivelyFactor(id, ele) {
             if (index >= 0) {
                 ele.id = eleID.replace(id, id + "_num1");
                 if (label && ele.children[0] && ele.children[0].children[0]) {
-                    if (ele.children[0].children[0].innerText.indexOf("#1") < 0) {
+                    if (ele.children[0].children[0].innerText.indexOf("#1") < 0 && $(ele).hasClass("factory")) {
                         ele.children[0].children[0].innerText += " #1";
                     }
                 }
@@ -763,6 +780,47 @@ function submitIntent(mode) {
 }
 
 // UTILITY FUNCTIONS
+function collapseGroups() {
+    $(".collapsing").each(function () {
+        var $div = $(this);
+        var collapseStr = "collapse-" + $div.attr("id");
+        var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});
+        var $toggle = $("<a>").attr("data-toggle", "collapse")
+                .attr("data-target", "#" + collapseStr)
+                .addClass("group-collapse-toggle");
+
+        $($($div.children()[0]).children()[0]).after($toggle);
+        $div.children().each(function () {
+            var $this = $(this);
+            if (!$this.hasClass("group-header")) {
+                $this.appendTo($collapseDiv);
+            }
+        });
+        $div.append($collapseDiv);
+
+        $div.removeClass("collapsing");
+    });
+    $(".collapsed").each(function () {
+        var $div = $(this);
+        var collapseStr = "collapse-" + $div.attr("id");
+        var $collapseDiv = $("<div>", {class: "collapse", id: collapseStr});
+        var $toggle = $("<a>").attr("data-toggle", "collapse")
+                .attr("data-target", "#" + collapseStr)
+                .addClass("group-collapse-toggle collapsed");
+
+        $($($div.children()[0]).children()[0]).after($toggle);
+        $div.children().each(function () {
+            var $this = $(this);
+            if (!$this.hasClass("group-header")) {
+                $this.appendTo($collapseDiv);
+            }
+        });
+        $div.append($collapseDiv);
+
+        $div.removeClass("collapsed");
+    });
+}
+
 function collapseDiv($name, $div) {
     var name = $name.text().toLowerCase();
     var parent = getParentName($div.attr("id"));
@@ -883,12 +941,14 @@ function getName(key) {
 function constructID(ele) {
     var retString = ele.getAttribute("name");
     if (ele.nodeName === "input") {
-        retString = ele.parentElement.getAttribute("name") + "-" + ele.children[0].innerHTML;
-        ele = ele.parentElement;
+        retString = ele.children[0].innerHTML;
     }
+
     while (ele.nodeName !== "stage") {
-        retString = ele.parentElement.getAttribute("name") + "-" + retString;
         ele = ele.parentElement;
+        if (ele.getAttribute("passthrough") === null) {
+            retString = ele.getAttribute("name") + "-" + retString;
+        }
     }
     return retString.replace(/ /g, "_").toLowerCase();
 }
@@ -954,7 +1014,7 @@ function buildClone(key, target, $factoryBtn) {
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
 
-    // Reset button listeners  
+    // Reset listeners  
     $(".intent-button-factory").off("click");
     $(".intent-button-factory").click(function (e) {
         // Modify clone for current index
@@ -973,6 +1033,18 @@ function buildClone(key, target, $factoryBtn) {
             });
         }
     });
+    $clone.find("input[data-valid]").each(function () {
+        $(this).change(function () {
+            $(this).removeClass("invalid-input");
+            var $stage = $($(this).parents(".intent-stage-div")[0]);
+            if ($stage.find(".invalid-input").length === 0) {
+                $("#prog-" + $stage.attr("id")).removeClass("invalid-input");
+            }
+            if ($(".invalid-input").length === 0) {
+                $(".intent-operations").removeClass("blocked");
+            }
+        });
+    });
 
     var $defArr = $clone.find("[data-default]");
     for (var i = 0; i < $defArr.length; i++) {
@@ -987,18 +1059,7 @@ function buildClone(key, target, $factoryBtn) {
     }
 
     refreshNames();
-    enforceBounds();
-
-    if ($clone.children(".collapse").length > 0) {
-        var id = "#" + $($clone.children(".collapse")[0]).attr("id");
-        var arr = $clone.find(".group-collapse-toggle");
-        for (var i = 0; i < arr.length; i++) {
-            if ($(arr[i]).data("target") === id) {
-                $(arr[i]).click();
-                break;
-            }
-        }
-    }
+    enforceBounds();    
 }
 
 function refreshLinks() {
@@ -1027,9 +1088,13 @@ function refreshLinks() {
 
             $input.append($option);
         }
-
-        if (currSelection) {
+        
+        if (currSelection && currSelection !== "") {
             $input.val(currSelection);
+        } else {
+            if ($input.find("option:not(:empty)").length > 0) {
+                $input.val($input.find("option:not(:empty)").val());
+            }
         }
     }
 }
@@ -1064,7 +1129,8 @@ function refreshNames() {
             var name = $input.data("name");
 
             var $parent = $input.parent();
-            while (!$parent.hasClass("intent-group-div")) {
+            var nameReg = new RegExp("_num\\d+$");
+            while (!$parent.hasClass("intent-group-div") || !nameReg.test($parent.attr("id"))) {
                 $parent = $parent.parent();
                 if (!$parent)
                     return;
@@ -1150,44 +1216,66 @@ function parseSchemaIntoManifest(schema) {
 
 var recurCache = {};
 function parseManifestIntoJSON() {
+    // Step 0: Trim unfulfilled groups
+//    $(intent).find("fulfilled").each(function () {
+//        var nameArr = [];
+//        $(this).children().each(function () {
+//            nameArr.push(this.innerHTML);
+//        });
+//            
+//        var eleName = this.parentElement.getAttribute("name");
+//        // Find element(s) in manifest
+//        recurCache = {};
+//        findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+//        
+//        for (var key in recurCache) {
+//            var ele = recurCache[key];
+//            for (var i = 0; i < nameArr.length; i++) {
+//                var name = nameArr[i];
+//                if (ele[name] === null || ele[name] === "") {
+//                    delete ele;
+//                }
+//            }
+//        }
+//    });
+    
     // Step 1: Reorg hierarchy
     $(intent).find("path").each(function () {
         var arr = this.children;
-        for (var i = 0; i < arr.length; i++) {
-            var target = arr[i].innerHTML.toLowerCase().replace(/ /g, "_");
-            var eleName = this.parentElement.getAttribute("name");
 
-            // Find element(s) in manifest
-            recurCache = [];
-            findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+        var target = arr[0].innerHTML.toLowerCase().replace(/ /g, "_");
+        var eleName = this.parentElement.getAttribute("name");
 
-            for (var key in recurCache) {
-                var ele = recurCache[key];
-                // Find target
-                if (target === "root") {
-                    for (var child in ele) {
-                        manifest[child] = ele[child];
-                    }
+        // Find element(s) in manifest
+        recurCache = [];
+        findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+
+        for (var key in recurCache) {
+            var ele = recurCache[key];
+            // Find target
+            if (target === "root") {
+                for (var child in ele) {
+                    manifest[child] = ele[child];
+                }
+            } else {
+                var targetEle = findKeyDeep(manifest, ele[target]);
+                if (targetEle) {
+                    // Input link path
+                    delete ele[target];
+                    targetEle[key] = ele;
                 } else {
-                    var targetEle = findKeyDeep(manifest, ele[target]);
-                    if (targetEle) {
-                        // Input link path
-                        delete ele[target];
-                        targetEle[key] = ele;
-                    } else {
-                        // Explicit JSON path
-                        var pathArr = target.split("/");
+                    // Explicit JSON path
+                    var pathArr = target.split("/");
 
-                        var obj = manifest;
-                        for (var j = 0; j < pathArr.length; j++) {
-                            if (!(pathArr[j] in obj)) {
-                                obj[pathArr[j]] = {};
-                            }
-                            obj = obj[pathArr[j]];
+                    var obj = manifest;
+                    for (var j = 0; j < pathArr.length; j++) {
+                        if (!(pathArr[j] in obj)) {
+                            obj[pathArr[j]] = {};
                         }
-
-                        obj[key] = ele;
+                        obj = obj[pathArr[j]];
                     }
+
+                    obj[key] = ele;
                 }
             }
         }
@@ -1205,6 +1293,8 @@ function parseManifestIntoJSON() {
     trimLeaves(manifest);
 
     // Step 4: Finishing and initialization
+    renamePathing();
+
     var newManifest = {};
     newManifest["data"] = manifest;
     manifest = newManifest;
@@ -1221,27 +1311,24 @@ function parseManifestIntoJSON() {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            manifest["uuid"] = result;
+            package["uuid"] = result;
+            manifest["data"]["uuid"] = result;
             if (options.length > 0) {
-                manifest["options"] = options;
+                package["options"] = options;
                 manifest["data"]["options"] = options;
             }
-            manifest["data"]["uuid"] = result;
 
             // Render template            
-            var rendered = render(manifest);
-            if (!rendered) {
-                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
-                manifest = null;
-                return;
-            }
-
-            delete manifest["data"]["uuid"];
-            delete manifest["data"]["options"];
+//            var rendered = render(manifest);
+//            if (!rendered) {
+//                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
+//                manifest = null;
+//                return;
+//            }
 
             package["service"] = intentType;
             package["alias"] = $("#meta-alias").val();
-            package["data"] = rendered;
+            package["data"] = manifest["data"];
         }
     });
 }
@@ -1411,6 +1498,15 @@ function trimLeaves(recur) {
             delete recur[prop];
         }
     }
+}
+
+function renamePathing() {
+    $(intent).find("path").each(function () {
+        if (this.getElementsByTagName("name").length > 0) {
+            var nameArr = this.getElementsByTagName("name")[0].innerHTML.split("::");
+            manifest = JSON.parse(JSON.stringify(manifest).replace(nameArr[0],nameArr[1]));
+        }
+    });
 }
 
 // Find closest input with generic name matching key

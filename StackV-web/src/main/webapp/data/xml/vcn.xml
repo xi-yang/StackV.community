@@ -85,7 +85,7 @@
         </group>        
     </stage>
     <stage name="Subnets">
-        <group block="subnets" name="Subnet" collapsible="true">
+        <group block="subnets" name="Subnet" collapsible="true" opened="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -94,8 +94,8 @@
             <input>
                 <name>CIDR</name>
                 <type>text</type>
-                <valid>cidr</valid>
                 <default first_only="true">10.0.0.0/24</default>
+                <valid>cidr</valid>                
             </input>
             <input condition="aws-form">
                 <name>VPN Route Propagation</name>
@@ -107,7 +107,7 @@
                 <type>checkbox</type>
             </input>
             
-            <group factory="true" name="route" label="off">
+            <group factory="true" name="route" label="off" collapsible="true">
                 <input>
                     <name>From</name>
                     <type>text</type>
@@ -131,63 +131,70 @@
         </group>
     </stage>
     <stage name="VMs">
-        <group block="vms" name="VM" collapsible="true">
+        <group block="vms" name="VM" collapsible="true" opened="true">
             <path>
                 <parent>subnet host</parent>                
             </path>
             
-            <input>
-                <name>Subnet Host</name>
-                <type>select</type>
-                <link>subnets</link>
-                <valid>select</valid>
-            </input>
-            <input>
-                <name>Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>                                    
-            <input>
-                <name>Security Group</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input>
-                <name>Keypair Name</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input condition ="aws-form">
-                <name>Instance Type</name>
-                <type>text</type>                
-                <valid>string</valid>
-            </input>
-            <input condition="aws-form">
-                <name>Image</name>
-                <type>text</type>
-                <valid>string</valid>
-            </input>
-            <input condition ="openstack-form">
-                <name>Host</name>
-                <type>text</type>               
-                <default>any</default>
-                <valid>string</valid>
-            </input>
-            <input condition="openstack-form">
-                <name>Floating IP</name>
-                <type>text</type>
-                <default>any</default>
-            </input>
+            <group name="Details" passthrough="true" collapsible="true" opened="true">
+                <input>
+                    <name>Subnet Host</name>
+                    <type>select</type>
+                    <link>subnets</link>
+                    <valid>select</valid>
+                </input>
+                <input>
+                    <name>Name</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>                                    
+                <input>
+                    <name>Security Group</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Keypair Name</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input condition="aws-form">
+                    <name>Instance Type</name>
+                    <type>text</type>                
+                    <valid>string</valid>
+                </input>
+                <input condition="openstack-form">
+                    <name>Flavor</name>
+                    <type>text</type>                
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Image</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input condition="openstack-form">
+                    <name>Host</name>
+                    <type>text</type>               
+                    <default>any</default>
+                    <valid>string</valid>
+                </input>
+                <input condition="openstack-form">
+                    <name>Floating IP</name>
+                    <type>text</type>
+                    <default>any</default>
+                </input>
+            </group>
             
-            <group factory="true" condition="aws-form" name="Interface">
+            <group factory="true" condition="aws-form" name="Interface"  collapsible="true">
                 <input required="true">
                     <name>Type</name>
-                    <type>select</type>
-                    <size>small</size>
+                    <type>select</type>                    
                     <options>
                         <option>Ethernet</option>
                         <option condition="openstack-form">SRIOV</option>
-                    </options>     
+                    </options>   
+                    <size>small</size>  
                     <valid>select</valid>               
                 </input>
                 <input>
@@ -201,31 +208,83 @@
                     <size>small</size>                    
                 </input>                
             </group>
-            <group factory="true" name="Route">
+            <group name="Routes" passthrough="true" collapsible="true">
+                <group factory="true" name="Route" label="off">
+                    <input>
+                        <name>From</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>To</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Next Hop</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Type</name>
+                        <type>text</type>
+                    </input>
+                </group>
+            </group>
+            <group name="Globus Connect" collapsible="true">
                 <input>
-                    <name>From</name>
+                    <name>Username</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>To</name>
+                    <name>Password</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>Next Hop</name>
+                    <name>Short Name</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input>
-                    <name>Type</name>
+                    <name>Data Interface IP</name>
                     <type>text</type>
+                    <valid>ip</valid>
                 </input>
+                <input>
+                    <name>Default Directory</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+            </group>
+            <group factory="true" name="Ceph RBD" collapsible="true">
+                <input>
+                    <name>Size</name>
+                    <type>text</type>
+                    <hint>(in GB)</hint>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Mount Point</name>
+                    <type>text</type>
+                    <default>/mnt/ceph1</default>
+                    <valid>string</valid>
+                </input>
+            </group>            
+            <group name="NFS" collapsible="true">
+                <group factory="true" name="Export">                    
+                    <input>
+                        <name>Value</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                </group>
             </group>
         </group>
     </stage>
     <stage name="Gateways">
-        <group block="gateways" name="Gateway" collapsible="true">            
+        <group block="gateways" name="Gateway" collapsible="true" opened="true">            
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -240,7 +299,7 @@
                 </options>
                 <valid>select</valid>
             </input>                        
-            <group factory="true" name="Connect">  
+            <group factory="true" name="Connect" collapsible="true">  
                 <bound>
                     <name>gateways-gateway-type</name>
                     <value>AWS Direct Connect</value>
@@ -270,7 +329,7 @@
         </group>
     </stage>    
     <stage name="SRIOVs" condition="openstack-form">
-        <group block="sriovs" name="SRIOV" collapsible="true">
+        <group block="sriovs" name="SRIOV" collapsible="true" opened="true">
             <path>
                 <parent>Hosting VM</parent>
             </path>
@@ -295,7 +354,7 @@
             <input>
                 <name>IP Address</name>
                 <type>text</type>
-                <valid>ip</valid>
+                <valid>cidr</valid>
             </input>       
             <input>
                 <name>MAC Address</name>

@@ -11,6 +11,11 @@
                 <message>Please enter a valid string.</message>
             </constraint>
             <constraint>
+                <name>integer</name>
+                <regex>\d+</regex>
+                <message>Please enter a valid integer.</message>
+            </constraint>
+            <constraint>
                 <name>vlan</name>
                 <regex>^\d{1,4}$|^\d{1,4}-\d{1,4}$|^any$</regex>
                 <message>Please enter a valid VLAN.</message>
@@ -37,6 +42,24 @@
                 <type>text</type>
                 <valid>string</valid>
             </input>
+            <group name="Bandwidth" collapsible="true">
+            <input>
+                <name>Capacity</name>
+                <hint>(in Mbps)</hint>
+                <type>text</type>
+                <valid>integer</valid>
+            </input>
+            <input required="true">
+                <name>QoS Class</name>
+                <type>select</type>
+                <options>
+                    <option>guaranteedCapped</option>
+                    <option>softCapped</option>
+                    <option>anyAvailable</option>
+                    <option default="true">bestEffort</option>
+                </options>
+            </input>
+            </group>
             <group factory="true" name="terminal">
                 <bound>
                     <name>connections-type</name>

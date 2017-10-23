@@ -145,7 +145,6 @@
         
         <script src="/StackV-web/js/svc/intentEngine.js"></script>
         <script src="/StackV-web/js/svc/handlebars.js"></script>        
-        <script src="/StackV-web/templating/renderer.js"></script>
 
     </body>
 </html>
