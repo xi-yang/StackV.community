@@ -32,7 +32,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.HashMap;
 import java.util.Properties;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -61,37 +60,40 @@ public class ServiceHandler {
     String alias;
     String lastState = "INIT";
 
-    public ServiceHandler(JSONObject input, TokenHandler initToken) {
+    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         token = initToken;
 
-        logger.trace("ServiceHandler", "Service Handler initialized");
-        createInstance(input);
+        createInstance(input, refUUID, autoProceed);
     }
 
-    public ServiceHandler(String refUUID, TokenHandler initToken) {
+    public ServiceHandler(String refUUID, TokenHandler initToken) throws SQLException {
         this.refUUID = refUUID;
         logger.refuuid(refUUID);
-
         token = initToken;
 
-        logger.trace("ServiceHandler", "Service Handler initialized: " + refUUID);
         loadInstance(refUUID);
     }
 
     // INIT METHODS
-    private void createInstance(JSONObject inputJSON) {
+    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         String method = "createInstance";
+        logger.refuuid(refUUID);
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
             logger.start(method);
 
-            type = (String) inputJSON.get("type");
+            type = (String) inputJSON.get("service");
             alias = (String) inputJSON.get("alias");
             owner = (String) inputJSON.get("username");
 
-            JSONObject dataJSON = (JSONObject) inputJSON.get("data");
+            String delta = (String) inputJSON.get("data");
+            String deltaUUID = (String) inputJSON.get("uuid");
+
+            if (deltaUUID == null) {
+                deltaUUID = delta.split("<uuid>")[1].split("</uuid>")[0];
+            }
 
             // Find user ID.
             try {
@@ -106,16 +108,6 @@ public class ServiceHandler {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-
-            // Instance Creation
-            URL url = new URL(String.format("%s/service/instance", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
-            logger.refuuid(refUUID);
-
-            // Create Parameter Map
-            ServiceParser paraParser = new ServiceParser(type);
-            HashMap<String, String> paraMap = paraParser.parse(dataJSON, refUUID);
 
             // Initialize service parameters.
             Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
@@ -140,9 +132,9 @@ public class ServiceHandler {
             rs.next();
             int instanceID = rs.getInt("service_instance_id");
 
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`) VALUES (?)");
+            prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?, ?)");
             prep.setInt(1, instanceID);
+            prep.setString(2, refUUID);
             prep.executeUpdate();
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
@@ -154,7 +146,8 @@ public class ServiceHandler {
             logger.init();
 
             // Execute service creation.
-            switch (type) {
+            ServiceEngine.orchestrateInstance(refUUID, delta, deltaUUID, token, autoProceed);
+            /*switch (type) {
                 case "netcreate":
                     ServiceEngine.createNetwork(paraMap, token);
                     break;
@@ -168,25 +161,24 @@ public class ServiceHandler {
                     ServiceEngine.createDNC(dataJSON, token, refUUID);
                     break;
                 default:
-            }
+            }*/
 
             // Return instance UUID
             logger.end(method);
-        } catch (EJBException | SQLException | IOException ex) {
+        } catch (EJBException | SQLException ex) {
             logger.catching(method, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
     }
 
-    private void loadInstance(String refUUID) {
+    private void loadInstance(String refUUID) throws SQLException {
         String method = "loadInstance";
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            logger.trace_start(method);
-
             Properties front_connectionProps = new Properties();
             front_connectionProps.put("user", front_db_user);
             front_connectionProps.put("password", front_db_pass);
@@ -203,17 +195,16 @@ public class ServiceHandler {
                 type = rs1.getString("type");
                 lastState = rs1.getString("last_state");
             }
-
-            logger.trace_end(method);
         } catch (SQLException ex) {
             logger.catching(method, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
     }
 
     // OPERATION METHODS
-    public void operate(String action) {
+    public void operate(String action) throws SQLException, IOException, InterruptedException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -221,9 +212,9 @@ public class ServiceHandler {
 
         logger.refuuid(refUUID);
         logger.start(method);
-        try {
-            clearVerification();
-            ServiceEngine.toggleVerify(true, refUUID, token);
+        updateLastState(null, refUUID);
+        VerificationHandler verify = new VerificationHandler(refUUID, token);
+        try {            
             switch (action) {
                 case "cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
@@ -253,32 +244,31 @@ public class ServiceHandler {
                     break;
 
                 case "verify":
-                    ServiceEngine.verify(refUUID, token);
+                    verify.startVerification();
                     break;
                 case "unverify":
-                    ServiceEngine.toggleVerify(false, refUUID, token);
+                    verify.stopVerification();
                     break;
 
+                // Subcommands
+                case "propagate":
+                    ServiceEngine.propagateInstance(refUUID, token.auth());
+                    break;
+                case "commit":
+                    ServiceEngine.commitInstance(refUUID, token.auth());
+                    break;
+                case "call_verify":
+                    ServiceEngine.verifyInstance(refUUID, token.auth());
+                    break;
                 default:
                     logger.warning(method, "Invalid action");
             }
 
             logger.end(method);
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
-            try {
-                Properties front_connectionProps = new Properties();
-                front_connectionProps.put("user", front_db_user);
-                front_connectionProps.put("password", front_db_pass);
-                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                        front_connectionProps);
-
-                prep = front_conn.prepareStatement("UPDATE service_verification V INNER JOIN service_instance I SET V.verification_state = '-1' WHERE V.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
-                prep.setString(1, refUUID);
-                prep.executeUpdate();
-            } catch (SQLException ex2) {
-                logger.catching(method, ex2);
-            }
+            verify.stopVerification();            
             logger.catching(method, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
             if (lastState != null) {
@@ -287,7 +277,7 @@ public class ServiceHandler {
         }
     }
 
-    public String status() {
+    public String status() throws IOException {
         try {
             URL url = new URL(String.format("%s/service/%s/status", host, refUUID));
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
@@ -296,7 +286,7 @@ public class ServiceHandler {
             return result;
         } catch (IOException ex) {
             logger.catching("status", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -354,11 +344,13 @@ public class ServiceHandler {
         }
 
         result = propagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
         if (!result) {
             return 3;
         }
 
         result = commit(refUuid, token.auth());
+        lastState = "COMMITTING";
         if (!result) {
             return 4;
         }
@@ -366,8 +358,9 @@ public class ServiceHandler {
         while (true) {
             instanceState = status();
             if (instanceState.equals("COMMITTED")) {
-                lastState = instanceState;
-                lastState = ServiceEngine.verify(refUuid, token);
+                lastState = "COMMITTED";
+                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                verify.startVerification();
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
                 return 5;
@@ -386,7 +379,9 @@ public class ServiceHandler {
             logger.trace("forceCancelInstance", "Verification priming check - " + instanceState);
             if (instanceState.equals("COMMITTED")) {
                 lastState = "COMMITTED";
-                lastState = ServiceEngine.verify(refUuid, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                verify.clearVerification();
+                verify.startVerification();
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
                 return 5;
@@ -403,7 +398,9 @@ public class ServiceHandler {
 
             String instanceState = status();
             if (instanceState.equals("COMMITTED")) {
-                ServiceEngine.verify(refUuid, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                verify.clearVerification();
+                verify.startVerification();
 
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
@@ -414,7 +411,7 @@ public class ServiceHandler {
     }
 
     // Utility Methods ---------------------------------------------------------
-    private void setSuperState(String refUuid, SuperState superState) {
+    private void setSuperState(String refUuid, SuperState superState) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -432,6 +429,7 @@ public class ServiceHandler {
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("setSuperState", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
@@ -444,7 +442,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Propagate Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        lastState = result;
+        lastState = "PROPAGATED";
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
@@ -455,7 +453,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Forced Propagate Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        lastState = result;
+        lastState = "PROPAGATED";
         return result.equalsIgnoreCase("PROPAGATED");
     }
 
@@ -466,7 +464,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Commit Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        lastState = result;
+        lastState = "COMMITTING";
         return result.equalsIgnoreCase("COMMITTING");
     }
 
@@ -477,7 +475,7 @@ public class ServiceHandler {
         //logger.log(Level.INFO, "Sending Forced Commit Command");
         //logger.log(Level.INFO, "Response Code : {0}", result);
 
-        lastState = result;
+        lastState = "COMMITTING";
         return result.equalsIgnoreCase("COMMITTING");
     }
 
@@ -514,37 +512,9 @@ public class ServiceHandler {
         return result;
     }
 
-    private boolean clearVerification() {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("UPDATE service_verification V "
-                    + "INNER JOIN service_instance I "
-                    + "ON V.service_instance_id = I.service_instance_id AND I.referenceUUID = ? "
-                    + "SET V.verification_state = ?, V.verification_run = 0");
-            prep.setString(1, refUUID);
-            prep.setNull(2, java.sql.Types.INTEGER);
-            prep.executeUpdate();
-
-            return true;
-        } catch (SQLException ex) {
-            logger.catching("clearVerification", ex);
-            return false;
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
-    }
-
-    void updateLastState(String lastState, String refUUID) {
+    void updateLastState(String lastState, String refUUID) throws SQLException {
         String method = "updateLastState";
-        logger.trace_start(method);
+        logger.trace_start(method, lastState);
 
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -562,11 +532,10 @@ public class ServiceHandler {
             prep.setString(2, refUUID);
             prep.executeUpdate();
         } catch (SQLException ex) {
-            logger.catching("cacheSystemDelta", ex);
+            logger.catching("updateLastState", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
-
-        logger.trace_end(method);
     }
 }

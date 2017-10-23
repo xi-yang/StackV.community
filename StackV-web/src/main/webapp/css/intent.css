@@ -48,12 +48,12 @@ button:focus {
 }
 
 #intent-panel-body {
-    height: calc(100% - 50px);
+    height: calc(100% - 60px);
     width: calc(100% - 150px);
     padding: 30px 30px 20px 10px;
-    overflow: scroll;
+    overflow: auto;
     border-radius: 0 0 15px 0;
-
+    margin-bottom: 10px;
     background: linear-gradient(to right, rgba(255,255,255,0.01) 0%,rgba(255,255,255,1) 5%,rgba(255,255,255,1) 95%,rgba(255,255,255,0.01) 100%), url('/StackV-web/img/hex-back.png');
 }
 
@@ -71,10 +71,11 @@ button:focus {
     margin-left: 5px;
 }
 #intent-panel-meta #meta-alias {
-    width: 100%;
+    width: 100px;
     margin: auto;
-    height: 25px;
+    height: 75px;
     padding: 5px;
+    resize: none;
 }
 #intent-panel-meta-block {
     height: calc(100% - 225px);
@@ -108,7 +109,12 @@ button:focus {
     margin: auto;
     margin-top: 5px;
 }
-.intent-input.invalid {
+.intent-group-div button[disabled] {
+    opacity: .3;
+    color: #eee;
+    pointer-events: none;
+}
+.intent-input.invalid-input, #meta-alias.invalid-input {
     border: 1px solid red;
     color: red;
 }
@@ -118,7 +124,7 @@ button:focus {
     color: darkred;
     display: none;
 }
-.intent-input.invalid + .intent-input-message {
+.intent-input.invalid-input + .intent-input-message {
     display: block;
 }
 
@@ -170,7 +176,7 @@ button:focus {
     opacity: 0;
 }
 .intent-stage-div.conditional.conditioned:not(.active) {
-    display: none;
+    display: none !important;
 }
 
 .button-factory {
@@ -209,11 +215,11 @@ button:focus {
     pointer-events: none;
 }
 
-#intent-submit {
+.intent-operations {
     left: 0;
     position: absolute;
     bottom: 0;
-    border-radius: 0 0 0 20px;
+    border-radius: 0 0 0 15px;
     background: #7f7f7f;
     color: white;
     border: 1px solid #6d6d6d;
@@ -223,10 +229,10 @@ button:focus {
     -webkit-transition: all 150ms linear;
     transition: all 150ms linear;
     text-transform: uppercase;
-    width: 100%;
+    width: 50%;
     height: 30px;
 }
-#intent-submit:hover {   
+.intent-operations:hover {   
     background: #737373;
     border: 1px solid rgba(0, 0, 0, 0.05);    
     color: #a5a5a5;
@@ -234,6 +240,27 @@ button:focus {
     text-shadow: -1px -1px 0 #5f5f5f;
     -webkit-transition: all 250ms linear;
     transition: all 250ms linear;
+}
+.intent-controls.blocked, .intent-operations.blocked {    
+    color: #afafaf;
+    pointer-events: none;    
+}
+
+#intent-submit {
+    left: 50%;
+    border-radius: 0;
+}
+#intent-save {
+
+}
+
+#saveModalLabel {
+    display: inline-block;
+}
+#profile-name, #profile-description {
+    display: block;
+    margin: auto;
+    margin-bottom: 5px;
 }
 
 .conditional { 

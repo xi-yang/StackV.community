@@ -22,7 +22,7 @@
  */
 /* global XDomainRequest, baseUrl, loggedIn, TweenLite, Power2, tweenBlackScreen */
 // Service JavaScript Library
-baseUrl = window.location.origin;
+var baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
 var refreshTimer;
 var countdownTimer;
@@ -33,7 +33,7 @@ var dataTable;
 $(function () {
     $.ajaxSetup({
         cache: false,
-        timeout: 15000
+        timeout: 60000
     });
 
     keycloak.init().success(function (authenticated) {
@@ -727,8 +727,8 @@ function forceReinstateInstance(uuid) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
-            window.location.reload(true);
-        }
+            window.location.reload(true); 
+       }
     });
     //window.location.replace('/StackV-web/ops/catalog.jsp');
 }
@@ -1161,7 +1161,7 @@ function formatChild(d) {
     if (d.referenceUUID !== "") {
         retString += '<tr>' +
                 '<td>UUID:</td>' +
-                '<td><textarea class="dataTables-child">' + d.referenceUUID + '</textarea></td>' +
+                '<td>' + d.referenceUUID + '</td>' +
                 '</tr>';
     }
     retString += '<tr>' +

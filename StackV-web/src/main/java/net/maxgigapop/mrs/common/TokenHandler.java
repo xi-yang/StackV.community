@@ -56,8 +56,8 @@ public class TokenHandler {
     }
 
     public void refreshToken() {
-        long elapsed = (System.nanoTime() - accessCreationTime) / 1000000;        
-        if (elapsed > 45000) {                   
+        long elapsed = (System.nanoTime() - accessCreationTime) / 1000000;
+        if (elapsed > 45000) {
             accessToken = refreshTokenSub(0);
         }
     }
@@ -108,9 +108,7 @@ public class TokenHandler {
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
 
-            if (recur == 0) {
-                logger.trace_end(method);
-            } else {
+            if (recur != 0) {
                 logger.status(method, "Refresh achieved after " + recur + " retry");
             }
             return (String) result.get("access_token");

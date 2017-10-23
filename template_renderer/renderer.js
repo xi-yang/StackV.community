@@ -97,8 +97,8 @@ function compile_templates() {
  * @returns {string} rendered intent in .ttl format
  */
 function render(intent){
-    intent.data.uuid = intent.uuid;
     try {
+        intent.data.uuid = intent.uuid;
         return templates[intent.service](intent.data);
     } catch (err) {
         log.error(err);

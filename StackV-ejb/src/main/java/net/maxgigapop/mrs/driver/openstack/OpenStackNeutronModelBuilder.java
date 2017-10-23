@@ -88,10 +88,12 @@ public class OpenStackNeutronModelBuilder {
         Property providesVPC = Mrs.providesVPC;
         Property providesVM = Mrs.providesVM;
         Property type = Mrs.type;
+        Property batch = Mrs.batch;
         Property providedByService = Mrs.providedByService;
         Property providesBucket = Mrs.providesBucket;
         Property providesRoute = Mrs.providesRoute;
         Property hasRoute = Mrs.hasRoute;
+        Property order = Mrs.order;
 
         Property providesSubnet = Mrs.providesSubnet;
 
@@ -208,6 +210,11 @@ public class OpenStackNeutronModelBuilder {
             model.add(model.createStatement(VM, Mrs.memory_mb, Integer.toString(server.getFlavor().getRam())));
             model.add(model.createStatement(VM, Mrs.disk_gb, Integer.toString(server.getFlavor().getDisk())));
                         
+            
+           //check for batch creation and add the batch property
+           Map<String,String> serverMetaData = server.getMetadata();
+           if(serverMetaData.containsKey("has batch"))
+           {model.add(model.createStatement(VM, batch, serverMetaData.get("has batch")));}
             
             for (Port port : openstackget.getServerPorts(server)) {
                 String PortName = openstackget.getResourceName(port);

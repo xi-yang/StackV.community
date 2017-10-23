@@ -36,13 +36,13 @@
         padding: 7px;
         /* stop unintentional highlighting */ 
         -webkit-user-select: none;
-         -moz-user-select: none;
-          -ms-user-select: none;
-              user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
 
     }
     .hover_div::selection {
-                background: none;
+        background: none;
 
     } 
 
@@ -172,21 +172,21 @@
     .jSonDialog{
         text-align:left;
     }
-    
+
     svg text {
         -webkit-user-select: none;
-           -moz-user-select: none;
-            -ms-user-select: none;
-                user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
     }
     svg text::selection {
         background: none;
     }
-/*     .details_viz_div text {
-      font: 13px bold sans-serif; stroke-linejoin: round;
-      text-anchor: middle; fill: gray; stroke: black;
-    }*/
-   
+    /*     .details_viz_div text {
+          font: 13px bold sans-serif; stroke-linejoin: round;
+          text-anchor: middle; fill: gray; stroke: black;
+        }*/
+
 </style>
 
 <script type="text/javascript">
@@ -341,7 +341,7 @@
     }
 
     function make_display_panel(div_id, prefix) {
-        var display_panel =  "<div class=\"displayPanel\" id=\"" + prefix + "_displayPanel\"> " +
+        var display_panel = "<div class=\"displayPanel\" id=\"" + prefix + "_displayPanel\"> " +
                 "<div class=\"displayPanelBar\">" +
                 "<div class=\"displayPanelCloserBar\"> " +
                 "<i id=\"displayPanelCloser\" class=\"fa fa-times displayPanelCloser\" aria-hidden=\"true\"></i>" +
@@ -400,22 +400,23 @@
 
 
 
-    function recenterGraph(o, model,  width, height) {
+    function recenterGraph(o, model, width, height) {
         o.resetZoom();
         if (width === undefined && height === undefined) {
             width = $("#" + o.svgContainerName).closest("td").width();
             height = $("#" + o.svgContainerName).closest("td").height();
         }
         layout.stop();
-        
-         if(o.svgContainerName.includes("serv")) {
-            width = $(window).width() * .85;; //$("#" + viz_id).width();
-            height =  $(window).height() * .1; //$("#" + viz_id).height();
 
-            buildTreeViz(model.dept_trees,model.resources, model, width, height, o.svgContainerName);
+        if (o.svgContainerName.includes("serv")) {
+            width = $(window).width() * .85;
+            ; //$("#" + viz_id).width();
+            height = $(window).height() * .1; //$("#" + viz_id).height();
+
+            buildTreeViz(model.dept_trees, model.resources, model, width, height, o.svgContainerName);
 
             layout.doTreeLayout(model, null, width, height);
-            layout.doTreeLayout(model, null, width, height);      
+            layout.doTreeLayout(model, null, width, height);
         } else {
             layout.doLayout(model, null, width, height);
             layout.doLayout(model, null, width, height);
@@ -442,26 +443,28 @@
 
 
     function drawGraph(outputApi, model2) {
-       // $("#" + outputApi.svgContainerName).width("50%");
-       // $("#" + outputApi.svgContainerName).height("50%");
+        // $("#" + outputApi.svgContainerName).width("50%");
+        // $("#" + outputApi.svgContainerName).height("50%");
 
         if (outputApi.svgContainerName.includes("serv") || outputApi.svgContainerName.includes("sys")) {
-            var width = $(window).width() * .85;; //$("#" + viz_id).width();
-            var height =  $(window).height() * .1; //$("#" + viz_id).height();
+            var width = $(window).width() * .85;
+            ; //$("#" + viz_id).width();
+            var height = $(window).height() * .1; //$("#" + viz_id).height();
         } else {
-            var width = 993;; //$("#" + viz_id).width();
-            var height =  130; //$("#" + viz_id).height();
-        } 
-        var tdID =  $("#" + outputApi.svgContainerName).closest("td").attr("id");
- //TODO, figure out why we need to call this twice
+            var width = 993;
+            ; //$("#" + viz_id).width();
+            var height = 130; //$("#" + viz_id).height();
+        }
+        var tdID = $("#" + outputApi.svgContainerName).closest("td").attr("id");
+        //TODO, figure out why we need to call this twice
         //If we do not, the layout does to converge as nicely, even if we double the number of iterations
-        if(outputApi.svgContainerName.includes("serv")) {
-            buildTreeViz(model2.dept_trees,model2.resources, model2, width, height, outputApi.svgContainerName);
+        if (outputApi.svgContainerName.includes("serv")) {
+            buildTreeViz(model2.dept_trees, model2.resources, model2, width, height, outputApi.svgContainerName);
             layout.doTreeLayout(model2, null, width, height);
             layout.doTreeLayout(model2, null, width, height);
             outputApi.setZoom(.8);
             render.doRender(outputApi, model2, false, modelMap, outputApiMap);
-      
+
         } else {
             layout.doLayout(model2, null, width, height);
             layout.doLayout(model2, null, width, height);
@@ -472,23 +475,25 @@
     }
     function displayError(error, d3_obj, viz_id, offset) {
         if (viz_id.includes("serv") || viz_id.includes("sys")) {
-            var div_width = $(window).width() * .85;; //$("#" + viz_id).width();
-            var div_height =  $(window).height() * .1; //$("#" + viz_id).height();
+            var div_width = $(window).width() * .85;
+            ; //$("#" + viz_id).width();
+            var div_height = $(window).height() * .1; //$("#" + viz_id).height();
         } else {
-            var div_width = 993;; //$("#" + viz_id).width();
-            var div_height =  130; //$("#" + viz_id).height();
-        } 
+            var div_width = 993;
+            ; //$("#" + viz_id).width();
+            var div_height = 130; //$("#" + viz_id).height();
+        }
         var x = (div_width / 4) + (div_width / 6);
         var y = (div_height / 2) + (div_height / 2);
         if (offset === undefined) {
             offset = 0;
         }
-        
+
         if (error === "Empty") {
             $("#" + viz_id + "_div").addClass("emptyViz");
             $("#" + viz_id + "_div").trigger("emptyViz");
         }
-        
+
         d3_obj.select("#" + viz_id).append("text")
                 .attr("x", x + offset)
                 .attr("y", y)
@@ -498,7 +503,7 @@
                 .text(error);
     }
 
-    function displayText(text, d3_obj, viz_id, x, y, text_id) {     
+    function displayText(text, d3_obj, viz_id, x, y, text_id) {
         var currentText = document.getElementById(text_id);
         if (currentText !== null) {
             currentText.innerHTML = text;
@@ -526,7 +531,7 @@
         //viz_table.find("th:nth-child(" + index + ")").css( "color", "#ccc");
     }
     function showManifest() {
-        var uuid =  sessionStorage.getItem("instance-uuid");
+        var uuid = sessionStorage.getItem("instance-uuid");
         window.open('/StackV-web/ops/details/manifestPortal.jsp?uuid=' + uuid, 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
     }
     function createTextToggle(prefix, textModel) {
@@ -536,10 +541,10 @@
         var width = viz_svg.width();
         width -= width / 4;
         var height = viz_svg.height();
-        
-        if (prefix.includes("serv") || prefix.includes("sys")  ) {
-           width = "inherit";
-           height += height / 2; 
+
+        if (prefix.includes("serv") || prefix.includes("sys")) {
+            width = "inherit";
+            height += height / 2;
         }
 
         var textModelDiv = "<div id=\"" + prefix + "_text_div\" class=\"hide details-viz-text-model\"> <pre class=\"details-viz-pre\" style=\"width: " + width +
@@ -576,86 +581,87 @@
                 xhr.setRequestHeader("Authorization", "bearer " + token);
             },
             dataType: "json",
-            success: function (data, textStatus, jqXHR) {     
-                $('.details_viz_div').bind('emptyViz', function() {
+            success: function (data, textStatus, jqXHR) {
+                $('.details_viz_div').bind('emptyViz', function () {
                     var id = $(this).attr("id");
                     if (id.includes("ser") || id.includes("sys"))
                         removeIfEmpty(id);
-                 });
-                if (data.serviceModelAddition && data.serviceModelAddition !== "{ }") {
-                    var servAObj = JSON.parse(data.serviceModelAddition);
-                    var servAModel = new ModelConstructor();
-                    servAModel.makeServiceDtlModel(servAObj, model);
-                    buildTreeLayout(servAModel);
-                    modelMap["serva_viz"] = servAModel;
-                    var outputApi = new outputApi_(render.API, contextMenu, "serva_viz");
-                    outputApiMap["serva_viz"] = outputApi;
-                    drawGraph(outputApi, servAModel);
-                    $("#serva_viz_recenter_button").on("click", function (evt, width, height) {
-                        recenterGraph(outputApi, servAModel, width, height);
-                        evt.preventDefault();
-                    });
-                    createTextToggle("serva", data.serviceModelAddition);
-                } else {
-                    displayError("Empty", d3, "serva_viz");
-                    disableButtons("serva");
-                }
+                });
+                if (data) {
+                    if (data.serviceModelAddition && data.serviceModelAddition !== "{ }") {
+                        var servAObj = JSON.parse(data.serviceModelAddition);
+                        var servAModel = new ModelConstructor();
+                        servAModel.makeServiceDtlModel(servAObj, model);
+                        buildTreeLayout(servAModel);
+                        modelMap["serva_viz"] = servAModel;
+                        var outputApi = new outputApi_(render.API, contextMenu, "serva_viz");
+                        outputApiMap["serva_viz"] = outputApi;
+                        drawGraph(outputApi, servAModel);
+                        $("#serva_viz_recenter_button").on("click", function (evt, width, height) {
+                            recenterGraph(outputApi, servAModel, width, height);
+                            evt.preventDefault();
+                        });
+                        createTextToggle("serva", data.serviceModelAddition);
+                    } else {
+                        displayError("Empty", d3, "serva_viz");
+                        disableButtons("serva");
+                    }
 
-                if (data.serviceModelReduction && data.serviceModelReduction !== "{ }") {
-                    var servRObj = JSON.parse(data.serviceModelReduction);
-                    var servRModel = new ModelConstructor();
-                    servRModel.makeServiceDtlModel(servRObj, model);
-                    buildTreeLayout(servRModel);
-                    modelMap["servr_viz"] = servRModel;
-                    var outputApi2 = new outputApi_(render.API, contextMenu, "servr_viz");
-                    outputApiMap["servr_viz"] = outputApi2;
-                    drawGraph(outputApi2, servRModel);
-                    $("#servr_viz_recenter_button").on("click", function (evt, width, height) {
-                        recenterGraph(outputApi2, servRModel, width, height);
-                        evt.preventDefault();
-                    });
-                    createTextToggle("servr", data.serviceModelReduction);
-                } else {
-                    displayError("Empty", d3, "servr_viz");
-                    disableButtons("servr");
-                }
+                    if (data.serviceModelReduction && data.serviceModelReduction !== "{ }") {
+                        var servRObj = JSON.parse(data.serviceModelReduction);
+                        var servRModel = new ModelConstructor();
+                        servRModel.makeServiceDtlModel(servRObj, model);
+                        buildTreeLayout(servRModel);
+                        modelMap["servr_viz"] = servRModel;
+                        var outputApi2 = new outputApi_(render.API, contextMenu, "servr_viz");
+                        outputApiMap["servr_viz"] = outputApi2;
+                        drawGraph(outputApi2, servRModel);
+                        $("#servr_viz_recenter_button").on("click", function (evt, width, height) {
+                            recenterGraph(outputApi2, servRModel, width, height);
+                            evt.preventDefault();
+                        });
+                        createTextToggle("servr", data.serviceModelReduction);
+                    } else {
+                        displayError("Empty", d3, "servr_viz");
+                        disableButtons("servr");
+                    }
 
-                if (data.systemModelAddition && data.systemModelAddition !== "{ }") {
-                    var sysAObj = JSON.parse(data.systemModelAddition);
-                    var sysAModel = new ModelConstructor();
-                    sysAModel.initWithMap(sysAObj, model);
-                    modelMap["sysa_viz"] = sysAModel;
-                    var outputApi3 = new outputApi_(render.API, contextMenu, "sysa_viz");
-                    outputApiMap["sysa_viz"] = outputApi3;
-                    drawGraph(outputApi3, sysAModel);
-                    $("#sysa_viz_recenter_button").on("click", function (evt, width, height) {
-                        recenterGraph(outputApi3, sysAModel, width, height);
-                        evt.preventDefault();
-                    });
-                    createTextToggle("sysa", data.systemModelAddition);
-                } else {
-                    displayError("Empty", d3, "sysa_viz");
-                    disableButtons("sysa");
-                }
+                    if (data.systemModelAddition && data.systemModelAddition !== "{ }") {
+                        var sysAObj = JSON.parse(data.systemModelAddition);
+                        var sysAModel = new ModelConstructor();
+                        sysAModel.initWithMap(sysAObj, model);
+                        modelMap["sysa_viz"] = sysAModel;
+                        var outputApi3 = new outputApi_(render.API, contextMenu, "sysa_viz");
+                        outputApiMap["sysa_viz"] = outputApi3;
+                        drawGraph(outputApi3, sysAModel);
+                        $("#sysa_viz_recenter_button").on("click", function (evt, width, height) {
+                            recenterGraph(outputApi3, sysAModel, width, height);
+                            evt.preventDefault();
+                        });
+                        createTextToggle("sysa", data.systemModelAddition);
+                    } else {
+                        displayError("Empty", d3, "sysa_viz");
+                        disableButtons("sysa");
+                    }
 
-                if (data.systemModelReduction && data.systemModelReduction !== "{ }") {
-                    var sysrObj = JSON.parse(data.systemModelReduction);
-                    var sysrModel = new ModelConstructor();
-                    sysrModel.initWithMap(sysrObj, model);
-                    modelMap["sysr_viz"] = sysrModel;
-                    var outputApi4 = new outputApi_(render.API, contextMenu, "sysr_viz");
-                    outputApiMap["sysr_viz"] = outputApi4;
-                    drawGraph(outputApi4, sysrModel);
-                    $("#sysr_viz_recenter_button").on("click", function (evt, width, height) {
-                        recenterGraph(outputApi4, sysrModel, width, height);
-                        evt.preventDefault();
-                    });
-                    createTextToggle("sysr", data.systemModelReduction);
-                } else {
-                    displayError("Empty", d3, "sysr_viz");
-                    disableButtons("sysr");
+                    if (data.systemModelReduction && data.systemModelReduction !== "{ }") {
+                        var sysrObj = JSON.parse(data.systemModelReduction);
+                        var sysrModel = new ModelConstructor();
+                        sysrModel.initWithMap(sysrObj, model);
+                        modelMap["sysr_viz"] = sysrModel;
+                        var outputApi4 = new outputApi_(render.API, contextMenu, "sysr_viz");
+                        outputApiMap["sysr_viz"] = outputApi4;
+                        drawGraph(outputApi4, sysrModel);
+                        $("#sysr_viz_recenter_button").on("click", function (evt, width, height) {
+                            recenterGraph(outputApi4, sysrModel, width, height);
+                            evt.preventDefault();
+                        });
+                        createTextToggle("sysr", data.systemModelReduction);
+                    } else {
+                        displayError("Empty", d3, "sysr_viz");
+                        disableButtons("sysr");
+                    }
                 }
-
             },
 
             error: function (jqXHR, textStatus, errorThrown) {
@@ -677,7 +683,7 @@
             type: "GET",
             url: "/StackV-web/restapi/app/service/lastverify/" + UUID,
             beforeSend: function (xhr) {
-               xhr.setRequestHeader("Authorization", "bearer " + token);
+                xhr.setRequestHeader("Authorization", "bearer " + token);
             },
 
             dataType: "json",
@@ -772,14 +778,14 @@
 
     }
     function removeIfEmpty(viz) {
-          var viz =  $("#" + viz);
-          var table = viz.closest("table");
-          if (viz.hasClass("emptyViz")){
+        var viz = $("#" + viz);
+        var table = viz.closest("table");
+        if (viz.hasClass("emptyViz")) {
             table.addClass("hide");
             table.addClass("emptyVizTable");
-          }
+        }
     }
-    
+
     function outputApi_(renderAPI, contextMenu, svg) {
         var that = this;
         this.renderApi = renderAPI;
@@ -965,135 +971,139 @@
 
         $(".displayPanel").draggable({handle: ".displayPanelBar"});
     }
-    
 
-function getPolicyActions(model)  {
-    policyActions = [];
-    
-    for (var i in model.elementMap) {
+
+    function getPolicyActions(model) {
+        policyActions = [];
+
+        for (var i in model.elementMap) {
             if (model.elementMap[i].getType() === "PolicyAction") {
                 policyActions.push(model.elementMap[i]);
             }
+        }
+        return policyActions;
     }
-    return policyActions;
-}
 
-function getDepth(policyAction, model) {
-       var misc = policyAction.relationship_to; 
-       var max = 0; 
-       for (var elem in misc) {
-           if (misc[elem] !== "dependOn") continue;
-           var depth = getDepth(model.elementMap[elem], model);
-           if (depth > max) max = depth; 
-       }
-       return 1 + max;
-}
+    function getDepth(policyAction, model) {
+        var misc = policyAction.relationship_to;
+        var max = 0;
+        for (var elem in misc) {
+            if (misc[elem] !== "dependOn")
+                continue;
+            var depth = getDepth(model.elementMap[elem], model);
+            if (depth > max)
+                max = depth;
+        }
+        return 1 + max;
+    }
 
-function getTallestPolicy(policyActions, model) {
-    var maxVal = -1; 
-    var max; 
-    for (var i = 0; i < policyActions.length; i++) {
+    function getTallestPolicy(policyActions, model) {
+        var maxVal = -1;
+        var max;
+        for (var i = 0; i < policyActions.length; i++) {
             var depth = getDepth(policyActions[i], model);
             if (depth > maxVal) {
                 maxVal = depth;
                 max = policyActions[i];
-            } 
+            }
+        }
+        return max;
     }
-    return max; 
-}
 
-function containsElement(array, element) {
-    for (var i = 0; i < array.length; i++) {
-        if (array[i].getName() === element.getName()) return true;
+    function containsElement(array, element) {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i].getName() === element.getName())
+                return true;
+        }
+        return false;
     }
-    return false; 
-}
 
-function buildTree(root, level, visited,  model) {
-       var misc = root.misc_elements; 
-       var res = [];
-       if  (root === undefined || containsElement(visited,root) || visited.length ===  Object.keys(model.policyMap).length) 
-           return res;
-       
-       visited.push(root);
+    function buildTree(root, level, visited, model) {
+        var misc = root.misc_elements;
+        var res = [];
+        if (root === undefined || containsElement(visited, root) || visited.length === Object.keys(model.policyMap).length)
+            return res;
 
-       root.level = level;
+        visited.push(root);
 
-       ++level;
+        root.level = level;
 
-       for (var i = 0; i < misc.length; i++) {
-           if (!containsElement(visited,(misc[i]))) {
-               if (misc[i].relationship_to[root.getName()] === "exportTo" || 
-                   misc[i].relationship_to[root.getName()] ==="importFrom" ) {
+        ++level;
 
-                   if (misc[i].getType().includes("Policy")) {
-                      misc[i].level = level;
-                      res =  res.concat(buildTree(misc[i], level, visited, model));
-                  }
-                  
-              } 
-           }
-       }
+        for (var i = 0; i < misc.length; i++) {
+            if (!containsElement(visited, (misc[i]))) {
+                if (misc[i].relationship_to[root.getName()] === "exportTo" ||
+                        misc[i].relationship_to[root.getName()] === "importFrom") {
 
-       var rel = root.relationship_to; 
-       for (var elem in rel) {
-           if (!containsElement(visited, model.elementMap[elem]) ) {
+                    if (misc[i].getType().includes("Policy")) {
+                        misc[i].level = level;
+                        res = res.concat(buildTree(misc[i], level, visited, model));
+                    }
 
-               if (model.elementMap[elem].getType().includes("Policy")) {
-                 res =  res.concat(buildTree(model.elementMap[elem], level, visited,  model));
-               } 
-               
-           } 
-       }
-
-       return [root].concat(res);
-}
-
-function buildTreeLayout(model) {
-    var policyActions = [];
-    var resources = [];
-
-    policyActions = getPolicyActions(model);
-
-    var max = getTallestPolicy(policyActions, model);
-    var noDep = getRoots(policyActions);
-
-    var tree = buildTree(max, 0, [], model);
-    
-    tree = tree.filter(function(elem, index, self) {
-        return index === self.indexOf(elem);
-    });
-    
-    for (var i in model.elementMap) {
-        if (!model.elementMap[i].getType().includes("Policy") )
-            resources.push(model.elementMap[i]);
-    }
-    model.dept_trees = getMultipleTrees(noDep, tree, model);
-    model.resources = resources;
-}
-
-function getRoots(policyActions) {
-    var roots = [];
-    for (var i = 0; i < policyActions.length; i++) {
-        var elems = policyActions[i].misc_elements;
-        var isRoot = true; 
-        for (var j = 0; j < elems.length; j++) {
-            for (var k in elems[j].relationship_to) {
-                if (k === policyActions[i].getName() && elems[j].relationship_to[k] === "dependOn" ){
-                    isRoot = false; 
                 }
             }
         }
-        if (isRoot) roots.push(policyActions[i]);
+
+        var rel = root.relationship_to;
+        for (var elem in rel) {
+            if (!containsElement(visited, model.elementMap[elem])) {
+
+                if (model.elementMap[elem].getType().includes("Policy")) {
+                    res = res.concat(buildTree(model.elementMap[elem], level, visited, model));
+                }
+
+            }
+        }
+
+        return [root].concat(res);
     }
-    return roots; 
-}
+
+    function buildTreeLayout(model) {
+        var policyActions = [];
+        var resources = [];
+
+        policyActions = getPolicyActions(model);
+
+        var max = getTallestPolicy(policyActions, model);
+        var noDep = getRoots(policyActions);
+
+        var tree = buildTree(max, 0, [], model);
+
+        tree = tree.filter(function (elem, index, self) {
+            return index === self.indexOf(elem);
+        });
+
+        for (var i in model.elementMap) {
+            if (!model.elementMap[i].getType().includes("Policy"))
+                resources.push(model.elementMap[i]);
+        }
+        model.dept_trees = getMultipleTrees(noDep, tree, model);
+        model.resources = resources;
+    }
+
+    function getRoots(policyActions) {
+        var roots = [];
+        for (var i = 0; i < policyActions.length; i++) {
+            var elems = policyActions[i].misc_elements;
+            var isRoot = true;
+            for (var j = 0; j < elems.length; j++) {
+                for (var k in elems[j].relationship_to) {
+                    if (k === policyActions[i].getName() && elems[j].relationship_to[k] === "dependOn") {
+                        isRoot = false;
+                    }
+                }
+            }
+            if (isRoot)
+                roots.push(policyActions[i]);
+        }
+        return roots;
+    }
     function getMultipleTrees(roots, first_tree, model) {
         var new_trees = [first_tree];
         for (var i = 0; i < roots.length; i++) {
             for (var j = 0; j < new_trees.length; j++) {
                 if (isIsolatedTree(new_trees, roots[i])) {
-                    var tree = buildTree(roots[i], 0, [],  model);
+                    var tree = buildTree(roots[i], 0, [], model);
                     new_trees.push(tree);
                 }
             }
@@ -1101,26 +1111,26 @@ function getRoots(policyActions) {
         return new_trees;
     }
     function isIsolatedTree(trees, root) {
-        for(var i = 0; i < trees.length; i++) {
+        for (var i = 0; i < trees.length; i++) {
             if (containsElement(trees[i], root))
                 return false;
         }
         return true;
     }
-    
+
     function getResourcesForTree(tree, model) {
-        var resources  = [];
+        var resources = [];
         for (var i = 0; i < tree.length; i++) {
-            var elems = tree[i].relationship_to; 
+            var elems = tree[i].relationship_to;
             for (var name in elems) {
                 if (name.startsWith("urn")) {
                     resources.push(model.nodeMap[name]);
                     var misc_elems = model.elementMap[name].misc_elements;
                     for (var j = 0; j < misc_elems.length; j++) {
                         var misc = misc_elems[j];
-                        var misc_name = misc.getName(); 
-                        if (misc_name.startsWith("urn") && !containsElement (resources, misc)) {
-                           resources.push(model.nodeMap[misc_name]);
+                        var misc_name = misc.getName();
+                        if (misc_name.startsWith("urn") && !containsElement(resources, misc)) {
+                            resources.push(model.nodeMap[misc_name]);
                         }
                     }
                 }
@@ -1141,33 +1151,33 @@ function getRoots(policyActions) {
     function buildTreeViz(trees, resources, model, width, height, viz_id) {
         var horiz_constant = (1 / trees.length);
         horiz_constant += horiz_constant * horiz_constant;
-        var horiz_offset = 0; 
+        var horiz_offset = 0;
         var multitree_layout = (trees.length > 1);
-        
-        for(var treeIndx = 0; treeIndx < trees.length; treeIndx++) {
+
+        for (var treeIndx = 0; treeIndx < trees.length; treeIndx++) {
             var treeElems = trees[treeIndx];
-            var treeResources = []; 
+            var treeResources = [];
             if (multitree_layout) {
                 treeResources = getResourcesForTree(treeElems, model);
             } else {
-                treeResources = getAllResourcse(model); 
+                treeResources = getAllResourcse(model);
             }
-            
-            var startX = (width / 2) - (horiz_offset); 
-            var startY = height*Math.log2(treeElems.length)*1.25;
-            var curLevel =  treeElems[0].level;
-            var prevLevel = -1; 
-            var ind = 0; 
+
+            var startX = (width / 2) - (horiz_offset);
+            var startY = height * Math.log2(treeElems.length) * 1.25;
+            var curLevel = treeElems[0].level;
+            var prevLevel = -1;
+            var ind = 0;
             var e = [[]];
 
-            for (var i = 0; i < treeElems.length; i ++) {
+            for (var i = 0; i < treeElems.length; i++) {
                 var elem = treeElems[i];
-                var policy; 
+                var policy;
                 var type = elem.getType();
                 if (type.includes("Policy")) {
-                   policy = model.policyMap[elem.getName()];
-                } else  {
-                   policy = model.nodeMap[elem.getName()];
+                    policy = model.policyMap[elem.getName()];
+                } else {
+                    policy = model.nodeMap[elem.getName()];
                 }
 
                 if (e[elem.level] !== undefined) {
@@ -1185,39 +1195,39 @@ function getRoots(policyActions) {
             e[0][0].y = startY;
 
             for (var i = 1; i < e.length; i++) {
-                var lastStart = e[i-1][0];
-                var lastEnd = e[i-1][e[i-1].length-1];
+                var lastStart = e[i - 1][0];
+                var lastEnd = e[i - 1][e[i - 1].length - 1];
 
                 var policies = e[i];
-                var xOffset = ((lastEnd.x - lastStart.x) / policies.length) + screen.width*.04;
-                xOffset = xOffset*horiz_constant;
-                var yOffset  = e[i-1][0].y - screen.height*.05;
+                var xOffset = ((lastEnd.x - lastStart.x) / policies.length) + screen.width * .04;
+                xOffset = xOffset * horiz_constant;
+                var yOffset = e[i - 1][0].y - screen.height * .05;
 
                 for (var j = 0; j < policies.length; j++) {
-                     if (j === 0) {
-                         policies[j].x = lastStart.x - (screen.width*.05 * horiz_constant);
-                     } else if (j === policies.length-1 && e[i-1].length  <= e[i].length) {
-                         policies[j].x = lastEnd.x + (screen.width*.05 * horiz_constant);
-                     } else {
-                         policies[j].x = policies[j-1].x + xOffset;
-                     }        
-                     policies[j].y = yOffset;
+                    if (j === 0) {
+                        policies[j].x = lastStart.x - (screen.width * .05 * horiz_constant);
+                    } else if (j === policies.length - 1 && e[i - 1].length <= e[i].length) {
+                        policies[j].x = lastEnd.x + (screen.width * .05 * horiz_constant);
+                    } else {
+                        policies[j].x = policies[j - 1].x + xOffset;
+                    }
+                    policies[j].y = yOffset;
                 }
 
-            }  
+            }
 
-            var resStartX = e[e.length-1][0].x;
-            var resStartY = e[e.length-1][0].y - screen.height*.09; 
-            
+            var resStartX = e[e.length - 1][0].x;
+            var resStartY = e[e.length - 1][0].y - screen.height * .09;
+
             for (var i = 0; i < treeResources.length; i++) {
                 var elem = treeResources[i];
                 elem.x = resStartX;
                 elem.y = resStartY;
-                resStartX += (screen.width*.04*horiz_constant);
+                resStartX += (screen.width * .04 * horiz_constant);
             }
-            
 
-            horiz_offset += (e[e.length-1][0].x - startX) ;
+
+            horiz_offset += (e[e.length - 1][0].x - startX);
         }
     }
 

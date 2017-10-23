@@ -43,6 +43,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
@@ -203,12 +205,13 @@ public class OpenStackPush {
                 osClient.networking().port().delete(port.getId());
 
             } else if (o.get("request").toString().equals("CreateVolumeRequest")) {
+                for(int i = 0; i<Integer.parseInt(o.get("batch").toString());i++){
                 Volume volume = new CinderVolume();
                 volume.toBuilder().size(Integer.parseInt(o.get("size").toString()))
                         .volumeType(o.get("type").toString())
                         .name(o.get("name").toString());
 
-                osClient.blockStorage().volumes().create(volume);
+                osClient.blockStorage().volumes().create(volume);}
 
             } else if (o.get("request").toString().equals("DeleteVolumeRequest")) {
                 Volume volume = client.getVolume(o.get("volume name").toString());
@@ -255,18 +258,47 @@ public class OpenStackPush {
                 String id = net.getId();
                 osClient.networking().subnet().delete(net.getId());
                 SubnetDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
-            } else if (o.get("request").toString().equals("DeleteNetworkRequests")) {
+            } 
+            
+            
+            else if (o.get("request").toString().equals("DeleteNetworkRequests")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 Network network = client.getNetwork(o.get("name").toString());
-                String id = network.getId();
+                String networkId = network.getId();
+                String routerId = null;
+                
+                //check for router deletion
+                List<?extends Router> routersList = osClient.networking().router().list();
+                for(Router r : routersList){
+                    if(r.getName().contains(o.get("name").toString())){
+                        routerId = r.getId();}
+                }
+                
+                //detach the router interface attached to this network and then delete the router 
                 for (Port p : client.getPorts()) {
-                    if (p.getNetworkId().equals(network.getId())) {
-                        throw logger.error_throwing(method, "port" + p.getId() + "is still attached to the network, so network" + network.getName() + "cannot be deleted");
+                    if (p.getNetworkId().equals(network.getId()) && !(p.getDeviceOwner().equals("network:dhcp"))) {
+                        if(p.getDeviceId().equals(routerId))
+                        {
+                            osClient.networking().router().detachInterface(routerId, null, p.getId());
+                            osClient.networking().port().delete(p.getId());
+                            
+                            Router r = client.getRouter(routerId);
+                            //clear the external gateway so as to delete the router
+                            r.toBuilder().clearExternalGateway();
+                            osClient.networking().router().delete(routerId);
+                        }
+                        else{
+                        throw logger.error_throwing(method, "port" + p.getId() + "is still attached to the network, so network" + network.getName() + "cannot be deleted");}
                     }
                 }
                 osClient.networking().network().delete(network.getId());
-                NetworkDeletionCheck(id, url, NATServer, username, password, tenantName, topologyUri);
-            } else if (o.get("request").toString().equals("RunInstanceRequest")) {
+                NetworkDeletionCheck(networkId, url, NATServer, username, password, tenantName, topologyUri);
+            } 
+            
+            else if (o.get("request").toString().equals("RunInstanceRequest")) {
+                //loop through the server creation process for batch requests
+                int batchVal = Integer.parseInt(o.get("batch").toString());
+                for(int cnt=0;cnt<batchVal;cnt++){
                 ServerCreateBuilder builder = Builders.server();
                 // determine image and flavor
                 if (o.get("image").toString().equals("any") && o.get("image").toString().equals("any")) {
@@ -297,16 +329,17 @@ public class OpenStackPush {
                     builder.availabilityZone("nova:"+o.get("host name").toString());
                 }
                 int index = 0;
+                
                 while (true) {
+                    //choose the default port for server deployement
                     String key = "port" + Integer.toString(index);
                     if (o.containsKey(key)) {
                         OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
-                        for (Port p : client.getPorts()) {  //here need to be careful
-                            if (client.getResourceName(p).equals(o.get(key).toString())) {
-                                builder.addNetworkPort(p.getId());
-                                break;
-                            }
-                        }
+                        List<Port> portList = client.getPorts(o.get(key).toString());
+                        builder.addNetworkPort(portList.get(cnt).getId());
+                        //add the port to the meta data
+                        builder.addMetadataItem("hasBidirectional Port", o.get(key).toString()+
+                                "(default Port) with order: "+o.get("port order").toString());
                         index++;
                     } else {
                         break;
@@ -315,49 +348,88 @@ public class OpenStackPush {
                 ServerCreate server = (ServerCreate) builder.build();
                 Server s = osClient.compute().servers().boot(server);
                 String servername = o.get("server name").toString();
-                VmCreationCheck(servername, url, NATServer, username, password, tenantName, topologyUri);
+                int numberOfServersCreated = cnt+1;
+                VmCreationCheck(servername,numberOfServersCreated, url, NATServer, username, password, tenantName, topologyUri);
                 // optional secgroups 
                 if (o.containsKey("secgroup") && !o.get("secgroup").toString().isEmpty()) {
                     String[] sgs = o.get("secgroup").toString().split(",|;|:");
                     for (String secgroup : sgs) {
-                        SecurityGroupAddCheck(s.getId(), secgroup);
+                        try {
+                            SecurityGroupAddCheck(s.getId(), secgroup);
+                        } catch (Exception ex) {
+                            throw logger.throwing(method, ex);
+                        }
                     }
                 }
                 if (o.containsKey("alt name")) {
                     client.setMetadata(o.get("server name").toString(), "alt name", o.get("alt name").toString());
+                }}
+                if(batchVal>1){
+                    client.setMetadataBatch(o.get("server name").toString(), "has batch", Integer.toString(batchVal));
                 }
-            } else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
-                Server server = client.getServer(o.get("server name").toString());
+            } 
+            
+            
+            else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
+                
+               List<Server> serversList = client.getServerList(o.get("server name").toString());
+                for(Server server:serversList){
                 osClient.compute().servers().delete(server.getId());
-                VmDeletionCheck(server.getId(), url, NATServer, username, password, tenantName, topologyUri);
-            } else if (o.get("request").toString().equals("AttachVolumeRequest")) {
+                VmDeletionCheck(server.getId(), url, NATServer, username, password, tenantName, topologyUri);}
+            } 
+            
+            else if (o.get("request").toString().equals("AttachVolumeRequest")) {
                 ServerServiceImpl serverService = new ServerServiceImpl();
-                String volumeId = client.getVolume(o.get("volume name").toString()).getId();
-                String serverId = client.getServer(o.get("server name").toString()).getId();
+                List<Server> serversList = client.getServerList(o.get("server name").toString());
+                List<Volume> volumesList = client.getVolumesBatch(o.get("volume name").toString());
+                for(int cnt =0; cnt<serversList.size();cnt++){
+                String volumeId = volumesList.get(cnt).getId();
+                String serverId = serversList.get(cnt).getId();
 
-                serverService.attachVolume(serverId, volumeId, o.get("device name").toString());
-            } else if (o.get("request").toString().equals("DetachVolumeRequest")) {
+                serverService.attachVolume(serverId, volumeId, o.get("device name").toString());}
+            } 
+            
+            else if (o.get("request").toString().equals("DetachVolumeRequest")) {
                 ServerServiceImpl serverService = new ServerServiceImpl();
                 String serverId = client.getServer(o.get("server name").toString()).getId();
                 String attachmentId = o.get("attachment id").toString();
 
                 serverService.detachVolume(serverId, attachmentId);
-            } else if (o.get("request").toString().equals("AttachPortRequest")) {
+            }
+            
+            
+            else if (o.get("request").toString().equals("AttachPortRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
 
+                List<Server> serversList = client.getServerList(o.get("server name").toString());
+                List<Port> portsList = client.getPorts(o.get("port name").toString());
                 InterfaceServiceImpl portService = new InterfaceServiceImpl();
-                String serverId = client.getServer(o.get("server name").toString()).getId();
-                String portId = client.getPort(o.get("port name").toString()).getId();
-
-                //portService.create(serverId, portId);
-            } else if (o.get("request").toString().equals("DetachPortRequest")) {
-                InterfaceServiceImpl portService = new InterfaceServiceImpl();
-                String serverId = client.getServer(o.get("server name").toString()).getId();
-                String portId = client.getPort(o.get("port name").toString()).getId();
+                for(int cnt =0; cnt<serversList.size();cnt++){
+                Server server = serversList.get(cnt);
+                String serverId = server.getId();
+                String portId = portsList.get(cnt).getId();
                 
-                portService.detach(serverId, portId);
-                PortDetachCheck(portId, url, NATServer, username, password, tenantName, topologyUri);
-            } else if (o.get("request").toString().equals("CreateRotingInfoRequest")) {
+                //append the ports to server meta data
+                String portMetaData = client.getMetadata(server,"hasBidirectional Port") + ",\n";
+                portMetaData = portMetaData + o.get("port name").toString() +
+                        " with order: "+ o.get("port order").toString();
+                portService.create(serverId, portId);
+                client.setMetadataById(serverId, "hasBidirectional Port", portMetaData);}
+            } 
+            
+            else if (o.get("request").toString().equals("DetachPortRequest")) {
+                String portName = ResourceTool.getResourceName(o.get("port name").toString(), OpenstackPrefix.PORT);
+                List<Port> portsList = client.getPorts(portName);
+                InterfaceServiceImpl portService = new InterfaceServiceImpl();
+                for(Port port:portsList){
+                String attachmentId = port.getDeviceId();
+                String portId = port.getId();
+                portService.detach(attachmentId, portId);
+                PortDetachCheck(portId, url, NATServer, username, password, tenantName, topologyUri);}
+            } 
+            
+            
+            else if (o.get("request").toString().equals("CreateRotingInfoRequest")) {
                 String routerName = "";
                 String routerid = "";
                 String netid = "";
@@ -604,17 +676,22 @@ public class OpenStackPush {
                         break;
                     }
                 }
-            } else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
+            }
+            
+            else if (o.get("request").toString().equals("CreateNetworkInterfaceRequest")) {
+                int batchCount = Integer.parseInt(o.get("batch").toString());
+                String portName = null;
+                for(int i = 0; i<batchCount;i++){
                 Port port = new NeutronPort();
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 String portname = o.get("port name").toString();
+                portName = portname;
                 Subnet subnet = null;
                 for (Subnet sn : client.getSubnets()) {
                     if (sn.getName().equals(o.get("subnet name").toString())) {
                         subnet = sn;
                         break;
                     }
-
                 }
                 if (subnet == null) {
                     throw logger.error_throwing(method, "unknown subnet:" + o.get("subnet name"));
@@ -628,14 +705,18 @@ public class OpenStackPush {
                             .fixedIp(o.get("private address").toString(), subnet.getId())
                             .networkId(subnet.getNetworkId());
                 }
-                osClient.networking().port().create(port);
+                osClient.networking().port().create(port);}
 
-                PortCreationCheck(portname, url, NATServer, username, password, tenantName, topologyUri);
-            } else if (o.get("request").toString().equals("DeleteNetworkInterfaceRequest")) {
-                Port port = client.getPort(o.get("port name").toString());
+                PortCreationCheck(portName, url, NATServer, username, password, tenantName, topologyUri);
+            }
+            
+            else if (o.get("request").toString().equals("DeleteNetworkInterfaceRequest")) {
+                List<Port> ports = client.getPorts(o.get("port name").toString());
+                for(Port port:ports){
                 if (port != null && port.getDeviceOwner().equals("")) { //this is for delete port have no device owner, if the port has a device owner, it cannot delete it at here besides it will delete at elsewhere.
+                    
                     osClient.networking().port().delete(port.getId());
-                }
+                }}
 
             } else if (o.get("request").toString().equals("DeleteRotingInfoRequest")) {
                 HashMap<String, HashMap<String, String>> routing_info_for_router = new HashMap<String, HashMap<String, String>>();
@@ -730,20 +811,45 @@ public class OpenStackPush {
                 String routeto = o.get("routeto").toString();
                 Subnet s = client.getSubnet(subnetname);
                 System.out.println("There is currently no way to delete the host route through api");
-            } else if (o.get("request").toString().equals("AssociateFloatingIpRequest")) {
+            }
+            
+           else if (o.get("request").toString().equals("AssociateFloatingIpRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 String servername = o.get("server name").toString();
                 String portname = o.get("port name").toString();
+                portname = portname.split("//+")[0];
                 String floatip = o.get("floating ip").toString();
-                Server s = client.getServer(servername);
-                Port p = client.getPort(portname);
-                //@TODO: check if floating ip is already associated with other VM/port
-                NetFloatingIP fipObj = client.findFloatingIp(floatip);
-                if (fipObj == null || fipObj.getFixedIpAddress() != null) {
-                    throw logger.error_throwing(method, "floating IP does not exist or has been associated with other instance / port: " + floatip);                    
+              
+              //batch support
+              List<String> floatingIps = new ArrayList();
+              if(floatip.charAt(0)=='['&&floatip.charAt(floatip.length()-1)==']')
+              {
+                  floatip = floatip.substring(1,floatip.length()-1);
+                  floatingIps = Arrays.asList(floatip.split(", "));
+              }
+                List<Server> serversList = client.getServerList(servername);
+                List<Port> portList = client.getPorts(portname);
+                for(int cnt=0;cnt<serversList.size();cnt++){
+                String floatIp = floatingIps.get(cnt);
+                Server server = serversList.get(cnt);
+                String portIpAddr = null;
+                for(Port port: portList)
+                {
+                    if(port.getDeviceId().equals(server.getId())){
+                        portIpAddr = ((IP)port.getFixedIps().toArray()[0]).getIpAddress();
+                    break;
+                    }
                 }
-                ActionResponse ar = osClient.compute().floatingIps().addFloatingIP(s, ((IP)p.getFixedIps().toArray()[0]).getIpAddress(), floatip);
-            } else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
+                NetFloatingIP fipObj = client.findFloatingIp(floatIp);
+                if (fipObj == null || fipObj.getFixedIpAddress() != null) {
+                    throw logger.error_throwing(method, "floating IP does not exist or has been associated with other instance / port: " + floatIp);                    
+                }
+                
+                ActionResponse r = osClient.compute().floatingIps().addFloatingIP(server,portIpAddr,floatIp);
+                }
+            }
+            
+            else if (o.get("request").toString().equals("CreateisAliaseRequest")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 String servername = o.get("server name").toString();
                 String subnetnamefloat = o.get("subnet name floatip").toString();
@@ -1261,6 +1367,7 @@ public class OpenStackPush {
                         + "?address mrs:type \"ipv4-prefix\" ."
                         + "?address mrs:value ?value}";
                 r1 = executeQuery(query, emptyModel, modelDelta);
+                r1 = executeQueryUnion(query,modelRef,modelDelta);
                 if (!r1.hasNext()) {
                     throw logger.error_throwing(method, String.format("Subnet %s does nto specify network address", subnet));
                 }
@@ -1396,18 +1503,28 @@ public class OpenStackPush {
         //1 get the tag resource from the reference model that indicates 
         //that this is a network  interface 
         //2 select all the ports in the reference model that have that tag
-        
-        //added 9/28: filter out bidirectional ports that contain the word "tunnel",
+
+        //added by @adam: filter out bidirectional ports that contain the word "tunnel",
         //as these are part of vpn endpoint and not port requests.
-        query = "SELECT ?port WHERE {?port a  nml:BidirectionalPort . FILTER (!regex( str(?port), \".*tunnel.*\")) }";
+        query = "SELECT ?port ?batch ?order WHERE {"
+                + "?port a  nml:BidirectionalPort . "
+                + "OPTIONAL { ?server nml:hasBidirectionalPort ?port. "
+                + " ?server mrs:batch ?batch} "
+                + "OPTIONAL {?port mrs:order ?order} " 
+                + "FILTER (!regex( str(?port), \".*tunnel.*\")) " 
+                + "} ORDER BY ?order ?port";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution querySolution = r.next();
             RDFNode port = querySolution.get("port");
+            RDFNode batch = querySolution.get("batch");//null;
+            //String batchVal = (batch!=null)? batch.asResource().toString() : "3";
+            String batchVal = (batch!=null)? batch.toString() : "1";
             String portname = port.asResource().toString();
             String portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
+            //portName = portname.split("\\+")[0];
             Port p = client.getPort(portName);
-
+           
             //2.1 make sure that the desired operation is valid
             if (p == null ^ creation) //network interface  exists, no need to create a network interface
             {
@@ -1475,6 +1592,9 @@ public class OpenStackPush {
                 o.put("private address", privateAddress);
                 o.put("subnet name", subnetName);
                 o.put("port name", portName);
+                
+                //support batch
+                o.put("batch",batchVal);
                 requests.add(o);
             }
         }
@@ -1493,87 +1613,65 @@ public class OpenStackPush {
 
         //1 check for any addition of a port into a device or subnet
         //some error here
-        query = "SELECT ?node ?port WHERE {"
+        query = "SELECT ?node ?port ?order ?batch WHERE {"
                 + "?node nml:hasBidirectionalPort ?port ."
                 + "?node a nml:Node. "
                 + "FILTER (not exists {?vmfex mrs:providesVNic ?port})"
-                + "}";
+                + "OPTIONAL {?port mrs:order ?order}"
+                + "OPTIONAL {?node mrs:batch ?batch}} ORDER BY ?order ?port";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        List<String> nodesWithAPort = new ArrayList();
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode port = q.get("port");
             RDFNode server = q.get("node");
             String servername = server.asResource().toString();
             String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
+            String order = null;
 
-            //1.1 get the server name, if no server is found, it means the port is not being attached to a server
-            //so we will just skip this iteration
-            //we are also checking for the existance of the server, if the server does not exist
-            //the ports will be attached during creation, not done by this method
-            //here is an error
-            query = "SELECT ?node WHERE {?node a nml:Node. FILTER(?node = <" + server.asResource() + ">)}";
-            // System.out.println(query.toString());
-            ResultSet r1 = executeQuery(query, modelRef, modelDelta);
-            Server s = null;
-            if (r1.hasNext()) {
-                s = client.getServer(serverName);
-                r1.next();
-                String portname = port.asResource().toString();
-                String portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
-
-                //1.2 check that the port has a tag
-                /*
-                 query = "SELECT ?tag WHERE {<" + port.asResource() + "> mrs:hasTag ?tag}";
-                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
-                 if (!r2.hasNext()) {
-                 throw logger.error_throwing(method, String.format("bidirectional port %s to be attached to intsnace does not specify a tag", port));
-                 }
-                 QuerySolution q2 = r2.next();
-                 RDFNode tag = q2.get("tag");
-
-                 //1.3 check that the port has the correct tag
-                 query = "SELECT ?tag WHERE {<" + tag.asResource() + "> mrs:type \"interface\". "
-                 + "<" + tag.asResource() + "> mrs:value \"network\"}";
-                 r2 = executeQuery(query, modelRef, modelDelta);
-                 if (!r2.hasNext()) {
-                 throw logger.error_throwing(method, String.format("bidirectional port %s to be attached to instance is not a net"
-                 + "work interface", port));
-                 }
-                 */
-                //1.4 create the request
-                JSONObject o = new JSONObject();
-                /*
-                 Port p = client.getPort(portName);
-                 if (p == null) {
-                 throw logger.error_throwing(method, String.format("unknown port name '%s'", portName));
-                 }
-                 */
-                //1.4.1 port attachment will be added
-                if (creation == true) {
-                    //1.4.1.1 see if the network interface is already atatched
-
-                    /*
-                    
-
-                     if (p.getDeviceOwner() != null && !p.getDeviceOwner().isEmpty()) {
-
-                     throw logger.error_throwing(method, String.format("bidirectional port %s to be attached to instance %s is already"
-                     + " attached to an instance", port, serverName));
-                     }
-                     */
-                    o.put("request", "AttachPortRequest");
-                    o.put("port name", portName);
-                    o.put("server name", serverName);
-                    requests.add(o);
-                } //1.4.2 port attachment will be deleted
-                else {
-                    o.put("request", "DetachPortRequest");
-                    o.put("port name", portName);
-                    o.put("server name", serverName);
-                    requests.add(o);
+            //find the number of ports that have to be attached to the VM
+            int numPorts = 0;
+            query = "SELECT ?port WHERE {<" + server.asResource() + "> nml:hasBidirectionalPort ?port "
+                    + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
+                    + "}";
+            ResultSet rNumPorts = executeQuery(query, emptyModel, modelDelta);
+            while (rNumPorts.hasNext()) {
+                rNumPorts.next();
+                numPorts++;
+            }
+            if (!q.contains("order") && creation && numPorts > 1) {
+                throw logger.error_throwing(method, "there is no Order Porperty for the port -  " + port.toString());
+            } else {
+                if (creation) {
+                    order = (numPorts > 1) ? q.get("order").toString() : "default";
                 }
             }
+            String portname = port.asResource().toString();
+            String portName = ResourceTool.getResourceName(portname, OpenstackPrefix.PORT);
+            portName = portname.split("//+")[0];
 
+            RDFNode batch = q.get("batch");
+            String batchVal = (batch != null) ? batch.toString() : "1";
+
+            if (Integer.parseInt(batchVal) >= 1 && creation) {
+                if (!nodesWithAPort.contains(serverName)) {
+                    nodesWithAPort.add(serverName);
+                    continue;
+                }
+            }
+            JSONObject o = new JSONObject();
+            if (creation == true) {
+                o.put("request", "AttachPortRequest");
+                o.put("port name", portName);
+                o.put("server name", serverName);
+                o.put("port order", order);
+                requests.add(o);
+            } else {
+                o.put("request", "DetachPortRequest");
+                o.put("port name", portName);
+                o.put("server name", serverName);
+                requests.add(o);
+            }
         }
         return requests;
     }
@@ -1590,19 +1688,22 @@ public class OpenStackPush {
 
         //1 check for any addition of a port into a device or subnet
         //some error here
-        query = "SELECT ?node ?port ?fip WHERE {"
+        query = "SELECT ?node ?port ?fip ?batch WHERE {"
                 + "?node nml:hasBidirectionalPort ?port ."
                 + "?node a nml:Node. "
                 + "?port mrs:hasNetworkAddress ?addr. "
                 + "?addr mrs:type \"floating-ip\". "
                 + "?addr mrs:value ?fip. "
-                + "}";
+                + "OPTIONAL {?node mrs:batch ?batch}}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
             QuerySolution q = r.next();
             RDFNode server = q.get("node");
             RDFNode port = q.get("port");
             RDFNode fip = q.get("fip");
+            RDFNode batch = q.get("batch");
+            
+            String batchVal = (batch!=null)? batch.toString() : "1";
             String servername = server.asResource().toString();
             String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
             String portname = port.asResource().toString();
@@ -1633,13 +1734,17 @@ public class OpenStackPush {
                 o.put("request", "AssociateFloatingIpRequest");
                 o.put("server name", serverName);
                 o.put("port name", portName);
+                ArrayList<String> floatingIps = new ArrayList();
                 if (floatingIp.equalsIgnoreCase("any")) {
+                    
+                    for(int i = 0; i<Integer.parseInt(batchVal);i++){
                     floatingIp = checkoutFloatingIp(modelRef);
                     if (floatingIp == null) {
                         throw logger.error_throwing(method, "failed to assign 'any' floating IP to  port "+portName);
                     }
-                }
-                o.put("floating ip", floatingIp);
+                    else{floatingIps.add(floatingIp);}
+                }}
+                o.put("floating ip", floatingIps);
                 requests.add(o);
             } else {
                 //@TODO: Add handling for DeassociateFloatingIpRequest in commit. 
@@ -1694,9 +1799,10 @@ public class OpenStackPush {
         String query;
 
         //1 check for any operation involving a server
-        query = "SELECT ?server ?port ?name WHERE {"
+        query = "SELECT ?server ?port ?name ?batch WHERE {"
                 + "?server a nml:Node. "
-                + "OPTIONAL { ?server nml:name ?name. }" 
+                + "OPTIONAL { ?server nml:name ?name.} "
+                + "OPTIONAL {?server mrs:batch ?batch}" 
                 + "}";
         ResultSet r = executeQuery(query, modelDelta, emptyModel);//here modified 
 
@@ -1706,6 +1812,12 @@ public class OpenStackPush {
             String servername = vm.asResource().toString();
             String serverName = ResourceTool.getResourceName(servername, OpenstackPrefix.vm);
             Server server = client.getServer(serverName);
+            
+            //check for batch requests
+            RDFNode batch = q.get("batch");//null;//
+            String batchVal = (batch!=null)? batch.toString(): "1";
+            
+            
             String serverAltName = "";
             if (q.contains("name")) {
                 serverAltName = q.get("name").toString();
@@ -1723,7 +1835,7 @@ public class OpenStackPush {
                 query = "SELECT ?service WHERE {?service mrs:providesVM <" + vm.asResource() + ">}";
                 ResultSet r1 = executeQuery(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
-                    throw logger.error_throwing(method, String.format("Dleta model does not specify service that provides the VM: %s", vm));
+                    throw logger.error_throwing(method, String.format("Delta model does not specify service that provides the VM: %s", vm));
                 }
                 QuerySolution q1 = r1.next();
                 RDFNode hypervisorService = q1.get("service");
@@ -1767,9 +1879,11 @@ public class OpenStackPush {
                 }
                 q1 = r1.next();
                 RDFNode subnet = q1.get("subnet");
-
+                String subnetId = subnet.asResource().toString();
                 //find the port
-                query = "SELECT ?port WHERE {<" + subnet.asResource() + "> nml:hasBidirectionalPort ?port}";
+                query = "SELECT ?port WHERE {<" + subnet.asResource() + "> nml:hasBidirectionalPort ?port "
+                        + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
+                        + "}";
                 ResultSet r5 = executeQuery(query, modelRef, modelDelta);
                 if (!r5.hasNext()) {
                     throw logger.error_throwing(method, String.format("Vm %s does not specify the attached network interface", vm));
@@ -1810,21 +1924,41 @@ public class OpenStackPush {
                         }
                     }
                 }
+                
+                
+                 //find the number of ports that have to be attached to the VM
+                int numPorts = 0;
+                query = "SELECT ?port WHERE {<"+vm.asResource()+"> nml:hasBidirectionalPort ?port "
+                        + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
+                        + "}";
+                ResultSet rNumPorts = executeQuery(query, emptyModel, modelDelta); 
+                while(rNumPorts.hasNext()){
+                   rNumPorts.next();
+                   numPorts++;
+                }
 
                 //1.7 (creation==true) find the subnet the server is in first  find the port the server uses
-                query = "SELECT ?port WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port}";
+                query = "SELECT ?port ?order WHERE {<" + vm.asResource() + "> nml:hasBidirectionalPort ?port ."
+                        + "OPTIONAL {?port mrs:order ?order} "
+                        + "FILTER NOT EXISTS {?vmfex mrs:providesVNic ?port.} "
+                        + "} ORDER BY ?order ?port";
                 ResultSet r2 = executeQuery(query, modelRef, modelDelta);
-                if (creation && !r2.hasNext()) {
-                    throw logger.error_throwing(method, String.format("Vm %s does not specify the attached network interface", vm));
+                if (creation && !r2.hasNext() && numPorts > 1) {
+                    throw logger.error_throwing(method, String.format("Vm %s does not specify the attached network interface or the Order property "
+                            + "of the port is not specified", vm));
                 }
+                String portOrder = null;
                 List<String> portNames = new ArrayList();
                 while (creation && r2.hasNext())//there could be multiple network interfaces attached to the instance
                 {
                     QuerySolution q2 = r2.next();
                     RDFNode port = q2.get("port");
+                    //get the order if the port if the server has multiple port requests or else assign the "default" order for single port
+                    portOrder = (numPorts > 1 )? q2.get("order").toString(): "default";
                     String Name = port.asResource().toString();
                     String name = ResourceTool.getResourceName(Name, OpenstackPrefix.PORT);
                     portNames.add(name);
+                    break; //select the first port, with lowest order as the default port
                 }
                 
                 //1.10 create the request
@@ -1834,6 +1968,11 @@ public class OpenStackPush {
                 } else {
                     o.put("request", "TerminateInstanceRequest");
                 }
+                
+                //add batchVal
+                o.put("batch",batchVal);
+                o.put("subnet",subnetId);
+                o.put("port order",portOrder);
 
                 o.put("server name", serverName);
                 String imageType = defaultImage;
@@ -1909,8 +2048,8 @@ public class OpenStackPush {
         String query;
 
         //1 check for new association between intsnce and volume
-        query = "SELECT  ?node ?volume  WHERE {?node  mrs:hasVolume  ?volume. "
-                + "}";
+        query = "SELECT  ?node ?volume ?batch WHERE {?node  mrs:hasVolume  ?volume. "
+                + "OPTIONAL {?node mrs:batch ?batch}}";
         ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
         while (r1.hasNext()) {
             QuerySolution querySolution1 = r1.next();
@@ -1920,6 +2059,9 @@ public class OpenStackPush {
             RDFNode volume = querySolution1.get("volume");
             String volumeName = volume.asResource().toString();
             volumeName = ResourceTool.getResourceName(volumeName, OpenstackPrefix.volume);
+            
+            //batch Support
+            
 
             //1.1 find the device name of the volume
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName. "
@@ -2047,6 +2189,7 @@ public class OpenStackPush {
                 + "?route mrs:routeTo ?routeTo "
                 + "OPTIONAL {?rttable mrs:type ?rttype} }";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        //ResultSet r = executeQueryUnion(query, modelRef, modelDelta);
         while (r.hasNext()) {
             QuerySolution q = r.next();
             if (q.contains("rttype")) {
@@ -2077,6 +2220,7 @@ public class OpenStackPush {
                         + "<" + nextHopResource.asResource() + "> mrs:value ?value}";
 
                 ResultSet r1 = executeQuery(query, emptyModel, modelDelta);
+                //ResultSet r1 = executeQueryUnion(query, modelRef, modelDelta);
                 if (!r1.hasNext()) {
                     throw logger.error_throwing(method, String.format("nexthop %s for route %s is "
                             + "malformed", nextHopResource, routeResource));
@@ -2220,9 +2364,8 @@ public class OpenStackPush {
             o.put(key, routing_info_for_router2);
 
         }
-        requests.add(o);
-        if (o.size() == 0) {
-            requests.remove(o);
+        if (!o.isEmpty()) {
+            requests.add(o);
         }
         return requests;
     }
@@ -2237,7 +2380,8 @@ public class OpenStackPush {
                 + "?route mrs:routeTo ?routeTo ."
                 + "?route mrs:routeFrom ?routeFrom}";
 
-        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        //ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        ResultSet r = executeQuery(query, modelRef, modelDelta);
         QuerySolution q = r.next();
         while (r.hasNext()) {
             RDFNode routeResource = q.get("route");
@@ -2520,7 +2664,8 @@ public class OpenStackPush {
                 + "?rtsvc mrs:providesRoutingTable ?rtable ."
                 + "?rtable mrs:type ?rtable_type ."
                 + "}";
-        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+//        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        ResultSet r = executeQueryUnion(query, modelRef, modelDelta);
         while (r.hasNext()) {
             JSONObject JO = new JSONObject();
             QuerySolution q = r.next();
@@ -2573,7 +2718,7 @@ public class OpenStackPush {
                     + "OPTIONAL {?route mrs:nextHop ?next_hop. "
                     + "     ?next_hop mrs:type ?next_hop_type. "
                     + "     ?next_hop mrs:value ?next_hop_value. } "
-                    + "}";
+                    + "} ORDER BY (?route)";
             ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
             int routeNum = 1;
             while (r3.hasNext()) {
@@ -3079,7 +3224,7 @@ public class OpenStackPush {
         }
     }
 
-    public void VmCreationCheck(String id, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
+    public void VmCreationCheck(String id,int batchCount, String url, String NATServer, String username, String password, String tenantName, String topologyUri) {
         /*DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
          request.withNetworkInterfaceIds(id);
          */
@@ -3089,10 +3234,13 @@ public class OpenStackPush {
             try {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 //client.updateResources("Port");
-                Server resource = client.getServer(id);
-                if (resource != null) {
-                    break;
-                }
+//                Server resource = client.getServer(id);
+//                if (resource != null) {
+//                    break;
+//                }
+                  List<Server> resources = client.getServerList(id);
+                  if(resources.size()==batchCount){break;}
+            
             } catch (Exception e) {
             }
         }
@@ -3193,7 +3341,18 @@ public class OpenStackPush {
         }
     }
     
-    public void SecurityGroupAddCheck(String serverId, String secgroupId) {
+    public void SecurityGroupAddCheck(String serverId, String secgroupId) throws Exception {
+        List<? extends SecGroupExtension> listServerGroups = osClient.compute().securityGroups().list();
+        boolean secgroupDefined = false;
+        for (SecGroupExtension secgroup : listServerGroups) {
+            if (secgroup.getName().equals(secgroupId)) {
+                secgroupDefined = true;
+                break;
+            }
+        }
+        if (!secgroupDefined) {
+            throw new Exception("Unknown Security Group: " + secgroupId);
+        }
         int maxTries = 30;
         while ((maxTries--) > 0) {
             try {
@@ -3202,7 +3361,7 @@ public class OpenStackPush {
                     // add
                     osClient.compute().servers().addSecurityGroup(serverId, secgroupId);
                     // check
-                    List<? extends SecGroupExtension> listServerGroups = osClient.compute().securityGroups().listServerGroups(serverId);
+                    listServerGroups = osClient.compute().securityGroups().listServerGroups(serverId);
                     if (listServerGroups != null && !listServerGroups.isEmpty()) {
                         for (SecGroupExtension secgroup : listServerGroups) {
                             if (secgroup.getName().equals(secgroupId)) {
@@ -3219,6 +3378,7 @@ public class OpenStackPush {
                 Thread.currentThread().interrupt();
             }
         }
+        throw new Exception("Failed to add Security Group: " + secgroupId);
     }
     
     public void CephRbdDeletionCheck(String serverId, String deviceId) {

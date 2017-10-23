@@ -38,8 +38,8 @@ IN THE WORK.
     <!--Simple-->
     <xs:attribute name="factory" type="xs:boolean"/>
     <xs:attribute name="collapsible" type="xs:boolean"/>
-    <xs:attribute name="label" type="xs:boolean"/>
     <xs:attribute name="proceeding" type="xs:boolean"/>
+    <xs:attribute name="passthrough" type="xs:boolean"/>
     <xs:attribute name="required" type="xs:boolean"/>
     <xs:attribute name="return" type="xs:boolean"/>
     
@@ -48,22 +48,26 @@ IN THE WORK.
     <xs:attribute name="condition" type="xs:string"/>
     <xs:attribute name="type" type="xs:string"/>
     <xs:attribute name="block" type="xs:string"/>
+    <xs:attribute name="start" type="xs:string"/>
+    <xs:attribute name="default" type="xs:string"/>
+    <xs:attribute name="label" type="xs:string"/>
     
     <xs:element name="name" type="xs:string"/>
     <xs:element name="type" type="xs:string"/>
     <xs:element name="tag" type="xs:string"/>
     <xs:element name="size" type="xs:string"/>    
-    <xs:element name="link" type="xs:string"/>    
-    <xs:element name="default" type="xs:string"/>
     <xs:element name="initial" type="xs:string"/>    
     <xs:element name="interval" type="xs:string"/>
     <xs:element name="url" type="xs:string"/>
     <xs:element name="value" type="xs:string"/>
+    <xs:element name="hint" type="xs:string"/>
     <xs:element name="text" type="xs:string"/>
     <xs:element name="parent" type="xs:string"/>
     <xs:element name="valid" type="xs:string"/>
     <xs:element name="regex" type="xs:string"/>
     <xs:element name="message" type="xs:string"/>
+    <xs:element name="max" type="xs:string"/>
+    <xs:element name="min" type="xs:string"/>
     
     <!--Complex-->
     <xs:element name="intent">
@@ -110,15 +114,18 @@ IN THE WORK.
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="path" minOccurs="0"/>
-                <xs:element ref="input" maxOccurs="unbounded"/>
+                <xs:element ref="bound" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>
                 <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
             <xs:attribute ref="factory" default="false"/>
             <xs:attribute ref="name" use="required"/>
             <xs:attribute ref="condition"/>
+            <xs:attribute ref="passthrough"/>
             <xs:attribute ref="block"/>
             <xs:attribute ref="collapsible" default="false"/>
             <xs:attribute ref="label" default="true"/>
+            <xs:attribute ref="start"/>
         </xs:complexType>
     </xs:element>
     
@@ -126,13 +133,14 @@ IN THE WORK.
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="name"/>
-                <xs:element ref="type"/>
-                <xs:element ref="size" minOccurs="0"/>
-                <xs:element ref="default" minOccurs="0"/>  
+                <xs:element ref="type"/>                
+                <xs:element ref="hint" minOccurs="0"/>                
                 <xs:element ref="initial" minOccurs="0"/>                
-                <xs:element ref="source" minOccurs="0"/>
-                <xs:element ref="options" minOccurs="0"/>
+                <xs:element ref="default" minOccurs="0"/>  
                 <xs:element ref="link" minOccurs="0"/>
+                <xs:element ref="options" minOccurs="0"/>
+                <xs:element ref="size" minOccurs="0"/>
+                <xs:element ref="source" minOccurs="0"/>                                
                 <xs:element ref="valid" minOccurs="0"/>
             </xs:sequence>
             <xs:attribute ref="required"/>
@@ -188,12 +196,43 @@ IN THE WORK.
         </xs:complexType>
     </xs:element>
     
+    <xs:element name="default">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:string">
+                    <xs:attribute name="first_only" type="xs:string" />
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="link">
+        <xs:complexType>
+            <xs:simpleContent>
+                <xs:extension base="xs:string">
+                    <xs:attribute name="nameVal" type="xs:string" />
+                </xs:extension>
+            </xs:simpleContent>
+        </xs:complexType>
+    </xs:element>
+    
     <xs:element name="constraint">
         <xs:complexType>
             <xs:sequence>
                 <xs:element ref="name"/>
                 <xs:element ref="regex"/>
                 <xs:element ref="message" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>  
+    
+    <xs:element name="bound">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="name"/>
+                <xs:element ref="value"/>
+                <xs:element ref="min" minOccurs="0"/>
+                <xs:element ref="max" minOccurs="0"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>   

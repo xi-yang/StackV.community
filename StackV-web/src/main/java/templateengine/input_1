@@ -1,0 +1,66 @@
+{
+  "data": {
+    "uuid": "0405093b-5d8b-47ad-bdac-1b78a88e9224",
+    "parent": "urn:ogf:network:sdn.maxgigapop.net:network",
+    "cidr": "10.0.0.0/16",
+    "subnets": [
+      {
+        "name": "Subnet_1",
+        "cidr": "10.0.0.0/24",
+        "internet_routable": false,
+        "vms": [
+          {
+            "name": "VM_1",
+            "host": "any",
+            "floating_ip": "any",
+            "routes": [
+              {
+                "from": "TFrom",
+                "to": "TTo",
+                "next_hop": "TNext"
+              }
+            ],
+            "sriovs": [
+              {
+                "hosting_gateway": "Gateway_2",
+                "name": "SRIOV_1",
+                "ip_address": "1.1.1.1",
+                "mac_address": "AA:BB:CC:DD:EE:FF"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "gateways": [
+      {
+        "name": "Gateway_1",
+        "type": "UCS Port Profile",
+        "connects": [
+          {
+            "from": "TestFrom",
+            "to": "TestTo"
+          }
+        ]
+      },
+      {
+        "name": "Gateway_2",
+        "type": "UCS Port Profile",
+        "connects": [
+          {
+            "from": "TestFrom",
+            "to": "TestToo"
+          }
+        ]
+      }
+    ],
+    "options": [
+      "openstack-form"
+    ]
+  },
+  "service": "vcn",
+  "uuid": "0405093b-5d8b-47ad-bdac-1b78a88e9224",
+  "options": [
+    "openstack-form"
+  ]
+}
