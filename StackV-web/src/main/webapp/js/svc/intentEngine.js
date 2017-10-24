@@ -969,20 +969,16 @@ function buildClone(key, target, $factoryBtn) {
     $clone.html($clone.html().replace(regColl, "collapse-" + name + "_num" + count));
 
     // Change element attributes
-    $clone.attr("id", $clone.attr("id").replace(regName, name + "_num" + count));
-
-    // Match parent (sub-factories)
     var $target = $("#" + target);
-    var $parent = $target.parent();
-    $clone.addClass("factored");
+    var origID = $clone.attr("id").replace(getName($clone.attr("id")), "");    
+    var targetID = $target.attr("id").replace(getName($clone.attr("id")), "");    
+    $clone.attr("id", targetID + name + "_num" + count);
+    
+    var origReg = new RegExp("id=\"" + origID, "g");
+    $clone.html($clone.html().replace(origReg, "id=\"" + targetID));
 
-    if ($parent.attr("id") !== "intent-panel-body" &&
-            getParentName($clone.attr("id")) !== getName($parent.attr("id"))) {
-        var regParent = new RegExp(getParentName($clone.attr("id")), "g");
-        $clone.attr("id", $clone.attr("id").replace(regParent, getName($parent.attr("id"))));
-        $clone.html($clone.html().replace(regParent, getName($parent.attr("id"))));
-    }
-
+    // Match parent (sub-factories)    
+    $clone.addClass("factored");    
     var cloneID = $clone.attr("id");
 
     // Replace control buttons    
