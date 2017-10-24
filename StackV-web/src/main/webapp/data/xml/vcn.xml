@@ -209,7 +209,7 @@
                 </input>                
             </group>
             <group name="Routes" passthrough="true" collapsible="true">
-                <group factory="true" name="Route" label="off">
+                <group factory="true" name="Route">
                     <input>
                         <name>From</name>
                         <type>text</type>

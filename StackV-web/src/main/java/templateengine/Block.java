@@ -2,8 +2,8 @@ package templateengine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -218,7 +218,7 @@ public class Block {
 
             Block block = new Block(blockStr, input, newScope, template, (HashMap<String, String>) context.clone());
             if (block.isInput()) {
-                recurBody = recurBody.replaceFirst(Pattern.quote(blockStr), block.render());
+                recurBody = recurBody.replaceFirst(Pattern.quote(blockStr), Matcher.quoteReplacement(block.render()));
             } else {
                 recurBody = recurBody.replace(blockStr, block.render());
             }
