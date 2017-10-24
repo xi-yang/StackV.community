@@ -3027,6 +3027,13 @@ public class WebResource {
         String retString = template.apply(inputJSON);
         retString = retString.replace("&lt;", "<").replace("&gt;", ">");
         System.out.println("\n\n\nResult:\n" + retString);
+        
+        String parent = (String) ((JSONObject) inputJSON.get("data")).get("parent");
+        if (parent.contains("amazon")) {
+            inputJSON.put("host", "aws");
+        } else {
+            inputJSON.put("host", "ops");
+        }
 
         inputJSON.put("data", retString);
 

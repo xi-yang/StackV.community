@@ -146,7 +146,7 @@ public class ServiceHandler {
             logger.init();
 
             // Execute service creation.
-            ServiceEngine.orchestrateInstance(refUUID, delta, deltaUUID, token, autoProceed);
+            ServiceEngine.orchestrateInstance(refUUID, inputJSON, deltaUUID, token, autoProceed);
             /*switch (type) {
                 case "netcreate":
                     ServiceEngine.createNetwork(paraMap, token);
@@ -214,7 +214,7 @@ public class ServiceHandler {
         logger.start(method);
         updateLastState(null, refUUID);
         VerificationHandler verify = new VerificationHandler(refUUID, token);
-        try {            
+        try {
             switch (action) {
                 case "cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
@@ -266,7 +266,7 @@ public class ServiceHandler {
 
             logger.end(method);
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
-            verify.stopVerification();            
+            verify.stopVerification();
             logger.catching(method, ex);
             throw ex;
         } finally {

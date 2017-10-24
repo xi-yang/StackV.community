@@ -40,6 +40,7 @@ import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.WebResource;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
+import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import org.json.simple.JSONObject;
 
 /**
@@ -56,12 +57,13 @@ public class ServiceEngine {
     private final static String RAINS_DB_PASS = "root";
 
     // OPERATION FUNCTIONS    
-    static void orchestrateInstance(String refUUID, String svcDelta, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
+    static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
         String method = "orchestrateInstance";
         String result;
-        String lastState = "INIT";
+        String lastState = "INIT";        
+        String svcDelta = (String) inputJSON.get("data");
         logger.start(method, svcDelta);
-
+        
         int start = svcDelta.indexOf("<modelAddition>") + 15;
         int end = svcDelta.indexOf("</modelAddition>");
         String model = svcDelta.substring(start, end);
@@ -78,6 +80,10 @@ public class ServiceEngine {
             result = initInstance(refUUID, svcDelta, token.auth());
             logger.trace(method, "Initialized");
             cacheSystemDelta(instanceID, result);
+
+            if (inputJSON.containsKey("host")) {
+                pushProperty(refUUID ,"host", (String) inputJSON.get("host"), token.auth());
+            }
 
             if (autoProceed) {
                 logger.trace(method, "Proceeding automatically");
@@ -139,7 +145,7 @@ public class ServiceEngine {
             }
         }
     }
-    
+
     // UTILITY FUNCTIONS    
     private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) throws SQLException {
         String method = "cacheServiceDelta";
@@ -335,5 +341,11 @@ public class ServiceEngine {
             logger.catching(method, ex);
             throw ex;
         }
+    }
+    
+    static void pushProperty(String refUUID, String key, String value, String auth) throws IOException {
+        URL url = new URL(String.format("%s/service/property/%s/%s", HOST, refUUID, key));
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        String result = executeHttpMethod(url, conn, "POST", value, auth);
     }
 }
