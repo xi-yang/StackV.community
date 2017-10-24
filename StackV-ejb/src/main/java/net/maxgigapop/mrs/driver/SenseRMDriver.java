@@ -104,9 +104,9 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             URL url = new URL(String.format("%s/deltas", subsystemBaseUrl));
             HttpURLConnection conn;
             if (url.toString().startsWith("https:")) {
-                conn = (HttpURLConnection) url.openConnection();
-            } else {
                 conn = (HttpsURLConnection) url.openConnection();
+            } else {
+                conn = (HttpURLConnection) url.openConnection();
             }
             conn.setRequestProperty("Content-Encoding", "gzip");
             String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
@@ -162,9 +162,9 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getId()));
             HttpURLConnection conn;
             if (url.toString().startsWith("https:")) {
-                conn = (HttpURLConnection) url.openConnection();
-            } else {
                 conn = (HttpsURLConnection) url.openConnection();
+            } else {
+                conn = (HttpURLConnection) url.openConnection();
             }
             String[] response = DriverUtil.executeHttpMethod(conn, "PUT", null);
             if (response[1].equals("200")) {
@@ -198,9 +198,9 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
                 HttpURLConnection conn;
                 if (url.toString().startsWith("https:")) {
-                    conn = (HttpURLConnection) url.openConnection();
-                } else {
                     conn = (HttpsURLConnection) url.openConnection();
+                } else {
+                    conn = (HttpURLConnection) url.openConnection();
                 }
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("200")) { // committed successfully
