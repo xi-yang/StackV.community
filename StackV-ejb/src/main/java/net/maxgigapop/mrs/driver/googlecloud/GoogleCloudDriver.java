@@ -91,7 +91,7 @@ public class GoogleCloudDriver implements IHandleDriverSystemCall {
         
         GoogleCloudPush push = new GoogleCloudPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
         
-        List<JSONObject> requests = push.propagate(model, modelAdd, modelReduc);
+        ArrayList<JSONObject> requests = push.propagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId();
         driverInstance.putProperty(requestId, requests.toString());
         DriverInstancePersistenceManager.merge(driverInstance);
@@ -137,7 +137,7 @@ public class GoogleCloudDriver implements IHandleDriverSystemCall {
         DriverInstancePersistenceManager.merge(driverInstance);
         GoogleCloudPush push = new GoogleCloudPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
                 ObjectMapper mapper = new ObjectMapper();
-        List<JSONObject> requestList = new ArrayList();
+        ArrayList<JSONObject> requestList = new ArrayList();
         try {
             requestList = mapper.readValue(requests, mapper.getTypeFactory().constructCollectionType(List.class, JSONObject.class));
         } catch (IOException ex) {

@@ -64,7 +64,7 @@ public class GoogleCloudModelBuilder {
             for (Object o : vpcs) {
                 JSONObject vpcInfo = (JSONObject) o;
                 String name = vpcInfo.get("name").toString();
-                String vpcUri = lookupResourceUri(metadata, Mrs.VirtualCloudService, name);
+                String vpcUri = lookupResourceUri(metadata, "vpc", name);
                 //String vpcUri = vpcInfo.get("description").toString();
                 
                 Resource vpc = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpcUri, GoogleCloudPrefix.vpc, name), Nml.Topology);
@@ -88,7 +88,7 @@ public class GoogleCloudModelBuilder {
                     String subnetName = GoogleCloudGet.parseGoogleURI(o2.toString(), "subnetworks");
                     String subnetRegion = GoogleCloudGet.parseGoogleURI(o2.toString(), "regions");
                     JSONObject subnetInfo = gcpGet.getSubnet(subnetRegion, subnetName);
-                    String subnetUri = lookupResourceUri(metadata, Mrs.SwitchingSubnet, name, subnetRegion, subnetName);
+                    String subnetUri = lookupResourceUri(metadata, "subnet", name, subnetRegion, subnetName);
                     //String subnetUri = recoverGcpUri(subnetInfo);
                     String cidr = subnetInfo.get("ipCidrRange").toString();
                     String gateway = subnetInfo.get("gatewayAddress").toString();
@@ -120,7 +120,7 @@ public class GoogleCloudModelBuilder {
                 for (Object o2: routesInfo) {
                     JSONObject routeInfo = (JSONObject) o2;
                     String routeName = routeInfo.get("name").toString();
-                    String routeUri = lookupResourceUri(metadata, Mrs.Route, name, routeName);
+                    String routeUri = lookupResourceUri(metadata, "route", name, routeName);
                     String destRange = routeInfo.get("destRange").toString();
                     String nextHop = "unknown";
                     String vpcName = GoogleCloudGet.parseGoogleURI(routeInfo.get("network").toString(), "networks");
@@ -160,38 +160,52 @@ public class GoogleCloudModelBuilder {
                 
                 String zone = GoogleCloudGet.parseGoogleURI(vmInfo.get("zone").toString(), "zones");
                 JSONArray netifaces = (JSONArray) vmInfo.get("networkInterfaces");
-                String vpcName = "none";
-                String subnetName = "none";
-                String networkIP = "none";
-                String natIP = "none";
                 
-                if (netifaces == null) {
-                    logger.warning(method, "unable to find network interface for instance "+instanceName);
-                } else {
-                    if (netifaces.size() > 1) {
-                        logger.warning(method, String.format("VM instance %s has %d network interfaces; only the first will be modeled.", instanceName, netifaces.size()));
-                    }
-                    //For now, we assume there is only one network interface
-                    JSONObject netiface = (JSONObject) netifaces.get(0);
-                    vpcName = GoogleCloudGet.parseGoogleURI(netiface.get("network").toString(), "networks");
-                    subnetName = GoogleCloudGet.parseGoogleURI(netiface.get("subnetwork").toString(), "subnetworks");
-                    networkIP = netiface.get("networkIP").toString();
-                    natIP = GoogleCloudGet.getInstancePublicIP(netiface);
-                }
-
-                String vpcUri = lookupResourceUri(metadata, Mrs.VirtualCloudService, vpcName);
-                String instanceUri = lookupResourceUri(metadata, Nml.Node, zone, instanceName);
-                
-                Resource instance = RdfOwl.createResource(model, ResourceTool.getResourceUri(instanceUri, GoogleCloudPrefix.instance, vpcName, zone, instanceName), Nml.Node);
-                Resource vpc = model.getResource(ResourceTool.getResourceUri(vpcUri, GoogleCloudPrefix.vpc, vpcName));
-                model.add(model.createStatement(vpc, Nml.hasNode, instance));
+                String instanceUri = lookupResourceUri(metadata, "vm", zone, instanceName);
+                Resource instance = RdfOwl.createResource(model, ResourceTool.getResourceUri(instanceUri, GoogleCloudPrefix.instance, zone, instanceName), Nml.Node);
                 model.add(model.createStatement(instance, Mrs.type, instanceType));
                 
-                if (!natIP.equals("none")) {
-                    Resource publicIP = RdfOwl.createResource(model, instance.getURI()+":publicIP", Mrs.NetworkAddress);
-                    model.add(model.createStatement(publicIP, Mrs.type, "ipv4-address"));
-                    model.add(model.createStatement(publicIP, Mrs.value, networkIP));
-                    model.add(model.createStatement(instance, Mrs.hasNetworkAddress, publicIP));
+                if (netifaces == null) {
+                    logger.warning(method, "unable to find any network interfaces for instance "+instanceName);
+                } else {
+                    System.out.printf("netifaces:\n%s\n", netifaces);
+                    
+                    for (Object o2 : netifaces) {
+                        JSONObject netiface = (JSONObject) o2;
+                        
+                        //A instance is considered to be "in" the vpc used by nic0, the only nic it is guaranteed to have
+                        if ("nic0".equals(netiface.get("name").toString())) {
+                            String natIP = GoogleCloudGet.getInstancePublicIP(netiface);
+                            if (!natIP.equals("none")) {
+                                Resource publicIP = RdfOwl.createResource(model, instance.getURI()+":publicIP", Mrs.NetworkAddress);
+                                model.add(model.createStatement(publicIP, Mrs.type, "ipv4-address"));
+                                model.add(model.createStatement(publicIP, Mrs.value, natIP));
+                                model.add(model.createStatement(instance, Mrs.hasNetworkAddress, publicIP));
+                            }
+                        }
+                        
+                        //Extract the vpcName from the google URI
+                        String vpcName = GoogleCloudGet.parseGoogleURI(netiface.get("network").toString(), "networks");
+                        //Try to find the VPC Uri in the metadata table. If absent, this returns the empty string
+                        String vpcUri = lookupResourceUri(metadata, "vpc", vpcName);
+                        Resource vpc = model.getResource(ResourceTool.getResourceUri(vpcUri, GoogleCloudPrefix.vpc, vpcName));
+                        String nicName = netiface.get("name").toString();
+                        String nicIP = netiface.get("networkIP").toString();
+                        String subnetName = GoogleCloudGet.parseGoogleURI(netiface.get("subnetwork").toString(), "subnetworks");
+                        String subnetRegion = GoogleCloudGet.parseGoogleURI(netiface.get("subnetwork").toString(), "regions");
+                        String nicUri = lookupResourceUri(metadata, "nic", vpcName, instanceName, nicName);
+                        
+                        //You cannot attach multiple network interfaces to the same VPC network.
+                        //You can only configure a network interface when you create an instance.
+                        model.add(model.createStatement(vpc, Nml.hasNode, instance));
+                        //Create a new biport resource for each netiface
+                        Resource biPort = RdfOwl.createResource(model, ResourceTool.getResourceUri(nicUri, GoogleCloudPrefix.nic, vpcName, instanceName, nicName), Nml.BidirectionalPort);
+                        model.add(model.createStatement(instance, Nml.hasBidirectionalPort, biPort));
+                        Resource netiAddr = RdfOwl.createResource(model, ResourceTool.getResourceUri(biPort+":ip+"+nicIP, GoogleCloudPrefix.nicNetworkAddress, vpcName, subnetRegion, subnetName, nicName, nicIP), Mrs.NetworkAddress);
+                        model.add(model.createStatement(biPort, Mrs.hasNetworkAddress, netiAddr));
+                        model.add(model.createStatement(netiAddr, Mrs.type, "ipv4:private"));
+                        model.add(model.createStatement(netiAddr, Mrs.value, nicIP));
+                    }
                 }
                 
                 model.add(model.createStatement(instance, Mrs.providedByService, computeService));
@@ -207,7 +221,7 @@ public class GoogleCloudModelBuilder {
                     String size = fullDiskInfo.get("sizeGb").toString();
                     String type = GoogleCloudGet.parseGoogleURI(fullDiskInfo.get("type").toString(), "diskTypes");
                     String diskName = fullDiskInfo.get("name").toString();
-                    String diskUri = lookupResourceUri(metadata, Mrs.Volume, zone, diskName);
+                    String diskUri = lookupResourceUri(metadata, "volume", zone, diskName);
                     
                     Resource volume = RdfOwl.createResource(model, ResourceTool.getResourceUri(diskUri, GoogleCloudPrefix.volume, zone, diskName), Mrs.Volume);
                     model.add(model.createStatement(instance, Mrs.hasVolume, volume));
@@ -217,7 +231,7 @@ public class GoogleCloudModelBuilder {
                 }
             }
         } else {
-            logger.error(method, "failed to get instancess due to null response");
+            logger.error(method, "failed to get instances due to null response");
         }
         
         //buckets
@@ -227,7 +241,7 @@ public class GoogleCloudModelBuilder {
             for (Object o : bucketsInfo) {
                 JSONObject bucketInfo = (JSONObject) o;
                 String bucketName = bucketInfo.get("name").toString();
-                String bucketUri = lookupResourceUri(metadata, Mrs.Bucket, bucketName);
+                String bucketUri = lookupResourceUri(metadata, "bucket", bucketName);
                 //String bucketUri = recoverGcpUri(bucketInfo);
                 Resource bucket = RdfOwl.createResource(model, ResourceTool.getResourceUri(bucketUri, GoogleCloudPrefix.bucket, bucketName), Mrs.Bucket);
                 model.add(model.createStatement(objectStorageService, Mrs.providesBucket, bucket));
@@ -242,66 +256,82 @@ public class GoogleCloudModelBuilder {
         return model;
     }
     
-    public static String getResourceKey(Resource type, String... args) {
+    public static String getResourceKey(String type, String...args) {
+        //First argument to this function was changed from Resource to String, so that unique URIs could be assigned to unmodeled resources
         String key = null, method = "getResourceKey";
+        //uncommenting the following line results in uneccessary logging bloat during model pull
         //logger.start(method);
         
-        
-        if (Mrs.VirtualCloudService.equals(type)) {
+        switch (type) {
+        case "vpc":
             if (args.length == 1) {
                 //VPCs are identified by name only
                 key = String.format("vpc_%s", args);
             } else {
-                logger.warning(method, "failed VPC URI retrieval due to incorrect nuber of args");
+                logger.warning(method, "failed VPC URI retrieval due to incorrect number of args");
             }
-        } else if (Mrs.SwitchingSubnet.equals(type)) {
+        break;
+        case "subnet":
             if (args.length == 3) {
-                //Subnets are identified by vpc, name, and region
-                //Subnets in different regions or different vpcs may have same name
+                //Subnets are identified by vpc, name, and region, since subnets in different regions or vpcs may have same name
                 key = String.format("subnet_%s_%s_%s", args);
             } else {
-                logger.warning(method, "failed subnet URI retrieval due to incorrect nuber of args");
+                logger.warning(method, "failed subnet URI retrieval due to incorrect number of args");
             }
-        } else if (Mrs.Route.equals(type)) {
+        break;
+        case "route":
             if (args.length == 2) {
                 //Routes are identified by vpc and name
                 key = String.format("route_%s_%s", args);
             } else {
-                logger.warning(method, "failed route URI retrieval due to incorrect nuber of args");
+                logger.warning(method, "failed route URI retrieval due to incorrect number of args");
             }
-        } else if (Nml.Node.equals(type)) {
+        break;
+        case "vm":
             if (args.length == 2) {
                 //VM instance
                 //identified by zone and name
                 key = String.format("instance_%s_%s", args );
             } else {
-                logger.warning(method, "failed instance URI retrieval due to incorrect nuber of args");
+                logger.warning(method, "failed instance URI retrieval due to incorrect number of args");
             }
-        } else if (Mrs.Volume.equals(type)) {
+        break;
+        case "volume":
             if (args.length == 2) {
                 //identified by zone and name
                 key = String.format("volume_%s_%s", args);
             } else {
-                logger.warning(method, "failed volume URI retrieval due to incorrect nuber of args");
+                logger.warning(method, "failed volume URI retrieval due to incorrect number of args");
             }
-        } else if (Mrs.Bucket.equals(type)) {
+        break;
+        case "bucket":
             if (args.length == 1) {
                 key = String.format("bucket_%s", args);
             } else {
-                logger.warning(method, "failed bucket URI retrieval due to incorrect nuber of args");
+                logger.warning(method, "failed bucket URI retrieval due to incorrect number of args");
             }
-        } else {
+        break;
+        case "nic":
+            if (args.length == 3) {
+                //nics are identified by vpc - instance - name (nic0-7)
+                key = String.format("nic_%s_%s_%s", args);
+            } else {
+                logger.warning(method, "failed nic URI retrieval due to incorrect number of args");
+            }
+        break;
+        default:
             logger.warning(method, "failed resource URI retrieval due to unknown resource");
+        break;
         }
         
         //logger.end(method);
         
         //adding uri_ ensures that normal entries in the metadata table will never be mistaken for uri entries
         if (key == null) return "";
-        else return "uri_"+key;
+        else return ("uri_"+key).replaceAll("[^a-zA-Z0-9_\\-]", "");
     }
     
-    public static String lookupResourceUri(HashMap<String, String> metadata, Resource type, String... args) {
+    public static String lookupResourceUri(HashMap<String, String> metadata, String type, String... args) {
         String key = getResourceKey(type, args);
         
         if (metadata != null && metadata.containsKey(key)) {
@@ -337,5 +367,12 @@ public class GoogleCloudModelBuilder {
                   .replaceAll("-d", ".")
                   .replaceAll("-u", "_")
                   .replaceAll("-h", "-");
+    }
+    
+    //Removes non-alphanumeric non-hyphen characters from strings
+    //Similar to makeUriGcpCompatible, but it removes instead of escapes
+    //offending characters.
+    public static String removeChars (String input) {
+        return input.replaceAll("[^a-zA-Z0-9\\-]", "");
     }
 }

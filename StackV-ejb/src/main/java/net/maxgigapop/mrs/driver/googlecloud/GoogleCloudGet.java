@@ -60,7 +60,7 @@ public class GoogleCloudGet {
     }
     
     public Compute getComputeClient() { return computeClient; }
-    
+
     public Storage getStorageClient() { return storageClient; }
     
     public JSONObject makeRequest(HttpRequest request) throws IOException {
