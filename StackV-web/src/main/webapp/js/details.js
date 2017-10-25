@@ -938,8 +938,7 @@ function buttonModerate() {
     }
 
     if (verifyState === "RUNNING") {
-        $("#verify").html("Cancel Verification");
-        $("#verify").attr("id", "unverify");
+        $("#unverify").removeClass("hide");
     }        
 }
 

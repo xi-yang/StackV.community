@@ -129,11 +129,22 @@ public class VerificationDrone implements Runnable {
                                     + "WHERE `instanceUUID` = ? ");
                             prep.setString(1, instanceUUID);
                             prep.executeUpdate();
-                            return;
+                            break;
                         case "STOP":
-                            logger.trace(method, "Stop signal received. Drone ending operation");
-                            return;
+                            logger.status(method, "Stop signal received. Drone ending operation");
+                            state = "FINISHED";
+                            prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED' "
+                                    + "WHERE `instanceUUID` = ? ");
+                            prep.setString(1, instanceUUID);
+                            prep.executeUpdate();
+                            break;
                     }
+
+                    prep = conn.prepareStatement("UPDATE service_verification SET pending_action = '' "
+                            + "WHERE instanceUUID = ?");
+                    prep.setString(1, instanceUUID);
+                    prep.executeUpdate();
+                    return;
                 }
 
                 logger.trace(method, "Run " + currentRun + "/" + runs + " | Instance in " + instanceSubstate);

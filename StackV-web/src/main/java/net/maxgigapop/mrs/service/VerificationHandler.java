@@ -130,7 +130,7 @@ public class VerificationHandler {
             prep.setString(1, instanceUUID);
             rs = prep.executeQuery();
             if (rs.next()) {
-                state = rs.getString(state);
+                state = rs.getString("state");
             }
         } catch (SQLException ex) {
             logger.catching(method, ex);
