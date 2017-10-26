@@ -137,10 +137,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         for (String connId: connDataMap.keySet()) {
             List<Resource> terminals = new ArrayList<>();
             JSONObject jsonConnReq = (JSONObject)connDataMap.get(connId);
-            if (jsonConnReq.size() < 3) {
+            JSONObject jsonTerminals = (JSONObject)jsonConnReq.get("terminals");
+            if (jsonTerminals == null || jsonTerminals.size() < 3) {
                 throw logger.error_throwing(method, String.format("cannot find path for connection '%s' - request must have at least 3 terminals", connId));
             }
-            for (Object key : jsonConnReq.keySet()) {
+            for (Object key : jsonTerminals.keySet()) {
                 Resource terminal = systemModel.getResource((String) key);
                 if (!systemModel.contains(terminal, null)) {
                     throw logger.error_throwing(method, String.format("cannot identify terminal <%s> in JSON data", key));
@@ -164,6 +165,15 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 throw logger.error_throwing(method, String.format("cannot find initial feasible path for connection '%s' between '%s' and '%s'", connId, terminal1, terminal2));
             }
             MCETools.Path mpvbPath = MCETools.getLeastCostPath(feasibleKSP12); //(Could also be pick 2nd and 3rd for disturbing search)
+            if (jsonConnReq.containsKey("bandwidth")) {
+                JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
+                String strMaximum = (String)jsonBw.get("maximum");
+                Long maximum = (strMaximum != null ? Long.parseLong(strMaximum) : null);
+                Long available = (jsonBw.containsKey("available") ? Long.parseLong((String)jsonBw.get("available")) : null);
+                Long reservable = (jsonBw.containsKey("reservable") ? Long.parseLong((String)jsonBw.get("reservable")) : null);
+                mpvbPath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
+                // candidatePath.bandwithProfile.type = "guaranteedCapped"; //default
+            }
             // For 3rd through Tth terminals, connect them to one of openflow nodes in the path
             for (Resource terminalX : terminals) {
                 MCETools.Path bridgePath = connectTerminalToPath(transformedModel, mpvbPath, terminalX, jsonConnReq, portVlanMap);
@@ -174,8 +184,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 mpvbPath.getOntModel().add(bridgePath.getOntModel().getBaseModel());
             }
             // Add MAC list flows
-            if (((JSONObject)jsonConnReq.get(terminal1.getURI())).containsKey("mac_list") && ((JSONObject)jsonConnReq.get(terminal2.getURI())).containsKey("mac_list")) {
-                addMacFlowsToBridges(mpvbPath, transformedModel, jsonConnReq, portVlanMap);
+            if (((JSONObject)jsonTerminals.get(terminal1.getURI())).containsKey("mac_list") && ((JSONObject)jsonTerminals.get(terminal2.getURI())).containsKey("mac_list")) {
+                addMacFlowsToBridges(mpvbPath, transformedModel, jsonTerminals, portVlanMap);
             }
             // Tag path hops
             MCETools.tagPathHops(mpvbPath, "l2path+"+resConn.getURI()+":"+connId+"");
@@ -187,10 +197,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
 
     private MCETools.Path connectTerminalToPath(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX, JSONObject jsonConnReq, Map portVlanMap) {
         String method = "connectTerminalToPath";
+        JSONObject jsonTerminals = (JSONObject)jsonConnReq.get("terminals");
         Resource bridgeOpenflowService = checkTerminalOnPath(transformedModel, mpvbPath, terminalX);
         if (bridgeOpenflowService != null) {
             Resource bridgePort = terminalX;
-            JSONObject jsonTe = (JSONObject) jsonConnReq.get(terminalX.getURI());
+            JSONObject jsonTe = (JSONObject) jsonTerminals.get(terminalX.getURI());
             String bridgeVlanTag = null;
             if (jsonTe != null && jsonTe.containsKey("vlan_tag")) {
                 TagSet vlanRange;
@@ -208,7 +219,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             Statement bridgeHop = bridgePathModel.createStatement(bridgeOpenflowService, Nml.connectsTo, terminalX);
             bridgePathModel.add(bridgeHop);
             bridgePath.add(bridgeHop);
-            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag, jsonConnReq, portVlanMap);
+            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag, jsonTerminals, portVlanMap);
             if (bridgePathModel == null) {
                 throw logger.error_throwing(method, String.format("terminal '%s' is in path but cannot be bridged.", terminalX));
             }
@@ -242,9 +253,20 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     } catch (Exception ex) {
                         throw logger.throwing(method, "verifyL2Path -exception- ", ex);
                     }
+                    if (verified && jsonConnReq.containsKey("bandwidth")) {
+                        JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
+                        Long maximum = jsonBw.containsKey("maximum") ? Long.getLong(jsonBw.get("maximum").toString()) : null;
+                        Long available = jsonBw.containsKey("available") ? Long.getLong(jsonBw.get("available").toString()) : null;
+                        Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+                        bridgePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
+                        bridgePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+                        bridgePath.bandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+                        bridgePath.bandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
+                        verified = MCETools.verifyPathBandwidthProfile(transformedModel, bridgePath);
+                    }
                     if (verified) {
                         // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-                        OntModel bridgePathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonConnReq);
+                        OntModel bridgePathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonTerminals);
                         if (bridgePathModel != null) {
                             // bridgePath is always in port->port->ofSvc->port form. The first is bridge port 
                             // but VLAN flows created by createL2PathVlanSubnets start from second port.
@@ -263,7 +285,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                                 continue;
                             }
                             String bridgeVlanTag = rs.next().get("vlan_in").toString();
-                            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag, jsonConnReq, portVlanMap);
+                            bridgePathModel = createBridgePathFlows(transformedModel, mpvbPath, bridgePathModel, bridgeOpenflowService, bridgePort, bridgeVlanTag, jsonTerminals, portVlanMap);
                             if (bridgePathModel == null) {
                                 continue;
                             }
@@ -341,7 +363,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
     
     //@TODO: use action name and value for URI, add mrs:order 
     private OntModel createBridgePathFlows(OntModel transformedModel, MCETools.Path mpvbPath, OntModel bridgePathModel,
-            Resource bridgeOpenflowService, Resource bridgePort, String bridgeVlanTag, JSONObject jsonConnReq, Map portVlanMap) {
+            Resource bridgeOpenflowService, Resource bridgePort, String bridgeVlanTag, JSONObject jsonTerminals, Map portVlanMap) {
         String method="createBridgePathFlows";
         // create VLAN bridging flows with bridgeOpenflowService and bridgePort and add to l2PathModel
         OntModel mpvbModel = mpvbPath.getOntModel();
@@ -425,8 +447,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         portVlanMap.put(bridgePortName, bridgeVlanTag);
         // check if this bridge is VLAN flooding or requires ARP (then adds MAC flows)
         boolean doMatchArp = false;
-        if (((JSONObject)jsonConnReq.get(terminalX.getURI())).containsKey("mac_list")) {
-            String[] bridgePortMacList = ((JSONObject)jsonConnReq.get(terminalX.getURI())).get("mac_list").toString().split(",");
+        if (((JSONObject)jsonTerminals.get(terminalX.getURI())).containsKey("mac_list")) {
+            String[] bridgePortMacList = ((JSONObject)jsonTerminals.get(terminalX.getURI())).get("mac_list").toString().split(",");
             if (bridgePortMacList.length == 0 || bridgePortMacList[0].length() != 17) {
                 throw logger.error_throwing(method, "invalid mac_list format in request data for terminal: " +  terminalX);
             }
@@ -578,7 +600,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         return listNodes;
     }
 
-    private void addMacFlowsToBridges(MCETools.Path mpvbPath, OntModel refModel, JSONObject jsonConnReq, Map portVlanMap) {
+    private void addMacFlowsToBridges(MCETools.Path mpvbPath, OntModel refModel, JSONObject jsonTerminals, Map portVlanMap) {
         Map<String, String> portMacListMap = new HashMap();
         // augment mvpvPath to become bidirectional
         MCETools.Path augmentedPath = new MCETools.Path();
@@ -588,9 +610,9 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             augmentedPath.add(reverseLink);
         }
         // populateMacsForTree by using every terminal as root
-        for (Object key: jsonConnReq.keySet()) {
-            if (((JSONObject)jsonConnReq.get(key)).containsKey("mac_list")) {
-                String macList = (String)((JSONObject)jsonConnReq.get(key)).get("mac_list");
+        for (Object key: jsonTerminals.keySet()) {
+            if (((JSONObject)jsonTerminals.get(key)).containsKey("mac_list")) {
+                String macList = (String)((JSONObject)jsonTerminals.get(key)).get("mac_list");
                 Resource terminal = mpvbPath.getOntModel().getResource((String)key);
                 List<Resource> listVisited = new ArrayList();
                 listVisited.add(terminal);
