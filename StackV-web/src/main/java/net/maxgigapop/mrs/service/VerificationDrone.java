@@ -29,6 +29,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.WebResource;
@@ -172,7 +173,7 @@ public class VerificationDrone implements Runnable {
 
                 // Step 3: Update verification data
                 prep = conn.prepareStatement("UPDATE `service_verification` SET `state`='RUNNING',`delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,"
-                        + "`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=? "
+                        + "`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=?, `timestamp`=? "
                         + "WHERE `instanceUUID`= ? ");
                 prep.setString(1, (String) verifyJSON.get("referenceUUID"));
                 prep.setString(2, (String) verifyJSON.get("creationTime"));
@@ -183,7 +184,8 @@ public class VerificationDrone implements Runnable {
                 prep.setString(7, (String) verifyJSON.get("reductionVerified"));
                 prep.setString(8, (String) verifyJSON.get("additionVerified"));
                 prep.setInt(9, currentRun);
-                prep.setString(10, instanceUUID);
+                prep.setTimestamp(10, new Timestamp(System.currentTimeMillis()));
+                prep.setString(11, instanceUUID);
                 prep.executeUpdate();
 
                 // Step 4: Check for success

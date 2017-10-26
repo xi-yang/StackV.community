@@ -59,9 +59,11 @@ import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.math.BigInteger;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -2403,6 +2405,67 @@ public class WebResource {
         } finally {
             commonsClose(front_conn, prep, rs);
         }
+    }
+
+    /**
+     * @api {GET} /app/details/:siUUID/verification/drone Check Verification Drone
+     * @apiVersion 1.0.0
+     * @apiDescription Check if instance has an operational verification drone
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {String} siUUID instance UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
+    @GET
+    @Path(value = "/details/{siUUID}/verification/drone")
+    @RolesAllowed("Panels")
+    public String hasVerifyDrone(@PathParam(value = "siUUID") final String refUUID) throws SQLException, IOException, InterruptedException {
+        String method = "hasVerifyDrone";
+        logger.trace_start(method);
+
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            prep = front_conn.prepareStatement("SELECT timestamp FROM service_verification "
+                    + "WHERE instanceUUID = ?");
+            prep.setString(1, refUUID);
+            rs = prep.executeQuery();
+            while (rs.next()) {
+                BigInteger ONE_BILLION = new BigInteger("1000000000");
+                Timestamp time = rs.getTimestamp(1);
+                Timestamp now = new Timestamp(System.currentTimeMillis());
+
+                final BigInteger firstTime = BigInteger.valueOf(time.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(time.getNanos()));
+                final BigInteger secondTime = BigInteger.valueOf(now.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(now.getNanos()));
+                int diff = (firstTime.subtract(secondTime)).divide(new BigInteger("1000000000000")).intValue();
+                
+                System.out.println(diff);
+
+                if (diff < -30) {
+                    logger.trace_end(method);
+                    return "0";
+                } else {
+                    logger.trace_end(method);
+                    return "1";
+                }
+            }
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+        return "-1";
     }
 
     @GET
