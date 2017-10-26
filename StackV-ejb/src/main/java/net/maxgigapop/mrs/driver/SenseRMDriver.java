@@ -30,6 +30,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
@@ -37,6 +38,7 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.net.ssl.HttpsURLConnection;
+import javax.xml.datatype.XMLGregorianCalendar;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
@@ -45,11 +47,13 @@ import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.common.DateTimeUtil;
 import net.maxgigapop.mrs.common.DriverUtil;
 import net.maxgigapop.mrs.common.EJBExceptionNegotiable;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.logging.log4j.core.net.Severity;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -100,9 +104,9 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             URL url = new URL(String.format("%s/deltas", subsystemBaseUrl));
             HttpURLConnection conn;
             if (url.toString().startsWith("https:")) {
-                conn = (HttpURLConnection) url.openConnection();
-            } else {
                 conn = (HttpsURLConnection) url.openConnection();
+            } else {
+                conn = (HttpURLConnection) url.openConnection();
             }
             conn.setRequestProperty("Content-Encoding", "gzip");
             String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
@@ -155,12 +159,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         }
         // commit through PUT
         try {
-            URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getId(), aDelta.getId()));
+            URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getId()));
             HttpURLConnection conn;
             if (url.toString().startsWith("https:")) {
-                conn = (HttpURLConnection) url.openConnection();
-            } else {
                 conn = (HttpsURLConnection) url.openConnection();
+            } else {
+                conn = (HttpURLConnection) url.openConnection();
             }
             String[] response = DriverUtil.executeHttpMethod(conn, "PUT", null);
             if (response[1].equals("200")) {
@@ -194,9 +198,9 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
                 HttpURLConnection conn;
                 if (url.toString().startsWith("https:")) {
-                    conn = (HttpURLConnection) url.openConnection();
-                } else {
                     conn = (HttpsURLConnection) url.openConnection();
+                } else {
+                    conn = (HttpURLConnection) url.openConnection();
                 }
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("200")) { // committed successfully
@@ -256,19 +260,21 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         synchronized (syncOnDriverInstance) {
             String version = null;
             String ttlModel = null;
-            String creationTimestamp = null;
+            String creationTimeStr = null;
+            SimpleDateFormat r1123Formatter = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+            r1123Formatter.setTimeZone(TimeZone.getTimeZone("GMT"));
             try {
                 String lastModified = null;
                 if (driverInstance.getHeadVersionItem() != null) {
-                    lastModified = driverInstance.getHeadVersionItem().getModelRef().getCreationTime().toString();
+                    lastModified = r1123Formatter.format(driverInstance.getHeadVersionItem().getModelRef().getCreationTime());
                 }
                 // pull model from REST API
-                URL url = new URL(subsystemBaseUrl + "/models");
+                URL url = new URL(subsystemBaseUrl + "/models?current=true&summary=false&encode=false");
                 HttpURLConnection conn;
                 if (url.toString().startsWith("https:")) {
-                    conn = (HttpURLConnection) url.openConnection();
-                } else {
                     conn = (HttpsURLConnection) url.openConnection();
+                } else {
+                    conn = (HttpURLConnection) url.openConnection();
                 }
                 if (lastModified != null) {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
@@ -291,17 +297,23 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 } else if (!response[1].equals("200")) { // handle other HTTP code
                     throw logger.error_throwing(method, driverInstance + " Unexpected HTTP return code: " + response[1]);
                 }
-                JSONObject responseJSON = (JSONObject) JSONValue.parseWithException(response[0]);
-                version = responseJSON.get("id").toString();
+                JSONObject responseJSON = (JSONObject) ((JSONArray) JSONValue.parseWithException(response[0])).get(0);
+                if (responseJSON.containsKey("id")) {
+                    version = responseJSON.get("id").toString();
+                }
                 if (version == null || version.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty id in pulled model from SENSE-RM");
                 }
-                ttlModel = responseJSON.get("model").toString();
+                if (responseJSON.containsKey("model")) {
+                    ttlModel = responseJSON.get("model").toString();
+                }
                 if (ttlModel == null || ttlModel.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty model content from SENSE-RM");
                 }
-                creationTimestamp = responseJSON.get("creationTime").toString();
-                if (creationTimestamp == null || creationTimestamp.isEmpty()) {
+                if (responseJSON.containsKey("creationTime")) {
+                    creationTimeStr = responseJSON.get("creationTime").toString();
+                }
+                if (creationTimeStr == null || creationTimeStr.isEmpty()) {
                     throw logger.error_throwing(method, driverInstance + "encounters null/empty creationTime from SENSE-RM");
                 }
             } catch (IOException ex) {
@@ -322,7 +334,8 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 dm = new DriverModel();
                 dm.setCommitted(true);
                 dm.setOntModel(ontModel);
-                Date creationTime = new Date(Long.parseLong(creationTimestamp));
+                XMLGregorianCalendar cal = DateTimeUtil.xmlGregorianCalendar(creationTimeStr);
+                Date creationTime = DateTimeUtil.xmlGregorianCalendarToDate(cal);
                 dm.setCreationTime(creationTime);
                 ModelPersistenceManager.save(dm);
                 vi = new VersionItem();
