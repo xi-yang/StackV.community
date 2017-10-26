@@ -172,7 +172,7 @@ public class VerificationDrone implements Runnable {
                 }
 
                 // Step 3: Update verification data
-                prep = conn.prepareStatement("UPDATE `service_verification` SET `state`='RUNNING',`delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,"
+                prep = conn.prepareStatement("UPDATE `service_verification` SET `verification_state` = `0`, `state`='RUNNING',`delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,"
                         + "`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=?, `timestamp`=? "
                         + "WHERE `instanceUUID`= ? ");
                 prep.setString(1, (String) verifyJSON.get("referenceUUID"));
@@ -268,9 +268,10 @@ public class VerificationDrone implements Runnable {
             prep.executeUpdate();
 
             prep = conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`, `instanceUUID`, `state`) VALUES (?,?,'INIT')");
+                    + "(`service_instance_id`, `instanceUUID`, `timestamp`, `state`) VALUES (?,?,?,'INIT')");
             prep.setInt(1, instanceID);
             prep.setString(2, instanceUUID);
+            prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("resetVerification", ex);

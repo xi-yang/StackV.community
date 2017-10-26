@@ -27,6 +27,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Properties;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
@@ -94,9 +95,10 @@ public class VerificationHandler {
             prep.executeUpdate();
 
             prep = conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`, `instanceUUID`, `state`) VALUES (?,?,'INIT')");
+                    + "(`service_instance_id`, `instanceUUID`, `timestamp`, `state`) VALUES (?,?,?,'INIT')");
             prep.setInt(1, instanceID);
             prep.setString(2, instanceUUID);
+            prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("clearVerification", ex);

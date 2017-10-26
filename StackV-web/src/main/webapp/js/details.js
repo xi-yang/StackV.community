@@ -313,7 +313,7 @@ function subloadVerification() {
                     xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 },
                 success: function (retCode) {
-                    hasDrone = (retCode === 1);
+                    hasDrone = (retCode === "1");
                 }
             });
 
@@ -828,6 +828,7 @@ function instructionModerate() {
     if (verificationRun !== null) {
         switch (subState) {
             case "INIT":
+            case "COMPILED":
                 blockString = "Service is being initialized.";
                 break;
             case "PROPAGATED":
