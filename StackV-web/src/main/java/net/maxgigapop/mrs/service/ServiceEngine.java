@@ -60,10 +60,10 @@ public class ServiceEngine {
     static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
         String method = "orchestrateInstance";
         String result;
-        String lastState = "INIT";        
+        String lastState = "INIT";
         String svcDelta = (String) inputJSON.get("data");
         logger.start(method, svcDelta);
-        
+
         int start = svcDelta.indexOf("<modelAddition>") + 15;
         int end = svcDelta.indexOf("</modelAddition>");
         String model = svcDelta.substring(start, end);
@@ -82,7 +82,7 @@ public class ServiceEngine {
             cacheSystemDelta(instanceID, result);
 
             if (inputJSON.containsKey("host")) {
-                pushProperty(refUUID ,"host", (String) inputJSON.get("host"), token.auth());
+                pushProperty(refUUID, "host", (String) inputJSON.get("host"), token.auth());
             }
 
             if (autoProceed) {
@@ -103,14 +103,14 @@ public class ServiceEngine {
                     HttpURLConnection status = (HttpURLConnection) url.openConnection();
                     result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());
                 }
-                lastState = "COMMITTED";
-                logger.trace(method, "Committed");
 
-                if (!result.equals("FAILED")) {
+                if (result.equals("FAILED")) {
+                    logger.trace(method, "Automatic verification skipped due to FAILED state");
+                } else {
+                    lastState = "COMMITTED";
+                    logger.trace(method, "Committed");
                     VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
                     verify.startVerification();
-                } else {
-                    logger.trace(method, "Automatic verification skipped due to FAILED state");
                 }
             }
 
@@ -342,7 +342,7 @@ public class ServiceEngine {
             throw ex;
         }
     }
-    
+
     static void pushProperty(String refUUID, String key, String value, String auth) throws IOException {
         URL url = new URL(String.format("%s/service/property/%s/%s", HOST, refUUID, key));
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
