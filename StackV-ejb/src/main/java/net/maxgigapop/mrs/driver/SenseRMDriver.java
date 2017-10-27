@@ -195,7 +195,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             try {
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
-                URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
+                URL url = new URL(String.format("%s/deltas/%s", subsystemBaseUrl, aDelta.getId()));
                 HttpURLConnection conn;
                 if (url.toString().startsWith("https:")) {
                     conn = (HttpsURLConnection) url.openConnection();
