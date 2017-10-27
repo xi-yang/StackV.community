@@ -172,7 +172,7 @@ public class VerificationDrone implements Runnable {
                 }
 
                 // Step 3: Update verification data
-                prep = conn.prepareStatement("UPDATE `service_verification` SET `verification_state` = `0`, `state`='RUNNING',`delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,"
+                prep = conn.prepareStatement("UPDATE `service_verification` SET `verification_state` = '0', `state`='RUNNING',`delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,"
                         + "`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=?, `timestamp`=? "
                         + "WHERE `instanceUUID`= ? ");
                 prep.setString(1, (String) verifyJSON.get("referenceUUID"));
