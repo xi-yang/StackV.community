@@ -214,7 +214,7 @@ public class ServiceHandler {
         logger.refuuid(refUUID);
         logger.start(method);
         updateLastState(null, refUUID);
-        VerificationHandler verify = new VerificationHandler(refUUID, token);
+        VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
         try {
             switch (action) {
                 case "cancel":
@@ -257,10 +257,7 @@ public class ServiceHandler {
                     break;
                 case "commit":
                     ServiceEngine.commitInstance(refUUID, token.auth());
-                    break;
-                case "call_verify":
-                    ServiceEngine.verifyInstance(refUUID, token.auth());
-                    break;
+                    break;               
                 default:
                     logger.warning(method, "Invalid action");
             }
@@ -360,7 +357,7 @@ public class ServiceHandler {
             instanceState = status();
             if (instanceState.equals("COMMITTED")) {
                 lastState = "COMMITTED";
-                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
                 verify.startVerification();
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
@@ -380,7 +377,7 @@ public class ServiceHandler {
             logger.trace("forceCancelInstance", "Verification priming check - " + instanceState);
             if (instanceState.equals("COMMITTED")) {
                 lastState = "COMMITTED";
-                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
                 verify.clearVerification();
                 verify.startVerification();
                 return 0;
@@ -399,7 +396,7 @@ public class ServiceHandler {
 
             String instanceState = status();
             if (instanceState.equals("COMMITTED")) {
-                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
                 verify.clearVerification();
                 verify.startVerification();
 

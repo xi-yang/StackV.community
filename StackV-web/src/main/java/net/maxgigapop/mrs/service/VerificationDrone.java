@@ -44,7 +44,7 @@ import org.json.simple.parser.ParseException;
  */
 public class VerificationDrone implements Runnable {
 
-    private final static String host = "http://127.0.0.1:8080/StackV-web/restapi";
+    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "VerificationDrone");
     private final TokenHandler token;
     Connection conn;
@@ -55,42 +55,21 @@ public class VerificationDrone implements Runnable {
     String instanceUUID;
     String instanceSubstate;
     String pending;
+    String lastResult;
     int runs;
     int delay;
     int currentRun;
 
-    /*String deltaUUID;
-    String verifiedReduction;
-    String verifiedAddition;
-    String unverifiedReduction;
-    String unverifiedAddition;
-    String reduction;
-    String addition;*/
     public VerificationDrone(String _instanceUUID, TokenHandler _token, Connection _conn, int _runs, int _delay) {
         instanceUUID = _instanceUUID;
         token = _token;
         conn = _conn;
         runs = _runs;
-        delay = _delay;
-        /*try {
-            prep = conn.prepareStatement("SELECT * FROM service_verification"
-                    + "WHERE instanceUUID = ?");
-            prep.setString(1, instanceUUID);
-            ResultSet rs1 = prep.executeQuery();
-            if (rs1.next()) {
-                state = rs1.getString("state");
-                currentRun = rs1.getInt("verification_run");
-                deltaUUID = rs1.getString("delta_uuid");
-                verifiedReduction = rs1.getString("verified_reduction");
-                verifiedAddition = rs1.getString("verified_addition");
-                unverifiedReduction = rs1.getString("unverified_reduction");
-                unverifiedAddition = rs1.getString("unverified_addition");
-                reduction = rs1.getString("reduction");
-                addition = rs1.getString("addition");
-            }
-        } catch (SQLException ex) {
-            logger.catching("VerificationDrone init", ex);
-        }*/
+        delay = _delay;        
+    }
+    
+    public String getResult() {
+        return lastResult;
     }
 
     @Override
@@ -153,9 +132,10 @@ public class VerificationDrone implements Runnable {
                 // Step 2: Update state
                 boolean redVerified = true, addVerified = true;
 
-                URL url = new URL(String.format("%s/service/verify/%s", host, instanceUUID));
+                URL url = new URL(String.format("%s/service/verify/%s", HOST, instanceUUID));
                 HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
                 String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, token.auth());
+                lastResult = result;
 
                 // Pull data from JSON.
                 JSONParser parser = new JSONParser();
@@ -244,7 +224,7 @@ public class VerificationDrone implements Runnable {
                 pending = rs.getString("pending_action");
             }
 
-            URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+            URL url = new URL(String.format("%s/service/%s/status", HOST, instanceUUID));
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
             instanceSubstate = executeHttpMethod(url, status, "GET", null, token.auth());
         } catch (SQLException | IOException ex) {

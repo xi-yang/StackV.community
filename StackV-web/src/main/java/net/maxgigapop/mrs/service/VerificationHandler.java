@@ -44,12 +44,18 @@ public class VerificationHandler {
     PreparedStatement prep;
     ResultSet rs;
 
+    boolean sync;
     String state;
     String instanceUUID;
+    int runs;
+    int delay;
 
-    public VerificationHandler(String _instanceUUID, TokenHandler _token) {
+    public VerificationHandler(String _instanceUUID, TokenHandler _token, int _runs, int _delay, boolean _sync) {
         String method = "init";
         token = _token;
+        runs = _runs;
+        delay = _delay;
+        sync = _sync;
         instanceUUID = _instanceUUID;
         logger.refuuid(instanceUUID);
         try {
@@ -67,8 +73,22 @@ public class VerificationHandler {
         }
     }
 
-    public void startVerification() {
-        new Thread(new VerificationDrone(instanceUUID, token, conn, 30, 10)).start();
+    public String startVerification() {
+        if (sync) {
+            return syncVerification();
+        } else {
+            asyncVerification();
+            return null;
+        }
+    }
+    
+    private void asyncVerification() {
+        new Thread(new VerificationDrone(instanceUUID, token, conn, runs, delay)).start();
+    }
+    private String syncVerification() {
+        VerificationDrone drone = new VerificationDrone(instanceUUID, token, conn, runs, delay);
+        drone.run();
+        return drone.getResult();
     }
 
     public void pauseVerification() {
@@ -77,7 +97,7 @@ public class VerificationHandler {
 
     public void stopVerification() {
         sendAction("STOP");
-    }
+    }   
 
     public void clearVerification() {
         try {

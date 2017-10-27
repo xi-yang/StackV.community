@@ -85,6 +85,7 @@ import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.service.ServiceEngine;
+import net.maxgigapop.mrs.service.VerificationHandler;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.logging.log4j.Level;
 import org.jboss.resteasy.spi.HttpRequest;
@@ -2448,7 +2449,7 @@ public class WebResource {
                 final BigInteger firstTime = BigInteger.valueOf(time.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(time.getNanos()));
                 final BigInteger secondTime = BigInteger.valueOf(now.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(now.getNanos()));
                 int diff = (firstTime.subtract(secondTime)).divide(new BigInteger("1000000000000")).intValue();
-                
+
                 System.out.println(diff);
 
                 if (diff < -30) {
@@ -3024,24 +3025,19 @@ public class WebResource {
         final TokenHandler token = new TokenHandler(refresh);
         final String method = "operate";
         logger.trace_start(method, "Thread:" + Thread.currentThread());
-        if (action.equals("call_verify")) {
-            String retString = ServiceEngine.verifyInstance(refUuid, token.auth());
-            logger.trace_end(method);
-            return retString;
-        } else {
-            executorService.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        doOperate(refUuid, action, token);
-                    } catch (SQLException | IOException | InterruptedException ex) {
-                        logger.catching(method, ex);
-                    }
+
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    doOperate(refUuid, action, token);
+                } catch (SQLException | IOException | InterruptedException ex) {
+                    logger.catching(method, ex);
                 }
-            });
-            logger.trace_end(method);
-            return null;
-        }
+            }
+        });
+        logger.trace_end(method);
+        return null;
     }
 
     @PUT
@@ -3052,9 +3048,26 @@ public class WebResource {
             final String action) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
-        String method = "operate";
-        logger.trace_start(method, "Thread:" + Thread.currentThread());
+        String method = "operateSync";
+        logger.trace_start(method);
         doOperate(refUuid, action, token);
+        logger.trace_end(method);
+    }
+
+    @GET
+    @Path(value = "/service/{siUUID}/call_verify")
+    @RolesAllowed("Services")
+    public void callVerify(@PathParam(value = "siUUID")
+            final String refUUID, @PathParam(value = "action")
+            final String action) throws SQLException, InterruptedException, IOException {
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
+        String method = "callVerify";
+        logger.trace_start(method);
+
+        VerificationHandler verify = new VerificationHandler(refUUID, token, 1, 10, true);
+        verify.startVerification();
+
         logger.trace_end(method);
     }
 

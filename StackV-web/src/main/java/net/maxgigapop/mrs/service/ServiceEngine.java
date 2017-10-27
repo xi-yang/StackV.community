@@ -107,7 +107,7 @@ public class ServiceEngine {
                 logger.trace(method, "Committed");
 
                 if (!result.equals("FAILED")) {
-                    VerificationHandler verify = new VerificationHandler(refUUID, token);
+                    VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
                     verify.startVerification();
                 } else {
                     logger.trace(method, "Automatic verification skipped due to FAILED state");
