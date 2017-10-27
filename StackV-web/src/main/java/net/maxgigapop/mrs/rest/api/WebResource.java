@@ -3054,24 +3054,35 @@ public class WebResource {
         logger.trace_end(method);
     }
 
+    /**
+     * @api {get} /app/service/:siUUID/call_verify Call Verify
+     * @apiVersion 1.0.0
+     * @apiDescription Single-run of service verification, returning result data
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {String} siUUID instance UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X GET http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/call_verify
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * 
+     * @apiSuccess {JSONObject} Verification result JSON.     
+     */
     @GET
     @Path(value = "/service/{siUUID}/call_verify")
     @RolesAllowed("Services")
-    public void callVerify(@PathParam(value = "siUUID")
-            final String refUUID, @PathParam(value = "action")
-            final String action) throws SQLException, InterruptedException, IOException {
+    public String callVerify(@PathParam(value = "siUUID")
+            final String refUUID) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         String method = "callVerify";
         logger.trace_start(method);
 
         VerificationHandler verify = new VerificationHandler(refUUID, token, 1, 10, true);
-        verify.startVerification();
-
-        logger.trace_end(method);
+        return verify.startVerification();        
     }
-
-    /**
+ 
+   /**
      * @api {delete} /app/service/:siUUID/ Delete Service
      * @apiVersion 1.0.0
      * @apiDescription Delete the specified service instance.

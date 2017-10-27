@@ -52,9 +52,7 @@ public class ServiceEngine {
     private final static StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceEngine");
     private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
     private final static String FRONT_DB_USER = "front_view";
-    private final static String FRONT_DB_PASS = "frontuser";
-    private final static String RAINS_DB_USER = "root";
-    private final static String RAINS_DB_PASS = "root";
+    private final static String FRONT_DB_PASS = "frontuser";   
 
     // OPERATION FUNCTIONS    
     static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {

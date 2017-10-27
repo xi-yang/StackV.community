@@ -41,16 +41,12 @@ import static net.maxgigapop.mrs.rest.api.WebResource.SuperState;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 import org.json.simple.JSONObject;
 
-/**
- *
- * @author rikenavadur
- */
 public class ServiceHandler {
 
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceHandler");
-    private final String host = "http://127.0.0.1:8080/StackV-web/restapi";
-    private final String front_db_user = "front_view";
-    private final String front_db_pass = "frontuser";
+    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
+    private final static String FRONT_DB_USER = "front_view";
+    private final static String FRONT_DB_PASS = "frontuser";
 
     TokenHandler token;
     public String refUUID;
@@ -104,8 +100,8 @@ public class ServiceHandler {
             }
 
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+            front_connectionProps.put("user", FRONT_DB_USER);
+            front_connectionProps.put("password", FRONT_DB_PASS);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -181,8 +177,8 @@ public class ServiceHandler {
         ResultSet rs = null;
         try {
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+            front_connectionProps.put("user", FRONT_DB_USER);
+            front_connectionProps.put("password", FRONT_DB_PASS);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -277,7 +273,7 @@ public class ServiceHandler {
 
     public String status() throws IOException {
         try {
-            URL url = new URL(String.format("%s/service/%s/status", host, refUUID));
+            URL url = new URL(String.format("%s/service/%s/status", HOST, refUUID));
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
             String result = executeHttpMethod(url, status, "GET", null, token.auth());
 
@@ -297,8 +293,8 @@ public class ServiceHandler {
      */
     private int deleteInstance(String refUuid, TokenHandler token) throws SQLException, IOException {
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
+        front_connectionProps.put("user", FRONT_DB_USER);
+        front_connectionProps.put("password", FRONT_DB_PASS);
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
@@ -415,8 +411,8 @@ public class ServiceHandler {
         ResultSet rs = null;
         try {
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+            front_connectionProps.put("user", FRONT_DB_USER);
+            front_connectionProps.put("password", FRONT_DB_PASS);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -434,7 +430,7 @@ public class ServiceHandler {
     }
 
     private boolean propagate(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/propagate", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Propagate Command");
@@ -445,7 +441,7 @@ public class ServiceHandler {
     }
 
     private boolean forcePropagate(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Forced Propagate Command");
@@ -456,7 +452,7 @@ public class ServiceHandler {
     }
 
     private boolean commit(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/commit", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Commit Command");
@@ -467,7 +463,7 @@ public class ServiceHandler {
     }
 
     private boolean forceCommit(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/commit_forced", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/commit_forced", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Forced Commit Command");
@@ -478,7 +474,7 @@ public class ServiceHandler {
     }
 
     private boolean revert(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/revert", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Revert Command");
@@ -489,7 +485,7 @@ public class ServiceHandler {
     }
 
     private boolean forceRevert(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/revert_forced", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/revert_forced", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Forced Revert Command");
@@ -500,7 +496,7 @@ public class ServiceHandler {
     }
 
     private String delete(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "DELETE", null, auth);
         //logger.log(Level.INFO, "Sending Delete Command");
@@ -519,8 +515,8 @@ public class ServiceHandler {
         ResultSet rs = null;
         try {
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+            front_connectionProps.put("user", FRONT_DB_USER);
+            front_connectionProps.put("password", FRONT_DB_PASS);
 
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
