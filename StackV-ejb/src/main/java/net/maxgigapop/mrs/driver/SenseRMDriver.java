@@ -167,7 +167,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 conn = (HttpURLConnection) url.openConnection();
             }
             String[] response = DriverUtil.executeHttpMethod(conn, "PUT", null);
-            if (response[1].equals("200")) {
+            if (response[1].equals("200") || response[1].equals("204")) {
                 aDelta.setStatus("COMMITTING");
                 DeltaPersistenceManager.merge(aDelta);
             } else if (response[1].equals("400")) {
