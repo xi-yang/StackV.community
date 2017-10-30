@@ -168,6 +168,7 @@ function loadDetails() {
         var apiUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
         $.ajax({
             url: apiUrl,
+            async: false,
             type: 'GET',
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -220,6 +221,7 @@ function subloadDetails() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -254,6 +256,7 @@ function subloadStatus(refUuid) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + refUuid + '/substatus';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -275,11 +278,14 @@ function subloadStatus(refUuid) {
         }
     });
 }
+
+hasDrone = true;
 function subloadVerification() {
     var uuid = sessionStorage.getItem("instance-uuid");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/verification';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -299,6 +305,18 @@ function subloadVerification() {
             verificationAddition = verification[3];
             verificationReduction = verification[4];
 
+            $.ajax({
+                url: apiUrl += '/drone',
+                async: false,
+                type: 'GET',
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                },
+                success: function (retCode) {
+                    hasDrone = (retCode === "1");
+                }
+            });
+
             instructionModerate();
             buttonModerate();
         }
@@ -310,6 +328,7 @@ function subloadACL() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/acl';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -370,6 +389,7 @@ function loadACL() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + keycloak.subject + '/acl';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -458,17 +478,17 @@ function loadVisualization() {
             var tabs = [
                 {
                     "name": "Service",
-                    "state": "COMPILED",
+                    "state": "READY",
                     "createContent": createVizTab.bind(undefined, "Service")
                 },
                 {
                     "name": "System",
-                    "state": "COMPILED",
+                    "state": "READY",
                     "createContent": createVizTab.bind(undefined, "System")
                 },
                 {
                     "name": "Verification",
-                    "state": "COMMITTING",
+                    "state": "READY",
                     "createContent": createVizTab.bind(undefined, "Verification")
                 }
             ];
@@ -808,6 +828,7 @@ function instructionModerate() {
     if (verificationRun !== null) {
         switch (subState) {
             case "INIT":
+            case "COMPILED":
                 blockString = "Service is being initialized.";
                 break;
             case "PROPAGATED":
@@ -817,8 +838,16 @@ function instructionModerate() {
                 blockString = "Service is currently being constructed.";
                 break;
             case "COMMITTED":
-                blockString = "Service has been constructed, and is now being verified. (Run "
-                        + verificationRun + ")";
+                switch (verificationState) {
+                    case "null":
+                    case "0":
+                        blockString = "Service has been constructed, and is now being verified. (Run "
+                                + verificationRun + ")";
+                        break;
+                    case "-1":
+                        blockString = "Service has been constructed, but could not be verified. Please attempt verification again.";
+                        break;
+                }
                 break;
             case "FAILED":
                 if (verificationRun > 0 && verificationRun < 30) {
@@ -863,9 +892,10 @@ function buttonModerate() {
 
     switch (subState) {
         case "COMMITTED":
-            $("#verify").removeClass("hide");
-            break;
-        case "COMMITTING":            
+            if (!hasDrone) {
+                $("#verify").removeClass("hide");
+            }
+
             switch (superState) {
                 case "CREATE":
                 case "REINSTATE":
@@ -875,9 +905,26 @@ function buttonModerate() {
                     $("#force_reinstate").removeClass("hide");
                     break;
             }
-            
+            $("#delete").removeClass("hide");
+
+            break;
+        case "COMMITTING":
+            switch (superState) {
+                case "CREATE":
+                case "REINSTATE":
+                    $("#force_cancel").removeClass("hide");
+                    break;
+                case "CANCEL":
+                    $("#force_reinstate").removeClass("hide");
+                    break;
+            }
+
             break;
         case "FAILED":
+            if (!hasDrone) {
+                $("#verify").removeClass("hide");
+            }
+
             // Error case
             if (lastState === "INIT") {
                 $(".instance-command").addClass("hide");
@@ -917,11 +964,6 @@ function buttonModerate() {
             }
             break;
     }
-
-    if (verifyState === "RUNNING") {
-        $("#verify").html("Cancel Verification");
-        $("#verify").attr("id", "unverify");
-    }        
 }
 
 
@@ -950,7 +992,7 @@ function reloadData() {
                     $("#body-" + this.id).toggleClass("hide");
                 });
                 refreshSync(refreshed, timerSetting);
-            }, 500);
+            }, 250);
         } else {
             reloadLogs();
             subloadDetails();

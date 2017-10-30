@@ -1141,6 +1141,9 @@ function loadDataTable(apiUrl) {
     var level = sessionStorage.getItem("logging-level");
     if (level !== null) {
         $("#logging-filter-level").val(level);
+    } else {
+        sessionStorage.setItem("logging-level", "INFO");
+        $("#logging-filter-level").val("INFO");
     }
 }
 function formatChild(d) {

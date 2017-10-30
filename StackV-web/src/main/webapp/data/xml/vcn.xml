@@ -85,7 +85,7 @@
         </group>        
     </stage>
     <stage name="Subnets">
-        <group block="subnets" name="Subnet" collapsible="true">
+        <group block="subnets" name="Subnet" collapsible="true" opened="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -131,12 +131,12 @@
         </group>
     </stage>
     <stage name="VMs">
-        <group block="vms" name="VM" collapsible="true">
+        <group block="vms" name="VM" collapsible="true" opened="true">
             <path>
                 <parent>subnet host</parent>                
             </path>
             
-            <group name="Details" passthrough="true" collapsible="true">
+            <group name="Details" passthrough="true" collapsible="true" opened="true">
                 <input>
                     <name>Subnet Host</name>
                     <type>select</type>
@@ -209,7 +209,7 @@
                 </input>                
             </group>
             <group name="Routes" passthrough="true" collapsible="true">
-                <group factory="true" name="Route" label="off">
+                <group factory="true" name="Route">
                     <input>
                         <name>From</name>
                         <type>text</type>
@@ -284,7 +284,7 @@
         </group>
     </stage>
     <stage name="Gateways">
-        <group block="gateways" name="Gateway" collapsible="true">            
+        <group block="gateways" name="Gateway" collapsible="true" opened="true">            
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -329,7 +329,7 @@
         </group>
     </stage>    
     <stage name="SRIOVs" condition="openstack-form">
-        <group block="sriovs" name="SRIOV" collapsible="true">
+        <group block="sriovs" name="SRIOV" collapsible="true" opened="true">
             <path>
                 <parent>Hosting VM</parent>
             </path>

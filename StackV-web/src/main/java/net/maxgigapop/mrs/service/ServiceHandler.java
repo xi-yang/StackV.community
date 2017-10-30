@@ -41,16 +41,12 @@ import static net.maxgigapop.mrs.rest.api.WebResource.SuperState;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 import org.json.simple.JSONObject;
 
-/**
- *
- * @author rikenavadur
- */
 public class ServiceHandler {
 
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceHandler");
-    private final String host = "http://127.0.0.1:8080/StackV-web/restapi";
-    private final String front_db_user = "front_view";
-    private final String front_db_pass = "frontuser";
+    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
+    private final static String FRONT_DB_USER = "front_view";
+    private final static String FRONT_DB_PASS = "frontuser";
 
     TokenHandler token;
     public String refUUID;
@@ -60,13 +56,13 @@ public class ServiceHandler {
     String alias;
     String lastState = "INIT";
 
-    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) {
+    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         token = initToken;
 
         createInstance(input, refUUID, autoProceed);
     }
 
-    public ServiceHandler(String refUUID, TokenHandler initToken) {
+    public ServiceHandler(String refUUID, TokenHandler initToken) throws SQLException {
         this.refUUID = refUUID;
         logger.refuuid(refUUID);
         token = initToken;
@@ -75,7 +71,7 @@ public class ServiceHandler {
     }
 
     // INIT METHODS
-    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) {
+    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         String method = "createInstance";
         logger.refuuid(refUUID);
         Connection front_conn = null;
@@ -104,8 +100,8 @@ public class ServiceHandler {
             }
 
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+            front_connectionProps.put("user", FRONT_DB_USER);
+            front_connectionProps.put("password", FRONT_DB_PASS);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -132,9 +128,10 @@ public class ServiceHandler {
             rs.next();
             int instanceID = rs.getInt("service_instance_id");
 
-            prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?, ?)");
+            prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`, `timestamp`) VALUES (?, ?, ?)");
             prep.setInt(1, instanceID);
             prep.setString(2, refUUID);
+            prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
             prep.executeUpdate();
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
@@ -146,7 +143,7 @@ public class ServiceHandler {
             logger.init();
 
             // Execute service creation.
-            ServiceEngine.orchestrateInstance(refUUID, delta, deltaUUID, token, autoProceed);
+            ServiceEngine.orchestrateInstance(refUUID, inputJSON, deltaUUID, token, autoProceed);
             /*switch (type) {
                 case "netcreate":
                     ServiceEngine.createNetwork(paraMap, token);
@@ -167,20 +164,21 @@ public class ServiceHandler {
             logger.end(method);
         } catch (EJBException | SQLException ex) {
             logger.catching(method, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
     }
 
-    private void loadInstance(String refUUID) {
+    private void loadInstance(String refUUID) throws SQLException {
         String method = "loadInstance";
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+            front_connectionProps.put("user", FRONT_DB_USER);
+            front_connectionProps.put("password", FRONT_DB_PASS);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -194,17 +192,16 @@ public class ServiceHandler {
                 type = rs1.getString("type");
                 lastState = rs1.getString("last_state");
             }
-
-            logger.trace_end(method);
         } catch (SQLException ex) {
             logger.catching(method, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
     }
 
     // OPERATION METHODS
-    public void operate(String action) {
+    public void operate(String action) throws SQLException, IOException, InterruptedException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -213,8 +210,8 @@ public class ServiceHandler {
         logger.refuuid(refUUID);
         logger.start(method);
         updateLastState(null, refUUID);
+        VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
         try {
-            VerificationHandler verify = new VerificationHandler(refUUID, token);
             switch (action) {
                 case "cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
@@ -256,27 +253,16 @@ public class ServiceHandler {
                     break;
                 case "commit":
                     ServiceEngine.commitInstance(refUUID, token.auth());
-                    break;
+                    break;               
                 default:
                     logger.warning(method, "Invalid action");
             }
 
             logger.end(method);
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
-            try {
-                Properties front_connectionProps = new Properties();
-                front_connectionProps.put("user", front_db_user);
-                front_connectionProps.put("password", front_db_pass);
-                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                        front_connectionProps);
-
-                prep = front_conn.prepareStatement("UPDATE service_verification V INNER JOIN service_instance I SET V.verification_state = '-1' WHERE V.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
-                prep.setString(1, refUUID);
-                prep.executeUpdate();
-            } catch (SQLException ex2) {
-                logger.catching(method, ex2);
-            }
+            verify.stopVerification();
             logger.catching(method, ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
             if (lastState != null) {
@@ -285,16 +271,16 @@ public class ServiceHandler {
         }
     }
 
-    public String status() {
+    public String status() throws IOException {
         try {
-            URL url = new URL(String.format("%s/service/%s/status", host, refUUID));
+            URL url = new URL(String.format("%s/service/%s/status", HOST, refUUID));
             HttpURLConnection status = (HttpURLConnection) url.openConnection();
             String result = executeHttpMethod(url, status, "GET", null, token.auth());
 
             return result;
         } catch (IOException ex) {
             logger.catching("status", ex);
-            return null;
+            throw ex;
         }
     }
 
@@ -307,8 +293,8 @@ public class ServiceHandler {
      */
     private int deleteInstance(String refUuid, TokenHandler token) throws SQLException, IOException {
         Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
+        front_connectionProps.put("user", FRONT_DB_USER);
+        front_connectionProps.put("password", FRONT_DB_PASS);
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
@@ -367,7 +353,7 @@ public class ServiceHandler {
             instanceState = status();
             if (instanceState.equals("COMMITTED")) {
                 lastState = "COMMITTED";
-                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
                 verify.startVerification();
                 return 0;
             } else if (!(instanceState.equals("COMMITTING"))) {
@@ -379,15 +365,18 @@ public class ServiceHandler {
     }
 
     private int forceCancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+        lastState = "INIT";
         forceRevert(refUuid, token.auth());
         forcePropagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
+        lastState = "COMMITTING";
         while (true) {
             String instanceState = status();
             logger.trace("forceCancelInstance", "Verification priming check - " + instanceState);
             if (instanceState.equals("COMMITTED")) {
                 lastState = "COMMITTED";
-                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
                 verify.clearVerification();
                 verify.startVerification();
                 return 0;
@@ -400,13 +389,16 @@ public class ServiceHandler {
 
     private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
         forcePropagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
+        lastState = "COMMITTING";
         while (true) {
             logger.trace("forceRetryInstance", "Verification priming check");
 
             String instanceState = status();
             if (instanceState.equals("COMMITTED")) {
-                VerificationHandler verify = new VerificationHandler(refUUID, token);
+                lastState = "COMMITTED";
+                VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
                 verify.clearVerification();
                 verify.startVerification();
 
@@ -419,14 +411,14 @@ public class ServiceHandler {
     }
 
     // Utility Methods ---------------------------------------------------------
-    private void setSuperState(String refUuid, SuperState superState) {
+    private void setSuperState(String refUuid, SuperState superState) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+            front_connectionProps.put("user", FRONT_DB_USER);
+            front_connectionProps.put("password", FRONT_DB_PASS);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -437,13 +429,14 @@ public class ServiceHandler {
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("setSuperState", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }
     }
 
     private boolean propagate(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/propagate", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/propagate", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Propagate Command");
@@ -454,7 +447,7 @@ public class ServiceHandler {
     }
 
     private boolean forcePropagate(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Forced Propagate Command");
@@ -465,7 +458,7 @@ public class ServiceHandler {
     }
 
     private boolean commit(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/commit", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/commit", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Commit Command");
@@ -476,7 +469,7 @@ public class ServiceHandler {
     }
 
     private boolean forceCommit(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/commit_forced", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/commit_forced", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Forced Commit Command");
@@ -487,7 +480,7 @@ public class ServiceHandler {
     }
 
     private boolean revert(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/revert", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/revert", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Revert Command");
@@ -498,7 +491,7 @@ public class ServiceHandler {
     }
 
     private boolean forceRevert(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/revert_forced", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/revert_forced", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
         //logger.log(Level.INFO, "Sending Forced Revert Command");
@@ -509,7 +502,7 @@ public class ServiceHandler {
     }
 
     private String delete(String refUuid, String auth) throws MalformedURLException, IOException {
-        URL url = new URL(String.format("%s/service/%s/", host, refUuid));
+        URL url = new URL(String.format("%s/service/%s/", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "DELETE", null, auth);
         //logger.log(Level.INFO, "Sending Delete Command");
@@ -519,35 +512,7 @@ public class ServiceHandler {
         return result;
     }
 
-    private boolean clearVerification() {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("UPDATE service_verification V "
-                    + "INNER JOIN service_instance I "
-                    + "ON V.service_instance_id = I.service_instance_id AND I.referenceUUID = ? "
-                    + "SET V.verification_state = ?, V.verification_run = 0, V.enabled = 1");
-            prep.setString(1, refUUID);
-            prep.setNull(2, java.sql.Types.INTEGER);
-            prep.executeUpdate();
-
-            return true;
-        } catch (SQLException ex) {
-            logger.catching("clearVerification", ex);
-            return false;
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
-    }
-
-    void updateLastState(String lastState, String refUUID) {
+    void updateLastState(String lastState, String refUUID) throws SQLException {
         String method = "updateLastState";
         logger.trace_start(method, lastState);
 
@@ -556,8 +521,8 @@ public class ServiceHandler {
         ResultSet rs = null;
         try {
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+            front_connectionProps.put("user", FRONT_DB_USER);
+            front_connectionProps.put("password", FRONT_DB_PASS);
 
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
@@ -568,6 +533,7 @@ public class ServiceHandler {
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("updateLastState", ex);
+            throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
         }

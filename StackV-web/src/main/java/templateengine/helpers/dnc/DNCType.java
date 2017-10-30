@@ -9,9 +9,9 @@ public class DNCType implements Helper {
     public String apply(ArrayList<Object> obj) {
         String type = (String) obj.get(0);
         switch (type) {
-            case "Multi-Path P2P VLAN":
+            case "Multi-Path_P2P_VLAN":
                 return "MCE_MPVlanConnection";
-            case "Multi-Point VLAN Bridge":
+            case "Multi-Point_VLAN_Bridge":
                 return "MCE_MultiPointVlanBridge";
         }
         return "";

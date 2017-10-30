@@ -27,6 +27,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Properties;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
@@ -43,20 +44,24 @@ public class VerificationHandler {
     PreparedStatement prep;
     ResultSet rs;
 
+    boolean sync;
     String state;
     String instanceUUID;
+    int runs;
+    int delay;
 
-    public VerificationHandler(String _instanceUUID, TokenHandler _token) {
+    public VerificationHandler(String _instanceUUID, TokenHandler _token, int _runs, int _delay, boolean _sync) {
         String method = "init";
         token = _token;
+        runs = _runs;
+        delay = _delay;
+        sync = _sync;
         instanceUUID = _instanceUUID;
         logger.refuuid(instanceUUID);
         try {
-            String front_db_user = "front_view";
-            String front_db_pass = "frontuser";
             Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+            front_connectionProps.put("user", "front_view");
+            front_connectionProps.put("password", "frontuser");
             conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
@@ -66,8 +71,22 @@ public class VerificationHandler {
         }
     }
 
-    public void startVerification() {
-        new Thread(new VerificationDrone(instanceUUID, token, conn, 30, 10)).start();
+    public String startVerification() {
+        if (sync) {
+            return syncVerification();
+        } else {
+            asyncVerification();
+            return null;
+        }
+    }
+    
+    private void asyncVerification() {
+        new Thread(new VerificationDrone(instanceUUID, token, conn, runs, delay)).start();
+    }
+    private String syncVerification() {
+        VerificationDrone drone = new VerificationDrone(instanceUUID, token, conn, runs, delay);
+        drone.run();
+        return drone.getResult();
     }
 
     public void pauseVerification() {
@@ -76,7 +95,7 @@ public class VerificationHandler {
 
     public void stopVerification() {
         sendAction("STOP");
-    }
+    }   
 
     public void clearVerification() {
         try {
@@ -94,9 +113,10 @@ public class VerificationHandler {
             prep.executeUpdate();
 
             prep = conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`, `instanceUUID`, `state`) VALUES (?,?,'INIT')");
+                    + "(`service_instance_id`, `instanceUUID`, `timestamp`, `state`) VALUES (?,?,?,'INIT')");
             prep.setInt(1, instanceID);
             prep.setString(2, instanceUUID);
+            prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("clearVerification", ex);
@@ -130,7 +150,7 @@ public class VerificationHandler {
             prep.setString(1, instanceUUID);
             rs = prep.executeQuery();
             if (rs.next()) {
-                state = rs.getString(state);
+                state = rs.getString("state");
             }
         } catch (SQLException ex) {
             logger.catching(method, ex);

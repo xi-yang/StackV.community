@@ -130,16 +130,15 @@
                 {{/if floating_ip}}                
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt; .
 
-                {{/ !AddressString name interfaces @uuid}}  {{/ TODO check on conditional relating to blank addressString }}
                 {{#sriovs}}
                     {{$if !LinkedGatewayType @gateways = "UCS Port Profile"}}
-                        &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-sriov{{@index}}&gt;
+                        &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;
                             a            spa:PolicyAction ;
                             spa:type     "MCE_UcsSriovStitching" ;
                             spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-{{VMName}}-eth0&gt;;
-                            spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;.
+                            spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;.
 
-                        &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-sriov{{@index}}&gt;
+                        &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;
                             a            spa:PolicyData;
                             spa:type     "JSON";
                             spa:value    """ {
@@ -153,13 +152,13 @@
                                 } """ .
                     {{/if !LinkedGatewayType}}
                     {{$if !LinkedGatewayType @gateways = "L2 Stitch Port"}}
-                        &lt;x-policy-annotation:action:ucs-{{hosting_gateway}}-sriov{{@index}}-stitch&gt;
+                        &lt;x-policy-annotation:action:ucs-{{hosting_gateway}}-{{name}}-stitch&gt;
                             a            spa:PolicyAction ;
                             spa:type     "MCE_UcsSriovStitching" ;
                             spa:dependOn &lt;x-policy-annotation:action:create-{{hosting_gateway}}&gt;, &lt;x-policy-annotation:action:create-path&gt;;
-                            spa:importFrom &lt;x-policy-annotation:data:{{hosting_gateway}}-sriov{{@index}}-criteria&gt; .
+                            spa:importFrom &lt;x-policy-annotation:data:{{hosting_gateway}}-{{name}}&gt; .
 
-                        &lt;x-policy-annotation:data:{{hosting_gateway}}-sriov{{@index}}-criteria&gt;
+                        &lt;x-policy-annotation:data:{{hosting_gateway}}-{{name}}&gt;
                             a            spa:PolicyData;
                             spa:type     "JSON";
                             spa:format   """ {
@@ -187,18 +186,38 @@
                         {{$if ^last}}.{{/if ^last}}
                 {{/routes}}
                 {{#routes}}
-                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
-                          a  mrs:Route;
-                                        {{$if to}}
-                          mrs:routeTo "{{to}}"; {{/ might have to format this differently, check networkAddressFromJson method}}
-                                        {{/if to}}
-                                        {{$if from}}
-                          mrs:routeFrom "{{from}}"; {{/ might have to format this differently, check networkAddressFromJson method}}
-                                        {{/if from}}
-                                        {{$if next_hop}}
-                          mrs:nextHop "{{next_hop}}"; {{/ might have to format this differently, check networkAddressFromJson method}}
-                                        {{/if next_hop}}
+                    &lt;{{*RouteTag}}{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}{{/RouteTag}}&gt;
+                        a  mrs:Route;
+                        {{$if to}}
+                            mrs:routeTo &lt;{{RouteTag}}:route_to&gt;;
+                        {{/if to}}
+                        {{$if from}}
+                            mrs:routeFrom &lt;{{RouteTag}}:route_from&gt;;
+                        {{/if from}}
+                        {{$if next_hop}}
+                            mrs:nextHop &lt;{{RouteTag}}:next_hop&gt;;
+                        {{/if next_hop}}
                     .
+
+                    {{$if to}}
+                        &lt;{{RouteTag}}:route_to&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-prefix";
+                                mrs:value   "{{to}}".
+                    {{/if to}}
+                    {{$if from}}
+                        &lt;{{RouteTag}}:route_from&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-prefix";
+                                mrs:value   "{{from}}".
+                    {{/if from}}
+                    {{$if next_hop}}
+                        &lt;{{RouteTag}}:next_hop&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-address";
+                                mrs:value   "{{next_hop}}".
+                    {{/if next_hop}}
+                    
                 {{/routes}}
             {{/if routes}}
 
@@ -208,21 +227,6 @@
                     mrs:type     "floating-ip";
                     mrs:value     "{{floating_ip}}".
             {{/if floating_ip}}
-
-            {{$if ceph_rbd}} {{/ CEPH Needs to be included in portal manifest }}
-                {{#ceph_rbd}}
-                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
-                       a  mrs:Volume;
-                       mrs:disk_gb "{{disk_gb}}";
-                       mrs:mount_point "{{mount_point}}".
-                {{/ceph_rbd}}
-                &lt;{{VMTag}}&gt;
-                   mrs:hasVolume
-                {{#ceph_rbd}} {{/ ensure that ceph_rbd blocks will be handled in same order regardless of when called, if not, need to make a helper}}
-                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$unless ^last}},{{/unless ^last}}
-                {{/ceph_rbd}}
-                .
-            {{/if ceph_rbd}}
 
             &lt;x-policy-annotation:action:create-{{name}}&gt;
                 a            spa:PolicyAction ;
@@ -255,24 +259,22 @@
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#ceph_rbds}}
-                &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
-                   a  mrs:Volume;
-                   mrs:disk_gb "{{size}}" ;
-                   mrs:mount_point "{{mount_point}}" .
-            {{/ceph_rbds}}
-            {{$if ceph_rbds}}
-                &lt;{{VMTag}}&gt;
-                    mrs:hasVolume
-                    {{#ceph_rbds}}
-                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
-                    {{/ceph_rbds}}
+                {{$if size}}
+                    &lt;{{VMTag}}&gt;
+                        mrs:hasVolume
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                        
 
-                &lt;{{@parent}}:ceph-rbd&gt;
-                    mrs:providesVolume 
-                    {{#ceph_rbds}}
-                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$if ^last}}.{{/if ^last}}{{$unless ^last}},{{/unless ^last}}
-                    {{/ceph_rbds}}
-            {{/if ceph_rbds}}            
+                    &lt;{{@parent}}:ceph-rbd&gt;
+                        mrs:providesVolume 
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                            
+
+                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
+                           a  mrs:Volume;
+                           mrs:disk_gb "{{size}}" ;
+                           mrs:mount_point "{{mount_point}}" .
+
+                {{/if size}}
+            {{/ceph_rbds}}
         {{/vms}}
 
         {{#vms}}
@@ -339,14 +341,14 @@
         {{/ dependOn }}
         {{#vms}}
             {{#sriovs}}
-                {{*SRIOVIndex @index}}
+                {{*SRIOVName name}}
                 {{#@gateways}}
                     {{$if connects.0/from}}
                         {{$if type = "UCS Port Profile"}}
                             &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
                                a  nml:Topology;
                                spa:type spa:Abstraction;
-                               spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-sriov{{SRIOVIndex}}&gt;.                                                                        
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-{{SRIOVName}}&gt;.                                                                        
                         {{/if type}}
                     {{/if connects.0/from}}
                     {{$if connects.0/to}}
@@ -354,7 +356,7 @@
                             &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
                                a  nml:Topology;
                                spa:type spa:Abstraction;
-                               spa:dependOn  &lt;x-policy-annotation:action:ucs-{{name}}-sriov{{SRIOVIndex}}-stitch&gt;.                                             
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-{{name}}-{{SRIOVName}}-stitch&gt;.                                             
                         {{/if type}}
                     {{/if connects.0/to}}
                 {{/@gateways}}

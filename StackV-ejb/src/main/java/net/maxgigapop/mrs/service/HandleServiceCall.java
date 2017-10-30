@@ -870,7 +870,7 @@ public class HandleServiceCall {
             throw logger.error_throwing(method, "ref:ServiceInstance has no ServiceDelta to verify");
         }
         logger.targetid(serviceDelta.getId());
-        logger.start(method);
+        logger.trace_start(method);
         if (serviceDelta.getSystemDelta() == null) {
             throw logger.error_throwing(method, "there is no SystemDelta associated with target:ServiceDelta");
         }
@@ -925,7 +925,7 @@ public class HandleServiceCall {
             serviceInstance.setStatus("READY");
             ServiceInstancePersistenceManager.merge(serviceInstance);
         }
-        logger.end(method);
+        logger.trace_end(method);
     }
     
     public boolean verifyModelAddition(Model deltaModel, Model refModel, Model verifiedModel, Model unverifiedModel) {

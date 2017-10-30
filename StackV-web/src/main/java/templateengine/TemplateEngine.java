@@ -1,6 +1,8 @@
 package templateengine;
 
 import java.util.HashMap;
+import java.util.regex.Pattern;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.json.simple.JSONObject;
 
 public class TemplateEngine {
@@ -9,7 +11,7 @@ public class TemplateEngine {
     Template template;
     String render;
 
-    public TemplateEngine() {        
+    public TemplateEngine() {
     }
 
     public String apply(JSONObject input) {
@@ -17,14 +19,16 @@ public class TemplateEngine {
         switch (type) {
             case "dnc":
                 template = new DNCTemplate();
-                render = template.getTemplate();
                 break;
             case "vcn":
                 template = new VCNTemplate();
-                render = template.getTemplate();
                 break;
+            case "ahc":
+                template = new AHCTemplate();
+                break;                
         }
-        
+        render = template.getTemplate();
+
         // Begin loop
         String recurBody = render;
         int start = recurBody.indexOf("{{");
@@ -57,25 +61,30 @@ public class TemplateEngine {
             }
 
             Block block = new Block(blockStr, (JSONObject) input.get("data"), (JSONObject) input.get("data"), template, new HashMap<String, String>());
-            recurBody = recurBody.replace(blockStr, block.render());
+            if (block.isInput()) {
+                recurBody = recurBody.replaceFirst(Pattern.quote(blockStr), block.render());
+            }
+            else {
+                recurBody = recurBody.replace(blockStr, block.render());
+            }
 
             start = recurBody.indexOf("{{");
-        }               
-        
+        }
+
         // Postprocessing
         escapeModel();
-        
+
         return recurBody;
     }
-    
+
     private void escapeModel() {
         int start = render.indexOf("<modelAddition>") + 15;
         int end = render.indexOf("</modelAddition>");
-        
+
         String body = render.substring(start, end);
         body = body.replaceAll("<", "&lt;");
         body = body.replaceAll(">", "&gt;");
-        
+
         render = render.substring(0, start) + body + render.substring(end);
     }
 }

@@ -43,6 +43,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
@@ -352,7 +354,11 @@ public class OpenStackPush {
                 if (o.containsKey("secgroup") && !o.get("secgroup").toString().isEmpty()) {
                     String[] sgs = o.get("secgroup").toString().split(",|;|:");
                     for (String secgroup : sgs) {
-                        SecurityGroupAddCheck(s.getId(), secgroup);
+                        try {
+                            SecurityGroupAddCheck(s.getId(), secgroup);
+                        } catch (Exception ex) {
+                            throw logger.throwing(method, ex);
+                        }
                     }
                 }
                 if (o.containsKey("alt name")) {
@@ -2712,7 +2718,7 @@ public class OpenStackPush {
                     + "OPTIONAL {?route mrs:nextHop ?next_hop. "
                     + "     ?next_hop mrs:type ?next_hop_type. "
                     + "     ?next_hop mrs:value ?next_hop_value. } "
-                    + "}";
+                    + "} ORDER BY (?route)";
             ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
             int routeNum = 1;
             while (r3.hasNext()) {
@@ -3335,7 +3341,18 @@ public class OpenStackPush {
         }
     }
     
-    public void SecurityGroupAddCheck(String serverId, String secgroupId) {
+    public void SecurityGroupAddCheck(String serverId, String secgroupId) throws Exception {
+        List<? extends SecGroupExtension> listServerGroups = osClient.compute().securityGroups().list();
+        boolean secgroupDefined = false;
+        for (SecGroupExtension secgroup : listServerGroups) {
+            if (secgroup.getName().equals(secgroupId)) {
+                secgroupDefined = true;
+                break;
+            }
+        }
+        if (!secgroupDefined) {
+            throw new Exception("Unknown Security Group: " + secgroupId);
+        }
         int maxTries = 30;
         while ((maxTries--) > 0) {
             try {
@@ -3344,7 +3361,7 @@ public class OpenStackPush {
                     // add
                     osClient.compute().servers().addSecurityGroup(serverId, secgroupId);
                     // check
-                    List<? extends SecGroupExtension> listServerGroups = osClient.compute().securityGroups().listServerGroups(serverId);
+                    listServerGroups = osClient.compute().securityGroups().listServerGroups(serverId);
                     if (listServerGroups != null && !listServerGroups.isEmpty()) {
                         for (SecGroupExtension secgroup : listServerGroups) {
                             if (secgroup.getName().equals(secgroupId)) {
@@ -3361,6 +3378,7 @@ public class OpenStackPush {
                 Thread.currentThread().interrupt();
             }
         }
+        throw new Exception("Failed to add Security Group: " + secgroupId);
     }
     
     public void CephRbdDeletionCheck(String serverId, String deviceId) {

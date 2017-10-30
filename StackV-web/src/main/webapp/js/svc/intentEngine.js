@@ -266,6 +266,7 @@ function renderInputs(arr, $parent) {
             var start = ele.getAttribute("start");
             var def = ele.getAttribute("default");
             var collapsible = ele.getAttribute("collapsible");
+            var opened = ele.getAttribute("opened");
             var block = ele.getAttribute("block");
             var str = name.charAt(0).toUpperCase() + name.slice(1);
             var eleID = constructID(ele);
@@ -278,7 +279,12 @@ function renderInputs(arr, $parent) {
             // Handle potential element modifiers            
             var $targetDiv = $div;
             if (collapsible === "true") {
-                $div.addClass("collapsing");
+                if (opened === "true") {
+                    $div.addClass("collapsing");
+                }                
+                else {
+                    $div.addClass("collapsed");
+                }
             }
             if (factory === "true") {
                 $div.addClass("factory");
@@ -352,6 +358,7 @@ function renderInputs(arr, $parent) {
             var name = constructID(ele);
             var trigger = ele.getAttribute("trigger");
             var condition = ele.getAttribute("condition");
+            var hidden = ele.getAttribute("hidden");
             var required = ele.getAttribute("required");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
@@ -381,9 +388,9 @@ function renderInputs(arr, $parent) {
                 } else {
                     parentName = ele.parentElement.parentElement.getAttribute("name");
                 }
-                
-                $input.attr("data-name", parentName + "_1");
-                $input.val(parentName + "_1");
+
+                $input.attr("data-name", parentName + " 1");
+                $input.val(parentName + " 1");
             }
 
             // Handle potential element modifiers
@@ -545,12 +552,16 @@ function renderInputs(arr, $parent) {
                     }
                 });
             }
+            
+            if (hidden) {
+                $label.addClass("hidden");
+            }
 
             $label.append($input);
             if ($message) {
                 $label.append($message);
             }
-            $parent.append($label);
+            $parent.append($label);            
         }
     }
 }
@@ -789,6 +800,25 @@ function collapseGroups() {
 
         $div.removeClass("collapsing");
     });
+    $(".collapsed").each(function () {
+        var $div = $(this);
+        var collapseStr = "collapse-" + $div.attr("id");
+        var $collapseDiv = $("<div>", {class: "collapse", id: collapseStr});
+        var $toggle = $("<a>").attr("data-toggle", "collapse")
+                .attr("data-target", "#" + collapseStr)
+                .addClass("group-collapse-toggle collapsed");
+
+        $($($div.children()[0]).children()[0]).after($toggle);
+        $div.children().each(function () {
+            var $this = $(this);
+            if (!$this.hasClass("group-header")) {
+                $this.appendTo($collapseDiv);
+            }
+        });
+        $div.append($collapseDiv);
+
+        $div.removeClass("collapsed");
+    });
 }
 
 function collapseDiv($name, $div) {
@@ -913,12 +943,12 @@ function constructID(ele) {
     if (ele.nodeName === "input") {
         retString = ele.children[0].innerHTML;
     }
-        
+
     while (ele.nodeName !== "stage") {
         ele = ele.parentElement;
         if (ele.getAttribute("passthrough") === null) {
             retString = ele.getAttribute("name") + "-" + retString;
-        }        
+        }
     }
     return retString.replace(/ /g, "_").toLowerCase();
 }
@@ -939,20 +969,16 @@ function buildClone(key, target, $factoryBtn) {
     $clone.html($clone.html().replace(regColl, "collapse-" + name + "_num" + count));
 
     // Change element attributes
-    $clone.attr("id", $clone.attr("id").replace(regName, name + "_num" + count));
-
-    // Match parent (sub-factories)
     var $target = $("#" + target);
-    var $parent = $target.parent();
-    $clone.addClass("factored");
+    var origID = $clone.attr("id").replace(getName($clone.attr("id")), "");    
+    var targetID = $target.attr("id").replace(getName($clone.attr("id")), "");    
+    $clone.attr("id", targetID + name + "_num" + count);
+    
+    var origReg = new RegExp("id=\"" + origID, "g");
+    $clone.html($clone.html().replace(origReg, "id=\"" + targetID));
 
-    if ($parent.attr("id") !== "intent-panel-body" &&
-            getParentName($clone.attr("id")) !== getName($parent.attr("id"))) {
-        var regParent = new RegExp(getParentName($clone.attr("id")), "g");
-        $clone.attr("id", $clone.attr("id").replace(regParent, getName($parent.attr("id"))));
-        $clone.html($clone.html().replace(regParent, getName($parent.attr("id"))));
-    }
-
+    // Match parent (sub-factories)    
+    $clone.addClass("factored");    
     var cloneID = $clone.attr("id");
 
     // Replace control buttons    
@@ -1029,18 +1055,7 @@ function buildClone(key, target, $factoryBtn) {
     }
 
     refreshNames();
-    enforceBounds();
-
-    if ($clone.children(".collapse").length > 0) {
-        var id = "#" + $($clone.children(".collapse")[0]).attr("id");
-        var arr = $clone.find(".group-collapse-toggle");
-        for (var i = 0; i < arr.length; i++) {
-            if ($(arr[i]).data("target") === id) {
-                $(arr[i]).click();
-                break;
-            }
-        }
-    }
+    enforceBounds();    
 }
 
 function refreshLinks() {
@@ -1069,9 +1084,13 @@ function refreshLinks() {
 
             $input.append($option);
         }
-
-        if (currSelection) {
+        
+        if (currSelection && currSelection !== "") {
             $input.val(currSelection);
+        } else {
+            if ($input.find("option:not(:empty)").length > 0) {
+                $input.val($input.find("option:not(:empty)").val());
+            }
         }
     }
 }
@@ -1106,7 +1125,8 @@ function refreshNames() {
             var name = $input.data("name");
 
             var $parent = $input.parent();
-            while (!$parent.hasClass("intent-group-div")) {
+            var nameReg = new RegExp("_num\\d+$");
+            while (!$parent.hasClass("intent-group-div") || !nameReg.test($parent.attr("id"))) {
                 $parent = $parent.parent();
                 if (!$parent)
                     return;
@@ -1192,44 +1212,66 @@ function parseSchemaIntoManifest(schema) {
 
 var recurCache = {};
 function parseManifestIntoJSON() {
+    // Step 0: Trim unfulfilled groups
+//    $(intent).find("fulfilled").each(function () {
+//        var nameArr = [];
+//        $(this).children().each(function () {
+//            nameArr.push(this.innerHTML);
+//        });
+//            
+//        var eleName = this.parentElement.getAttribute("name");
+//        // Find element(s) in manifest
+//        recurCache = {};
+//        findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+//        
+//        for (var key in recurCache) {
+//            var ele = recurCache[key];
+//            for (var i = 0; i < nameArr.length; i++) {
+//                var name = nameArr[i];
+//                if (ele[name] === null || ele[name] === "") {
+//                    delete ele;
+//                }
+//            }
+//        }
+//    });
+    
     // Step 1: Reorg hierarchy
     $(intent).find("path").each(function () {
         var arr = this.children;
-        for (var i = 0; i < arr.length; i++) {
-            var target = arr[i].innerHTML.toLowerCase().replace(/ /g, "_");
-            var eleName = this.parentElement.getAttribute("name");
 
-            // Find element(s) in manifest
-            recurCache = [];
-            findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+        var target = arr[0].innerHTML.toLowerCase().replace(/ /g, "_");
+        var eleName = this.parentElement.getAttribute("name");
 
-            for (var key in recurCache) {
-                var ele = recurCache[key];
-                // Find target
-                if (target === "root") {
-                    for (var child in ele) {
-                        manifest[child] = ele[child];
-                    }
+        // Find element(s) in manifest
+        recurCache = [];
+        findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
+
+        for (var key in recurCache) {
+            var ele = recurCache[key];
+            // Find target
+            if (target === "root") {
+                for (var child in ele) {
+                    manifest[child] = ele[child];
+                }
+            } else {
+                var targetEle = findKeyDeep(manifest, ele[target]);
+                if (targetEle) {
+                    // Input link path
+                    delete ele[target];
+                    targetEle[key] = ele;
                 } else {
-                    var targetEle = findKeyDeep(manifest, ele[target]);
-                    if (targetEle) {
-                        // Input link path
-                        delete ele[target];
-                        targetEle[key] = ele;
-                    } else {
-                        // Explicit JSON path
-                        var pathArr = target.split("/");
+                    // Explicit JSON path
+                    var pathArr = target.split("/");
 
-                        var obj = manifest;
-                        for (var j = 0; j < pathArr.length; j++) {
-                            if (!(pathArr[j] in obj)) {
-                                obj[pathArr[j]] = {};
-                            }
-                            obj = obj[pathArr[j]];
+                    var obj = manifest;
+                    for (var j = 0; j < pathArr.length; j++) {
+                        if (!(pathArr[j] in obj)) {
+                            obj[pathArr[j]] = {};
                         }
-
-                        obj[key] = ele;
+                        obj = obj[pathArr[j]];
                     }
+
+                    obj[key] = ele;
                 }
             }
         }
@@ -1247,6 +1289,8 @@ function parseManifestIntoJSON() {
     trimLeaves(manifest);
 
     // Step 4: Finishing and initialization
+    renamePathing();
+
     var newManifest = {};
     newManifest["data"] = manifest;
     manifest = newManifest;
@@ -1450,6 +1494,15 @@ function trimLeaves(recur) {
             delete recur[prop];
         }
     }
+}
+
+function renamePathing() {
+    $(intent).find("path").each(function () {
+        if (this.getElementsByTagName("name").length > 0) {
+            var nameArr = this.getElementsByTagName("name")[0].innerHTML.split("::");
+            manifest = JSON.parse(JSON.stringify(manifest).replace(nameArr[0],nameArr[1]));
+        }
+    });
 }
 
 // Find closest input with generic name matching key

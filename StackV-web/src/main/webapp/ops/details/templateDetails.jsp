@@ -70,6 +70,7 @@
                                     <button class="btn btn-default hide instance-command" id="modify">Modify</button>
                                     <button class="btn btn-default hide instance-command" id="force_modify">Force Modify</button>
                                     <button class="btn btn-default hide instance-command" id="verify">Verify</button>
+                                    <button class="btn btn-default hide instance-command" id="unverify">Cancel Verification</button>
                                     <button class="btn btn-default hide instance-command" id="delete">Delete</button>
                                 </div>
                             </td>

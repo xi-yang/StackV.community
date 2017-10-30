@@ -3,17 +3,15 @@ package templateengine.helpers.vcn;
 import java.util.ArrayList;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import templateengine.helpers.Helper;
 
-public class VPCSubnetData implements Helper {
-
-    JSONParser parser = new JSONParser();
+public class VPCExport implements Helper {    
 
     @Override
-    public String apply(ArrayList<Object> obj) {
-        String retString = "";
-        JSONArray subnets = (JSONArray) obj.get(0);
+    public String apply(ArrayList<Object> obj) {        
+        String retString = "spa:exportTo ";
+        JSONObject vpc = (JSONObject) obj.get(0);
+        JSONArray subnets = (JSONArray) vpc.get("subnets");
         ArrayList<String> names = new ArrayList<>();
         for (Object subnetObj : subnets) {
             JSONObject subnet = (JSONObject) subnetObj;
@@ -25,12 +23,16 @@ public class VPCSubnetData implements Helper {
                 }
             }
         }
+        
+        if (((String) vpc.get("parent")).contains("amazon")) {
+            retString += "&lt;x-policy-annotation:data:vpc-aws-export&gt;,\n\t";
+        }
 
         for (int i = 0;
                 i < names.size();
                 i++) {
-            String name = names.get(i);
-            retString += "&lt;x-policy-annotation:data:vpc-subnet-" + name.replace(" ", "_") + "-criteria&gt;";
+            String name = names.get(i).replace(" ", "_");
+            retString += "&lt;x-policy-annotation:data:vpc-subnet-" + name + "-criteria&gt;";
             if (i < names.size() - 1) {
                 retString += ",\n";
             } else {
@@ -39,5 +41,9 @@ public class VPCSubnetData implements Helper {
         }
 
         return retString;
+    }
+    
+    private boolean contains(JSONArray jsonArray, String key) {
+        return jsonArray.toString().contains("\"" + key + "\"");
     }
 }
