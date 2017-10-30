@@ -366,8 +366,11 @@ public class ServiceHandler {
 
     private int forceCancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         forceRevert(refUuid, token.auth());
+        lastState = "INIT";
         forcePropagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
+        lastState = "COMMITTING";
         while (true) {
             String instanceState = status();
             logger.trace("forceCancelInstance", "Verification priming check - " + instanceState);
@@ -386,12 +389,15 @@ public class ServiceHandler {
 
     private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
         forcePropagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
+        lastState = "COMMITTING";
         while (true) {
             logger.trace("forceRetryInstance", "Verification priming check");
 
             String instanceState = status();
             if (instanceState.equals("COMMITTED")) {
+                lastState = "COMMITTED";
                 VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
                 verify.clearVerification();
                 verify.startVerification();
