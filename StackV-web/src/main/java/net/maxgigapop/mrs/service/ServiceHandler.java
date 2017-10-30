@@ -365,8 +365,8 @@ public class ServiceHandler {
     }
 
     private int forceCancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
-        forceRevert(refUuid, token.auth());
         lastState = "INIT";
+        forceRevert(refUuid, token.auth());
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
