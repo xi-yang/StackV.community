@@ -36,13 +36,13 @@
                 <option>Multi-Point VLAN Bridge</option>
             </options>
         </input>
-        <group factory="true" name="connection" collapsible="true">
+        <group factory="true" name="connection" collapsible="true" opened="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
                 <valid>string</valid>
             </input>
-            <group name="Bandwidth" collapsible="true">
+            <group name="Bandwidth" collapsible="true" opened="true">
             <input>
                 <name>Capacity</name>
                 <hint>(in Mbps)</hint>
