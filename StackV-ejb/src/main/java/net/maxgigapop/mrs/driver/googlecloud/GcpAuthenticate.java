@@ -13,18 +13,18 @@ import org.json.simple.JSONObject;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import net.maxgigapop.mrs.common.StackLogger;
 
-public class GoogleCloudAuthenticate {
+public class GcpAuthenticate {
     /*
     This class creates and stores a GoogleCredential from a String or JSON object.
     */
     //public static final StackLogger logger = GoogleCloudDriver.logger;
     private GoogleCredential credential = null;
     
-    public GoogleCloudAuthenticate (JSONObject jsonInput) {
+    public GcpAuthenticate (JSONObject jsonInput) {
         this(jsonInput.toString());
     }
     
-    public GoogleCloudAuthenticate (String jsonString) {
+    public GcpAuthenticate (String jsonString) {
         String method = "GoogleCloudAuthenticate";
         try {
             InputStream resourceAsStream = new ByteArrayInputStream(jsonString.getBytes());

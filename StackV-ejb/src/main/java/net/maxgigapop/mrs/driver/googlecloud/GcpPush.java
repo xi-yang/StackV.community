@@ -5,11 +5,10 @@
  */
 package net.maxgigapop.mrs.driver.googlecloud;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
 import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
+//import org.json.simple.JSONArray;
 
 import com.google.api.services.compute.model.AttachedDisk;
 import com.google.api.services.compute.model.AttachedDiskInitializeParams;
@@ -17,18 +16,17 @@ import com.google.api.services.compute.model.Instance;
 import com.google.api.services.compute.model.NetworkInterface;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.services.compute.model.AccessConfig;
+import com.google.api.services.compute.model.Network;
+import com.google.api.services.compute.model.Subnetwork;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
 
 /**
  *
  * @author raymonddsmith
  */
-public class GoogleCloudPush {
-    private GoogleCloudGet gcpGet;
+public class GcpPush {
+    private GcpGet gcpGet;
     private String topologyUri = null;
     private String region = null;
     private String projectID = null;
@@ -39,9 +37,9 @@ public class GoogleCloudPush {
     String defaultRegion = null; //Default region is used by subnets, currently
     String defaultZone = null; //Default zone is used by instances and disks, and should contained within default region
     
-    public GoogleCloudPush(String jsonAuth, String projectID, String region, String topologyUri, 
+    public GcpPush(String jsonAuth, String projectID, String region, String topologyUri, 
             String defaultImage, String defaultInstanceType, String defaultKeyPair, String defaultSecGroup) {
-        this.gcpGet = new GoogleCloudGet(jsonAuth, projectID, region);
+        this.gcpGet = new GcpGet(jsonAuth, projectID, region);
         this.projectID = projectID;
         this.region = region;
         //do an adjustment to the topologyUri
@@ -57,7 +55,7 @@ public class GoogleCloudPush {
     
     public ArrayList<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
         ArrayList<JSONObject> requests = new ArrayList<>();
-        GoogleCloudQuery gcq = new GoogleCloudQuery(modelRef, modelAdd, modelReduct);
+        GcpQuery gcq = new GcpQuery(modelRef, modelAdd, modelReduct);
         //Instances, VPCs, subnets
         
         requests.addAll(gcq.deleteInstanceRequests());
@@ -74,31 +72,58 @@ public class GoogleCloudPush {
     //When deleting an instance, remember to remove it's URI from the lookup table.
     public void commit(ArrayList<JSONObject> requests) throws InterruptedException {
         String method = "commit";
-        HttpRequest httpRequest;
-        String name;
+        HttpRequest request;
         
-        for (JSONObject request : requests) {
-            switch (request.get("type").toString()) {
+        for (JSONObject requestInfo : requests) {
+            switch (requestInfo.get("type").toString()) {
             case "create_vpc":
-                name = request.get("name").toString();
+                String name = requestInfo.get("name").toString();
+                String uri =  requestInfo.get("uri").toString();
+                Network network = new Network();
+                network.setName(name).setAutoCreateSubnetworks(false);
                 
+                try {
+                    request = gcpGet.getComputeClient().networks().insert(projectID, network).buildHttpRequest();
+                    request.execute();
+                    //Add this vpc's uri to the metadata table
+                    gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), uri);
+                } catch (IOException e) {
+                    //TODO log error
+                }
             break;
             case "delete_vpc":
-                
+                //TODO
             break;
             case "create_subnet":
-                
+                //vpcUri is not a MAX but a google URI
+                String vpcName = requestInfo.get("vpc_name").toString();
+                String vpcUri = "https://www.googleapis.com/compute/v1/"
+                        + "projects/elegant-works-176420/global/networks/"+vpcName;
+                String subnetUri = requestInfo.get("subnet_uri").toString();
+                String cidr = requestInfo.get("subnet_cidr").toString();
+                String subnetRegion = requestInfo.get("subnet_region").toString();
+                String subnetName = requestInfo.get("subnet_name").toString();
+                Subnetwork subnet = new Subnetwork();
+                subnet.setIpCidrRange(cidr).setName(subnetName).setRegion(subnetRegion).setNetwork(vpcUri);
+                try {
+                    request = gcpGet.getComputeClient().subnetworks().insert(projectID, subnetRegion, subnet).buildHttpRequest();
+                    request.execute();
+                    gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, subnetRegion, subnetName), subnetUri);
+                } catch (IOException e) {
+                    //TODO log
+                }
             break;
             case "delete_subnet":
-                
+                //TODO
             break;
             case "create_instance":
-                name = request.get("name").toString();
-                String ip = request.get("ip").toString();
-                String subnetIP = request.get("subnetIP").toString();
+                name = requestInfo.get("name").toString();
+                region = requestInfo.get("region").toString();
+                String ip = requestInfo.get("ip").toString();
+                String subnetIP = requestInfo.get("subnetIP").toString();
                 String machineType = "zones/"+region+"/machineTypes/";
-                machineType += request.get("machineType").toString();
-                long diskSizeGb = Integer.parseInt(request.get("diskSizeGb").toString());
+                machineType += requestInfo.get("machineType").toString();
+                long diskSizeGb = Integer.parseInt(requestInfo.get("diskSizeGb").toString());
             
                 AccessConfig access = new AccessConfig()
                     .setName("External Nat")
@@ -131,17 +156,18 @@ public class GoogleCloudPush {
                     .setDisks(disks);
                     
                 try {
-                    httpRequest = gcpGet.getComputeClient().instances().insert(projectID, region, instance).buildHttpRequest();
-                    httpRequest.execute();
+                    request = gcpGet.getComputeClient().instances().insert(projectID, region, instance).buildHttpRequest();
+                    request.execute();
                 } catch (IOException ex) {
                     //todo
                 }
             break;
             case "delete_instance":
-                String instanceName = "placeholder";
+                name = "placeholder";
+                region = "placeholder";
                 try {
-                    httpRequest = gcpGet.getComputeClient().instances().delete(projectID, region, instanceName).buildHttpRequest();
-                    gcpGet.makeRequest(httpRequest);
+                    request = gcpGet.getComputeClient().instances().delete(projectID, region, name).buildHttpRequest();
+                    gcpGet.makeRequest(request);
                 } catch (IOException e) {
                     //TODO log error
                 }

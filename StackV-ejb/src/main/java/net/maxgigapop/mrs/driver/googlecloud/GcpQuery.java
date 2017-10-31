@@ -24,7 +24,7 @@ import java.util.ArrayList;
  *
  * @author raymonddsmith
  */
-public class GoogleCloudQuery {
+public class GcpQuery {
     /*
     This class contains functions used by GoogleCloudPush for querying the addition
     and reduction model. Having these methods in their own class reduces file bloat.
@@ -34,7 +34,7 @@ public class GoogleCloudQuery {
     private static final String defaultRegion = "us-central1";
     private static final String defaultZone = "us-central1-c";
     
-    public GoogleCloudQuery(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
+    public GcpQuery(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
         this.modelRef = modelRef;
         this.modelAdd = modelAdd;
         this.modelReduct = modelReduct;
@@ -53,6 +53,8 @@ public class GoogleCloudQuery {
     public ArrayList<JSONObject> deleteInstanceRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "createInstanceRequests";
+        //need to find 
+        
         
         return output;
     }
@@ -60,6 +62,42 @@ public class GoogleCloudQuery {
     public ArrayList<JSONObject> createSubnetRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "createSubnetRequests";
+        
+        //subnet region and name are optional. vpcname is used to build
+        String query = "SELECT ?vpcUri ?vpcName ?subnetUri ?subnetName ?subnetCIDR ?subnetRegion"
+                + "WHERE { ?service mrs:providesVPC ?vpcUri . ?vpcUri a nml:Topology ;"
+                + "?vpcUri nml:hasService ?switchingService . "
+                + "?switchingService mrs:providesSubnet ?subnetUri."
+                + "?subnetUri mrs:hasNetworkAddress ?addressUri . "
+                + "?addressUri a mrs:networkAddress ; mrs:value ?subnetCIDR"
+                + "OPTIONAL { ?subnetUri nml:name ?vpcName }"
+                + "OPTIONAL { ?subnetUri nml:name ?subnetName} "
+                + "OPTIONAL { ?subnetUri mrs:type ?subnetRegion} }";
+        
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        while (r.hasNext()) {
+            JSONObject subnetRequest = new JSONObject();
+            QuerySolution solution = r.next();
+            String vpcUri = solution.get("vpcUri").toString();
+            String vpcName = solution.get("vpcName").toString();
+            String subnetUri = solution.get("subnetUri").toString();
+            String subnetCIDR = solution.get("subnetCIDR").toString();
+            String subnetName = solution.get("subnetName").toString();
+            String subnetRegion = solution.get("subnetRegion").toString();
+            if (vpcName == null) vpcName = makeNameFromUri(vpcUri);
+            if (subnetName == null) subnetName = makeNameFromUri(subnetUri);
+            if (subnetRegion == null) subnetRegion = defaultRegion;
+            
+            subnetRequest.put("type", "create_subnet");
+            subnetRequest.put("vpc_name", vpcName);
+            subnetRequest.put("subnet_uri", subnetUri);
+            subnetRequest.put("subnet_cidr", subnetCIDR);
+            subnetRequest.put("subnet_name", subnetName);
+            subnetRequest.put("subnet_region", subnetRegion);
+            //for now, just print
+            //System.out.printf("output: %s\n", subnetRequest);
+            output.add(subnetRequest);
+        }
         
         return output;
     }
@@ -71,46 +109,34 @@ public class GoogleCloudQuery {
         return output;
     }
     
-    //Need name, uri, at least 1 subnet
+    //Need name
     public ArrayList<JSONObject> createVpcRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "createVpcRequests";
         //Find an object that provides a vpc to something else, and is a topology
-        //name, subnetName, subnetRegion are optional
-        String query = "SELECT ?vpcUri ?vpcName ?subnetUri ?subnetName ?subnetRegion ?cidr "
+        //Name is optional. Only URI is mandatory
+        String query = "SELECT ?vpcUri ?vpcName"
                 + "WHERE { ?service mrs:providesVPC ?vpcUri . ?vpcUri a nml:Topology ;"
-                + "?vpcUri nml:hasService ?switchingService. "
-                + "?switchingService a mrs:switchingService ; mrs:providesSubnet ?subnetUri"
-                + "OPTIONAL { ?vpc nml:name ?vpcName}"
-                + "OPTIONAL { ?vpc } }";
+                + "OPTIONAL { ?vpcUri nml:name ?vpcName} }";
+        
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             JSONObject vpcRequest = new JSONObject();
             String name;
             QuerySolution solution = r.next();
             String vpcUri = solution.get("vpc").toString();
-            //the vpc may or may not have a name specified
-            query = "SELECT ?name WHERE { "+ vpcUri +" nml:name ?name }";
-            ResultSet nameResult = executeQuery(query, emptyModel, modelAdd);
-            //We only need one name, so we don't care if r contains more than one solution
-            if (r.hasNext()) {
-                name = r.next().get("name").toString();
-            } else {
-                //remove gcp incompatible characters
-                name = GoogleCloudModelBuilder.removeChars(vpcUri);
-                //let the name be the final 60 chars of the uri
-                name = name.substring(name.length()-60);
-            }
+            String vpcName = solution.get("vpcName").toString();
+            String cidr = solution.get("cidr").toString();
             
-            query = "SELECT ?subnetName ?subnetUri WHERE";
+            if (vpcName == null) vpcName = makeNameFromUri(vpcUri);
             
-            vpcRequest.put("name", name);
+            vpcRequest.put("type", "create_vpc");
+            vpcRequest.put("name", vpcName);
             vpcRequest.put("uri", vpcUri);
-            vpcRequest.put("cidr", "1.2.3.4/32");
-            vpcRequest.put("initialSubnetName", "default");
-            vpcRequest.put("initialSubnetUri", "temp");
-            vpcRequest.put("initialSubnetRegion", defaultRegion);
             
+            //for now, just print
+            //System.out.printf("output: %s\n", vpcRequest);
+            output.add(vpcRequest);
         }
         return output;
     }
@@ -121,7 +147,20 @@ public class GoogleCloudQuery {
         
         return output;
     }
-
+    
+    public static String makeNameFromUri(String uri) {
+        //given a uri, returns a string that can be used to name a resource.
+        //useful when a name for a resource is not available in model
+        String output = removeChars(uri);
+        return output.substring(output.length() - 60);
+    }
+    
+    //Removes non-alphanumeric non-hyphen characters from strings
+    //Similar to makeUriGcpCompatible from gcpModelBuilder, but it removes
+    //instead of escaping offending characters.
+    public static String removeChars (String input) {
+        return input.replaceAll("[^a-zA-Z0-9\\-]", "");
+    }
     
     /* ****************************************************************
      * function that executes a query using a model addition/subtraction and a

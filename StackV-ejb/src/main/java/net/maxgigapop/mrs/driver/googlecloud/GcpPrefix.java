@@ -10,7 +10,7 @@ package net.maxgigapop.mrs.driver.googlecloud;
  * @author Adam Smith
  */
 
-public class GoogleCloudPrefix {
+public class GcpPrefix {
     public static final String prefix = "google.com:google-cloud";
 
     public static final String vpcService =           prefix+":vpcService+%s";

@@ -62,9 +62,9 @@ import org.json.simple.JSONObject;
 //TODO make request not to be in the database as a driver property, as they do not
 //truly get deleted.
 @Stateless
-public class GoogleCloudDriver implements IHandleDriverSystemCall {
+public class GcpDriver implements IHandleDriverSystemCall {
     
-    public static final StackLogger logger = new StackLogger(GoogleCloudDriver.class.getName(), "GoogleCloudDriver");
+    public static final StackLogger logger = new StackLogger(GcpDriver.class.getName(), "GoogleCloudDriver");
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
@@ -89,7 +89,7 @@ public class GoogleCloudDriver implements IHandleDriverSystemCall {
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
         
-        GoogleCloudPush push = new GoogleCloudPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
+        GcpPush push = new GcpPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
         
         ArrayList<JSONObject> requests = push.propagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId();
@@ -135,7 +135,7 @@ public class GoogleCloudDriver implements IHandleDriverSystemCall {
         String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
-        GoogleCloudPush push = new GoogleCloudPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
+        GcpPush push = new GcpPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
                 ObjectMapper mapper = new ObjectMapper();
         ArrayList<JSONObject> requestList = new ArrayList();
         try {
@@ -171,7 +171,7 @@ public class GoogleCloudDriver implements IHandleDriverSystemCall {
             String region = driverInstance.getProperty("region");
             String topologyURI = driverInstance.getProperty("topologyUri");
             //Regions region = Regions.fromName(r);
-            OntModel ontModel = GoogleCloudModelBuilder.createOntology(jsonAuth, projectID, region, topologyURI);
+            OntModel ontModel = GcpModelBuilder.createOntology(jsonAuth, projectID, region, topologyURI);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();

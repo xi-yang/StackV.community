@@ -28,17 +28,17 @@ import org.json.simple.parser.ParseException;
  *
  * @author raymonddsmith
  */
-public class GoogleCloudGet {
+public class GcpGet {
     
-    private GoogleCloudAuthenticate authenticate = null;
+    private GcpAuthenticate authenticate = null;
     private Compute computeClient = null;
     private Storage storageClient = null;
     private String projectID;
     private String region;
     private JSONParser parser = new JSONParser();
     
-    public GoogleCloudGet(String jsonAuth, String projectID, String region) {
-        authenticate = new GoogleCloudAuthenticate(jsonAuth);
+    public GcpGet(String jsonAuth, String projectID, String region) {
+        authenticate = new GcpAuthenticate(jsonAuth);
         this.projectID = projectID;
         this.region = region;
         
@@ -143,6 +143,8 @@ public class GoogleCloudGet {
         this makes a get project request, and then extracts the commonInstanceMetadata
         from the result and places it in a hashmap.
         */
+        JSONObject project = getProject();
+        if (!project.containsKey("commonInstanceMetadata")) return null;
         JSONObject projectMetadata = (JSONObject) getProject().get("commonInstanceMetadata");
         JSONArray items = (JSONArray) projectMetadata.get("items");
         JSONObject item;
