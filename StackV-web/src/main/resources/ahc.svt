@@ -476,8 +476,10 @@
     spa:type     "JSON";
     spa:value    """{
         "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
-            "urn:ogf:network:openstack.com:openstack-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"},
-            "urn:ogf:network:aws.amazon.com:aws-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"}
+            "terminals": {
+                "urn:ogf:network:openstack.com:openstack-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"},
+                "urn:ogf:network:aws.amazon.com:aws-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"}
+            }
         }
     }""".
 
