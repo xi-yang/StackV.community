@@ -311,7 +311,7 @@
                         mrs:hasVolume
                             &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                        
 
-                    &lt;{{@parent}}:ceph-rbd&gt;
+                    &lt;{{@openstack/parent}}:ceph-rbd&gt;
                         mrs:providesVolume 
                             &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                            
 
