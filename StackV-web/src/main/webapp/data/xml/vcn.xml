@@ -259,6 +259,10 @@
                 </input>
             </group>
             <group factory="true" name="Ceph RBD" collapsible="true">
+                <fulfilled>
+                    <name>size</name>
+                </fulfilled>
+                
                 <input>
                     <name>Size</name>
                     <type>text</type>

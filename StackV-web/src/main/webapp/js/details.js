@@ -478,17 +478,17 @@ function loadVisualization() {
             var tabs = [
                 {
                     "name": "Service",
-                    "state": "READY",
+                    "state": "COMPILED",
                     "createContent": createVizTab.bind(undefined, "Service")
                 },
                 {
                     "name": "System",
-                    "state": "READY",
+                    "state": "COMMITTING",
                     "createContent": createVizTab.bind(undefined, "System")
                 },
                 {
                     "name": "Verification",
-                    "state": "READY",
+                    "state": "COMMITTED",
                     "createContent": createVizTab.bind(undefined, "Verification")
                 }
             ];

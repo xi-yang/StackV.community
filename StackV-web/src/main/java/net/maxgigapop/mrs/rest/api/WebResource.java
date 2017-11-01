@@ -2425,7 +2425,6 @@ public class WebResource {
     @RolesAllowed("Panels")
     public String hasVerifyDrone(@PathParam(value = "siUUID") final String refUUID) throws SQLException, IOException, InterruptedException {
         String method = "hasVerifyDrone";
-        logger.trace_start(method);
 
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -2453,10 +2452,8 @@ public class WebResource {
                 System.out.println(diff);
 
                 if (diff < -30) {
-                    logger.trace_end(method);
                     return "0";
                 } else {
-                    logger.trace_end(method);
                     return "1";
                 }
             }
