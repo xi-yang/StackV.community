@@ -757,6 +757,7 @@ public class MCETools {
         if (bwProfile.granularity != null) {
             bwProfile.granularity *= factor;
         }
+        bwProfile.unit = "bps";
         return bwProfile;
     }
 
