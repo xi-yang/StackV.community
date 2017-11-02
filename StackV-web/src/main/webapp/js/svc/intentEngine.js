@@ -281,8 +281,7 @@ function renderInputs(arr, $parent) {
             if (collapsible === "true") {
                 if (opened === "true") {
                     $div.addClass("collapsing");
-                }                
-                else {
+                } else {
                     $div.addClass("collapsed");
                 }
             }
@@ -552,7 +551,7 @@ function renderInputs(arr, $parent) {
                     }
                 });
             }
-            
+
             if (hidden) {
                 $label.addClass("hidden");
             }
@@ -561,7 +560,7 @@ function renderInputs(arr, $parent) {
             if ($message) {
                 $label.append($message);
             }
-            $parent.append($label);            
+            $parent.append($label);
         }
     }
 }
@@ -969,20 +968,24 @@ function buildClone(key, target, $factoryBtn) {
     $clone.html($clone.html().replace(regColl, "collapse-" + name + "_num" + count));
 
     // Change element attributes
-    $clone.attr("id", $clone.attr("id").replace(regName, name + "_num" + count));
-
-    // Match parent (sub-factories)
     var $target = $("#" + target);
-    var $parent = $target.parent();
-    $clone.addClass("factored");
+    if (factories[key]["block"] === undefined) {        
+        var origID = $clone.attr("id").replace(getName($clone.attr("id")), "");
+        var targetID = $target.attr("id").replace(getName($clone.attr("id")), "");
+        $clone.attr("id", targetID + name + "_num" + count);
 
-    if ($parent.attr("id") !== "intent-panel-body" &&
-            getParentName($clone.attr("id")) !== getName($parent.attr("id"))) {
-        var regParent = new RegExp(getParentName($clone.attr("id")), "g");
-        $clone.attr("id", $clone.attr("id").replace(regParent, getName($parent.attr("id"))));
-        $clone.html($clone.html().replace(regParent, getName($parent.attr("id"))));
+        var origReg = new RegExp("id=\"" + origID, "g");
+        $clone.html($clone.html().replace(origReg, "id=\"" + targetID));
+    } else {
+        var origID = $clone.attr("id");
+        var targetID = $clone.attr("id").substring(0, $clone.attr("id").length - 1) + count;
+        $clone.attr("id", targetID);
+        
+        var origReg = new RegExp("id=\"" + origID, "g");
+        $clone.html($clone.html().replace(origReg, "id=\"" + targetID));
     }
-
+    // Match parent (sub-factories)    
+    $clone.addClass("factored");
     var cloneID = $clone.attr("id");
 
     // Replace control buttons    
@@ -1010,7 +1013,7 @@ function buildClone(key, target, $factoryBtn) {
     } else {
         $target.append($clone);
     }
-
+    
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
 
@@ -1059,7 +1062,7 @@ function buildClone(key, target, $factoryBtn) {
     }
 
     refreshNames();
-    enforceBounds();    
+    enforceBounds();
 }
 
 function refreshLinks() {
@@ -1088,7 +1091,7 @@ function refreshLinks() {
 
             $input.append($option);
         }
-        
+
         if (currSelection && currSelection !== "") {
             $input.val(currSelection);
         } else {
@@ -1238,7 +1241,7 @@ function parseManifestIntoJSON() {
 //            }
 //        }
 //    });
-    
+
     // Step 1: Reorg hierarchy
     $(intent).find("path").each(function () {
         var arr = this.children;
@@ -1504,7 +1507,7 @@ function renamePathing() {
     $(intent).find("path").each(function () {
         if (this.getElementsByTagName("name").length > 0) {
             var nameArr = this.getElementsByTagName("name")[0].innerHTML.split("::");
-            manifest = JSON.parse(JSON.stringify(manifest).replace(nameArr[0],nameArr[1]));
+            manifest = JSON.parse(JSON.stringify(manifest).replace(nameArr[0], nameArr[1]));
         }
     });
 }

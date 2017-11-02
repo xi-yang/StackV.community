@@ -118,10 +118,11 @@ public class MCE_MPVlanConnection extends MCEBase {
         for (String connId: connDataMap.keySet()) {
             List<Resource> terminals = new ArrayList<>();
             JSONObject jsonConnReq = (JSONObject)connDataMap.get(connId);
-            if (jsonConnReq.size() != 2) {
+            JSONObject jsonTerminals = (JSONObject)jsonConnReq.get("terminals");
+            if (jsonTerminals == null || jsonTerminals.size() != 2) {
                 throw logger.error_throwing(method, String.format("cannot find path for connection '%s' - request must have exactly 2 terminals", connId));
             }
-            for (Object key : jsonConnReq.keySet()) {
+            for (Object key : jsonTerminals.keySet()) {
                 Resource terminal = systemModel.getResource((String) key);
                 if (!systemModel.contains(terminal, null)) {
                     throw logger.error_throwing(method, String.format("cannot identify terminal <%s> in JSON data", key));

@@ -59,9 +59,11 @@ import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.math.BigInteger;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -83,6 +85,7 @@ import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.service.ServiceEngine;
+import net.maxgigapop.mrs.service.VerificationHandler;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.logging.log4j.Level;
 import org.jboss.resteasy.spi.HttpRequest;
@@ -2405,6 +2408,67 @@ public class WebResource {
         }
     }
 
+    /**
+     * @api {GET} /app/details/:siUUID/verification/drone Check Verification Drone
+     * @apiVersion 1.0.0
+     * @apiDescription Check if instance has an operational verification drone
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {String} siUUID instance UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
+    @GET
+    @Path(value = "/details/{siUUID}/verification/drone")
+    @RolesAllowed("Panels")
+    public String hasVerifyDrone(@PathParam(value = "siUUID") final String refUUID) throws SQLException, IOException, InterruptedException {
+        String method = "hasVerifyDrone";
+        logger.trace_start(method);
+
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            prep = front_conn.prepareStatement("SELECT timestamp FROM service_verification "
+                    + "WHERE instanceUUID = ?");
+            prep.setString(1, refUUID);
+            rs = prep.executeQuery();
+            while (rs.next()) {
+                BigInteger ONE_BILLION = new BigInteger("1000000000");
+                Timestamp time = rs.getTimestamp(1);
+                Timestamp now = new Timestamp(System.currentTimeMillis());
+
+                final BigInteger firstTime = BigInteger.valueOf(time.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(time.getNanos()));
+                final BigInteger secondTime = BigInteger.valueOf(now.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(now.getNanos()));
+                int diff = (firstTime.subtract(secondTime)).divide(new BigInteger("1000000000000")).intValue();
+
+                System.out.println(diff);
+
+                if (diff < -30) {
+                    logger.trace_end(method);
+                    return "0";
+                } else {
+                    logger.trace_end(method);
+                    return "1";
+                }
+            }
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+        return "-1";
+    }
+
     @GET
     @Path("/details/{uuid}/acl")
     @Produces("application/json")
@@ -2961,24 +3025,19 @@ public class WebResource {
         final TokenHandler token = new TokenHandler(refresh);
         final String method = "operate";
         logger.trace_start(method, "Thread:" + Thread.currentThread());
-        if (action.equals("call_verify")) {
-            String retString = ServiceEngine.verifyInstance(refUuid, token.auth());
-            logger.trace_end(method);
-            return retString;
-        } else {
-            executorService.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        doOperate(refUuid, action, token);
-                    } catch (SQLException | IOException | InterruptedException ex) {
-                        logger.catching(method, ex);
-                    }
+
+        executorService.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    doOperate(refUuid, action, token);
+                } catch (SQLException | IOException | InterruptedException ex) {
+                    logger.catching(method, ex);
                 }
-            });
-            logger.trace_end(method);
-            return null;
-        }
+            }
+        });
+        logger.trace_end(method);
+        return null;
     }
 
     @PUT
@@ -2989,13 +3048,41 @@ public class WebResource {
             final String action) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
-        String method = "operate";
-        logger.trace_start(method, "Thread:" + Thread.currentThread());
+        String method = "operateSync";
+        logger.trace_start(method);
         doOperate(refUuid, action, token);
         logger.trace_end(method);
     }
 
     /**
+     * @api {get} /app/service/:siUUID/call_verify Call Verify
+     * @apiVersion 1.0.0
+     * @apiDescription Single-run of service verification, returning result data
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {String} siUUID instance UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X GET http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/call_verify
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * 
+     * @apiSuccess {JSONObject} Verification result JSON.     
+     */
+    @GET
+    @Path(value = "/service/{siUUID}/call_verify")
+    @RolesAllowed("Services")
+    public String callVerify(@PathParam(value = "siUUID")
+            final String refUUID) throws SQLException, InterruptedException, IOException {
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
+        String method = "callVerify";
+        logger.trace_start(method);
+
+        VerificationHandler verify = new VerificationHandler(refUUID, token, 1, 10, true);
+        return verify.startVerification();        
+    }
+ 
+   /**
      * @api {delete} /app/service/:siUUID/ Delete Service
      * @apiVersion 1.0.0
      * @apiDescription Delete the specified service instance.
@@ -3027,6 +3114,15 @@ public class WebResource {
         String retString = template.apply(inputJSON);
         retString = retString.replace("&lt;", "<").replace("&gt;", ">");
         System.out.println("\n\n\nResult:\n" + retString);
+
+        if (((JSONObject) inputJSON.get("data")).containsKey("parent")) {
+            String parent = (String) ((JSONObject) inputJSON.get("data")).get("parent");
+            if (parent.contains("amazon")) {
+                inputJSON.put("host", "aws");
+            } else {
+                inputJSON.put("host", "ops");
+            }
+        }
 
         inputJSON.put("data", retString);
 

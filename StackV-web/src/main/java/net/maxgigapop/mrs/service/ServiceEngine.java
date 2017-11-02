@@ -40,6 +40,7 @@ import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.WebResource;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
+import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import org.json.simple.JSONObject;
 
 /**
@@ -51,15 +52,14 @@ public class ServiceEngine {
     private final static StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceEngine");
     private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
     private final static String FRONT_DB_USER = "front_view";
-    private final static String FRONT_DB_PASS = "frontuser";
-    private final static String RAINS_DB_USER = "root";
-    private final static String RAINS_DB_PASS = "root";
+    private final static String FRONT_DB_PASS = "frontuser";   
 
     // OPERATION FUNCTIONS    
-    static void orchestrateInstance(String refUUID, String svcDelta, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
+    static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
         String method = "orchestrateInstance";
         String result;
         String lastState = "INIT";
+        String svcDelta = (String) inputJSON.get("data");
         logger.start(method, svcDelta);
 
         int start = svcDelta.indexOf("<modelAddition>") + 15;
@@ -79,6 +79,10 @@ public class ServiceEngine {
             logger.trace(method, "Initialized");
             cacheSystemDelta(instanceID, result);
 
+            if (inputJSON.containsKey("host")) {
+                pushProperty(refUUID, "host", (String) inputJSON.get("host"), token.auth());
+            }
+
             if (autoProceed) {
                 logger.trace(method, "Proceeding automatically");
 
@@ -97,14 +101,14 @@ public class ServiceEngine {
                     HttpURLConnection status = (HttpURLConnection) url.openConnection();
                     result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());
                 }
-                lastState = "COMMITTED";
-                logger.trace(method, "Committed");
 
-                if (!result.equals("FAILED")) {
-                    VerificationHandler verify = new VerificationHandler(refUUID, token);
-                    verify.startVerification();
-                } else {
+                if (result.equals("FAILED")) {
                     logger.trace(method, "Automatic verification skipped due to FAILED state");
+                } else {
+                    lastState = "COMMITTED";
+                    logger.trace(method, "Committed");
+                    VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
+                    verify.startVerification();
                 }
             }
 
@@ -139,7 +143,7 @@ public class ServiceEngine {
             }
         }
     }
-    
+
     // UTILITY FUNCTIONS    
     private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) throws SQLException {
         String method = "cacheServiceDelta";
@@ -335,5 +339,11 @@ public class ServiceEngine {
             logger.catching(method, ex);
             throw ex;
         }
+    }
+
+    static void pushProperty(String refUUID, String key, String value, String auth) throws IOException {
+        URL url = new URL(String.format("%s/service/property/%s/%s", HOST, refUUID, key));
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        String result = executeHttpMethod(url, conn, "POST", value, auth);
     }
 }
