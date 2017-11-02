@@ -239,19 +239,24 @@
                     {{/if next_hop}}
                     
                 {{/routes}}
-                {{$if !isDCHost}}
-                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;
-                        a  mrs:Route;                                        
-                            mrs:routeTo "%$..amazon_ip%";                                        
-                            mrs:nextHop &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;;.
-
-                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;
-                        a  mrs:NetworkAddress;
-                            mrs:type    "ipv4-address";
-                            mrs:value   "{{@aws/cidr}}".
-                        
-                {{/if !isDCHost}}
             {{/if routes}}
+
+            {{$unless !isQuaggaHost}}
+                &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;
+                    a  mrs:Route;                                        
+                        mrs:routeTo &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; ;                                       
+                        mrs:nextHop &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; .
+
+                &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt;
+                    a  mrs:NetworkAddress;
+                        mrs:type    "ipv4-address-prefix";
+                        mrs:value   "{{@aws/cidr}}".
+
+                &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;
+                    a  mrs:NetworkAddress;
+                        mrs:type    "ipv4-address";
+                        mrs:value   "10.10.0.1".
+            {{/unless !isQuaggaHost}}
 
             {{$if floating_ip}}
                 &lt;{{VMTag}}:eth0floatingip&gt;            
