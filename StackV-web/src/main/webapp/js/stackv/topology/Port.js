@@ -119,7 +119,9 @@ define([
         this.setVisible = function (vis) {
             this.isVisible = vis;
             map_(this.childrenPorts, function (child) {
-                child.setVisible(vis && !that.folded);
+                if (child !== undefined) {
+                    child.setVisible(vis && !that.folded);
+                }
             });
         };
 
@@ -131,7 +133,9 @@ define([
             var ans = 0;
             if (!this.folded) {
                 map_(this.childrenPorts, function (child) {
-                    ans = Math.max(ans, child.getVisibleHeight());
+                    if (child !== undefined) {
+                        ans = Math.max(ans, child.getVisibleHeight());
+                    }
                 });
             }
             ans += 1;
@@ -146,7 +150,9 @@ define([
             }
             var ans = 0;
             map_(this.childrenPorts, function (child) {
-                ans += child.countVisibleLeaves();
+                if (child !== undefined) {
+                    ans += child.countVisibleLeaves();
+                }
             });
             return ans;
         };
@@ -158,7 +164,9 @@ define([
                 ans.push(new Edge(this, this.alias));
             }
             map_(this.childrenPorts, function (child) {
-                ans = ans.concat(child.getEdges());
+                if (child !== undefined) {
+                    ans = ans.concat(child.getEdges());
+                }
             });
             return ans;
         };
