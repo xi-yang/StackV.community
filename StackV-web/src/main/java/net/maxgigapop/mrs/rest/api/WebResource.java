@@ -2067,6 +2067,7 @@ public class WebResource {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
+        String method = "loadInstances";
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             ArrayList<String> banList = new ArrayList<>();
@@ -2075,7 +2076,7 @@ public class WebResource {
             // Verify user
             String username = authUsername(userId);
             if (username == null) {
-                logger.error("loadInstances", "Logged-in user does not match requested user information");
+                logger.error(method, "Logged-in user does not match requested user information");
                 return retList;
             }
 
@@ -2119,15 +2120,14 @@ public class WebResource {
 
                         retList.add(instanceList);
                     } catch (IOException ex) {
-                        logger.catching("loadInstances", ex);
-                        throw ex;
+                        logger.catching(method, ex);
                     }
                 }
             }
 
             return retList;
         } catch (SQLException ex) {
-            logger.catching("loadInstances", ex);
+            logger.catching(method, ex);
             throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
