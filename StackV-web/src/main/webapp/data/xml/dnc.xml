@@ -36,29 +36,29 @@
                 <option>Multi-Point VLAN Bridge</option>
             </options>
         </input>
-        <group factory="true" name="connection" collapsible="true">
+        <group factory="true" name="connection" collapsible="true" opened="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
                 <valid>string</valid>
             </input>
-            <group name="Bandwidth" collapsible="true">
-            <input>
-                <name>Capacity</name>
-                <hint>(in Mbps)</hint>
-                <type>text</type>
-                <valid>integer</valid>
-            </input>
-            <input required="true">
-                <name>QoS Class</name>
-                <type>select</type>
-                <options>
-                    <option>guaranteedCapped</option>
-                    <option>softCapped</option>
-                    <option>anyAvailable</option>
-                    <option default="true">bestEffort</option>
-                </options>
-            </input>
+            <group name="Bandwidth" collapsible="true" opened="true">
+                <input>
+                    <name>Capacity</name>                    
+                    <type>text</type>
+                    <hint>(in Mbps)</hint>
+                    <valid>integer</valid>
+                </input>
+                <input required="true">
+                    <name>QoS Class</name>
+                    <type>select</type>
+                    <options>
+                        <option>guaranteedCapped</option>
+                        <option>softCapped</option>
+                        <option>anyAvailable</option>
+                        <option default="true">bestEffort</option>
+                    </options>
+                </input>
             </group>
             <group factory="true" name="terminal">
                 <bound>
@@ -82,8 +82,8 @@
                 <input>
                     <name>VLAN Tag</name>
                     <type>text</type>
-                    <size>small</size>
                     <default>any</default>
+                    <size>small</size>
                     <valid>vlan</valid>
                 </input>
                 <input condition="type::Multi-Point VLAN Bridge">

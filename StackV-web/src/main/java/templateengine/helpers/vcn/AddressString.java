@@ -42,8 +42,7 @@ public class AddressString implements Helper {
                     "    a        mrs:NetworkAddress;\n    mrs:type   'floating-ip';\n" + "    mrs:value       '" + addressString + "' .\n\n";
 //            } else {
             } else {
-//                addressMRL = ' .\n\n';
-                addressMRL = " .\n\n";
+//                addressMRL = " .\n\n";
 //            }
             }
 //        });

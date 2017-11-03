@@ -197,9 +197,9 @@
                     a   mrs:RoutingTable;
                     mrs:type   "linux";
                     mrs:hasRoute
-                {{$if !isDCHost}}
+                {{$unless !isQuaggaHost}}
                     &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;,
-                {{/if !isDCHost}}
+                {{/unless !isQuaggaHost}}
                 {{#routes}}
                     {{$unless ^first}},{{/unless ^first}}
                     &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
@@ -244,12 +244,12 @@
             {{$unless !isQuaggaHost}}
                 &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;
                     a  mrs:Route;                                        
-                        mrs:routeTo &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; ;                                       
+                        mrs:routeTo &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt; ;                                       
                         mrs:nextHop &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; .
 
                 &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt;
                     a  mrs:NetworkAddress;
-                        mrs:type    "ipv4-address-prefix";
+                        mrs:type    "ipv4-prefix";
                         mrs:value   "{{@aws/cidr}}".
 
                 &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;

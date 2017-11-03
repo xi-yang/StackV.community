@@ -2067,6 +2067,7 @@ public class WebResource {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
+        String method = "loadInstances";
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             ArrayList<String> banList = new ArrayList<>();
@@ -2075,7 +2076,7 @@ public class WebResource {
             // Verify user
             String username = authUsername(userId);
             if (username == null) {
-                logger.error("loadInstances", "Logged-in user does not match requested user information");
+                logger.error(method, "Logged-in user does not match requested user information");
                 return retList;
             }
 
@@ -2119,15 +2120,14 @@ public class WebResource {
 
                         retList.add(instanceList);
                     } catch (IOException ex) {
-                        logger.catching("loadInstances", ex);
-                        throw ex;
+                        logger.catching(method, ex);
                     }
                 }
             }
 
             return retList;
         } catch (SQLException ex) {
-            logger.catching("loadInstances", ex);
+            logger.catching(method, ex);
             throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
@@ -2425,7 +2425,6 @@ public class WebResource {
     @RolesAllowed("Panels")
     public String hasVerifyDrone(@PathParam(value = "siUUID") final String refUUID) throws SQLException, IOException, InterruptedException {
         String method = "hasVerifyDrone";
-        logger.trace_start(method);
 
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -2453,10 +2452,8 @@ public class WebResource {
                 System.out.println(diff);
 
                 if (diff < -30) {
-                    logger.trace_end(method);
                     return "0";
                 } else {
-                    logger.trace_end(method);
                     return "1";
                 }
             }
@@ -2596,6 +2593,44 @@ public class WebResource {
 
         } catch (SQLException ex) {
             logger.catching("getVerificationResultsUnion", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    @GET
+    @Path("/delta/{siUUID}")
+    @Produces("application/json")
+    @RolesAllowed("Panels")
+    public String getDeltaBacked(@PathParam("siUUID") String serviceUUID) throws IOException, SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
+            prep.setString(1, serviceUUID);
+            rs = prep.executeQuery();
+            rs.next();
+
+            if (rs.getInt(1) > 0) {
+                URL url = new URL(String.format("%s/service/delta/%s", host, serviceUUID));
+                HttpURLConnection status = (HttpURLConnection) url.openConnection();
+                String result = executeHttpMethod(url, status, "GET", null, auth);
+
+                return result;
+            } else {
+                return "{}";
+            }
+        } catch (IOException | SQLException ex) {
+            logger.catching("getDeltaBacked", ex);
             throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
@@ -3002,6 +3037,36 @@ public class WebResource {
         return UUID.randomUUID().toString();
     }
 
+    @PUT
+    @Path(value = "/service/{siUUID}/superstate/{state}")
+    @RolesAllowed("Services")
+    public String adminChangeSuperState(@PathParam(value = "siUUID") final String refUUID,
+            @PathParam(value = "state") final String state) throws IOException, SQLException {
+        final String method = "adminChangeSuperState";
+        try {
+            final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+            logger.start(method);
+            
+            String stateStr = state.toUpperCase();
+
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+
+            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
+            PreparedStatement prep = front_conn.prepareStatement("UPDATE `frontend`.`service_instance` SET `super_state` = ? WHERE `service_instance`.`referenceUUID` = ?");
+            prep.setString(1, stateStr);
+            prep.setString(2, refUUID);
+            prep.executeUpdate();
+
+            logger.end(method);
+            return null;
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            throw ex;
+        }
+    }
+
     /**
      * @api {put} /app/service/:siUUID/:action Operate Service
      * @apiVersion 1.0.0
@@ -3065,8 +3130,8 @@ public class WebResource {
      * @apiExample {curl} Example Call:
      * curl -X GET http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/call_verify
      * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     * 
-     * @apiSuccess {JSONObject} Verification result JSON.     
+     *
+     * @apiSuccess {JSONObject} Verification result JSON.
      */
     @GET
     @Path(value = "/service/{siUUID}/call_verify")
@@ -3079,10 +3144,10 @@ public class WebResource {
         logger.trace_start(method);
 
         VerificationHandler verify = new VerificationHandler(refUUID, token, 1, 10, true);
-        return verify.startVerification();        
+        return verify.startVerification();
     }
- 
-   /**
+
+    /**
      * @api {delete} /app/service/:siUUID/ Delete Service
      * @apiVersion 1.0.0
      * @apiDescription Delete the specified service instance.
@@ -3134,44 +3199,6 @@ public class WebResource {
         instance.operate(action);
 
         return instance.superState.name() + " -- " + instance.status();
-    }
-
-    @GET
-    @Path("/delta/{siUUID}")
-    @Produces("application/json")
-    @RolesAllowed("Panels")
-    public String getDeltaBacked(@PathParam("siUUID") String serviceUUID) throws IOException, SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-        try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
-            prep.setString(1, serviceUUID);
-            rs = prep.executeQuery();
-            rs.next();
-
-            if (rs.getInt(1) > 0) {
-                URL url = new URL(String.format("%s/service/delta/%s", host, serviceUUID));
-                HttpURLConnection status = (HttpURLConnection) url.openConnection();
-                String result = executeHttpMethod(url, status, "GET", null, auth);
-
-                return result;
-            } else {
-                return "{}";
-            }
-        } catch (IOException | SQLException ex) {
-            logger.catching("getDeltaBacked", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
     }
 
     // Utility Methods ---------------------------------------------------------
