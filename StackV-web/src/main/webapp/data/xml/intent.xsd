@@ -45,8 +45,10 @@ IN THE WORK.
     
     <xs:attribute name="name" type="xs:string"/>
     <xs:attribute name="trigger" type="xs:string"/>
+    <xs:attribute name="hidden" type="xs:string"/>
     <xs:attribute name="condition" type="xs:string"/>
     <xs:attribute name="type" type="xs:string"/>
+    <xs:attribute name="opened" type="xs:string"/>
     <xs:attribute name="block" type="xs:string"/>
     <xs:attribute name="start" type="xs:string"/>
     <xs:attribute name="default" type="xs:string"/>
@@ -54,6 +56,7 @@ IN THE WORK.
     
     <xs:element name="name" type="xs:string"/>
     <xs:element name="type" type="xs:string"/>
+    <xs:element name="location" type="xs:string"/>
     <xs:element name="tag" type="xs:string"/>
     <xs:element name="size" type="xs:string"/>    
     <xs:element name="initial" type="xs:string"/>    
@@ -100,8 +103,10 @@ IN THE WORK.
     <xs:element name="stage">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="group" minOccurs="0" maxOccurs="10"/>
                 <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element ref="note" minOccurs="0"/>
             </xs:sequence>
             <xs:attribute ref="name" use="required"/>
             <xs:attribute ref="condition"/>
@@ -112,10 +117,13 @@ IN THE WORK.
     
     <xs:element name="group">
         <xs:complexType>
-            <xs:sequence>
-                <xs:element ref="path" minOccurs="0"/>
+            <xs:sequence>                
                 <xs:element ref="bound" minOccurs="0" maxOccurs="unbounded"/>
-                <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element ref="fulfilled" minOccurs="0"/>
+                <xs:element ref="path" minOccurs="0"/>
+                
+                <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>                
+                <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>                
                 <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
             <xs:attribute ref="factory" default="false"/>
@@ -124,6 +132,7 @@ IN THE WORK.
             <xs:attribute ref="passthrough"/>
             <xs:attribute ref="block"/>
             <xs:attribute ref="collapsible" default="false"/>
+            <xs:attribute ref="opened"/>
             <xs:attribute ref="label" default="true"/>
             <xs:attribute ref="start"/>
         </xs:complexType>
@@ -134,9 +143,9 @@ IN THE WORK.
             <xs:sequence>
                 <xs:element ref="name"/>
                 <xs:element ref="type"/>                
+                <xs:element ref="default" minOccurs="0"/>
                 <xs:element ref="hint" minOccurs="0"/>                
-                <xs:element ref="initial" minOccurs="0"/>                
-                <xs:element ref="default" minOccurs="0"/>  
+                <xs:element ref="initial" minOccurs="0"/>                                  
                 <xs:element ref="link" minOccurs="0"/>
                 <xs:element ref="options" minOccurs="0"/>
                 <xs:element ref="size" minOccurs="0"/>
@@ -144,6 +153,7 @@ IN THE WORK.
                 <xs:element ref="valid" minOccurs="0"/>
             </xs:sequence>
             <xs:attribute ref="required"/>
+            <xs:attribute ref="hidden"/>
             <xs:attribute ref="trigger"/>
             <xs:attribute ref="condition"/>
         </xs:complexType>
@@ -181,6 +191,7 @@ IN THE WORK.
     <xs:element name="path">
         <xs:complexType>
             <xs:sequence>
+                <xs:element ref="name" minOccurs="0"/>
                 <xs:element ref="parent" maxOccurs="10"/>
             </xs:sequence>
         </xs:complexType>
@@ -191,6 +202,7 @@ IN THE WORK.
             <xs:simpleContent>
                 <xs:extension base="xs:string">
                     <xs:attribute name="condition" type="xs:string" />
+                    <xs:attribute name="default" type="xs:string" />
                 </xs:extension>
             </xs:simpleContent>
         </xs:complexType>
@@ -236,4 +248,22 @@ IN THE WORK.
             </xs:sequence>
         </xs:complexType>
     </xs:element>   
+    
+    <xs:element name="fulfilled">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="name"/>                
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>  
+    
+    <xs:element name="note">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="location"/>                
+                <xs:element ref="size"/>
+                <xs:element ref="text"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 </xs:schema>

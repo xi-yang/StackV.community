@@ -274,6 +274,15 @@ define([
                 edges.push({source: n, target: child});
             });
         });
+
+        var newEdges = [];
+        for (var edge in edges) {
+            if (edges[edge]._isProper()) {
+                newEdges.push(edges[edge]);
+            }
+        }
+        edges = newEdges;
+        
         force = d3.layout.force()
                 .nodes(nodes)
                 .links(edges)
