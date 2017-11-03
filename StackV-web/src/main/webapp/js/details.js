@@ -470,25 +470,26 @@ function loadVisualization() {
                 "INIT": 0,
                 "COMPILED": 1,
                 "COMMITTING": 2,
-                "FAILED": 3,
-                "COMMITTED": 4,
+                "COMMITTING-PARTIAL": 2,
+                "COMMITTED": 3,
+                "FAILED": 4,
                 "READY": 5
             };
 
             var tabs = [
                 {
                     "name": "Service",
-                    "state": "READY",
+                    "state": "COMPILED",
                     "createContent": createVizTab.bind(undefined, "Service")
                 },
                 {
                     "name": "System",
-                    "state": "READY",
+                    "state": "COMMITTING",
                     "createContent": createVizTab.bind(undefined, "System")
                 },
                 {
                     "name": "Verification",
-                    "state": "READY",
+                    "state": "COMMITTED",
                     "createContent": createVizTab.bind(undefined, "Verification")
                 }
             ];

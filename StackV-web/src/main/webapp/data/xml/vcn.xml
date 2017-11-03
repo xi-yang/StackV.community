@@ -259,6 +259,9 @@
                 </input>
             </group>
             <group factory="true" condition="openstack-form" name="Ceph RBD" collapsible="true">
+                <fulfilled>
+                    <name>size</name>
+                </fulfilled>
                 <input>
                     <name>Size</name>
                     <type>text</type>

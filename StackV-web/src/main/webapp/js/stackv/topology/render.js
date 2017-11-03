@@ -654,6 +654,10 @@ define([
         /**@param {Edge} e**/
         function updateSvgChoordsEdge(e) {
             //getCenterOfMass will walk up the chain until it finds a visible element
+            if (!e.leftPort || !e.rightPort) {
+                return;
+            }
+            
             var src = e.leftPort.getFirstVisibleParent();
             var tgt = e.rightPort.getFirstVisibleParent();
             var srcChoords = src.getCenterOfMass();
