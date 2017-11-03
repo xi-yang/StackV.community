@@ -27,6 +27,7 @@ public class AHCTemplate extends Template {
         helpers.put("isAWS", new isAWS());
         helpers.put("isOPS", new isOPS());
         helpers.put("isDCHost", new isDCHost());
+        helpers.put("isQuaggaHost", new isQuaggaHost());
         helpers.put("DCGatewayName", new DCGatewayName());
         helpers.put("DCSRIOVName", new DCSRIOVName());
         helpers.put("DCSRIOVs", new DCSRIOVs());

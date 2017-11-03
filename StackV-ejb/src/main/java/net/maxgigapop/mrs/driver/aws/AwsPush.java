@@ -565,7 +565,7 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
                 String routeTableId = parameters[1];
                 String subnetId = ec2Client.getResourceId(parameters[2]);
-                for (int retry = 0; retry < 6; retry++) {
+                for (int retry = 0; retry < 12; retry++) {
                     String resId = ec2Client.getTableId(parameters[1]);
                     if (routeTableId != resId) {
                         routeTableId = resId;
