@@ -60,13 +60,11 @@
             spa:type     "JSON";
             spa:value    """{
                 "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
-                    "terminals": {
-                        "{{!DirectConnDest @gateways}}": {
-                            "vlan_tag":"{{!DirectConnVLAN @gateways}}"
-                        },
-                        "{{@parent}}": {
-                            "vlan_tag":"{{!DirectConnVLAN @gateways}}"
-                        }
+                    "{{!DirectConnDest @gateways}}": {
+                        "vlan_tag":"{{!DirectConnVLAN @gateways}}"
+                    },
+                    "{{@parent}}": {
+                        "vlan_tag":"{{!DirectConnVLAN @gateways}}"
                     }
                 }
             }""".
@@ -371,7 +369,7 @@
     a           spa:PolicyAction ;
     spa:type     "MCE_VirtualNetworkCreation" ;
     spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt;;
-    spa:exportTo &lt;x-policy-annotation:data:vpc-export&gt;,
+    spa:exportTo &lt;x-policy-annotation:data:vpc-export&gt;
 {{!VPCSubnetData subnets}}
 
 </modelAddition>
