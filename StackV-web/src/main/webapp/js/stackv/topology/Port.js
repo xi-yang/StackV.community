@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2013-2016 University of Maryland
  * Modified by: Antonio Heard 2016
-
+ 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
  * Work without restriction, including without limitation the rights to use, 
  * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
  * the Work, and to permit persons to whom the Work is furnished to do so, 
  * subject to the following conditions:
-
+ 
  * The above copyright notice and this permission notice shall be included in 
  * all copies or substantial portions of the Work.
-
+ 
  * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
@@ -39,7 +39,7 @@ define([
         this.ancestorNode = null;
         this.alias = null;
         this._map = map;
-        
+
         this.isVisible = false;
         this.x = 0;
         this.y = 0;
@@ -48,7 +48,7 @@ define([
         this.svgNodeSubnetHighlight = null; // For subnet tab
         this.folded = false;
         this.detailsReference = false;
-        
+
         //We are reloading this port from a new model
         //Model.js will handle most of the reparsing, but we need to
         //clear out some old data
@@ -89,13 +89,13 @@ define([
                 } else if (child.name) {
                     alert("");
                     child = map[child.name];
-              
+
                 } else {
-                    return; 
+                    return;
                 }
                 try {
-                child = new Port(child, map);
-                that.childrenPorts.push(child);
+                    child = new Port(child, map);
+                    that.childrenPorts.push(child);
                 } catch (err) {
                     console.log("Child Port Not Correct!");
                 }
@@ -192,14 +192,16 @@ define([
             }
             this.ancestorNode = node;
             map_(this.childrenPorts, function (child) {
-                child.setNode(node);
+                if (child !== undefined) {
+                    child.setNode(node);
+                }
             });
         };
 
         this.getName = function () {
             return backing.name;
         };
-        
+
         this.hasAlias = function () {
             return this.alias !== null;
         };
