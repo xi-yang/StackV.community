@@ -566,12 +566,12 @@ public class AwsPush {
                 String routeTableId = parameters[1];
                 String subnetId = ec2Client.getResourceId(parameters[2]);
                 for (int retry = 0; retry < 12; retry++) {
-                    String resId = ec2Client.getTableId(parameters[1]);
+                    String resId = ec2Client.getResourceId(parameters[1]);
                     if (routeTableId != resId) {
                         routeTableId = resId;
                         break;
                     }
-                    logger.warning(method, String.format("Cannot resolve resource ID from RouteTable %s ", routeTableId));
+                    logger.warning(method, String.format("Cannot resolve resource ID for RouteTable %s ", resId));
                     try {
                         Thread.sleep(10000L);
                     } catch (InterruptedException ex) {
