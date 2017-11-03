@@ -571,6 +571,7 @@ public class AwsPush {
                         routeTableId = resId;
                         break;
                     }
+                    logger.warning(method, String.format("Cannot resolve resource ID from RouteTable %s ", routeTableId));
                     try {
                         Thread.sleep(10000L);
                     } catch (InterruptedException ex) {
@@ -580,8 +581,13 @@ public class AwsPush {
                 AssociateRouteTableRequest associateRequest = new AssociateRouteTableRequest();
                 associateRequest.withRouteTableId(routeTableId)
                         .withSubnetId(ec2Client.getResourceId(subnetId));
-                AssociateRouteTableResult associateResult = ec2.associateRouteTable(associateRequest);
-
+                try {
+                    AssociateRouteTableResult associateResult = ec2.associateRouteTable(associateRequest);
+                } catch (AmazonServiceException e) {
+                    if (e.getErrorCode().equals("InvalidRouteTableID.NotFound")) {
+                        logger.warning(method, String.format("AssociateTableRequest fails - TRY ASSOCIATE MANUALLY - %s", e));
+                    }
+                }
             } else if (request.contains("CreateInternetGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
