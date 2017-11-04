@@ -601,11 +601,11 @@ public class AwsPush {
                 for (int retry = 0; retry < 3; retry++) {
                     try {
                         AttachInternetGatewayRequest gwRequest = new AttachInternetGatewayRequest();
-                        gwRequest.withInternetGatewayId(ec2Client.getResourceId(parameters[1]))
-                                .withVpcId(ec2Client.getVpcId(parameters[2]));
+                        gwRequest.withInternetGatewayId(igw.getInternetGatewayId())
+                                .withVpcId(ec2Client.getResourceId(parameters[2]));
 
                         ec2.attachInternetGateway(gwRequest);
-                        ec2Client.internetGatewayAttachmentCheck(ec2Client.getResourceId(parameters[1]));
+                        ec2Client.internetGatewayAttachmentCheck(igw.getInternetGatewayId());
                         break;
                     } catch (AmazonServiceException e) {
                         if (!e.getErrorCode().equals("InvalidInternetGatewayID.NotFound")) {
