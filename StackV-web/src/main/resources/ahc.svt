@@ -197,9 +197,9 @@
                     a   mrs:RoutingTable;
                     mrs:type   "linux";
                     mrs:hasRoute
-                {{$if !isDCHost}}
+                {{$unless !isQuaggaHost}}
                     &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;,
-                {{/if !isDCHost}}
+                {{/unless !isQuaggaHost}}
                 {{#routes}}
                     {{$unless ^first}},{{/unless ^first}}
                     &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
@@ -239,19 +239,24 @@
                     {{/if next_hop}}
                     
                 {{/routes}}
-                {{$if !isDCHost}}
-                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;
-                        a  mrs:Route;                                        
-                            mrs:routeTo "%$..amazon_ip%";                                        
-                            mrs:nextHop &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;;.
-
-                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;
-                        a  mrs:NetworkAddress;
-                            mrs:type    "ipv4-address";
-                            mrs:value   "{{@aws/cidr}}".
-                        
-                {{/if !isDCHost}}
             {{/if routes}}
+
+            {{$unless !isQuaggaHost}}
+                &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;
+                    a  mrs:Route;                                        
+                        mrs:routeTo &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt; ;                                       
+                        mrs:nextHop &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; .
+
+                &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt;
+                    a  mrs:NetworkAddress;
+                        mrs:type    "ipv4-prefix";
+                        mrs:value   "{{@aws/cidr}}".
+
+                &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;
+                    a  mrs:NetworkAddress;
+                        mrs:type    "ipv4-address";
+                        mrs:value   "10.10.0.1".
+            {{/unless !isQuaggaHost}}
 
             {{$if floating_ip}}
                 &lt;{{VMTag}}:eth0floatingip&gt;            
@@ -311,7 +316,7 @@
                         mrs:hasVolume
                             &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                        
 
-                    &lt;{{@parent}}:ceph-rbd&gt;
+                    &lt;{{@openstack/parent}}:ceph-rbd&gt;
                         mrs:providesVolume 
                             &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                            
 
@@ -476,8 +481,10 @@
     spa:type     "JSON";
     spa:value    """{
         "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
-            "urn:ogf:network:openstack.com:openstack-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"},
-            "urn:ogf:network:aws.amazon.com:aws-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"}
+            "terminals": {
+                "urn:ogf:network:openstack.com:openstack-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"},
+                "urn:ogf:network:aws.amazon.com:aws-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"}
+            }
         }
     }""".
 

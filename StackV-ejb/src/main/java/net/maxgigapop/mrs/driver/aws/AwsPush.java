@@ -565,12 +565,13 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
                 String routeTableId = parameters[1];
                 String subnetId = ec2Client.getResourceId(parameters[2]);
-                for (int retry = 0; retry < 6; retry++) {
-                    String resId = ec2Client.getTableId(parameters[1]);
+                for (int retry = 0; retry < 12; retry++) {
+                    String resId = ec2Client.getResourceId(parameters[1]);
                     if (routeTableId != resId) {
                         routeTableId = resId;
                         break;
                     }
+                    logger.warning(method, String.format("Cannot resolve resource ID for RouteTable %s ", resId));
                     try {
                         Thread.sleep(10000L);
                     } catch (InterruptedException ex) {
@@ -580,8 +581,13 @@ public class AwsPush {
                 AssociateRouteTableRequest associateRequest = new AssociateRouteTableRequest();
                 associateRequest.withRouteTableId(routeTableId)
                         .withSubnetId(ec2Client.getResourceId(subnetId));
-                AssociateRouteTableResult associateResult = ec2.associateRouteTable(associateRequest);
-
+                try {
+                    AssociateRouteTableResult associateResult = ec2.associateRouteTable(associateRequest);
+                } catch (AmazonServiceException e) {
+                    if (e.getErrorCode().equals("InvalidRouteTableID.NotFound")) {
+                        logger.warning(method, String.format("AssociateTableRequest fails - TRY ASSOCIATE MANUALLY - %s", e));
+                    }
+                }
             } else if (request.contains("CreateInternetGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -595,11 +601,11 @@ public class AwsPush {
                 for (int retry = 0; retry < 3; retry++) {
                     try {
                         AttachInternetGatewayRequest gwRequest = new AttachInternetGatewayRequest();
-                        gwRequest.withInternetGatewayId(ec2Client.getResourceId(parameters[1]))
-                                .withVpcId(ec2Client.getVpcId(parameters[2]));
+                        gwRequest.withInternetGatewayId(igw.getInternetGatewayId())
+                                .withVpcId(ec2Client.getResourceId(parameters[2]));
 
                         ec2.attachInternetGateway(gwRequest);
-                        ec2Client.internetGatewayAttachmentCheck(ec2Client.getResourceId(parameters[1]));
+                        ec2Client.internetGatewayAttachmentCheck(igw.getInternetGatewayId());
                         break;
                     } catch (AmazonServiceException e) {
                         if (!e.getErrorCode().equals("InvalidInternetGatewayID.NotFound")) {

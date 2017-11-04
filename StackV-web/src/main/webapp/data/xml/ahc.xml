@@ -42,6 +42,11 @@
             </constraint>
             <constraint>
                 <name>ip</name>
+                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$</regex>
+                <message>Please enter a valid IP address.</message>
+            </constraint>
+            <constraint>
+                <name>cidr</name>
                 <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}$</regex>
                 <message>Please enter a valid CIDR.</message>
             </constraint>
@@ -79,7 +84,7 @@
                 <name>CIDR</name>
                 <type>text</type>
                 <default>10.0.0.0/16</default>
-                <valid>ip</valid>
+                <valid>cidr</valid>
             </input>
             <input>
                 <name>Direct Connect VLAN</name>
@@ -104,7 +109,7 @@
                 <name>CIDR</name>
                 <type>text</type>
                 <default>10.1.0.0/16</default>
-                <valid>ip</valid>
+                <valid>cidr</valid>
             </input>
         </group>
         <group name="Intercloud">
@@ -150,8 +155,8 @@
         <group name="AWS" passthrough="true">
             <group name="AWS Subnet" block="aws-subnets" collapsible="true" opened="true">
                 <path>
-                    <parent>aws</parent>  
-                    <name>aws_subnet::subnet</name>                                                  
+                    <name>aws_subnet::subnet</name>
+                    <parent>aws</parent>                      
                 </path>
             
                 <input>
@@ -163,7 +168,7 @@
                     <name>CIDR</name>
                     <type>text</type>
                     <default first_only="true">10.0.0.0/24</default>
-                    <valid>ip</valid>
+                    <valid>cidr</valid>
                 </input>
                 <input hidden="true">
                     <name>VPN Route Propagation</name>
@@ -200,8 +205,8 @@
         <group name="Openstack" passthrough="true">
             <group name="OpenStack Subnet" block="ops-subnets" collapsible="true" opened="true">
                 <path>
-                    <parent>openstack</parent>
                     <name>openstack_subnet::subnet</name>                                    
+                    <parent>openstack</parent>                    
                 </path>
             
                 <input>
@@ -213,7 +218,7 @@
                     <name>CIDR</name>
                     <type>text</type>
                     <default first_only="true">10.1.0.0/24</default>
-                    <valid>ip</valid>
+                    <valid>cidr</valid>
                 </input>
                 <input hidden="true">
                     <name>Internet Routable</name>
@@ -248,8 +253,8 @@
         <group name="AWS" passthrough="true">
             <group block="aws-vms" name="AWS VM" collapsible="true" opened="true">
                 <path>
-                    <parent>subnet host</parent> 
-                    <name>aws_vm::vm</name>               
+                    <name>aws_vm::vm</name>         
+                    <parent>subnet host</parent>                           
                 </path>
             
                 <input>
@@ -288,8 +293,8 @@
         <group name="Openstack" passthrough="true">   
             <group block="ops-vms" name="OpenStack VM" collapsible="true" opened="true">
                 <path>
-                    <parent>subnet host</parent>  
-                    <name>openstack_vm::vm</name>                             
+                    <name>openstack_vm::vm</name>  
+                    <parent>subnet host</parent>                                                 
                 </path>
             
                 <input>
@@ -356,58 +361,60 @@
                         <type>text</type>
                     </input>
                 </group>
-                <group name="Globus Connect" collapsible="true">
-                    <input>
-                        <name>Username</name>
-                        <type>text</type>
-                        <valid>string</valid>
-                    </input>
-                    <input>
-                        <name>Password</name>
-                        <type>text</type>
-                        <valid>string</valid>
-                    </input>
-                    <input>
-                        <name>Short Name</name>
-                        <type>text</type>
-                        <valid>string</valid>
-                    </input>
-                    <input>
-                        <name>Data Interface IP</name>
-                        <type>text</type>
-                        <valid>ip</valid>
-                    </input>
-                    <input>
-                        <name>Default Directory</name>
-                        <type>text</type>
-                        <valid>string</valid>
-                    </input>
-                </group>
-                <group factory="true" name="Ceph RBD" collapsible="true">
-                    <fulfilled>
-                        <name>size</name>
-                    </fulfilled>
-                    
-                    <input>
-                        <name>Size</name>
-                        <type>text</type>                        
-                        <hint>(in GB)</hint>
-                        <valid>string</valid>
-                    </input>
-                    <input>
-                        <name>Mount Point</name>
-                        <type>text</type>
-                        <default>/mnt/ceph1</default>
-                        <valid>string</valid>
-                    </input>
-                </group>            
-                <group name="NFS" collapsible="true">
-                    <group factory="true" name="Export">                    
+                <group name="VS Functions" passthrough="true">
+                    <group name="Globus Connect" collapsible="true">
                         <input>
-                            <name>Value</name>
+                            <name>Username</name>
                             <type>text</type>
                             <valid>string</valid>
                         </input>
+                        <input>
+                            <name>Password</name>
+                            <type>text</type>
+                            <valid>string</valid>
+                        </input>
+                        <input>
+                            <name>Short Name</name>
+                            <type>text</type>
+                            <valid>string</valid>
+                        </input>
+                        <input>
+                            <name>Data Interface IP</name>
+                            <type>text</type>
+                            <valid>ip</valid>
+                        </input>
+                        <input>
+                            <name>Default Directory</name>
+                            <type>text</type>
+                            <valid>string</valid>
+                        </input>
+                    </group>
+                    <group factory="true" name="Ceph RBD" collapsible="true">
+                        <fulfilled>
+                            <name>size</name>
+                        </fulfilled>
+                    
+                        <input>
+                            <name>Size</name>
+                            <type>text</type>                        
+                            <hint>(in GB)</hint>
+                            <valid>string</valid>
+                        </input>
+                        <input>
+                            <name>Mount Point</name>
+                            <type>text</type>
+                            <default>/mnt/ceph1</default>
+                            <valid>string</valid>
+                        </input>
+                    </group>            
+                    <group name="NFS" collapsible="true">
+                        <group factory="true" name="Export">                    
+                            <input>
+                                <name>Value</name>
+                                <type>text</type>
+                                <valid>string</valid>
+                            </input>
+                        </group>
                     </group>
                 </group>
             </group>
@@ -480,7 +487,7 @@
                 <name>IP Address</name>
                 <type>text</type>
                 <default first_only="true">10.10.0.1/24</default>
-                <valid>ip</valid>
+                <valid>cidr</valid>
             </input>       
             <input>
                 <name>MAC Address</name>

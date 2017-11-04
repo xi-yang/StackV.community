@@ -136,6 +136,8 @@ public class VerificationDrone implements Runnable {
                 HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
                 String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, token.auth());
                 lastResult = result;
+                
+                System.out.println("VerificationDrone :: UUID=" + instanceUUID + " :: \n" + lastResult + "\n");
 
                 // Pull data from JSON.
                 JSONParser parser = new JSONParser();

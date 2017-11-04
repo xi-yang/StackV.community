@@ -12,7 +12,7 @@ public class VPCSubnetData implements Helper {
 
     @Override
     public String apply(ArrayList<Object> obj) {
-        String retString = "";
+        String retString = ",";
         JSONArray subnets = (JSONArray) obj.get(0);
         ArrayList<String> names = new ArrayList<>();
         for (Object subnetObj : subnets) {
@@ -26,9 +26,7 @@ public class VPCSubnetData implements Helper {
             }
         }
 
-        for (int i = 0;
-                i < names.size();
-                i++) {
+        for (int i = 0; i < names.size(); i++) {
             String name = names.get(i);
             retString += "&lt;x-policy-annotation:data:vpc-subnet-" + name.replace(" ", "_") + "-criteria&gt;";
             if (i < names.size() - 1) {
@@ -38,6 +36,10 @@ public class VPCSubnetData implements Helper {
             }
         }
 
-        return retString;
+        if (retString.equals(",")) {
+            return ".";
+        } else {
+            return retString;
+        }
     }
 }
