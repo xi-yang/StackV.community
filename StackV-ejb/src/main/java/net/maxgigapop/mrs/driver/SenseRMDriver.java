@@ -32,6 +32,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
@@ -108,6 +110,8 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             } else {
                 conn = (HttpURLConnection) url.openConnection();
             }
+            conn.setConnectTimeout(5*1000);
+            conn.setReadTimeout(5*1000);
             conn.setRequestProperty("Content-Encoding", "gzip");
             String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
             if (response[1].equals("201")) {
@@ -166,8 +170,10 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             } else {
                 conn = (HttpURLConnection) url.openConnection();
             }
+            conn.setConnectTimeout(5*1000);
+            conn.setReadTimeout(5*1000);
             String[] response = DriverUtil.executeHttpMethod(conn, "PUT", null);
-            if (response[1].equals("200")) {
+            if (response[1].equals("200") || response[1].equals("204")) {
                 aDelta.setStatus("COMMITTING");
                 DeltaPersistenceManager.merge(aDelta);
             } else if (response[1].equals("400")) {
@@ -195,7 +201,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             try {
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
-                URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
+                URL url = new URL(String.format("%s/deltas/%s?summary=true", subsystemBaseUrl, aDelta.getId()));
                 HttpURLConnection conn;
                 if (url.toString().startsWith("https:")) {
                     conn = (HttpsURLConnection) url.openConnection();
@@ -204,10 +210,16 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 }
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("200")) { // committed successfully
-                    aDelta.setStatus(response[0]);
+                    JSONObject responseJSON = (JSONObject) ((JSONArray) JSONValue.parseWithException(response[0])).get(0);
+                    aDelta.setStatus(((String) responseJSON.get("state")).toUpperCase());
                     DeltaPersistenceManager.merge(aDelta);
-                    if (response[0].equals("COMMITTING")) {
+                    if (aDelta.getStatus().equals("COMMITTED") || aDelta.getStatus().equals("ACTIVATED"))  {
                         doPoll = false;
+                    } else if (aDelta.getStatus().equals("COMMITTING")) {
+                        doPoll = true;
+                    } else if (aDelta.getStatus().equals("FAILED") ) {
+                        //@TODO: responseJSON.error
+                        throw logger.error_throwing(method, driverInstance + "RM Internal Error - " + response[0]);
                     }
                 } else if (response[1].equals("400")) {
                     throw logger.error_throwing(method, driverInstance + "Bad Request - " + response[0]);
@@ -228,6 +240,8 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 throw logger.error_throwing(method, driverInstance + " polling commit status got interrupted");
             } catch (IOException ex) {
                 throw logger.throwing(method, driverInstance + " failed to communicate with subsystem - ", ex);
+            } catch (ParseException ex) {
+                throw logger.throwing(method, driverInstance + " failed to parse delta information - ", ex);
             }
         }
         logger.end(method);
@@ -280,6 +294,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
                 }
                 conn.setConnectTimeout(5*1000);
+                conn.setReadTimeout(5*1000);
                 conn.addRequestProperty("Content-Encoding", "gzip");
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("304")) {
@@ -319,7 +334,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             } catch (IOException ex) {
                 throw logger.throwing(method, driverInstance + " API failed to connect to subsystem with ", ex);
             } catch (ParseException ex) {
-                throw logger.throwing(method, driverInstance + " parse pulled information from subsystem ", ex);
+                throw logger.throwing(method, driverInstance + " failed to parse pulled information from subsystem ", ex);
             }
             VersionItem vi = null;
             DriverModel dm = null;
