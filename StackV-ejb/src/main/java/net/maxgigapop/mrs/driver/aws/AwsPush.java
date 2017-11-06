@@ -641,9 +641,27 @@ public class AwsPush {
             } else if (request.contains("PropagateVpnRequest")) {
                 String[] parameters = request.split("\\s+");
                 String tableIdTag = parameters[1];
-                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(parameters[2]));
-                RouteTable table = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
-
+                String vpnIdTag = parameters[2];
+                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(vpnIdTag));
+                for (int retry = 0; vpn == null && retry < 3; retry++) {
+                    logger.warning(method, "PropagateVpnRequest cannot get VpnGateway for: " + vpnIdTag);
+                    try {
+                        sleep(10000L); // pause for 10 seconds and retry
+                    } catch (InterruptedException ex) {
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
+                    }
+                    vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(vpnIdTag));
+                }
+                RouteTable table = ec2Client.getRoutingTable(ec2Client.getResourceId(tableIdTag));
+                for (int retry = 0; table == null && retry < 3; retry++) {
+                    logger.warning(method, "PropagateVpnRequest cannot get RoutingTable for: " + tableIdTag);
+                    try {
+                        sleep(10000L); // pause for 10 seconds and retry
+                    } catch (InterruptedException ex) {
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
+                    }
+                    table = ec2Client.getRoutingTable(ec2Client.getResourceId(tableIdTag));
+                }
                 EnableVgwRoutePropagationRequest propagationRequest = new EnableVgwRoutePropagationRequest();
                 propagationRequest.withGatewayId(vpn.getVpnGatewayId())
                         .withRouteTableId(table.getRouteTableId());
