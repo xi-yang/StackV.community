@@ -557,7 +557,7 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
 
                 CreateSubnetRequest subnetRequest = new CreateSubnetRequest();
-                subnetRequest.withVpcId(ec2Client.getResourceId(parameters[1]))
+                subnetRequest.withVpcId(ec2Client.getVpcId(parameters[1]))
                         .withCidrBlock(parameters[2])
                         .withAvailabilityZone(Regions.US_EAST_1.getName() + "e");
 

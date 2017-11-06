@@ -1328,7 +1328,7 @@ public class AwsEC2Get {
     
     public String getResourceId(String tag) {
         Filter filter = new Filter();
-        filter.withName("value")
+        filter.withName("tag:id")
                 .withValues(tag);
 
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
