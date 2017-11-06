@@ -550,9 +550,6 @@ public class AwsPush {
                 }
                 ec2Client.getRoutingTables().add(mainTable);
                 ec2Client.tagResource(mainTable.getRouteTableId(), parameters[3]);
-                if (!ec2Client.waitResourceTag(vpcId, vpcIdTag)) {
-                    logger.warning(method, String.format("waitResourceTag failed to see tag:%s on VPC:%s.", vpcIdTag, vpcId));
-                }
             } else if (request.contains("CreateSubnetRequest")) {
                 String[] parameters = request.split("\\s+");
 
