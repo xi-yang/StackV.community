@@ -525,7 +525,8 @@ public class AwsPush {
                 ec2Client.getVpcs().add(vpcResult.getVpc());
                 ec2Client.vpcStatusCheck(vpcId, VpcState.Available.name().toLowerCase());
                 //create the tag for the vpc
-                ec2Client.tagResource(vpcId, parameters[2]);
+                String vpcIdTag = parameters[2];
+                ec2Client.tagResource(vpcId, vpcIdTag);
                 //tag the routing table of the VPC
                 RouteTable mainTable = null;
                 for (int retry = 0; retry < 12; retry++) {
@@ -549,7 +550,9 @@ public class AwsPush {
                 }
                 ec2Client.getRoutingTables().add(mainTable);
                 ec2Client.tagResource(mainTable.getRouteTableId(), parameters[3]);
-                
+                if (!ec2Client.waitResourceTag(vpcId, vpcIdTag)) {
+                    logger.warning(method, String.format("waitResourceTag failed to see tag:%s on VPC:%s.", vpcIdTag, vpcId));
+                }
             } else if (request.contains("CreateSubnetRequest")) {
                 String[] parameters = request.split("\\s+");
 

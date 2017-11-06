@@ -1647,7 +1647,22 @@ public class AwsEC2Get {
             }
         }
     }
-    
+
+    public boolean waitResourceTag(String id, String tag) {
+        Long delay = 10000L; // 10 seconds
+        for (int retry = 0; retry < 12; retry++) {
+            if (this.getResourceId(tag).equals(id)) {
+                return true;
+            }
+            try {
+                sleep(delay);
+            } catch (InterruptedException ex1) {
+                ;
+            }
+        }
+        // wait for up to 2 minutes
+        return false;
+    }
     /**
      * ****************************************************************
      * function to create tags in batches
