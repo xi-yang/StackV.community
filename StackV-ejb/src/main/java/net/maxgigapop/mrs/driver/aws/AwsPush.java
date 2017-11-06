@@ -307,7 +307,7 @@ public class AwsPush {
 
                 String tableIdTag = parameters[1];
                 String target = ec2Client.getResourceId(parameters[3]);
-                RouteTable t = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
+                RouteTable t = ec2Client.getRoutingTable(ec2Client.getResourceId(tableIdTag));
                 Vpc v = ec2Client.getVpc(t.getVpcId());
 
                 Route route = new Route();
@@ -554,7 +554,7 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
 
                 CreateSubnetRequest subnetRequest = new CreateSubnetRequest();
-                subnetRequest.withVpcId(ec2Client.getVpcId(parameters[1]))
+                subnetRequest.withVpcId(ec2Client.getResourceId(parameters[1]))
                         .withCidrBlock(parameters[2])
                         .withAvailabilityZone(Regions.US_EAST_1.getName() + "e");
 
@@ -573,7 +573,7 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
 
                 CreateRouteTableRequest tableRequest = new CreateRouteTableRequest();
-                tableRequest.withVpcId(ec2Client.getVpcId(parameters[1]));
+                tableRequest.withVpcId(ec2Client.getResourceId(parameters[1]));
                 CreateRouteTableResult tableResult = ec2.createRouteTable(tableRequest);
 
                 ec2Client.getRoutingTables().add(tableResult.getRouteTable());
@@ -641,7 +641,7 @@ public class AwsPush {
                 for (int retry = 0; retry < 3; retry++) {
                     try {
                         VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
-                        Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
+                        Vpc v = ec2Client.getVpc(ec2Client.getResourceId(parameters[2]));
                         if (!vpn.equals(ec2Client.getVirtualPrivateGateway(v))) {
                             AttachVpnGatewayRequest gwRequest = new AttachVpnGatewayRequest();
                             gwRequest.withVpnGatewayId(vpn.getVpnGatewayId())
@@ -710,7 +710,7 @@ public class AwsPush {
 
                 String tableIdTag = parameters[1];
                 String target = ec2Client.getResourceId(parameters[3]);
-                RouteTable t = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
+                RouteTable t = ec2Client.getRoutingTable(ec2Client.getResourceId(tableIdTag));
                 Vpc v = ec2Client.getVpc(t.getVpcId());
 
                 Route route = new Route();
@@ -865,7 +865,7 @@ public class AwsPush {
                 
                 List<Instance> newInstances = result.getReservation().getInstances();
                 List<String> newInstanceIds = new ArrayList();
-                String vpcId = ec2Client.getVpcId(parameters[13]);
+                String vpcId = ec2Client.getResourceId(parameters[13]);
                 for(int ind =0;ind<Integer.parseInt(parameters[11]);ind++){
                 Instance instance = newInstances.get(ind);
                 ec2Client.getEc2Instances().add(instance);
