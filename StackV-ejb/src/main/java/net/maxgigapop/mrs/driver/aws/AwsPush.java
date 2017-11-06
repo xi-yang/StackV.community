@@ -451,17 +451,36 @@ public class AwsPush {
 
             } else if (request.contains("detachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
-
-                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
-                Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
+                String vgwIdTag = parameters[1];
+                String vpcIdTag = parameters[2];
+                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(vgwIdTag));
+                for (int retry = 0; gateway == null && retry < 3; retry++) {
+                    logger.warning(method, "detachVpnGatewayRequest cannot get VpnGateway for: " + vgwIdTag);
+                    try {
+                        sleep(10000L); // pause for 10 seconds and retry
+                    } catch (InterruptedException ex) {
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
+                    }
+                    gateway = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(vgwIdTag));
+                }
+                Vpc vpc = ec2Client.getVpc(ec2Client.getResourceId(vpcIdTag));
+                for (int retry = 0; vpc == null && retry < 3; retry++) {
+                    logger.warning(method, "detachVpnGatewayRequest cannot get VPC for: " + vpcIdTag);
+                    try {
+                        sleep(10000L); // pause for 10 seconds and retry
+                    } catch (InterruptedException ex) {
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
+                    }
+                    vpc = ec2Client.getVpc(ec2Client.getResourceId(vpcIdTag));
+                }
                 DetachVpnGatewayRequest gwRequest = new DetachVpnGatewayRequest();
                 gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
-                        .withVpcId(v.getVpcId());
+                        .withVpcId(vpc.getVpcId());
                 
                 // Somehow VGW may disappear from the API for a while after deleting dxvif. 
                 // Retry in an error-retry loop for up to 5 minutes
-
-                for (int i = 0; i < 10; i++) {
+                int retry = 0;
+                for (retry = 0; retry < 10; retry++) {
                     try {
                         Future<Void> asyncResult = ec2.detachVpnGatewayAsync(gwRequest);
                         ec2Client.vpnGatewayDetachmentCheck(asyncResult);
@@ -470,10 +489,13 @@ public class AwsPush {
                         try {
                             Thread.sleep(30000L); // sleep 30 secs
                         } catch (InterruptedException ex) {
-                            ; //@TODO if i == 9 (final) ==> error report
+                            ;
                         }
                         continue;
                     }
+                }
+                if (retry == 10) {
+                    logger.warning(method, request + " failed after 10x detachVpnGatewayAsync tries");
                 }
             } else if (request.contains("DisassociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
