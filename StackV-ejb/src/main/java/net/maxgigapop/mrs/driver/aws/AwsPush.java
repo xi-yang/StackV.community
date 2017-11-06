@@ -641,7 +641,7 @@ public class AwsPush {
             } else if (request.contains("PropagateVpnRequest")) {
                 String[] parameters = request.split("\\s+");
                 String tableIdTag = parameters[1];
-                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[2]));
+                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(parameters[2]));
                 RouteTable table = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
 
                 EnableVgwRoutePropagationRequest propagationRequest = new EnableVgwRoutePropagationRequest();
