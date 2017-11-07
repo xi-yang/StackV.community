@@ -204,9 +204,9 @@
                     a   mrs:RoutingTable;
                     mrs:type   "linux";
                     mrs:hasRoute
-                {{$if !isDCHost}}
+                {{$unless !isQuaggaHost}}
                     &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;,
-                {{/if !isDCHost}}
+                {{/unless !isQuaggaHost}}
                 {{#routes}}
                     {{$unless ^first}},{{/unless ^first}}
                     &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
@@ -251,12 +251,12 @@
             {{$unless !isQuaggaHost}}
                 &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;
                     a  mrs:Route;                                        
-                        mrs:routeTo &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; ;                                       
+                        mrs:routeTo &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt; ;                                       
                         mrs:nextHop &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; .
 
                 &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt;
                     a  mrs:NetworkAddress;
-                        mrs:type    "ipv4-address-prefix";
+                        mrs:type    "ipv4-prefix";
                         mrs:value   "{{@aws/cidr}}".
 
                 &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;
@@ -354,6 +354,9 @@
             {{$if data_interface_ip}}
                 mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
             {{/if data_interface_ip}}
+            {{$if public}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:public&gt; ;
+            {{/if public}}
                 nml:name "{{short_name}}" .
             &lt;{{VMTag}}&gt;
                nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
@@ -373,6 +376,12 @@
                a mrs:NetworkAddress ;
                mrs:type "globus:interface";
                mrs:value "{{data_interface_ip}}" .            
+            {{$if public}}
+               &lt;{{VMTag}}:service+globus:public&gt;
+                  a mrs:NetworkAddress ;
+                  mrs:type "globus:public";
+                  mrs:value "{{public}}" .
+            {{/if public}}
             {{/globus_connect}}
         {{/vms}}
         {{#vms}}
