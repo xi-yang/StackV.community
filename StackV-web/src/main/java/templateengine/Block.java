@@ -365,7 +365,7 @@ public class Block {
         } else {
             recur = scopedInput;
         }
-        
+
         for (int i = 0; i < keyArr.length - 1; i++) {
             String key = keyArr[i];
             String eleArr[] = key.split("\\.");
@@ -409,9 +409,13 @@ public class Block {
             if (obj instanceof JSONObject) {
                 recur = (JSONObject) obj;
             } else {
-                int index = Integer.parseInt(eleArr[1]);
-                recur = (JSONObject) ((JSONArray) obj).get(index);
-                break;
+                if (obj == null) {
+                    return false;
+                } else {
+                    int index = Integer.parseInt(eleArr[1]);
+                    recur = (JSONObject) ((JSONArray) obj).get(index);
+                    break;
+                }
             }
         }
         if (recur.containsKey(keyArr[keyArr.length - 1])) {
