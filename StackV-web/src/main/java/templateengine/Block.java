@@ -365,12 +365,16 @@ public class Block {
         } else {
             recur = scopedInput;
         }
+        
         for (int i = 0; i < keyArr.length - 1; i++) {
             String key = keyArr[i];
-            Object obj = recur.get(key);
+            String eleArr[] = key.split("\\.");
+            Object obj = recur.get(eleArr[0]);
             if (obj instanceof JSONObject) {
                 recur = (JSONObject) obj;
             } else {
+                int index = Integer.parseInt(eleArr[1]);
+                recur = (JSONObject) ((JSONArray) obj).get(index);
                 break;
             }
         }
@@ -384,7 +388,7 @@ public class Block {
         } else {
             System.out.println("ERROR: Input not found - " + keyStr);
             // logger.error("Input not found: " + keyStr);
-            return keyStr;
+            return keyStr.toUpperCase();
         }
     }
 
@@ -405,7 +409,8 @@ public class Block {
             if (obj instanceof JSONObject) {
                 recur = (JSONObject) obj;
             } else {
-                recur = (JSONObject) ((JSONArray) obj).get(0);
+                int index = Integer.parseInt(eleArr[1]);
+                recur = (JSONObject) ((JSONArray) obj).get(index);
                 break;
             }
         }
