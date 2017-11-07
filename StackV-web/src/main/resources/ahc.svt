@@ -99,9 +99,9 @@
 
             &lt;{{VMTag}}:eth0&gt;
                 a           nml:BidirectionalPort;
-                {{$if elastic_ip}}
+                {{$if interfaces.0/elastic_ip}}
                     mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
-                {{/if elastic_ip}}                
+                {{/if interfaces.0/elastic_ip}}                
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt; .
             {{$if interfaces}}
                 {{!AddressString name interfaces @uuid}}
@@ -197,9 +197,9 @@
                     a   mrs:RoutingTable;
                     mrs:type   "linux";
                     mrs:hasRoute
-                {{$unless !isQuaggaHost}}
+                {{$if !isDCHost}}
                     &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;,
-                {{/unless !isQuaggaHost}}
+                {{/if !isDCHost}}
                 {{#routes}}
                     {{$unless ^first}},{{/unless ^first}}
                     &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
@@ -244,12 +244,12 @@
             {{$unless !isQuaggaHost}}
                 &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;
                     a  mrs:Route;                                        
-                        mrs:routeTo &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt; ;                                       
+                        mrs:routeTo &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; ;                                       
                         mrs:nextHop &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; .
 
                 &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt;
                     a  mrs:NetworkAddress;
-                        mrs:type    "ipv4-prefix";
+                        mrs:type    "ipv4-address-prefix";
                         mrs:value   "{{@aws/cidr}}".
 
                 &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;
