@@ -826,7 +826,9 @@ function toggleTextModel(viz_table, text_table) {
 // Moderation Functions
 function instructionModerate() {
     var blockString = "";
-    if (verificationRun !== null) {
+    if (lastState === "null") {
+        blockString = "Service has encountered a fatal error. Please contact a system administrator for manual recovery.";
+    } else if (verificationRun !== null) {
         switch (subState) {
             case "INIT":
             case "COMPILED":
@@ -891,51 +893,16 @@ function buttonModerate() {
         $("#delete").removeClass("hide");
     }
 
-    switch (subState) {
-        case "COMMITTED":
-            if (!hasDrone) {
-                $("#verify").removeClass("hide");
-            }
+    // Error case
+    if (lastState === "null") {
+        $(".instance-command").removeClass("hide");
+    } else {
+        switch (subState) {
+            case "COMMITTED":
+                if (!hasDrone) {
+                    $("#verify").removeClass("hide");
+                }
 
-            switch (superState) {
-                case "CREATE":
-                case "REINSTATE":
-                    $("#force_cancel").removeClass("hide");
-                    break;
-                case "CANCEL":
-                    $("#force_reinstate").removeClass("hide");
-                    break;
-            }
-            $("#delete").removeClass("hide");
-
-            break;
-        case "COMMITTING":
-            switch (superState) {
-                case "CREATE":
-                case "REINSTATE":
-                    $("#force_cancel").removeClass("hide");
-                    break;
-                case "CANCEL":
-                    $("#force_reinstate").removeClass("hide");
-                    break;
-            }
-
-            break;
-        case "FAILED":
-            if (!hasDrone) {
-                $("#verify").removeClass("hide");
-            }
-
-            // Error case
-            if (lastState === "INIT") {
-                $(".instance-command").addClass("hide");
-                $("#delete").removeClass("hide");
-            }
-
-            if (lastState === "COMMITTED" ||
-                    lastState === "COMMITTING" ||
-                    lastState === "READY") {
-                $("#verify").removeClass("hide");
                 switch (superState) {
                     case "CREATE":
                     case "REINSTATE":
@@ -945,25 +912,63 @@ function buttonModerate() {
                         $("#force_reinstate").removeClass("hide");
                         break;
                 }
-            }
-            if (lastState === "COMMITTING" ||
-                    lastState === "PROPAGATED" ||
-                    lastState === "COMPILED") {
-                $("#verify").removeClass("hide");
-                $("#force_retry").removeClass("hide");
-            }
-            break;
-        case "READY":
-            switch (superState) {
-                case "CREATE":
-                case "REINSTATE":
-                    $("#cancel").removeClass("hide");
-                    break;
-                case "CANCEL":
-                    $("#reinstate").removeClass("hide");
-                    break;
-            }
-            break;
+                $("#delete").removeClass("hide");
+
+                break;
+            case "COMMITTING":
+                switch (superState) {
+                    case "CREATE":
+                    case "REINSTATE":
+                        $("#force_cancel").removeClass("hide");
+                        break;
+                    case "CANCEL":
+                        $("#force_reinstate").removeClass("hide");
+                        break;
+                }
+
+                break;
+            case "FAILED":
+                if (!hasDrone) {
+                    $("#verify").removeClass("hide");
+                }
+
+                if (lastState === "INIT") {
+                    $("#delete").removeClass("hide");
+                }
+
+                if (lastState === "COMMITTED" ||
+                        lastState === "COMMITTING" ||
+                        lastState === "READY") {
+                    $("#verify").removeClass("hide");
+                    switch (superState) {
+                        case "CREATE":
+                        case "REINSTATE":
+                            $("#force_cancel").removeClass("hide");
+                            break;
+                        case "CANCEL":
+                            $("#force_reinstate").removeClass("hide");
+                            break;
+                    }
+                }
+                if (lastState === "COMMITTING" ||
+                        lastState === "PROPAGATED" ||
+                        lastState === "COMPILED") {
+                    $("#verify").removeClass("hide");
+                    $("#force_retry").removeClass("hide");
+                }
+                break;
+            case "READY":
+                switch (superState) {
+                    case "CREATE":
+                    case "REINSTATE":
+                        $("#cancel").removeClass("hide");
+                        break;
+                    case "CANCEL":
+                        $("#reinstate").removeClass("hide");
+                        break;
+                }
+                break;
+        }
     }
 }
 

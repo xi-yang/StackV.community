@@ -72,6 +72,8 @@
                                     <button class="btn btn-default hide instance-command" id="verify">Verify</button>
                                     <button class="btn btn-default hide instance-command" id="unverify">Cancel Verification</button>
                                     <button class="btn btn-default hide instance-command" id="delete">Delete</button>
+                                    <button class="btn btn-default hide service-operation instance-command" id="propagate">Propagate</button>
+                                    <button class="btn btn-default hide service-operation instance-command" id="commit">Commit</button>
                                 </div>
                             </td>
                         </tr>

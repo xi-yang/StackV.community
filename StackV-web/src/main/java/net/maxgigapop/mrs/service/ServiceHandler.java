@@ -280,7 +280,7 @@ public class ServiceHandler {
             return result;
         } catch (IOException ex) {
             logger.catching("status", ex);
-            throw ex;
+            return null;
         }
     }
 
