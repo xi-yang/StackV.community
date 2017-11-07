@@ -257,6 +257,11 @@
                     <type>text</type>
                     <valid>string</valid>
                 </input>
+                <input>
+                    <name>Public</name>
+                    <type>checkbox</type>
+                    <size>small</size>
+                </input>
             </group>
             <group factory="true" condition="openstack-form" name="Ceph RBD" collapsible="true">
                 <fulfilled>

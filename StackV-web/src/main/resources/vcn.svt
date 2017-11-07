@@ -295,6 +295,9 @@
             {{$if data_interface_ip}}
                 mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
             {{/if data_interface_ip}}
+            {{$if public}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:public&gt; ;
+            {{/if public}}
                 nml:name "{{short_name}}" .
             &lt;{{VMTag}}&gt;
                nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
@@ -314,6 +317,12 @@
                a mrs:NetworkAddress ;
                mrs:type "globus:interface";
                mrs:value "{{data_interface_ip}}" .            
+            {{$if public}}
+               &lt;{{VMTag}}:service+globus:public&gt;
+                  a mrs:NetworkAddress ;
+                  mrs:type "globus:public";
+                  mrs:value "{{public}}" .            
+            {{/if public}}
             {{/globus_connect}}
         {{/vms}}
         {{#vms}}

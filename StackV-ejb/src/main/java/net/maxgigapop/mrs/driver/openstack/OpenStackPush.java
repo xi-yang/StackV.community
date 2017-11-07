@@ -1144,10 +1144,11 @@ public class OpenStackPush {
                 String shortName = (String) o.get("shortname");
                 String defaultDir = (String) o.get("directory");
                 String dataInterface = (String) o.get("interface");
-                String endpointUri = (String) o.get("uri");
+                String isPublic = (String) o.get("public");
                 String status =  (String) o.get("status");
-                client.setMetadata(servername, "globus:info", String.format("{'user':'%s','password':'%s','shortname':'%s','directory':'%s','interface':'%s','status':'%s'}", 
-                        globusUser, globusPass, shortName, defaultDir, dataInterface, status));
+                String endpointUri = (String) o.get("uri");
+                client.setMetadata(servername, "globus:info", String.format("{'user':'%s','password':'%s','shortname':'%s','directory':'%s','interface':'%s','public':'%s','status':'%s'}", 
+                        globusUser, globusPass, shortName, defaultDir, dataInterface, isPublic, status));
                 client.setMetadata(servername, "globus:info:uri", endpointUri);
             } else if (o.get("request").toString().equals("NfsRequest")) {
                 String servername = (String) o.get("server name");
@@ -2946,7 +2947,7 @@ public class OpenStackPush {
     private List<JSONObject> globusConnectRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
         String method = "globusConnectRequests";
         List<JSONObject> requests = new ArrayList();
-        String query = "SELECT ?vm ?ep ?shortname ?username ?password ?directory ?interface  WHERE {"
+        String query = "SELECT ?vm ?ep ?shortname ?username ?password ?directory ?interface ?public WHERE {"
                 + "?vm nml:hasService ?ep. "
                 + "?ep a mrs:EndPoint. "
                 + "?ep mrs:type \"globus:connect\". "
@@ -2963,6 +2964,9 @@ public class OpenStackPush {
                 + "OPTIONAL {?ep mrs:hasNetworkAddress ?naInterface. "
                 + "     ?naInterface mrs:type \"globus:interface\". "
                 + "     ?naInterface mrs:value ?interface. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naPublic. "
+                + "     ?naPublic mrs:type \"globus:public\". "
+                + "     ?naPublic mrs:value ?public. } "
                 + "}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         while (r.hasNext()) {
@@ -3000,6 +3004,13 @@ public class OpenStackPush {
                 dataInterface = q.get("interface").toString();
             }
             o.put("interface", dataInterface);
+            String isPublic = "False";
+            if (q.contains("public")) {
+                if (q.get("public").toString().toLowerCase().equals("true")) {
+                    isPublic = "True";
+                }
+            }
+            o.put("public", isPublic);
             String endpointUri = q.getResource("ep").getURI();
             o.put("uri", endpointUri);
         }

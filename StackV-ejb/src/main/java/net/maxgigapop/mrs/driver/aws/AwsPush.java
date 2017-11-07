@@ -189,9 +189,6 @@ public class AwsPush {
         //create all the routeTables that need to be created
         requests += createRouteTableRequests(modelRef, modelAdd);
 
-        //create the associations of route tables
-        requests += associateTableRequest(modelRef, modelAdd);
-
         //create gateways request 
         requests += createGatewayRequests(modelRef, modelAdd);
 
@@ -310,7 +307,7 @@ public class AwsPush {
 
                 String tableIdTag = parameters[1];
                 String target = ec2Client.getResourceId(parameters[3]);
-                RouteTable t = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
+                RouteTable t = ec2Client.getRoutingTable(ec2Client.getResourceId(tableIdTag));
                 Vpc v = ec2Client.getVpc(t.getVpcId());
 
                 Route route = new Route();
@@ -454,17 +451,36 @@ public class AwsPush {
 
             } else if (request.contains("detachVpnGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
-
-                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
-                Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
+                String vgwIdTag = parameters[1];
+                String vpcIdTag = parameters[2];
+                VpnGateway gateway = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(vgwIdTag));
+                for (int retry = 0; gateway == null && retry < 3; retry++) {
+                    logger.warning(method, "detachVpnGatewayRequest cannot get VpnGateway for: " + vgwIdTag);
+                    try {
+                        sleep(10000L); // pause for 10 seconds and retry
+                    } catch (InterruptedException ex) {
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
+                    }
+                    gateway = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(vgwIdTag));
+                }
+                Vpc vpc = ec2Client.getVpc(ec2Client.getResourceId(vpcIdTag));
+                for (int retry = 0; vpc == null && retry < 3; retry++) {
+                    logger.warning(method, "detachVpnGatewayRequest cannot get VPC for: " + vpcIdTag);
+                    try {
+                        sleep(10000L); // pause for 10 seconds and retry
+                    } catch (InterruptedException ex) {
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
+                    }
+                    vpc = ec2Client.getVpc(ec2Client.getResourceId(vpcIdTag));
+                }
                 DetachVpnGatewayRequest gwRequest = new DetachVpnGatewayRequest();
                 gwRequest.withVpnGatewayId(gateway.getVpnGatewayId())
-                        .withVpcId(v.getVpcId());
+                        .withVpcId(vpc.getVpcId());
                 
                 // Somehow VGW may disappear from the API for a while after deleting dxvif. 
                 // Retry in an error-retry loop for up to 5 minutes
-
-                for (int i = 0; i < 10; i++) {
+                int retry = 0;
+                for (retry = 0; retry < 10; retry++) {
                     try {
                         Future<Void> asyncResult = ec2.detachVpnGatewayAsync(gwRequest);
                         ec2Client.vpnGatewayDetachmentCheck(asyncResult);
@@ -473,10 +489,13 @@ public class AwsPush {
                         try {
                             Thread.sleep(30000L); // sleep 30 secs
                         } catch (InterruptedException ex) {
-                            ; //@TODO if i == 9 (final) ==> error report
+                            ;
                         }
                         continue;
                     }
+                }
+                if (retry == 10) {
+                    logger.warning(method, request + " failed after 10x detachVpnGatewayAsync tries");
                 }
             } else if (request.contains("DisassociateTableRequest")) {
                 String[] parameters = request.split("\\s+");
@@ -505,7 +524,10 @@ public class AwsPush {
                 String vpcId = vpcResult.getVpc().getVpcId();
                 ec2Client.getVpcs().add(vpcResult.getVpc());
                 ec2Client.vpcStatusCheck(vpcId, VpcState.Available.name().toLowerCase());
-                //tag the routing table of the 
+                //create the tag for the vpc
+                String vpcIdTag = parameters[2];
+                ec2Client.tagResource(vpcId, vpcIdTag);
+                //tag the routing table of the VPC
                 RouteTable mainTable = null;
                 for (int retry = 0; retry < 12; retry++) {
                     DescribeRouteTablesResult tablesResult = this.ec2.describeRouteTables();
@@ -527,10 +549,7 @@ public class AwsPush {
                     throw logger.error_throwing(method, String.format("failed for CreateVpcRequest (%s) - null main routing table ", parameters[3]));
                 }
                 ec2Client.getRoutingTables().add(mainTable);
-                //create the tag for the vpc
-                ec2Client.tagResource(vpcId, parameters[2]);
                 ec2Client.tagResource(mainTable.getRouteTableId(), parameters[3]);
-                
             } else if (request.contains("CreateSubnetRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -554,41 +573,26 @@ public class AwsPush {
                 String[] parameters = request.split("\\s+");
 
                 CreateRouteTableRequest tableRequest = new CreateRouteTableRequest();
-                tableRequest.withVpcId(ec2Client.getVpcId(parameters[1]));
+                tableRequest.withVpcId(ec2Client.getResourceId(parameters[1]));
                 CreateRouteTableResult tableResult = ec2.createRouteTable(tableRequest);
 
                 ec2Client.getRoutingTables().add(tableResult.getRouteTable());
                 ec2Client.RouteTableCreationCheck(tableResult.getRouteTable().getRouteTableId());
                 ec2Client.tagResource(tableResult.getRouteTable().getRouteTableId(), parameters[2]);
 
-            } else if (request.contains("AssociateTableRequest")) {
-                String[] parameters = request.split("\\s+");
-                String routeTableId = parameters[1];
-                String subnetId = ec2Client.getResourceId(parameters[2]);
-                for (int retry = 0; retry < 18; retry++) {
-                    String resId = ec2Client.getTableId(parameters[1]);
-                    if (routeTableId != resId) {
-                        routeTableId = resId;
-                        break;
-                    }
-                    logger.warning(method, String.format("Cannot resolve resource ID from RouteTable t%s ", routeTableId));
+                if (parameters.length > 3) {
+                    String subnetId = ec2Client.getResourceId(parameters[3]);
+                    AssociateRouteTableRequest associateRequest = new AssociateRouteTableRequest();
+                    associateRequest.withRouteTableId(tableResult.getRouteTable().getRouteTableId())
+                            .withSubnetId(ec2Client.getResourceId(subnetId));
                     try {
-                        Thread.sleep(10000L);
-                    } catch (InterruptedException ex) {
-                        logger.warning(method, request + " -exception- " + ex.getMessage());
+                        AssociateRouteTableResult associateResult = ec2.associateRouteTable(associateRequest);
+                    } catch (AmazonServiceException e) {
+                        if (e.getErrorCode().equals("InvalidRouteTableID.NotFound")) {
+                            logger.warning(method, String.format("AssociateTableRequest fails - TRY ASSOCIATE MANUALLY - %s", e));
+                        }
                     }
                 }
-                AssociateRouteTableRequest associateRequest = new AssociateRouteTableRequest();
-                associateRequest.withRouteTableId(routeTableId)
-                        .withSubnetId(ec2Client.getResourceId(subnetId));
-                try {
-                    AssociateRouteTableResult associateResult = ec2.associateRouteTable(associateRequest);
-                } catch (AmazonServiceException e) {
-                    if (!e.getErrorCode().equals("InvalidRouteTableID.NotFound")) {
-                        logger.warning(method, String.format("AssociateTableRequest fails - TRY ASSOCIATE MANUALLY - %s", e));
-                    }
-                }
-
             } else if (request.contains("CreateInternetGatewayRequest")) {
                 String[] parameters = request.split("\\s+");
 
@@ -602,11 +606,11 @@ public class AwsPush {
                 for (int retry = 0; retry < 3; retry++) {
                     try {
                         AttachInternetGatewayRequest gwRequest = new AttachInternetGatewayRequest();
-                        gwRequest.withInternetGatewayId(ec2Client.getResourceId(parameters[1]))
-                                .withVpcId(ec2Client.getVpcId(parameters[2]));
+                        gwRequest.withInternetGatewayId(igw.getInternetGatewayId())
+                                .withVpcId(ec2Client.getResourceId(parameters[2]));
 
                         ec2.attachInternetGateway(gwRequest);
-                        ec2Client.internetGatewayAttachmentCheck(ec2Client.getResourceId(parameters[1]));
+                        ec2Client.internetGatewayAttachmentCheck(igw.getInternetGatewayId());
                         break;
                     } catch (AmazonServiceException e) {
                         if (!e.getErrorCode().equals("InvalidInternetGatewayID.NotFound")) {
@@ -637,7 +641,7 @@ public class AwsPush {
                 for (int retry = 0; retry < 3; retry++) {
                     try {
                         VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[1]));
-                        Vpc v = ec2Client.getVpc(ec2Client.getVpcId(parameters[2]));
+                        Vpc v = ec2Client.getVpc(ec2Client.getResourceId(parameters[2]));
                         if (!vpn.equals(ec2Client.getVirtualPrivateGateway(v))) {
                             AttachVpnGatewayRequest gwRequest = new AttachVpnGatewayRequest();
                             gwRequest.withVpnGatewayId(vpn.getVpnGatewayId())
@@ -659,9 +663,27 @@ public class AwsPush {
             } else if (request.contains("PropagateVpnRequest")) {
                 String[] parameters = request.split("\\s+");
                 String tableIdTag = parameters[1];
-                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getVpnGatewayId(parameters[2]));
-                RouteTable table = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
-
+                String vpnIdTag = parameters[2];
+                VpnGateway vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(vpnIdTag));
+                for (int retry = 0; vpn == null && retry < 3; retry++) {
+                    logger.warning(method, "PropagateVpnRequest cannot get VpnGateway for: " + vpnIdTag);
+                    try {
+                        sleep(10000L); // pause for 10 seconds and retry
+                    } catch (InterruptedException ex) {
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
+                    }
+                    vpn = ec2Client.getVirtualPrivateGateway(ec2Client.getResourceId(vpnIdTag));
+                }
+                RouteTable table = ec2Client.getRoutingTable(ec2Client.getResourceId(tableIdTag));
+                for (int retry = 0; table == null && retry < 3; retry++) {
+                    logger.warning(method, "PropagateVpnRequest cannot get RoutingTable for: " + tableIdTag);
+                    try {
+                        sleep(10000L); // pause for 10 seconds and retry
+                    } catch (InterruptedException ex) {
+                        logger.warning(method, request + " -exception- " + ex.getMessage());
+                    }
+                    table = ec2Client.getRoutingTable(ec2Client.getResourceId(tableIdTag));
+                }
                 EnableVgwRoutePropagationRequest propagationRequest = new EnableVgwRoutePropagationRequest();
                 propagationRequest.withGatewayId(vpn.getVpnGatewayId())
                         .withRouteTableId(table.getRouteTableId());
@@ -688,7 +710,7 @@ public class AwsPush {
 
                 String tableIdTag = parameters[1];
                 String target = ec2Client.getResourceId(parameters[3]);
-                RouteTable t = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
+                RouteTable t = ec2Client.getRoutingTable(ec2Client.getResourceId(tableIdTag));
                 Vpc v = ec2Client.getVpc(t.getVpcId());
 
                 Route route = new Route();
@@ -843,7 +865,7 @@ public class AwsPush {
                 
                 List<Instance> newInstances = result.getReservation().getInstances();
                 List<String> newInstanceIds = new ArrayList();
-                String vpcId = ec2Client.getVpcId(parameters[13]);
+                String vpcId = ec2Client.getResourceId(parameters[13]);
                 for(int ind =0;ind<Integer.parseInt(parameters[11]);ind++){
                 Instance instance = newInstances.get(ind);
                 ec2Client.getEc2Instances().add(instance);
@@ -2337,16 +2359,18 @@ public class AwsPush {
                 RDFNode address = querySolution1.get("address");
                 RDFNode vpc = querySolution1.get("vpc");
                 String vpcIdTagValue = ResourceTool.getResourceName(vpc.asResource().toString(), awsPrefix.vpc());
-
+                String subnetIdTag = "";
                 //if the table was a main table, it was created with
                 //the vpc
                 if (!type.asLiteral().toString().equals("main")) {
                     //check the main route to the vpc is there
                     boolean found = false;
-                    query = "SELECT ?route ?routeTo WHERE{<" + table.asResource() + "> mrs:hasRoute ?route ."
+                    query = "SELECT ?route ?routeTo ?subnet WHERE{<" + table.asResource() + "> mrs:hasRoute ?route ."
                             + "?route mrs:nextHop \"local\" ."
                             + "?to mrs:type \"ipv4-prefix\" ."
-                            + "?to mrs:value ?routeTo}";
+                            + "?to mrs:value ?routeTo . "
+                            + "OPTIONAL {?route mrs:routeFrom ?subnet. ?subnet a mrs:SwitchingSubnet.}"
+                            + "}";
                     r1 = executeQuery(query, emptyModel, modelAdd);
                     if (!r1.hasNext()) {
                         throw logger.error_throwing(method, String.format("model addition for route table %s"
@@ -2355,9 +2379,14 @@ public class AwsPush {
                     while (r1.hasNext()) {
                         QuerySolution querySolution2 = r1.next();
                         RDFNode addressTable = querySolution2.get("routeTo");
+                        if (querySolution2.contains("subnet")) {
+                            RDFNode resSubnet = querySolution2.get("subnet");
+                            subnetIdTag = ResourceTool.getResourceName(resSubnet.asResource().toString(), awsPrefix.subnet()) + " ";
+                        }
                         //compare to check if it is in fact the address of the vpc
                         if (addressTable.asLiteral().toString().equals(address.asLiteral().toString())) {
                             found = true;
+                            break;
                         }
                     }
                     if (found == false) {
@@ -2365,84 +2394,7 @@ public class AwsPush {
                                 + "does not specify the main route in the model addition", table));
                     }
                 }
-                requests += String.format("CreateRouteTableRequest %s %s \n", vpcIdTagValue, tableIdTagValue);
-            }
-        }
-        return requests;
-    }
-
-    /**
-     * ****************************************************************
-     * Function to associate Route table with a subnet
-     * ****************************************************************
-     */
-    private String associateTableRequest(OntModel model, OntModel modelAdd) {
-        String method = "associateTableRequest";
-        String requests = "";
-        String tempRequests = "";
-        String query;
-
-        query = "SELECT ?route ?routeFrom WHERE {?route mrs:routeFrom ?routeFrom}";
-        ResultSet r = executeQuery(query, emptyModel, modelAdd);
-        while (r.hasNext()) {
-            boolean createRequest = true;
-            QuerySolution querySolution = r.next();
-            RDFNode value = querySolution.get("routeFrom");
-            RDFNode route = querySolution.get("route");
-            RDFNode routeFrom = querySolution.get("routeFrom");
-
-            //routeFrom must be a subnet
-            query = "SELECT ?a WHERE {<" + value.asResource().toString() + "> a mrs:SwitchingSubnet}";
-            ResultSet r1 = executeQuery(query, model, modelAdd);
-            if (!r1.hasNext()) {
-                continue;
-            }
-
-            query = "SELECT ?table WHERE {?table mrs:hasRoute <" + route.asResource() + "> ."
-                    + "?service mrs:providesRoute <" + route.asResource() + ">}";
-            r1 = executeQuery(query, model, modelAdd);
-            if (!r1.hasNext()) {
-                throw logger.error_throwing(method, String.format("Route  %s"
-                        + "does not have a route table or is not"
-                        + "being provided by a routing service in the model addition", route));
-            }
-            QuerySolution querySolution1 = r1.next();
-            RDFNode table = querySolution1.get("table");
-
-            String subnetIdTag = ResourceTool.getResourceName(value.asResource().toString(), awsPrefix.subnet());
-            String tableIdTag = ResourceTool.getResourceName(table.asResource().toString(), awsPrefix.routingTable());
-
-            RouteTable rt = ec2Client.getRoutingTable(ec2Client.getTableId(tableIdTag));
-            if (rt == null) {
-            } else {
-                for (RouteTableAssociation as : rt.getAssociations()) {
-                    if (as.getSubnetId().equals(ec2Client.getResourceId(subnetIdTag))) {
-                        createRequest = false;
-                    }
-                }
-            }
-
-            String querySubnetIdTag = "\"" + subnetIdTag + "\"";
-            if (createRequest == true) {
-                //check that older routes in the table now include this new route
-                //from network address
-                query = "SELECT ?route WHERE {<" + table.asResource() + "> mrs:hasRoute ?route}";
-                ResultSet r2 = executeQuery(query, model, emptyModel);
-                while (r2.hasNext()) {
-                    QuerySolution q2 = r2.next();
-                    RDFNode ro = q2.get("route");
-                    query = "SELECT ?routeFrom WHERE {<" + routeFrom.asResource() + "> a mrs:SwitchingSubnet}";
-                    ResultSet r3 = executeQuery(query, model, modelAdd);
-                    if (!r3.hasNext()) {
-                        throw logger.error_throwing(method, String.format("Route  %s does state"
-                                + "new association with subnet %s in the model addition", ro, subnetIdTag));
-                    }
-                }
-                tempRequests = String.format("AssociateTableRequest %s %s \n", tableIdTag, subnetIdTag);
-                if (!requests.contains(tempRequests))//dont include duplicate requests
-                {
-                    requests += tempRequests;
-                }
+                requests += String.format("CreateRouteTableRequest %s %s %s\n", vpcIdTagValue, tableIdTagValue, subnetIdTag);
             }
         }
         return requests;
