@@ -333,6 +333,7 @@ public class ServiceHandler {
         }
 
         result = revert(refUuid, token.auth());
+        lastState = "INIT";
         if (!result) {
             return 2;
         }
