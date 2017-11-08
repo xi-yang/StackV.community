@@ -105,6 +105,13 @@
                 spa:type    "JSON";
                 spa:format  """{
                     "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
+
+            {{$if interfaces.0/elastic_ip}}
+                &lt;{{VMTag}}:eth0floatingip&gt;            
+                    a            mrs:NetworkAddress;
+                    mrs:type     "floating-ip";
+                    mrs:value     "{{interfaces.0/elastic_ip}}".
+            {{/if interfaces.0/elastic_ip}}
         {{/vms}}
     {{/subnets}}
 {{/if !isAWS}}
