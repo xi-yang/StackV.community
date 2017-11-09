@@ -176,7 +176,6 @@ public class AwsPush {
         //delete the Vpcs that need to be deleted
         requests += deleteVpcsRequests(modelRef, modelReduct);
 
-        //Added 6/9
         //delete certain vpn connections
         requests += deleteVPNConnectionRequests(modelRef, modelReduct);
         

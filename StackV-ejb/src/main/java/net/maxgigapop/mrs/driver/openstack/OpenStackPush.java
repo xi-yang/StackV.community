@@ -371,8 +371,9 @@ public class OpenStackPush {
             
             
             else if (o.get("request").toString().equals("TerminateInstanceRequest")) {
-                
-               List<Server> serversList = client.getServerList(o.get("server name").toString());
+                //@TODO: check down status for SRIOV, virtualRouter, Globus, Ceph and NFS
+                    //@TODO: in ansible - change long run procedures into aync and mark 'down' status sooner
+                List<Server> serversList = client.getServerList(o.get("server name").toString());
                 for(Server server:serversList){
                 osClient.compute().servers().delete(server.getId());
                 VmDeletionCheck(server.getId(), url, NATServer, username, password, tenantName, topologyUri);}
