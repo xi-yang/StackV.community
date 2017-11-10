@@ -21,7 +21,7 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap */
+/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap, swal */
 // Tweens
 var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.easeInOut, paused: true, top: "30px"});
 var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
@@ -202,19 +202,28 @@ function loadWizard() {
             });
 
             $(".button-profile-delete").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
-                $.ajax({
-                    url: apiUrl,
-                    type: 'DELETE',
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                    },
-                    success: function (result) {
-                        loadWizard();
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
+                swal("Confirm deletion?", {
+                    buttons: {
+                        cancel: "Cancel",
+                        delete: {text: "Delete", value: true}
+                    }
+                }).then((value) => {
+                    if (value) {
+                        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
+                        $.ajax({
+                            url: apiUrl,
+                            type: 'DELETE',
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            },
+                            success: function (result) {
+                                loadWizard();
+                            },
+                            error: function (textStatus, errorThrown) {
+                                console.log(textStatus);
+                                console.log(errorThrown);
+                            }
+                        });
                     }
                 });
 

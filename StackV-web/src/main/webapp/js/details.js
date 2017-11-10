@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, swal */
 // Tweens
 var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
     paused: true, top: "0px", opacity: "1", display: "block"});
@@ -180,39 +180,62 @@ function loadDetails() {
                     resumeRefresh();
                     reloadData();
                 } else {
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
-                    $.ajax({
-                        url: apiUrl,
-                        type: 'PUT',
-                        beforeSend: function (xhr) {
-                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                        },
-                        success: function () {
-                            $(".instance-command").attr('disabled', false);
-                            resumeRefresh();
-                            if (command === "delete" || command === "force_delete") {
-                                setTimeout(function () {
-                                    sessionStorage.removeItem("instance-uuid");
-                                    window.document.location = "/StackV-web/ops/catalog.jsp";
-                                }, 250);
-                            } else {
-                                reloadData();
+                    if ((command === "delete") || (command === "force_delete")) {
+                        swal("Confirm deletion?", {
+                            buttons: {
+                                cancel: "Cancel",
+                                delete: {text: "Delete", value: true}
                             }
-                        }
-                    });
-                    if (!(command === "delete") && !(command === "force_delete")) {
-                        setTimeout(function () {
-                            $(".instance-command").attr('disabled', false);
-                            resumeRefresh();
-                            reloadData();
-                        }, 250);
+                        }).then((value) => {
+                            if (value) {
+                                executeCommand(command);
+                            } else {
+                                setTimeout(function () {
+                                    $(".instance-command").attr('disabled', false);
+                                    resumeRefresh();
+                                    reloadData();
+                                }, 250);
+                            }
+                        });
+                    } else {
+                        executeCommand(command);
                     }
+
                 }
             }
         });
     });
-
+}
+function executeCommand(command) {
+    var uuid = sessionStorage.getItem("instance-uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function () {
+            $(".instance-command").attr('disabled', false);
+            resumeRefresh();
+            if (command === "delete" || command === "force_delete") {
+                setTimeout(function () {
+                    sessionStorage.removeItem("instance-uuid");
+                    window.document.location = "/StackV-web/ops/catalog.jsp";
+                }, 250);
+            } else {
+                reloadData();
+            }
+        }
+    });
+    if (!(command === "delete") && !(command === "force_delete")) {
+        setTimeout(function () {
+            $(".instance-command").attr('disabled', false);
+            resumeRefresh();
+            reloadData();
+        }, 250);
+    }
 }
 
 function subloadDetails() {
