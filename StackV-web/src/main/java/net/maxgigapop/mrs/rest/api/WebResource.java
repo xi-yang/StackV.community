@@ -71,7 +71,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -84,7 +83,6 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
-import net.maxgigapop.mrs.service.ServiceEngine;
 import net.maxgigapop.mrs.service.VerificationHandler;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.logging.log4j.Level;
@@ -140,7 +138,7 @@ public class WebResource {
     String kc_url = System.getProperty("kc_url");
     private final serviceBeans servBean = new serviceBeans();
     JSONParser parser = new JSONParser();
-    private final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
+    private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
 
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
 
@@ -3043,8 +3041,7 @@ public class WebResource {
     public String adminChangeSuperState(@PathParam(value = "siUUID") final String refUUID,
             @PathParam(value = "state") final String state) throws IOException, SQLException {
         final String method = "adminChangeSuperState";
-        try {
-            final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        try {            
             logger.start(method);
             
             String stateStr = state.toUpperCase();
