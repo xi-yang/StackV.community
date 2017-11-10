@@ -1772,7 +1772,7 @@ public class WebResource {
      * info
      */
     @GET
-    @Path("/logging/")
+    @Path("/logging/")    
     @Produces("application/json")
     @RolesAllowed("Logging")
     public String getLogLevel() {
