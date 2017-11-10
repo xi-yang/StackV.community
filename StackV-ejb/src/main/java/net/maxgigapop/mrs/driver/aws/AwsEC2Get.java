@@ -810,7 +810,6 @@ public class AwsEC2Get {
                         ;
                     }
                 } 
-                break;
             } catch (NullPointerException ex2) {
                 break;
             }
