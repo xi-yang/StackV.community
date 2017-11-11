@@ -144,7 +144,7 @@ public class GcpGet {
         from the result and places it in a hashmap.
         */
         JSONObject project = getProject();
-        if (!project.containsKey("commonInstanceMetadata")) return null;
+        if (project == null || !project.containsKey("commonInstanceMetadata")) return null;
         JSONObject projectMetadata = (JSONObject) getProject().get("commonInstanceMetadata");
         JSONArray items = (JSONArray) projectMetadata.get("items");
         JSONObject item;

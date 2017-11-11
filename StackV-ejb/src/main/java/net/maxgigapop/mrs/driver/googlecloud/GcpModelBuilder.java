@@ -115,7 +115,13 @@ public class GcpModelBuilder {
                 Routes contain routeTo and nextHop info
                 routeFrom info is not included.
                 */
-                JSONArray routesInfo = (JSONArray) gcpGet.getRoutes().get("items");
+                JSONObject routeResult = gcpGet.getRoutes();
+                JSONArray routesInfo = null;
+                if (routeResult.containsKey("items")) {
+                    routesInfo = (JSONArray) routeResult.get("items");
+                } else {
+                    logger.error(method, "failed to get routes: "+routeResult);
+                }
                 
                 for (Object o2: routesInfo) {
                     JSONObject routeInfo = (JSONObject) o2;
@@ -157,10 +163,8 @@ public class GcpModelBuilder {
                 JSONObject vmInfo = (JSONObject) o;
                 String instanceName = vmInfo.get("name").toString();
                 String instanceType = GcpGet.parseGoogleURI(vmInfo.get("machineType").toString(), "machineTypes");
-                
                 String zone = GcpGet.parseGoogleURI(vmInfo.get("zone").toString(), "zones");
                 JSONArray netifaces = (JSONArray) vmInfo.get("networkInterfaces");
-                
                 String instanceUri = lookupResourceUri(metadata, "vm", zone, instanceName);
                 Resource instance = RdfOwl.createResource(model, ResourceTool.getResourceUri(instanceUri, GcpPrefix.instance, zone, instanceName), Nml.Node);
                 model.add(model.createStatement(instance, Mrs.type, instanceType));
@@ -168,7 +172,7 @@ public class GcpModelBuilder {
                 if (netifaces == null) {
                     logger.warning(method, "unable to find any network interfaces for instance "+instanceName);
                 } else {
-                    System.out.printf("netifaces:\n%s\n", netifaces);
+                    //System.out.printf("netifaces:\n%s\n", netifaces);
                     
                     for (Object o2 : netifaces) {
                         JSONObject netiface = (JSONObject) o2;
@@ -259,7 +263,7 @@ public class GcpModelBuilder {
         return model;
     }
     
-    public static String getResourceKey(String type, String...args) {
+    public static String getResourceKey(String type, Object...args) {
         //First argument to this function was changed from Resource to String, so that unique URIs could be assigned to unmodeled resources
         String key = null, method = "getResourceKey";
         //uncommenting the following line results in uneccessary logging bloat during model pull

@@ -38,7 +38,7 @@ public class GcpPush {
     String defaultZone = null; //Default zone is used by instances and disks, and should contained within default region
     
     public GcpPush(String jsonAuth, String projectID, String region, String topologyUri, 
-            String defaultImage, String defaultInstanceType, String defaultKeyPair, String defaultSecGroup) {
+            String defaultImage, String defaultInstanceType, String defaultKeyPair, String defaultSecGroup, String defaultRegion, String defaultZone) {
         this.gcpGet = new GcpGet(jsonAuth, projectID, region);
         this.projectID = projectID;
         this.region = region;
@@ -48,9 +48,8 @@ public class GcpPush {
         this.defaultInstanceType = defaultInstanceType;
         this.defaultKeyPair = defaultKeyPair;
         this.defaultSecGroup = defaultSecGroup;
-        this.defaultRegion = "us-central1";//this should be set by constructor, but the value has not yet been added to driver
-        this.defaultZone = "us-central1-c";//same ^
-        
+        this.defaultRegion = defaultRegion;
+        this.defaultZone = defaultZone;
     }
     
     public ArrayList<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {

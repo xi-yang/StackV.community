@@ -53,14 +53,6 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;//
 //import static net.maxgigapop.mrs.driver.openstack.OpenStackDriver.logger;
 import org.json.simple.JSONObject;
 
-/**
- *
- * @author muzcategui
- */
-//TODO make the stirng returned by the push.progate function to be in JSON format
-// and adapt it to the driver
-//TODO make request not to be in the database as a driver property, as they do not
-//truly get deleted.
 @Stateless
 public class GcpDriver implements IHandleDriverSystemCall {
     
@@ -69,6 +61,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
+        System.out.println("START PROPAGATE DELTA");
         aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         String method = "propagateDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
@@ -84,12 +77,14 @@ public class GcpDriver implements IHandleDriverSystemCall {
         String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
         String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
         String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
+        String defaultRegion = driverInstance.getProperty("defaultRegion");
+        String defaultZone = driverInstance.getProperty("defaultZone");
         
         OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
         
-        GcpPush push = new GcpPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
+        GcpPush push = new GcpPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup, defaultRegion, defaultZone);
         
         ArrayList<JSONObject> requests = push.propagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId();
@@ -133,9 +128,12 @@ public class GcpDriver implements IHandleDriverSystemCall {
         String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
         String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
         String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
+        String defaultRegion = driverInstance.getProperty("defaultRegion");
+        String defaultZone = driverInstance.getProperty("defaultZone");
+        
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
-        GcpPush push = new GcpPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
+        GcpPush push = new GcpPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup, defaultRegion, defaultZone);
                 ObjectMapper mapper = new ObjectMapper();
         ArrayList<JSONObject> requestList = new ArrayList();
         try {
