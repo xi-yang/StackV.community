@@ -86,9 +86,9 @@
 
             &lt;{{VMTag}}:eth0&gt;
                 a           nml:BidirectionalPort;
-                {{$if elastic_ip}}
+                {{$if interfaces.0/elastic_ip}}
                     mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
-                {{/if elastic_ip}}                
+                {{/if interfaces.0/elastic_ip}}                
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt; .
             {{$if interfaces}}
                 {{!AddressString name interfaces @uuid}}
@@ -105,6 +105,13 @@
                 spa:type    "JSON";
                 spa:format  """{
                     "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
+
+            {{$if interfaces.0/elastic_ip}}
+                &lt;{{VMTag}}:eth0floatingip&gt;            
+                    a            mrs:NetworkAddress;
+                    mrs:type     "floating-ip";
+                    mrs:value     "{{interfaces.0/elastic_ip}}".
+            {{/if interfaces.0/elastic_ip}}
         {{/vms}}
     {{/subnets}}
 {{/if !isAWS}}
@@ -295,6 +302,9 @@
             {{$if data_interface_ip}}
                 mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
             {{/if data_interface_ip}}
+            {{$if public}}
+                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:public&gt; ;
+            {{/if public}}
                 nml:name "{{short_name}}" .
             &lt;{{VMTag}}&gt;
                nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
@@ -314,6 +324,12 @@
                a mrs:NetworkAddress ;
                mrs:type "globus:interface";
                mrs:value "{{data_interface_ip}}" .            
+            {{$if public}}
+               &lt;{{VMTag}}:service+globus:public&gt;
+                  a mrs:NetworkAddress ;
+                  mrs:type "globus:public";
+                  mrs:value "{{public}}" .            
+            {{/if public}}
             {{/globus_connect}}
         {{/vms}}
         {{#vms}}

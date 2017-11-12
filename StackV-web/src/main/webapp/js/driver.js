@@ -21,7 +21,7 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, swal */
 var tweenInstalledPanel = new TweenLite("#installed-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px"});
 var tweenAddPanel = new TweenLite("#driver-add-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 var tweenTemplatePanel = new TweenLite("#driver-template-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
@@ -904,8 +904,17 @@ function getAllDetails() {
                 delButton.style.width = "64px";
                 delButton.className = "button-profile-select btn btn-default";
                 delButton.onclick = function () {
-                    removeDriver(this.id);
-                    reloadData();
+                    swal("Confirm deletion?", {
+                        buttons: {
+                            cancel: "Cancel",
+                            delete: {text: "Delete", value: true}
+                        }
+                    }).then((value) => {
+                        if (value) {
+                            removeDriver(this.id);
+                            reloadData();
+                        }
+                    });
                 };
 
                 delButton.id = result[i + 2];

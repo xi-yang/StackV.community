@@ -72,6 +72,8 @@
                                     <button class="btn btn-default hide instance-command" id="verify">Verify</button>
                                     <button class="btn btn-default hide instance-command" id="unverify">Cancel Verification</button>
                                     <button class="btn btn-default hide instance-command" id="delete">Delete</button>
+                                    <button class="btn btn-default hide service-operation instance-command" id="propagate">Propagate</button>
+                                    <button class="btn btn-default hide service-operation instance-command" id="commit">Commit</button>
                                 </div>
                             </td>
                         </tr>
@@ -147,6 +149,7 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>

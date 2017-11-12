@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, swal */
 // Tweens
 var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
     paused: true, top: "0px", opacity: "1", display: "block"});
@@ -180,39 +180,62 @@ function loadDetails() {
                     resumeRefresh();
                     reloadData();
                 } else {
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
-                    $.ajax({
-                        url: apiUrl,
-                        type: 'PUT',
-                        beforeSend: function (xhr) {
-                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                        },
-                        success: function () {
-                            $(".instance-command").attr('disabled', false);
-                            resumeRefresh();
-                            if (command === "delete" || command === "force_delete") {
-                                setTimeout(function () {
-                                    sessionStorage.removeItem("instance-uuid");
-                                    window.document.location = "/StackV-web/ops/catalog.jsp";
-                                }, 250);
-                            } else {
-                                reloadData();
+                    if ((command === "delete") || (command === "force_delete")) {
+                        swal("Confirm deletion?", {
+                            buttons: {
+                                cancel: "Cancel",
+                                delete: {text: "Delete", value: true}
                             }
-                        }
-                    });
-                    if (!(command === "delete") && !(command === "force_delete")) {
-                        setTimeout(function () {
-                            $(".instance-command").attr('disabled', false);
-                            resumeRefresh();
-                            reloadData();
-                        }, 250);
+                        }).then((value) => {
+                            if (value) {
+                                executeCommand(command);
+                            } else {
+                                setTimeout(function () {
+                                    $(".instance-command").attr('disabled', false);
+                                    resumeRefresh();
+                                    reloadData();
+                                }, 250);
+                            }
+                        });
+                    } else {
+                        executeCommand(command);
                     }
+
                 }
             }
         });
     });
-
+}
+function executeCommand(command) {
+    var uuid = sessionStorage.getItem("instance-uuid");
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function () {
+            $(".instance-command").attr('disabled', false);
+            resumeRefresh();
+            if (command === "delete" || command === "force_delete") {
+                setTimeout(function () {
+                    sessionStorage.removeItem("instance-uuid");
+                    window.document.location = "/StackV-web/ops/catalog.jsp";
+                }, 250);
+            } else {
+                reloadData();
+            }
+        }
+    });
+    if (!(command === "delete") && !(command === "force_delete")) {
+        setTimeout(function () {
+            $(".instance-command").attr('disabled', false);
+            resumeRefresh();
+            reloadData();
+        }, 250);
+    }
 }
 
 function subloadDetails() {
@@ -826,7 +849,9 @@ function toggleTextModel(viz_table, text_table) {
 // Moderation Functions
 function instructionModerate() {
     var blockString = "";
-    if (verificationRun !== null) {
+    if (lastState === "null") {
+        blockString = "Service has encountered a fatal error. Please contact a system administrator for manual recovery.";
+    } else if (verificationRun !== null) {
         switch (subState) {
             case "INIT":
             case "COMPILED":
@@ -891,51 +916,16 @@ function buttonModerate() {
         $("#delete").removeClass("hide");
     }
 
-    switch (subState) {
-        case "COMMITTED":
-            if (!hasDrone) {
-                $("#verify").removeClass("hide");
-            }
+    // Error case
+    if (lastState === "null") {
+        $(".instance-command").removeClass("hide");
+    } else {
+        switch (subState) {
+            case "COMMITTED":
+                if (!hasDrone) {
+                    $("#verify").removeClass("hide");
+                }
 
-            switch (superState) {
-                case "CREATE":
-                case "REINSTATE":
-                    $("#force_cancel").removeClass("hide");
-                    break;
-                case "CANCEL":
-                    $("#force_reinstate").removeClass("hide");
-                    break;
-            }
-            $("#delete").removeClass("hide");
-
-            break;
-        case "COMMITTING":
-            switch (superState) {
-                case "CREATE":
-                case "REINSTATE":
-                    $("#force_cancel").removeClass("hide");
-                    break;
-                case "CANCEL":
-                    $("#force_reinstate").removeClass("hide");
-                    break;
-            }
-
-            break;
-        case "FAILED":
-            if (!hasDrone) {
-                $("#verify").removeClass("hide");
-            }
-
-            // Error case
-            if (lastState === "INIT") {
-                $(".instance-command").addClass("hide");
-                $("#delete").removeClass("hide");
-            }
-
-            if (lastState === "COMMITTED" ||
-                    lastState === "COMMITTING" ||
-                    lastState === "READY") {
-                $("#verify").removeClass("hide");
                 switch (superState) {
                     case "CREATE":
                     case "REINSTATE":
@@ -945,25 +935,63 @@ function buttonModerate() {
                         $("#force_reinstate").removeClass("hide");
                         break;
                 }
-            }
-            if (lastState === "COMMITTING" ||
-                    lastState === "PROPAGATED" ||
-                    lastState === "COMPILED") {
-                $("#verify").removeClass("hide");
-                $("#force_retry").removeClass("hide");
-            }
-            break;
-        case "READY":
-            switch (superState) {
-                case "CREATE":
-                case "REINSTATE":
-                    $("#cancel").removeClass("hide");
-                    break;
-                case "CANCEL":
-                    $("#reinstate").removeClass("hide");
-                    break;
-            }
-            break;
+                $("#delete").removeClass("hide");
+
+                break;
+            case "COMMITTING":
+                switch (superState) {
+                    case "CREATE":
+                    case "REINSTATE":
+                        $("#force_cancel").removeClass("hide");
+                        break;
+                    case "CANCEL":
+                        $("#force_reinstate").removeClass("hide");
+                        break;
+                }
+
+                break;
+            case "FAILED":
+                if (!hasDrone) {
+                    $("#verify").removeClass("hide");
+                }
+
+                if (lastState === "INIT") {
+                    $("#delete").removeClass("hide");
+                }
+
+                if (lastState === "COMMITTED" ||
+                        lastState === "COMMITTING" ||
+                        lastState === "READY") {
+                    $("#verify").removeClass("hide");
+                    switch (superState) {
+                        case "CREATE":
+                        case "REINSTATE":
+                            $("#force_cancel").removeClass("hide");
+                            break;
+                        case "CANCEL":
+                            $("#force_reinstate").removeClass("hide");
+                            break;
+                    }
+                }
+                if (lastState === "COMMITTING" ||
+                        lastState === "PROPAGATED" ||
+                        lastState === "COMPILED") {
+                    $("#verify").removeClass("hide");
+                    $("#force_retry").removeClass("hide");
+                }
+                break;
+            case "READY":
+                switch (superState) {
+                    case "CREATE":
+                    case "REINSTATE":
+                        $("#cancel").removeClass("hide");
+                        break;
+                    case "CANCEL":
+                        $("#reinstate").removeClass("hide");
+                        break;
+                }
+                break;
+        }
     }
 }
 
