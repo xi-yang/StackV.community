@@ -280,7 +280,7 @@ public class ServiceHandler {
             return result;
         } catch (IOException ex) {
             logger.catching("status", ex);
-            throw ex;
+            return null;
         }
     }
 
@@ -333,6 +333,7 @@ public class ServiceHandler {
         }
 
         result = revert(refUuid, token.auth());
+        lastState = "INIT";
         if (!result) {
             return 2;
         }

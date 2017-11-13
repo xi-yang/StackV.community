@@ -757,6 +757,7 @@ public class MCETools {
         if (bwProfile.granularity != null) {
             bwProfile.granularity *= factor;
         }
+        bwProfile.unit = "bps";
         return bwProfile;
     }
 
@@ -1045,6 +1046,9 @@ public class MCETools {
             paramMap.put("egressSwitchingService", egressSwitchingService);
             if (lastParamMap != null) {
                 lastParamMap.put("ingressSwitchingService", egressSwitchingService);
+                if (vlanTranslation) {
+                    lastParamMap.put("vlanTranslation", true);                
+                }
             }
         }
         paramMap.put("vlanTranslation", vlanTranslation);
@@ -1066,17 +1070,25 @@ public class MCETools {
             lastParamMap = (HashMap) portParamMap.get(lastPort);
         }
         Integer suggestedVlan = null;
+        Integer lastVlan = null;
         if (lastParamMap != null && lastParamMap.containsKey("suggestedVlan")) {
             suggestedVlan = (Integer) lastParamMap.get("suggestedVlan");
-            if (!vlanRange.hasTag(suggestedVlan) && // if no continuous vlan
-                    (!paramMap.containsKey("vlanTranslation")
-                    || !(Boolean) paramMap.get("vlanTranslation"))) { // try translation but not able to
-                return null;
+            lastVlan = suggestedVlan;
+            if (!vlanRange.hasTag(suggestedVlan)) { // if no continuous vlan
+                if (!paramMap.containsKey("vlanTranslation")
+                        || !(Boolean) paramMap.get("vlanTranslation")) { // try translation but not able to
+                    return null;
+                } else {
+                    suggestedVlan = null;
+                }
             }
         }
         // init vlan or do tanslation to any tag
         if (suggestedVlan == null) {
             suggestedVlan = vlanRange.getRandom();
+            if (lastVlan == null) {
+                lastVlan = suggestedVlan;
+            }
         }
         paramMap.put("suggestedVlan", suggestedVlan);
         
@@ -1160,14 +1172,18 @@ public class MCETools {
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.value, suggestedVlan.toString()));
 
+        String labelSwappable = "true";
+        if ((!paramMap.containsKey("vlanTranslation") || !(Boolean) paramMap.get("vlanTranslation"))) {
+            labelSwappable = "false";
+        }
         // create ingressSubnet for ingressSwitchingService and add port the the new subnet
         if (paramMap.containsKey("ingressSwitchingService")) {
             Resource ingressSwitchingService = (Resource) paramMap.get("ingressSwitchingService");
-            String vlanSubnetUrn = ingressSwitchingService.toString() + ":vlan+" + suggestedVlan;
+            String vlanSubnetUrn = ingressSwitchingService.toString() + ":vlan+" + lastVlan;
             Resource ingressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingService, Mrs.providesSubnet, ingressSwitchingSubnet));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.labelSwapping, "false"));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.labelSwapping, labelSwappable));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.belongsTo, ingressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, ingressSwitchingSubnet));
@@ -1176,11 +1192,11 @@ public class MCETools {
         // get egressSubnet for egressSwitchingService and add port the this existing subnet
         if (paramMap.containsKey("egressSwitchingService")) {
             Resource egressSwitchingService = (Resource) paramMap.get("egressSwitchingService");
-            String vlanSubnetUrn = egressSwitchingService.toString() + ":vlan+" + suggestedVlan;
+            String vlanSubnetUrn = egressSwitchingService.toString() + ":vlan+" + lastVlan;
             Resource egressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingService, Mrs.providesSubnet, egressSwitchingSubnet));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.labelSwapping, "false"));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.labelSwapping, labelSwappable));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.belongsTo, egressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet));
