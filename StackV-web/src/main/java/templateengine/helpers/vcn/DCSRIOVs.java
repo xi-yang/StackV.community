@@ -24,7 +24,7 @@ public class DCSRIOVs implements Helper {
 
                     if (gateway.get("type").equals("Intercloud Network")) {
                         String mode = (String) obj.get(0);
-                        if (mode.equals("action")) {
+                        if (mode.equalsIgnoreCase("action")) {
                             retString += ", &lt;x-policy-annotation:action:sriov-criteria-external-"; 
                         } else {
                             retString += ", &lt;x-policy-annotation:data:sriov-criteria-external-";

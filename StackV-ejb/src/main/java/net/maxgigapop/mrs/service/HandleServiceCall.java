@@ -606,6 +606,7 @@ public class HandleServiceCall {
             List<String> excludeExtentials = new ArrayList<String>();
             excludeMatches.add("#isAlias");
             excludeMatches.add("#providedBy");
+            excludeMatches.add("#belongsTo");
             excludeExtentials.add("#nextHop");
             excludeExtentials.add("#routeFrom");
             excludeExtentials.add("#routeTo");

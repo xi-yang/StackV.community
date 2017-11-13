@@ -34,7 +34,9 @@ import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -63,6 +65,8 @@ public class AwsEC2Get {
     private List<VpnConnection> vpnConnections = null;
     
     final private long delayMax = 32000L;
+
+    private Map<String, String> resourceTagMap = new HashMap(); // map tag into ID
 
     public AwsEC2Get(String access_key_id, String secret_access_key, Regions region) {
         AwsAuthenticateService authenticate = new AwsAuthenticateService(access_key_id, secret_access_key);
@@ -806,7 +810,6 @@ public class AwsEC2Get {
                         ;
                     }
                 } 
-                break;
             } catch (NullPointerException ex2) {
                 break;
             }
@@ -1326,7 +1329,7 @@ public class AwsEC2Get {
      * ****************************************************************
      */
     
-    public String getResourceId(String tag) {
+    private String getResourceIdRaw(String tag) {
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
@@ -1338,6 +1341,14 @@ public class AwsEC2Get {
             return descriptions.get(descriptions.size() - 1).getResourceId(); //get the last resource tagged with this id 
         }
         return tag;
+    }
+    
+    public String getResourceId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        } else {
+            return getResourceIdRaw(tag);
+        }
     }
     
     
@@ -1446,10 +1457,13 @@ public class AwsEC2Get {
      * ****************************************************************
      */
     public String getInstanceId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+        
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-        
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1492,10 +1506,13 @@ public class AwsEC2Get {
      * ****************************************************************
      */
     public String getVolumeId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1516,10 +1533,13 @@ public class AwsEC2Get {
      * ****************************************************************
      */
     public String getTableId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1540,10 +1560,13 @@ public class AwsEC2Get {
      * ****************************************************************
      */
     public String getVpcId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1564,10 +1587,13 @@ public class AwsEC2Get {
      * ****************************************************************
      */
     public String getVpnGatewayId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1603,9 +1629,12 @@ public class AwsEC2Get {
      */
     
     public String getVpnConnectionId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
         Filter filter = new Filter();
-        filter.withName("value").withValues(tag);
-        
+        filter.withName("value").withValues(tag);        
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1618,7 +1647,6 @@ public class AwsEC2Get {
 
             }
         }
-        
         int pos;
         pos = tag.indexOf("vpn-");
         if (pos != -1) {
@@ -1646,8 +1674,24 @@ public class AwsEC2Get {
             } catch (AmazonServiceException e) {
             }
         }
+        resourceTagMap.put(tag, id);
     }
-    
+
+    public boolean waitResourceTag(String id, String tag) {
+        Long delay = 10000L; // 10 seconds
+        for (int retry = 0; retry < 12; retry++) {
+            if (this.getResourceId(tag).equals(id)) {
+                return true;
+            }
+            try {
+                sleep(delay);
+            } catch (InterruptedException ex1) {
+                ;
+            }
+        }
+        // wait for up to 2 minutes
+        return false;
+    }
     /**
      * ****************************************************************
      * function to create tags in batches
