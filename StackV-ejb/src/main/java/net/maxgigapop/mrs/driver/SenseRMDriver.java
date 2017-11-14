@@ -111,7 +111,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 conn = (HttpURLConnection) url.openConnection();
             }
             conn.setConnectTimeout(5*1000);
-            conn.setReadTimeout(5*1000);
+            //conn.setReadTimeout(5*1000);
             conn.setRequestProperty("Content-Encoding", "gzip");
             String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
             if (response[1].equals("201")) {
@@ -171,7 +171,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 conn = (HttpURLConnection) url.openConnection();
             }
             conn.setConnectTimeout(5*1000);
-            conn.setReadTimeout(5*1000);
+            //conn.setReadTimeout(5*1000);
             String[] response = DriverUtil.executeHttpMethod(conn, "PUT", null);
             if (response[1].equals("200") || response[1].equals("204")) {
                 aDelta.setStatus("COMMITTING");
@@ -299,7 +299,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
                 }
                 conn.setConnectTimeout(5*1000);
-                conn.setReadTimeout(5*1000);
+                //conn.setReadTimeout(5*1000);
                 conn.addRequestProperty("Content-Encoding", "gzip");
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("304")) {
