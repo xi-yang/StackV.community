@@ -216,9 +216,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     } else {
                         responseJSON = (JSONObject) JSONValue.parseWithException(response[0]);
                     }
+                    if (!responseJSON.containsKey("state") || responseJSON.get("state") == null) {
+                        throw logger.error_throwing(method, driverInstance + "RM return none / null 'state' - " + response[0]);
+                    }
                     aDelta.setStatus(((String) responseJSON.get("state")).toUpperCase());
                     DeltaPersistenceManager.merge(aDelta);
-                    if (aDelta.getStatus().equals("COMMITTED") || aDelta.getStatus().equals("ACTIVATED"))  {
+                    if (aDelta.getStatus().equals("COMMITTED") || aDelta.getStatus().equals("ACTIVATED")) {
                         doPoll = false;
                     } else if (aDelta.getStatus().equals("COMMITTING")) {
                         doPoll = true;
