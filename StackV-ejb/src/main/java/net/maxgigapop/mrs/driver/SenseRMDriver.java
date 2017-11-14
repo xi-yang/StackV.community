@@ -210,7 +210,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 }
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("200")) { // committed successfully
-                    JSONObject responseJSON = (JSONObject) ((JSONArray) JSONValue.parseWithException(response[0])).get(0);
+                    JSONObject responseJSON;
+                    if (response[0].startsWith("[")) {
+                        responseJSON = (JSONObject) ((JSONArray) JSONValue.parseWithException(response[0])).get(0);
+                    } else {
+                        responseJSON = (JSONObject) JSONValue.parseWithException(response[0]);
+                    }
                     aDelta.setStatus(((String) responseJSON.get("state")).toUpperCase());
                     DeltaPersistenceManager.merge(aDelta);
                     if (aDelta.getStatus().equals("COMMITTED") || aDelta.getStatus().equals("ACTIVATED"))  {
