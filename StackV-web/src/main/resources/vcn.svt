@@ -90,7 +90,7 @@
                 &lt;{{VMTag}}:eth{{@index}}&gt;
                     a           nml:BidirectionalPort;
                     {{$if elastic_ip}}
-                        mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
+                        mrs:hasNetworkAddress &lt;{{VMTag}}:eth{{@index}}floatingip&gt; ;
                     {{/if elastic_ip}}                
                     spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt; .
 
