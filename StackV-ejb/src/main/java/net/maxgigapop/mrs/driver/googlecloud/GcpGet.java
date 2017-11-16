@@ -34,13 +34,11 @@ public class GcpGet {
     private Compute computeClient = null;
     private Storage storageClient = null;
     private String projectID;
-    private String region;
     private JSONParser parser = new JSONParser();
     
-    public GcpGet(String jsonAuth, String projectID, String region) {
+    public GcpGet(String jsonAuth, String projectID) {
         authenticate = new GcpAuthenticate(jsonAuth);
         this.projectID = projectID;
-        this.region = region;
         
         try {
             HttpTransport trans = GoogleNetHttpTransport.newTrustedTransport();
@@ -97,10 +95,32 @@ public class GcpGet {
         }
     }
     
-    public JSONObject getVmInstances() {
+    public JSONObject getVmInstances(String region) {
         try {
             //returns a list of vm instances wiithin a region
             return makeRequest(computeClient.instances().list(projectID, region).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+    public JSONArray getAggregatedVmInstances() {
+        try {
+            JSONObject result, temp;
+            JSONArray zoneResult, output = new JSONArray();
+            result = makeRequest(computeClient.instances().aggregatedList(projectID).buildHttpRequest());
+            result = (JSONObject) result.get("items");
+            
+            for (Object key : result.keySet()) {
+                //if the jsonobject contains the key "instances", then there are vms in that zone
+                temp = (JSONObject) result.get(key);
+                if (temp.containsKey("instances")) {
+                    zoneResult = (JSONArray) temp.get("instances");
+                    output.addAll(zoneResult);
+                }
+            }
+            
+            return output;
         } catch (IOException e) {
             return null;
         }

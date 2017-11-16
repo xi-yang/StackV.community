@@ -8,16 +8,16 @@ package net.maxgigapop.mrs.driver.googlecloud;
 import java.util.ArrayList;
 import java.io.IOException;
 import org.json.simple.JSONObject;
-//import org.json.simple.JSONArray;
+import org.json.simple.JSONArray;
 
 import com.google.api.services.compute.model.AttachedDisk;
 import com.google.api.services.compute.model.AttachedDiskInitializeParams;
 import com.google.api.services.compute.model.Instance;
-import com.google.api.services.compute.model.NetworkInterface;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.services.compute.model.AccessConfig;
 import com.google.api.services.compute.model.Network;
 import com.google.api.services.compute.model.Subnetwork;
+import com.google.api.services.compute.model.AccessConfig;
+import com.google.api.services.compute.model.NetworkInterface;
+import com.google.api.client.http.HttpRequest;
 
 import com.hp.hpl.jena.ontology.OntModel;
 
@@ -28,33 +28,30 @@ import com.hp.hpl.jena.ontology.OntModel;
 public class GcpPush {
     private GcpGet gcpGet;
     private String topologyUri = null;
-    private String region = null;
+    //private String region = null;
     private String projectID = null;
     String defaultImage = null;
     String defaultInstanceType = null;
-    String defaultKeyPair = null;
-    String defaultSecGroup = null;
+    //String defaultKeyPair = null;
+    //String defaultSecGroup = null;
     String defaultRegion = null; //Default region is used by subnets, currently
     String defaultZone = null; //Default zone is used by instances and disks, and should contained within default region
     
-    public GcpPush(String jsonAuth, String projectID, String region, String topologyUri, 
-            String defaultImage, String defaultInstanceType, String defaultKeyPair, String defaultSecGroup, String defaultRegion, String defaultZone) {
-        this.gcpGet = new GcpGet(jsonAuth, projectID, region);
+    public GcpPush(String jsonAuth, String projectID, String topologyUri, 
+            String defaultImage, String defaultInstanceType, String defaultRegion, String defaultZone) {
+        this.gcpGet = new GcpGet(jsonAuth, projectID);
         this.projectID = projectID;
-        this.region = region;
         //do an adjustment to the topologyUri
         this.topologyUri = topologyUri + ":";
         this.defaultImage = defaultImage;
         this.defaultInstanceType = defaultInstanceType;
-        this.defaultKeyPair = defaultKeyPair;
-        this.defaultSecGroup = defaultSecGroup;
         this.defaultRegion = defaultRegion;
         this.defaultZone = defaultZone;
     }
     
-    public ArrayList<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
-        ArrayList<JSONObject> requests = new ArrayList<>();
-        GcpQuery gcq = new GcpQuery(modelRef, modelAdd, modelReduct);
+    public JSONArray propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
+        JSONArray requests = new JSONArray();
+        GcpQuery gcq = new GcpQuery(modelRef, modelAdd, modelReduct, defaultImage, defaultInstanceType, defaultRegion, defaultZone);
         //Instances, VPCs, subnets
         
         requests.addAll(gcq.deleteInstanceRequests());
@@ -69,11 +66,12 @@ public class GcpPush {
     }
     
     //When deleting an instance, remember to remove it's URI from the lookup table.
-    public void commit(ArrayList<JSONObject> requests) throws InterruptedException {
+    public void commit(JSONArray requests) throws InterruptedException {
         String method = "commit";
         HttpRequest request;
         
-        for (JSONObject requestInfo : requests) {
+        for (Object o : requests) {
+            JSONObject requestInfo = (JSONObject) o;
             switch (requestInfo.get("type").toString()) {
             case "create_vpc":
                 String name = requestInfo.get("name").toString();
@@ -116,28 +114,41 @@ public class GcpPush {
                 //TODO
             break;
             case "create_instance":
-                name = requestInfo.get("name").toString();
-                region = requestInfo.get("region").toString();
-                String ip = requestInfo.get("ip").toString();
+                String vmName, zone, machineType, diskSize;
+                vmName = requestInfo.get("name").toString();
+                zone = requestInfo.get("zone").toString();
+                String region = requestInfo.get("region").toString();
                 String subnetIP = requestInfo.get("subnetIP").toString();
-                String machineType = "zones/"+region+"/machineTypes/";
+                machineType = String.format("zones/%s/machineTypes/%s", zone, requestInfo.get("machineType"));
                 machineType += requestInfo.get("machineType").toString();
                 long diskSizeGb = Integer.parseInt(requestInfo.get("diskSizeGb").toString());
-            
-                AccessConfig access = new AccessConfig()
-                    .setName("External Nat")
-                    .setNatIP(ip)
-                    .setType("ONE_TO_ONE_NAT");
-                ArrayList<AccessConfig> accessList = new ArrayList<>();
-                accessList.add(access);
-                NetworkInterface netiface = new NetworkInterface()
-                    .setNetwork("projects/elegant-works-176420/global/networks/default")
-                    .setSubnetwork("projects/elegant-works-176420/regions/us-central1/subnetworks/default")
-                    .setNetworkIP(subnetIP)
-                    .setAccessConfigs(accessList);
+                String diskType = "";
+                
+                //Add NICs
                 ArrayList<NetworkInterface> netifaces = new ArrayList<>();
-                netifaces.add(netiface);
-                    
+                NetworkInterface netiface;
+                ArrayList<AccessConfig> accessList;
+                AccessConfig access;
+                int i = 0;
+                String ip, key = "nic"+i;
+                
+                while (requestInfo.containsKey(key)) {
+                    ip = requestInfo.get(key).toString();
+                    access = new AccessConfig()
+                        .setName("External Nat")
+                        .setNatIP(ip)
+                        .setType("ONE_TO_ONE_NAT");
+                    accessList = new ArrayList<>();
+                    accessList.add(access);
+                    netiface = new NetworkInterface()
+                        .setNetwork("projects/elegant-works-176420/global/networks/default")
+                        .setSubnetwork("projects/elegant-works-176420/regions/us-central1/subnetworks/default")
+                        .setNetworkIP(subnetIP)
+                        .setAccessConfigs(accessList);
+                    netifaces.add(netiface);
+                    key = "key" + (++i);
+                }
+                
                 AttachedDiskInitializeParams init = new AttachedDiskInitializeParams()
                     .setDiskSizeGb(diskSizeGb)
                     .setSourceImage("projects/debian-cloud/global/images/debian-9-stretch-v20170717")
@@ -149,7 +160,7 @@ public class GcpPush {
                 ArrayList<AttachedDisk> disks = new ArrayList<>();
                 disks.add(disk);
                 Instance instance = new Instance()
-                    .setName(name)
+                    .setName(vmName)
                     .setMachineType(machineType)
                     .setNetworkInterfaces(netifaces)
                     .setDisks(disks);

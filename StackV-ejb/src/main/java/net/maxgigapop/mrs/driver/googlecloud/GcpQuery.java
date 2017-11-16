@@ -2,6 +2,7 @@
 package net.maxgigapop.mrs.driver.googlecloud;
 
 import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.Query;
@@ -12,7 +13,9 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  *
@@ -25,20 +28,25 @@ public class GcpQuery {
     */
     private final OntModel modelRef, modelAdd, modelReduct;
     private static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-    private static final String defaultRegion = "us-central1";
-    private static final String defaultZone = "us-central1-c";
+    //private static final String defaultRegion = "us-central1";
+    //private static final String defaultZone = "us-central1-c";
+    private String defaultImage, defaultInstanceType, defaultRegion, defaultZone;
     
-    public GcpQuery(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
+    
+    public GcpQuery(OntModel modelRef, OntModel modelAdd, OntModel modelReduct, String defaultImage,
+            String defaultInstanceType, String defaultRegion, String defaultZone) {
         this.modelRef = modelRef;
         this.modelAdd = modelAdd;
-        
-        modelAdd.write(System.out);
         this.modelReduct = modelReduct;
+        this.defaultImage = defaultImage;
+        this.defaultInstanceType = defaultInstanceType;
+        this.defaultRegion = defaultRegion;
+        this.defaultZone = defaultZone;
     }
     
     //need name, zone
-    public ArrayList<JSONObject> createInstanceRequests() {
-        ArrayList<JSONObject> output = new ArrayList<>();
+    public JSONArray createInstanceRequests() {
+        JSONArray output = new JSONArray();
         String method = "createInstanceRequests";
         //need type, vpc, subnet, ip, disk size
         //name, zone, sourceImage, diskType are optional
@@ -52,36 +60,40 @@ public class GcpQuery {
         while (r.hasNext()) {
             JSONObject instanceRequest = new JSONObject();
             QuerySolution solution = r.next();
+            HashMap<String, String> typeInfo = parseTypeStr(getOrDefault(solution, "type", null));
             String instanceUri = solution.get("uri").toString();
             String instanceName = getOrDefault(solution, "name", makeNameFromUri(instanceUri));
-            String instanceType = getOrDefault(solution, "type", null);
             
-            String nicQuery = "SELECT ?nic ?nicIP WHERE { BIND(<" + instanceUri + "> AS ?uri) \n"
+            //secgroup and keypair are not used by gcp
+            //instance+1,image+2,secgroup+3,keypair+4
+            
+            String machineType = getOrDefault(typeInfo, "instance", defaultInstanceType);
+            String sourceImage = getOrDefault(typeInfo, "image", defaultImage);
+            String zone = getOrDefault(typeInfo, "zone", defaultZone);
+            String diskSize = getOrDefault(typeInfo, "diskSizeGb", "10");
+            
+            String nicQuery = "SELECT ?nicIP WHERE { BIND(<" + instanceUri + "> AS ?uri) \n"
                     + "?uri nml:hasBidirectionalPort ?nic . \n"
-                    + "?nic a nml:BidirectionalPort \n"
-                    + "OPTIONAL { mrs:hasNetworkAddress ?nicAddr \n"
-                    + "?nicAddr a mrs:NetworkAddress; mrs:value ?nicIP } }";
+                    + "?nic a nml:BidirectionalPort ; mrs:hasNetworkAddress ?nicAddr . \n"
+                    + "?nicAddr a mrs:NetworkAddress ; mrs:value ?nicIP }";
             
             int i = 0;
             
             ResultSet nicResult = executeQuery(nicQuery, emptyModel, modelAdd);
             while (nicResult.hasNext()) {
-                //String key = "nic" + i++;
+                String key = "nic" + i++;
                 QuerySolution nicSolution = nicResult.next();
-                //String nicUri = getOrDefault(nicSolution, "port", "no nic found");
-                
-                //instanceRequest.put(key, nicUri);
-                
-                System.out.println("nic: "+nicSolution);
-                //instanceRequest.put("port", nicUri);
-                //break;
+                String nicIP = nicSolution.get("nicIP").toString();
+                instanceRequest.put(key, nicIP);
             }
             
             instanceRequest.put("type", "create_instance");
-            instanceRequest.put("instance_uri", instanceUri);
-            instanceRequest.put("instanceName", instanceName);
-            instanceRequest.put("instanceType", instanceType);
-            
+            instanceRequest.put("uri", instanceUri);
+            instanceRequest.put("name", instanceName);
+            instanceRequest.put("machine_type", machineType);
+            instanceRequest.put("source_image", sourceImage);
+            instanceRequest.put("zone", zone);
+            instanceRequest.put("disk_size", diskSize);
             
             //String instanceNIC;
             System.out.printf("CREATE INSTANCE REQUEST: %s\n", instanceRequest);
@@ -206,6 +218,15 @@ public class GcpQuery {
         }
     }
     
+    private static String getOrDefault(HashMap<String, String> h, String key, String def) {
+        //This checks q for the key value, and returns the default if it is not found
+        if (h.containsKey(key)) {
+            return h.get(key).toString();
+        } else {
+            return def;
+        }
+    }
+    
     /* ****************************************************************
      * function that executes a query using a model addition/subtraction and a
      * reference model, returns the result of the query
@@ -251,5 +272,21 @@ public class GcpQuery {
         QueryExecution qexec = QueryExecutionFactory.create(query, unionModel);
         ResultSet r = qexec.execSelect();
         return r;
+    }
+
+    private HashMap<String, String> parseTypeStr(String typeStr) {
+        HashMap<String, String> output = new HashMap<>();
+        if (typeStr == null) return output;
+        String key, value, pairs[] = typeStr.split(",");
+        int pos;
+        
+        for (String s : pairs) {
+            pos = s.indexOf("+");
+            key = s.substring(0, pos);
+            value = s.substring(pos+1);
+            output.put(key, value);
+        }
+        
+        return output;
     }
 }

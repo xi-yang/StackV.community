@@ -30,7 +30,6 @@ package net.maxgigapop.mrs.driver.googlecloud;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.IOException;//
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
@@ -52,6 +51,9 @@ import net.maxgigapop.mrs.common.StackLogger;//
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;//
 //import static net.maxgigapop.mrs.driver.openstack.OpenStackDriver.logger;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 @Stateless
 public class GcpDriver implements IHandleDriverSystemCall {
@@ -71,12 +73,12 @@ public class GcpDriver implements IHandleDriverSystemCall {
         logger.start(method);
         String jsonAuth = driverInstance.getProperty("gcp_access_json");
         String projectID = driverInstance.getProperty("projectID");
-        String region = driverInstance.getProperty("region");
+        //String region = driverInstance.getProperty("region");
         String topologyURI = driverInstance.getProperty("topologyUri");
         String defaultImage = driverInstance.getProperty("defaultImage");
         String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
-        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
-        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
+        //String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
+        //String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
         String defaultRegion = driverInstance.getProperty("defaultRegion");
         String defaultZone = driverInstance.getProperty("defaultZone");
         
@@ -84,9 +86,9 @@ public class GcpDriver implements IHandleDriverSystemCall {
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
         
-        GcpPush push = new GcpPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup, defaultRegion, defaultZone);
+        GcpPush push = new GcpPush(jsonAuth, projectID, topologyURI, defaultImage, defaultInstanceType, defaultRegion, defaultZone);
         
-        ArrayList<JSONObject> requests = push.propagate(model, modelAdd, modelReduc);
+        JSONArray requests = push.propagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId();
         driverInstance.putProperty(requestId, requests.toString());
         DriverInstancePersistenceManager.merge(driverInstance);
@@ -122,20 +124,27 @@ public class GcpDriver implements IHandleDriverSystemCall {
         String jsonAuth = driverInstance.getProperty("gcp_access_json");
         
         String projectID =  driverInstance.getProperty("projectID");
-        String region = driverInstance.getProperty("region");
         String topologyURI = driverInstance.getProperty("topologyUri");
         String defaultImage = driverInstance.getProperty("defaultImage");
         String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
-        String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
-        String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
         String defaultRegion = driverInstance.getProperty("defaultRegion");
         String defaultZone = driverInstance.getProperty("defaultZone");
         
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
-        GcpPush push = new GcpPush(jsonAuth, projectID, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup, defaultRegion, defaultZone);
-                ObjectMapper mapper = new ObjectMapper();
-        ArrayList<JSONObject> requestList = new ArrayList();
+        GcpPush push = new GcpPush(jsonAuth, projectID, topologyURI, defaultImage, defaultInstanceType, defaultRegion, defaultZone);
+        
+        JSONParser parser = new JSONParser();
+        
+        try {
+            JSONArray requestArray = (JSONArray) parser.parse(requests);
+        } catch (ParseException ex) {
+            throw logger.throwing(method, ex);
+        }
+        
+        ObjectMapper mapper = new ObjectMapper();
+        JSONArray requestList;
+                //= new ArrayList();
         try {
             requestList = mapper.readValue(requests, mapper.getTypeFactory().constructCollectionType(List.class, JSONObject.class));
         } catch (IOException ex) {
@@ -169,7 +178,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
             String region = driverInstance.getProperty("region");
             String topologyURI = driverInstance.getProperty("topologyUri");
             //Regions region = Regions.fromName(r);
-            OntModel ontModel = GcpModelBuilder.createOntology(jsonAuth, projectID, region, topologyURI);
+            OntModel ontModel = GcpModelBuilder.createOntology(jsonAuth, projectID, topologyURI);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();

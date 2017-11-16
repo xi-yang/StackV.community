@@ -24,7 +24,8 @@ public class GcpModelBuilder {
     
     public static final StackLogger logger = GcpDriver.logger;
     
-    public static OntModel createOntology(String jsonAuth, String projectID, String region, String topologyURI) throws IOException {
+    public static OntModel createOntology(String jsonAuth, String projectID, String topologyURI) throws IOException {
+        String region = "us-central1";
         String method = "createOntology";
         logger.start(method);
         
@@ -38,7 +39,7 @@ public class GcpModelBuilder {
         model.setNsPrefix("nml", Nml.getURI());
         model.setNsPrefix("mrs", Mrs.getURI());
         
-        GcpGet gcpGet = new GcpGet(jsonAuth, projectID, region);
+        GcpGet gcpGet = new GcpGet(jsonAuth, projectID);
         
         Resource gcpTopology = RdfOwl.createResource(model, topologyURI, Nml.Topology);
         Resource vpcService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.vpcService, region), Mrs.VirtualCloudService);
@@ -156,10 +157,12 @@ public class GcpModelBuilder {
         }
         
         //Add VMs to model
-        JSONObject instancesInfo = gcpGet.getVmInstances(); 
+        //JSONObject instancesInfo = gcpGet.getVmInstances(); 
+        JSONArray instancesInfo = gcpGet.getAggregatedVmInstances();
+        
         if (instancesInfo != null) {
-            JSONArray vms = (JSONArray) instancesInfo.get("items");
-            for (Object o : vms) {
+            //JSONArray vms = (JSONArray) instancesInfo.get("items");
+            for (Object o : instancesInfo) {
                 JSONObject vmInfo = (JSONObject) o;
                 String instanceName = vmInfo.get("name").toString();
                 String instanceType = GcpGet.parseGoogleURI(vmInfo.get("machineType").toString(), "machineTypes");
