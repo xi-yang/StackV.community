@@ -98,7 +98,6 @@ public class HandleSystemCall {
         vg.setRefUuid(refUuid);
         for (String topoUri : ditMap.keySet()) {
             DriverInstance di = ditMap.get(topoUri);
-            synchronized (di) {
                 VersionItem vi = di.getHeadVersionItem();
                 if (vi == null) {
                     throw logger.error_throwing(method, "encounters null head versionItem in " + di);
@@ -110,7 +109,6 @@ public class HandleSystemCall {
                 if (vg.getVersionItems() == null || !vg.getVersionItems().contains(vi)) {
                     vg.addVersionItem(vi);
                 }
-            }
         }
         VersionGroupPersistenceManager.save(vg);
         logger.end(method);

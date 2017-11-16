@@ -100,7 +100,6 @@ public class SystemModelCoordinator {
             return;
         }
         for (DriverInstance di : ditMap.values()) {
-            synchronized (di) { 
                 if (di.getHeadVersionItem() == null) {
                     bootStrapped = false;
                     systemVersionGroup = null;
@@ -108,7 +107,6 @@ public class SystemModelCoordinator {
                     logger.trace_end(method);
                     return;
                 }
-            }
         }
         if (this.systemVersionGroup == null) {
             this.systemVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
