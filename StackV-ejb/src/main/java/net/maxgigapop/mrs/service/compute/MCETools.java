@@ -567,7 +567,7 @@ public class MCETools {
                 + "?node nml:hasService ?svc. "
                 + "?svc a ?svc_type. "
                 + "?node nml:connectsTo ?port. "
-                //+ "?svc nml:connectsTo ?port."
+                + "?svc nml:connectsTo ?port."
                 + "FILTER (?type in (nml:Node, nml:Topology) && ?svc_type in (nml:SwitchingService, mrs:OpenflowService))"
                 + "}";
         ResultSet rs = ModelUtil.sparqlQuery(infModel, sparql);
@@ -578,6 +578,15 @@ public class MCETools {
             Resource resPort = qs.getResource("port");
             stmtList.add(infModel.createLiteralStatement(resNode, Nml.connectsTo, resPort));
             stmtList.add(infModel.createLiteralStatement(resPort, Nml.connectsTo, resNode));
+            sparql = "SELECT ?subport WHERE {"
+                + String.format("<%s> nml:hasBidirectionalPort ?subport.", resPort.getURI())
+                + "}";
+            ResultSet rs2 = ModelUtil.sparqlQuery(infModel, sparql);
+            while (rs2.hasNext()) {
+                QuerySolution qs2 = rs2.next();
+                Resource resSubPort = qs2.getResource("subport");
+                stmtList.add(infModel.createLiteralStatement(resNode, Nml.connectsTo, resSubPort));
+            }
         }
         OntModel outputModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         outputModel.add(infModel);
