@@ -111,7 +111,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 conn = (HttpURLConnection) url.openConnection();
             }
             conn.setConnectTimeout(5*1000);
-            conn.setReadTimeout(5*1000);
+            //conn.setReadTimeout(5*1000);
             conn.setRequestProperty("Content-Encoding", "gzip");
             String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
             if (response[1].equals("201")) {
@@ -171,7 +171,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 conn = (HttpURLConnection) url.openConnection();
             }
             conn.setConnectTimeout(5*1000);
-            conn.setReadTimeout(5*1000);
+            //conn.setReadTimeout(5*1000);
             String[] response = DriverUtil.executeHttpMethod(conn, "PUT", null);
             if (response[1].equals("200") || response[1].equals("204")) {
                 aDelta.setStatus("COMMITTING");
@@ -210,10 +210,18 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 }
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("200")) { // committed successfully
-                    JSONObject responseJSON = (JSONObject) ((JSONArray) JSONValue.parseWithException(response[0])).get(0);
+                    JSONObject responseJSON;
+                    if (response[0].startsWith("[")) {
+                        responseJSON = (JSONObject) ((JSONArray) JSONValue.parseWithException(response[0])).get(0);
+                    } else {
+                        responseJSON = (JSONObject) JSONValue.parseWithException(response[0]);
+                    }
+                    if (!responseJSON.containsKey("state") || responseJSON.get("state") == null) {
+                        throw logger.error_throwing(method, driverInstance + "RM return none / null 'state' - " + response[0]);
+                    }
                     aDelta.setStatus(((String) responseJSON.get("state")).toUpperCase());
                     DeltaPersistenceManager.merge(aDelta);
-                    if (aDelta.getStatus().equals("COMMITTED") || aDelta.getStatus().equals("ACTIVATED"))  {
+                    if (aDelta.getStatus().equals("COMMITTED") || aDelta.getStatus().equals("ACTIVATED")) {
                         doPoll = false;
                     } else if (aDelta.getStatus().equals("COMMITTING")) {
                         doPoll = true;
@@ -294,7 +302,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
                 }
                 conn.setConnectTimeout(5*1000);
-                conn.setReadTimeout(5*1000);
+                //conn.setReadTimeout(5*1000);
                 conn.addRequestProperty("Content-Encoding", "gzip");
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("304")) {
