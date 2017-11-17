@@ -37,6 +37,7 @@ import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.DriverSystemDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -56,13 +57,12 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
         String method = "propagateDelta";
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
+        //aDelta = (DriverSystemDelta) DriverSystemDeltaPersistenceManager.findByReferenceUUID(aDelta.getReferenceUUID()); // refresh
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String ttlModel = driverInstance.getProperty("stubModelTtl");
@@ -81,7 +81,6 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             ttlModel = ModelUtil.marshalModel(ontModel.getBaseModel());
             // the extra "new:" makes two ttls always different to avoid new version_item being created before commit   
             driverInstance.putProperty("stubModelTtl_new", "new:" + ttlModel);
-            DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception ex) {
             throw logger.throwing(method, driverInstance + " failed to propagate", ex);
         }
@@ -95,7 +94,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {

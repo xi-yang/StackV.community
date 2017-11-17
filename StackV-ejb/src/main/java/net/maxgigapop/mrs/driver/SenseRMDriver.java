@@ -47,6 +47,7 @@ import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.DriverSystemDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.DateTimeUtil;
@@ -73,11 +74,10 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         String method = "propagateDelta";
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
@@ -90,7 +90,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         try {
             // compose string body (delta) using JSONObject
             JSONObject deltaJSON = new JSONObject();
-            deltaJSON.put("id", aDelta.getId());
+            deltaJSON.put("id", aDelta.getReferenceUUID());
             deltaJSON.put("modelId", refVI.getReferenceUUID());
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             deltaJSON.put("lastModified", dateFormat.format(new Date()).toString());
@@ -116,7 +116,6 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
             if (response[1].equals("201")) {
                 aDelta.setStatus("PROPGATED");
-                DeltaPersistenceManager.merge(aDelta);
             } else if (response[1].equals("409")) {
                 String jsonData = response[0];
                 EJBExceptionNegotiable ejbNegotiable = new EJBExceptionNegotiable();
@@ -151,7 +150,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
@@ -163,7 +162,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         }
         // commit through PUT
         try {
-            URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getId()));
+            URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getReferenceUUID()));
             HttpURLConnection conn;
             if (url.toString().startsWith("https:")) {
                 conn = (HttpsURLConnection) url.openConnection();
@@ -201,7 +200,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             try {
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
-                URL url = new URL(String.format("%s/deltas/%s?summary=true", subsystemBaseUrl, aDelta.getId()));
+                URL url = new URL(String.format("%s/deltas/%s?summary=true", subsystemBaseUrl, aDelta.getReferenceUUID()));
                 HttpURLConnection conn;
                 if (url.toString().startsWith("https:")) {
                     conn = (HttpsURLConnection) url.openConnection();

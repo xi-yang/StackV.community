@@ -42,13 +42,10 @@ public class OpenflowPush {
 
     private static final StackLogger logger = OpenflowRestconfDriver.logger;
 
-    public String propagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
+    public String propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
         String method = "propagate";
         JSONObject jRequests = new JSONObject();
         try {
-            OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
-            OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
-            OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
             JSONArray jDelete = this.extractFlows(modelRef, modelReduct);
             JSONArray jCreate = this.extractFlows(modelRef, modelAdd);
             jRequests.put("delete", jDelete);

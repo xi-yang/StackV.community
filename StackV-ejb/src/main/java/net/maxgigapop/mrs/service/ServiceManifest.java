@@ -42,6 +42,7 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.core.DataConcurrencyPoster;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -61,15 +62,15 @@ public class ServiceManifest {
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
-        SystemModelCoordinator systemModelCoordinator = null;
+        DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
-            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/SystemModelCoordinator");
-        } catch (NamingException ex) {
-            throw logger.throwing(method, ex);
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (Exception ex) {
+            throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + ex);
         }
-        OntModel omRef = systemModelCoordinator.getCachedOntModel();
-
+        OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
+        
         if (serviceType.equals("Dynamic Network Connection")) {
             joMan.put("connections", generateManifestDncLinks(omAdd));
         } else if (serviceType.equals("Virtual Cloud Network")) {
@@ -100,14 +101,14 @@ public class ServiceManifest {
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
-        SystemModelCoordinator systemModelCoordinator = null;
+        DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
-            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/SystemModelCoordinator");
-        } catch (NamingException ex) {
-            throw logger.throwing(method, ex);
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (Exception ex) {
+            throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + ex);
         }
-        OntModel omRef = systemModelCoordinator.getCachedOntModel();
+        OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd, omRef);
     }
     
