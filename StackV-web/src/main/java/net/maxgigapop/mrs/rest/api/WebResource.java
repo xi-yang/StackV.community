@@ -2300,13 +2300,12 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, V.verification_state, I.last_state FROM service_instance I, service_verification V "
-                    + "WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id");
+            prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, I.last_state "
+                    + "FROM service_instance I WHERE I.referenceUUID = ?");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
             while (rs.next()) {
-                retList.add(rs.getString("verification_state"));
                 retList.add(Services.get(rs.getString("type")).get(0));
                 retList.add(rs.getString("alias_name"));
                 retList.add(rs.getString("creation_time"));
@@ -2390,6 +2389,7 @@ public class WebResource {
             rs = prep.executeQuery();
             while (rs.next()) {
                 retList.add(rs.getString("state"));
+                retList.add(rs.getString("verification_state"));
                 retList.add(rs.getString("verification_run"));
                 retList.add(rs.getString("creation_time"));
                 retList.add(rs.getString("addition"));
@@ -2438,9 +2438,12 @@ public class WebResource {
                     + "WHERE instanceUUID = ?");
             prep.setString(1, refUUID);
             rs = prep.executeQuery();
-            while (rs.next()) {
+            while (rs.next()) {                
                 BigInteger ONE_BILLION = new BigInteger("1000000000");
                 Timestamp time = rs.getTimestamp(1);
+                if (time == null) {
+                    return "0";
+                }
                 Timestamp now = new Timestamp(System.currentTimeMillis());
 
                 final BigInteger firstTime = BigInteger.valueOf(time.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(time.getNanos()));

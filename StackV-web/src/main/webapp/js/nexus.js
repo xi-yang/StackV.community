@@ -76,8 +76,17 @@ $(function () {
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
             loadDriverNavbar();
             loadDriverPortal();
-        } else if (window.location.pathname === "/StackV-web/ops/intent_test.html") {
-            loadIntent(getURLParameter("intent"));            
+        } else if (window.location.pathname === "/StackV-web/ops/intent.html") {
+            loadIntent(getURLParameter("intent"));
+        } else if (window.location.pathname === "/StackV-web/ops/details.html") {
+            var uuid = sessionStorage.getItem("instance-uuid");
+            if (!uuid) {
+                alert("No Service Instance Selected!");
+                window.location.replace('/StackV-web/ops/catalog.jsp');
+            } else {
+                loadDetailsNavbar();
+                loadDetails();
+            }
         }
 
         if ($("#tag-panel").length) {
@@ -86,7 +95,7 @@ $(function () {
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
-            
+
             console.log("Token automatically updated!");
         }).error(function () {
             console.log("Automatic token update failed!");
@@ -727,8 +736,8 @@ function forceReinstateInstance(uuid) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
-            window.location.reload(true); 
-       }
+            window.location.reload(true);
+        }
     });
     //window.location.replace('/StackV-web/ops/catalog.jsp');
 }
@@ -1084,7 +1093,7 @@ function loadDataTable(apiUrl) {
             }
         },
         "dom": 'Bfrtip',
-        "buttons": [ 'csv' ],
+        "buttons": ['csv'],
         "columns": [
             {
                 "className": 'details-control',

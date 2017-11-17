@@ -143,136 +143,15 @@ function loadDetailsNavbar() {
 
 function loadDetails() {
     var uuid = sessionStorage.getItem("instance-uuid");
-    $("#instance-uuid").html(uuid);
-    subloadDetails();
+    startDetailsEngine(uuid);
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
     loadDataTable(apiUrl);
-    setTimeout(function () {
-        if (view === "left") {
-            tweenLoggingPanel.play();
-            $('div.dataTables_filter input').focus();
-        }
-    }, 1000);
     reloadLogs();
 
-    $(".delta-table-header").click(function () {
-        $("#body-" + this.id).toggleClass("hide");
-    });
-
-    $(document).on('click', '.instance-command', function () {
-        $(".instance-command").attr('disabled', true);
-        pauseRefresh();
-
-        var command = this.id;
-        var apiUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
-        $.ajax({
-            url: apiUrl,
-            async: false,
-            type: 'GET',
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-            },
-            success: function (result) {
-                if (subState !== result) {
-                    $(".instance-command").attr('disabled', false);
-                    resumeRefresh();
-                    reloadData();
-                } else {
-                    if ((command === "delete") || (command === "force_delete")) {
-                        swal("Confirm deletion?", {
-                            buttons: {
-                                cancel: "Cancel",
-                                delete: {text: "Delete", value: true}
-                            }
-                        }).then((value) => {
-                            if (value) {
-                                executeCommand(command);
-                            } else {
-                                setTimeout(function () {
-                                    $(".instance-command").attr('disabled', false);
-                                    resumeRefresh();
-                                    reloadData();
-                                }, 250);
-                            }
-                        });
-                    } else {
-                        executeCommand(command);
-                    }
-
-                }
-            }
-        });
-    });
-}
-function executeCommand(command) {
-    var uuid = sessionStorage.getItem("instance-uuid");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        success: function () {
-            $(".instance-command").attr('disabled', false);
-            resumeRefresh();
-            if (command === "delete" || command === "force_delete") {
-                setTimeout(function () {
-                    sessionStorage.removeItem("instance-uuid");
-                    window.document.location = "/StackV-web/ops/catalog.jsp";
-                }, 250);
-            } else {
-                reloadData();
-            }
-        }
-    });
-    if (!(command === "delete") && !(command === "force_delete")) {
-        setTimeout(function () {
-            $(".instance-command").attr('disabled', false);
-            resumeRefresh();
-            reloadData();
-        }, 250);
-    }
+    tweenDetailsPanel.play();
 }
 
-function subloadDetails() {
-    var uuid = sessionStorage.getItem("instance-uuid");
-
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
-    $.ajax({
-        url: apiUrl,
-        async: false,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (instance) {
-            /*  instance mapping:
-             *      0 - verification_state
-             *      1 - name
-             *      2 - alias_name
-             *      3 - creation_time
-             *      4 - super_state     
-             *      5 - last_state */
-
-            verificationState = instance[0];
-            alias = instance[2];
-            creation = instance[3];
-            superState = instance[4];
-            lastState = instance[5];
-
-            $("#instance-alias").html(alias);
-            $("#instance-creation-time").html(creation);
-            $("#instance-superstate").html(superState);
-
-            // Next steps
-            subloadStatus(uuid);
-        }
-    });
-}
 function subloadStatus(refUuid) {
     var ele = $("#instance-substate");
     var last = $("#instance-laststate");
@@ -342,85 +221,6 @@ function subloadVerification() {
 
             instructionModerate();
             buttonModerate();
-        }
-    });
-}
-
-function subloadACL() {
-    var uuid = sessionStorage.getItem("instance-uuid");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/acl';
-    $.ajax({
-        url: apiUrl,
-        async: false,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function () {
-            /*  acl mapping:
-             */
-            var panel = document.getElementById("details-panel");
-
-            var table = document.createElement("table");
-            table.className = "management-table hide acl-table";
-
-            var thead = document.createElement("thead");
-            thead.className = "delta-table-header";
-            var row = document.createElement("tr");
-            var head = document.createElement("th");
-            row.appendChild(head);
-            head = document.createElement("th");
-            head.innerHTML = "Access Control";
-            row.appendChild(head);
-
-            thead.appendChild(row);
-            table.appendChild(thead);
-
-            var tbody = document.createElement("tbody");
-            tbody.className = "delta-table-body";
-            tbody.id = "acl-body";
-
-            row = document.createElement("tr");
-            var cell = document.createElement("td");
-            cell.innerHTML = '<select id="acl-select" size="5" name="acl-select" multiple></select>';
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            cell = document.createElement("td");
-            cell.innerHTML = '<label>Give user access: <input type="text" name="acl-input" /></label>';
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            table.appendChild(tbody);
-            panel.appendChild(table);
-
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-
-            // Next step
-            loadACL(uuid);
-        }
-    });
-}
-
-function loadACL() {
-    var select = document.getElementById("acl-select");
-    $("#acl-select").empty();
-
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + keycloak.subject + '/acl';
-    $.ajax({
-        url: apiUrl,
-        async: false,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            for (i = 0; i < result.length; i++) {
-                select.append("<option>" + result[i] + "</option>");
-            }
         }
     });
 }
@@ -846,156 +646,6 @@ function toggleTextModel(viz_table, text_table) {
     }
 }
 
-// Moderation Functions
-function instructionModerate() {
-    var blockString = "";
-    if (lastState === "null") {
-        blockString = "Service has encountered a fatal error. Please contact a system administrator for manual recovery.";
-    } else if (verificationRun !== null) {
-        switch (subState) {
-            case "INIT":
-            case "COMPILED":
-                blockString = "Service is being initialized.";
-                break;
-            case "PROPAGATED":
-                blockString = "Service delta has been sent to the backend.";
-                break;
-            case "COMMITTING":
-                blockString = "Service is currently being constructed.";
-                break;
-            case "COMMITTED":
-                switch (verificationState) {
-                    case "null":
-                    case "0":
-                        blockString = "Service has been constructed, and is now being verified. (Run "
-                                + verificationRun + ")";
-                        break;
-                    case "-1":
-                        blockString = "Service has been constructed, but could not be verified. Please attempt verification again.";
-                        break;
-                }
-                break;
-            case "FAILED":
-                if (verificationRun > 0 && verificationRun < 30) {
-                    blockString = "Service has failed. Please see logging for more information. (Run "
-                            + verificationRun + ")";
-                } else {
-                    blockString = "Service has failed. Please see logging for more information.";
-                }
-                break;
-            case "READY":
-                switch (verificationState) {
-                    case "":
-                    case "null":
-                        blockString = "Service encountered an error during verification."
-                                + " Please contact your technical supervisor for further instructions.";
-                        break;
-                    case "0":
-                        blockString = "Service is verifying.";
-                        break;
-                    case "-1":
-                        blockString = "Service was not able to be verified.";
-                        break;
-                    case "1":
-                        blockString = "Service has been successfully verified.";
-                        break;
-                }
-                break;
-        }
-    }
-
-    document.getElementById("instruction-block").innerHTML = blockString;
-}
-
-function buttonModerate() {
-    var lastStateStr = $("#instance-laststate").html();
-    var lastState = lastStateStr.substring(8, lastStateStr.length - 1);
-    $(".instance-command").addClass("hide");
-
-    if (subState !== "COMMITTED") {
-        $("#delete").removeClass("hide");
-    }
-
-    // Error case
-    if (lastState === "null") {
-        $(".instance-command").removeClass("hide");
-    } else {
-        switch (subState) {
-            case "COMMITTED":
-                if (!hasDrone) {
-                    $("#verify").removeClass("hide");
-                }
-
-                switch (superState) {
-                    case "CREATE":
-                    case "REINSTATE":
-                        $("#force_cancel").removeClass("hide");
-                        break;
-                    case "CANCEL":
-                        $("#force_reinstate").removeClass("hide");
-                        break;
-                }
-                $("#delete").removeClass("hide");
-
-                break;
-            case "COMMITTING":
-                switch (superState) {
-                    case "CREATE":
-                    case "REINSTATE":
-                        $("#force_cancel").removeClass("hide");
-                        break;
-                    case "CANCEL":
-                        $("#force_reinstate").removeClass("hide");
-                        break;
-                }
-
-                break;
-            case "FAILED":
-                if (!hasDrone) {
-                    $("#verify").removeClass("hide");
-                }
-
-                if (lastState === "INIT") {
-                    $("#delete").removeClass("hide");
-                }
-
-                if (lastState === "COMMITTED" ||
-                        lastState === "COMMITTING" ||
-                        lastState === "READY") {
-                    $("#verify").removeClass("hide");
-                    switch (superState) {
-                        case "CREATE":
-                        case "REINSTATE":
-                            $("#force_cancel").removeClass("hide");
-                            break;
-                        case "CANCEL":
-                            $("#force_reinstate").removeClass("hide");
-                            break;
-                    }
-                }
-                if (lastState === "COMMITTING" ||
-                        lastState === "PROPAGATED" ||
-                        lastState === "COMPILED") {
-                    $("#verify").removeClass("hide");
-                    $("#force_retry").removeClass("hide");
-                }
-                break;
-            case "READY":
-                switch (superState) {
-                    case "CREATE":
-                    case "REINSTATE":
-                        $("#cancel").removeClass("hide");
-                        break;
-                    case "CANCEL":
-                        $("#reinstate").removeClass("hide");
-                        break;
-                }
-                break;
-        }
-    }
-}
-
-
 /* REFRESH */
 function reloadData() {
     keycloak.updateToken(90).error(function () {
@@ -1016,7 +666,8 @@ function reloadData() {
             }
             setTimeout(function () {
                 reloadLogs();
-                subloadDetails();
+                updateData();
+                renderDetails();
                 $(".delta-table-header").click(function () {
                     $("#body-" + this.id).toggleClass("hide");
                 });
@@ -1024,7 +675,8 @@ function reloadData() {
             }, 250);
         } else {
             reloadLogs();
-            subloadDetails();
+            updateData();
+            renderDetails();
             $(".delta-table-header").click(function () {
                 $("#body-" + this.id).toggleClass("hide");
             });

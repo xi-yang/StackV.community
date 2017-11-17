@@ -1,0 +1,63 @@
+{
+    "INIT": {
+        "instruction": "Service is being initialized.",
+        "buttons": ["delete"]
+    },
+    "COMPILED": {
+        "instruction": "Service is being initialized.",
+        "buttons": ["delete"]
+    },
+    "PROPAGATED": {
+        "instruction": "Service delta has been sent to backend.",
+        "buttons": ["delete"]
+    },
+    "COMMITTING": {
+        "instruction": "Service is currently being constructed.",
+        "buttons": ["delete", "force_cancel"]
+    },
+    "COMMITTED": {
+        "buttons": ["verify", "force_cancel", "delete"],
+        "verificationResult": {
+            "0": {
+                "instruction": "Service has been constructed, and is now being verified."                
+            },
+            "-1": {
+                "instruction": "Service has been constructed, but could not be verified. Please attempt verification again."
+            }
+        }
+    },
+    "FAILED": {
+        "instruction": "Service has failed. Please see logging for more information.",
+        "lastState": {
+            "INIT": {
+                "buttons": ["verify", "delete"]
+            },
+            "COMPILED": {
+                "buttons": ["verify", "delete", "force_retry"]
+            },
+            "PROPAGATED": {
+                "buttons": ["verify", "delete", "force_retry"]
+            },
+            "COMMITTING": {
+                "buttons": ["verify", "delete", "force_retry", "force_cancel"]
+            },
+            "COMMITTED": {
+                "buttons": ["verify", "delete", "force_cancel"]              
+            },
+            "READY": {
+                "buttons": ["verify", "delete", "force_cancel"]              
+            }
+        }        
+    },
+    "READY": {        
+        "buttons": ["delete", "cancel"],
+        "verificationResult": {
+            "-1": {
+                "instruction": "Service was not able to be verified."
+            },
+            "1": {
+                "instruction": "Service has been successfully verified."
+            }
+        }
+    }
+}

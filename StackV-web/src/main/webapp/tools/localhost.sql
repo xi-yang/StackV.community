@@ -198,7 +198,7 @@ CREATE TABLE `service_verification` (
   `reduction` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
   `addition` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
   `enabled` tinyint(1) NOT NULL DEFAULT '1',
-  `timestamp` datetime NOT NULL
+  `timestamp` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --

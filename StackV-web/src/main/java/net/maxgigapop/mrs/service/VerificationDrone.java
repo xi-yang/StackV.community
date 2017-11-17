@@ -114,9 +114,10 @@ public class VerificationDrone implements Runnable {
                             case "STOP":
                                 logger.status(method, "Stop signal received. Drone ending operation");
                                 state = "FINISHED";
-                                prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED' "
+                                prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED', `timestamp` = ?  "
                                         + "WHERE `instanceUUID` = ? ");
-                                prep.setString(1, instanceUUID);
+                                prep.setTimestamp(1, null);
+                                prep.setString(2, instanceUUID);                                
                                 prep.executeUpdate();
                                 break;
                         }
@@ -174,9 +175,10 @@ public class VerificationDrone implements Runnable {
                     // Step 4: Check for success
                     if (redVerified && addVerified) {
                         state = "FINISHED";
-                        prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1', `state` = 'FINISHED' "
+                        prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1', `state` = 'FINISHED', `timestamp` = ?  "
                                 + "WHERE `instanceUUID` = ? ");
-                        prep.setString(1, instanceUUID);
+                        prep.setTimestamp(1, null);
+                        prep.setString(2, instanceUUID);
                         prep.executeUpdate();
 
                         logger.end(method, "Verification success");
@@ -192,9 +194,10 @@ public class VerificationDrone implements Runnable {
             }
             // Step 4.1 If hit max runs without success, verification has failed
             state = "FINISHED";
-            prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED' "
+            prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED', `timestamp` = ? "
                     + "WHERE `instanceUUID` = ? ");
-            prep.setString(1, instanceUUID);
+            prep.setTimestamp(1, null);
+            prep.setString(2, instanceUUID);
             prep.executeUpdate();
 
             logger.end(method, "Verification failed");
@@ -254,10 +257,9 @@ public class VerificationDrone implements Runnable {
             prep.executeUpdate();
 
             prep = conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`, `instanceUUID`, `timestamp`, `state`) VALUES (?,?,?,'INIT')");
+                    + "(`service_instance_id`, `instanceUUID`, `state`) VALUES (?,?,'INIT')");
             prep.setInt(1, instanceID);
             prep.setString(2, instanceUUID);
-            prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("resetVerification", ex);
