@@ -127,7 +127,7 @@
                     </table>
                 </div>
             </div>
-
+            
 
             <div id="driver-content-panel" class="hidden">
                 <div class="modal-content">
@@ -138,9 +138,10 @@
                         <div class="tab-content" style="background-color:#FFFFFF">                                    
                             <div id="info-panel-body" class="tab-pane fadeIn" style="display:block;background-color:#FFFFFF">
                                 <div id="install-content" class="tab-pane fadeIn" style="background-color:#FFFFFF">
-                                    <div id='install-type' style="background-color:#FFFFFF"></div>
+                                    <div id='install-type' style="background-color:#FFFFFF">
+                                    </div>
                                     <div id='install-type-right' style="background-color:#FFFFFF"></div>
-                                    <div id = "info-panel-button"class = "modal-footer">
+                                    <div id = "info-panel-button" class = "modal-footer">
                                         <div id='install-options'>
                                             <button onclick="clearPanel(); closeContentPanel();">Close</button>
                                         </div>
@@ -152,7 +153,27 @@
 
                 </div>
             </div>
-
+            
+            <!-- element to display overflow driver value details when viewing driver details  -->
+            <div id="driver-overflow-details-panel" class="hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="driver-overflow-details-panel-title">Value</h3>
+                    </div>
+                    <div class="modal-body" style="background-color:#FFFFFF">
+                        <div class="tab-content" style="background-color:#FFFFFF">
+                            <div id ="driver-overflow-details-content" class="tab-pane fadeIn" style="display:block;background-color:#FFFFFF">
+                                <div id="driver-overflow-details-text"></div>
+                                <div id="driver-overflow-details-button" class="modal-footer">
+                                    <button class="button-profile-select btn btn-default" onclick="toggleDriverDetailsPanel();">Close</button
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+             
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
         </div>

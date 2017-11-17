@@ -68,6 +68,7 @@ import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.common.EJBExceptionNegotiable;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.core.DataConcurrencyPoster;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.service.orchestrate.WorkerBase;
 import net.maxgigapop.mrs.system.HandleSystemCall;
@@ -170,7 +171,7 @@ public class HandleServiceCall {
     
     public SystemDelta compileAddDelta(String serviceInstanceUuid, String workerClassPath, ServiceDelta spaDelta) {
         logger.refuuid(serviceInstanceUuid);
-        logger.targetid(spaDelta.getId());
+        logger.targetid(spaDelta.getReferenceUUID());
         logger.start("compileAddDelta", "COMPILING");
         ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         if (serviceInstance == null) {
@@ -287,7 +288,7 @@ public class HandleServiceCall {
         if (spaDelta == null) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none active delta with status=NEGOTIATING");
         }
-        logger.targetid(spaDelta.getId());
+        logger.targetid(spaDelta.getReferenceUUID());
         WorkerBase worker = null;
         try {
             worker = (WorkerBase) this.getClass().getClassLoader().loadClass(workerClassPath).newInstance();
@@ -966,6 +967,7 @@ public class HandleServiceCall {
             List<String> excludeMatches = new ArrayList<String>();
             List<String> excludeExtentials = new ArrayList<String>();
             excludeMatches.add("#isAlias");
+            excludeMatches.add("#belongsTo");
             excludeMatches.add("#providedBy");
             excludeExtentials.add("#nextHop");
             excludeExtentials.add("#routeFrom");
@@ -1065,16 +1067,16 @@ public class HandleServiceCall {
     }
     
     public boolean hasSystemBootStrapped() {
-        SystemModelCoordinator systemModelCoordinator = null;
+        DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
-            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
-        } catch (NamingException ex) {
-            throw logger.error_throwing("hasSystemBootStrapped", " failed to inject systemModelCoordinator -exception- " + ex);
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (NamingException e) {
+            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
         }
-        return systemModelCoordinator.isBootStrapped();
+        return dataConcurrencyPoster.isSystemModelCoordinator_bootStrapped();
     }
-    
+
     public void resetSystemBootStrapped() {
         SystemModelCoordinator systemModelCoordinator = null;
         try {
@@ -1088,28 +1090,27 @@ public class HandleServiceCall {
     }
     
     private OntModel fetchReferenceModel() {
+        String method = "fetchReferenceModel";
         SystemModelCoordinator systemModelCoordinator = null;
         try {
             Context ejbCxt = new InitialContext();
             systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
         } catch (NamingException ex) {
-            throw logger.error_throwing("fetchReferenceModel", " failed to inject systemModelCoordinator -exception- " + ex);
+            throw logger.error_throwing(method, " failed to inject systemModelCoordinator -exception- " + ex);
         }
         OntModel refModel = null;
-        for (int retry = 0; retry < 10; retry++) {
-            try {
-                refModel = systemModelCoordinator.getLatestOntModel();
-                break;
-            } catch (EJBException ex) {
-                if (ex.getMessage() != null && ex.getMessage().contains("concurrent access timeout ")) {
-                    try {
-                        sleep(10000L);
-                    } catch (InterruptedException ex1) {
-                        ;
-                    }
-                } else {
-                    throw ex;
+        try {
+            refModel = systemModelCoordinator.getLatestOntModel();
+        } catch (EJBException ex) {
+            if (ex.getMessage() != null && ex.getMessage().contains("concurrent access timeout ")) {
+                DataConcurrencyPoster dataConcurrencyPoster;
+                try {
+                    Context ejbCxt = new InitialContext();
+                    dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+                } catch (NamingException e) {
+                    throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + e);
                 }
+                refModel = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
             }
         }
         return refModel;

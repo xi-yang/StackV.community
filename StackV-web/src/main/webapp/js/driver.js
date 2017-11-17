@@ -26,6 +26,7 @@ var tweenInstalledPanel = new TweenLite("#installed-panel", 1, {ease: Power2.eas
 var tweenAddPanel = new TweenLite("#driver-add-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 var tweenTemplatePanel = new TweenLite("#driver-template-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
 var tweenContentPanel = new TweenLite("#driver-content-panel", 1, {ease: Power2.easeInOut, paused: true, bottom: "10%"});
+var tweenDriverOverflowDetailsPanel = new TweenLite("#driver-overflow-details-panel", 1, {ease: Power2.easeInOut, paused: true, bottom:"10%"});
 var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 var view = "center";
 
@@ -142,6 +143,26 @@ function closeContentPanel() {
         $("#driver-content-panel").removeClass("open");
         $("#driver-content-panel").removeClass("active");
         $("#driver-content-panel").addClass("hidden");
+    }
+}
+
+/*
+ * Show and hide the details of a driver value when asked
+ */
+function toggleDriverDetailsPanel(){
+    if (!$("#driver-overflow-details-panel").hasClass("open")) {
+        tweenBlackScreen.play();
+        tweenDriverOverflowDetailsPanel.play();
+        //$("#driver-overflow-details-panel").css("position", "absolute");
+        $("#driver-overflow-details-panel").addClass("open");
+        $("#driver-overflow-details-panel").removeClass("hidden");
+        $("#driver-overflow-details-panel").addClass("active");
+    } else {
+        tweenBlackScreen.reverse();
+        tweenDriverOverflowDetailsPanel.reverse();
+        $("#driver-overflow-details-panel").removeClass("open");
+        $("#driver-overflow-details-panel").removeClass("active");
+        $("#driver-overflow-details-panel").addClass("hidden");
     }
 }
 
@@ -806,7 +827,13 @@ function editDriverProfile(clickID) {
         row.cells[1].appendChild(textbox);
     }
 }
+
+
 //FIX THIS
+/*
+ * @param {type} clickID
+ * Making the drivers details profile
+ */
 function getDetailsProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var panel = document.getElementById("install-type");
@@ -999,7 +1026,29 @@ function getDetails(clickID) {
                 var tempkey = document.createElement("td");
                 var tempval = document.createElement("td");
                 tempkey.innerHTML = result[i];
-                tempval.innerHTML = result[i + 1];
+                var tempvalString = result[i + 1];
+                if (tempvalString.length > 80) {
+                    console.log("tempkey: " + tempkey.innerHTML);
+                    console.log("tempvalResult: " + tempvalString + " ,tempvalResult length: " + tempvalString.length);
+                    //if the value is greater than 80 - make a button which will show the info in a pane
+                    var valDetailsBtn = document.createElement("button");
+                    valDetailsBtn.id = "valDetailsBtn" + i;
+                    valDetailsBtn.innerHTML = "View Value";
+                    valDetailsBtn.title = tempvalString;
+                    valDetailsBtn.className = "button-profile-select btn btn-default";
+                    valDetailsBtn.onclick = function () {
+                        //clearPanel();
+                        //activateSide();
+                        //changeNameDet(); //function does nothing - currently has no body
+                        //displayValDetails(tempvalString);
+                        $("#driver-overflow-details-text").text(this.title);
+                        toggleDriverDetailsPanel();
+                    };
+                    tempval.appendChild(valDetailsBtn);
+                } else {
+                    tempval.innerHTML = tempvalString;
+                }
+                //tempval.innerHTML = result[i + 1];
                 row.appendChild(tempkey);
                 row.appendChild(tempval);
                 table.appendChild(row);
@@ -1008,6 +1057,7 @@ function getDetails(clickID) {
         }
     });
 }
+
 function plugDriver(topuri) {
     var URI = topuri;
     var userId = keycloak.tokenParsed.preferred_username;

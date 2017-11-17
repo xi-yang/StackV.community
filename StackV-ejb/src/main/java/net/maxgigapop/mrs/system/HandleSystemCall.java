@@ -98,7 +98,6 @@ public class HandleSystemCall {
         vg.setRefUuid(refUuid);
         for (String topoUri : ditMap.keySet()) {
             DriverInstance di = ditMap.get(topoUri);
-            synchronized (di) {
                 VersionItem vi = di.getHeadVersionItem();
                 if (vi == null) {
                     throw logger.error_throwing(method, "encounters null head versionItem in " + di);
@@ -110,7 +109,6 @@ public class HandleSystemCall {
                 if (vg.getVersionItems() == null || !vg.getVersionItems().contains(vi)) {
                     vg.addVersionItem(vi);
                 }
-            }
         }
         VersionGroupPersistenceManager.save(vg);
         logger.end(method);
@@ -174,7 +172,7 @@ public class HandleSystemCall {
         logger.refuuid(refUuid);
         logger.trace_start(method);
         if (refUuid.equals("default")) {
-            try {
+            try {//@TODO: use cache model from DataConcurrencyPoster
                 Context ejbCxt = new InitialContext();
                 SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
                 VersionGroup vg = systemModelCoordinator.getSystemVersionGroup();
@@ -415,39 +413,17 @@ public class HandleSystemCall {
             // Save targetDSD modelA and modelR.
             targetDSD.getModelAddition().setDelta(null);
             targetDSD.getModelReduction().setDelta(null);
-            //ModelPersistenceManager.save(targetDSD.getModelAddition());
-            //ModelPersistenceManager.save(targetDSD.getModelReduction());
             logger.trace(method, "created driver delta for target topology="+driverSystemTopoUri);
         }
         // Save systemDelta
-        sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
-        sysDelta.setPersistent(false);
-        DeltaPersistenceManager.save(sysDelta); // propogate to save included targetDriverSystemDeltas and modelA and modelR
+        //sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
+        //sysDelta.setPersistent(false);
 
         //## Step 4. propagate driverSystemDeltas 
         Context ejbCxt = null;
         for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
-            // save targetDSD
-            DeltaPersistenceManager.merge(targetDSD);
-            targetDSD.getModelAddition().setDelta(targetDSD);
-            targetDSD.getModelReduction().setDelta(targetDSD);
-            ModelPersistenceManager.merge(targetDSD.getModelAddition());
-            ModelPersistenceManager.merge(targetDSD.getModelReduction());
-            logger.trace(method, "start propagating targetDSD="+targetDSD);
-            // push driverSystemDeltas to driverInstances
+            targetDSD.setReferenceUUID(UUID.randomUUID().toString());
             DriverInstance driverInstance = targetDSD.getDriverInstance();
-            logger.trace(method, "targetDSD has driverInstance="+driverInstance);
-            // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta
-            if (driverInstance.getDriverSystemDeltas() != null) {
-                Iterator<DriverSystemDelta> itOtherDSD = driverInstance.getDriverSystemDeltas().iterator();
-                while (itOtherDSD.hasNext()) {
-                    DriverSystemDelta otherDSD = itOtherDSD.next();
-                    if (!otherDSD.getSystemDelta().equals(sysDelta)) {
-                        itOtherDSD.remove();
-                    }
-                }
-            }
-            driverInstance.addDriverSystemDelta(targetDSD);
             String driverEjbPath = driverInstance.getDriverEjbPath();
             // make driverSystem propagateDelta call with targetDSD
             try {
@@ -462,7 +438,34 @@ public class HandleSystemCall {
                 throw logger.throwing(method, ex);
             }
         }
-        // save systemInstance
+        //## Step 5. save propagate data
+        //DeltaPersistenceManager.merge(sysDelta); // propogate to save included targetDriverSystemDeltas and modelA and modelR
+        for (DriverSystemDelta targetDSD : targetDriverSystemDeltas) {
+            // save targetDSD
+            DeltaPersistenceManager.save(targetDSD);
+            targetDSD.getModelAddition().setDelta(targetDSD);
+            targetDSD.getModelReduction().setDelta(targetDSD);
+            ModelPersistenceManager.merge(targetDSD.getModelAddition());
+            ModelPersistenceManager.merge(targetDSD.getModelReduction());
+            logger.trace(method, "start propagating targetDSD="+targetDSD);
+            // push driverSystemDeltas to driverInstances
+            DriverInstance driverInstance = targetDSD.getDriverInstance();
+            logger.trace(method, "targetDSD has driverInstance="+driverInstance);
+            // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta
+            if (driverInstance.getDriverSystemDeltas() != null) {
+                Iterator<DriverSystemDelta> itOtherDSD = driverInstance.getDriverSystemDeltas().iterator();
+                while (itOtherDSD.hasNext()) {
+                    DriverSystemDelta otherDSD = itOtherDSD.next();
+                    if (otherDSD.getSystemDelta() == null || !otherDSD.getSystemDelta().equals(sysDelta)) {
+                        itOtherDSD.remove();
+                    }
+                }
+            }
+            driverInstance.addDriverSystemDelta(targetDSD);
+            DriverInstancePersistenceManager.save(driverInstance);
+        }
+        //sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
+        // save systemInstance and cascade to save systemDelta
         systemInstance.setSystemDelta(sysDelta);
         SystemInstancePersistenceManager.save(systemInstance);
         logger.end(method);
@@ -496,6 +499,7 @@ public class HandleSystemCall {
                 continue;
             }
             DriverInstance driverInstance = dsd.getDriverInstance();
+            driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
             if (driverInstance == null) {
                 throw logger.error_throwing(method, String.format("%s has null driverInstance ", dsd, systemInstance));
             }
@@ -506,6 +510,7 @@ public class HandleSystemCall {
                 String driverEjbPath = driverInstance.getDriverEjbPath();
                 IHandleDriverSystemCall driverSystemHandler = (IHandleDriverSystemCall) ejbCxt.lookup(driverEjbPath);
                 // 3. Call Async commitDelta to each driverInstance based on versionItems in VG.
+                dsd.setDriverInstance(driverInstance);
                 Future<String> result = driverSystemHandler.commitDelta(dsd);
                 // 4. add AsyncResult to resultMap
                 commitResultMap.put(dsd, result);

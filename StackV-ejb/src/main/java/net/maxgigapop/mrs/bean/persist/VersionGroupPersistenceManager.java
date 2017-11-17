@@ -96,7 +96,6 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         }
         for (DriverInstance di : ditMap.values()) {
             if (!listDI.contains(di)) {
-                synchronized (di) {
                     VersionItem newVi = di.getHeadVersionItem();
                     if (newVi == null) {
                         logger.targetid(di.getId().toString());
@@ -108,7 +107,6 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     if (!vg.getVersionItems().contains(newVi)) {
                         vg.addVersionItem(newVi);
                     }
-                }
                 needToUpdate = true;
             }
         }

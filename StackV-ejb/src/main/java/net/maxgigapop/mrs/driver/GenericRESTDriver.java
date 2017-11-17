@@ -67,11 +67,10 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         String method = "propagateDelta";
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
@@ -84,7 +83,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         try {
             // compose string body (delta) using JSONObject
             JSONObject deltaJSON = new JSONObject();
-            deltaJSON.put("id", aDelta.getId());
+            deltaJSON.put("id", aDelta.getReferenceUUID());
             deltaJSON.put("referenceVersion", refVI.getReferenceUUID());
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             deltaJSON.put("creationTime", dateFormat.format(new Date()).toString());
@@ -117,7 +116,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
@@ -129,7 +128,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         }
         // commit through PUT
         try {
-            URL url = new URL(String.format("%s/delta/%s/%s/commit", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
+            URL url = new URL(String.format("%s/delta/%s/%s/commit", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getReferenceUUID()));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String status = this.executeHttpMethod(url, conn, "PUT", null);
         } catch (IOException ex) {
@@ -142,7 +141,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
             try {
                 sleep(30000L); // poll every 30 seconds -> ? make configurable
                 // pull model from REST API
-                URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getId()));
+                URL url = new URL(String.format("%s/delta/%s/%s", subsystemBaseUrl, aDelta.getReferenceVersionItem().getReferenceUUID(), aDelta.getReferenceUUID()));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 String status = this.executeHttpMethod(url, conn, "GET", null);
                 if (status.toUpperCase().equals("ACTIVE") || status.toUpperCase().equals("TERMINATED")) {

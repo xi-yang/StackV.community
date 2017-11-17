@@ -63,12 +63,11 @@ public class AwsDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         String method = "propagateDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
@@ -80,16 +79,14 @@ public class AwsDriver implements IHandleDriverSystemCall {
         String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
         String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
 
-        String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
-        String modelAdd = aDelta.getModelAddition().getTtlModel();
-        String modelReduc = aDelta.getModelReduction().getTtlModel();
+        OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
+        OntModel modelAdd = aDelta.getModelAddition().getOntModel();
+        OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
-        String requests = null;
-        requests = push.pushPropagate(model, modelAdd, modelReduc);
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requests = push.pushPropagate(model, modelAdd, modelReduc);
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
         driverInstance.putProperty(requestId, requests);
-        DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);
     }
 
@@ -102,14 +99,14 @@ public class AwsDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
         String requests = driverInstance.getProperty(requestId);
         if (requests == null) {
             throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
