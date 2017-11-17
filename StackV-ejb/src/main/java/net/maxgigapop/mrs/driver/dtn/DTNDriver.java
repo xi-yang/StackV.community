@@ -42,11 +42,10 @@ public class DTNDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         String method = "propagateDelta";
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String user_account = driverInstance.getProperty("user_account");
@@ -55,9 +54,9 @@ public class DTNDriver implements IHandleDriverSystemCall {
         String topologyURI = driverInstance.getProperty("topologyUri");
         String map = driverInstance.getProperty("mappingId");
 
-        String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
-        String modelAdd = aDelta.getModelAddition().getTtlModel();
-        String modelReduc = aDelta.getModelReduction().getTtlModel();
+        OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
+        OntModel modelAdd = aDelta.getModelAddition().getOntModel();
+        OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
         DTNPush push = new DTNPush(user_account, access_key, address, topologyURI, map);
         String requests = null;
@@ -67,9 +66,8 @@ public class DTNDriver implements IHandleDriverSystemCall {
             throw logger.throwing(method, ex);
         }
 
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
         driverInstance.putProperty(requestId, requests);
-        DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);
     }
 
@@ -81,7 +79,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
@@ -94,7 +92,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
         String topologyURI = driverInstance.getProperty("topologyUri");
         String map = driverInstance.getProperty("mappingId");
         
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
         String requests = driverInstance.getProperty(requestId);
 
         DTNPush push = new DTNPush(user_account, access_key, address, topologyURI, map);

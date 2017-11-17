@@ -118,21 +118,9 @@ public class AwsPush {
      * function to propagate all the requests
      * ************************************************
      */
-    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
+    public String pushPropagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
         String method = "pushPropagate";
         String requests = "";
-
-        OntModel modelRef;
-        OntModel modelAdd;
-        OntModel modelReduct;
-        try {
-            modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
-            modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
-            modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
-
-        } catch (Exception ex) {
-            throw logger.throwing(method, ex);
-        }
 
         //deatch volumes that need to be detached
         requests += detachVolumeRequests(modelRef, modelReduct);
