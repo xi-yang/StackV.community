@@ -12,7 +12,7 @@ function load() {
             xhr.setRequestHeader("Authorization", "bearer " + token);
         },
         success: function (instance) {
-            var serviceName = instance[1];
+            var serviceName = instance[0];
             switch (serviceName) {
                 case "Dynamic Network Connection":
                     loadManifest("dnc-manifest-template.xml");
