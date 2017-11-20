@@ -40,6 +40,7 @@ var verificationHasDrone = true;
 var verificationState;
 var verificationResult;
 var verificationRun;
+var verificationElapsed;
 var verificationTime;
 var verificationAddition;
 var verificationReduction;
@@ -69,9 +70,9 @@ function renderDetails() {
             instruction = instruction.replace("{{" + str + "}}", result);
         }
     }
-    if (verificationHasDrone) {
-        instruction += " (Verification Run " + verificationRun + ")";
-    }
+    //if (verificationHasDrone) {
+        instruction += " (Verification elapsed time: " + verificationElapsed + ")";
+    //} 
     $instruction.html(instruction);
 
     // Buttons
@@ -147,6 +148,7 @@ function updateData() {
             verificationTime = verification[3];
             verificationAddition = verification[4];
             verificationReduction = verification[5];
+            verificationElapsed = verification[7];
 
             $.ajax({
                 url: apiUrl += '/drone',
