@@ -70,9 +70,9 @@ function renderDetails() {
             instruction = instruction.replace("{{" + str + "}}", result);
         }
     }
-    //if (verificationHasDrone) {
+    if (verificationHasDrone) {
         instruction += " (Verification elapsed time: " + verificationElapsed + ")";
-    //} 
+    } 
     $instruction.html(instruction);
 
     // Buttons
