@@ -46,6 +46,11 @@ div#driver-template-panel {
     z-index: 20;
 }
 
+.tooltip-inner {
+    word-break: break-all;
+    max-width: 80%;
+ }
+
 #install-content input {
     width: 80%;
 }

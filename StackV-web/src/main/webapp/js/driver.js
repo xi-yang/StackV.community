@@ -150,6 +150,7 @@ function closeContentPanel() {
  * Show and hide the details of a driver value when asked
  */
 function toggleDriverDetailsPanel(){
+    //if the overflow details panel is not opened (shown) - then play the animations and show the panel
     if (!$("#driver-overflow-details-panel").hasClass("open")) {
         tweenBlackScreen.play();
         tweenDriverOverflowDetailsPanel.play();
@@ -157,7 +158,7 @@ function toggleDriverDetailsPanel(){
         $("#driver-overflow-details-panel").addClass("open");
         $("#driver-overflow-details-panel").removeClass("hidden");
         $("#driver-overflow-details-panel").addClass("active");
-    } else {
+    } else { //otherwise reverse the animations and hide the panel
         tweenBlackScreen.reverse();
         tweenDriverOverflowDetailsPanel.reverse();
         $("#driver-overflow-details-panel").removeClass("open");
@@ -1027,33 +1028,52 @@ function getDetails(clickID) {
                 var tempval = document.createElement("td");
                 tempkey.innerHTML = result[i];
                 var tempvalString = result[i + 1];
+                
+                // handles if the details overflow the size of the table cell
+                // currently handled by replacing text with a button that brings up popup with text of details
+                // can also implement a tooltip
                 if (tempvalString.length > 80) {
-                    console.log("tempkey: " + tempkey.innerHTML);
-                    console.log("tempvalResult: " + tempvalString + " ,tempvalResult length: " + tempvalString.length);
                     //if the value is greater than 80 - make a button which will show the info in a pane
                     var valDetailsBtn = document.createElement("button");
-                    valDetailsBtn.id = "valDetailsBtn" + i;
-                    valDetailsBtn.innerHTML = "View Value";
+                    
+                    //setting the btn id to the text of the key
+                    valDetailsBtn.id = tempkey.innerHTML;
+                    
+                    // need to store the string somewhere unique to button so it can be accessed later by its onclick function
+                    // this will be overwritten by the currently used version of the bootstrap tooltip
                     valDetailsBtn.title = tempvalString;
-                    valDetailsBtn.className = "button-profile-select btn btn-default";
+                    
+                    valDetailsBtn.innerHTML = "View Value";
+                    
+                    //bootstrap tooltip attribute
+                    valDetailsBtn.setAttribute("data-toggle","tooltip");
+                    valDetailsBtn.setAttribute("data-placement", "right");
+                    
+                    
+                    valDetailsBtn.className = "button-profile-select btn btn-default";                    
                     valDetailsBtn.onclick = function () {
-                        //clearPanel();
-                        //activateSide();
-                        //changeNameDet(); //function does nothing - currently has no body
-                        //displayValDetails(tempvalString);
-                        $("#driver-overflow-details-text").text(this.title);
+                        $("#driver-overflow-details-panel-title").text(this.id);
+                        
+                        //Have to use data-original-title instead of title (like below) because the bootstrap tooltip overwrites 
+                        //and replaces the title attribute with its own version called data-original-title
+                        //$("#driver-overflow-details-text").text(this.title);
+                        $("#driver-overflow-details-text").text(this.getAttribute("data-original-title"));
                         toggleDriverDetailsPanel();
+                        $("html, body").animate({
+                            scrollTop: $("#driver-overflow-details-panel-title").offset().top
+                        }, 1000);
                     };
                     tempval.appendChild(valDetailsBtn);
                 } else {
+                    // if the value string is less than 80, then just display it in the display
                     tempval.innerHTML = tempvalString;
                 }
-                //tempval.innerHTML = result[i + 1];
                 row.appendChild(tempkey);
                 row.appendChild(tempval);
                 table.appendChild(row);
                 panel.appendChild(table);
             }
+            $('[data-toggle="tooltip"]').tooltip(); //activating tooltip
         }
     });
 }
