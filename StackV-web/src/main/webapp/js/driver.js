@@ -127,6 +127,8 @@ $(function () {
     });
 });
 
+//TODO merge into one function called toggleContentPanel during cleanup
+// and edit all references to these functions
 function openContentPanel() {
     if (!$("#driver-content-panel").hasClass("open")) {
         tweenBlackScreen.play();
@@ -930,8 +932,11 @@ function getAllDetails() {
 
                 delButton.innerHTML = "Delete";
                 delButton.style.width = "64px";
-                delButton.className = "button-profile-select btn btn-default";
+                delButton.className = "button-profile-select btn btn-danger";
                 delButton.onclick = function () {
+                    /*
+                     * * the SweetAlerts library style doesn't match the current style
+                     * Going to redo in regular boostrap style
                     swal("Confirm deletion?", {
                         buttons: {
                             cancel: "Cancel",
@@ -943,6 +948,8 @@ function getAllDetails() {
                             reloadData();
                         }
                     });
+                    */
+                   
                 };
 
                 delButton.id = result[i + 2];
@@ -966,6 +973,11 @@ function getAllDetails() {
         }
     });
 }
+
+function createButtonsModal(title, body,) {
+    
+}
+
 function removeDriver(clickID) {
     var topUri = clickID;
     var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
@@ -1028,6 +1040,8 @@ function getDetails(clickID) {
                 var tempval = document.createElement("td");
                 tempkey.innerHTML = result[i];
                 var tempvalString = result[i + 1];
+                // create a shorter version (up to 120 characters) of the values of the driver's keys
+                var tempvalStringShort = tempvalString.substring(0,121) + " ...";
                 
                 // handles if the details overflow the size of the table cell
                 // currently handled by replacing text with a button that brings up popup with text of details
@@ -1040,8 +1054,11 @@ function getDetails(clickID) {
                     valDetailsBtn.id = tempkey.innerHTML;
                     
                     // need to store the string somewhere unique to button so it can be accessed later by its onclick function
-                    // this will be overwritten by the currently used version of the bootstrap tooltip
-                    valDetailsBtn.title = tempvalString;
+                    // the title attribute value will be used by the tooltip when it is initialized so the string cannot be stored
+                    // in the title attribute. Instead the shorten string is stored in the title attribute and the full string is
+                    // stored in a custom attribute
+                    valDetailsBtn.title = tempvalStringShort;
+                    valDetailsBtn.setAttribute("details-value", tempvalString);
                     
                     valDetailsBtn.innerHTML = "View Value";
                     
@@ -1050,17 +1067,18 @@ function getDetails(clickID) {
                     valDetailsBtn.setAttribute("data-placement", "right");
                     
                     
+                    
                     valDetailsBtn.className = "button-profile-select btn btn-default";                    
                     valDetailsBtn.onclick = function () {
+                        
                         $("#driver-overflow-details-panel-title").text(this.id);
                         
                         //Have to use data-original-title instead of title (like below) because the bootstrap tooltip overwrites 
                         //and replaces the title attribute with its own version called data-original-title
-                        //$("#driver-overflow-details-text").text(this.title);
-                        $("#driver-overflow-details-text").text(this.getAttribute("data-original-title"));
+                        $("#driver-overflow-details-text").text(this.getAttribute("details-value"));
                         toggleDriverDetailsPanel();
-                        $("html, body").animate({
-                            scrollTop: $("#driver-overflow-details-panel-title").offset().top
+                        $("#driver-overflow-details-text").animate({
+                            scrollTop: $("#driver-content-panel").offset().top
                         }, 1000);
                     };
                     tempval.appendChild(valDetailsBtn);
