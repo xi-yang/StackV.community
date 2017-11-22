@@ -137,6 +137,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         for (String connId: connDataMap.keySet()) {
             List<Resource> terminals = new ArrayList<>();
             JSONObject jsonConnReq = (JSONObject)connDataMap.get(connId);
+            jsonConnReq.put("id", resConn.getURI()+"-"+connId.replace(" ", "_"));
             JSONObject jsonTerminals = (JSONObject)jsonConnReq.get("terminals");
             if (jsonTerminals == null || jsonTerminals.size() < 3) {
                 throw logger.error_throwing(method, String.format("cannot find path for connection '%s' - request must have at least 3 terminals", connId));
