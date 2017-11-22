@@ -81,10 +81,10 @@ public class VerificationHandler {
     }
     
     private void asyncVerification() {
-        new Thread(new VerificationDrone(instanceUUID, token, conn, runs, delay)).start();
+        new Thread(new VerificationDrone(instanceUUID, token, conn)).start();
     }
     private String syncVerification() {
-        VerificationDrone drone = new VerificationDrone(instanceUUID, token, conn, runs, delay);
+        VerificationDrone drone = new VerificationDrone(instanceUUID, token, conn);
         drone.run();
         return drone.getResult();
     }

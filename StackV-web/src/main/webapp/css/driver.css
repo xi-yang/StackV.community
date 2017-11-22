@@ -46,6 +46,16 @@ div#driver-template-panel {
     z-index: 20;
 }
 
+#driver-overflow-details-text {
+    height: 200px;
+    word-wrap: break-word;
+}
+
+.tooltip-inner {
+    word-break: break-all;
+    max-width: 80%;
+ }
+
 #install-content input {
     width: 80%;
 }

@@ -2395,6 +2395,7 @@ public class WebResource {
                 retList.add(rs.getString("addition"));
                 retList.add(rs.getString("reduction"));
                 retList.add(rs.getString("service_instance_id"));
+                retList.add(rs.getString("elapsed_time"));
             }
 
             return retList;
