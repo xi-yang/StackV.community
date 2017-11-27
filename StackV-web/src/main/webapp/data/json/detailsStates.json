@@ -15,6 +15,10 @@
         "instruction": "Service is currently being constructed.",
         "buttons": ["delete", "force_cancel"]
     },
+    "COMMITTING-PARTIAL": {
+        "instruction": "Service is currently being constructed.",
+        "buttons": ["delete", "force_cancel"]
+    },
     "COMMITTED": {
         "buttons": ["verify", "force_cancel", "delete"],
         "verificationResult": {

@@ -285,6 +285,6 @@ function executeCommand(command) {
                 $(".instance-command").attr('disabled', false);
                 resumeRefresh();
                 reloadData();
-            }, 250);
+            }, 500);
     }
 }

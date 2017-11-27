@@ -683,4 +683,4 @@ function reloadData() {
             refreshSync(refreshed, timerSetting);
         }
     });
-}
+}  

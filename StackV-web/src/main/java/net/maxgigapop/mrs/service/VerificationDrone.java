@@ -133,9 +133,7 @@ public class VerificationDrone implements Runnable {
                     URL url = new URL(String.format("%s/service/verify/%s", HOST, instanceUUID));
                     HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
                     String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, token.auth());
-                    lastResult = result;
-
-                    System.out.println("VerificationDrone :: UUID=" + instanceUUID + " :: \n" + lastResult + "\n");
+                    lastResult = result;                    
 
                     // Pull data from JSON.
                     JSONParser parser = new JSONParser();
@@ -272,5 +270,6 @@ public class VerificationDrone implements Runnable {
         } catch (SQLException ex) {
             logger.catching("resetVerification", ex);
         }
+        currentRun = 0;
     }
 }
