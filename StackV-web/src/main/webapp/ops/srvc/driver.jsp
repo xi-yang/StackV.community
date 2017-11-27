@@ -158,17 +158,15 @@
             <div id="driver-overflow-details-panel" class="hidden">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3 id="driver-overflow-details-panel-title">Value</h3>
+                        <h3 id="driver-overflow-details-panel-title"></h3>
                     </div>
-                    <div class="modal-body" style="background-color:#FFFFFF">
+                    <div class="modal-body" style="display:block;background-color:#FFFFFF">
                         <div class="tab-content" style="background-color:#FFFFFF">
-                            <div id ="driver-overflow-details-content" class="tab-pane fadeIn" style="display:block;background-color:#FFFFFF">
-                                <div id="driver-overflow-details-text"></div>
-                                <div id="driver-overflow-details-button" class="modal-footer">
-                                    <button class="button-profile-select btn btn-default" onclick="toggleDriverDetailsPanel();">Close</button
-                                </div>
-                            </div>
+                            <div id="driver-overflow-details-text"></div>
                         </div>
+                    </div>
+                    <div id="driver-overflow-details-button" class="modal-footer">
+                        <button class="button-profile-select btn btn-default" onclick="toggleDriverDetailsPanel();">Close</button>
                     </div>
                 </div>
             </div>
@@ -184,7 +182,7 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+        <script src="/StackV-web/js/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
