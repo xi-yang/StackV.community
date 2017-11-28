@@ -127,8 +127,8 @@ $(function () {
     });
 });
 
-//TODO merge into one function called toggleContentPanel during cleanup
-// and edit all references to these functions
+//TODO: merge into one function called toggleContentPanel during cleanup
+// and edit all references to below two functions
 function openContentPanel() {
     if (!$("#driver-content-panel").hasClass("open")) {
         tweenBlackScreen.play();
@@ -148,26 +148,6 @@ function closeContentPanel() {
     }
 }
 
-/*
- * Show and hide the details of a driver value when asked
- */
-function toggleDriverDetailsPanel(){
-    //if the overflow details panel is not opened (shown) - then play the animations and show the panel
-    if (!$("#driver-overflow-details-panel").hasClass("open")) {
-        tweenBlackScreen.play();
-        tweenDriverOverflowDetailsPanel.play();
-        //$("#driver-overflow-details-panel").css("position", "absolute");
-        $("#driver-overflow-details-panel").addClass("open");
-        $("#driver-overflow-details-panel").removeClass("hidden");
-        $("#driver-overflow-details-panel").addClass("active");
-    } else { //otherwise reverse the animations and hide the panel
-        tweenBlackScreen.reverse();
-        tweenDriverOverflowDetailsPanel.reverse();
-        $("#driver-overflow-details-panel").removeClass("open");
-        $("#driver-overflow-details-panel").removeClass("active");
-        $("#driver-overflow-details-panel").addClass("hidden");
-    }
-}
 
 function loadDriverNavbar() {
     $("#sub-nav").load("/StackV-web/nav/driver_navbar.html", function () {
@@ -653,8 +633,7 @@ function openWindow() {
     };
     document.getElementById("info-option").appendChild(saveButton);
 }
-function changeNameDet() {
-}
+
 function addDriver() {
     var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
@@ -769,7 +748,6 @@ function updateDrivers(URI) {
                     $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
-                    changeNameDet();
                     getDetailsProfile(URI);
                     openContentPanel();
                 };
@@ -794,8 +772,6 @@ function updateDrivers(URI) {
                     $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
-
-                    changeNameDet();
                     editDriverProfile(URI);
 
                     openContentPanel();
@@ -832,7 +808,6 @@ function editDriverProfile(clickID) {
 }
 
 
-//FIX THIS
 /*
  * @param {type} clickID
  * Making the drivers details profile
@@ -916,6 +891,9 @@ function getAllDetails() {
                 var cell3 = document.createElement("td");
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
+                
+                drivername.innerHTML = result[i + 2];
+                description.innerHTML = result[i + 1];
 
                 detButton.innerHTML = "Details";
                 detButton.style.width = "64px";
@@ -923,40 +901,63 @@ function getAllDetails() {
                 detButton.onclick = function () {
                     clearPanel();
                     activateSide();
-                    changeNameDet();
                     getDetails(this.id);
                     openContentPanel();
                 };
 
                 detButton.id = result[i];
-
                 delButton.innerHTML = "Delete";
                 delButton.style.width = "64px";
                 delButton.className = "button-profile-select btn btn-danger";
+                delButton.setAttribute("del-button-for", result[i + 2]);       
                 delButton.onclick = function () {
-                    /*
-                     * * the SweetAlerts library style doesn't match the current style
-                     * Going to redo in regular boostrap style
-                    swal("Confirm deletion?", {
-                        buttons: {
-                            cancel: "Cancel",
-                            delete: {text: "Delete", value: true}
-                        }
-                    }).then((value) => {
-                        if (value) {
-                            removeDriver(this.id);
-                            reloadData();
-                        }
-                    });
-                    */
+                   var driverNameFromAttr = this.getAttribute("del-button-for");
+                   var driverId = this.id;
                    
-                };
+          
+                   //setting text of the jquery dialog
+                   $("#dialog-confirm-text").text(driverNameFromAttr);
+                   //jquery dialog
+                   $("#dialog-confirm").dialog({
+                       open: function(event, ui) {
+                           // bootsrap and jquery have a conflict when displaying certain buttons 
+                           // (in this case the close - 'X' ) in the top right hand corner of the dialog.
+                           // So current solution is to hide that button and still allow us to use
+                           // bootstrap within the jquery dialog
+                           $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
+                           
+                           // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
+                           // but prevents use of boostrap styling in the jquery dialog
+                       },
+                       resizable: false,
+                       draggable: false,
+                       title: "Are you sure you want to delete this driver?",
+                       height: "auto",
+                       width: 400,
+                       modal: true,
+                       buttons: [
+                           {
+                               text: "Delete",
+                               "class": "button-profile-select btn btn-danger",
+                               click: function () {
+                                   removeDriver(driverId);
+                                   $(this).dialog("close");
+                               }
+                           },
+                           {
+                               text: "Cancel",
+                               "class": "button-profile-select btn btn-default",
+                               click: function () {
+                                   $(this).dialog("close");
+                               }
+                           }
+                       ]
+                       
+                   });
+                  };
 
                 delButton.id = result[i + 2];
-
-
-                drivername.innerHTML = result[i + 2];
-                description.innerHTML = result[i + 1];
+                
                 cell3.appendChild(detButton);
                 cell3.appendChild(delButton);
                 cell3.style.width = "170px";
@@ -972,10 +973,6 @@ function getAllDetails() {
             }
         }
     });
-}
-
-function createButtonsModal(title, body,) {
-    
 }
 
 function removeDriver(clickID) {
@@ -995,7 +992,6 @@ function removeDriver(clickID) {
         error: function (result) {
             clearPanel();
             activateSide();
-            changeNameDet();
 
             $("#info-panel-title").text("Failed Due to Service Instances:");
             var body = $("#info-panel-body");
@@ -1050,13 +1046,13 @@ function getDetails(clickID) {
                     //if the value is greater than 80 - make a button which will show the info in a pane
                     var valDetailsBtn = document.createElement("button");
                     
-                    //setting the btn id to the text of the key
+                    //assigning the text of the key (detail name) to the btn id
                     valDetailsBtn.id = tempkey.innerHTML;
                     
-                    // need to store the string somewhere unique to button so it can be accessed later by its onclick function
+                    // need to store the string somewhere unique to the button so it can be accessed later by its onclick function.
                     // the title attribute value will be used by the tooltip when it is initialized so the string cannot be stored
-                    // in the title attribute. Instead the shorten string is stored in the title attribute and the full string is
-                    // stored in a custom attribute
+                    // in the title attribute. Instead the shortened string is stored in the title attribute and the full string is
+                    // stored in a custom attribute called details-value
                     valDetailsBtn.title = tempvalStringShort;
                     valDetailsBtn.setAttribute("details-value", tempvalString);
                     
@@ -1070,16 +1066,42 @@ function getDetails(clickID) {
                     
                     valDetailsBtn.className = "button-profile-select btn btn-default";                    
                     valDetailsBtn.onclick = function () {
+                        var detailName = this.id;
+                        var detailValue = this.getAttribute("details-value");
                         
-                        $("#driver-overflow-details-panel-title").text(this.id);
+                        // setting the value of the detail to body of the dialog 
+                        $("#dialog-overflow-details-text").text(detailValue);
                         
-                        //Have to use data-original-title instead of title (like below) because the bootstrap tooltip overwrites 
-                        //and replaces the title attribute with its own version called data-original-title
-                        $("#driver-overflow-details-text").text(this.getAttribute("details-value"));
-                        toggleDriverDetailsPanel();
-                        $("#driver-overflow-details-text").animate({
-                            scrollTop: $("#driver-content-panel").offset().top
-                        }, 1000);
+                        $("#dialog-overflow-details").dialog({
+                            open: function(event, ui) {
+                                // bootsrap and jquery have a conflict when displaying certain buttons 
+                                // - in this case the close - 'X'  in the top right hand corner of the dialog.
+                                // So current solution is to hide that button and still allow us to use
+                                // bootstrap within the jquery dialog
+                                $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
+
+                                // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
+                                // but prevents use of boostrap styling in the jquery dialog
+                            },
+                            height: 400,
+                            width: 400,
+                            resizable: false,
+                            draggable: false,
+                            title: detailName,
+                            modal: true,
+                            buttons: [
+                                {
+                                    text: "Close",
+                                    "class": "button-profile-select btn btn-default",
+                                    click: function () {
+                                        $(this).dialog("close");
+                                    }
+                                }
+                            ]
+
+                        });
+                        
+                        
                     };
                     tempval.appendChild(valDetailsBtn);
                 } else {
