@@ -154,21 +154,14 @@
                 </div>
             </div>
             
-            <!-- element to display overflow driver value details when viewing driver details  -->
-            <div id="driver-overflow-details-panel" class="hidden">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 id="driver-overflow-details-panel-title"></h3>
-                    </div>
-                    <div class="modal-body" style="display:block;background-color:#FFFFFF">
-                        <div class="tab-content" style="background-color:#FFFFFF">
-                            <div id="driver-overflow-details-text"></div>
-                        </div>
-                    </div>
-                    <div id="driver-overflow-details-button" class="modal-footer">
-                        <button class="button-profile-select btn btn-default" onclick="toggleDriverDetailsPanel();">Close</button>
-                    </div>
-                </div>
+            <!-- element to display a dialog contain the verbose value of a driver detail -->
+            <div id="dialog-overflow-details">
+                <div id="dialog-overflow-details-text"></div>
+            </div>
+            
+            <!-- element to display confirmation dialogs with jquery -->
+            <div id="dialog-confirm">
+                <div id="dialog-confirm-text"></div>
             </div>
             
              

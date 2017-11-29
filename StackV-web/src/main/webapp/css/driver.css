@@ -37,6 +37,15 @@ div#driver-template-panel {
     z-index: 10;
 }
 
+#dialog-overflow-details-text {
+    overflow: auto;
+}
+
+.ui-dialog > .ui-widget-header {
+    background: '#333'
+}
+
+/*
 #driver-overflow-details-panel {
     bottom: -100%;
     width: 40%;
@@ -50,6 +59,7 @@ div#driver-template-panel {
     height: 200px;
     word-wrap: break-word;
 }
+*/
 
 .tooltip-inner {
     word-break: break-all;
