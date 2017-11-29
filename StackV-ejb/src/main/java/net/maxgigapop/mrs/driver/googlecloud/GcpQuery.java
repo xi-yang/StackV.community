@@ -15,6 +15,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.HashMap;
 
 /**
@@ -30,18 +31,20 @@ public class GcpQuery {
     private static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     //private static final String defaultRegion = "us-central1";
     //private static final String defaultZone = "us-central1-c";
-    private String defaultImage, defaultInstanceType, defaultRegion, defaultZone;
+    private String defaultImage, defaultInstanceType, defaultDiskType, defaultDiskSize, defaultRegion, defaultZone;
     
     
-    public GcpQuery(OntModel modelRef, OntModel modelAdd, OntModel modelReduct, String defaultImage,
-            String defaultInstanceType, String defaultRegion, String defaultZone) {
+    public GcpQuery(OntModel modelRef, OntModel modelAdd, OntModel modelReduct, Map<String, String> properties) {
         this.modelRef = modelRef;
         this.modelAdd = modelAdd;
         this.modelReduct = modelReduct;
-        this.defaultImage = defaultImage;
-        this.defaultInstanceType = defaultInstanceType;
-        this.defaultRegion = defaultRegion;
-        this.defaultZone = defaultZone;
+        
+        defaultImage = properties.get("defaultImage");
+        defaultInstanceType = properties.get("defaultInstanceType");
+        defaultDiskType = properties.get("defaultDiskType");
+        defaultDiskSize = properties.get("defaultDiskSize");
+        defaultRegion = properties.get("defaultRegion");
+        defaultZone = properties.get("defaultZone");
     }
     
     //need name, zone
@@ -62,7 +65,7 @@ public class GcpQuery {
             QuerySolution solution = r.next();
             HashMap<String, String> typeInfo = parseTypeStr(getOrDefault(solution, "type", null));
             String instanceUri = solution.get("uri").toString();
-            String instanceName = getOrDefault(solution, "name", makeNameFromUri(instanceUri));
+            String instanceName = getOrDefault(solution, "name", makeNameFromUri("vm", instanceUri));
             
             //secgroup and keypair are not used by gcp
             //instance+1,image+2,secgroup+3,keypair+4
@@ -70,7 +73,8 @@ public class GcpQuery {
             String machineType = getOrDefault(typeInfo, "instance", defaultInstanceType);
             String sourceImage = getOrDefault(typeInfo, "image", defaultImage);
             String zone = getOrDefault(typeInfo, "zone", defaultZone);
-            String diskSize = getOrDefault(typeInfo, "diskSizeGb", "10");
+            String diskType = getOrDefault(typeInfo, "diskType", defaultDiskType);
+            String diskSize = getOrDefault(typeInfo, "diskSizeGb", defaultDiskSize);
             
             String nicQuery = "SELECT ?nicIP WHERE { BIND(<" + instanceUri + "> AS ?uri) \n"
                     + "?uri nml:hasBidirectionalPort ?nic . \n"
@@ -93,6 +97,7 @@ public class GcpQuery {
             instanceRequest.put("machine_type", machineType);
             instanceRequest.put("source_image", sourceImage);
             instanceRequest.put("zone", zone);
+            instanceRequest.put("disk_type", diskType);
             instanceRequest.put("disk_size", diskSize);
             
             //String instanceNIC;
@@ -133,21 +138,21 @@ public class GcpQuery {
             JSONObject subnetRequest = new JSONObject();
             QuerySolution solution = r.next();
             String vpcUri = solution.get("vpcUri").toString();
-            String vpcName = getOrDefault(solution, "vpcName", makeNameFromUri(vpcUri));
+            String vpcName = getOrDefault(solution, "vpcName", makeNameFromUri("vpc", vpcUri));
             String subnetUri = getOrDefault(solution, "subnetUri", "error");
             String subnetCIDR = getOrDefault(solution, "subnetCIDR", "error");
-            String subnetName = getOrDefault(solution, "subnetName", makeNameFromUri(subnetUri));
+            String subnetName = getOrDefault(solution, "subnetName", makeNameFromUri("subnet", subnetUri));
             String subnetRegion = getOrDefault(solution, "subnetRegion", defaultRegion);
             
             subnetRequest.put("type", "create_subnet");
             subnetRequest.put("vpc_name", vpcName);
             subnetRequest.put("subnet_uri", subnetUri);
             subnetRequest.put("subnet_cidr", subnetCIDR);
-            subnetRequest.put("subnet_name", subnetName);
+            subnetRequest.put("subnet_name", removeChars(subnetName));
             subnetRequest.put("subnet_region", subnetRegion);
             //for now, just print
             System.out.printf("CREATE SUBNET REQUEST: %s\n", subnetRequest);
-            //output.add(subnetRequest);
+            output.add(subnetRequest);
         }
         
         return output;
@@ -175,7 +180,7 @@ public class GcpQuery {
             JSONObject vpcRequest = new JSONObject();
             QuerySolution solution = r.next();
             String vpcUri = solution.get("vpcUri").toString();
-            String vpcName = getOrDefault(solution, "vpcName", makeNameFromUri(vpcUri));
+            String vpcName = getOrDefault(solution, "vpcName", makeNameFromUri("vpc", vpcUri));
             
             vpcRequest.put("type", "create_vpc");
             vpcRequest.put("name", vpcName);
@@ -183,7 +188,7 @@ public class GcpQuery {
             
             //for now, just print
             System.out.printf("CREATE VPC REQUEST: %s\n", vpcRequest);
-            //output.add(vpcRequest);
+            output.add(vpcRequest);
         }
         return output;
     }
@@ -195,16 +200,18 @@ public class GcpQuery {
         return output;
     }
     
-    public static String makeNameFromUri(String uri) {
+    public static String makeNameFromUri(String type, String uri) {
         //given a uri, returns a string that can be used to name a resource.
         //useful when a name for a resource is not available in model
-        String output = removeChars(uri);
-        return output.substring(output.length() - 60);
+        
+        String output = uri.substring(23, 60);
+        output = removeChars(output);
+        output = String.format("%s-%s", type, output);
+        System.out.printf("in: %s out: %s\n", uri, output);
+        return output;
     }
     
     //Removes non-alphanumeric non-hyphen characters from strings
-    //Similar to makeUriGcpCompatible from gcpModelBuilder, but it removes
-    //instead of escaping offending characters.
     public static String removeChars (String input) {
         return input.replaceAll("[^a-zA-Z0-9\\-]", "");
     }
@@ -274,7 +281,7 @@ public class GcpQuery {
         return r;
     }
 
-    private HashMap<String, String> parseTypeStr(String typeStr) {
+    public static HashMap<String, String> parseTypeStr(String typeStr) {
         HashMap<String, String> output = new HashMap<>();
         if (typeStr == null) return output;
         String key, value, pairs[] = typeStr.split(",");
@@ -289,4 +296,20 @@ public class GcpQuery {
         
         return output;
     }
+    
+    public static String createTypeStr(HashMap<String, String> properties) {
+        String output = "";
+        
+        if (properties != null) {
+            for (String key : properties.keySet()) {
+                if (output.length() > 0 ) {
+                    output += ",";
+                }
+                output += String.format("%s+%s", key, properties.get(key));
+            }
+        }
+        
+        return output;
+    } 
+    
 }

@@ -29,15 +29,16 @@ package net.maxgigapop.mrs.driver.googlecloud;
 //import com.amazonaws.regions.Regions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.hpl.jena.ontology.OntModel;
-import java.io.IOException;//
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;//returned by commit and pull
 import javax.ejb.Asynchronous;//commit and pull are asynchronous
 import javax.ejb.Stateless;//entire class is stateless
-import javax.ejb.TransactionAttribute;//
-import javax.ejb.TransactionAttributeType;//
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
@@ -47,8 +48,8 @@ import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
-import net.maxgigapop.mrs.common.StackLogger;//
-import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;//
+import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 //import static net.maxgigapop.mrs.driver.openstack.OpenStackDriver.logger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
@@ -71,22 +72,12 @@ public class GcpDriver implements IHandleDriverSystemCall {
         }
         logger.targetid(aDelta.getId());
         logger.start(method);
-        String jsonAuth = driverInstance.getProperty("gcp_access_json");
-        String projectID = driverInstance.getProperty("projectID");
-        //String region = driverInstance.getProperty("region");
-        String topologyURI = driverInstance.getProperty("topologyUri");
-        String defaultImage = driverInstance.getProperty("defaultImage");
-        String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
-        //String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
-        //String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
-        String defaultRegion = driverInstance.getProperty("defaultRegion");
-        String defaultZone = driverInstance.getProperty("defaultZone");
         
         OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
         
-        GcpPush push = new GcpPush(jsonAuth, projectID, topologyURI, defaultImage, defaultInstanceType, defaultRegion, defaultZone);
+        GcpPush push = new GcpPush(driverInstance.getProperties());
         
         JSONArray requests = push.propagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getId();
@@ -121,42 +112,21 @@ public class GcpDriver implements IHandleDriverSystemCall {
             DriverInstancePersistenceManager.merge(driverInstance);
             throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
         }
-        String jsonAuth = driverInstance.getProperty("gcp_access_json");
-        
-        String projectID =  driverInstance.getProperty("projectID");
-        String topologyURI = driverInstance.getProperty("topologyUri");
-        String defaultImage = driverInstance.getProperty("defaultImage");
-        String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
-        String defaultRegion = driverInstance.getProperty("defaultRegion");
-        String defaultZone = driverInstance.getProperty("defaultZone");
         
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
-        GcpPush push = new GcpPush(jsonAuth, projectID, topologyURI, defaultImage, defaultInstanceType, defaultRegion, defaultZone);
+        GcpPush push = new GcpPush(driverInstance.getProperties());
         
         JSONParser parser = new JSONParser();
         
         try {
             JSONArray requestArray = (JSONArray) parser.parse(requests);
-        } catch (ParseException ex) {
-            throw logger.throwing(method, ex);
-        }
-        
-        ObjectMapper mapper = new ObjectMapper();
-        JSONArray requestList;
-                //= new ArrayList();
-        try {
-            requestList = mapper.readValue(requests, mapper.getTypeFactory().constructCollectionType(List.class, JSONObject.class));
-        } catch (IOException ex) {
-            throw logger.throwing(method, ex);
-        }
-        try {
-            push.commit(requestList);
-        } catch (InterruptedException e) {
+            push.commit(requestArray);
+        } catch (ParseException | InterruptedException e) {
             throw logger.throwing(method, e);
         }
         logger.end(method);
-        return new AsyncResult<String>("SUCCESS");
+        return new AsyncResult<>("SUCCESS");
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
@@ -175,11 +145,10 @@ public class GcpDriver implements IHandleDriverSystemCall {
         try {
             String jsonAuth = driverInstance.getProperty("gcp_access_json");
             String projectID = driverInstance.getProperty("projectID");
-            String region = driverInstance.getProperty("region");
             String topologyURI = driverInstance.getProperty("topologyUri");
-            //Regions region = Regions.fromName(r);
-            OntModel ontModel = GcpModelBuilder.createOntology(jsonAuth, projectID, topologyURI);
-
+            
+            OntModel ontModel = GcpModelBuilder.createOntology(driverInstance.getProperties());
+            
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
                 dm.setCommitted(true);
@@ -193,13 +162,10 @@ public class GcpDriver implements IHandleDriverSystemCall {
                 VersionItemPersistenceManager.save(vi);
                 driverInstance.setHeadVersionItem(vi);
             }
-        } catch (IOException e) {
-            throw logger.throwing(method, driverInstance + " failed GoogleCloudModelBuilder.createOntology", e);
-        } catch (Exception ex) {
-            throw logger.throwing(method, driverInstance + " failed pull model due to "+ex.getMessage(), ex);
+        } catch (Exception e) {
+            throw logger.throwing(method, driverInstance + " failed pull model due to "+e.getMessage(), e);
         }
         logger.trace_end(method);
         return new AsyncResult<>("SUCCESS");
     }
-
 }

@@ -30,9 +30,9 @@ import org.json.simple.parser.ParseException;
  */
 public class GcpGet {
     
-    private GcpAuthenticate authenticate = null;
-    private Compute computeClient = null;
-    private Storage storageClient = null;
+    private GcpAuthenticate authenticate;
+    private Compute computeClient;
+    private Storage storageClient;
     private String projectID;
     private JSONParser parser = new JSONParser();
     
@@ -50,10 +50,8 @@ public class GcpGet {
             sb.setApplicationName("gcp-cloud");
             computeClient = cb.build();
             storageClient = sb.build();
-        } catch (GeneralSecurityException e) {
-           
-        } catch (IOException e) {
-            
+        } catch (GeneralSecurityException | IOException e) {
+            //TODO log
         }
     }
     
@@ -104,6 +102,8 @@ public class GcpGet {
         }
     }
     
+    //unlike most gcp get functions, this does not return the raw google response
+    //which is always a JSONObject.
     public JSONArray getAggregatedVmInstances() {
         try {
             JSONObject result, temp;
@@ -170,12 +170,15 @@ public class GcpGet {
         JSONObject item;
         HashMap<String, String> output = new HashMap();
         
-        
-        for (Object o : items) {
-            item = (JSONObject) o;
-            output.put(item.get("key").toString(), item.get("value").toString());
+        if (items == null) {
+            //TODO log
+            System.out.printf("found metadata, but items = null. Displaying metadata: %s\n", projectMetadata);
+        } else {
+            for (Object o : items) {
+                item = (JSONObject) o;
+                output.put(item.get("key").toString(), item.get("value").toString());
+            }
         }
-        
         return output;
     }
     
@@ -190,11 +193,21 @@ public class GcpGet {
         
         if (key == null) return null;
         
+        String method = "modifyCommonMetadata";
+        boolean deletedItem = false;
         Metadata meta = new Metadata();
         Metadata.Items newItem;
         ArrayList newItems = new ArrayList();
+        JSONArray oldItems;
+        JSONObject project = getProject();
         //project is a JSONObject with field commonInstanceMetadata, which in turn is a JSONObject with a JSONArray items
-        JSONArray oldItems = (JSONArray) ( (JSONObject) getProject().get("commonInstanceMetadata")).get("items");
+        if (project == null || !project.containsKey("commonInstanceMetadata")) {
+            //olditems is empty
+            oldItems = null;
+        } else {
+            oldItems = (JSONArray) ( (JSONObject) project.get("commonInstanceMetadata")).get("items");
+        }
+        
         String oldKey;
         
         if (value != null) {
@@ -204,22 +217,27 @@ public class GcpGet {
             newItems.add(newItem);
         }
         
-        for (Object o: oldItems) {
-            JSONObject oldItem = (JSONObject) o;
-            newItem = new Metadata.Items();
-            newItem.setKey(oldItem.get("key").toString());
-            newItem.setValue(oldItem.get("value").toString());
-            //if the value is null and key matches, exclude this entry
-            //set key to null so we know that an entry was excluded
-            if (value == null && newItem.getKey().equals(key)) {
-                key = null;
-            } else {
-                newItems.add(newItem);
+        if (oldItems == null) {
+            if (value == null) {
+                return null;
+            }
+        } else {
+            for (Object o: oldItems) {
+                JSONObject oldItem = (JSONObject) o;
+                newItem = new Metadata.Items();
+                newItem.setKey(oldItem.get("key").toString());
+                newItem.setValue(oldItem.get("value").toString());
+                //if the value is null and key matches, exclude this entry
+                if (value == null && newItem.getKey().equals(key)) {
+                    deletedItem = true;
+                } else {
+                    newItems.add(newItem);
+                }
             }
         }
         
         //return null, as key to be deleted was not found
-        if (value == null && key != null) return null;
+        if (value == null && !deletedItem) return null;
         
         meta.setItems(newItems);
         

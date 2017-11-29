@@ -6,9 +6,12 @@
 package net.maxgigapop.mrs.driver.googlecloud;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.io.IOException;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import com.google.api.services.compute.model.AttachedDisk;
 import com.google.api.services.compute.model.AttachedDiskInitializeParams;
@@ -18,6 +21,7 @@ import com.google.api.services.compute.model.Subnetwork;
 import com.google.api.services.compute.model.AccessConfig;
 import com.google.api.services.compute.model.NetworkInterface;
 import com.google.api.client.http.HttpRequest;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 
 import com.hp.hpl.jena.ontology.OntModel;
 
@@ -27,31 +31,29 @@ import com.hp.hpl.jena.ontology.OntModel;
  */
 public class GcpPush {
     private GcpGet gcpGet;
-    private String topologyUri = null;
-    //private String region = null;
-    private String projectID = null;
-    String defaultImage = null;
-    String defaultInstanceType = null;
-    //String defaultKeyPair = null;
-    //String defaultSecGroup = null;
-    String defaultRegion = null; //Default region is used by subnets, currently
-    String defaultZone = null; //Default zone is used by instances and disks, and should contained within default region
+    private Map<String, String> properties;
+    private JSONParser parser;
+    private String topologyUri, jsonAuth, projectID;
+    //Default zone is used by instances and disks, and should contained within default region
+    //Default region is currently used by subnetss
+    private String defaultImage = null, defaultInstanceType, defaultRegion, defaultZone;
     
-    public GcpPush(String jsonAuth, String projectID, String topologyUri, 
-            String defaultImage, String defaultInstanceType, String defaultRegion, String defaultZone) {
-        this.gcpGet = new GcpGet(jsonAuth, projectID);
-        this.projectID = projectID;
-        //do an adjustment to the topologyUri
-        this.topologyUri = topologyUri + ":";
-        this.defaultImage = defaultImage;
-        this.defaultInstanceType = defaultInstanceType;
-        this.defaultRegion = defaultRegion;
-        this.defaultZone = defaultZone;
+    public GcpPush(Map<String, String> properties) {
+        this.properties = properties;
+        jsonAuth = properties.get("jsonAuth");
+        projectID = properties.get("projectID");
+        gcpGet = new GcpGet(jsonAuth, projectID);
+        topologyUri = properties.get("topologyUri") + ":";
+        defaultImage = properties.get("defaultImage");
+        defaultInstanceType = properties.get("defaultInstanceType");
+        defaultRegion = properties.get("defaultRegion");
+        defaultZone = properties.get("defaultZone");
+        parser = new JSONParser();
     }
     
     public JSONArray propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
         JSONArray requests = new JSONArray();
-        GcpQuery gcq = new GcpQuery(modelRef, modelAdd, modelReduct, defaultImage, defaultInstanceType, defaultRegion, defaultZone);
+        GcpQuery gcq = new GcpQuery(modelRef, modelAdd, modelReduct, properties);
         //Instances, VPCs, subnets
         
         requests.addAll(gcq.deleteInstanceRequests());
@@ -72,6 +74,7 @@ public class GcpPush {
         
         for (Object o : requests) {
             JSONObject requestInfo = (JSONObject) o;
+            System.out.printf("recieved request: %s info: %s \n", requestInfo.get("type"), requestInfo);
             switch (requestInfo.get("type").toString()) {
             case "create_vpc":
                 String name = requestInfo.get("name").toString();
@@ -80,12 +83,15 @@ public class GcpPush {
                 network.setName(name).setAutoCreateSubnetworks(false);
                 
                 try {
+                    JSONObject result;
                     request = gcpGet.getComputeClient().networks().insert(projectID, network).buildHttpRequest();
-                    request.execute();
+                    result = gcpGet.makeRequest(request);
+                    System.out.printf("create vpc result: %s\n", result);
                     //Add this vpc's uri to the metadata table
                     gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), uri);
                 } catch (IOException e) {
                     //TODO log error
+                    e.printStackTrace();
                 }
             break;
             case "delete_vpc":
@@ -102,12 +108,58 @@ public class GcpPush {
                 String subnetName = requestInfo.get("subnet_name").toString();
                 Subnetwork subnet = new Subnetwork();
                 subnet.setIpCidrRange(cidr).setName(subnetName).setRegion(subnetRegion).setNetwork(vpcUri);
-                try {
-                    request = gcpGet.getComputeClient().subnetworks().insert(projectID, subnetRegion, subnet).buildHttpRequest();
-                    request.execute();
-                    gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, subnetRegion, subnetName), subnetUri);
-                } catch (IOException e) {
-                    //TODO log
+                        //.setNetwork(vpcUri);
+                
+                //This is temporary code until a better solution is reached.
+                //The code loops back if and only if the server returns an error
+                //indicating that the resource is not ready.
+                
+                boolean repeat = true;
+                String errorMessage = null;
+                do {
+                    try {
+                        System.out.println("COMMMIT TEST: "+vpcName);
+                    
+                        JSONObject result;
+                        request = gcpGet.getComputeClient().subnetworks().insert(projectID, subnetRegion, subnet).buildHttpRequest();
+                        result = gcpGet.makeRequest(request);
+                        System.out.printf("result: %s", result);
+                        
+                        gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, subnetRegion, subnetName), subnetUri);
+                        repeat = false;
+                    } catch (GoogleJsonResponseException e) {
+                        String errorJson = e.getDetails().toString();
+                        
+                        try {
+                            
+                            JSONObject content = (JSONObject) parser.parse(errorJson);
+                            JSONObject error = (JSONObject) ((JSONArray) content.get("errors")).get(0);
+                            String reason = error.get("reason").toString();
+                            
+                            if ("resourceNotReady".equals(reason)) {
+                                //this is ok.
+                                System.out.println("Waiting for vpc status to become ready");
+                            } else {
+                                //something went wrong
+                                errorMessage = errorJson;
+                                repeat = false;
+                            }
+                        } catch (ParseException pe) {
+                            //It's not even JSON?
+                            repeat = false;
+                            errorMessage = String.format("Expected JSON, but got %s", errorJson);
+                        }
+                    } catch (IOException e) {
+                        //TODO log
+                        repeat = false;
+                        errorMessage = e.toString();
+                    }
+                } while (repeat);
+                
+                if (errorMessage == null) {
+                    System.out.println("OK!");
+                } else {
+                    System.out.printf("COMMIT ERROR: %s\n", errorMessage);
                 }
             break;
             case "delete_subnet":
@@ -118,11 +170,10 @@ public class GcpPush {
                 vmName = requestInfo.get("name").toString();
                 zone = requestInfo.get("zone").toString();
                 String region = requestInfo.get("region").toString();
-                String subnetIP = requestInfo.get("subnetIP").toString();
+                String subnetIP = requestInfo.get("subnet_ip").toString();
                 machineType = String.format("zones/%s/machineTypes/%s", zone, requestInfo.get("machineType"));
-                machineType += requestInfo.get("machineType").toString();
                 long diskSizeGb = Integer.parseInt(requestInfo.get("diskSizeGb").toString());
-                String diskType = "";
+                String diskType = requestInfo.get("disk_type").toString();
                 
                 //Add NICs
                 ArrayList<NetworkInterface> netifaces = new ArrayList<>();

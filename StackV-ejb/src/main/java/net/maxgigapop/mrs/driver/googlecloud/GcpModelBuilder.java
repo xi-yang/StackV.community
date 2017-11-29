@@ -11,6 +11,7 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 //import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
+import java.util.Map;
 import java.util.HashMap;
 import net.maxgigapop.mrs.common.*;
 import org.json.simple.JSONArray;
@@ -24,8 +25,12 @@ public class GcpModelBuilder {
     
     public static final StackLogger logger = GcpDriver.logger;
     
-    public static OntModel createOntology(String jsonAuth, String projectID, String topologyURI) throws IOException {
-        String region = "us-central1";
+    public static OntModel createOntology(Map<String, String> properties) throws IOException {
+       
+        String jsonAuth = properties.get("jsonAuth");
+        String projectID = properties.get("projectID");
+        String topologyUri = properties.get("topologyUri");
+        String region = "global";
         String method = "createOntology";
         logger.start(method);
         
@@ -41,7 +46,7 @@ public class GcpModelBuilder {
         
         GcpGet gcpGet = new GcpGet(jsonAuth, projectID);
         
-        Resource gcpTopology = RdfOwl.createResource(model, topologyURI, Nml.Topology);
+        Resource gcpTopology = RdfOwl.createResource(model, topologyUri, Nml.Topology);
         Resource vpcService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.vpcService, region), Mrs.VirtualCloudService);
         Resource computeService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.computeService, region), Mrs.HypervisorService);
         Resource objectStorageService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.objectStorageService, region), Mrs.ObjectStorageService);
@@ -64,6 +69,7 @@ public class GcpModelBuilder {
             JSONArray vpcs = (JSONArray) vpcsInfo.get("items");
             for (Object o : vpcs) {
                 JSONObject vpcInfo = (JSONObject) o;
+                //System.out.println(vpcInfo);
                 String name = vpcInfo.get("name").toString();
                 String vpcUri = lookupResourceUri(metadata, "vpc", name);
                 //String vpcUri = vpcInfo.get("description").toString();
@@ -85,30 +91,34 @@ public class GcpModelBuilder {
                 
                 //subnets
                 JSONArray subnetsInfo = (JSONArray) vpcInfo.get("subnetworks");
-                for (Object o2 : subnetsInfo) {
-                    String subnetName = GcpGet.parseGoogleURI(o2.toString(), "subnetworks");
-                    String subnetRegion = GcpGet.parseGoogleURI(o2.toString(), "regions");
-                    JSONObject subnetInfo = gcpGet.getSubnet(subnetRegion, subnetName);
-                    String subnetUri = lookupResourceUri(metadata, "subnet", name, subnetRegion, subnetName);
-                    //String subnetUri = recoverGcpUri(subnetInfo);
-                    String cidr = subnetInfo.get("ipCidrRange").toString();
-                    String gateway = subnetInfo.get("gatewayAddress").toString();
+                if (subnetsInfo == null) {
+                    logger.warning(method, "Null subnet response for VPC "+name);
+                } else {
+                    for (Object o2 : subnetsInfo) {
+                        String subnetName = GcpGet.parseGoogleURI(o2.toString(), "subnetworks");
+                        String subnetRegion = GcpGet.parseGoogleURI(o2.toString(), "regions");
+                        JSONObject subnetInfo = gcpGet.getSubnet(subnetRegion, subnetName);
+                        String subnetUri = lookupResourceUri(metadata, "subnet", name, subnetRegion, subnetName);
+                        //String subnetUri = recoverGcpUri(subnetInfo);
+                        String cidr = subnetInfo.get("ipCidrRange").toString();
+                        String gateway = subnetInfo.get("gatewayAddress").toString();
                     
-                    Resource subnet = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetUri, GcpPrefix.subnet, name, subnetRegion, subnetName), Mrs.SwitchingSubnet);
-                    model.add(model.createStatement(switchingService, Mrs.providesSubnet, subnet));
+                        Resource subnet = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetUri, GcpPrefix.subnet, name, subnetRegion, subnetName), Mrs.SwitchingSubnet);
+                        model.add(model.createStatement(switchingService, Mrs.providesSubnet, subnet));
                     
-                    Resource subnetGateway = RdfOwl.createResource(model, subnet.getURI()+":gateway", Nml.BidirectionalPort);
-                    model.add(model.createStatement(subnet, Nml.hasBidirectionalPort, subnetGateway));
+                        Resource subnetGateway = RdfOwl.createResource(model, subnet.getURI()+":gateway", Nml.BidirectionalPort);
+                        model.add(model.createStatement(subnet, Nml.hasBidirectionalPort, subnetGateway));
                     
-                    Resource gatewayIP = RdfOwl.createResource(model, subnetGateway.getURI()+":gatewayIP", Mrs.NetworkAddress);
-                    model.add(model.createStatement(subnetGateway, Mrs.hasNetworkAddress, gatewayIP));
-                    model.add(model.createStatement(gatewayIP, Mrs.type, "ipv4-address"));
-                    model.add(model.createStatement(gatewayIP, Mrs.value, gateway));
+                        Resource gatewayIP = RdfOwl.createResource(model, subnetGateway.getURI()+":gatewayIP", Mrs.NetworkAddress);
+                        model.add(model.createStatement(subnetGateway, Mrs.hasNetworkAddress, gatewayIP));
+                        model.add(model.createStatement(gatewayIP, Mrs.type, "ipv4-address"));
+                        model.add(model.createStatement(gatewayIP, Mrs.value, gateway));
                     
-                    Resource subnetCIDR = RdfOwl.createResource(model, subnet.getURI()+":cidr", Mrs.NetworkAddress);
-                    model.add(model.createStatement(subnet, Mrs.hasNetworkAddress, subnetCIDR));
-                    model.add(model.createStatement(subnetCIDR, Mrs.type, "ipv4-prefix-list"));
-                    model.add(model.createStatement(subnetCIDR, Mrs.value, cidr));
+                        Resource subnetCIDR = RdfOwl.createResource(model, subnet.getURI()+":cidr", Mrs.NetworkAddress);
+                        model.add(model.createStatement(subnet, Mrs.hasNetworkAddress, subnetCIDR));
+                        model.add(model.createStatement(subnetCIDR, Mrs.type, "ipv4-prefix-list"));
+                        model.add(model.createStatement(subnetCIDR, Mrs.value, cidr));
+                    }
                 }
                 
                 /*
@@ -159,18 +169,22 @@ public class GcpModelBuilder {
         //Add VMs to model
         //JSONObject instancesInfo = gcpGet.getVmInstances(); 
         JSONArray instancesInfo = gcpGet.getAggregatedVmInstances();
+        HashMap<String, String> instanceProperties = new HashMap<>();
         
         if (instancesInfo != null) {
             //JSONArray vms = (JSONArray) instancesInfo.get("items");
             for (Object o : instancesInfo) {
                 JSONObject vmInfo = (JSONObject) o;
                 String instanceName = vmInfo.get("name").toString();
-                String instanceType = GcpGet.parseGoogleURI(vmInfo.get("machineType").toString(), "machineTypes");
+                String machineType = GcpGet.parseGoogleURI(vmInfo.get("machineType").toString(), "machineTypes");
                 String zone = GcpGet.parseGoogleURI(vmInfo.get("zone").toString(), "zones");
+                instanceProperties.put("machineType", machineType);
+                instanceProperties.put("zone", zone);
+                
                 JSONArray netifaces = (JSONArray) vmInfo.get("networkInterfaces");
                 String instanceUri = lookupResourceUri(metadata, "vm", zone, instanceName);
                 Resource instance = RdfOwl.createResource(model, ResourceTool.getResourceUri(instanceUri, GcpPrefix.instance, zone, instanceName), Nml.Node);
-                model.add(model.createStatement(instance, Mrs.type, instanceType));
+                model.add(model.createStatement(instance, Mrs.type, GcpQuery.createTypeStr(instanceProperties)));
                 
                 if (netifaces == null) {
                     logger.warning(method, "unable to find any network interfaces for instance "+instanceName);
