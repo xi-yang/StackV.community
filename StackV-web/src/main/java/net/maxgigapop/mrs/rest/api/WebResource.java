@@ -912,7 +912,6 @@ public class WebResource {
     @GET
     @Path("keycloak/roles/{role}")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject) throws IOException, ParseException {
         String name = subject;
         try {
@@ -968,7 +967,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/groups/{group}")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getGroupRoles(@PathParam("group") String subject) throws IOException, ParseException {
         try {
             String method = "getGroupRoles";
@@ -1032,7 +1030,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/groups")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getGroups() throws IOException, ParseException {
         try {
             String method = "getGroups";
@@ -1096,7 +1093,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/roles")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getRoles() throws IOException, ParseException {
         try {
             String method = "getRoles";
@@ -1162,7 +1158,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/users/{user}/groups")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getUserGroups(@PathParam("user") String subject) throws IOException, ParseException {
         try {
             String method = "getUserGroups";
@@ -1332,7 +1327,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getUserRoles(@PathParam("user") String subject) throws IOException, ParseException {
         try {
             String method = "getUserRoles";
@@ -1854,7 +1848,6 @@ public class WebResource {
     @GET
     @Path("/logging/logs")
     @Produces("application/json")
-    @RolesAllowed("Logging")
     public String getLogs(@QueryParam("refUUID") String refUUID, @QueryParam("level") String level) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;

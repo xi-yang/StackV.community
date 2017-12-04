@@ -881,6 +881,9 @@ function getAllDetails() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
+        error: function () {
+            window.location.href = "/StackV-web/";
+        },
         success: function (result) {
             //fill installed table
             $('#installed-body').empty();

@@ -417,7 +417,7 @@ function renderInputs(arr, $parent) {
                         $input.attr("checked", true);
                     }
                 }
-                if (!ele.getElementsByTagName("default")[0].getAttribute("first_only")) {
+                if (!ele.getElementsByTagName("default")[0].getAttribute("firstOnly")) {
                     $input.attr("data-default", ele.getElementsByTagName("default")[0].innerHTML);
                 }
                 $input.val(ele.getElementsByTagName("default")[0].innerHTML);
