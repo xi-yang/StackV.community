@@ -111,6 +111,7 @@
                     </div>
                 </div>
             </div>
+            
             <div id="driver-template-panel">
                 <div id="saved-tab" class="tab-pane fadeIn">
                     <table class="management-table">
@@ -141,16 +142,15 @@
                                     <div id='install-type' style="background-color:#FFFFFF">
                                     </div>
                                     <div id='install-type-right' style="background-color:#FFFFFF"></div>
-                                    <div id = "info-panel-button" class = "modal-footer">
-                                        <div id='install-options'>
-                                            <button onclick="clearPanel(); closeContentPanel();">Close</button>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
+                    <div id = "info-panel-button" class = "modal-footer">
+                                        <div id='install-options'>
+                                            <button onclick="clearPanel(); closeContentPanel();">Close</button>
+                                        </div>
+                    </div>
                 </div>
             </div>
             

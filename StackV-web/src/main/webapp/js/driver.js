@@ -127,8 +127,7 @@ $(function () {
     });
 });
 
-//TODO: merge into one function called toggleContentPanel during cleanup
-// and edit all references to below two functions
+//opens the dialog to view details about a driver (of currently installed drivers)
 function openContentPanel() {
     if (!$("#driver-content-panel").hasClass("open")) {
         tweenBlackScreen.play();
@@ -138,6 +137,8 @@ function openContentPanel() {
         $("#driver-content-panel").addClass("active");
     }
 }
+
+//closes the dialog to view details about a driver (of currently installed drivers)
 function closeContentPanel() {
     if ($("#driver-content-panel").hasClass("active")) {
         tweenBlackScreen.reverse();
@@ -214,6 +215,7 @@ function installed_tab_fix() {
     document.getElementById("driver-nav-tab").className = "";
     document.getElementById("saved-nav-tab").className = "";
 }
+
 
 function activateSide() {
     $("#driver-content-panel").removeClass("hidden");
@@ -571,13 +573,14 @@ function clearText() {
     }
 }
 function changeNameInst() {
-    var saveButton = document.createElement("button");
-    saveButton.innerHTML = "Save Driver";
+    var saveButton = document.createElement("button");    
     saveButton.className = "button-profile-select btn btn-default";
+    saveButton.innerHTML = "Save Driver";
     saveButton.onclick = function () {
         openWindow();
     };
     document.getElementById('install-options').appendChild(saveButton);
+    
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
     instButton.className = "button-profile-select btn btn-default";
@@ -599,6 +602,12 @@ function changeNameInstRaw() {
     };
     document.getElementById('install-options').appendChild(instButton);
 }
+
+/*
+ * Opens an input box for the user to enter the driver name and description
+ * for the driver they want to save as a template.
+ * @returns {undefined}
+ */
 function openWindow() {
     $('#info-fields').empty();
     $('#info-option').empty();
@@ -634,6 +643,10 @@ function openWindow() {
     document.getElementById("info-option").appendChild(saveButton);
 }
 
+/*
+ * Saves the driver as a template. Reads values directly from the input box
+ * @returns {undefined}
+ */
 function addDriver() {
     var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
@@ -691,6 +704,13 @@ function addDriver() {
         }
     });
 }
+
+/*
+ * Deletes saved templates
+ * @param {type} clickID
+ * @returns {undefined}
+ */
+
 function removeDriverProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var topuri = clickID;
@@ -712,7 +732,7 @@ function removeDriverProfile(clickID) {
 }
 //needs to change
 //UPDATE THE API CALLS
-//Fixes for Andrew
+//update saved driver templates
 function updateDrivers(URI) {
     var userId = keycloak.tokenParsed.preferred_username;
     var table = document.getElementById("saved-table");
@@ -723,7 +743,7 @@ function updateDrivers(URI) {
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
+        },  
         success: function (result) {
             $('#saved-table').empty();
             for (var i = 0; i < result.length; i += 4) {
@@ -923,7 +943,7 @@ function getAllDetails() {
                            // bootsrap and jquery have a conflict when displaying certain buttons 
                            // (in this case the close - 'X' ) in the top right hand corner of the dialog.
                            // So current solution is to hide that button and still allow us to use
-                           // bootstrap within the jquery dialog
+                           // bootstrap styling within the jquery dialog
                            $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
                            
                            // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
@@ -1037,7 +1057,7 @@ function getDetails(clickID) {
                 tempkey.innerHTML = result[i];
                 var tempvalString = result[i + 1];
                 // create a shorter version (up to 120 characters) of the values of the driver's keys
-                var tempvalStringShort = tempvalString.substring(0,121) + " ...";
+                var tempvalStringShort = tempvalString.substring(0,121) + "...";
                 
                 // handles if the details overflow the size of the table cell
                 // currently handled by replacing text with a button that brings up popup with text of details
@@ -1195,6 +1215,29 @@ function installDriver() {
         }
     });
 }
+
+/*
+ * Shows the templates panel
+ * Allows users to install saved templates and delete templates
+ * @returns {undefined}
+ */
+function getAllTemplates() {
+    var userId = keycloak.tokenParsed.preferred_username;
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/driver/" + userId + "/get";
+    
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            console.log("getAllTemplates result: " + result);
+        }
+    });
+}
+
 function plugRaw() {
     var apiUrl = baseUrl + '/StackV-web/restapi/driver';
     var sentData = document.getElementById("rawXML").value;

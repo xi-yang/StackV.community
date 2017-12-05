@@ -38,28 +38,13 @@ div#driver-template-panel {
 }
 
 #dialog-overflow-details-text {
-    overflow: auto;
+    word-wrap: break-word;
 }
 
 .ui-dialog > .ui-widget-header {
     background: '#333'
 }
 
-/*
-#driver-overflow-details-panel {
-    bottom: -100%;
-    width: 40%;
-    height: 60%;
-    position: absolute;
-    left: 30%;
-    z-index: 20;
-}
-
-#driver-overflow-details-text {
-    height: 200px;
-    word-wrap: break-word;
-}
-*/
 
 .tooltip-inner {
     word-break: break-all;

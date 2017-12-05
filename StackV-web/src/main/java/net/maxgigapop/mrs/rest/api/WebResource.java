@@ -560,7 +560,7 @@ public class WebResource {
             }
 
             String user = (String) inputJSON.get("username");
-            String driver = (String) inputJSON.get("drivername");
+            String drivername = (String) inputJSON.get("drivername");
             String desc = (String) inputJSON.get("driverDescription");
             String data = (String) inputJSON.get("data");
             String uri = (String) inputJSON.get("topuri");
@@ -572,22 +572,23 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
 
             if (drivertype.equals("raw")) {
+                // excluding the topuri if the driver type is raw
                 prep = front_conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
                 prep.setString(1, user);
-                prep.setString(2, driver);
-                prep.setString(3, desc);
-                prep.setString(4, data);
-                prep.setString(5, "");
-                prep.setString(6, drivertype);
+                prep.setString(2, drivername);
+                prep.setString(3, drivertype);
+                prep.setString(4, "");
+                prep.setString(5, desc);
+                prep.setString(6, data);
                 prep.executeUpdate();
             } else {
                 prep = front_conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
                 prep.setString(1, user);
-                prep.setString(2, driver);
-                prep.setString(3, desc);
-                prep.setString(4, data);
-                prep.setString(5, uri);
-                prep.setString(6, drivertype);
+                prep.setString(2, drivername);
+                prep.setString(3, drivertype);
+                prep.setString(4, uri);
+                prep.setString(5, desc);
+                prep.setString(6, data);
                 prep.executeUpdate();
 
             }
