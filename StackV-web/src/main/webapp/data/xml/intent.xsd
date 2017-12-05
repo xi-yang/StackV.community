@@ -106,7 +106,6 @@ IN THE WORK.
                 <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>
                 <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>
                 <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>
-                <xs:element ref="note" minOccurs="0"/>
             </xs:sequence>
             <xs:attribute ref="name" use="required"/>
             <xs:attribute ref="condition"/>
@@ -119,22 +118,19 @@ IN THE WORK.
         <xs:complexType>
             <xs:sequence>                
                 <xs:element ref="bound" minOccurs="0" maxOccurs="unbounded"/>
-                <xs:element ref="fulfilled" minOccurs="0"/>
-                <xs:element ref="path" minOccurs="0"/>
-                
+                <xs:element ref="path" minOccurs="0"/>                
                 <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>                
                 <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>                
                 <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
             <xs:attribute ref="factory" default="false"/>
+            <xs:attribute ref="block"/>
             <xs:attribute ref="name" use="required"/>
             <xs:attribute ref="condition"/>
             <xs:attribute ref="passthrough"/>
-            <xs:attribute ref="block"/>
             <xs:attribute ref="collapsible" default="false"/>
             <xs:attribute ref="opened"/>
             <xs:attribute ref="label" default="true"/>
-            <xs:attribute ref="start"/>
         </xs:complexType>
     </xs:element>
     
@@ -212,7 +208,7 @@ IN THE WORK.
         <xs:complexType>
             <xs:simpleContent>
                 <xs:extension base="xs:string">
-                    <xs:attribute name="first_only" type="xs:string" />
+                    <xs:attribute name="firstOnly" type="xs:string" />
                 </xs:extension>
             </xs:simpleContent>
         </xs:complexType>

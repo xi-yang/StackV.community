@@ -94,7 +94,7 @@
             <input>
                 <name>CIDR</name>
                 <type>text</type>
-                <default first_only="true">10.0.0.0/24</default>
+                <default firstOnly="true">10.0.0.0/24</default>
                 <valid>cidr</valid>                
             </input>
             <input condition="aws-form">
