@@ -25,6 +25,11 @@
                 <regex>^\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2}(,\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2})*$</regex>
                 <message>Please enter a valid comma-separated list of MAC addresses.</message>
             </constraint>
+            <constraint>                                                                            
+                <name>cidr</name>                                                                   
+                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}$</regex>                          
+                <message>Please enter a valid CIDR.</message>                                       
+            </constraint>                                                                           
         </validation>
     </meta>
     <stage name="Connections">
@@ -36,7 +41,7 @@
                 <option>Multi-Point VLAN Bridge</option>
             </options>
         </input>
-        <group factory="true" name="connection" collapsible="true" opened="true">
+        <group factory="true" name="connection" collapsible="true" opened="false">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -92,7 +97,26 @@
                     <size>large</size>
                     <valid>macs</valid>
                 </input>
-            </group>            
+                <input>                                                                                
+                    <name>Assign IP</name>                                                                
+                    <type>checkbox</type>                                                              
+                    <size>small</size>                                                                 
+                </input>                                                                               
+            </group>
+            <group factory="true" name="IP Range" collapsible="true" opened="true">
+                <input>
+                    <name>Start</name>                    
+                    <type>text</type>
+                    <hint>(A.B.C.D/Mask)</hint>
+                    <valid>cidr</valid>
+                </input>
+                <input>
+                    <name>End</name>                    
+                    <type>text</type>
+                    <hint>(A.B.C.D/Mask)</hint>
+                    <valid>cidr</valid>
+                </input>
+            </group>
         </group>
     </stage>
 </intent>
