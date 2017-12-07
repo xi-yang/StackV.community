@@ -741,9 +741,10 @@ public class WebResource {
 
             while (ret.next()) {
                 list.add(ret.getString("drivername"));
-                list.add(ret.getString("description"));
-                list.add(ret.getString("data"));
+                list.add(ret.getString("drivertype"));
                 list.add(ret.getString("TopUri"));
+                list.add(ret.getString("description"));
+                list.add(ret.getString("data"));          
             }
 
             return list;

@@ -113,6 +113,7 @@ function resetView() {
     }
 }
 
+
 $(function () {
     $(".checkbox-level").change(function () {
         if ($(this).is(":checked")) {
@@ -126,6 +127,7 @@ $(function () {
         loadLogs();
     });
 });
+
 
 //opens the dialog to view details about a driver (of currently installed drivers)
 function openContentPanel() {
@@ -182,6 +184,7 @@ function loadDriverNavbar() {
 
 function loadDriverPortal() {
     getAllDetails();
+    updateDrivers(); //explicitly calling the function to load the driver templates
 
     $(".install-button").click(function () {
         openContentPanel();
@@ -605,7 +608,7 @@ function changeNameInstRaw() {
 
 /*
  * Opens an input box for the user to enter the driver name and description
- * for the driver they want to save as a template.
+ * for the driver they want to save as a template (during the installation process).
  * @returns {undefined}
  */
 function openWindow() {
@@ -730,10 +733,13 @@ function removeDriverProfile(clickID) {
         }
     });
 }
-//needs to change
-//UPDATE THE API CALLS
+
 //update saved driver templates
+//also can be used to show the template's panel
 function updateDrivers(URI) {
+// **Main concern: make sure each template gets the right uri id so other functions can take care of displaying the correct ui
+// **Second concern: have an install button for each template that allows the template to be installed directly (call the right install function with right URI)
+// I don't think the URI parameter is needed since all templates are being reloaded in anyway
     var userId = keycloak.tokenParsed.preferred_username;
     var table = document.getElementById("saved-table");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/get';
@@ -746,19 +752,33 @@ function updateDrivers(URI) {
         },  
         success: function (result) {
             $('#saved-table').empty();
-            for (var i = 0; i < result.length; i += 4) {
+            
+            /*
+             * The return format for the rest query is the columns of each record
+             * in the SQL table separated by commas. Each record is also separated
+             * by commas as well.
+             * Example: Given there are records in the templates table like so:
+             * Record 1: Driver1Name | Driver1Type | Driver1TopUri | Driver1Desc | Driver1Data
+             * Record 2: Driver2Name | Driver2Type | Driver2TopUri | Driver2Desc | Driver2Data
+             * 
+             * The result of the query would like this:
+             * Driver1Name,Driver1Type,Driver1TopUri,Driver1Desc,Driver1Data,Driver2Name,Driver2Type,Driver2TopUri,Driver2Desc,Driver2Data
+             */
+            console.log("updateDrivers rest call result: " + result);
+            for (var i = 0; i < result.length; i += 5) {
                 var row = document.createElement("tr");
                 var drivername = document.createElement("td");
-                var description = document.createElement("td");
-                var cell3 = document.createElement("td");
+                var description  = document.createElement("td");
+                var buttonsCell = document.createElement("td");
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
                 var edButton = document.createElement("button");
+                var installButton = document.createElement("button");
 
                 detButton.className = "button-profile-select btn btn-default";
                 detButton.style.width = "64px";
 
-                delButton.className = "button-profile-select btn btn-default";
+                delButton.className = "button-profile-select btn btn-danger";
                 delButton.style.width = "64px";
 
                 detButton.innerHTML = "Details";
@@ -768,48 +788,54 @@ function updateDrivers(URI) {
                     $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
-                    getDetailsProfile(URI);
+                    getDetailsProfile(URI); // look at call again - this should be the right call
                     openContentPanel();
                 };
-
-
-
                 detButton.id = result[i + 3];
-
+                
                 delButton.innerHTML = "Delete";
                 delButton.onclick = function () {
-                    removeDriverProfile(URI);
+                    //removeDriverProfile(URI);
                 };
-
                 delButton.id = result[i + 3];
 
                 edButton.innerHTML = "Edit";
                 edButton.style.width = "64px";
-                edButton.className = "button-profile-select btn btn-default";
+                edButton.className = "button-profile-select btn btn-warning";
                 edButton.onclick = function () {
                     $("#driver-content-panel").removeClass("hidden");
                     $("#driver-content-panel").addClass("active");
                     $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
-                    editDriverProfile(URI);
+                    //editDriverProfile(URI);
 
                     openContentPanel();
                 };
-
                 edButton.id = result[i + 3];
+                
+                installButton.innerHTML = "Install";
+                installButton.style.width = "64px";
+                installButton.className = "button-profile-select btn btn-primary";
+                installButton.onclick = function () {
+                    console.log("clicked the install button");
+                }
+                installButton.id = result[i + 3];
+                
 
 
                 drivername.innerHTML = result[i];
-                description.innerHTML = result[i + 1];
-                cell3.appendChild(detButton);
-                cell3.appendChild(edButton);
-                cell3.appendChild(delButton);
-                cell3.style.width = "200px";
+                description.innerHTML = result[i + 3];
+                
+                buttonsCell.appendChild(detButton);
+                buttonsCell.appendChild(installButton);
+                buttonsCell.appendChild(edButton);
+                buttonsCell.appendChild(delButton);
+                buttonsCell.style.width = "350px";
 
                 row.appendChild(drivername);
                 row.appendChild(description);
-                row.appendChild(cell3);
+                row.appendChild(buttonsCell);
                 table.appendChild(row);
             }
         }
@@ -859,6 +885,8 @@ function getDetailsProfile(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
+            console.log("in getDetailsProfile");
+            console.log("getDetailsProfile of topuri (clickid: " + clickID + "): " + result);
             $('#installed-type').empty();
             for (var key in result) {
                 if (result.hasOwnProperty(key)) {
@@ -884,8 +912,8 @@ function getDetailsProfile(clickID) {
             instDetailsButton.className = "button-profile-select btn btn-default";
             botpanel.appendChild(instDetailsButton);
         },
-        error: function () {
-            alert("Failure");
+        error: function (xhr, status, error) {
+            alert("Failure. Status: "  + status +  ", errorThrown: " + error);
         }
     });
     panel.appendChild(table);
@@ -1031,6 +1059,7 @@ function getDetails(clickID) {
     var driverId = clickID;
     var panel = document.getElementById("install-type");
     var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + driverId;
+    console.log("getDetails: apiUrl - " + apiUrl);
     var table = document.createElement("table");
     var thead = document.createElement("thead");
     var head_row = document.createElement("tr");
@@ -1219,11 +1248,8 @@ function installDriver() {
     });
 }
 
-/*
- * Shows the templates panel
- * Allows users to install saved templates and delete templates
- * @returns {undefined}
- */
+// No longer need since updateDrivers is being repurposed for the same task
+// Will remove once updateDrivers is completely working
 function getAllTemplates() {
     var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + "/StackV-web/restapi/app/driver/" + userId + "/get";
