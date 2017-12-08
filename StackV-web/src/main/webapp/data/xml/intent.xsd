@@ -140,8 +140,7 @@ IN THE WORK.
                 <xs:element ref="name"/>
                 <xs:element ref="type"/>                
                 <xs:element ref="default" minOccurs="0"/>
-                <xs:element ref="hint" minOccurs="0"/>                
-                <xs:element ref="initial" minOccurs="0"/>                                  
+                <xs:element ref="hint" minOccurs="0"/>                                                
                 <xs:element ref="link" minOccurs="0"/>
                 <xs:element ref="options" minOccurs="0"/>
                 <xs:element ref="size" minOccurs="0"/>
