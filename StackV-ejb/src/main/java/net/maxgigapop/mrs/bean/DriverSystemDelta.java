@@ -50,6 +50,8 @@ public class DriverSystemDelta extends DeltaBase {
     @JoinColumn(name = "referenceVersionItemId")
     protected VersionItem referenceVersionItem = null;
 
+    private String referenceUUID = null;
+
     private String status = null;
     
     public SystemDelta getSystemDelta() {
@@ -74,6 +76,14 @@ public class DriverSystemDelta extends DeltaBase {
 
     public void setReferenceVersionItem(VersionItem referenceVersionItem) {
         this.referenceVersionItem = referenceVersionItem;
+    }
+
+    public String getReferenceUUID() {
+        return referenceUUID;
+    }
+
+    public void setReferenceUUID(String referenceUUID) {
+        this.referenceUUID = referenceUUID;
     }
 
     public String getStatus() {

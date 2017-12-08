@@ -76,8 +76,17 @@ $(function () {
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
             loadDriverNavbar();
             loadDriverPortal();
-        } else if (window.location.pathname === "/StackV-web/ops/intent_test.html") {
-            loadIntent(getURLParameter("intent"));            
+        } else if (window.location.pathname === "/StackV-web/ops/intent.html") {
+            loadIntent(getURLParameter("intent"));
+        } else if (window.location.pathname === "/StackV-web/ops/details.html") {
+            var uuid = sessionStorage.getItem("instance-uuid");
+            if (!uuid) {
+                alert("No Service Instance Selected!");
+                window.location.replace('/StackV-web/ops/catalog.jsp');
+            } else {
+                loadDetailsNavbar();
+                loadDetails();
+            }
         }
 
         if ($("#tag-panel").length) {
@@ -86,7 +95,7 @@ $(function () {
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
-            
+
             console.log("Token automatically updated!");
         }).error(function () {
             console.log("Automatic token update failed!");
@@ -129,53 +138,56 @@ $(function () {
 
 function loadNavbar() {
     $("#nav").load("/StackV-web/nav/navbar.html", function () {
-        if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
+        if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
             $(".nav-admin").hide();
-        } else {
-            // set the active link - get everything after StackV-web
-            var url = $(location).attr('href').split(/\/StackV-web\//)[1];
-            if (/driver.jsp/.test(url))
-                $("li#driver-tab").addClass("active");
-            else if (/catalog.jsp/.test(url))
-                $("li#catalog-tab").addClass("active");
-            else if (/graphTest.jsp/.test(url))
-                $("li#visualization-tab").addClass("active");
-            else if (/acl.jsp/.test(url))
-                $("li#acl-tab").addClass("active");
-            else if (/templateDetails.jsp/.test(url))
-                $("li#details-tab").addClass("active");
-            else if (/admin.jsp/.test(url))
-                $("li#admin-tab").addClass("active");
-
-            var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
-            $.ajax({
-                url: apiUrl,
-                type: 'GET',
-                dataType: "text",
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                },
-                success: function (result) {
-                    $("#select-logging-level").val(result);
-                },
-                error: function (error, status, thrown) {
-                    console.log(error);
-                    console.log(status);
-                    console.log(thrown);
-                }
-            });
-
-            $("#logout-button").click(function (evt) {
-                keycloak.logout();
-
-                evt.preventDefault();
-            });
-            $("#account-button").click(function (evt) {
-                keycloak.accountManagement();
-
-                evt.preventDefault();
-            });
         }
+        if (keycloak.tokenParsed.resource_access.StackV && keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
+            $("#driver-tab").hide();
+        }
+
+        // set the active link - get everything after StackV-web
+        var url = $(location).attr('href').split(/\/StackV-web\//)[1];
+        if (/driver.jsp/.test(url))
+            $("li#driver-tab").addClass("active");
+        else if (/catalog.jsp/.test(url))
+            $("li#catalog-tab").addClass("active");
+        else if (/graphTest.jsp/.test(url))
+            $("li#visualization-tab").addClass("active");
+        else if (/acl.jsp/.test(url))
+            $("li#acl-tab").addClass("active");
+        else if (/templateDetails.jsp/.test(url))
+            $("li#details-tab").addClass("active");
+        else if (/admin.jsp/.test(url))
+            $("li#admin-tab").addClass("active");
+
+        var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
+        $.ajax({
+            url: apiUrl,
+            type: 'GET',
+            dataType: "text",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            success: function (result) {
+                $("#select-logging-level").val(result);
+            },
+            error: function (error, status, thrown) {
+                console.log(error);
+                console.log(status);
+                console.log(thrown);
+            }
+        });
+
+        $("#logout-button").click(function (evt) {
+            keycloak.logout();
+
+            evt.preventDefault();
+        });
+        $("#account-button").click(function (evt) {
+            keycloak.accountManagement();
+
+            evt.preventDefault();
+        });
     });
 }
 
@@ -727,8 +739,8 @@ function forceReinstateInstance(uuid) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
-            window.location.reload(true); 
-       }
+            window.location.reload(true);
+        }
     });
     //window.location.replace('/StackV-web/ops/catalog.jsp');
 }
@@ -1084,7 +1096,7 @@ function loadDataTable(apiUrl) {
             }
         },
         "dom": 'Bfrtip',
-        "buttons": [ 'csv' ],
+        "buttons": ['csv'],
         "columns": [
             {
                 "className": 'details-control',

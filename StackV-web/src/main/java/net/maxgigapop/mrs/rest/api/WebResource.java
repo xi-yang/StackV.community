@@ -428,10 +428,7 @@ public class WebResource {
     public String installDriver(final String dataInput) throws SQLException, IOException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
-        if (refresh != null) {
-            auth = token.auth();
-        }
+        final TokenHandler token = new TokenHandler(auth, refresh);
 
         Object obj = parser.parse(dataInput);
         JSONObject JSONtemp = (JSONObject) obj;
@@ -443,7 +440,7 @@ public class WebResource {
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = executeHttpMethod(url, connection, "POST", xmldata, auth);
+            String result = executeHttpMethod(url, connection, "POST", xmldata, token.auth());
             if (!result.equalsIgnoreCase("plug successfully")) //plugin error
             {
                 return "PLUGIN FAILED: Driver Resource did not return successfull";
@@ -479,11 +476,8 @@ public class WebResource {
     public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, IOException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
-        if (refresh != null) {
-            auth = token.auth();
-        }
-
+        final TokenHandler token = new TokenHandler(auth, refresh);
+        
         Properties prop = new Properties();
         prop.put("user", front_db_user);
         prop.put("password", front_db_pass);
@@ -918,7 +912,6 @@ public class WebResource {
     @GET
     @Path("keycloak/roles/{role}")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject) throws IOException, ParseException {
         String name = subject;
         try {
@@ -974,7 +967,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/groups/{group}")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getGroupRoles(@PathParam("group") String subject) throws IOException, ParseException {
         try {
             String method = "getGroupRoles";
@@ -1038,7 +1030,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/groups")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getGroups() throws IOException, ParseException {
         try {
             String method = "getGroups";
@@ -1102,7 +1093,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/roles")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getRoles() throws IOException, ParseException {
         try {
             String method = "getRoles";
@@ -1168,7 +1158,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/users/{user}/groups")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getUserGroups(@PathParam("user") String subject) throws IOException, ParseException {
         try {
             String method = "getUserGroups";
@@ -1338,7 +1327,6 @@ public class WebResource {
     @GET
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
-    @RolesAllowed("Keycloak")
     public ArrayList<ArrayList<String>> getUserRoles(@PathParam("user") String subject) throws IOException, ParseException {
         try {
             String method = "getUserRoles";
@@ -1860,7 +1848,6 @@ public class WebResource {
     @GET
     @Path("/logging/logs")
     @Produces("application/json")
-    @RolesAllowed("Logging")
     public String getLogs(@QueryParam("refUUID") String refUUID, @QueryParam("level") String level) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -2300,13 +2287,12 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
 
-            prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, V.verification_state, I.last_state FROM service_instance I, service_verification V "
-                    + "WHERE I.referenceUUID = ? AND I.service_instance_id = V.service_instance_id");
+            prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, I.last_state "
+                    + "FROM service_instance I WHERE I.referenceUUID = ?");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
             while (rs.next()) {
-                retList.add(rs.getString("verification_state"));
                 retList.add(Services.get(rs.getString("type")).get(0));
                 retList.add(rs.getString("alias_name"));
                 retList.add(rs.getString("creation_time"));
@@ -2390,11 +2376,13 @@ public class WebResource {
             rs = prep.executeQuery();
             while (rs.next()) {
                 retList.add(rs.getString("state"));
+                retList.add(rs.getString("verification_state"));
                 retList.add(rs.getString("verification_run"));
                 retList.add(rs.getString("creation_time"));
                 retList.add(rs.getString("addition"));
                 retList.add(rs.getString("reduction"));
                 retList.add(rs.getString("service_instance_id"));
+                retList.add(rs.getString("elapsed_time"));
             }
 
             return retList;
@@ -2438,9 +2426,12 @@ public class WebResource {
                     + "WHERE instanceUUID = ?");
             prep.setString(1, refUUID);
             rs = prep.executeQuery();
-            while (rs.next()) {
+            while (rs.next()) {                
                 BigInteger ONE_BILLION = new BigInteger("1000000000");
                 Timestamp time = rs.getTimestamp(1);
+                if (time == null) {
+                    return "0";
+                }
                 Timestamp now = new Timestamp(System.currentTimeMillis());
 
                 final BigInteger firstTime = BigInteger.valueOf(time.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(time.getNanos()));
@@ -2835,65 +2826,25 @@ public class WebResource {
 
     // >Services   
     @GET
-    @Path("/test")
-    @Produces("application/json")
-    @RolesAllowed("Services")
-    public ArrayList<String> serviceTest() throws IOException {
-        ArrayList<String> retList = new ArrayList<>();
-
-        throw new IOException();
-    }
-
-    /**
-     * @api {get} /app/service/:siUUID/status Check Status
-     * @apiVersion 1.0.0
-     * @apiDescription Retrieve full status of specified service instance.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     * @apiParam {String} siUUID instance UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/status
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {String} status Instance status composite, containing both superstate and substate
-     * @apiSuccessExample {String} Example Response:
-     * Cancel - FAILED
-     */
-    @GET
     @Path("/service/{siUUID}/status")
     @RolesAllowed("Services")
     public String checkStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
+        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
+        final TokenHandler token = new TokenHandler(auth, refresh);
 
         ServiceHandler instance = new ServiceHandler(refUUID, token);
 
         return instance.superState.name() + " - " + instance.status() + "\n";
     }
 
-    /**
-     * @api {get} /app/service/:siUUID/substatus Check Substatus
-     * @apiVersion 1.0.0
-     * @apiDescription Retrieve substatus of specified service instance.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     * @apiParam {String} siUUID instance UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/substatus
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {String} status Instance substatus
-     * @apiSuccessExample {String} Example Response:
-     * FAILED
-     */
     @GET
     @Path("/service/{siUUID}/substatus")
     @RolesAllowed("Services")
     public String subStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
+        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
+        final TokenHandler token = new TokenHandler(auth, refresh);
 
         ServiceHandler instance = new ServiceHandler(refUUID, token);
 
@@ -2923,7 +2874,7 @@ public class WebResource {
             System.out.println("Creation Input: " + inputString);
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(refresh);
+            final TokenHandler token = new TokenHandler(null, refresh);
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
             String serviceType = (String) inputJSON.get("service");
@@ -3014,7 +2965,7 @@ public class WebResource {
         logger.trace_start(method);
         try {
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(refresh);
+            final TokenHandler token = new TokenHandler(null, refresh);
 
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -3084,7 +3035,7 @@ public class WebResource {
             final String refUuid, @PathParam(value = "action")
             final String action) throws IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
+        final TokenHandler token = new TokenHandler(null, refresh);
         final String method = "operate";
         logger.trace_start(method, "Thread:" + Thread.currentThread());
 
@@ -3109,7 +3060,7 @@ public class WebResource {
             final String refUuid, @PathParam(value = "action")
             final String action) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
+        final TokenHandler token = new TokenHandler(null, refresh);
         String method = "operateSync";
         logger.trace_start(method);
         doOperate(refUuid, action, token);
@@ -3136,7 +3087,7 @@ public class WebResource {
     public String callVerify(@PathParam(value = "siUUID")
             final String refUUID) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
+        final TokenHandler token = new TokenHandler(null, refresh);
         String method = "callVerify";
         logger.trace_start(method);
 
@@ -3161,7 +3112,7 @@ public class WebResource {
     @RolesAllowed("Services")
     public void delete(@PathParam(value = "siUUID") final String refUuid) throws SQLException, IOException, InterruptedException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
+        final TokenHandler token = new TokenHandler(null, refresh);
         String method = "operate";
         logger.trace_start(method, "Thread:" + Thread.currentThread());
         doOperate(refUuid, "delete", token);

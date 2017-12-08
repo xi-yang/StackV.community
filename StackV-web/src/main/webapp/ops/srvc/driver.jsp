@@ -127,7 +127,7 @@
                     </table>
                 </div>
             </div>
-
+            
 
             <div id="driver-content-panel" class="hidden">
                 <div class="modal-content">
@@ -138,9 +138,10 @@
                         <div class="tab-content" style="background-color:#FFFFFF">                                    
                             <div id="info-panel-body" class="tab-pane fadeIn" style="display:block;background-color:#FFFFFF">
                                 <div id="install-content" class="tab-pane fadeIn" style="background-color:#FFFFFF">
-                                    <div id='install-type' style="background-color:#FFFFFF"></div>
+                                    <div id='install-type' style="background-color:#FFFFFF">
+                                    </div>
                                     <div id='install-type-right' style="background-color:#FFFFFF"></div>
-                                    <div id = "info-panel-button"class = "modal-footer">
+                                    <div id = "info-panel-button" class = "modal-footer">
                                         <div id='install-options'>
                                             <button onclick="clearPanel(); closeContentPanel();">Close</button>
                                         </div>
@@ -152,7 +153,18 @@
 
                 </div>
             </div>
-
+            
+            <!-- element to display a dialog contain the verbose value of a driver detail -->
+            <div id="dialog-overflow-details">
+                <div id="dialog-overflow-details-text"></div>
+            </div>
+            
+            <!-- element to display confirmation dialogs with jquery -->
+            <div id="dialog-confirm">
+                <div id="dialog-confirm-text"></div>
+            </div>
+            
+             
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
         </div>
@@ -163,7 +175,7 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+        <script src="/StackV-web/js/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>

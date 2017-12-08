@@ -625,6 +625,19 @@ public class ModelUtil {
         return dateFormat.parse(str);
     }
     
+    public static String stripUrnPrefix(String str) {
+        if (str.startsWith("urn")) {
+            int ind = str.indexOf("+");
+            if (ind < 0) {
+                ind = str.lastIndexOf(":");
+            }
+            if (ind > 0 && str.length() > ind+1) {
+                return str.substring(ind+1);
+            }
+        }
+        return str;
+    }
+    
     static public class DeltaVerification {
         protected String modelAdditionVerified = null;
         protected String modelReductionVerified = null;

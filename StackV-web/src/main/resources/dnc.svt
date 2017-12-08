@@ -13,7 +13,7 @@
 @prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .
 @prefix spa:   <http://schemas.ogf.org/mrs/2015/02/spa#> .
 
-<urn:ogf:network:vo1.maxgigapop.net:link=abstract>
+<urn:ogf:network:service+{{uuid}}:resource+links>
 	a            nml:Link ;
 	spa:type     spa:Abstraction ;
 	spa:dependOn <x-policy-annotation:action:create-path>.
