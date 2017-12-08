@@ -66,9 +66,8 @@ public class GcpQuery {
             HashMap<String, String> typeInfo = parseTypeStr(getOrDefault(solution, "type", null));
             String instanceUri = solution.get("uri").toString();
             String instanceName = getOrDefault(solution, "name", makeNameFromUri("vm", instanceUri));
-            
-            //secgroup and keypair are not used by gcp
-            //instance+1,image+2,secgroup+3,keypair+4
+            //remove invalid characters such as underscores
+            instanceName = removeChars(instanceName).toLowerCase();
             
             String machineType = getOrDefault(typeInfo, "instance", defaultInstanceType);
             String sourceImage = getOrDefault(typeInfo, "image", defaultImage);
@@ -76,22 +75,54 @@ public class GcpQuery {
             String diskType = getOrDefault(typeInfo, "diskType", defaultDiskType);
             String diskSize = getOrDefault(typeInfo, "diskSizeGb", defaultDiskSize);
             
-            String nicQuery = "SELECT ?nicIP WHERE { BIND(<" + instanceUri + "> AS ?uri) \n"
+            String nicQuery = "SELECT ?ip ?subnetUri ?subnetName ?vpc ?vpcName \n"
+                    + "WHERE { BIND(<" + instanceUri + "> AS ?uri) \n"
                     + "?uri nml:hasBidirectionalPort ?nic . \n"
-                    + "?nic a nml:BidirectionalPort ; mrs:hasNetworkAddress ?nicAddr . \n"
-                    + "?nicAddr a mrs:NetworkAddress ; mrs:value ?nicIP }";
+                    + "?nic a nml:BidirectionalPort ; mrs:hasNetworkAddress ?nicAddr .\n"
+                    + "?nicAddr a mrs:NetworkAddress ; mrs:value ?ip \n"
+                    + "OPTIONAL { ?subnetUri a mrs:SwitchingSubnet ; nml:hasBidirectionalPort ?nic . \n"
+                    + "?vpcUri a nml:Topology ; nml:hasService ?switchingService . \n"
+                    + "?switchingService a mrs:SwitchingService ; mrs:providesSubnet ?subnetUri . "
+                    + "OPTIONAL { ?subnetUri nml:name ?subnetName } "
+                    + "OPTIONAL { ?vpcUri nml:name ?vpcName } } }";
             
             int i = 0;
             
+            JSONArray nics = new JSONArray();
             ResultSet nicResult = executeQuery(nicQuery, emptyModel, modelAdd);
             while (nicResult.hasNext()) {
-                String key = "nic" + i++;
                 QuerySolution nicSolution = nicResult.next();
-                String nicIP = nicSolution.get("nicIP").toString();
-                instanceRequest.put(key, nicIP);
+                String nicIP = nicSolution.get("ip").toString();
+                JSONObject nicInfo = new JSONObject();
+                
+                nicInfo.put("nic", i++);
+                //either both vpc and subnet will be found, or neither
+                if (nicSolution.contains("subnetUri")) {
+                    String subnetUri = nicSolution.get("subnetUri").toString();
+                    
+                    if (!nicSolution.contains("vpcUri")) {
+                        System.out.printf("if instance contains a subnet, it should a vpc. <%s>\n", subnetUri);
+                        nicInfo.put("vpc", "default");
+                    } else {
+                    String vpcUri = nicSolution.get("vpcUri").toString();
+                    //if the name for either subnet is vpc, make one from uri
+                    nicInfo.put("subnet", getOrDefault(nicSolution, "subnetName", makeNameFromUri("subnet", subnetUri)));
+                    nicInfo.put("vpc", getOrDefault(nicSolution, "vpcName", makeNameFromUri("vpc", subnetUri)));
+                    }
+                } else {
+                    nicInfo.put("subnet", "default");
+                    nicInfo.put("vpc", "default");
+                }
+                
+                nicInfo.put("region", defaultRegion);
+                nicInfo.put("ip", nicIP);
+                
+                nics.add(nicInfo);
+                System.out.printf("found nic: %s\n", nicInfo);
             }
             
             instanceRequest.put("type", "create_instance");
+            //instanceRequest.put(, );
             instanceRequest.put("uri", instanceUri);
             instanceRequest.put("name", instanceName);
             instanceRequest.put("machine_type", machineType);
@@ -99,10 +130,10 @@ public class GcpQuery {
             instanceRequest.put("zone", zone);
             instanceRequest.put("disk_type", diskType);
             instanceRequest.put("disk_size", diskSize);
+            instanceRequest.put("nics", nics);
             
-            //String instanceNIC;
             System.out.printf("CREATE INSTANCE REQUEST: %s\n", instanceRequest);
-            //output.add(instanceRequest);
+            output.add(instanceRequest);
         }
         
         return output;
@@ -123,8 +154,7 @@ public class GcpQuery {
         //subnet region and name are optional. vpcname is used to build
         String query = "SELECT ?vpcUri ?vpcName ?subnetUri ?subnetName ?subnetCIDR ?subnetRegion\n"
                 + "WHERE { ?service mrs:providesVPC ?vpcUri . \n"
-                + "?vpcUri a nml:Topology ;\n"
-                + "nml:hasService ?switchingService . \n"
+                + "?vpcUri a nml:Topology ; nml:hasService ?switchingService . \n"
                 + "?switchingService a mrs:SwitchingService ; \n"
                 + "mrs:providesSubnet ?subnetUri . \n"
                 + "?subnetUri a mrs:SwitchingSubnet ; mrs:hasNetworkAddress ?addressUri . \n"
@@ -204,10 +234,9 @@ public class GcpQuery {
         //given a uri, returns a string that can be used to name a resource.
         //useful when a name for a resource is not available in model
         
-        String output = uri.substring(23, 60);
+        String output = type + "-" + uri.substring(23, 60);
         output = removeChars(output);
-        output = String.format("%s-%s", type, output);
-        System.out.printf("in: %s out: %s\n", uri, output);
+        //System.out.printf("in: %s out: %s\n", uri, output);
         return output;
     }
     
