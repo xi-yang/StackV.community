@@ -2838,22 +2838,6 @@ public class WebResource {
         return instance.superState.name() + " - " + instance.status() + "\n";
     }
 
-    /**
-     * @api {get} /app/service/:siUUID/substatus Check Substatus
-     * @apiVersion 1.0.0
-     * @apiDescription Retrieve substatus of specified service instance.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     * @apiParam {String} siUUID instance UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/substatus
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {String} status Instance substatus
-     * @apiSuccessExample {String} Example Response:
-     * FAILED
-     */
     @GET
     @Path("/service/{siUUID}/substatus")
     @RolesAllowed("Services")
