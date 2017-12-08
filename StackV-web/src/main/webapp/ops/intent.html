@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Service Intent</title>
+
+        <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
+        <link rel="stylesheet" href="/StackV-web/css/style.css">
+    </head>
+
+    <body>
+        <!-- NAV BAR -->
+        <div id="nav">
+        </div>
+        <!-- TAG PANEL -->
+        <div id="tag-panel">
+        </div>
+        <!-- MAIN PANEL -->
+        <div id="black-screen"></div>
+        <div id="main-pane">
+            <div class="container" id="intent-panel">
+                <div class="row">
+                    <div id="intent-panel-header">
+                        <ol class="cd-breadcrumb triangle" id="intent-progress">                            
+                        </ol>
+                    </div>
+                </div>                                
+                <div class="row" style="height:100%;">
+                    <div class="col-sm-4 text-right" id="intent-panel-meta">
+                        <div id="meta-service">
+                            <div id="meta-title"></div>
+                            <textarea id="meta-alias" name="meta-alias" placeholder="Service Alias"></textarea>
+                        </div>                        
+                        <button class="button-control intent-operations active" id="intent-save">Save</button>
+                        <button class="button-control intent-operations active" id="intent-submit">Submit</button>
+                    </div>                    
+                    <div class="col-sm-8" id="intent-panel-body">  
+                        <img class="intent-controls" id="intent-prev" alt="Prev" src="/StackV-web/img/prev_arrow.png" />
+                        <img class="intent-controls" id="intent-next" alt="Next" src="/StackV-web/img/next_arrow.png" />                        
+                    </div>
+                    <div class="modal fade" id="saveModal" tabindex="-1" role="dialog" aria-labelledby="saveModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="saveModalLabel">Save Intent to Profile</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <input id="profile-name" name="profile-name" placeholder="Profile Name" />
+                                    <textarea id="profile-description" name="profile-description" placeholder="Profile Description"></textarea>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button id="button-profile-save" type="button" data-dismiss="modal" class="btn btn-primary">Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/sweetalert.min.js"></script>
+
+        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
+        <script src="/StackV-web/js/mousetrap.js"></script>
+        <script src="/StackV-web/js/mousetrap-dict.js"></script>
+
+        <script src="/StackV-web/js/nexus.js"></script>        
+
+        <script src="/StackV-web/js/svc/intentEngine.js"></script>
+        <script src="/StackV-web/js/svc/handlebars.js"></script>        
+
+    </body>
+</html>

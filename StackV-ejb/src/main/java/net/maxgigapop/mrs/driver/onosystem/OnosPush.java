@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.logging.Level;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.DriverSystemDeltaPersistenceManager;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.commons.codec.binary.Base64;
 
@@ -48,14 +49,11 @@ public class OnosPush {
 
     }
 
-    public String pushPropagate(String access_key_id, String secret_access_key, String mappingId, String model, String modelAddTtl, String modelReductTtl, String topologyURI, String subsystemBaseUrl) throws Exception {
+    public String pushPropagate(String access_key_id, String secret_access_key, String mappingId, OntModel modelRef, OntModel modelAdd, OntModel modelReduct, String topologyURI, String subsystemBaseUrl) throws Exception {
 
         String requests = "";
         String reduction_string = "";
         String addition_string = "";
-        OntModel modelRef = ModelUtil.unmarshalOntModel(model);
-        OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
-        OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
         reduction_string = parseFlowsReduct(modelReduct, mappingId, topologyURI);
         if (reduction_string.length() > 1) {
             requests = "Reduction\n" + reduction_string + "end_Reduct";
@@ -72,8 +70,8 @@ public class OnosPush {
 
     public void pushCommit(String access_key_id, String secret_access_key, String model, String fakeMap, String topologyURI, String subsystemBaseUrl, DriverSystemDelta aDelta) throws Exception {
         String method = "pushCommit";
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
-        String stringModelAdd = aDelta.getSystemDelta().getModelAddition().getTtlModel();
+        aDelta = (DriverSystemDelta) DriverSystemDeltaPersistenceManager.findByReferenceUUID(aDelta.getReferenceUUID()); // refresh
+        String stringModelAdd = ModelUtil.marshalOntModel(aDelta.getSystemDelta().getModelAddition().getOntModel());
         String newStringModelAdd = stringModelAdd;
 
         localFakeMap = fakeMap;

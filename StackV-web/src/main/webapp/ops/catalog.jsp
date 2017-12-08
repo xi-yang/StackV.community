@@ -1,10 +1,4 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page errorPage = "/StackV-web/errorPage.jsp" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />
 <!DOCTYPE html>
 <html>
     <head>
@@ -99,7 +93,10 @@
                         <h3 id="info-panel-title"></h3>
                     </div>
                     <div class="modal-body">
-                        <div id="info-panel-text">
+                        <div id="info-panel-input">
+                            <input id="profile-alias" placeholder="Instance Alias"/>
+                        </div>
+                        <div id="info-panel-text">                            
                             <textarea id="info-panel-text-area"></textarea>
                         </div>
                     </div>
@@ -136,6 +133,7 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
@@ -144,6 +142,9 @@
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/catalog.js"></script>
+        
+        <script src="/StackV-web/js/svc/intentEngine.js"></script>
+        <script src="/StackV-web/js/svc/handlebars.js"></script>        
 
     </body>
 </html>

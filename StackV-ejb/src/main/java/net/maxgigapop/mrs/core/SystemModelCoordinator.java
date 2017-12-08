@@ -35,6 +35,8 @@ import javax.ejb.LockType;
 import javax.ejb.Schedule;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
@@ -62,11 +64,6 @@ public class SystemModelCoordinator {
     boolean bootStrapped = false;
     // current VG with cached union ModelBase
     VersionGroup systemVersionGroup = null;
-
-    @Lock(LockType.READ)
-    public boolean isBootStrapped() {
-        return bootStrapped;
-    }
     
     @Lock(LockType.WRITE)
     public void setBootStrapped(boolean bl) {
@@ -76,16 +73,20 @@ public class SystemModelCoordinator {
             systemVersionGroup = null;
         }
     }
-    
-    @Lock(LockType.WRITE)
-    public VersionGroup getSystemVersionGroup() {
-        return systemVersionGroup;
-    }
 
     @Lock(LockType.WRITE)
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void autoUpdate() {
         String method = "autoUpdate";
+        DataConcurrencyPoster dataConcurrencyPoster;
+        try {
+            Context ejbCxt = new InitialContext();
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (Exception ex) {
+            logger.warning(method, "failed to lookup DataConcurrencyPoster --" + ex);
+            logger.trace_end(method);
+            return;
+        }
         logger.trace_start(method);
         if (!bootStrapped) {
             logger.trace(method, "bootstrapping - bootStrapped==false");
@@ -94,21 +95,21 @@ public class SystemModelCoordinator {
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null || ditMap.isEmpty()) {
             bootStrapped = false;
+            dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
             systemVersionGroup = null;
             logger.warning(method, "ditMap == null or ditMap.isEmpty");
             logger.trace_end(method);
             return;
         }
         for (DriverInstance di : ditMap.values()) {
-            synchronized (di) { 
                 if (di.getHeadVersionItem() == null) {
                     bootStrapped = false;
+                    dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
                     systemVersionGroup = null;
                     logger.warning(method, di + "has null headVersionItem");
                     logger.trace_end(method);
                     return;
                 }
-            }
         }
         if (this.systemVersionGroup == null) {
             this.systemVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
@@ -122,6 +123,7 @@ public class SystemModelCoordinator {
             } catch (Exception ex) {
                 this.systemVersionGroup = null;
                 bootStrapped = false;
+                dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
                 logger.catching(method, ex);
                 return;
             }
@@ -130,6 +132,7 @@ public class SystemModelCoordinator {
                 this.systemVersionGroup.createUnionModel();
             }
         }
+        dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(systemVersionGroup.getCachedModelBase().getOntModel());
         if (!bootStrapped) {
             // cleanning up from recovery
             logger.message(method, "cleanning up from recovery");
@@ -137,6 +140,7 @@ public class SystemModelCoordinator {
             Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
             VersionItemPersistenceManager.cleanupAllBefore(before24h);
             bootStrapped = true;
+            dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
             logger.message(method, "Done! - bootStrapped changed to true");
         }
         logger.trace_end(method);
@@ -146,6 +150,13 @@ public class SystemModelCoordinator {
     public VersionGroup getLatest() {
         String method = "getLatest";
         logger.trace_start(method);
+        DataConcurrencyPoster dataConcurrencyPoster = null;
+        try {
+            Context ejbCxt = new InitialContext();
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (Exception ex) {
+            logger.warning(method, "failed to lookup DataConcurrencyPoster --" + ex);
+        }
         if (this.systemVersionGroup == null) {
             logger.trace(method, "this.systemVersionGroup == null");
             this.systemVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
@@ -173,21 +184,21 @@ public class SystemModelCoordinator {
                 this.systemVersionGroup.createUnionModel();
             }
         }
+        if (dataConcurrencyPoster != null) {
+            dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(systemVersionGroup.getCachedModelBase().getOntModel());
+        }
         logger.trace_end(method);
         return this.systemVersionGroup;
-    }
-    
-    @Lock(LockType.READ)
-    public OntModel getCachedOntModel() {
-        if (this.systemVersionGroup != null) {
-            return this.systemVersionGroup.getCachedModelBase().getOntModel();
-        }
-        return null;
     }
 
     @Lock(LockType.READ)
     public OntModel getLatestOntModel() {
         VersionGroup vg = getLatest();
         return vg.getCachedModelBase().getOntModel();
+    }
+    
+    @Lock(LockType.READ)
+    public VersionGroup getSystemVersionGroup() {
+        return systemVersionGroup;
     }
 }

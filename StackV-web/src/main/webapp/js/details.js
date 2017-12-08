@@ -1,30 +1,33 @@
-/* 
+/*
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, swal */
 // Tweens
-var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px", opacity: "1", display: "block"});
-var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px", opacity: "1", display: "block"});
-var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px", opacity: "1", display: "block"});
+var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
+    paused: true, top: "0px", opacity: "1", display: "block"});
+var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut,
+    paused: true, left: "0px", opacity: "1", display: "block"});
+var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut,
+    paused: true, right: "0px", opacity: "1", display: "block"});
 
 var view = "center";
 
@@ -140,101 +143,34 @@ function loadDetailsNavbar() {
 
 function loadDetails() {
     var uuid = sessionStorage.getItem("instance-uuid");
-    $("#instance-uuid").html(uuid);
-    subloadDetails();
+    startDetailsEngine(uuid);
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
     loadDataTable(apiUrl);
-    setTimeout(function () {
-        if (view === "left") {
-            tweenLoggingPanel.play();
-            $('div.dataTables_filter input').focus();
-        }
-    }, 1000);
     reloadLogs();
 
-    $(".delta-table-header").click(function () {
-        $("#body-" + this.id).toggleClass("hide");
-    });
-
-    $(document).on('click', '.instance-command', function () {
-        $(".instance-command").attr('disabled', true);
-        pauseRefresh();
-
-        var command = this.id;
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
-        $.ajax({
-            url: apiUrl,
-            type: 'PUT',
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-            },
-            success: function () {
-                $(".instance-command").attr('disabled', false);
-                resumeRefresh();
-                if (command === "delete" || command === "force_delete") {
-                    setTimeout(function () {
-                        sessionStorage.removeItem("instance-uuid");
-                        window.document.location = "/StackV-web/ops/catalog.jsp";
-                    }, 250);
-                } else {
-                    reloadData();
-                }
-            }
-        });
-        if (!(command === "delete") && !(command === "force_delete")) {
-            setTimeout(function () {
-                $(".instance-command").attr('disabled', false);
-                resumeRefresh();
-                reloadData();
-            }, 250);
-        }
-    });
-
+    tweenDetailsPanel.play();
 }
 
-function subloadDetails() {
-    var uuid = sessionStorage.getItem("instance-uuid");
-
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (instance) {
-            /*  instance mapping:
-             *      0 - verification_state
-             *      1 - name
-             *      2 - alias_name
-             *      3 - creation_time
-             *      4 - super_state     */
-
-            $("#instance-verification").html(instance[0]);
-            $("#instance-alias").html(instance[2]);
-            $("#instance-creation-time").html(instance[3]);
-            $("#instance-superstate").html(instance[4]);
-
-
-            // Next steps
-            subloadStatus(uuid);
-        }
-    });
-}
 function subloadStatus(refUuid) {
-    var ele = document.getElementById("instance-substate");
+    var ele = $("#instance-substate");
+    var last = $("#instance-laststate");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + refUuid + '/substatus';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            ele.innerHTML = result;
+            if (result === "FAILED") {
+                last.html(" (After " + lastState + ")");
+            }
+
+            subState = result;
+            ele.html(result);
 
             if (view === "center") {
                 tweenDetailsPanel.play();
@@ -244,106 +180,47 @@ function subloadStatus(refUuid) {
         }
     });
 }
+
+hasDrone = true;
 function subloadVerification() {
     var uuid = sessionStorage.getItem("instance-uuid");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/verification';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (verification) {
             /*  verification mapping:
-             *      0 - verification_run
-             *      1 - creation_time
-             *      2 - addition
-             *      3 - reduction
-             *      4 - service_instance_id */
-            $("#verification-run").html(verification[0]);
-            $("#verification-time").html(verification[1]);
-            $("#verification-addition").html(verification[2]);
-            $("#verification-reduction").html(verification[3]);
+             *      1 - state
+             *      1 - verification_run
+             *      2 - creation_time
+             *      3 - addition
+             *      4 - reduction
+             *      5 - service_instance_id  */
+
+            verifyState = verification[0];
+            verificationRun = verification[1];
+            verificationTime = verification[2];
+            verificationAddition = verification[3];
+            verificationReduction = verification[4];
+
+            $.ajax({
+                url: apiUrl += '/drone',
+                async: false,
+                type: 'GET',
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                },
+                success: function (retCode) {
+                    hasDrone = (retCode === "1");
+                }
+            });
 
             instructionModerate();
             buttonModerate();
-        }
-    });
-}
-
-function subloadACL() {
-    var uuid = sessionStorage.getItem("instance-uuid");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/acl';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (verification) {
-            /*  acl mapping:
-             */
-            var panel = document.getElementById("details-panel");
-
-            var table = document.createElement("table");
-            table.className = "management-table hide acl-table";
-
-            var thead = document.createElement("thead");
-            thead.className = "delta-table-header";
-            var row = document.createElement("tr");
-            var head = document.createElement("th");
-            row.appendChild(head);
-            head = document.createElement("th");
-            head.innerHTML = "Access Control";
-            row.appendChild(head);
-
-            thead.appendChild(row);
-            table.appendChild(thead);
-
-            var tbody = document.createElement("tbody");
-            tbody.className = "delta-table-body";
-            tbody.id = "acl-body";
-
-            row = document.createElement("tr");
-            var cell = document.createElement("td");
-            cell.innerHTML = '<select id="acl-select" size="5" name="acl-select" multiple></select>';
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            cell = document.createElement("td");
-            cell.innerHTML = '<label>Give user access: <input type="text" name="acl-input" /></label>';
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            table.appendChild(tbody);
-            panel.appendChild(table);
-
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-
-            // Next step            
-            loadACL(uuid);
-        }
-    });
-}
-
-function loadACL() {
-    var select = document.getElementById("acl-select");
-    $("#acl-select").empty();
-
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + keycloak.subject + '/acl';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            for (i = 0; i < result.length; i++) {
-                select.append("<option>" + result[i] + "</option>");
-            }
         }
     });
 }
@@ -396,7 +273,8 @@ function buildDeltaTable(type) {
     row = document.createElement("tr");
     var cell = document.createElement("td");
     cell.colSpan = "3";
-    cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.' + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
+    cell.innerHTML = '<button  class="details-model-toggle btn btn-default" onclick="toggleTextModel(\'.'
+            + type.toLowerCase() + '-delta-table\', \'#delta-' + type + '\');">Toggle Text Model</button>';
     row.appendChild(cell);
     tbody.appendChild(row);
 
@@ -407,342 +285,345 @@ function buildDeltaTable(type) {
 }
 
 function loadVisualization() {
-    $("#details-viz").load("/StackV-web/details_viz.html", function () {
-        document.getElementById("visual-panel").innerHTML = "";
-        var State = document.getElementById("instance-substate").innerHTML;
-        var verificationState = document.getElementById("instance-verification").innerHTML;
+    if (!(subState === "INIT" || (subState === "FAILED" && lastState === "INIT"))) {
+        $("#details-viz").load("/StackV-web/details_viz.html", function () {
+            document.getElementById("visual-panel").innerHTML = "";
 
-        var States = {
-            "INIT": 0,
-            "COMPILED": 1,
-            "COMMITTED": 2,
-            "FAILED": 3,
-            "READY": 4
-        };
+            var States = {
+                "INIT": 0,
+                "COMPILED": 1,
+                "COMMITTING": 2,
+                "COMMITTING-PARTIAL": 2,
+                "COMMITTED": 3,
+                "FAILED": 4,
+                "READY": 5
+            };
 
-        var tabs = [
-            {
-                "name": "Service",
-                "state": "INIT",
-                "createContent": createVizTab.bind(undefined, "Service")
-            },
-            {
-                "name": "System",
-                "state": "COMPILED",
-                "createContent": createVizTab.bind(undefined, "System")
-            },
-            {
-                "name": "Verification",
-                "state": "FAILED",
-                "createContent": createVizTab.bind(undefined, "Verification")
-            }
-        ];
-
-        createTabs();
-        function createVizTab(viz_type) {
-            var div = document.createElement("div");
-            div.classList.add("viz");
-            div.id = "sd_" + viz_type;
-            div.appendChild(buildViz(viz_type + " Addition"));
-            div.appendChild(buildViz(viz_type + " Reduction"));
-
-            div.classList.add("tab-pane");
-            div.classList.add("fade");
-            div.classList.add("in");
-            div.classList.add("viz-tab-content");
-            return div;
-        }
-
-        function buildHeaderLink(id, text) {
-            var link = document.createElement("a");
-            ;
-            link.href = "#";
-            link.classList.add("viz-hdr");
-            link.classList.add("unexpanded");
-            link.id = id;
-            link.text = text;
-            return link;
-        }
-
-        function buildViz(viz_type) {
-            var table = document.createElement("table");
-            table.classList.add("management-table");
-            table.classList.add("viz-table");
-            var headerRow = document.createElement("tr");
-            var vizRow = document.createElement("tr");
-            var additionHeader = document.createElement("th");
-            var reductionHeader = document.createElement("th");
-            var additionCell = document.createElement("td");
-            additionCell.classList.add("viz-cell");
-            var reductionCell = document.createElement("td");
-            reductionCell.classList.add("viz-cell");
-
-            switch (viz_type) {
-
-                case "System Addition":
-                    table.id = "sd_System_Addition";
-
-                    var a = buildHeaderLink("sd_System_Addition_Link", "Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_System_Addition_Viz";
-
-                    vizRow.appendChild(additionCell);
-
-                    if (!$("#sysa_viz_div").hasClass("emptyViz")) {
-                        var sysa_viz_div = document.getElementById("sysa_viz_div");
-                        additionCell.appendChild(sysa_viz_div);
-                        sysa_viz_div.classList.remove("hidden");
-                    }
-                    break;
-                case "System Reduction":
-                    table.id = "sd_System_Reduction";
-
-                    var a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_System_Reduction_Viz";
-
-                    vizRow.appendChild(reductionCell);
-
-                    if (!$("#sysr_viz_div").hasClass("emptyViz")) {
-                        //  $(".system-delta-table").removeClass("hide");
-                        var sysr_viz_div = document.getElementById("sysr_viz_div");
-                        reductionCell.appendChild(sysr_viz_div);
-                        sysr_viz_div.classList.remove("hidden");
-                    }
-
-                    break;
-                case "Service Addition":
-                    table.id = "sd_Service_Addition";
-
-                    var a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Service_Addition_Viz";
-
-                    vizRow.appendChild(additionCell);
-
-                    if (!$("#serva_viz_div").hasClass("emptyViz")) {
-                        // $(".service-delta-table").removeClass("hide");
-                        var serva_viz_div = document.getElementById("serva_viz_div");
-                        additionCell.appendChild(serva_viz_div);
-                        serva_viz_div.classList.remove("hidden");
-                    }
-
-                    break;
-                case "Service Reduction":
-                    table.id = "sd_Service_Reduction";
-
-                    var a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Service_Addition_Viz";
-
-                    vizRow.appendChild(reductionCell);
-
-                    if (!$("#servr_viz_div").hasClass("emptyViz")) {
-                        var servr_viz_div = document.getElementById("servr_viz_div");
-                        reductionCell.appendChild(servr_viz_div);
-                        servr_viz_div.classList.remove("hidden");
-                    }
-                    break;
-                case "Verification Addition":
-                    var a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Unverified_Addition_Viz";
-
-                    vizRow.appendChild(additionCell);
-
-                    a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Verified_Addition_Viz";
-
-                    vizRow.appendChild(reductionCell);
-
-
-                    if (!$("#va_viz_div").hasClass("emptyViz") || !$("#ua_viz_div").hasClass("emptyViz")) {
-                        var va_viz_div = document.getElementById("va_viz_div");
-                        var ua_viz_div = document.getElementById("ua_viz_div");
-
-                        additionCell.appendChild(ua_viz_div);
-                        reductionCell.appendChild(va_viz_div);
-
-                        ua_viz_div.classList.remove("hidden");
-                        va_viz_div.classList.remove("hidden");
-
-                    }
-
-                    break;
-                case "Verification Reduction":
-
-                    var a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Unverified_Reduction_Viz";
-
-                    vizRow.appendChild(additionCell);
-
-                    a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Verified_Reduction_Viz";
-
-                    vizRow.appendChild(reductionCell);
-
-                    if (!$("#vr_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {
-                        var ur_viz_div = document.getElementById("ur_viz_div");
-                        var vr_viz_div = document.getElementById("vr_viz_div");
-
-                        additionCell.appendChild(ur_viz_div);
-                        reductionCell.appendChild(vr_viz_div);
-
-                        ur_viz_div.classList.remove("hidden");
-                        vr_viz_div.classList.remove("hidden");
-                    }
-                    break;
-            }
-            if (viz_type.includes("Verification")) {
-                headerRow.appendChild(additionHeader);
-                headerRow.appendChild(reductionHeader);
-            } else if (viz_type.includes("Addition")) {
-                headerRow.appendChild(additionHeader);
-            } else {
-                headerRow.appendChild(reductionHeader);
-            }
-            table.appendChild(headerRow);
-            table.appendChild(vizRow);
-
-            return table;
-        }
-
-
-
-        function createTabs() {
-            $(".verification-table").addClass("hide");
-            $(".system-delta-table").addClass("hide");
-            $(".service-delta-table").addClass("hide");
-            $("#delta-Service").addClass("hide");
-            $("#delta-System").addClass("hide");
-
-
-            var tabBar = document.createElement("ul");
-            tabBar.classList.add("nav");
-            tabBar.classList.add("nav-tabs");
-
-            var tabContent = document.createElement("div");
-            tabContent.classList.add("tab-content");
-            tabContent.classList.add("viz-tab-content");
-
-            for (var i = 0; i < tabs.length; i++) {
-                var tab = tabs[i];
-
-                if ((tab.name === "Verification") && (verificationState === null))
-                    continue;
-
-                if (States[tab.state] <= States[State]) {
-                    createTab(tab, tabBar);
-                    tabContent.appendChild(tab.createContent());
+            var tabs = [
+                {
+                    "name": "Service",
+                    "state": "COMPILED",
+                    "createContent": createVizTab.bind(undefined, "Service")
+                },
+                {
+                    "name": "System",
+                    "state": "COMMITTING",
+                    "createContent": createVizTab.bind(undefined, "System")
+                },
+                {
+                    "name": "Verification",
+                    "state": "COMMITTED",
+                    "createContent": createVizTab.bind(undefined, "Verification")
                 }
+            ];
+
+            createTabs();
+            function createVizTab(viz_type) {
+                var div = document.createElement("div");
+                div.classList.add("viz");
+                div.id = "sd_" + viz_type;
+                div.appendChild(buildViz(viz_type + " Addition"));
+                div.appendChild(buildViz(viz_type + " Reduction"));
+
+                div.classList.add("tab-pane");
+                div.classList.add("fade");
+                div.classList.add("in");
+                div.classList.add("viz-tab-content");
+                return div;
             }
-            tabBar.lastChild.classList.add("active");
-            tabContent.lastChild.classList.add("active");
 
-            var visualization_panel = document.getElementById("visual-panel");
-            visualization_panel.appendChild(tabBar);
-            visualization_panel.appendChild(tabContent);
-
-            setEvent();
-        }
-
-        function make_tab_id(tab) {
-            var id = tab.name.replace(/\s+/g, '');
-            return "sd_" + id;
-        }
-        function createTab(tab, tabBar) {
-            var li = document.createElement("li");
-            var a = document.createElement("a");
-            a.href = "#" + make_tab_id(tab);
-            a.text = tab.name;
-            a.setAttribute("data-toggle", "tab");
-            li.appendChild(a);
-            tabBar.appendChild(li);
-        }
-
-        function setEvent(container) {
-            //$(".viz-hdr")
-            //$(".details-viz-button").click();
-
-            $(".viz-hdr").on("click", function () {
-                var tab = $(this).closest(".tab-pane");
-
-                var hdr = $(this).closest("th");
-                var cell = hdr.closest('table').find('td').eq(hdr.index());
-                var table = $(this).closest("table");
-                var viz = cell.children().eq(0);
-                var text_model = viz.children(".details-viz-text-model");
-                var text_model_pre = text_model.children("pre").eq(0);
+            function buildHeaderLink(id, text) {
+                var link = document.createElement("a");
                 ;
+                link.href = "#";
+                link.classList.add("viz-hdr");
+                link.classList.add("unexpanded");
+                link.id = id;
+                link.text = text;
+                return link;
+            }
 
-                var text_model_pre_width = text_model_pre.width();
-                var text_model_pre_height = text_model_pre.height();
+            function buildViz(viz_type) {
+                var table = document.createElement("table");
+                table.classList.add("management-table");
+                table.classList.add("viz-table");
+                var headerRow = document.createElement("tr");
+                var vizRow = document.createElement("tr");
+                var additionHeader = document.createElement("th");
+                var reductionHeader = document.createElement("th");
+                var additionCell = document.createElement("td");
+                additionCell.classList.add("viz-cell");
+                var reductionCell = document.createElement("td");
+                reductionCell.classList.add("viz-cell");
 
-                if (viz.hasClass("emptyViz"))
-                    return;
+                switch (viz_type) {
 
-                var button = viz.children(".details-viz-recenter-button");
+                    case "System Addition":
+                        table.id = "sd_System_Addition";
 
-                if ($(this).hasClass("unexpanded")) {
-                    if (!$("#instance-details-table").hasClass("hide"))
-                        $("#instance-details-table").addClass("hide");
+                        var a = buildHeaderLink("sd_System_Addition_Link", "Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_System_Addition_Viz";
 
-                    tab.find(".viz-cell").not(cell).addClass("hide");
-                    tab.find(".viz-hdr").closest("th").not(hdr).addClass("hide");
-                    tab.find(".viz-table").not(table).addClass("hide");
+                        vizRow.appendChild(additionCell);
 
-                    viz.addClass("expanded-viz-div");
-                    table.height("95%");
-                    $(this).removeClass("unexpanded");
-                    $(this).addClass("expanded");
-                    button.trigger("click", [viz.width(), viz.height()]);
+                        if (!$("#sysa_viz_div").hasClass("emptyViz")) {
+                            var sysa_viz_div = document.getElementById("sysa_viz_div");
+                            additionCell.appendChild(sysa_viz_div);
+                            sysa_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                    case "System Reduction":
+                        table.id = "sd_System_Reduction";
 
-                    text_model_pre.width("inherit");
-                    text_model_pre.addClass("expanded");
-                    text_model_pre.height(viz.height() * 2);
-                                        
-                    pauseRefresh();
+                        var a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_System_Reduction_Viz";
+
+                        vizRow.appendChild(reductionCell);
+
+                        if (!$("#sysr_viz_div").hasClass("emptyViz")) {
+                            //  $(".system-delta-table").removeClass("hide");
+                            var sysr_viz_div = document.getElementById("sysr_viz_div");
+                            reductionCell.appendChild(sysr_viz_div);
+                            sysr_viz_div.classList.remove("hidden");
+                        }
+
+                        break;
+                    case "Service Addition":
+                        table.id = "sd_Service_Addition";
+
+                        var a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Service_Addition_Viz";
+
+                        vizRow.appendChild(additionCell);
+
+                        if (!$("#serva_viz_div").hasClass("emptyViz")) {
+                            // $(".service-delta-table").removeClass("hide");
+                            var serva_viz_div = document.getElementById("serva_viz_div");
+                            additionCell.appendChild(serva_viz_div);
+                            serva_viz_div.classList.remove("hidden");
+                        }
+
+                        break;
+                    case "Service Reduction":
+                        table.id = "sd_Service_Reduction";
+
+                        var a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Service_Addition_Viz";
+
+                        vizRow.appendChild(reductionCell);
+
+                        if (!$("#servr_viz_div").hasClass("emptyViz")) {
+                            var servr_viz_div = document.getElementById("servr_viz_div");
+                            reductionCell.appendChild(servr_viz_div);
+                            servr_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                    case "Verification Addition":
+                        var a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Unverified_Addition_Viz";
+
+                        vizRow.appendChild(additionCell);
+
+                        a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Verified_Addition_Viz";
+
+                        vizRow.appendChild(reductionCell);
+
+
+                        if (!$("#va_viz_div").hasClass("emptyViz") || !$("#ua_viz_div").hasClass("emptyViz")) {
+                            var va_viz_div = document.getElementById("va_viz_div");
+                            var ua_viz_div = document.getElementById("ua_viz_div");
+
+                            additionCell.appendChild(ua_viz_div);
+                            reductionCell.appendChild(va_viz_div);
+
+                            ua_viz_div.classList.remove("hidden");
+                            va_viz_div.classList.remove("hidden");
+
+                        }
+
+                        break;
+                    case "Verification Reduction":
+
+                        var a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Unverified_Reduction_Viz";
+
+                        vizRow.appendChild(additionCell);
+
+                        a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Verified_Reduction_Viz";
+
+                        vizRow.appendChild(reductionCell);
+
+                        if (!$("#vr_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {
+                            var ur_viz_div = document.getElementById("ur_viz_div");
+                            var vr_viz_div = document.getElementById("vr_viz_div");
+
+                            additionCell.appendChild(ur_viz_div);
+                            reductionCell.appendChild(vr_viz_div);
+
+                            ur_viz_div.classList.remove("hidden");
+                            vr_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                }
+                if (viz_type.includes("Verification")) {
+                    headerRow.appendChild(additionHeader);
+                    headerRow.appendChild(reductionHeader);
+                } else if (viz_type.includes("Addition")) {
+                    headerRow.appendChild(additionHeader);
                 } else {
-                    if ($("#instance-details-table").hasClass("hide") && !$(".viz-hdr.expanded").not(this).length) {
-                        $("#instance-details-table").removeClass("hide");
+                    headerRow.appendChild(reductionHeader);
+                }
+                table.appendChild(headerRow);
+                table.appendChild(vizRow);
+
+                return table;
+            }
+
+
+
+            function createTabs() {
+                $(".verification-table").addClass("hide");
+                $(".system-delta-table").addClass("hide");
+                $(".service-delta-table").addClass("hide");
+                $("#delta-Service").addClass("hide");
+                $("#delta-System").addClass("hide");
+
+
+                var tabBar = document.createElement("ul");
+                tabBar.classList.add("nav");
+                tabBar.classList.add("nav-tabs");
+
+                var tabContent = document.createElement("div");
+                tabContent.classList.add("tab-content");
+                tabContent.classList.add("viz-tab-content");
+
+                for (var i = 0; i < tabs.length; i++) {
+                    var tab = tabs[i];
+
+                    if ((tab.name === "Verification") && (verificationState === null))
+                        continue;
+
+                    if (States[tab.state] <= States[subState]) {
+                        createTab(tab, tabBar);
+                        tabContent.appendChild(tab.createContent());
+                    }
+                }
+                if (tabBar.lastChild) {
+                    tabBar.lastChild.classList.add("active");
+                    tabContent.lastChild.classList.add("active");
+
+                    var visualization_panel = document.getElementById("visual-panel");
+                    visualization_panel.appendChild(tabBar);
+                    visualization_panel.appendChild(tabContent);
+
+                    setEvent();
+                }
+            }
+
+            function make_tab_id(tab) {
+                var id = tab.name.replace(/\s+/g, '');
+                return "sd_" + id;
+            }
+            function createTab(tab, tabBar) {
+                var li = document.createElement("li");
+                var a = document.createElement("a");
+                a.href = "#" + make_tab_id(tab);
+                a.text = tab.name;
+                a.setAttribute("data-toggle", "tab");
+                li.appendChild(a);
+                tabBar.appendChild(li);
+            }
+
+            function setEvent(container) {
+                //$(".viz-hdr")
+                //$(".details-viz-button").click();
+
+                $(".viz-hdr").on("click", function () {
+                    var tab = $(this).closest(".tab-pane");
+
+                    var hdr = $(this).closest("th");
+                    var cell = hdr.closest('table').find('td').eq(hdr.index());
+                    var table = $(this).closest("table");
+                    var viz = cell.children().eq(0);
+                    var text_model = viz.children(".details-viz-text-model");
+                    var text_model_pre = text_model.children("pre").eq(0);
+                    ;
+
+                    var text_model_pre_width = text_model_pre.width();
+                    var text_model_pre_height = text_model_pre.height();
+
+                    if (viz.hasClass("emptyViz"))
+                        return;
+
+                    var button = viz.children(".details-viz-recenter-button");
+
+                    if ($(this).hasClass("unexpanded")) {
+                        if (!$("#instance-details-table").hasClass("hide"))
+                            $("#instance-details-table").addClass("hide");
+
+                        tab.find(".viz-cell").not(cell).addClass("hide");
+                        tab.find(".viz-hdr").closest("th").not(hdr).addClass("hide");
+                        tab.find(".viz-table").not(table).addClass("hide");
+
+                        viz.addClass("expanded-viz-div");
+                        table.height("95%");
+                        $(this).removeClass("unexpanded");
+                        $(this).addClass("expanded");
+                        button.trigger("click", [viz.width(), viz.height()]);
+
+                        text_model_pre.width("inherit");
+                        text_model_pre.addClass("expanded");
+                        text_model_pre.height(viz.height() * 2);
+
+                        pauseRefresh();
+                    } else {
+                        if ($("#instance-details-table").hasClass("hide") && !$(".viz-hdr.expanded").not(this).length) {
+                            $("#instance-details-table").removeClass("hide");
+                        }
+
+                        tab.find(".viz-cell").not(cell).removeClass("hide");
+                        tab.find(".viz-hdr").closest("th").not(hdr).removeClass("hide");
+                        tab.find(".viz-table").not(".emptyVizTable").removeClass("hide");
+
+                        table.height("10%");
+                        viz.removeClass("expanded-viz-div");
+                        $(this).removeClass("expanded");
+                        $(this).addClass("unexpanded");
+                        button.trigger("click", [viz.width(), viz.height()]);
+
+                        text_model_pre.removeClass("expanded");
+                        text_model_pre.width("initial");
+                        text_model_pre.height(text_model_pre_height / 2.5);
+
+                        resumeRefresh();
                     }
 
-                    tab.find(".viz-cell").not(cell).removeClass("hide");
-                    tab.find(".viz-hdr").closest("th").not(hdr).removeClass("hide");
-                    tab.find(".viz-table").not(".emptyVizTable").removeClass("hide");
+                });
+            }
 
-                    table.height("10%");
-                    viz.removeClass("expanded-viz-div");
-                    $(this).removeClass("expanded");
-                    $(this).addClass("unexpanded");
-                    button.trigger("click", [viz.width(), viz.height()]);
-
-                    text_model_pre.removeClass("expanded");
-                    text_model_pre.width("initial");
-                    text_model_pre.height(text_model_pre_height / 2.5);
-
-                    resumeRefresh();
-                }
-
-            });
-        }
-
-        if (view === "right") {
-            tweenVisualPanel.play();
-        }
-    });
-
+            if (view === "right") {
+                tweenVisualPanel.play();
+            }
+        });
+    }
 }
 function closeVisTabs() {
     $(".viz-hdr.expanded").click();
@@ -765,176 +646,6 @@ function toggleTextModel(viz_table, text_table) {
     }
 }
 
-// Moderation Functions
-function instructionModerate() {
-    if (document.getElementById("verification-run") !== null) {
-        var subState = document.getElementById("instance-substate").innerHTML;
-        var verificationState = document.getElementById("instance-verification").innerHTML;
-        var verificationRun = document.getElementById("verification-run").innerHTML;
-        var blockString = "";
-
-        // State -1 - Error during validation/reconstruction
-        if ((subState === 'READY' || subState === 'FAILED') && verificationState === "") {
-            blockString = "Service encountered an error during verification. Please contact your technical supervisor for further instructions.";
-        }
-        // State 0 - Before Verify
-        else if (subState !== 'READY' && subState !== 'FAILED') {
-            blockString = "Service is still processing. Please hold for further instructions.";
-        }
-        // State 1 - Ready & Verifying
-        else if (subState === 'READY' && verificationState === '0') {
-            blockString = "Service is verifying.";
-        }
-        // State 2 - Ready & Verified
-        else if (subState === 'READY' && verificationState === '1') {
-            blockString = "Service has been successfully verified.";
-        }
-        // State 3 - Ready & Unverified
-        else if (subState === 'READY' && verificationState === '-1') {
-            blockString = "Service was not able to be verified.";
-        }
-        // State 4 - Failed & Verifying
-        else if (subState === 'FAILED' && verificationState === '0') {
-            blockString = "Service is verifying. (Run " + verificationRun + "/5)";
-        }
-        // State 5 - Failed & Verified
-        else if (subState === 'FAILED' && verificationState === '1') {
-            blockString = "Service has been successfully verified.";
-        }
-        // State 6 - Failed & Unverified
-        else if (subState === 'FAILED' && verificationState === '-1') {
-            blockString = "Service was not able to be verified.";
-        }
-
-        document.getElementById("instruction-block").innerHTML = blockString;
-    }
-}
-
-function buttonModerate() {
-    var superState = document.getElementById("instance-superstate").innerHTML;
-    var subState = document.getElementById("instance-substate").innerHTML;
-    var verificationState = document.getElementById("instance-verification").innerHTML;
-
-    $(".instance-command").addClass("hide");
-    if (superState === 'Create') {
-        // State 0 - Stuck
-        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-            $("#force_delete").toggleClass("hide");
-            $("#force_cancel").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 1 - Ready & Verifying
-        if (subState === 'READY' && verificationState === '0') {
-
-        }
-        // State 2 - Ready & Verified
-        else if (subState === 'READY' && verificationState === '1') {
-            $("#cancel").toggleClass("hide");
-            $("#modify").toggleClass("hide");
-        }
-        // State 3 - Ready & Unverified
-        else if (subState === 'READY' && verificationState === '-1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 4 - Failed & Verifying
-        else if (subState === 'FAILED' && verificationState === '0') {
-
-        }
-        // State 5 - Failed & Verified
-        else if (subState === 'FAILED' && verificationState === '1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#force_modify").toggleClass("hide");
-            $("#force_delete").toggleClass("hide");
-        }
-        // State 6 - Failed & Unverified
-        else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-            $("#force_delete").toggleClass("hide");
-        }
-    } else if (superState === 'Cancel') {
-        // State 0 - Stuck
-        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-            $("#force_delete").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 1 - Ready & Verifying
-        if (subState === 'READY' && verificationState === '0') {
-
-        }
-        // State 2 - Ready & Verified
-        else if (subState === 'READY' && verificationState === '1') {
-            $("#reinstate").toggleClass("hide");
-            $("#modify").toggleClass("hide");
-            $("#delete").toggleClass("hide");
-        }
-        // State 3 - Ready & Unverified
-        else if (subState === 'READY' && verificationState === '-1') {
-            $("#force_delete").toggleClass("hide");
-            $("#force_reinstate").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 4 - Failed & Verifying
-        else if (subState === 'FAILED' && verificationState === '0') {
-
-        }
-        // State 5 - Failed & Verified
-        else if (subState === 'FAILED' && verificationState === '1') {
-            $("#force_reinstate").toggleClass("hide");
-            $("#force_modify").toggleClass("hide");
-            $("#delete").toggleClass("hide");
-        }
-        // State 6 - Failed & Unverified
-        else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#force_delete").toggleClass("hide");
-            $("#force_reinstate").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-    } else if (superState === 'Reinstate') {
-        // State 0 - Stuck
-        if (verificationState === "" || verificationState === "null" || subState === "INIT") {
-            $("#force_delete").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 1 - Ready & Verifying
-        if (subState === 'READY' && verificationState === '0') {
-
-        }
-        // State 2 - Ready & Verified
-        else if (subState === 'READY' && verificationState === '1') {
-            $("#cancel").toggleClass("hide");
-            $("#modify").toggleClass("hide");
-        }
-        // State 3 - Ready & Unverified
-        else if (subState === 'READY' && verificationState === '-1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-        // State 4 - Failed & Verifying
-        else if (subState === 'FAILED' && verificationState === '0') {
-
-        }
-        // State 5 - Failed & Verified
-        else if (subState === 'FAILED' && verificationState === '1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#force_modify").toggleClass("hide");
-        }
-        // State 6 - Failed & Unverified
-        else if (subState === 'FAILED' && verificationState === '-1') {
-            $("#force_cancel").toggleClass("hide");
-            $("#force_retry").toggleClass("hide");
-            $("#reverify").toggleClass("hide");
-        }
-    }
-}
-
-
 /* REFRESH */
 function reloadData() {
     keycloak.updateToken(90).error(function () {
@@ -955,19 +666,21 @@ function reloadData() {
             }
             setTimeout(function () {
                 reloadLogs();
-                subloadDetails();
+                updateData();
+                renderDetails();
                 $(".delta-table-header").click(function () {
                     $("#body-" + this.id).toggleClass("hide");
                 });
                 refreshSync(refreshed, timerSetting);
-            }, 1000);
+            }, 250);
         } else {
             reloadLogs();
-            subloadDetails();
+            updateData();
+            renderDetails();
             $(".delta-table-header").click(function () {
                 $("#body-" + this.id).toggleClass("hide");
             });
             refreshSync(refreshed, timerSetting);
         }
     });
-}
+}  

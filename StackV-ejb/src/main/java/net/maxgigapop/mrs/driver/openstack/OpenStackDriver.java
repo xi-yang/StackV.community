@@ -61,12 +61,11 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     //@Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
         String method = "propagateDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         String username = driverInstance.getProperty("username");
         String password = driverInstance.getProperty("password");
@@ -90,9 +89,8 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
                 topologyURI, defaultImage, defaultFlavor, defaultKeyPair, defaultSecGroup);
         List<JSONObject> requests = null;
         requests = push.propagate(model, modelAdd, modelReduc);
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
         driverInstance.putProperty(requestId, requests.toString());
-        DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);
     }
 
@@ -105,14 +103,14 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        String requestId = driverInstance.getId().toString() + aDelta.getId();
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID();
         String requests = driverInstance.getProperty(requestId);
         if (requests == null) {
             throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
@@ -120,7 +118,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         if (requests.isEmpty()) {
             driverInstance.getProperties().remove(requestId);
             DriverInstancePersistenceManager.merge(driverInstance);
-            throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
+            logger.warning(method, "requests.isEmpty - no change to commit, requestId="+requestId);
         }        
         String username = driverInstance.getProperty("username");
         String password = driverInstance.getProperty("password");

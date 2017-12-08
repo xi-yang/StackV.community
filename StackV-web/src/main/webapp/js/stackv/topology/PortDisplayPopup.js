@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2013-2016 University of Maryland
  * Modified by: Antonio Heard 2016
-
+ 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
  * Work without restriction, including without limitation the rights to use, 
  * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
  * the Work, and to permit persons to whom the Work is furnished to do so, 
  * subject to the following conditions:
-
+ 
  * The above copyright notice and this permission notice shall be included in 
  * all copies or substantial portions of the Work.
-
+ 
  * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
@@ -50,7 +50,7 @@ define(["local/d3", "local/stackv/utils"],
                 this.hostNode = null;
                 this.visible = false;
                 this.outputApi = outputApi;
-                
+
                 var that = this;
                 this.setOffset = function (x, y) {
                     this.dx = x;
@@ -178,55 +178,58 @@ define(["local/d3", "local/stackv/utils"],
                         //when the mouse events are called
                         (function () {
                             var port = stack.pop();
-                            map_(port.childrenPorts, function (child) {
-                                stack.push(child);
-                            });
-                            
-                            var color;
-                            if (port.hasAlias() || port.hasChildren()) {
-                                color = that.portColors[port.getVisibleHeight() % that.portColors.length];
-                            } else {
-                                color = that.portEmptyColor;
-                            }
-                            if (port.hasChildren()) {
-                                port.svgNode = parentPortContainer.append("rect")
-                                        .style("fill", color);
-                            } else {
-                                port.svgNode = portContainer.append("image")
-                                        .attr("xlink:href", port.getIconPath());
-                            }
-                           if (port.detailsReference) {
-                                port.svgNode.style("opacity", .4);
-                            }
-
-                            port.svgNode
-                                .on("mousemove", function () {
-                                    outputApi.setHoverText(port.getName());
-                                    outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
-                                    outputApi.setHoverVisible(true);
-                                    if (!port.hasChildren()) {
-                                        port.enlarged = true;
-                                    }
-                                    that.updateSvgChoordsPort(port);
-                                })
-                                .on("mouseleave", function () {
-                                    outputApi.setHoverVisible(false);
-                                    port.enlarged = false;
-                                    that.updateSvgChoordsPort(port);
-                                })
-                                .on("click", function () {
-                                    renderApi.selectElement(port, that.outputApi);
-                                })
-                                .on("dblclick", function () {
-                                    port.setFolded(!port.getFolded());
-                                    renderApi.redrawPopups(that.outputApi);
-                                    renderApi.drawHighlight();
-                                    renderApi.layoutEdges(that.outputApi);
+                            if (port) {
+                                map_(port.childrenPorts, function (child) {
+                                    stack.push(child);
                                 });
-                            if (that.outputApi.contextMenu){
-                                port.svgNode.on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port));                      
-                            } 
-                            port.svgNode.call(dragBehaviour);
+
+
+                                var color;
+                                if (port.hasAlias() || port.hasChildren()) {
+                                    color = that.portColors[port.getVisibleHeight() % that.portColors.length];
+                                } else {
+                                    color = that.portEmptyColor;
+                                }
+                                if (port.hasChildren()) {
+                                    port.svgNode = parentPortContainer.append("rect")
+                                            .style("fill", color);
+                                } else {
+                                    port.svgNode = portContainer.append("image")
+                                            .attr("xlink:href", port.getIconPath());
+                                }
+                                if (port.detailsReference) {
+                                    port.svgNode.style("opacity", .4);
+                                }
+
+                                port.svgNode
+                                        .on("mousemove", function () {
+                                            outputApi.setHoverText(port.getName());
+                                            outputApi.setHoverLocation(d3.event.clientX, d3.event.clientY);
+                                            outputApi.setHoverVisible(true);
+                                            if (!port.hasChildren()) {
+                                                port.enlarged = true;
+                                            }
+                                            that.updateSvgChoordsPort(port);
+                                        })
+                                        .on("mouseleave", function () {
+                                            outputApi.setHoverVisible(false);
+                                            port.enlarged = false;
+                                            that.updateSvgChoordsPort(port);
+                                        })
+                                        .on("click", function () {
+                                            renderApi.selectElement(port, that.outputApi);
+                                        })
+                                        .on("dblclick", function () {
+                                            port.setFolded(!port.getFolded());
+                                            renderApi.redrawPopups(that.outputApi);
+                                            renderApi.drawHighlight();
+                                            renderApi.layoutEdges(that.outputApi);
+                                        });
+                                if (that.outputApi.contextMenu) {
+                                    port.svgNode.on("contextmenu", that.outputApi.contextMenu.renderedElemContextListener.bind(undefined, port));
+                                }
+                                port.svgNode.call(dragBehaviour);
+                            }
                         })();
                     }
                     //Draw the box itself.

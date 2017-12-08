@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Miguel Uzcategui 2015
- * Modified by: Xi Yang 2016
+ * Modified by: Xi Yang 2016, 2017
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -67,10 +67,36 @@ import org.json.simple.parser.ParseException;
  * @author max
  */
 @Stateless
-public class MCE_VirtualNetworkCreation implements IModelComputationElement {
+public class MCE_VirtualNetworkCreation extends MCEBase {
 
     private static final StackLogger logger = new StackLogger(MCE_VirtualNetworkCreation.class.getName(), "MCE_VirtualNetworkCreation");
 
+    private static final String OSpec_Template
+            = "{\n"
+            //+ "	\"name\": \"?vpc_name?\",\n"
+            //+ "	\"cidr\": \"?vpc_cidr?\",\n"
+            + "	\"subnets\": [\n"
+            + "		{\n"
+            //+ "			\"name\": \"?subnet_name?\",\n"
+            //+ "			\"cidr\": \"?subnet_cidr?\",\n"
+            + "			\"uri\": \"?subnet_uri?\",\n"
+            + "			\"#required\": \"false\",\n"
+            + "			\"#sparql\": \"SELECT DISTINCT ?subnet_uri WHERE {?vpc_uri nml:hasService ?service. ?service a mrs:SwitchingService. ?service mrs:providesSubnet ?subnet_uri}\"\n"
+            + "		}\n"
+            + "	],\n"
+            + "	\"gateways\": [\n"
+            + "		{\n"
+            //+ "			\"name\": \"?gateway_name?\",\n"
+            + "			\"type\": \"?gateway_type?\",\n"
+            + "			\"uri\": \"?gateway_uri?\",\n"
+            + "			\"#required\": \"false\",\n"
+            + "			\"#sparql\": \"SELECT DISTINCT ?gateway_uri ?gateway_type WHERE {?vpc_uri nml:hasBidirectionalPort ?gateway_uri. ?gateway_uri mrs:type ?gateway_type. FILTER(?gateway_type = \\\"internet-gateway\\\" || ?gateway_type = \\\"vpn-gateway\\\")}\"\n"
+            + "		}\n"
+            + "	],\n"
+            + "	\"uri\": \"?vpc_uri?\",\n"
+            + "	\"#sparql\": \"SELECT DISTINCT ?vpc_uri WHERE {?vpc_uri a nml:Topology. ?cloud mrs:providesVPC ?vpc_uri.}\"\n"
+            + "}";
+    
     @Override
     @Asynchronous
     public Future<ServiceDelta> process(Resource policy, ModelBase systemModel, ServiceDelta annotatedDelta) {
@@ -78,76 +104,29 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         String method = "process";
         logger.refuuid(annotatedDelta.getReferenceUUID());
         logger.start(method);
-        if (annotatedDelta.getModelAddition() == null || annotatedDelta.getModelAddition().getOntModel() == null) {
-            throw logger.error_throwing(method, "target:ServiceDelta has null addition model");
-        }
         try {
             logger.trace(method, "DeltaAddModel Input=\n" + ModelUtil.marshalOntModel(annotatedDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
             logger.trace(method, "marshalOntModel(annotatedDelta.additionModel) -exception-"+ex);
         }
-        // importPolicyData
-        String sparqlString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
-                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
-                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
-                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
-                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
-                + "SELECT ?network ?policy ?data ?dataType ?dataValue WHERE {"
-                + "?network a nml:Topology ."
-                + "?network spa:dependOn ?policy . "
-                + "?policy a spa:PolicyAction. "
-                + "?policy spa:type 'MCE_VirtualNetworkCreation'. "
-                + "?policy spa:importFrom ?data. "
-                + "?data spa:type ?dataType. "
-                + "?data spa:value ?dataValue. "
-                + String.format("FILTER (not exists {?policy spa:dependOn ?other} && ?policy = <%s>)", policy.getURI())
-                + "}";
-        Map<Resource, List> networkPolicyMap = new HashMap<>();
-        Query query = QueryFactory.create(sparqlString);
-        QueryExecution qexec = QueryExecutionFactory.create(query, annotatedDelta.getModelAddition().getOntModel());
-        ResultSet r = (ResultSet) qexec.execSelect();
-        while (r.hasNext()) {
-            QuerySolution querySolution = r.next();
-            Resource resNetwork = querySolution.get("network").asResource();
-            if (!networkPolicyMap.containsKey(resNetwork)) {
-                List policyList = new ArrayList<>();
-                networkPolicyMap.put(resNetwork, policyList);
-            }
-            Resource resPolicy = querySolution.get("policy").asResource();
-            Resource resData = querySolution.get("data").asResource();
-            RDFNode networkDataType = querySolution.get("dataType");
-            RDFNode networkDataValue = querySolution.get("dataValue");
-            Map policyData = new HashMap<>();
-            policyData.put("policy", resPolicy);
-            policyData.put("data", resData);
-            policyData.put("type", networkDataType.toString());
-            policyData.put("value", networkDataValue.toString());
-            networkPolicyMap.get(resNetwork).add(policyData);
-        }
+        
+        Map<Resource, JSONObject> policyResDataMap = this.preProcess(policy, systemModel, annotatedDelta);        
 
+        // Specific MCE logic
         ServiceDelta outputDelta = annotatedDelta.clone();
-
-        for (Resource network : networkPolicyMap.keySet()) {
-            //1. compute placement based on filter/match criteria *policyData*
-            // returned placementModel contains the VM as well as hosting Node/Topology and HypervisorService from systemModel
-            OntModel placementModel = this.doCreation(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), network, networkPolicyMap.get(network));
+        for (Resource network : policyResDataMap.keySet()) {
+            //1. compute virtual network model based on  policyData
+            OntModel placementModel = this.doCreation(systemModel.getOntModel(), annotatedDelta.getModelAddition().getOntModel(), network, policyResDataMap.get(network));
             if (placementModel == null) {
                 throw logger.error_throwing(method, "cannot apply policy to create network=" + network);
             }
 
-            //2. merge the placement satements into spaModel
+            //2. merge the network creation satements into spaModel
             outputDelta.getModelAddition().getOntModel().add(placementModel.getBaseModel());
-
-            //3. update policyData this action exportTo 
-            this.exportPolicyData(outputDelta.getModelAddition().getOntModel(), network);
-
-            //4. remove policy and all related SPA statements receursively under vm from spaModel
-            //   and also remove all statements that say dependOn this 'policy'
-            MCETools.removeResolvedAnnotation(outputDelta.getModelAddition().getOntModel(), network);
-
-            //$$ TODO: change VM URI (and all other virtual resources) into a unique string either during compile or in stitching action
-            //$$ TODO: Add dependOn->Abstraction annotation to root level spaModel and add a generic Action to remvoe that abstract nml:Topology
         }
+
+        this.postProcess(policy, outputDelta.getModelAddition().getOntModel(), systemModel.getOntModel(), OSpec_Template, policyResDataMap);
+
         try {
             logger.trace(method, "DeltaAddModel Output=\n" + ModelUtil.marshalOntModel(outputDelta.getModelAddition().getOntModel()));
         } catch (Exception ex) {
@@ -159,41 +138,9 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
 
     //?? Use current containing abstract Topology ?
     // ignore if dependOn 'Abstraction'
-    private OntModel doCreation(OntModel systemModel, OntModel spaModel, Resource resNetwork, List<Map> placementCriteria) {
+    private OntModel doCreation(OntModel systemModel, OntModel spaModel, Resource resNetwork, JSONObject topoDescription) {
         String method = "doCreation";
-        OntModel placementModel = null;
-        for (Map filterCriterion : placementCriteria) {
-            if (!filterCriterion.containsKey("data") || !filterCriterion.containsKey("type") || !filterCriterion.containsKey("value")) {
-                continue;
-            }
-            OntModel hostModel = this.modelNetwork(systemModel, spaModel, resNetwork, filterCriterion.get("value").toString());
-            if (hostModel == null) {
-                throw logger.error_throwing(method, String.format("cannot create network=%s based on polocy=%s", resNetwork, filterCriterion.get("policy")));
-            }
-            //$$ create VM resource and relation
-            //$$ assemble placementModel;
-            if (placementModel == null) {
-                placementModel = hostModel;
-            } else {
-                placementModel.add(hostModel.getBaseModel());
-            }
-        }
-        //System.out.println(placementModel);
-        return placementModel;
-    }
-
-    private OntModel modelNetwork(OntModel systemModel, OntModel spaModel, Resource resNetwork, String value) {
-        String method = "modelNetwork";
-        //the String value will be a JSON Object 
-        JSONParser parser = new JSONParser();
-        Object obj = new Object();
-        try {
-            obj = parser.parse(value);
-        } catch (ParseException e) {
-            throw logger.throwing(method, String.format("cannot parse json string %s", value), e);
-        }
-        JSONObject topoDescription = (JSONObject) obj;
-
+        logger.message(method, "@doVirtualNetworkCreation -> " + resNetwork);
         //1 get all the info in the array that matters for this MCE
         //1.1 get topology info it should be Stirngs
         String type = (String) topoDescription.get("type");
@@ -220,7 +167,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
             networkCIDR = "10.0.0.0/16";
         }
         if (topologyUri == null) {
-            throw logger.error_throwing(method, String.format("network %s does not have a parent topology", this.getClass().getName(), value));
+            throw logger.error_throwing(method, String.format("network %s does not have a parent topology", resNetwork));
         }
 
         //2.3 check if it is openstack or AWS
@@ -244,15 +191,15 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         } else {
             ops = true;
         }
-        spaModel = modelDefaultNetwork(systemModel, spaModel, ops, resNetwork, type, networkCIDR, topologyUri, routes);
+        OntModel vnetModel = modelDefaultNetwork(systemModel, spaModel, ops, resNetwork, type, networkCIDR, topologyUri, routes);
         if (aws == true) {
-            spaModel = modelGateways(systemModel, spaModel, resNetwork, gateways, topologyUri);
-            spaModel = modelAwsSubnets(systemModel, spaModel, resNetwork, networkCIDR, type, topologyUri, subnets);
+            vnetModel = modelGateways(systemModel, vnetModel, resNetwork, gateways, topologyUri);
+            vnetModel = modelAwsSubnets(systemModel, vnetModel, resNetwork, networkCIDR, type, topologyUri, subnets);
         } else if (ops = true) {
-            spaModel = modelOpsSubnets(systemModel, spaModel, resNetwork, networkCIDR, type, topologyUri, subnets);
+            vnetModel = modelOpsSubnets(systemModel, vnetModel, resNetwork, networkCIDR, type, topologyUri, subnets);
         }
 
-        return spaModel;
+        return vnetModel;
     }
 
     /**
@@ -625,7 +572,7 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
                                     + "}";
                         }
 
-                        r = executeQuery(sparqlString, systemModel, spaModel);
+                        r = ModelUtil.executeQuery(sparqlString, systemModel, spaModel);
                         if (!r.hasNext()) {
                             throw logger.error_throwing(method, String.format("main topology %s does not have a public subnet to route to the internet", topologyUri));
                         }
@@ -686,109 +633,4 @@ public class MCE_VirtualNetworkCreation implements IModelComputationElement {
         return spaModel;
     }
 
-    private void exportPolicyData(OntModel spaModel, Resource resNetwork) {
-        String method = "exportPolicyData";
-        // find Placement policy -> exportTo -> policyData for vpc
-        String sparql = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
-                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
-                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
-                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
-                + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
-                + "SELECT ?vpc ?policyAction ?policyData ?type ?value ?format WHERE {"
-                + String.format("?vservice mrs:providesVPC <%s> .", resNetwork.toString())
-                + String.format("<%s> spa:dependOn ?policyAction .", resNetwork.toString())
-                + "?policyAction a spa:PolicyAction. "
-                + "?policyAction spa:type 'MCE_VirtualNetworkCreation' ."
-                + "?policyAction spa:exportTo ?policyData . "
-                + "?policyData a spa:PolicyData ."
-                + "OPTIONAL {?policyData spa:format ?format.}"
-                + "}";
-        ResultSet r = ModelUtil.sparqlQuery(spaModel, sparql);
-        List<QuerySolution> solutions = new ArrayList<>();
-        while (r.hasNext()) {
-            solutions.add(r.next());
-        }
-        for (QuerySolution querySolution : solutions) {
-            Resource resData = querySolution.get("policyData").asResource();
-            spaModel.add(resData, Spa.type, "JSON");
-
-            JSONObject output = new JSONObject();
-            output.put("uri", resNetwork);
-
-            sparql = String.format("SELECT ?gateway ?type WHERE {<%s> nml:hasBidirectionalPort ?gateway .", resNetwork.toString())
-                    + "?gateway mrs:type ?type ."
-                    + "FILTER (?type = \"internet-gateway\" || ?type = \"vpn-gateway\")}";
-            r = ModelUtil.sparqlQuery(spaModel, sparql);
-            JSONArray gateways = new JSONArray();
-            while (r.hasNext()) {
-                JSONObject gatewayObject = new JSONObject();
-                QuerySolution q1 = r.next();
-                Literal type = q1.get("type").asLiteral();
-                Resource gateway = q1.getResource("gateway");
-                gatewayObject.put("uri", gateway);
-                gatewayObject.put("type", type);
-                gateways.add(gatewayObject);
-            }
-            //add gateways to output JSON
-            if (!gateways.isEmpty()) {
-                output.put("gateways", gateways);
-            }
-            //export subnet results
-            sparql = String.format("SELECT ?subnet WHERE {<%s>  nml:hasService ?service .", resNetwork)
-                    + "?service a mrs:SwitchingService ."
-                    + "?service mrs:providesSubnet ?subnet}";
-            r = ModelUtil.sparqlQuery(spaModel, sparql);
-            JSONArray subnets = new JSONArray();
-            while (r.hasNext()) {
-                JSONObject subnetObject = new JSONObject();
-                QuerySolution q1 = r.next();
-                Resource subnet = q1.get("subnet").asResource();
-                subnetObject.put("uri", subnet);
-                subnets.add(subnetObject);
-            }
-            //add subnets to output
-            if (!subnets.isEmpty()) {
-                output.put("subnets", subnets);
-            }
-            //add output as spa:value of the export resrouce
-            String exportValue = output.toJSONString();
-            if (querySolution.contains("format")) {
-                String exportFormat = querySolution.get("format").toString();
-                try {
-                    exportValue = MCETools.formatJsonExport(exportValue, exportFormat);
-                } catch (Exception ex) {
-                    logger.warning(method, "formatJsonExport exception and ignored: "+ ex);
-                    continue;
-                }
-            }
-            spaModel.add(resData, Spa.value, exportValue);
-        }
-    }
-
-    /**
-     * ****************************************************************
-     * function that executes a query using a model addition/subtraction and a
-     * reference model, returns the result of the query
-     * ****************************************************************
-     */
-    private ResultSet executeQuery(String queryString, OntModel refModel, OntModel model) {
-        queryString = "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"
-                + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
-                + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
-                + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
-                + queryString;
-
-        //get all the nodes that will be added
-        Query query = QueryFactory.create(queryString);
-        QueryExecution qexec = QueryExecutionFactory.create(query, model);
-        ResultSet r = qexec.execSelect();
-
-        //check on reference model if the statement is not in the model addition,
-        //or model subtraction
-        if (!r.hasNext()) {
-            qexec = QueryExecutionFactory.create(query, refModel);
-            r = qexec.execSelect();
-        }
-        return r;
-    }
 }

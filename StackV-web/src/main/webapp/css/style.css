@@ -40,10 +40,7 @@ black-screen: 3
 @import "animate.min.css";
 @import "font-awesome.min.css";
 @import "bootstrap.min.css";
-@import "dataTables/jquery.dataTables.css";
-@import "dataTables/dataTables.bootstrap.min.css";
-@import "dataTables/dataTables.fixedColumns.min.css";
-@import "dataTables/scroller.bootstrap.css";
+@import "sweetalert.css";
 
 /*Custom styles*/
 @import "global.css";
@@ -56,3 +53,4 @@ black-screen: 3
 @import "acl.css";
 @import "details.css";
 @import "admin.css";
+@import "intent.css";

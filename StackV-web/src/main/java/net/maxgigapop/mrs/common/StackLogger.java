@@ -134,6 +134,13 @@ public class StackLogger {
         ThreadContext.put("severity", severity.name());
         ThreadContext.put("event", String.format("%s.%s.error", moduleName, method));
         logger.error(String.format("{\"message\":\"%s\", \"severity\":\"%s\"}", message, severity.name()));        
+    }    
+    public void error(String method, String message, Severity severity, Exception ex) {
+        ThreadContext.put("module", moduleName);
+        ThreadContext.put("method", method);
+        ThreadContext.put("severity", severity.name());
+        ThreadContext.put("event", String.format("%s.%s.error", moduleName, method));
+        logger.error(String.format("{\"message\":\"%s\", \"severity\":\"%s\"}", message, severity.name()), ex);        
     }
     
     public void error(String method, String message) {
@@ -170,7 +177,7 @@ public class StackLogger {
 
     // differing log4j.catching (no marker)
     public void catching(String method, Exception ex, Severity severity) {
-        error(method, "catching "+ex, severity);
+        error(method, "catching "+ex, severity, ex);
     }
     
     public void catching(String method, Exception ex) {

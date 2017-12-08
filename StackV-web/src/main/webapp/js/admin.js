@@ -25,7 +25,7 @@
 var tweenAdminPanel = new TweenLite("#admin-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px", opacity: "1", display: "block"});
 var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px", opacity: "1", display: "block"});
 
-var view = "left";
+var view = "center";
 var dataTable = null;
 
 Mousetrap.bind({
@@ -124,8 +124,10 @@ function loadAdmin() {
         if (view === "left") {
             tweenLoggingPanel.play();
             $('div.dataTables_filter input').focus();
+        } else {
+            tweenAdminPanel.play();
         }
-    }, 500);
+    }, 1000);
     reloadLogs();
 }
 
@@ -145,50 +147,122 @@ function reloadData() {
     });
 }
 
-function executeRequest(){
-    
+function executeRequest() {
+
     var url_request = $("#API-request").val();
-    var url = document.getElementById("URL").value;
+    var url = $("#URL").val();
     //var apiUrl = baseUrl + '/StackV-web/restapi/app/'+"option" + document.getElementById("URL").value;
-    var apiUrl = baseUrl + "/StackV-web/restapi/app/"+ url;
+    var apiUrl = baseUrl + "/StackV-web/restapi"+ url;
     var type = url_request;
-    
-    var url_selected = String(url).split("/");
-    
-    
-    $.ajax({
-        url: apiUrl,
-        type: type,
+
+    var input = $("#api_result").val();
+
+    url_arr = url.split("/");
+
+    if (type === "GET") {
+        $.ajax({
+            url: apiUrl,
+            type: type,
+            dataType: "text",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function (result) {
+
+                if (typeof result === "string") {
+                    if (url_arr[0] === "keycloak") {
+                        var resultArr = String(result).split(",");
+                        var jsonStr = "[";
+                        var index = 0;
+                        for (index = 0; index < resultArr.length; index += 2) {
+                            if (index + 2 === resultArr.length) {
+                                jsonStr += "[" + "\"" + resultArr[index + 1] + "\"" + " , " + "\"" + resultArr[index] + "\"" + "]";
+                            } else {
+                                jsonStr += "[" + "\"" + resultArr[index + 1] + "\"" + " , " + "\"" + resultArr[index] + "\"" + "],";
+                            }
+                        }
+                        jsonStr += "]";
+                        var jsonFormat = JSON.parse(jsonStr);
+
+                        $("#api_result").val(JSON.stringify(jsonFormat, null, 2));
+                    } else {
+                        $("#api_result").val(result);
+                    }
+                } else {
+                    $("#api_result").val(JSON.stringify(result, null, 2));
+                }
+
+            },
+            error: function () {
+                $("#api_result").val("Failure");
+            }
+        });
+    } else if (type === "PUT" || type === "POST") {
+        $.ajax({
+            url: apiUrl,
+            type: type,
+            data: input,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function (result) {
+                $("#api_result").val("Success");
+            },
+            error: function () {
+                $("#api_result").val("Failure");
+            }
+        });
+    } else if (type === "DELETE") {
+        $.ajax({
+            url: apiUrl,
+            type: type,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function (result) {
+                $("#api_result").val("success");
+            },
+            error: function () {
+                $("#api_result").val("failure");
+            }
+        });
+    } else if(type === "DELETE"){
+        $.ajax({
+            url: apiUrl,
+            type: type,
+            data: input,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            
-            var resultArr = String(result).split(",");
-            
-                var jsonStr = "[";
-                
-                var index = 0;
-                
-                for(index = 0;index < resultArr.length;index+=2){
-                    if(index+2 == resultArr.length){
-                        jsonStr += "["+"\""+resultArr[index+1]+"\""+" , "+"\""+resultArr[index]+"\""+"]";
-                    } else {
-                        jsonStr += "["+"\""+resultArr[index+1]+"\""+" , "+"\""+resultArr[index]+"\""+"],";
-                    }
-                }
-                
-                jsonStr += "]";
-                var jsonFormat = JSON.parse(jsonStr);
-                alert(JSON.stringify(jsonFormat));
-                document.getElementById("api_result").innerHTML = JSON.stringify(jsonFormat,null,2);
-
+            $("#api_result").val("Success");
         },
         error: function () {
-            alert("failed");
-            document.getElementById("api_result").innerHTML = "failure";
+            $("#api_result").val("Failure");
         }
     });
-    
+    }
+}
+
+function loggingChange(sel) {
+    var level = sel.value;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/' + level;
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function () {
+
+        }
+    });
 }

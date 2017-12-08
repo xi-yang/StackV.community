@@ -21,11 +21,12 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, swal */
 var tweenInstalledPanel = new TweenLite("#installed-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px"});
 var tweenAddPanel = new TweenLite("#driver-add-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 var tweenTemplatePanel = new TweenLite("#driver-template-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
 var tweenContentPanel = new TweenLite("#driver-content-panel", 1, {ease: Power2.easeInOut, paused: true, bottom: "10%"});
+var tweenDriverOverflowDetailsPanel = new TweenLite("#driver-overflow-details-panel", 1, {ease: Power2.easeInOut, paused: true, bottom:"10%"});
 var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 var view = "center";
 
@@ -126,20 +127,27 @@ $(function () {
     });
 });
 
+//TODO: merge into one function called toggleContentPanel during cleanup
+// and edit all references to below two functions
 function openContentPanel() {
     if (!$("#driver-content-panel").hasClass("open")) {
         tweenBlackScreen.play();
         tweenContentPanel.play();
         $("#driver-content-panel").addClass("open");
+        $("#driver-content-panel").removeClass("hidden");
+        $("#driver-content-panel").addClass("active");
     }
 }
 function closeContentPanel() {
-    if ($("#driver-content-panel").hasClass("open")) {
+    if ($("#driver-content-panel").hasClass("active")) {
         tweenBlackScreen.reverse();
         tweenContentPanel.reverse();
         $("#driver-content-panel").removeClass("open");
+        $("#driver-content-panel").removeClass("active");
+        $("#driver-content-panel").addClass("hidden");
     }
 }
+
 
 function loadDriverNavbar() {
     $("#sub-nav").load("/StackV-web/nav/driver_navbar.html", function () {
@@ -208,6 +216,8 @@ function installed_tab_fix() {
 }
 
 function activateSide() {
+    $("#driver-content-panel").removeClass("hidden");
+    $("#driver-content-panel").addClass("active");
     $('#driver-panel-right').addClass('active-detail');
     $('#install-content').addClass('active');
     $('#driver-panel-top').removeClass('no-side-tab');
@@ -217,6 +227,10 @@ function activateSide() {
 }
 
 function closeSide() {
+
+    $("#driver-content-panel").removeClass("active");
+    $("#driver-content-panel").addClass("hidden");
+
     document.getElementById("driver-panel-right").className = "inactive";
     $('#install-tab').removeClass = "active";
     $('#install-content').removeClass('active');
@@ -227,19 +241,15 @@ function closeSide() {
 
 }
 function installRaw() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("textarea");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "raw";
-    type.style.color = "white";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    $("#info-panel-title").text("Raw Driver");
 
 
     first.innerHTML = "Enter Raw XML:";
-    first.style.color = "white";
+    first.style.color = "#333";
     second.id = "rawXML";
     second.rows = "15";
     second.cols = "45";
@@ -247,26 +257,22 @@ function installRaw() {
     divContent.appendChild(second);
 }
 function installStub() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
     var fourth = document.createElement("textarea");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "StubSystemDriver";
-    type.style.color = "white";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    $("#info-panel-title").text("Stub System Driver");
 
     first.innerHTML = "Topology URI:";
-    first.style.color = "white";
+    first.style.color = "#333";
 
     second.type = "text";
     second.id = "TOPURI";
 
     third.innerHTML = "TTL:";
-    third.style.color = "white";
+    third.style.color = "#333";
 
     fourth.id = "stubModelTtl";
     fourth.rows = "20";
@@ -278,13 +284,28 @@ function installStub() {
     divContent.appendChild(fourth);
 }
 function installAWS() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
     var fourth = document.createElement("input");
     var fifth = document.createElement("p");
     var sixth = document.createElement("input");
+
+    //Instance Type
+    //Image
+    //Key Pair
+    //Sec Group
+    var instance = document.createElement("p");
+    var instanceInput = document.createElement("input");
+    var image = document.createElement("p");
+    var imageInput = document.createElement("input");
+    var keyPair = document.createElement("p");
+    var keyPairInput = document.createElement("input");
+    var secGroup = document.createElement("p");
+    var secGroupInput = document.createElement("input");
+
+
+
     var seventh = document.createElement("p");
     var eighth = document.createElement("SELECT");
     var option1 = document.createElement("option");
@@ -299,32 +320,55 @@ function installAWS() {
     var option10 = document.createElement("option");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "AwsDriver";
-    type.style.color = "white";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+
+    $("#info-panel-title").text("AWS Driver");
 
 
     first.innerHTML = "Topology URI:";
-    first.style.color = "white";
+    first.style.color = "#333";
 
     second.type = "text";
     second.id = "TOPURI";
 
     third.innerHTML = "Amazon Access ID:";
-    third.style.color = "white";
+    third.style.color = "#333";
 
     fourth.type = "text";
     fourth.id = "aws_access_key_id";
 
     fifth.innerHTML = "Amazon Secret Key:";
-    fifth.style.color = "white";
+    fifth.style.color = "#333";
 
     sixth.type = "text";
     sixth.id = "aws_secret_access_key";
 
+
+    instance.innerHTML = "Default Instance";
+    instance.style.color = "#333";
+
+    instanceInput.type = "text";
+    instanceInput.id = "instance";
+
+    image.innerHTML = "Default Image";
+    image.style.color = "#333";
+
+    imageInput.type = "text";
+    imageInput.id = "image";
+
+    keyPair.innerHTML = "Default Key Pair";
+    keyPair.style.color = "#333";
+
+    keyPairInput.type = "text";
+    keyPairInput.id = "key-pair";
+
+    secGroup.innerHTML = "Default Sec Group";
+    secGroup.style.color = "#333";
+
+    secGroupInput.type = "text";
+    secGroupInput.id = "sec-group";
+
     seventh.innerHTML = "Region";
-    seventh.style.color = "white";
+    seventh.style.color = "#333";
 
     option1.text = "us-east-1";
     option2.text = "us-east-2";
@@ -355,30 +399,30 @@ function installAWS() {
     divContent.appendChild(fourth);
     divContent.appendChild(fifth);
     divContent.appendChild(sixth);
+    divContent.appendChild(instance);
+    divContent.appendChild(instanceInput);
+    divContent.appendChild(image);
+    divContent.appendChild(imageInput);
+    divContent.appendChild(keyPair);
+    divContent.appendChild(keyPairInput);
+    divContent.appendChild(secGroup);
+    divContent.appendChild(secGroupInput);
     divContent.appendChild(seventh);
     divContent.appendChild(eighth);
 }
 function installOpenstack() {
-    var type = document.createElement("p");
     var divContent = document.getElementById("install-type");
-    var divContentRight = document.getElementById("install-type-right");
 
     var extName = document.createElement("p");
     var ext = document.createElement("textarea");
     var content = [];
 
-    divContent.style = "float: left;margin-left:15%";
-    divContentRight.style = "float: right;margin-right:15%";    
+    $("#info-panel-title").text("Open Stack Driver");
 
-    type.innerHTML = "OpenStackDriver";
-    type.style.color = "white";
-    type.id = "drivertype";
-    divContent.appendChild(type);
-
-    for (var i = 0; i < 22; i += 2) {
+    for (var i = 0; i < 26; i += 2) {
         var textbox = document.createElement("p");
         var input = document.createElement("input");
-        textbox.style.color = "white";
+        textbox.style.color = "#333";
         input.type = "text";
         content[i] = textbox;
         content[i + 1] = input;
@@ -406,29 +450,32 @@ function installOpenstack() {
     content[19].id = "defaultImage";
     content[20].innerHTML = "Default Flavor:";
     content[21].id = "defaultFlavor";
+    content[22].innerHTML = "Default Key Pair";
+    content[23].id = "key-pair";
+    content[24].innerHTML = "Default Sec Group";
+    content[25].id = "sec-group";
+
+
 
 
     extName.innerHTML = "ModelExt:";
-    extName.style.color = "white";
+    extName.style.color = "#333";
     ext.id = "modelExt";
     ext.rows = "15";
     ext.cols = "30";
 
 
-    for (var i = 0; i < 16; i++) {
+    for (var i = 0; i < 26; i++) {
         divContent.appendChild(content[i]);
     }
 
-    for (var i = 16; i < 22; i++) {
-        divContentRight.appendChild(content[i]);
-    }
 
 
-    divContentRight.appendChild(extName);
-    divContentRight.appendChild(ext);
+
+    divContent.appendChild(extName);
+    divContent.appendChild(ext);
 }
 function installStack() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
@@ -439,31 +486,28 @@ function installStack() {
     var eighth = document.createElement("input");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "StackSystemDriver";
-    type.style.color = "white";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    $("#info-panel-title").text("Stack System Driver");
 
     first.innerHTML = "Topology URI:";
-    first.style.color = "white";
+    first.style.color = "#333";
 
     second.type = "text";
     second.id = "TOPURI";
 
     third.innerHTML = "Subsystem Base URL:";
-    third.style.color = "white";
+    third.style.color = "#333";
 
     fourth.type = "text";
     fourth.id = "subsystemBaseUrl";
 
     fifth.innerHTML = "Authorization Server:";
-    fifth.style.color = "white";
+    fifth.style.color = "#333";
 
     sixth.type = "text";
     sixth.id = "authServer";
 
     seventh.innerHTML = "Credentials:";
-    seventh.style.color = "white";
+    seventh.style.color = "#333";
 
     eighth.type = "password";
     eighth.id = "credentials";
@@ -479,26 +523,22 @@ function installStack() {
     divContent.appendChild(eighth);
 }
 function installGeneric() {
-    var type = document.createElement("p");
     var first = document.createElement("p");
     var second = document.createElement("input");
     var third = document.createElement("p");
     var fourth = document.createElement("input");
     var divContent = document.getElementById("install-type");
 
-    type.innerHTML = "GenericRESTDriver";
-    type.style.color = "white";
-    type.id = "drivertype";
-    divContent.appendChild(type);
+    $("#info-panel-title").text("Generic REST Driver");
 
     first.innerHTML = "Topology URI:";
-    first.style.color = "white";
+    first.style.color = "#333";
 
     second.type = "text";
     second.id = "TOPURI";
 
     third.innerHTML = "Subsystem Base URL:";
-    third.style.color = "white";
+    third.style.color = "#333";
 
     fourth.type = "text";
     fourth.id = "subsystemBaseUrl";
@@ -509,6 +549,7 @@ function installGeneric() {
     divContent.appendChild(fourth);
 }
 function clearPanel() {
+    $("#info-panel-title").text("Details");
     $('#install-type').empty();
     $('#install-options').empty();
     $('#install-type-right').empty();
@@ -517,6 +558,7 @@ function clearPanel() {
     document.getElementById("install-options").style = "";
     var closeButton = document.createElement("button");
     closeButton.innerHTML = "Close";
+    closeButton.className = "button-profile-select btn btn-default";
     closeButton.onclick = function () {
         clearPanel();
         closeContentPanel();
@@ -531,12 +573,14 @@ function clearText() {
 function changeNameInst() {
     var saveButton = document.createElement("button");
     saveButton.innerHTML = "Save Driver";
+    saveButton.className = "button-profile-select btn btn-default";
     saveButton.onclick = function () {
         openWindow();
     };
     document.getElementById('install-options').appendChild(saveButton);
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
+    instButton.className = "button-profile-select btn btn-default";
     instButton.onclick = function () {
         installDriver();
         reloadData();
@@ -546,6 +590,7 @@ function changeNameInst() {
 }
 function changeNameInstRaw() {
     var instButton = document.createElement("button");
+    instButton.className = "button-profile-select btn btn-default";
     instButton.innerHTML = "Install Driver";
     instButton.onclick = function () {
         plugRaw();
@@ -563,6 +608,7 @@ function openWindow() {
     var descname = document.createElement("p");
     var desc = document.createElement("input");
     var saveButton = document.createElement("button");
+    saveButton.className = "button-profile-select btn btn-default";
 
     $('#info-panel').addClass("active");
 
@@ -587,8 +633,7 @@ function openWindow() {
     };
     document.getElementById("info-option").appendChild(saveButton);
 }
-function changeNameDet() {
-}
+
 function addDriver() {
     var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
@@ -597,7 +642,7 @@ function addDriver() {
     var description = document.getElementById("description").value;
     var driver = document.getElementById("drivername").value;
     var URI = document.getElementById("TOPURI").value;
-    var type = document.getElementById("drivertype").innerHTML;
+    var type = document.getElementById("info-panel-title").innerHTML;
 
     $('#black-screen').addClass("off");
     $('#info-panel').removeClass();
@@ -639,7 +684,10 @@ function addDriver() {
         contentType: 'application/json',
         data: sentData,
         success: function () {
-            updateDrivers();
+            updateDrivers(URI);
+            reloadData();
+        },
+        error: function () {
         }
     });
 }
@@ -654,13 +702,18 @@ function removeDriverProfile(clickID) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        success: function () {
-            updateDrivers();
+        success: function (result) {
+            updateDrivers(topuri);
+            reloadData();
+        },
+        error: function (result) {
         }
     });
 }
 //needs to change
-function updateDrivers() {
+//UPDATE THE API CALLS
+//Fixes for Andrew
+function updateDrivers(URI) {
     var userId = keycloak.tokenParsed.preferred_username;
     var table = document.getElementById("saved-table");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/get';
@@ -681,35 +734,51 @@ function updateDrivers() {
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
                 var edButton = document.createElement("button");
-                var spacer = document.createElement("div");
+
+                detButton.className = "button-profile-select btn btn-default";
+                detButton.style.width = "64px";
+
+                delButton.className = "button-profile-select btn btn-default";
+                delButton.style.width = "64px";
 
                 detButton.innerHTML = "Details";
                 detButton.onclick = function () {
+                    $("#driver-content-panel").removeClass("hidden");
+                    $("#driver-content-panel").addClass("active");
+                    $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
-                    changeNameDet();
-                    getDetailsProfile(this.id);
+                    getDetailsProfile(URI);
+                    openContentPanel();
                 };
-                detButton.style.width = "50px";
+
+
+
                 detButton.id = result[i + 3];
 
                 delButton.innerHTML = "Delete";
                 delButton.onclick = function () {
-                    removeDriverProfile(this.id);
+                    removeDriverProfile(URI);
                 };
-                delButton.style.width = "50px";
+
                 delButton.id = result[i + 3];
 
                 edButton.innerHTML = "Edit";
+                edButton.style.width = "64px";
+                edButton.className = "button-profile-select btn btn-default";
                 edButton.onclick = function () {
+                    $("#driver-content-panel").removeClass("hidden");
+                    $("#driver-content-panel").addClass("active");
+                    $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
-                    editDriverProfile(this.id);
+                    editDriverProfile(URI);
+
+                    openContentPanel();
                 };
-                edButton.style.width = "50px";
+
                 edButton.id = result[i + 3];
 
-                spacer.style.width = "25px";
 
                 drivername.innerHTML = result[i];
                 description.innerHTML = result[i + 1];
@@ -737,6 +806,12 @@ function editDriverProfile(clickID) {
         row.cells[1].appendChild(textbox);
     }
 }
+
+
+/*
+ * @param {type} clickID
+ * Making the drivers details profile
+ */
 function getDetailsProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var panel = document.getElementById("install-type");
@@ -779,11 +854,18 @@ function getDetailsProfile(clickID) {
             }
 
             var instDetailsButton = document.createElement("button");
+            instDetailsButton.className = "button-profile-select btn btn-default";
             instDetailsButton.innerHTML = "Install";
+            instDetailsButton.className = "button-profile-select btn btn-default";
+
             instDetailsButton.onclick = function () {
                 plugDriver(result["TOPURI"]);
             };
+            instDetailsButton.className = "button-profile-select btn btn-default";
             botpanel.appendChild(instDetailsButton);
+        },
+        error: function () {
+            alert("Failure");
         }
     });
     panel.appendChild(table);
@@ -799,6 +881,9 @@ function getAllDetails() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
+        error: function () {
+            window.location.href = "/StackV-web/";
+        },
         success: function (result) {
             //fill installed table
             $('#installed-body').empty();
@@ -809,33 +894,74 @@ function getAllDetails() {
                 var cell3 = document.createElement("td");
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
-                var spacer = document.createElement("div");
+                
+                drivername.innerHTML = result[i + 2];
+                description.innerHTML = result[i + 1];
 
                 detButton.innerHTML = "Details";
+                detButton.style.width = "64px";
+                detButton.className = "button-profile-select btn btn-default";
                 detButton.onclick = function () {
                     clearPanel();
                     activateSide();
-                    changeNameDet();
                     getDetails(this.id);
                     openContentPanel();
                 };
-                detButton.style.width = "50px";
+
                 detButton.id = result[i];
-
                 delButton.innerHTML = "Delete";
+                delButton.style.width = "64px";
+                delButton.className = "button-profile-select btn btn-danger";
+                delButton.setAttribute("del-button-for", result[i + 2]);       
                 delButton.onclick = function () {
-                    removeDriver(this.id);
-                    reloadData();
-                };
-                delButton.style.width = "50px";
+                   var driverNameFromAttr = this.getAttribute("del-button-for");
+                   var driverId = this.id;
+                   
+          
+                   //setting text of the jquery dialog
+                   $("#dialog-confirm-text").text(driverNameFromAttr);
+                   //jquery dialog
+                   $("#dialog-confirm").dialog({
+                       open: function(event, ui) {
+                           // bootsrap and jquery have a conflict when displaying certain buttons 
+                           // (in this case the close - 'X' ) in the top right hand corner of the dialog.
+                           // So current solution is to hide that button and still allow us to use
+                           // bootstrap within the jquery dialog
+                           $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
+                           
+                           // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
+                           // but prevents use of boostrap styling in the jquery dialog
+                       },
+                       resizable: false,
+                       draggable: false,
+                       title: "Are you sure you want to delete this driver?",
+                       height: "auto",
+                       width: 400,
+                       modal: true,
+                       buttons: [
+                           {
+                               text: "Delete",
+                               "class": "button-profile-select btn btn-danger",
+                               click: function () {
+                                   removeDriver(driverId);
+                                   $(this).dialog("close");
+                               }
+                           },
+                           {
+                               text: "Cancel",
+                               "class": "button-profile-select btn btn-default",
+                               click: function () {
+                                   $(this).dialog("close");
+                               }
+                           }
+                       ]
+                       
+                   });
+                  };
+
                 delButton.id = result[i + 2];
-
-                spacer.style.width = "25px";
-
-                drivername.innerHTML = result[i + 2];
-                description.innerHTML = result[i + 1];
+                
                 cell3.appendChild(detButton);
-                cell3.appendChild(spacer);
                 cell3.appendChild(delButton);
                 cell3.style.width = "170px";
 
@@ -851,6 +977,7 @@ function getAllDetails() {
         }
     });
 }
+
 function removeDriver(clickID) {
     var topUri = clickID;
     var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
@@ -862,6 +989,21 @@ function removeDriver(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function () {
+            updateDrivers(topUri);
+            reloadData();
+        },
+        error: function (result) {
+            clearPanel();
+            activateSide();
+
+            $("#info-panel-title").text("Failed Due to Service Instances:");
+            var body = $("#info-panel-body");
+            for (var i = 1; i < result.length; i++) {
+                body.text(body.text() + result[i] + "\n");
+            }
+
+            openContentPanel();
+
         }
     });
 }
@@ -896,16 +1038,89 @@ function getDetails(clickID) {
                 var tempkey = document.createElement("td");
                 var tempval = document.createElement("td");
                 tempkey.innerHTML = result[i];
-                tempval.innerHTML = result[i + 1];
+                var tempvalString = result[i + 1];
+                // create a shorter version (up to 120 characters) of the values of the driver's keys
+                var tempvalStringShort = tempvalString.substring(0,121) + " ...";
+                
+                // handles if the details overflow the size of the table cell
+                // currently handled by replacing text with a button that brings up popup with text of details
+                // can also implement a tooltip
+                if (tempvalString.length > 80) {
+                    //if the value is greater than 80 - make a button which will show the info in a pane
+                    var valDetailsBtn = document.createElement("button");
+                    
+                    //assigning the text of the key (detail name) to the btn id
+                    valDetailsBtn.id = tempkey.innerHTML;
+                    
+                    // need to store the string somewhere unique to the button so it can be accessed later by its onclick function.
+                    // the title attribute value will be used by the tooltip when it is initialized so the string cannot be stored
+                    // in the title attribute. Instead the shortened string is stored in the title attribute and the full string is
+                    // stored in a custom attribute called details-value
+                    valDetailsBtn.title = tempvalStringShort;
+                    valDetailsBtn.setAttribute("details-value", tempvalString);
+                    
+                    valDetailsBtn.innerHTML = "View Value";
+                    
+                    //bootstrap tooltip attribute
+                    valDetailsBtn.setAttribute("data-toggle","tooltip");
+                    valDetailsBtn.setAttribute("data-placement", "right");
+                    
+                    
+                    
+                    valDetailsBtn.className = "button-profile-select btn btn-default";                    
+                    valDetailsBtn.onclick = function () {
+                        var detailName = this.id;
+                        var detailValue = this.getAttribute("details-value");
+                        
+                        // setting the value of the detail to body of the dialog 
+                        $("#dialog-overflow-details-text").text(detailValue);
+                        
+                        $("#dialog-overflow-details").dialog({
+                            open: function(event, ui) {
+                                // bootsrap and jquery have a conflict when displaying certain buttons 
+                                // - in this case the close - 'X'  in the top right hand corner of the dialog.
+                                // So current solution is to hide that button and still allow us to use
+                                // bootstrap within the jquery dialog
+                                $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
+
+                                // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
+                                // but prevents use of boostrap styling in the jquery dialog
+                            },
+                            height: 400,
+                            width: 400,
+                            resizable: false,
+                            draggable: false,
+                            title: detailName,
+                            modal: true,
+                            buttons: [
+                                {
+                                    text: "Close",
+                                    "class": "button-profile-select btn btn-default",
+                                    click: function () {
+                                        $(this).dialog("close");
+                                    }
+                                }
+                            ]
+
+                        });
+                        
+                        
+                    };
+                    tempval.appendChild(valDetailsBtn);
+                } else {
+                    // if the value string is less than 80, then just display it in the display
+                    tempval.innerHTML = tempvalString;
+                }
                 row.appendChild(tempkey);
                 row.appendChild(tempval);
                 table.appendChild(row);
-
+                panel.appendChild(table);
             }
+            $('[data-toggle="tooltip"]').tooltip(); //activating tooltip
         }
     });
-    panel.appendChild(table);
 }
+
 function plugDriver(topuri) {
     var URI = topuri;
     var userId = keycloak.tokenParsed.preferred_username;
@@ -924,7 +1139,7 @@ function plugDriver(topuri) {
             $('#install-type').empty();
             var data = document.createElement("p");
 
-            data.style.color = "white";
+            data.style.color = "#333";
             data.innerHTML = result;
             panel.appendChild(data);
         }
@@ -936,7 +1151,7 @@ function installDriver() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/install';
     var jsonData = [];
     var tempData = {};
-    var type = document.getElementById("drivertype").innerHTML;
+    var type = document.getElementById("info-panel-title").innerHTML;
 
     for (var temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
@@ -956,7 +1171,7 @@ function installDriver() {
             tempData[temp.id] = temp.value;
     }
 
-    tempData["drivertype"] = type;
+    tempData["info-panel-title"] = type;
     jsonData.push(tempData);
 
     var settings = JSON.stringify({jsonData});
@@ -973,10 +1188,13 @@ function installDriver() {
         success: function (result) {
             var data = document.createElement("p");
 
-            data.style.color = "white";
+            data.style.color = "#333";
             data.innerHTML = result;
             panel.appendChild(data);
             getAllDetails();
+        },
+        error: function (textStatus, errorThrown) {
+
         }
     });
 }

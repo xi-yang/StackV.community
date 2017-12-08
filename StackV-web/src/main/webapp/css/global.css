@@ -6,7 +6,7 @@
 
 /*Miscellaenous global styles*/
 ::-webkit-scrollbar {
-    display:none;
+    /*display:none;*/
 }
 .hide {
     opacity: 0;
@@ -111,4 +111,9 @@ div.sub-main#main-pane {
 #sub-nav #refresh-button {
     margin: 11px 0px 11px 5px;
     color: white;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    opacity: 1;
 }

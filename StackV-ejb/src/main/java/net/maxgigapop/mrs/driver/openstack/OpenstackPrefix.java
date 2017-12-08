@@ -73,6 +73,7 @@ public class OpenstackPrefix {
     public static String network_routing_service  = prefix+":vpc+%s:routingservice";
     
     public static String network_routing_table  = prefix+":vpc+%s:routingtable";
+    
     public static String routingTable = prefix+":vpc+%s:routingtable+%s";
 
     public static String network_route  = prefix+":vpc+%s:dest_ip+%s:subnet+%s:route";
@@ -111,6 +112,8 @@ public class OpenstackPrefix {
     
     public static String hypervisorBypassSvc = prefix+":host+%s:hypervisor-bypass-svc+%s";
     
+    public static String ipsec = prefix+":service+ipsec";
+    
     public static String nic = prefix+":vpc+%s:subnet+%s:nic+%s";
     
     public static String nicNetworkAddress = prefix+":vpc+%s:subnet+%s:nic+%s:ip+%s";
@@ -120,7 +123,6 @@ public class OpenstackPrefix {
     public static String routeFrom = prefix+":vpc+%s:routingtable+%s:route+%s:routefrom";
 
     public static String routeTo = prefix+":vpc+%s:routingtable+%s:route+%s:routeto";
-
 
     public static String s3Service = prefix+":s3service+%s";
 

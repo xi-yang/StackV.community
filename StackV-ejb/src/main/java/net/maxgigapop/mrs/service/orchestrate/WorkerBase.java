@@ -195,7 +195,7 @@ public class WorkerBase {
 
     protected void retrieveSystemModel() {
         String method = "retrieveSystemModel";
-        try {
+        try {//@TODO: use cache model from DataConcurrencyPoster
             Context ejbCxt = new InitialContext();
             SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
             //referenceSystemModelVG = systemModelCoordinator.getLatestVersionGroupWithUnionModel();

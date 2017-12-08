@@ -79,6 +79,30 @@
                         </tfoot>
                     </table>
                 </div>
+                
+                <div id="acl-group-role-div" class="closed">
+                    <table class="management-table" id="acl-group-role-table">
+                        <thead>
+                            <tr>
+                                <th>Group Roles<button type="button" class="acl-group-roles close" aria-hidden="true">&times;</button></th>
+                            </tr>
+                        </thead>
+                        <tbody id="group-role-body">
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>
+                                    <select id="acl-role-select1"><option selected disabled>Choose a role</option></select>
+                                    <button class="btn-default" id="acl-group-role-add">Add</button>
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                
+                
+                
             </div>
             <div class="acl-panel" id="acl-instance-panel">
                 <input type="hidden" id="acl-instance">

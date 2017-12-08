@@ -37,7 +37,7 @@
             </div>
 
             <div id="driver-add-panel">
-                <div style="width: 100%; height: 85%; overflow: auto; display: block;" id="driver-tab1" class="tab-pane fadeIn">
+                <div style="width: 100%; height: 85%;display: block;" id="driver-tab1" class="tab-pane fadeIn">
                     <table class="management-table">
                         <thead>
                             <tr>
@@ -51,42 +51,42 @@
                                 <td>AWS Driver</td>
                                 <td>Amazon AWS Cloud Services</td>
                                 <td style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install install-button'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Generic REST Driver</td>
                                 <td>Generic REST API for Compatible Model Driven Services</td>
                                 <td style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install install-button'>Install</button>
+                                    <button onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>OpenStack Driver</td>
                                 <td>OpenStack Cloud Services</td>
                                 <td  style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install install-button'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Stack Driver</td>
                                 <td>Stack Over Sub-level StackV in Hierarchical Deployment</td>
                                 <td  style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install install-button'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr> 
                             <tr>
                                 <td>Stub Driver</td>
                                 <td>A Dump Driver Instance with Pre-loaded Fixed Model</td>
                                 <td style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install install-button'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Raw Driver</td>
                                 <td>Take Raw XML to Plug in "Any" Type of Driver Instance</td>
                                 <td  style="width: 180px;">
-                                    <button style ='width: 50px;' onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install install-button'>Install</button>
+                                    <button onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install install-button button-profile-select btn btn-default'>Install</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -127,20 +127,44 @@
                     </table>
                 </div>
             </div>
+            
 
-
-            <div id="driver-content-panel">
-                <div class="tab-content" id="catalog-tab-content">                                    
-                    <div id="install-content" class="tab-pane fadeIn">
-                        <div id='install-type'></div>
-                        <div id='install-type-right'></div>
-                        <div id='install-options'>
-                            <button onclick="clearPanel(); closeContentPanel();">Close</button>
+            <div id="driver-content-panel" class="hidden">
+                <div class="modal-content">
+                    <div class = "modal-header">
+                        <h3 id ="info-panel-title"></h3>
+                    </div>
+                    <div class ="modal-body " style="background-color:#FFFFFF">
+                        <div class="tab-content" style="background-color:#FFFFFF">                                    
+                            <div id="info-panel-body" class="tab-pane fadeIn" style="display:block;background-color:#FFFFFF">
+                                <div id="install-content" class="tab-pane fadeIn" style="background-color:#FFFFFF">
+                                    <div id='install-type' style="background-color:#FFFFFF">
+                                    </div>
+                                    <div id='install-type-right' style="background-color:#FFFFFF"></div>
+                                    <div id = "info-panel-button" class = "modal-footer">
+                                        <div id='install-options'>
+                                            <button onclick="clearPanel(); closeContentPanel();">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                 </div>
             </div>
-
+            
+            <!-- element to display a dialog contain the verbose value of a driver detail -->
+            <div id="dialog-overflow-details">
+                <div id="dialog-overflow-details-text"></div>
+            </div>
+            
+            <!-- element to display confirmation dialogs with jquery -->
+            <div id="dialog-confirm">
+                <div id="dialog-confirm-text"></div>
+            </div>
+            
+             
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
         </div>
@@ -151,6 +175,7 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>

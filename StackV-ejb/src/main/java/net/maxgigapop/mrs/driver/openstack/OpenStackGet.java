@@ -271,6 +271,19 @@ public class OpenStackGet {
     public List<Port> getPorts() {
         return ports;
     }
+    
+    
+    
+    //get a list of port by its name
+    public List<Port> getPorts(String id) {
+        List<Port> pors = new ArrayList();
+        for (Port port : ports) {
+            if (port.getId().equals(id) || port.getName().equals(id)) {
+                pors.add(port);
+            }
+        }
+        return pors;
+    }
 
     //get a port by its id
     public Port getPort(String id) {
@@ -305,6 +318,17 @@ public class OpenStackGet {
             }
         }
         return null;
+    }
+    
+    //get list of server by the name
+    public List<Server> getServerList(String id) {
+        List<Server> serversList = new ArrayList();
+        for (Server server : servers) {
+            if (server.getId().equals(id) || server.getName().equals(id)) {
+                 serversList.add(server);
+            }
+        }
+        return serversList;
     }
 
     public List<Image> getImages() {
@@ -376,6 +400,16 @@ public class OpenStackGet {
         }
         return null;
     }
+    
+    public List<Volume> getVolumesBatch(String id) {
+        List<Volume> volumesList = new ArrayList();
+        for (Volume volume : volumes) {
+            if (volume.getId().equals(id) || volume.getName().equals(id)) {
+                volumesList.add(volume);
+            }
+        }
+        return volumesList;
+    }
 
     //get all floating ips in the tenant
     public List<NetFloatingIP> getFloatingIp() {
@@ -440,17 +474,17 @@ public class OpenStackGet {
         if (name.isEmpty()) {
             return r.getId();
         } else {
-            return r.getName();
+            return r.getName().replace(" ", "_");
         }
     }
     
     //get the name of a server 
-    public String getServereName(Server r) {
+    public String getServerName(Server r) {
         String name = r.getName();
         if (name ==null || name.isEmpty()) {
             return r.getId();
         } else {
-            return r.getName();
+            return r.getName().replace(" ", "_");
         }
     }
     
@@ -460,7 +494,7 @@ public class OpenStackGet {
         if (name == null || name.isEmpty()) {
             return r.getId();
         } else {
-            return r.getName();
+            return r.getName().replace(" ", "_");
         }
     }
     public String getInterfaceSubnetID(NeutronRouterInterface i){
@@ -495,11 +529,39 @@ public class OpenStackGet {
         return data.get(key);
     }
     
+    
+    public void setMetadataBatch(String serverId, String key, String value){ 
+        List<Server> serversList = this.getServerList(serverId);
+        for(Server server:serversList){
+        if (server == null)
+            return;
+        Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+        if (data == null) {
+            data = new HashMap();
+        }
+        data.put(key, value);
+        metadata.put(server, data);
+        client.compute().servers().updateMetadata(server.getId(), data);}
+    }
+    
     public void setMetadata(String serverId, String key, String value){ 
         Server server = this.getServer(serverId);
         if (server == null)
             return;
         Map<String, String> data = client.compute().servers().getMetadata(server.getId());
+        if (data == null) {
+            data = new HashMap();
+        }
+        data.put(key, value);
+        metadata.put(server, data);
+        client.compute().servers().updateMetadata(server.getId(), data);
+    }
+    
+    public void setMetadataById(String serverId, String key, String value){ 
+        Server server = this.getServer(serverId);
+        if (server == null)
+            return;
+        Map<String, String> data = client.compute().servers().getMetadata(serverId);
         if (data == null) {
             data = new HashMap();
         }

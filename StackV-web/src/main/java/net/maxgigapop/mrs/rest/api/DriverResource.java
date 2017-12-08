@@ -29,6 +29,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
@@ -42,6 +43,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
@@ -125,18 +128,22 @@ public class DriverResource {
 
     @DELETE
     @Path("/{topoUri}")
-    public String unplug(@PathParam("topoUri") String topoUri) {
+    public Response unplug(@PathParam("topoUri") String topoUri) {
         String method = "unplug";
         logger.targetid(topoUri);
         logger.trace_start(method);
         try {
+            List<String> retList = systemCallHandler.lookupDriverBoundServiceInstances(topoUri);
+            if (retList != null && !retList.isEmpty()) {
+                return Response.status(Status.CONFLICT).entity(retList.toString()).build();
+            }
             systemCallHandler.unplugDriverInstance(topoUri);
         } catch (Exception e) {
             throw logger.throwing(method, e);
         }
         logger.trace_end(method);
-        return "unplug successfully";
-    }
+        return Response.ok().entity("unplug successfully").build();
+    }   
 
     @POST
     @Consumes({"application/xml", "application/json"})

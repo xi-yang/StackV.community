@@ -44,18 +44,20 @@ define(["local/stackv/utils"], function (utils) {
         this.edgeType = null;
         
         this._isProper = function () {
-            if (this.leftPort.getType() !== "Port" && this.rightPort.getType() !== "Port") {
-                this.source = this.leftPort;
-                this.target = this.rightPort;
-                return true;
-            }
             if (!this.leftPort) {
                 console.log("Left Port Missing!");
                 return false;
             } else if (!this.rightPort) {
                 console.log("Right Port Missing!");
                 return false;
-            } else {
+            } 
+            
+            if (this.leftPort.getType() !== "Port" && this.rightPort.getType() !== "Port") {
+                this.source = this.leftPort;
+                this.target = this.rightPort;
+                return true;
+            }
+            else {
                 var ans = true;
                 var leftCursor = this.leftPort.ancestorNode;
                 var rightCursor = this.rightPort.ancestorNode;

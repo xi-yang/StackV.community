@@ -55,25 +55,23 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
 
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         String method = "propagateDelta";
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
-        String modelBase = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();        
-        String modelAdd = aDelta.getModelAddition().getTtlModel();
-        String modelReduc = aDelta.getModelReduction().getTtlModel();
+        OntModel modelRef = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
+        OntModel modelAdd = aDelta.getModelAddition().getOntModel();
+        OntModel modelReduc = aDelta.getModelReduction().getOntModel();
         OpenflowPush push = new OpenflowPush();
         String requests = null;
-        requests = push.propagate(modelBase, modelAdd, modelReduc);
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        requests = push.propagate(modelRef, modelAdd, modelReduc);
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
         driverInstance.putProperty(requestId, requests);
-        DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);
     }
 
@@ -85,7 +83,7 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
@@ -100,7 +98,7 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null || loginUser == null || loginPass ==null || topologyURI == null) {
             throw logger.error_throwing(method, String.format("%s misses one of the property keys {subsystemBaseUrlm, loginUser, loginPass, topologyUri}", driverInstance));
         }
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
         String requests = driverInstance.getProperty(requestId);
 
         OpenflowPush push = new OpenflowPush();

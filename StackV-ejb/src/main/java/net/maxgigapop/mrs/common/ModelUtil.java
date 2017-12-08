@@ -338,7 +338,7 @@ public class ModelUtil {
                 model.getBaseModel().write(writer1, "TURTLE");                
             }
             if (!writer1.getBuffer().toString().isEmpty()) {
-                throw new Exception("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects - " + (delta == null ? "" : delta));
+                throw new Exception("ModelUtil.splitOntModelByTopology encounters non-dispatchable nml/mrs objects - " + (delta == null ? "" : writer1.getBuffer().toString()));
             }
         }
         return topoModelMap;
@@ -623,6 +623,19 @@ public class ModelUtil {
     public static Date modelDateFromString(String str) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         return dateFormat.parse(str);
+    }
+    
+    public static String stripUrnPrefix(String str) {
+        if (str.startsWith("urn")) {
+            int ind = str.indexOf("+");
+            if (ind < 0) {
+                ind = str.lastIndexOf(":");
+            }
+            if (ind > 0 && str.length() > ind+1) {
+                return str.substring(ind+1);
+            }
+        }
+        return str;
     }
     
     static public class DeltaVerification {

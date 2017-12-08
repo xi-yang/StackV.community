@@ -22,16 +22,18 @@
  */
 /* global XDomainRequest, baseUrl, loggedIn, TweenLite, Power2, tweenBlackScreen */
 // Service JavaScript Library
-baseUrl = window.location.origin;
+var baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
 var refreshTimer;
 var countdownTimer;
+var dataTable;
 
 // Page Load Function
 
 $(function () {
     $.ajaxSetup({
-        cache: false        
+        cache: false,
+        timeout: 60000
     });
 
     keycloak.init().success(function (authenticated) {
@@ -74,6 +76,17 @@ $(function () {
         } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
             loadDriverNavbar();
             loadDriverPortal();
+        } else if (window.location.pathname === "/StackV-web/ops/intent.html") {
+            loadIntent(getURLParameter("intent"));
+        } else if (window.location.pathname === "/StackV-web/ops/details.html") {
+            var uuid = sessionStorage.getItem("instance-uuid");
+            if (!uuid) {
+                alert("No Service Instance Selected!");
+                window.location.replace('/StackV-web/ops/catalog.jsp');
+            } else {
+                loadDetailsNavbar();
+                loadDetails();
+            }
         }
 
         if ($("#tag-panel").length) {
@@ -82,6 +95,7 @@ $(function () {
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
+
             console.log("Token automatically updated!");
         }).error(function () {
             console.log("Automatic token update failed!");
@@ -115,73 +129,65 @@ $(function () {
         window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
     });
 
+    $(".checkbox-level").click(function (evt) {
+        evt.preventDefault();
+    });
+
     clearCounters();
 });
 
 function loadNavbar() {
     $("#nav").load("/StackV-web/nav/navbar.html", function () {
-        if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
+        if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
             $(".nav-admin").hide();
-        } else {
-            // set the active link - get everything after StackV-web
-            var url = $(location).attr('href').split(/\/StackV-web\//)[1];
-            if (/driver.jsp/.test(url))
-                $("li#driver-tab").addClass("active");
-            else if (/catalog.jsp/.test(url))
-                $("li#catalog-tab").addClass("active");
-            else if (/graphTest.jsp/.test(url))
-                $("li#visualization-tab").addClass("active");
-            else if (/acl.jsp/.test(url))
-                $("li#acl-tab").addClass("active");
-            else if (/templateDetails.jsp/.test(url))
-                $("li#details-tab").addClass("active");
-            else if (/admin.jsp/.test(url))
-                $("li#admin-tab").addClass("active");
-
-            var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
-            $.ajax({
-                url: apiUrl,
-                type: 'GET',
-                dataType: "text",
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                },
-                success: function (result) {
-                    $("#select-logging-level").val(result);
-                },
-                error: function (error, status, thrown) {
-                    console.log(error);
-                    console.log(status);
-                    console.log(thrown);
-                }
-            });
-
-            $("#logout-button").click(function (evt) {
-                keycloak.logout();
-
-                evt.preventDefault();
-            });
-            $("#account-button").click(function (evt) {
-                keycloak.accountManagement();
-
-                evt.preventDefault();
-            });
         }
-    });
-}
-
-function loggingChange(sel) {
-    var level = sel.value;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/' + level;
-    $.ajax({
-        url: apiUrl,
-        type: 'PUT',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function () {
-
+        if (keycloak.tokenParsed.resource_access.StackV && keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
+            $("#driver-tab").hide();
         }
+
+        // set the active link - get everything after StackV-web
+        var url = $(location).attr('href').split(/\/StackV-web\//)[1];
+        if (/driver.jsp/.test(url))
+            $("li#driver-tab").addClass("active");
+        else if (/catalog.jsp/.test(url))
+            $("li#catalog-tab").addClass("active");
+        else if (/graphTest.jsp/.test(url))
+            $("li#visualization-tab").addClass("active");
+        else if (/acl.jsp/.test(url))
+            $("li#acl-tab").addClass("active");
+        else if (/templateDetails.jsp/.test(url))
+            $("li#details-tab").addClass("active");
+        else if (/admin.jsp/.test(url))
+            $("li#admin-tab").addClass("active");
+
+        var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
+        $.ajax({
+            url: apiUrl,
+            type: 'GET',
+            dataType: "text",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            success: function (result) {
+                $("#select-logging-level").val(result);
+            },
+            error: function (error, status, thrown) {
+                console.log(error);
+                console.log(status);
+                console.log(thrown);
+            }
+        });
+
+        $("#logout-button").click(function (evt) {
+            keycloak.logout();
+
+            evt.preventDefault();
+        });
+        $("#account-button").click(function (evt) {
+            keycloak.accountManagement();
+
+            evt.preventDefault();
+        });
     });
 }
 
@@ -348,7 +354,6 @@ function addVolume() {
                 + '<option value="gp2">gp2</option>'
                 + '</select>'
                 + '<input type="button" class="button-register" value="Remove" onClick="removeVolume(' + tableHeight + ')" />';
-
     }
 }
 
@@ -1041,7 +1046,11 @@ function resumeRefresh() {
     if (timer.attr('disabled')) {
         $("#refresh-button").attr('disabled', false);
         timer.attr('disabled', false);
-        setRefresh(timer.val());
+        if (timer.val() === "off") {
+            $("#refresh-button").html('Manually Refresh Now');
+        } else {
+            setRefresh(timer.val());
+        }
     }
 }
 function timerChange(sel) {
@@ -1086,18 +1095,21 @@ function loadDataTable(apiUrl) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             }
         },
+        "dom": 'Bfrtip',
+        "buttons": ['csv'],
         "columns": [
             {
                 "className": 'details-control',
                 "orderable": false,
                 "data": null,
                 "defaultContent": '',
-                "width": ""
+                "width": "20px"
             },
-            {"data": "timestamp", "width": "180px"},
+            {"data": "timestamp", "width": "150px"},
             {"data": "event"},
-            {"data": "referenceUUID", "width": "280px"},
-            {"data": "level"}
+            {"data": "referenceUUID", "width": "250px"},
+            {"data": "level", "width": "70px"},
+            {"data": "message", "visible": false, "searchable": false}
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("row-" + data.level.toLowerCase());
@@ -1109,7 +1121,10 @@ function loadDataTable(apiUrl) {
             displayBuffer: 10
         },
         "scrollX": true,
-        "scrollY": "calc(60vh - 130px)"
+        "scrollY": "calc(60vh - 130px)",
+        "initComplete": function (settings, json) {
+            console.log('DataTables has finished its initialisation.');
+        }
     });
     new $.fn.dataTable.FixedColumns(dataTable);
 
@@ -1134,20 +1149,34 @@ function loadDataTable(apiUrl) {
             pauseRefresh();
         }
     });
+
+    var level = sessionStorage.getItem("logging-level");
+    if (level !== null) {
+        $("#logging-filter-level").val(level);
+    } else {
+        sessionStorage.setItem("logging-level", "INFO");
+        $("#logging-filter-level").val("INFO");
+    }
 }
 function formatChild(d) {
     // `d` is the original data object for the row
     var retString = '<table cellpadding="5" cellspacing="0" border="0">';
-    if (!(d.message === "{}")) {
+    if (d.message !== "{}") {
         retString += '<tr>' +
                 '<td style="width:10%">Message:</td>' +
                 '<td style="white-space: normal">' + d.message + '</td>' +
                 '</tr>';
     }
-    if (!(d.exception === "")) {
+    if (d.exception !== "") {
         retString += '<tr>' +
                 '<td>Exception:</td>' +
-                '<td>' + d.exception + '</td>' +
+                '<td><textarea class="dataTables-child">' + d.exception + '</textarea></td>' +
+                '</tr>';
+    }
+    if (d.referenceUUID !== "") {
+        retString += '<tr>' +
+                '<td>UUID:</td>' +
+                '<td>' + d.referenceUUID + '</td>' +
                 '</tr>';
     }
     retString += '<tr>' +
@@ -1160,7 +1189,46 @@ function formatChild(d) {
 }
 function reloadLogs() {
     if (dataTable) {
-        dataTable.ajax.reload(null, false);
+        if (sessionStorage.getItem("logging-level") !== null) {
+            dataTable.ajax.reload(filterLogs(), false);
+        } else {
+            dataTable.ajax.reload(null, false);
+        }
     }
 }
+function filterLogs() {
+    var level = $("#logging-filter-level").val();
+    if (level !== undefined) {
+        sessionStorage.setItem("logging-level", level);
 
+        var curr = dataTable.ajax.url();
+        var paramArr = curr.split(/[?&]+/);
+        var newURL = paramArr[0];
+
+        var refEle;
+        for (var x in paramArr) {
+            if (paramArr[x].indexOf("refUUID") !== -1) {
+                refEle = paramArr[x];
+            }
+        }
+
+        newURL += "?level=" + level;
+        if (refEle) {
+            newURL += "&" + refEle;
+        }
+
+        dataTable.ajax.url(newURL).load(null, false);
+    }
+}
+function downloadLogs() {
+    var ret = [];
+    if (dataTable) {
+        var data = dataTable.rows().data();
+        for (var i in data) {
+            var log = data[i];
+
+            ret.push(JSON.stringify(log));
+        }
+    }
+    return ret;
+}

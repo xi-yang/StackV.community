@@ -2,6 +2,7 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Created by: Miguel Uzcategui 2015
  * Modified by: Xi Yang 2015-2016
+ * Modified by: Adam Smith 2017
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -33,7 +34,9 @@ import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import static java.lang.Thread.sleep;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -59,8 +62,11 @@ public class AwsEC2Get {
     private List<NetworkInterface> networkInterfaces = null;
     private List<InternetGateway> internetGateways = null;
     private List<VpnGateway> virtualPrivateGateways = null;
+    private List<VpnConnection> vpnConnections = null;
     
     final private long delayMax = 32000L;
+
+    private Map<String, String> resourceTagMap = new HashMap(); // map tag into ID
 
     public AwsEC2Get(String access_key_id, String secret_access_key, Regions region) {
         AwsAuthenticateService authenticate = new AwsAuthenticateService(access_key_id, secret_access_key);
@@ -84,7 +90,7 @@ public class AwsEC2Get {
                 }
             }
         }
-
+        
         //get all the subnets in the account
         DescribeSubnetsResult subnetsResult = this.client.describeSubnets();
         this.subnets = subnetsResult.getSubnets();
@@ -121,6 +127,11 @@ public class AwsEC2Get {
         DescribeVpnGatewaysResult vpnGatewaysResult = this.client.describeVpnGateways();
         virtualPrivateGateways = vpnGatewaysResult.getVpnGateways();
 
+        //Added 6/7
+        //get all the vpnConnctions under the account
+        DescribeVpnConnectionsResult vpnConnectionResult = this.client.describeVpnConnections();
+        vpnConnections = vpnConnectionResult.getVpnConnections();
+        
         //get all the volumes under the account
         DescribeVolumesResult volumesResult = this.client.describeVolumes();
         volumes = volumesResult.getVolumes();
@@ -394,7 +405,22 @@ public class AwsEC2Get {
         }
         return null;
     }
+    
+    //Added 6/7/17
+    //get the VPN Connections
+    public List<VpnConnection> getVpnConnections() {
+        return vpnConnections;
+    }
 
+    public VpnConnection getVpnConnection(String id) {
+        for (VpnConnection v : vpnConnections) {
+            if (v.getVpnConnectionId().equals(id)) {
+                return v;
+            }
+        }
+        return null;
+    }
+    
     //get all the volumes under the aws account
     public List<Volume> getVolumes() {
         return this.volumes;
@@ -728,7 +754,10 @@ public class AwsEC2Get {
             }
         }
     }
-
+    
+    //TODO: add wait functions for vpn connection addition and deletion. 6/9
+    
+    
     /**
      * ****************************************************************
      * function to wait for Vpn gateway addition
@@ -781,7 +810,6 @@ public class AwsEC2Get {
                         ;
                     }
                 } 
-                break;
             } catch (NullPointerException ex2) {
                 break;
             }
@@ -1028,6 +1056,37 @@ public class AwsEC2Get {
             }
         }
     }
+    
+    /**
+     * ****************************************************************
+     * function to wait for the correct port deletion status check
+     * ****************************************************************
+     */
+    public void PortDeletionCheckBatch(List<String> ids) {
+        DescribeNetworkInterfacesRequest request = new DescribeNetworkInterfacesRequest();
+        request.withNetworkInterfaceIds(ids);
+        long delay = 1000L;
+        while (true) {
+            delay *= 2;
+            try {
+                List<NetworkInterface> resources = client.describeNetworkInterfaces(request).getNetworkInterfaces();
+                if (resources.isEmpty()) {
+                    break;
+                }
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+                break;
+            } catch (NullPointerException ex2) {
+                break;
+            }
+        }
+    }
 
     /**
      * ****************************************************************
@@ -1089,12 +1148,49 @@ public class AwsEC2Get {
             }
         }
     }
-
+    
+    /**
+     * ****************************************************************
+     * function to wait for the correct batch instance status
+     * ****************************************************************
+     */
+    public void instanceStatusCheckBatch(List<String> ids, String status) {
+        DescribeInstanceStatusRequest request = new DescribeInstanceStatusRequest();
+        request.withIncludeAllInstances(Boolean.TRUE).withInstanceIds(ids);
+        Filter filter = new Filter();
+        filter.withName("instance-state-name").withValues(status);
+        DescribeInstanceStatusRequest request2 = new DescribeInstanceStatusRequest();
+        request2.withIncludeAllInstances(Boolean.TRUE).withFilters(filter);
+                    
+        long delay = 1000L;
+        while (true) {
+            delay *= 2;
+            try {
+                List<InstanceStatus> stats = client.describeInstanceStatus(request).getInstanceStatuses();
+                List<InstanceStatus> instanceIds = client.describeInstanceStatus(request2).getInstanceStatuses();
+                if (instanceIds.containsAll(stats)) {
+                    break;
+                }
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                }
+            } catch (NullPointerException ex2) {
+                ;
+            }
+        }
+    }
+    
     /**
      * ****************************************************************
      * function to wait for the correct instance status
      * ****************************************************************
      */
+    
     public void instanceStatusCheck(String id, String status) {
         DescribeInstancesRequest request = new DescribeInstancesRequest();
         request.withInstanceIds(id);
@@ -1120,6 +1216,76 @@ public class AwsEC2Get {
         }
     }
 
+    //Method to wait for vpn Connection created status
+    public void vpnCreationCheck(String id) {
+        DescribeVpnConnectionsRequest request = new DescribeVpnConnectionsRequest();
+        request.withVpnConnectionIds(id);
+        
+        long delay = 1000L;
+        while (true) {
+            delay *= 2;
+            try {
+                VpnConnection resource = client.describeVpnConnections(request).getVpnConnections().get(0);
+                if (resource != null) {
+                    break;
+                }
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
+            }
+        }
+    }
+    
+    //Method to wait for vpn Connection deleted status
+    public void vpnDeletionCheck(String id) {
+        DescribeVpnConnectionsRequest request = new DescribeVpnConnectionsRequest();
+        request.withVpnConnectionIds(id);
+        
+        long delay = 1000L;
+        while (true) {
+            delay *= 2;
+            try {
+                VpnConnection resource = client.describeVpnConnections(request).getVpnConnections().get(0);
+                if (resource == null || resource.getState().equals(VpnState.Deleted.toString()) ) {
+                    break;
+                }
+                
+            } catch (com.amazonaws.AmazonServiceException ex) {
+                if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax) {
+                    try {
+                        sleep(delay);
+                    } catch (InterruptedException ex1) {
+                        ;
+                    }
+                } 
+            } catch (NullPointerException ex2) {
+                ;
+            }
+        }
+    }
+    
+    //9/21
+    //returns a VpnConnection if vgw is attached to one, else returns null 
+    public VpnConnection vgwGetVpn(String vgwId) {
+        String deleting = VpnState.Deleting.toString();
+        String deleted = VpnState.Deleted.toString();
+        for (VpnConnection v : vpnConnections) {
+            if (v.getVpnGatewayId().equals(vgwId)) {
+                    if (v.getState().equals(deleted)) continue;
+                    if (v.getState().equals(deleting)) continue;
+                    return v;
+                }
+            }
+        return null;
+    }
+    
     /*
      *******************************************************************
      * Method to find root volume of instance 
@@ -1154,15 +1320,16 @@ public class AwsEC2Get {
 
     /**
      * ****************************************************************
-     * //function that checks if the id provided is a tag; if it is, it will
-     * return //the resource id, otherwise it will return the input parameter
-     * which is the //id of the resource //NOTE: does not work with volumes and
-     * instances because sometimes the tags // persist for a while in this
-     * resources, therefore we need to check if the // instance or volume
+     * function that checks if the id provided is a tag; if it is, it will
+     * return the resource id, otherwise it will return the input parameter
+     * which is the id of the resource NOTE: does not work with volumes and
+     * instances because sometimes the tags persist for a while in this
+     * resources, therefore we need to check if the instance or volume
      * actually exists
      * ****************************************************************
      */
-    public String getResourceId(String tag) {
+    
+    private String getResourceIdRaw(String tag) {
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
@@ -1175,6 +1342,114 @@ public class AwsEC2Get {
         }
         return tag;
     }
+    
+    public String getResourceId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        } else {
+            return getResourceIdRaw(tag);
+        }
+    }
+    
+    
+    //returns the list of resources with the given tag
+    public List<String> getBatchResourceId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();        
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                   batchIds.add(des.getResourceId());
+            }
+            return batchIds; //get the last resource tagged with this id 
+        }
+        return null;
+    }
+    
+//    to extract the additional volume IDs for deletion. Use the getvolumeId method instead
+    /*public List<String> getBatchVolumes(String tag) {
+        Filter filter = new Filter();
+        filter.withName("tag:id")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();  
+        DescribeVolumesRequest tagRequest = new DescribeVolumesRequest();
+        tagRequest.withFilters(filter);
+        List<Volume> descriptions = client.describeVolumes(tagRequest).getVolumes();
+        if (!descriptions.isEmpty()) {
+            for (Volume des : descriptions) {
+                   batchIds.add(des.getVolumeId());
+            }
+            return batchIds; 
+        }
+        return null;
+    }*/
+    
+    //return list of additional network interfaces attached to the instance
+    public List<String> getBatchNetworkInterfacesForDeletion(String tag) {
+        Filter filter = new Filter();
+        filter.withName("tag:id")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();  
+        DescribeNetworkInterfacesRequest tagRequest = new DescribeNetworkInterfacesRequest();
+        tagRequest.withFilters(filter);
+        List<NetworkInterface> descriptions = client.describeNetworkInterfaces(tagRequest).getNetworkInterfaces();
+        if (!descriptions.isEmpty()) {
+            for (NetworkInterface des : descriptions) {
+            // to select network interafaces that are created and not attached to any instance
+                if(des.getAttachment() == null){ 
+                    if(des.getStatus().equals("available")){batchIds.add(des.getNetworkInterfaceId());}
+                }
+            //to select network interfaces which are not default eni 
+            else{
+                if(des.getAttachment().getDeviceIndex()!=0 ){ 
+                   batchIds.add(des.getNetworkInterfaceId());}}
+                    }
+        return batchIds;}
+        return null;
+    }
+    
+    public List<String> getBatchNetworkInterfaces(String tag) {
+        Filter filter = new Filter();
+        filter.withName("tag:id")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();  
+        DescribeNetworkInterfacesRequest tagRequest = new DescribeNetworkInterfacesRequest();
+        tagRequest.withFilters(filter);
+        List<NetworkInterface> descriptions = client.describeNetworkInterfaces(tagRequest).getNetworkInterfaces();
+        if (!descriptions.isEmpty()) {
+            for (NetworkInterface des : descriptions) {
+                   batchIds.add(des.getNetworkInterfaceId());
+            }
+            return batchIds;
+        }
+        return null;
+    }
+    
+    //return list of instances created in batch with the same tag
+    public List<String> getBatchInstanceIds(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+        List<String> batchIds = new ArrayList();
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                Instance i = getInstance(des.getResourceId());
+                if (i != null && i.getState().getCode() != 48) //check if the instance was not deleted
+                {
+                    batchIds.add(des.getResourceId());
+                }
+            }
+            return batchIds;
+        }
+        return null;
+    }
 
     /**
      * ****************************************************************
@@ -1182,10 +1457,13 @@ public class AwsEC2Get {
      * ****************************************************************
      */
     public String getInstanceId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+        
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1201,16 +1479,40 @@ public class AwsEC2Get {
         return tag;
     }
 
+    //return the list of additional volumes created with the same tag
+    public List<String> getBatchVolumeId(String tag) {
+        Filter filter = new Filter();
+        filter.withName("value")
+                .withValues(tag);
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        List<String> batchIds = new ArrayList();
+
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+        if (!descriptions.isEmpty()) {
+            for (TagDescription des : descriptions) {
+                Volume vol = getVolume(des.getResourceId());
+                if (vol != null && !vol.getState().equals("deleted")) {
+                    batchIds.add(des.getResourceId());
+                }
+            }
+            return batchIds;
+        }
+        return null;
+    }
     /**
      * ****************************************************************
      * //function to get the Id from and volume tag
      * ****************************************************************
      */
     public String getVolumeId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1227,14 +1529,17 @@ public class AwsEC2Get {
 
     /**
      * ****************************************************************
-     * //function to get the Id from a volume tag
+     * function to get the Id from a volume tag
      * ****************************************************************
      */
     public String getTableId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1255,10 +1560,13 @@ public class AwsEC2Get {
      * ****************************************************************
      */
     public String getVpcId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1279,10 +1587,13 @@ public class AwsEC2Get {
      * ****************************************************************
      */
     public String getVpnGatewayId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
         Filter filter = new Filter();
         filter.withName("value")
                 .withValues(tag);
-
         DescribeTagsRequest tagRequest = new DescribeTagsRequest();
         tagRequest.withFilters(filter);
         List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
@@ -1294,9 +1605,59 @@ public class AwsEC2Get {
                 }
             }
         }
+        
+        /* 9/16/17
+        Sometimes, if the vgw was created manually the id tag will be absent but
+        the vgwID can still be recovered from the URI. If the vgw was created manually,
+        the URI should have the id appended near the end.
+        
+        the id has the form vgw-XXXXXXXX
+        */
+        int pos;
+        pos = tag.indexOf("vgw-");
+        if (pos != -1) {
+            return tag.substring(pos, pos+12);
+        }
+        
         return tag;
     }
 
+    /**
+     * ****************************************************************
+     * Function to get the Id from a vpnConnection tag - added 6/9
+     * ****************************************************************
+     */
+    
+    public String getVpnConnectionId(String tag) {
+        if (resourceTagMap.containsKey(tag)) {
+            return resourceTagMap.get(tag);
+        }
+
+        Filter filter = new Filter();
+        filter.withName("value").withValues(tag);        
+        DescribeTagsRequest tagRequest = new DescribeTagsRequest();
+        tagRequest.withFilters(filter);
+        List<TagDescription> descriptions = this.describeTagsUnlimit(tagRequest);
+        if (!descriptions.isEmpty()) {
+            for (TagDescription desc : descriptions) {
+                VpnConnection vpnc = getVpnConnection(desc.getResourceId());
+                if (vpnc != null) {
+                    return desc.getResourceId();
+                }
+
+            }
+        }
+        int pos;
+        pos = tag.indexOf("vpn-");
+        if (pos != -1) {
+            return tag.substring(pos, pos+12);
+        }
+        
+        return tag;
+    }
+    
+    
+    
     /**
      * ****************************************************************
      * function to tag a resource
@@ -1305,6 +1666,58 @@ public class AwsEC2Get {
     public void tagResource(String id, String tag) {
         CreateTagsRequest tagRequest = new CreateTagsRequest();
         tagRequest.withTags(new Tag("id", tag));
+        tagRequest.withResources(id);
+        while (true) {
+            try {
+                client.createTags(tagRequest);
+                break;
+            } catch (AmazonServiceException e) {
+            }
+        }
+        resourceTagMap.put(tag, id);
+    }
+
+    public boolean waitResourceTag(String id, String tag) {
+        Long delay = 10000L; // 10 seconds
+        for (int retry = 0; retry < 12; retry++) {
+            if (this.getResourceId(tag).equals(id)) {
+                return true;
+            }
+            try {
+                sleep(delay);
+            } catch (InterruptedException ex1) {
+                ;
+            }
+        }
+        // wait for up to 2 minutes
+        return false;
+    }
+    /**
+     * ****************************************************************
+     * function to create tags in batches
+     * ****************************************************************
+     */
+    public void tagBatchResources(List<String> id, String tag) {
+        CreateTagsRequest tagRequest = new CreateTagsRequest();
+        tagRequest.withTags(new Tag("id", tag));
+        tagRequest.withResources(id);
+        while (true) {
+            try {
+                client.createTags(tagRequest);
+                break;
+            } catch (AmazonServiceException e) {
+            }
+        }
+    }
+    
+    /**
+     * ****************************************************************
+     * function to create batch tags for the resources
+     * ****************************************************************
+     */
+    public void tagResourcesWithBatchId(List<String> id, String tag) {
+        CreateTagsRequest tagRequest = new CreateTagsRequest();
+        tagRequest.withTags(new Tag("batch", tag));
         tagRequest.withResources(id);
         while (true) {
             try {
@@ -1343,6 +1756,8 @@ public class AwsEC2Get {
             delay *= 2; 
             try {
                 List<TagDescription> descriptions = client.describeTags(tagRequest).getTags();
+//                DescribeTagsResult a = client.describeTags();
+//                List<TagDescription> descriptions = a.getTags();
                 return descriptions;
             } catch (com.amazonaws.AmazonServiceException ex) {
                 if (ex.getErrorCode().equals("RequestLimitExceeded") && delay > 0 && delay <= delayMax*2) {

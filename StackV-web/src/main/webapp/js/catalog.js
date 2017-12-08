@@ -21,7 +21,7 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap */
+/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap, swal */
 // Tweens
 var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.easeInOut, paused: true, top: "30px"});
 var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
@@ -39,7 +39,7 @@ Mousetrap.bind({
         window.location.href = "/StackV-web/orch/graphTest.jsp";
     },
     'shift+right': function () {
-        window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
+        window.location.href = "/StackV-web/ops/details.html";
     },
     'space': function () {
         if ($("#catalog-panel").hasClass("closed")) {
@@ -66,6 +66,13 @@ function loadCatalog() {
     loadInstances();
     loadWizard();
     loadEditor();
+
+    if (getURLParameter("profiles")) {
+        openCatalog();
+        setTimeout(function () {
+            $($("ul.catalog-tabs").children()[0]).children().click();
+        }, 200);
+    }
 
     $("#black-screen").click(function () {
         $("#info-panel").removeClass("active");
@@ -125,7 +132,7 @@ function loadInstances() {
 
             $(".clickable-row").click(function () {
                 sessionStorage.setItem("instance-uuid", $(this).data("href"));
-                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
+                window.document.location = "/StackV-web/ops/details.html";
             });
 
             tweenInstancePanel.play();
@@ -195,19 +202,28 @@ function loadWizard() {
             });
 
             $(".button-profile-delete").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
-                $.ajax({
-                    url: apiUrl,
-                    type: 'DELETE',
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                    },
-                    success: function (result) {
-                        loadWizard();
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
+                swal("Confirm deletion?", {
+                    buttons: {
+                        cancel: "Cancel",
+                        delete: {text: "Delete", value: true}
+                    }
+                }).then((value) => {
+                    if (value) {
+                        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
+                        $.ajax({
+                            url: apiUrl,
+                            type: 'DELETE',
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            },
+                            success: function (result) {
+                                loadWizard();
+                            },
+                            error: function (textStatus, errorThrown) {
+                                console.log(textStatus);
+                                console.log(errorThrown);
+                            }
+                        });
                     }
                 });
 
@@ -215,30 +231,67 @@ function loadWizard() {
             });
 
             $(".button-profile-submit").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
-                $.ajax({
-                    url: apiUrl,
-                    type: 'POST',
-                    data: $("#info-panel-text-area").val(),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function (result) {
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
-                    }
-                });
-                // reload top table and hide modal
-                reloadData();
-                $("div#profile-modal").modal("hide");
-                $("#black-screen").addClass("off");
-                $("#info-panel").removeClass("active");
-                evt.preventDefault();
+                if ($("#profile-alias").val()) {
+                    var profile = JSON.parse($("#info-panel-text-area").val());
+                    profile["alias"] = $("#profile-alias").val();
+
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
+                    $.ajax({
+                        url: apiUrl,
+                        async: false,
+                        type: 'GET',
+                        dataType: "text",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        },
+                        success: function (result) {
+                            var manifest = profile;
+                            manifest["uuid"] = result;
+                            manifest["data"]["uuid"] = result;
+                            manifest["data"]["options"] = manifest["options"];
+                            //manifest["data"] = JSON.parse($("#info-panel-text-area").val());
+
+                            // Render template
+//                            var rendered = render(manifest);
+//                            if (!rendered) {
+//                                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
+//                                return;
+//                            }
+
+                            manifest['proceed'] = "true";
+                            var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                            $.ajax({
+                                url: apiUrl,
+                                type: 'POST',
+                                data: JSON.stringify(manifest),
+                                contentType: "application/json; charset=utf-8",
+                                dataType: "json",
+                                beforeSend: function (xhr) {
+                                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                                    xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                                },
+                                success: function (result) {
+                                },
+                                error: function (textStatus, errorThrown) {
+                                    console.log(textStatus);
+                                    console.log(errorThrown);
+                                }
+                            });
+                        }
+                    });
+                    // reload top table and hide modal
+                    reloadData();
+                    $("div#profile-modal").modal("hide");
+                    $("#black-screen").addClass("off");
+                    $("#info-panel").removeClass("active");
+                    evt.preventDefault();
+                } else {
+                    $("#profile-alias").addClass("invalid");
+                    $("#profile-alias").change(function () {
+                        $(this).removeClass("invalid");
+                    });
+                }
             });
 
             // Hide the regular buttons and reveal the save as box
@@ -259,9 +312,9 @@ function loadWizard() {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
                 var data = {
                     name: $("#new-profile-name").val(),
-                    userID: keycloak.subject,
+                    username: keycloak.tokenParsed.preferred_username,
                     description: $("#new-profile-description").val(),
-                    data: $("#info-panel-text-area").val()
+                    data: JSON.parse($("#info-panel-text-area").val())
                 };
 
                 $.ajax({
@@ -355,8 +408,8 @@ function loadEditor() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-            $(document).on('click', '.button-service-select', function ( evt ) {          
-                var ref = "/StackV-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
+            $(document).on('click', '.button-service-select', function (evt) {
+                var ref = "/StackV-web/ops/intent.html?intent=" + this.id.toLowerCase();
                 window.location.href = ref;
 
                 evt.preventDefault();

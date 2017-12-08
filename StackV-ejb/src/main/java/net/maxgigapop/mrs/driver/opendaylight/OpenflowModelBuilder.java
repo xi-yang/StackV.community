@@ -183,6 +183,9 @@ public class OpenflowModelBuilder {
                 Resource resOpenflow = model.getResource(URI_node(topologyURI, nodeIdEsc)+":openflow");
                 Resource resFlowTable = model.getResource(resOpenflow.getURI()+":table=0");
                 JSONArray jFlows = (JSONArray)((JSONObject)jTable0.get(0)).get("flow");
+                if (jFlows == null) {
+                    continue;
+                }
                 for (Object o2: jFlows) {
                     JSONObject jFlow = (JSONObject)o2;
                     String flowId = (String)jFlow.get("id");
@@ -327,14 +330,16 @@ public class OpenflowModelBuilder {
                     try {
                         net.minidev.json.JSONArray j3 = (net.minidev.json.JSONArray)JsonPath.parse(jFlow).read("$.instructions..action");
                         JSONArray jActions = (JSONArray)j3.get(0);
+                        String order = "0";
                         for (Object o3: jActions) {
                             JSONObject jAction = (JSONObject) o3;
                             // flow action rules
-                            String order = "0";
                             if (jAction.containsKey("order")) {
-                                jAction.get("order").toString();
+                                order = jAction.get("order").toString();
                             }
                             Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), order), Mrs.FlowRule);
+                            Character c0 = order.charAt(0);
+                            order = order.replace(c0, ++c0);
                             model.add(model.createStatement(resFlow, Mrs.flowAction, resFlowAction));
                             if (jAction.containsKey("output-action")) {
                                 JSONObject jActionOutput = (JSONObject)jAction.get("output-action");
@@ -399,7 +404,7 @@ public class OpenflowModelBuilder {
                             } // and more, e.g. MPLS label swap, dscp, ttl etc.
                         }
                     } catch (Exception ex) {
-                        Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), "0"), Mrs.FlowRule);
+                        Resource resFlowAction = RdfOwl.createResource(model, URI_action(resFlow.getURI(), "X"), Mrs.FlowRule);
                         model.add(model.createStatement(resFlow, Mrs.flowAction, resFlowAction));
                         model.add(model.createStatement(resFlowAction, Mrs.type, "drop"));
                         model.add(model.createStatement(resFlowAction, Mrs.value, "drop"));

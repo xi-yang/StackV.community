@@ -55,12 +55,8 @@ public class DTNPush {
      * function to propagate all the requests
      * ************************************************
      */
-    public String pushPropagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) throws Exception {
+    public String pushPropagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) throws Exception {
         String requests = "";
-
-        OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
-        OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
-        OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
 
         //delete a data transfer
         requests += cancelDataTransfer(modelRef, modelReduct);

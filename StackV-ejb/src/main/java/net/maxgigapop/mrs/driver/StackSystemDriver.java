@@ -62,6 +62,7 @@ import net.maxgigapop.mrs.bean.SystemInstance;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.DriverSystemDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -89,11 +90,10 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         String method = "propagateDelta";
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
@@ -113,7 +113,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
             // Step 2. propagate delta to systemInstance
             // compose string body (delta) using JSONObject
             JSONObject deltaJSON = new JSONObject();
-            deltaJSON.put("id", aDelta.getId());
+            deltaJSON.put("id", aDelta.getReferenceUUID());
             deltaJSON.put("referenceVersion", refVI.getReferenceUUID());
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
             deltaJSON.put("creationTime", dateFormat.format(new Date()).toString());
@@ -132,8 +132,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
             if (!status.toUpperCase().contains("SUCCESS")) {
                 throw logger.error_throwing(method, "target:DriverSystemDelta has no reference VersionItem");
             }
-            driverInstance.putProperty("stackSystemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getId().toString(), systemInstanceUUID);
-            DriverInstancePersistenceManager.merge(driverInstance);
+            driverInstance.putProperty("stackSystemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getReferenceUUID().toString(), systemInstanceUUID);
         } catch (Exception e) {
             throw logger.throwing(method, driverInstance + " failed to propagate", e);
         }
@@ -148,7 +147,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
@@ -158,11 +157,11 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
         if (subsystemBaseUrl == null) {
             throw logger.error_throwing(method, driverInstance +"has no property key=subsystemBaseUrl");
         }
-        String stackSystemInstanceUUID = driverInstance.getProperty("stackSystemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getId().toString());
+        String stackSystemInstanceUUID = driverInstance.getProperty("stackSystemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getReferenceUUID().toString());
         if (stackSystemInstanceUUID == null) {
             throw logger.error_throwing(method, driverInstance + " has no property key=systemInstanceUUID as required for commit");
         }
-        driverInstance.getProperties().remove("stackSystemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getId().toString());
+        driverInstance.getProperties().remove("stackSystemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getReferenceUUID().toString());
         DriverInstancePersistenceManager.merge(driverInstance);
         String authServer = driverInstance.getProperty("authServer");
         String credential = driverInstance.getProperty("credential");
@@ -232,7 +231,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || !DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().containsKey(driverInstance.getTopologyUri())) {
             logger.warning(method, "driver instance is initializing");
-            return new AsyncResult<>("INITIALIZING");
+            return new AsyncResult<>("INIT");
         }
         String authServer = driverInstance.getProperty("authServer");
         String credential = driverInstance.getProperty("credential");
