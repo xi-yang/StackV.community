@@ -25,11 +25,11 @@
                 <regex>^\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2}(,\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2})*$</regex>
                 <message>Please enter a valid comma-separated list of MAC addresses.</message>
             </constraint>
-            <constraint>                                                                            
-                <name>cidr</name>                                                                   
-                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}$</regex>                          
-                <message>Please enter a valid CIDR.</message>                                       
-            </constraint>                                                                           
+            <constraint>
+                <name>cidr</name>
+                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}$</regex>
+                <message>Please enter a valid CIDR.</message>
+            </constraint>
         </validation>
     </meta>
     <stage name="Connections">
@@ -41,7 +41,7 @@
                 <option>Multi-Point VLAN Bridge</option>
             </options>
         </input>
-        <group factory="true" name="connection" collapsible="true" opened="false">
+        <group factory="true" name="connection" collapsible="true" opened="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -49,7 +49,7 @@
             </input>
             <group name="Bandwidth" collapsible="true" opened="true">
                 <input>
-                    <name>Capacity</name>                    
+                    <name>Capacity</name>
                     <type>text</type>
                     <hint>(in Mbps)</hint>
                     <valid>integer</valid>
@@ -77,7 +77,7 @@
                     <value>Multi-Point VLAN Bridge</value>
                     <min>3</min>
                 </bound>
-                
+
                 <input>
                     <name>URI</name>
                     <type>text</type>
@@ -94,24 +94,24 @@
                 <input condition="type::Multi-Point VLAN Bridge">
                     <name>MAC Address List</name>
                     <type>text</type>
-                    <size>large</size>
+                    <size>small</size>
                     <valid>macs</valid>
                 </input>
-                <input>                                                                                
-                    <name>Assign IP</name>                                                                
-                    <type>checkbox</type>                                                              
-                    <size>small</size>                                                                 
-                </input>                                                                               
-            </group>
-            <group factory="true" name="IP Range" collapsible="true" opened="true">
                 <input>
-                    <name>Start</name>                    
+                    <name>Assign IP</name>
+                    <type>checkbox</type>
+                    <size>small</size>
+                </input>
+            </group>
+            <group factory="true" name="IP Range" collapsible="true" opened="false">
+                <input>
+                    <name>Start</name>
                     <type>text</type>
                     <hint>(A.B.C.D/Mask)</hint>
                     <valid>cidr</valid>
                 </input>
                 <input>
-                    <name>End</name>                    
+                    <name>End</name>
                     <type>text</type>
                     <hint>(A.B.C.D/Mask)</hint>
                     <valid>cidr</valid>

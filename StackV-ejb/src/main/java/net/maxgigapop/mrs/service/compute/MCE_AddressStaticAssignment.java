@@ -30,15 +30,10 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
@@ -47,15 +42,12 @@ import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.common.DriverUtil;
 import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.AddressUtil;
 import net.maxgigapop.mrs.common.Mrs;
-import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
-import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -134,12 +126,14 @@ public class MCE_AddressStaticAssignment extends MCEBase {
         JSONArray jsonAssignments = (JSONArray) jsonAssignReq.get("assign_to");
         String addressType = jsonAssignReq.containsKey("address_type") ? (String) jsonAssignReq.get("address_type") : "ipv4-address";
         // for each jsonAssignment in the jsonAssignments array, get one address from jsonAddresses 
+        List<String> ipAddresses = normalizeIpAddressList(jsonAddresses);
         for (Object obj: jsonAssignments) {
             JSONObject jsonAssignFilter = (JSONObject)obj;
             if (jsonAssignFilter.containsKey("l2path") && jsonAssignFilter.containsKey("terminals")) {
                 JSONArray assignToPath = (JSONArray) jsonAssignFilter.get("l2path");
                 JSONArray assignToTerminals = (JSONArray) jsonAssignFilter.get("terminals");
-                List<String> addresses = this.checkoutAddresses(jsonAddresses, assignToTerminals.size()); 
+                //@@ normalize jsonAddresses (ranges into individual IPs / up to 128 addresses) 
+                List<String> addresses = this.checkoutAddresses(ipAddresses, assignToTerminals.size()); 
                 // exception if running out of addresses
                 if (addresses == null) {
                    throw logger.error_throwing(method, String.format("%d addresses are requested but address pool has only %d", assignToTerminals.size(), jsonAddresses.size()) );
@@ -157,6 +151,29 @@ public class MCE_AddressStaticAssignment extends MCEBase {
         return assignModel;
     }
     
+    private List<String> normalizeIpAddressList(List poolAddressRanges) {
+        List<String> listAddresses = new ArrayList();
+        for (Object obj: poolAddressRanges) {
+            String ipRange = (String) obj;
+            if (AddressUtil.isIpAddressMaskRange(ipRange)) {
+                List<Long> ipList = AddressUtil.ipMaskRangeToLongList(ipRange);
+                Long mask = ipList.get(0);
+                ipList.remove(0);
+                for (Long ip: ipList) {
+                    listAddresses.add(AddressUtil.ipToString(ip, mask));
+                }
+            } else if (AddressUtil.isIpAddressPrefixkRange(ipRange)) {
+                List<Long> ipList = AddressUtil.ipPrefixRangeToLongList(ipRange);
+                Long mask = ipList.get(0);
+                ipList.remove(0);
+                for (Long ip: ipList) {
+                    listAddresses.add(AddressUtil.ipToString(ip, mask));
+                }
+            }
+        }
+        return listAddresses;
+    }
+            
     private List<String> checkoutAddresses(List poolAddresses, int num) {
         List<String> listAddresses = new ArrayList();
         if (num > poolAddresses.size()) {
