@@ -56,7 +56,7 @@ import org.json.simple.JSONObject;
 @Stateless
 public class MCE_AddressStaticAssignment extends MCEBase {
 
-    private static final StackLogger logger = new StackLogger(MCE_AddressStaticAssignment.class.getName(), "MCE_AwsDxStitching");
+    private static final StackLogger logger = new StackLogger(MCE_AddressStaticAssignment.class.getName(), "MCE_AddressStaticAssignment");
 
     private static final String OSpec_Template
             = "{\n"
@@ -136,7 +136,7 @@ public class MCE_AddressStaticAssignment extends MCEBase {
                 List<String> addresses = this.checkoutAddresses(ipAddresses, assignToTerminals.size()); 
                 // exception if running out of addresses
                 if (addresses == null) {
-                   throw logger.error_throwing(method, String.format("%d addresses are requested but address pool has only %d", assignToTerminals.size(), jsonAddresses.size()) );
+                   throw logger.error_throwing(method, String.format("%d addresses are requested but address pool has %d remaining", assignToTerminals.size(), ipAddresses.size()) );
                 }
                 for (int i = 0; i < addresses.size(); i++) {
                     Resource resAssignToInterface = this.lookupL2PathTerminalInterface(unionSysModel, assignToPath, (String)assignToTerminals.get(i));

@@ -319,15 +319,23 @@ public class MCEBase implements IModelComputationElement {
                     jaRecursive.add(jaResolved.get(0));
                 }
             } else if (obj instanceof JSONArray) {
-                if (joVarMap != null) {
-                    ((JSONObject)((JSONArray)obj).get(0)).put("#varmap", joVarMap);
-                }
-                JSONArray jaResolved = handleSparsqlJsonMap((JSONObject)((JSONArray)obj).get(0), model,  modelRef);
-                if (jaResolved == null) {
-                    itKey.remove();
-                } else {
-                    joTemplate.put(key, jaResolved);
-                    jaRecursive.addAll(jaResolved);
+                JSONArray joArr = (JSONArray) obj;
+                joTemplate.remove(key);
+                for (Object obj2 : joArr) {
+                    JSONObject jo = (JSONObject) obj2;
+                    if (joVarMap != null) {
+                        ((JSONObject) ((JSONArray) obj).get(0)).put("#varmap", joVarMap);
+                    }
+                    JSONArray jaResolved = handleSparsqlJsonMap(jo, model, modelRef);
+                    if (jaResolved == null) {
+                        itKey.remove();
+                    } else {
+                        if (!joTemplate.containsKey(key)) {
+                            joTemplate.put(key, new JSONArray());
+                        }
+                        ((JSONArray)joTemplate.get(key)).addAll(jaResolved);
+                        jaRecursive.addAll(jaResolved);
+                    }
                 }
             }
         }
@@ -351,7 +359,7 @@ public class MCEBase implements IModelComputationElement {
                             throw logger.error_throwing(method, "Invalid output format: %% must only be included in a single element array.");
                         }
                         Object obj1 = ((JSONArray) jo.get("$$")).get(0);
-                        json = "[";
+                        json = "["; 
                         for (Object obj2 : policyResDataMap.get(key).keySet()) {
                             if (obj1 instanceof JSONObject && obj2 instanceof String) {
                                 JSONObject oj1 = (JSONObject) obj1;
