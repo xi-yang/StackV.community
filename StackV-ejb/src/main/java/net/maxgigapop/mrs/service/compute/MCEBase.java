@@ -320,22 +320,23 @@ public class MCEBase implements IModelComputationElement {
                 }
             } else if (obj instanceof JSONArray) {
                 JSONArray joArr = (JSONArray) obj;
-                joTemplate.remove(key);
+                joTemplate.put(key, null);
                 for (Object obj2 : joArr) {
                     JSONObject jo = (JSONObject) obj2;
                     if (joVarMap != null) {
                         ((JSONObject) ((JSONArray) obj).get(0)).put("#varmap", joVarMap);
                     }
                     JSONArray jaResolved = handleSparsqlJsonMap(jo, model, modelRef);
-                    if (jaResolved == null) {
-                        itKey.remove();
-                    } else {
-                        if (!joTemplate.containsKey(key)) {
+                    if (jaResolved != null) {
+                        if (joTemplate.get(key) == null) {
                             joTemplate.put(key, new JSONArray());
                         }
                         ((JSONArray)joTemplate.get(key)).addAll(jaResolved);
                         jaRecursive.addAll(jaResolved);
                     }
+                }
+                if (joTemplate.get(key) == null) {
+                    itKey.remove();
                 }
             }
         }

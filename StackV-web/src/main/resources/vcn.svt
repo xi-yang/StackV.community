@@ -60,11 +60,13 @@
             spa:type     "JSON";
             spa:value    """{
                 "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
-                    "{{!DirectConnDest @gateways}}": {
-                        "vlan_tag":"{{!DirectConnVLAN @gateways}}"
-                    },
-                    "{{@parent}}": {
-                        "vlan_tag":"{{!DirectConnVLAN @gateways}}"
+                    "terminals": {
+                        "{{!DirectConnDest @gateways}}": {
+                            "vlan_tag":"{{!DirectConnVLAN @gateways}}"
+                        },
+                        "{{@parent}}": {
+                            "vlan_tag":"{{!DirectConnVLAN @gateways}}"
+                        }
                     }
                 }
             }""".
