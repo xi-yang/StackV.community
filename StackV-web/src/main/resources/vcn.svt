@@ -290,49 +290,49 @@
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#globus_connect}}
-            &lt;{{VMTag}}:service+globus&gt;
-                a  mrs:EndPoint ;
-                mrs:type "globus:connect" ;
-            {{$if username}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:username&gt; ;
-            {{/if username}}
-            {{$if password}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:password&gt; ;
-            {{/if password}}
-            {{$if default_directory}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:directory&gt; ;
-            {{/if default_directory}}
-            {{$if data_interface_ip}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
-            {{/if data_interface_ip}}
-            {{$if public}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:public&gt; ;
-            {{/if public}}
-                nml:name "{{short_name}}" .
-            &lt;{{VMTag}}&gt;
-               nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
-            &lt;{{VMTag}}:service+globus:username&gt;
-               a mrs:NetworkAddress ;
-               mrs:type "globus:username";
-               mrs:value "{{username}}" .
-            &lt;{{VMTag}}:service+globus:password&gt;
-               a mrs:NetworkAddress ;
-               mrs:type "globus:password";
-               mrs:value "{{password}}" .
-            &lt;{{VMTag}}:service+globus:directory&gt;
-               a mrs:NetworkAddress ;
-               mrs:type "globus:directory";
-               mrs:value "{{default_directory}}" .
-            &lt;{{VMTag}}:service+globus:interface&gt;
-               a mrs:NetworkAddress ;
-               mrs:type "globus:interface";
-               mrs:value "{{data_interface_ip}}" .
-            {{$if public}}
-               &lt;{{VMTag}}:service+globus:public&gt;
-                  a mrs:NetworkAddress ;
-                  mrs:type "globus:public";
-                  mrs:value "{{public}}" .
-            {{/if public}}
+              {{$if username}}
+	            &lt;{{VMTag}}:service+globus&gt;
+	                a  mrs:EndPoint ;
+	                mrs:type "globus:connect" ;
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:username&gt; ;
+	            {{$if password}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:password&gt; ;
+	            {{/if password}}
+	            {{$if default_directory}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:directory&gt; ;
+	            {{/if default_directory}}
+	            {{$if data_interface_ip}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
+	            {{/if data_interface_ip}}
+	            {{$if public}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:public&gt; ;
+	            {{/if public}}
+	                nml:name "{{short_name}}" .
+	            &lt;{{VMTag}}&gt;
+	               nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
+	            &lt;{{VMTag}}:service+globus:username&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:username";
+	               mrs:value "{{username}}" .
+	            &lt;{{VMTag}}:service+globus:password&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:password";
+	               mrs:value "{{password}}" .
+	            &lt;{{VMTag}}:service+globus:directory&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:directory";
+	               mrs:value "{{default_directory}}" .
+	            &lt;{{VMTag}}:service+globus:interface&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:interface";
+	               mrs:value "{{data_interface_ip}}" .
+	            {{$if public}}
+	               &lt;{{VMTag}}:service+globus:public&gt;
+	                  a mrs:NetworkAddress ;
+	                  mrs:type "globus:public";
+	                  mrs:value "{{public}}" .
+	            {{/if public}}
+              {{/if username}}
             {{/globus_connect}}
         {{/vms}}
         {{#vms}}
