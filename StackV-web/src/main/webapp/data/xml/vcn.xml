@@ -232,6 +232,9 @@
                 </group>
             </group>
             <group name="Globus Connect" condition="openstack-form" collapsible="true">
+                <fulfilled>
+                    <name>username</name>
+                </fulfilled>
                 <input>
                     <name>Username</name>
                     <type>text</type>
