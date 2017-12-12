@@ -354,6 +354,9 @@
                 </group>
                 <group name="VS Functions" passthrough="true">
                     <group name="Globus Connect" collapsible="true">
+		                <fulfilled>
+		                    <name>username</name>
+		                </fulfilled>
                         <input>
                             <name>Username</name>
                             <type>text</type>
