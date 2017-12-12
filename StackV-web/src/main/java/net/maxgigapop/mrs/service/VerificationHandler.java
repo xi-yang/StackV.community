@@ -81,10 +81,10 @@ public class VerificationHandler {
     }
     
     private void asyncVerification() {
-        new Thread(new VerificationDrone(instanceUUID, token, conn, runs, delay)).start();
+        new Thread(new VerificationDrone(instanceUUID, token, conn)).start();
     }
     private String syncVerification() {
-        VerificationDrone drone = new VerificationDrone(instanceUUID, token, conn, runs, delay);
+        VerificationDrone drone = new VerificationDrone(instanceUUID, token, conn);
         drone.run();
         return drone.getResult();
     }
@@ -113,10 +113,9 @@ public class VerificationHandler {
             prep.executeUpdate();
 
             prep = conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`, `instanceUUID`, `timestamp`, `state`) VALUES (?,?,?,'INIT')");
+                    + "(`service_instance_id`, `instanceUUID`, `state`) VALUES (?,?,'INIT')");
             prep.setInt(1, instanceID);
             prep.setString(2, instanceUUID);
-            prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("clearVerification", ex);

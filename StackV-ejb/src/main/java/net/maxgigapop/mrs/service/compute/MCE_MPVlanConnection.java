@@ -56,13 +56,14 @@ public class MCE_MPVlanConnection extends MCEBase {
     private static final String OSpec_Template
             = "{\n"
             + "	\"$$\": [\n"
-            + "		{\n"
-            + "			\"hop\": \"?hop?\",\n"
+            + "	  {\"name\":\"%%\",\n"
+            + "	   \"hops\": [{\"hop\": \"?hop?\",\n"
             + "			\"vlan_tag\": \"?vid?\",\n"
             + "			\"#sparql\": \"SELECT DISTINCT ?hop ?vid WHERE {?hop a nml:BidirectionalPort. "
             + "?hop nml:hasLabel ?vlan. ?vlan nml:value ?vid. ?hop mrs:tag \\\"l2path+$$:%%\\\".}\",\n"
             + "			\"#required\": \"false\"\n"
-            + "		}\n"
+            + "		}]"
+            + "   }\n"
             + "	]\n"
             + "}";
 
@@ -118,6 +119,7 @@ public class MCE_MPVlanConnection extends MCEBase {
         for (String connId: connDataMap.keySet()) {
             List<Resource> terminals = new ArrayList<>();
             JSONObject jsonConnReq = (JSONObject)connDataMap.get(connId);
+            jsonConnReq.put("id", ModelUtil.stripUrnPrefix(resConn.getURI())+"-"+ModelUtil.stripUrnPrefix(connId).replace(" ", "_"));
             JSONObject jsonTerminals = (JSONObject)jsonConnReq.get("terminals");
             if (jsonTerminals == null || jsonTerminals.size() != 2) {
                 throw logger.error_throwing(method, String.format("cannot find path for connection '%s' - request must have exactly 2 terminals", connId));

@@ -1,0 +1,79 @@
+openapi: 3.0.0
+info:
+  title: Sample API
+  description: StackV REST API Documentation.
+  version: 0.9.0
+servers:
+  - url: 'http://localhost:8080/StackV-web/restapi/app'
+    description: Frontend Local Server
+tags:
+  - name: acl
+    description: Access control commands
+  - name: service
+    description: Service instance commands
+paths:
+  '/service/{siUUID}/status':
+    get:
+      tags:
+        - service
+      summary: Instance status.
+      description: Retrieve service instance superstatus and substatus.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful retrieval of service status
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Create - READY
+  '/service/{siUUID}/substatus':
+    get:
+      tags:
+        - service
+      summary: Instance substatus.
+      description: Retrieve only the service instance substatus.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful retrieval of service status
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: READY
+  /service:
+    post:
+      tags:
+        - service
+      summary: Create service.
+      description: Create a service instance.
+      responses:
+        '200':
+          description: Successful service creation
+components:
+  securitySchemes:
+    keycloak:
+      type: oauth2
+      description: Keycloak OAuth2 Endpoint
+      flows:
+        password:
+          tokenUrl: >-
+            https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token
+          refreshUrl: >-
+            https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token
+          scopes: {}
+security:
+  - keycloak: []

@@ -116,7 +116,8 @@ public class MCETools {
         OntModel ontModel = null;
         double failureProb = 0.0;
         BandwidthProfile bandwithProfile = null;
-
+        String connectionId = null;
+        
         public Path() {
             super();
         }
@@ -155,6 +156,14 @@ public class MCETools {
 
         public void setBandwithProfile(BandwidthProfile bandwithProfile) {
             this.bandwithProfile = bandwithProfile;
+        }
+
+        public String getConnectionId() {
+            return connectionId;
+        }
+
+        public void setConnectionId(String connectionId) {
+            this.connectionId = connectionId;
         }
     }
 
@@ -312,6 +321,7 @@ public class MCETools {
                     itP.remove();
                 } else {
                     // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
+                    candidatePath.setConnectionId((String)jsonConnReq.get("id"));
                     OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, (JSONObject)jsonConnReq.get("terminals"));
                     if (l2PathModel == null) {
                         itP.remove();
@@ -921,7 +931,7 @@ public class MCETools {
                 if (portParamMap.get(currentHop).containsKey("openflowService")) {
                     subnetModel = createVlanFlowsOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                 } else {
-                    subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, path.getBandwithProfile());
+                    subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, path);
                 }
                 if (subnetModel != null) {
                     l2PathModel.add(subnetModel.getBaseModel());
@@ -938,7 +948,7 @@ public class MCETools {
                     if (portParamMap.get(currentHop).containsKey("openflowService")) {
                         subnetModel = createVlanFlowsOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                     } else {
-                        subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, path.getBandwithProfile());
+                        subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, path);
                     }
                     if (subnetModel != null) {
                         l2PathModel.add(subnetModel.getBaseModel());
@@ -1065,9 +1075,11 @@ public class MCETools {
         portParamMap.put(currentHop, paramMap);
     }
 
-    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, BandwidthProfile bwProfile) {
+    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, Path path) {
         String method = "createVlanSubnetOnHop";
         HashMap paramMap = (HashMap) portParamMap.get(currentHop);
+        BandwidthProfile bwProfile = path.getBandwithProfile();
+        String connId = path.getConnectionId();
         if (!paramMap.containsKey("vlanRange")) {
             return null;
         }
@@ -1189,7 +1201,7 @@ public class MCETools {
         // create ingressSubnet for ingressSwitchingService and add port the the new subnet
         if (paramMap.containsKey("ingressSwitchingService")) {
             Resource ingressSwitchingService = (Resource) paramMap.get("ingressSwitchingService");
-            String vlanSubnetUrn = ingressSwitchingService.toString() + ":vlan+" + lastVlan;
+            String vlanSubnetUrn = ingressSwitchingService.toString() + ":conn+" + connId + ":vlan+" + lastVlan;
             Resource ingressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingService, Mrs.providesSubnet, ingressSwitchingSubnet));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
@@ -1202,7 +1214,7 @@ public class MCETools {
         // get egressSubnet for egressSwitchingService and add port the this existing subnet
         if (paramMap.containsKey("egressSwitchingService")) {
             Resource egressSwitchingService = (Resource) paramMap.get("egressSwitchingService");
-            String vlanSubnetUrn = egressSwitchingService.toString() + ":vlan+" + lastVlan;
+            String vlanSubnetUrn = egressSwitchingService.toString() + ":conn+" + connId + ":vlan+" + lastVlan;
             Resource egressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingService, Mrs.providesSubnet, egressSwitchingSubnet));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));

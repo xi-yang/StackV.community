@@ -25,7 +25,7 @@
 var tweenAdminPanel = new TweenLite("#admin-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px", opacity: "1", display: "block"});
 var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px", opacity: "1", display: "block"});
 
-var view = "left";
+var view = "center";
 var dataTable = null;
 
 Mousetrap.bind({
@@ -124,6 +124,8 @@ function loadAdmin() {
         if (view === "left") {
             tweenLoggingPanel.play();
             $('div.dataTables_filter input').focus();
+        } else {
+            tweenAdminPanel.play();
         }
     }, 1000);
     reloadLogs();

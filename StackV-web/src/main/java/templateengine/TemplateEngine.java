@@ -34,7 +34,7 @@ public class TemplateEngine {
         int start = recurBody.indexOf("{{");
         while (start > -1) {
             // Continue operating on stashes until no more exist
-            int end = recurBody.indexOf("}}");
+            int end = recurBody.indexOf("}}", start + 2);
             String blockStr = recurBody.substring(start, end + 2);
             String cleanTag = blockStr.replaceAll("~", "");
             if (cleanTag.charAt(2) == '#') {

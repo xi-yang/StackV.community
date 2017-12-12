@@ -16,7 +16,7 @@ public class DNCPolicyData implements Helper {
         JSONObject retJSON = new JSONObject();
         for (Object connObj : (JSONArray) root.get("connections")) {
             JSONObject conn = (JSONObject) connObj;
-            String connName = "urn:ogf:network:vo1_maxgigapop_net:link=" + conn.get("name");
+            String connName = ((String)conn.get("name")).replace(" ", "_");
             JSONObject retConn = new JSONObject();
             
             JSONObject retTerm = new JSONObject();

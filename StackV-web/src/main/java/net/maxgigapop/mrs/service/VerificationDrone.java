@@ -30,6 +30,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.WebResource;
@@ -51,21 +53,15 @@ public class VerificationDrone implements Runnable {
     PreparedStatement prep;
     ResultSet rs;
 
-    String state;
-    String instanceUUID;
-    String instanceSubstate;
-    String pending;
-    String lastResult;
-    int runs;
-    int delay;
+    String state, instanceUUID, instanceSubstate, pending, lastResult;
     int currentRun;
+    Instant start;
 
-    public VerificationDrone(String _instanceUUID, TokenHandler _token, Connection _conn, int _runs, int _delay) {
+    public VerificationDrone(String _instanceUUID, TokenHandler _token, Connection _conn) {
         instanceUUID = _instanceUUID;
         token = _token;
         conn = _conn;
-        runs = _runs;
-        delay = _delay;
+        start = Instant.now();
     }
 
     public String getResult() {
@@ -98,7 +94,7 @@ public class VerificationDrone implements Runnable {
         state = "RUNNING";
         currentRun++;
         try {
-            while (currentRun <= runs) {
+            while (currentRun <= 50) {
                 try {
                     // Step 1: Check for pending actions
                     updateData();
@@ -114,9 +110,10 @@ public class VerificationDrone implements Runnable {
                             case "STOP":
                                 logger.status(method, "Stop signal received. Drone ending operation");
                                 state = "FINISHED";
-                                prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED' "
+                                prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED', `timestamp` = ?  "
                                         + "WHERE `instanceUUID` = ? ");
-                                prep.setString(1, instanceUUID);
+                                prep.setTimestamp(1, null);
+                                prep.setString(2, instanceUUID);
                                 prep.executeUpdate();
                                 break;
                         }
@@ -128,7 +125,7 @@ public class VerificationDrone implements Runnable {
                         return;
                     }
 
-                    logger.trace(method, "Run " + currentRun + "/" + runs + " | Instance in " + instanceSubstate);
+                    logger.trace(method, "Run " + currentRun + "/50 | Instance in " + instanceSubstate);
 
                     // Step 2: Update state
                     boolean redVerified = true, addVerified = true;
@@ -136,9 +133,7 @@ public class VerificationDrone implements Runnable {
                     URL url = new URL(String.format("%s/service/verify/%s", HOST, instanceUUID));
                     HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
                     String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, token.auth());
-                    lastResult = result;
-
-                    System.out.println("VerificationDrone :: UUID=" + instanceUUID + " :: \n" + lastResult + "\n");
+                    lastResult = result;                    
 
                     // Pull data from JSON.
                     JSONParser parser = new JSONParser();
@@ -154,9 +149,16 @@ public class VerificationDrone implements Runnable {
                         addVerified = false;
                     }
 
+                    Duration duration = Duration.between(start, Instant.now());
+                    long absSeconds = Math.abs(duration.getSeconds());
+                    String durationStr = String.format("%d:%02d:%02d",
+                            absSeconds / 3600,
+                            (absSeconds % 3600) / 60,
+                            absSeconds % 60);
+
                     // Step 3: Update verification data
                     prep = conn.prepareStatement("UPDATE `service_verification` SET `verification_state` = '0', `state`='RUNNING',`delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,"
-                            + "`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=?, `timestamp`=? "
+                            + "`unverified_reduction`=?,`unverified_addition`=?,`reduction`=?,`addition`=?, `verification_run`=?, `timestamp`=?,`elapsed_time`=? "
                             + "WHERE `instanceUUID`= ? ");
                     prep.setString(1, (String) verifyJSON.get("referenceUUID"));
                     prep.setString(2, (String) verifyJSON.get("creationTime"));
@@ -168,33 +170,40 @@ public class VerificationDrone implements Runnable {
                     prep.setString(8, (String) verifyJSON.get("additionVerified"));
                     prep.setInt(9, currentRun);
                     prep.setTimestamp(10, new Timestamp(System.currentTimeMillis()));
-                    prep.setString(11, instanceUUID);
+                    prep.setString(11, durationStr);
+                    prep.setString(12, instanceUUID);
                     prep.executeUpdate();
 
                     // Step 4: Check for success
                     if (redVerified && addVerified) {
                         state = "FINISHED";
-                        prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1', `state` = 'FINISHED' "
+                        prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_state` = '1', `state` = 'FINISHED', `timestamp` = ?  "
                                 + "WHERE `instanceUUID` = ? ");
-                        prep.setString(1, instanceUUID);
+                        prep.setTimestamp(1, null);
+                        prep.setString(2, instanceUUID);
                         prep.executeUpdate();
 
                         logger.end(method, "Verification success");
                         return;
                     }
-                } catch (IOException ex) {                   
-                    logger.error(method, "Run " + currentRun + "/" + runs + " | Verification received IOException from backend.");
+                } catch (IOException ex) {
+                    logger.error(method, "Run " + currentRun + "/50 | Verification received IOException from backend.");
                 }
-                
+
                 // Step 5: Delay until next run
-                Thread.sleep(delay * 1000);
+                if (currentRun <= 30) {
+                    Thread.sleep(10000);
+                } else {
+                    Thread.sleep(30000);
+                }
                 currentRun++;
             }
             // Step 4.1 If hit max runs without success, verification has failed
             state = "FINISHED";
-            prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED' "
+            prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `verification_run` = '0', `verification_state` = '-1', `state` = 'FINISHED', `timestamp` = ? "
                     + "WHERE `instanceUUID` = ? ");
-            prep.setString(1, instanceUUID);
+            prep.setTimestamp(1, null);
+            prep.setString(2, instanceUUID);
             prep.executeUpdate();
 
             logger.end(method, "Verification failed");
@@ -254,13 +263,13 @@ public class VerificationDrone implements Runnable {
             prep.executeUpdate();
 
             prep = conn.prepareStatement("INSERT INTO `frontend`.`service_verification` "
-                    + "(`service_instance_id`, `instanceUUID`, `timestamp`, `state`) VALUES (?,?,?,'INIT')");
+                    + "(`service_instance_id`, `instanceUUID`, `state`) VALUES (?,?,'INIT')");
             prep.setInt(1, instanceID);
             prep.setString(2, instanceUUID);
-            prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("resetVerification", ex);
         }
+        currentRun = 0;
     }
 }

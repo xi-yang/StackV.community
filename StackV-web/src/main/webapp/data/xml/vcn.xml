@@ -94,7 +94,7 @@
             <input>
                 <name>CIDR</name>
                 <type>text</type>
-                <default first_only="true">10.0.0.0/24</default>
+                <default firstOnly="true">10.0.0.0/24</default>
                 <valid>cidr</valid>                
             </input>
             <input condition="aws-form">
@@ -232,6 +232,9 @@
                 </group>
             </group>
             <group name="Globus Connect" condition="openstack-form" collapsible="true">
+                <fulfilled>
+                    <name>username</name>
+                </fulfilled>
                 <input>
                     <name>Username</name>
                     <type>text</type>
@@ -264,9 +267,6 @@
                 </input>
             </group>
             <group factory="true" condition="openstack-form" name="Ceph RBD" collapsible="true">
-                <fulfilled>
-                    <name>size</name>
-                </fulfilled>
                 <input>
                     <name>Size</name>
                     <type>text</type>

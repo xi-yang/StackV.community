@@ -128,10 +128,9 @@ public class ServiceHandler {
             rs.next();
             int instanceID = rs.getInt("service_instance_id");
 
-            prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`, `timestamp`) VALUES (?, ?, ?)");
+            prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?, ?)");
             prep.setInt(1, instanceID);
             prep.setString(2, refUUID);
-            prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
             prep.executeUpdate();
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "

@@ -140,16 +140,7 @@
                     <valid>cidr-csv</valid>
                 </input>                  
             </group>
-        </group>
-        
-        <note>
-            <location>footer</location>
-            <size>medium</size>
-            <text>
-                BGP peering is through the Intercloud Network gateway that binds to the `SRIOV # 1` interface by default.
-                Input IP and MAC addresses of the local interface on the SRIOVs page.
-            </text>
-        </note>
+        </group>               
     </stage>
     <stage name="Subnets">
         <group name="AWS" passthrough="true">
@@ -167,7 +158,7 @@
                 <input>
                     <name>CIDR</name>
                     <type>text</type>
-                    <default first_only="true">10.0.0.0/24</default>
+                    <default firstOnly="true">10.0.0.0/24</default>
                     <valid>cidr</valid>
                 </input>
                 <input hidden="true">
@@ -217,7 +208,7 @@
                 <input>
                     <name>CIDR</name>
                     <type>text</type>
-                    <default first_only="true">10.1.0.0/24</default>
+                    <default firstOnly="true">10.1.0.0/24</default>
                     <valid>cidr</valid>
                 </input>
                 <input hidden="true">
@@ -363,6 +354,9 @@
                 </group>
                 <group name="VS Functions" passthrough="true">
                     <group name="Globus Connect" collapsible="true">
+		                <fulfilled>
+		                    <name>username</name>
+		                </fulfilled>
                         <input>
                             <name>Username</name>
                             <type>text</type>
@@ -394,11 +388,7 @@
                             <size>small</size>
                         </input>
                     </group>
-                    <group factory="true" name="Ceph RBD" collapsible="true">
-                        <fulfilled>
-                            <name>size</name>
-                        </fulfilled>
-                    
+                    <group factory="true" name="Ceph RBD" collapsible="true">                    
                         <input>
                             <name>Size</name>
                             <type>text</type>                        
@@ -491,13 +481,13 @@
             <input>
                 <name>IP Address</name>
                 <type>text</type>
-                <default first_only="true">10.10.0.1/24</default>
+                <default firstOnly="true">10.10.0.1/24</default>
                 <valid>cidr</valid>
             </input>       
             <input>
                 <name>MAC Address</name>
                 <type>text</type>
-                <default first_only="true">aa:bb:cc:10:10:01</default>
+                <default firstOnly="true">aa:bb:cc:10:10:01</default>
                 <valid>mac</valid>
             </input>               
         </group>
