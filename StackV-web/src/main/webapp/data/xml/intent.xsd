@@ -58,6 +58,7 @@ IN THE WORK.
     <xs:element name="type" type="xs:string"/>
     <xs:element name="location" type="xs:string"/>
     <xs:element name="tag" type="xs:string"/>
+    <xs:element name="has" type="xs:string"/>
     <xs:element name="size" type="xs:string"/>    
     <xs:element name="initial" type="xs:string"/>    
     <xs:element name="interval" type="xs:string"/>
@@ -118,7 +119,8 @@ IN THE WORK.
         <xs:complexType>
             <xs:sequence>                
                 <xs:element ref="bound" minOccurs="0" maxOccurs="unbounded"/>
-                <xs:element ref="path" minOccurs="0"/>                
+                <xs:element ref="fulfilled" minOccurs="0"/>      
+                <xs:element ref="path" minOccurs="0"/>              
                 <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>                
                 <xs:element ref="input" minOccurs="0" maxOccurs="unbounded"/>                
                 <xs:element ref="group" minOccurs="0" maxOccurs="unbounded"/>
@@ -247,7 +249,7 @@ IN THE WORK.
     <xs:element name="fulfilled">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="name"/>                
+                <xs:element ref="has" maxOccurs="unbounded"/>                
             </xs:sequence>
         </xs:complexType>
     </xs:element>  

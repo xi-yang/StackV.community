@@ -385,7 +385,11 @@
                             <size>small</size>
                         </input>
                     </group>
-                    <group factory="true" name="Ceph RBD" collapsible="true">                    
+                    <group factory="true" name="Ceph RBD" collapsible="true"> 
+                        <fulfilled>
+                            <has>size</has>
+                        </fulfilled>
+                                           
                         <input>
                             <name>Size</name>
                             <type>text</type>                        

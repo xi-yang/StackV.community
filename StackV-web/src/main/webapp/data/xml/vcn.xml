@@ -231,7 +231,7 @@
                     </input>
                 </group>
             </group>
-            <group name="Globus Connect" condition="openstack-form" collapsible="true">
+            <group name="Globus Connect" condition="openstack-form" collapsible="true">                                
                 <input>
                     <name>Username</name>
                     <type>text</type>
@@ -264,6 +264,10 @@
                 </input>
             </group>
             <group factory="true" condition="openstack-form" name="Ceph RBD" collapsible="true">
+                <fulfilled>
+                    <has>size</has>
+                </fulfilled>
+                
                 <input>
                     <name>Size</name>
                     <type>text</type>
