@@ -141,6 +141,7 @@ function loadInstances() {
 
 }
 
+var originalProfile;
 function loadWizard() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("wizard-body");
@@ -187,6 +188,7 @@ function loadWizard() {
                         $("#profile-modal").modal("show");
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(JSON.stringify(result));
+                        originalProfile = JSON.stringify(result);
                         $(".button-profile-save").attr('id', resultID);
                         $(".button-profile-save-as").attr('id', resultID);
                         $(".button-profile-submit").attr('id', resultID);
@@ -309,77 +311,97 @@ function loadWizard() {
 
             // After the user has put a new name and description for the new profile
             $(".button-profile-save-as-confirm").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
-                var data = {
-                    name: $("#new-profile-name").val(),
-                    username: keycloak.tokenParsed.preferred_username,
-                    description: $("#new-profile-description").val(),
-                    data: JSON.parse($("#info-panel-text-area").val())
-                };
+                var profileString = $("#info-panel-text-area").val();
+                if (isJSONString(profileString)) {
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                    var data = {
+                        name: $("#new-profile-name").val(),
+                        username: keycloak.tokenParsed.preferred_username,
+                        description: $("#new-profile-description").val(),
+                        data: JSON.parse($("#info-panel-text-area").val())
+                    };
 
-                $.ajax({
-                    url: apiUrl,
-                    type: 'PUT',
-                    data: JSON.stringify(data), //stringify to get escaped JSON in backend
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function (result) {
-                        // revert to regular buttons and close modal
-                        $("input#new-profile-name").val("");
-                        $("input#new-profile-description").val("");
-                        $("div.info-panel-save-as-description").css("display", "none");
-                        $("div.info-panel-regular-buttons").css("display", "block");
-                        $("div#profile-modal").modal("hide");
-                        // reload table
-                        loadWizard();
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
-                    }
-                });
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'PUT',
+                        data: JSON.stringify(data), //stringify to get escaped JSON in backend
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        },
+                        success: function (result) {
+                            // revert to regular buttons and close modal
+                            $("input#new-profile-name").val("");
+                            $("input#new-profile-description").val("");
+                            $("div.info-panel-save-as-description").css("display", "none");
+                            $("div.info-panel-regular-buttons").css("display", "block");
+                            $("div#profile-modal").modal("hide");
+                            // reload table
+                            loadWizard();
+                        },
+                        error: function (textStatus, errorThrown) {
+                            console.log(textStatus);
+                            console.log(errorThrown);
+                        }
+                    });
 
-                // reload the bottom panel
-                $("#black-screen").addClass("off");
-                $("#info-panel").removeClass("active");
-                evt.preventDefault();
+                    // reload the bottom panel
+                    $("#black-screen").addClass("off");
+                    $("#info-panel").removeClass("active");
+                    evt.preventDefault();
+                } else {
+                    swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');
+                }
             });
 
             $(".button-profile-save").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
+                var profileString = $("#info-panel-text-area").val();
+                if (isJSONString(profileString)) {
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
 
-                $.ajax({
-                    url: apiUrl,
-                    type: 'PUT',
-                    data: $("#info-panel-text-area").val(),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function (result) {
-                        // reload the bottom panel
-                        loadWizard();
-                        $("#profile-modal").modal("hide");
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
-                    }
-                });
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'PUT',
+                        data: profileString,
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        },
+                        success: function (result) {
+                            // reload the bottom panel
+                            loadWizard();
+                            $("#profile-modal").modal("hide");
+                        },
+                        error: function (textStatus, errorThrown) {
+                            console.log(textStatus);
+                            console.log(errorThrown);
+                        }
+                    });
 
-                $("#black-screen").addClass("off");
-                $("#info-panel").removeClass("active");
-                evt.preventDefault();
+                    $("#black-screen").addClass("off");
+                    $("#info-panel").removeClass("active");
+                    evt.preventDefault();
+                } else {
+                    swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');                    
+                }
             });
+
         }
     });
 }
+function isJSONString(str) {
+    try {
+        JSON.parse(str);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 
 function loadEditor() {
     var userId = keycloak.subject;
