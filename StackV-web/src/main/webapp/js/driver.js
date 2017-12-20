@@ -980,6 +980,7 @@ function getAllDetails() {
                            // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
                            // but prevents use of boostrap styling in the jquery dialog
                        },
+                       show: "slide",
                        resizable: false,
                        draggable: false,
                        title: "Are you sure you want to delete this driver?",
@@ -1055,6 +1056,12 @@ function removeDriver(clickID) {
         }
     });
 }
+
+/*
+ * Gets the details of one single driver (should be able to handle both installed and templates)
+ * @param {type} clickID
+ * @returns {undefined}
+ */
 function getDetails(clickID) {
     var driverId = clickID;
     var panel = document.getElementById("install-type");
@@ -1113,10 +1120,8 @@ function getDetails(clickID) {
                     //bootstrap tooltip attribute
                     valDetailsBtn.setAttribute("data-toggle","tooltip");
                     valDetailsBtn.setAttribute("data-placement", "right");
-                    
-                    
-                    
-                    valDetailsBtn.className = "button-profile-select btn btn-default";                    
+                                                            
+                    valDetailsBtn.className = "button-profile-select btn btn-default";
                     valDetailsBtn.onclick = function () {
                         var detailName = this.id;
                         var detailValue = this.getAttribute("details-value");
@@ -1135,7 +1140,11 @@ function getDetails(clickID) {
                                 // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
                                 // but prevents use of boostrap styling in the jquery dialog
                             },
-                            height: 400,
+                            minHeight: 0,
+                            create: function() {
+                              $(this).css("maxHeight",450);  
+                            },
+                            show: "slide",
                             width: 400,
                             resizable: false,
                             draggable: false,

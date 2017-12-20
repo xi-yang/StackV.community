@@ -593,7 +593,11 @@ public class WebResource {
             commonsClose(front_conn, prep, rs);
         }
     }
-
+    
+    /*
+    The SQL query doesn't make sense. The API endpoint is attempting to update the the profile but the query is running a select
+    and the returned string says "Deleted"
+    */
     @PUT
     @Path("/driver/{user}/edit/{topuri}")
     @RolesAllowed("Drivers")
@@ -612,7 +616,7 @@ public class WebResource {
         commonsClose(front_conn, prep, rs);
 
         return "Deleted";
-    }
+    }   
 
     /**
      * @api {delete} /app/driver/:username/delete/:topuri Delete Driver Profile
