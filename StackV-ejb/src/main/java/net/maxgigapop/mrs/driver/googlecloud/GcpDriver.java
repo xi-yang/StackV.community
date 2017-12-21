@@ -65,7 +65,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
         System.out.println("START PROPAGATE DELTA");
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
+        //aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         String method = "propagateDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
@@ -80,7 +80,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
         GcpPush push = new GcpPush(driverInstance.getProperties());
         
         JSONArray requests = push.propagate(model, modelAdd, modelReduc);
-        String requestId = driverInstance.getId().toString() + aDelta.getId();
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID();
         driverInstance.putProperty(requestId, requests.toString());
         DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);
@@ -102,7 +102,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID();
         String requests = driverInstance.getProperty(requestId);
         if (requests == null) {
             throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);

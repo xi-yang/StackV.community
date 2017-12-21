@@ -262,15 +262,19 @@ public class GcpModelBuilder {
         JSONObject bucketsResponse = gcpGet.getBuckets();
         if (bucketsResponse != null) {
             JSONArray bucketsInfo = (JSONArray) bucketsResponse.get("items");
-            for (Object o : bucketsInfo) {
-                JSONObject bucketInfo = (JSONObject) o;
-                String bucketName = bucketInfo.get("name").toString();
-                String bucketUri = lookupResourceUri(metadata, "bucket", bucketName);
-                //String bucketUri = recoverGcpUri(bucketInfo);
-                Resource bucket = RdfOwl.createResource(model, ResourceTool.getResourceUri(bucketUri, GcpPrefix.bucket, bucketName), Mrs.Bucket);
-                model.add(model.createStatement(objectStorageService, Mrs.providesBucket, bucket));
-                model.add(model.createStatement(gcpTopology, Mrs.hasBucket, bucket));
-                model.add(model.createStatement(bucket, Nml.name, bucketName));
+            if (bucketsInfo != null) {
+                for (Object o : bucketsInfo) {
+                    JSONObject bucketInfo = (JSONObject) o;
+                    String bucketName = bucketInfo.get("name").toString();
+                    String bucketUri = lookupResourceUri(metadata, "bucket", bucketName);
+                    //String bucketUri = recoverGcpUri(bucketInfo);
+                    Resource bucket = RdfOwl.createResource(model, ResourceTool.getResourceUri(bucketUri, GcpPrefix.bucket, bucketName), Mrs.Bucket);
+                    model.add(model.createStatement(objectStorageService, Mrs.providesBucket, bucket));
+                    model.add(model.createStatement(gcpTopology, Mrs.hasBucket, bucket));
+                    model.add(model.createStatement(bucket, Nml.name, bucketName));
+                }
+            } else {
+                //this just means that there are no buckets on the gcp project
             }
         } else {
             logger.error(method, "failed to get buckets due to null response");

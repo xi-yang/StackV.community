@@ -49,6 +49,7 @@ public class GcpPush {
         defaultRegion = properties.get("defaultRegion");
         defaultZone = properties.get("defaultZone");
         parser = new JSONParser();
+        
     }
     
     public JSONArray propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
@@ -80,27 +81,19 @@ public class GcpPush {
                 createVpc(requestInfo);
             break;
             case "delete_vpc":
-                //TODO
+                deleteVpc(requestInfo);
             break;
             case "create_subnet":
                 createSubnet(requestInfo);
             break;
             case "delete_subnet":
-                //TODO
+                deleteSubnet(requestInfo);
             break;
             case "create_instance":
                 createInstance(requestInfo);
             break;
             case "delete_instance":
-                String name = "placeholder";
-                String region = "placeholder";
-                try {
-                    request = gcpGet.getComputeClient().instances().delete(projectID, region, name).buildHttpRequest();
-                    gcpGet.makeRequest(request);
-                    //TODO remove metadata entry
-                } catch (IOException e) {
-                    //TODO log error
-                }
+                deleteInstance(requestInfo);
             break;
             }
             System.out.printf("COMMIT END: %s\n", requestInfo.get("type"));
@@ -122,74 +115,86 @@ public class GcpPush {
             gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), uri);
         } catch (IOException e) {
             //TODO log error
-            e.printStackTrace();
+            System.out.printf("COMMIT ERROR\n");
+        }
+    }
+    
+    private void deleteVpc(JSONObject requestInfo) {
+        String name = requestInfo.get("name").toString();
+        JSONObject result;
+        
+        try {
+            HttpRequest request = gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
+            result = gcpGet.makeRequest(request);
+            //remove the metadata entry
+            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), null);
+            
+        } catch (IOException e) {
+            System.out.printf("COMMIT ERROR\n");
         }
     }
     
     private void createSubnet(JSONObject requestInfo) {
         //vpcUri is not a MAX but a google URI
-        String vpcName = requestInfo.get("vpc_name").toString();
-        String vpcFormat = "https://www.googleapis.com/compute/v1/projects/elegant-works-176420/global/networks/%s";
-        String vpcUri = String.format(vpcFormat, vpcName);
-        String subnetUri = requestInfo.get("subnet_uri").toString();
-        String cidr = requestInfo.get("subnet_cidr").toString();
-        String subnetRegion = requestInfo.get("subnet_region").toString();
-        String subnetName = requestInfo.get("subnet_name").toString();
+        String vpcName = requestInfo.get("vpcName").toString();
+        String vpcFormat = "https://www.googleapis.com/compute/v1/projects/%s/global/networks/%s";
+        String vpcUri = String.format(vpcFormat, projectID, vpcName);
+        String subnetUri = requestInfo.get("uri").toString();
+        String cidr = requestInfo.get("cidr").toString();
+        String subnetRegion = requestInfo.get("region").toString();
+        String subnetName = requestInfo.get("name").toString();
         
         Subnetwork subnet = new Subnetwork();
         subnet.setIpCidrRange(cidr).setName(subnetName).setRegion(subnetRegion).setNetwork(vpcUri);
         
-        //This is temporary code until a better solution is reached.
-        //The code loops back if and only if the server returns an error
-        //indicating that the resource is not ready.
-        //If the server takes too long to prepare the resource, assume something went wrong.
-        long start = System.currentTimeMillis(), max = 30000;
-        boolean repeat;
-        String errorMessage = null;
-                
-        do {
-            if (System.currentTimeMillis() - start > max) {
-                errorMessage = "The resource is taking long to prepare.";
-                break;
+        try {
+            HttpRequest request = gcpGet.getComputeClient().subnetworks().insert(projectID, subnetRegion, subnet).buildHttpRequest();
+            if (waitRequest(request)) {
+                gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, subnetRegion, subnetName), subnetUri);
+            } else {
+                System.out.printf("an error occurred\n");
             }
             
-            repeat = false;
-            try {
-                HttpRequest request = gcpGet.getComputeClient().subnetworks().insert(projectID, subnetRegion, subnet).buildHttpRequest();
-                gcpGet.makeRequest(request);
-                gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, subnetRegion, subnetName), subnetUri);
-            } catch (GoogleJsonResponseException e) {
-                String errorJson = e.getDetails().toString();
-                
-                
-            } catch (IOException e) {
-                //TODO log
-                errorMessage = e.toString();
-            }
-        } while (repeat);
+        } catch (IOException e) {
+            System.out.printf("COMMIT ERROR\n");
+        }
+    }
+    
+    private void deleteSubnet(JSONObject requestInfo) {
+        String name = requestInfo.get("name").toString();
+        String vpcName = requestInfo.get("vpcName").toString();
+        String region = requestInfo.get("region").toString();
+        JSONObject result;
         
-        if (errorMessage != null) {
-            System.out.printf("COMMIT ERROR: %s\n", errorMessage);
+        try {
+            HttpRequest request = gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
+            result = gcpGet.makeRequest(request);
+            //remove the metadata entry
+            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), null);
+            
+        } catch (IOException e) {
+            System.out.printf("COMMIT ERROR %s\n", e);
         }
     }
     
     private void createInstance(JSONObject requestInfo) {
-        String vmName = requestInfo.get("name").toString();
+        String name = requestInfo.get("name").toString();
+        String uri = requestInfo.get("uri").toString();
         String zone = requestInfo.get("zone").toString();
         String machineFormat = "zones/%s/machineTypes/%s";
-        String machineType = String.format(machineFormat, zone, requestInfo.get("machine_type"));
-        String sourceImage = requestInfo.get("source_image").toString();
-        String diskFormat = "projects/elegant-works-176420/zones/us-central1-c/diskTypes/%s";
-        String diskType = String.format(diskFormat, requestInfo.get("disk_type"));
-        long diskSizeGb = Integer.parseInt(requestInfo.get("disk_size").toString());
+        String machineType = String.format(machineFormat, zone, requestInfo.get("machineType"));
+        String sourceImage = requestInfo.get("sourceImage").toString();
+        String diskFormat = "projects/%s/zones/us-central1-c/diskTypes/%s";
+        String diskType = String.format(diskFormat, projectID, requestInfo.get("diskType"));
+        long diskSizeGb = Integer.parseInt(requestInfo.get("diskSize").toString());
         
         //Used by NICs
-        String vpcFormat = "projects/elegant-works-176420/global/networks/%s";
-        String subnetFormat = "projects/elegant-works-176420/regions/%s/subnetworks/%s";
+        String vpcFormat = "projects/%s/global/networks/%s";
+        String subnetFormat = "projects/%s/regions/%s/subnetworks/%s";
         String vpcName, subnetRegion, subnetName, subnetIP;
         
         Instance instance = new Instance()
-            .setName(vmName)
+            .setName(name)
             .setMachineType(machineType);
                 
         //Add NICs
@@ -206,18 +211,20 @@ public class GcpPush {
                 vpcName = nicInfo.get("vpc").toString();
                 subnetRegion = nicInfo.get("region").toString();
                 subnetName = nicInfo.get("subnet").toString();
-                subnetIP = nicInfo.get("ip").toString();
                 
                 AccessConfig access = new AccessConfig()
-                    .setName("External Nat")
-                    .setNatIP(subnetIP) //external ip?
-                    .setType("ONE_TO_ONE_NAT");
+                    .setName("External Nat").setType("ONE_TO_ONE_NAT");
+                if (nicInfo.containsKey("ip")) {
+                    //External ip
+                    access.setNatIP(nicInfo.get("ip").toString());
+                }
+                
                 accessList = new ArrayList<>();
                 accessList.add(access);
             
                 NetworkInterface netiface = new NetworkInterface()
-                    .setNetwork(String.format(vpcFormat, vpcName))
-                    .setSubnetwork(String.format(subnetFormat, subnetRegion, subnetName))
+                    .setNetwork(String.format(vpcFormat, projectID, vpcName))
+                    .setSubnetwork(String.format(subnetFormat, projectID, subnetRegion, subnetName))
                     //.setNetworkIP(subnetIP) //This is the internal ip
                     .setAccessConfigs(accessList);
                 netifaces.add(netiface);
@@ -240,23 +247,70 @@ public class GcpPush {
         
         try {
             HttpRequest request = gcpGet.getComputeClient().instances().insert(projectID, zone, instance).buildHttpRequest();
-            request.execute();
-        } catch (IOException ex) {
+            
+            if (waitRequest(request)) {
+                gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vm", zone, name), uri);
+            } else {
+                System.out.printf("an error occurred\n");
+            }
+        } catch (IOException e) {
             //TODO
-            System.out.printf("ERROR: %s\n", ex);
+            System.out.printf("COMMIT ERROR: %s\n", e);
+        }
+    }
+    
+    private void deleteInstance(JSONObject requestInfo) {
+        String name = requestInfo.get("name").toString();
+        String zone = requestInfo.get("zone").toString();
+        JSONObject result;
+        
+        try {
+            HttpRequest request = gcpGet.getComputeClient().instances().delete(projectID, zone, name).buildHttpRequest();
+            result = gcpGet.makeRequest(request);
+            //remove the metadata entry
+            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vm", name), null);
+            
+        } catch (IOException e) {
+            System.out.printf("COMMIT ERROR: %s\n", e);
         }
     }
     
     JSONObject parseJSONException(GoogleJsonResponseException e) {
         String errorJson = e.getDetails().toString();
+        JSONObject error;
+        JSONArray errors;
         try {
-            return (JSONObject) parser.parse(errorJson);
+            error = (JSONObject) parser.parse(errorJson);
+            errors = (JSONArray) error.get("errors");
+            return (JSONObject) errors.get(0);
         } catch (ParseException pe) {
             //It's not even JSON?
-            System.out.printf("Expected JSON, but got %s", errorJson);
-
+            System.out.printf("Expected JSON, but got %s\n", errorJson);
         }
         return null;
+    }
+    
+    //repeats a request for up to 30s if the result if resourceNotReady
+    boolean waitRequest(HttpRequest request) throws IOException {
+        long start = System.currentTimeMillis(), max = 30000;
+        
+        do {
+            if (System.currentTimeMillis() - start > max) {
+                //resource is taking too long
+                return false;
+            }
+            
+            try {
+                gcpGet.makeRequest(request);
+                return true;
+            } catch (GoogleJsonResponseException e) {
+                JSONObject errorJson = parseJSONException(e);
+                
+                if ("resourceNotReady".equals(errorJson.get("reason"))) {
+                    //wait for resource to become ready
+                }
+            }
+        } while (true);
     }
     
 }
