@@ -13,24 +13,44 @@
 @prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .
 @prefix spa:   <http://schemas.ogf.org/mrs/2015/02/spa#> .
 
-<urn:ogf:network:service+{{uuid}}:resource+links>
-	a            nml:Link ;
-	spa:type     spa:Abstraction ;
-	spa:dependOn <x-policy-annotation:action:create-path>.
+&lt;urn:ogf:network:service+{{uuid}}:resource+links&gt;
+    a            nml:Link ;
+    spa:type     spa:Abstraction ;
+    spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.
 
-<x-policy-annotation:action:create-path>
-	a            spa:PolicyAction ;
+&lt;x-policy-annotation:action:create-path>
+    a            spa:PolicyAction ;
     spa:type     "{{!DNCType type}}" ;
-	spa:importFrom <x-policy-annotation:data:conn-criteria> ;
-	spa:exportTo <x-policy-annotation:data:conn-criteriaexport> .
 
-<x-policy-annotation:data:conn-criteria>
-	a            spa:PolicyData;
-	spa:type     "JSON";
+{{$if ip_ranges}}
+    spa:exportTo  &lt;x-policy-annotation:data:assign-ip-criteria&gt; ;
+{{/if ip_ranges}}
+
+    spa:importFrom <x-policy-annotation:data:conn-criteria&gt; .
+
+&lt;x-policy-annotation:data:conn-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
     spa:value    """{{!DNCPolicyData}}""".
 
-<x-policy-annotation:data:conn-criteriaexport>
-    a            spa:PolicyData.
+{{$if ip_ranges}}
+&lt;x-policy-annotation:action:assign-ip&gt;
+     a            spa:PolicyAction ;
+     spa:type     "MCE_AddressStaticAssignment" ;
+    spa:dependOn &lt;x-policy-annotation:action:create-path&gt; ;
+     spa:importFrom &lt;x-policy-annotation:data:assign-ip-criteria&gt; .
+
+&lt;x-policy-annotation:data:assign-ip-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
+    spa:format    """{{!DNCAssignIpAddress}}""".
+
+
+&lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
+    a            nml:Topology;
+    spa:type     spa:Abstraction ;
+    spa:dependOn &lt;x-policy-annotation:action:assign-ip&gt; .
+{{/if ip_ranges}}
 
 </modelAddition>
 </serviceDelta>

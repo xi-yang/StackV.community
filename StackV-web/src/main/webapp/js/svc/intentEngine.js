@@ -26,6 +26,7 @@
 var options = [];
 var factories = {};
 var initials = {};
+var fulfilled = {};
 var bindings = {};
 var gsap = {};
 var intent;
@@ -348,6 +349,19 @@ function renderInputs(arr, $parent) {
                         binding[name][val]["max"] = maxEle.innerHTML;
                     }
                 }
+            }
+
+            if ($(ele).children("fulfilled").length > 0) {
+                var $fulfill = $($(ele).children("fulfilled")[0]);
+                var tag = name.toLocaleLowerCase().replace(/ /g, "_");
+                var resArr = [];
+
+                var fulfillArr = $fulfill.children();
+                for (var j = 0; j < fulfillArr.length; j++) {
+                    var fulfillEle = fulfillArr[j];
+                    resArr.push(fulfillEle.innerHTML);
+                }
+                fulfilled[tag] = resArr;
             }
 
             // Recurse!
@@ -969,7 +983,7 @@ function buildClone(key, target, $factoryBtn) {
 
     // Change element attributes
     var $target = $("#" + target);
-    if (factories[key]["block"] === undefined) {        
+    if (factories[key]["block"] === undefined) {
         var origID = $clone.attr("id").replace(getName($clone.attr("id")), "");
         var targetID = $target.attr("id").replace(getName($clone.attr("id")), "");
         $clone.attr("id", targetID + name + "_num" + count);
@@ -980,7 +994,7 @@ function buildClone(key, target, $factoryBtn) {
         var origID = $clone.attr("id");
         var targetID = $clone.attr("id").substring(0, $clone.attr("id").length - 1) + count;
         $clone.attr("id", targetID);
-        
+
         var origReg = new RegExp("id=\"" + origID, "g");
         $clone.html($clone.html().replace(origReg, "id=\"" + targetID));
     }
@@ -1013,7 +1027,7 @@ function buildClone(key, target, $factoryBtn) {
     } else {
         $target.append($clone);
     }
-    
+
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
 
@@ -1219,29 +1233,6 @@ function parseSchemaIntoManifest(schema) {
 
 var recurCache = {};
 function parseManifestIntoJSON() {
-    // Step 0: Trim unfulfilled groups
-//    $(intent).find("fulfilled").each(function () {
-//        var nameArr = [];
-//        $(this).children().each(function () {
-//            nameArr.push(this.innerHTML);
-//        });
-//            
-//        var eleName = this.parentElement.getAttribute("name");
-//        // Find element(s) in manifest
-//        recurCache = {};
-//        findKeyDeepCache(manifest, eleName.toLowerCase().replace(/ /g, "_"));
-//        
-//        for (var key in recurCache) {
-//            var ele = recurCache[key];
-//            for (var i = 0; i < nameArr.length; i++) {
-//                var name = nameArr[i];
-//                if (ele[name] === null || ele[name] === "") {
-//                    delete ele;
-//                }
-//            }
-//        }
-//    });
-
     // Step 1: Reorg hierarchy
     $(intent).find("path").each(function () {
         var arr = this.children;
@@ -1297,6 +1288,7 @@ function parseManifestIntoJSON() {
 
     // Step 4: Finishing and initialization
     renamePathing();
+    checkFulfillment();
 
     var newManifest = {};
     newManifest["data"] = manifest;
@@ -1510,6 +1502,55 @@ function renamePathing() {
             manifest = JSON.parse(JSON.stringify(manifest).replace(nameArr[0], nameArr[1]));
         }
     });
+}
+
+function checkFulfillment() {
+    for (var key in fulfilled) {
+        var constraints = fulfilled[key];
+
+        nameRetrievalArr = [];
+        getNames(manifest, key);
+        for (var i in nameRetrievalArr) {
+            var entry = nameRetrievalArr[i];
+            if (!(key in entry)) {
+                key = key + "s";
+            }
+
+            for (var j in constraints) {
+                var constraint = constraints[j];
+                if (entry[key] instanceof Array) {
+                    for (var k in entry[key]) {
+                        if (!(constraint in entry[key][k])) {
+                            entry[key].splice(entry[key].indexOf(entry[key][k]),1);
+                        }
+                    }
+                    
+                    if (entry[key].length === 0) {
+                        delete entry[key];
+                    }
+                } else {
+                    if (!(constraint in entry[key])) {
+                        delete entry[key];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+var nameRetrievalArr = [];
+function getNames(obj, name) {
+    for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            if (key === name || key === name + "s") {
+                nameRetrievalArr.push(obj);
+            }
+            if ("object" === typeof (obj[key])) {
+                getNames(obj[key], name);
+            }
+        }
+    }
 }
 
 // Find closest input with generic name matching key

@@ -354,6 +354,9 @@
                 </group>
                 <group name="VS Functions" passthrough="true">
                     <group name="Globus Connect" collapsible="true">
+		                <fulfilled>
+		                    <name>username</name>
+		                </fulfilled>
                         <input>
                             <name>Username</name>
                             <type>text</type>
@@ -385,11 +388,11 @@
                             <size>small</size>
                         </input>
                     </group>
-                    <group factory="true" name="Ceph RBD" collapsible="true">
+                    <group factory="true" name="Ceph RBD" collapsible="true"> 
                         <fulfilled>
-                            <name>size</name>
+                            <has>size</has>
                         </fulfilled>
-                    
+                                           
                         <input>
                             <name>Size</name>
                             <type>text</type>                        

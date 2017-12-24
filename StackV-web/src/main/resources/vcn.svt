@@ -52,7 +52,7 @@
             a            spa:PolicyData;
             spa:type     "JSON" ;
             spa:format   """{
-                "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1%
+                "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1[0].hops.*%
             }""" .
 
         &lt;x-policy-annotation:data:conn-criteria1&gt;
@@ -60,15 +60,17 @@
             spa:type     "JSON";
             spa:value    """{
                 "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
-                    "{{!DirectConnDest @gateways}}": {
-                        "vlan_tag":"{{!DirectConnVLAN @gateways}}"
-                    },
-                    "{{@parent}}": {
-                        "vlan_tag":"{{!DirectConnVLAN @gateways}}"
+                    "terminals": {
+                        "{{!DirectConnDest @gateways}}": {
+                            "vlan_tag":"{{!DirectConnVLAN @gateways}}"
+                        },
+                        "{{@parent}}": {
+                            "vlan_tag":"{{!DirectConnVLAN @gateways}}"
+                        }
                     }
                 }
             }""".
-    {{/gateways}}        
+    {{/gateways}}
 {{/if !ifVCNGateways}}
 {{$unless !ifVCNGateways gateways}}
     spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
@@ -91,16 +93,16 @@
                     a           nml:BidirectionalPort;
                     {{$if elastic_ip}}
                         mrs:hasNetworkAddress &lt;{{VMTag}}:eth{{@index}}floatingip&gt; ;
-                    {{/if elastic_ip}}                
+                    {{/if elastic_ip}}
                     spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt; .
 
                 {{$if elastic_ip}}
-                    &lt;{{VMTag}}:eth{{@index}}floatingip&gt;            
+                    &lt;{{VMTag}}:eth{{@index}}floatingip&gt;
                         a            mrs:NetworkAddress;
                         mrs:type     "floating-ip";
                         mrs:value     "{{elastic_ip}}".
                 {{/if elastic_ip}}
-            {{/interfaces}}            
+            {{/interfaces}}
 
             &lt;x-policy-annotation:action:create-{{name}}&gt;
                 a            spa:PolicyAction ;
@@ -135,7 +137,7 @@
                 a            nml:BidirectionalPort;
                 {{$if floating_ip}}
                     mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
-                {{/if floating_ip}}                
+                {{/if floating_ip}}
                 spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt; .
 
                 {{#sriovs}}
@@ -171,15 +173,15 @@
                             spa:type     "JSON";
                             spa:format   """ {
                                "stitch_from": "{{VMTag}}",
-                               "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{name}}%,
+                               "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{name}}[0].hops.*%,
                                "mac_address": "{{mac_address}}"
                                "ip_address": "{{ip_address}}"
                                 {{$if connects}}
                                     ,   "routes" : {{connects}}
                                 {{/if connects}}
                                 } """ .
-                    {{/if !LinkedGatewayType}}              
-                {{/sriovs}}               
+                    {{/if !LinkedGatewayType}}
+                {{/sriovs}}
                 {{$if routes}}
                     &lt;{{VMTag}}:routingservice&gt;
                          a   mrs:RoutingService;
@@ -225,12 +227,12 @@
                                 mrs:type    "ipv4-address";
                                 mrs:value   "{{next_hop}}".
                     {{/if next_hop}}
-                    
+
                 {{/routes}}
             {{/if routes}}
 
             {{$if floating_ip}}
-                &lt;{{VMTag}}:eth0floatingip&gt;            
+                &lt;{{VMTag}}:eth0floatingip&gt;
                     a            mrs:NetworkAddress;
                     mrs:type     "floating-ip";
                     mrs:value     "{{floating_ip}}".
@@ -263,18 +265,18 @@
                 spa:format  """{ "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
         {{/vms}}
     {{/subnets}}
-    {{~#subnets}}       
+    {{~#subnets}}
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#ceph_rbds}}
                 {{$if size}}
                     &lt;{{VMTag}}&gt;
                         mrs:hasVolume
-                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                        
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.
 
                     &lt;{{@parent}}:ceph-rbd&gt;
-                        mrs:providesVolume 
-                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.                            
+                        mrs:providesVolume
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.
 
                         &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
                            a  mrs:Volume;
@@ -288,49 +290,49 @@
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#globus_connect}}
-            &lt;{{VMTag}}:service+globus&gt;
-                a  mrs:EndPoint ;
-                mrs:type "globus:connect" ;
-            {{$if username}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:username&gt; ;
-            {{/if username}}
-            {{$if password}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:password&gt; ;
-            {{/if password}}
-            {{$if default_directory}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:directory&gt; ;
-            {{/if default_directory}}
-            {{$if data_interface_ip}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
-            {{/if data_interface_ip}}
-            {{$if public}}
-                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:public&gt; ;
-            {{/if public}}
-                nml:name "{{short_name}}" .
-            &lt;{{VMTag}}&gt;
-               nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
-            &lt;{{VMTag}}:service+globus:username&gt;
-               a mrs:NetworkAddress ;
-               mrs:type "globus:username";
-               mrs:value "{{username}}" .
-            &lt;{{VMTag}}:service+globus:password&gt;
-               a mrs:NetworkAddress ;
-               mrs:type "globus:password";
-               mrs:value "{{password}}" .
-            &lt;{{VMTag}}:service+globus:directory&gt;
-               a mrs:NetworkAddress ;
-               mrs:type "globus:directory";
-               mrs:value "{{default_directory}}" .
-            &lt;{{VMTag}}:service+globus:interface&gt;
-               a mrs:NetworkAddress ;
-               mrs:type "globus:interface";
-               mrs:value "{{data_interface_ip}}" .            
-            {{$if public}}
-               &lt;{{VMTag}}:service+globus:public&gt;
-                  a mrs:NetworkAddress ;
-                  mrs:type "globus:public";
-                  mrs:value "{{public}}" .            
-            {{/if public}}
+              {{$if username}}
+	            &lt;{{VMTag}}:service+globus&gt;
+	                a  mrs:EndPoint ;
+	                mrs:type "globus:connect" ;
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:username&gt; ;
+	            {{$if password}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:password&gt; ;
+	            {{/if password}}
+	            {{$if default_directory}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:directory&gt; ;
+	            {{/if default_directory}}
+	            {{$if data_interface_ip}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
+	            {{/if data_interface_ip}}
+	            {{$if public}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:public&gt; ;
+	            {{/if public}}
+	                nml:name "{{short_name}}" .
+	            &lt;{{VMTag}}&gt;
+	               nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
+	            &lt;{{VMTag}}:service+globus:username&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:username";
+	               mrs:value "{{username}}" .
+	            &lt;{{VMTag}}:service+globus:password&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:password";
+	               mrs:value "{{password}}" .
+	            &lt;{{VMTag}}:service+globus:directory&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:directory";
+	               mrs:value "{{default_directory}}" .
+	            &lt;{{VMTag}}:service+globus:interface&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:interface";
+	               mrs:value "{{data_interface_ip}}" .
+	            {{$if public}}
+	               &lt;{{VMTag}}:service+globus:public&gt;
+	                  a mrs:NetworkAddress ;
+	                  mrs:type "globus:public";
+	                  mrs:value "{{public}}" .
+	            {{/if public}}
+              {{/if username}}
             {{/globus_connect}}
         {{/vms}}
         {{#vms}}
@@ -342,7 +344,7 @@
                 {{$if exports}}
                     mrs:hasNetworkAddress &lt;{{VMTag}}:service+nfs:exports&gt; .
                 {{/if exports}}
-                
+
                 &lt;{{VMTag}}&gt;
                     nml:hasService &lt;{{VMTag}}:service+nfs&gt;.
 
@@ -365,7 +367,7 @@
                             &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
                                a  nml:Topology;
                                spa:type spa:Abstraction;
-                               spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-{{SRIOVName}}&gt;.                                                                        
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-{{SRIOVName}}&gt;.
                         {{/if type}}
                     {{/if connects.0/from}}
                     {{$if connects.0/to}}
@@ -373,7 +375,7 @@
                             &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
                                a  nml:Topology;
                                spa:type spa:Abstraction;
-                               spa:dependOn  &lt;x-policy-annotation:action:ucs-{{name}}-{{SRIOVName}}-stitch&gt;.                                             
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-{{name}}-{{SRIOVName}}-stitch&gt;.
                         {{/if type}}
                     {{/if connects.0/to}}
                 {{/@gateways}}
