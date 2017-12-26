@@ -597,6 +597,7 @@ public class WebResource {
     /*
     The SQL query doesn't make sense. The API endpoint is attempting to update the the profile but the query is running a select
     and the returned string says "Deleted"
+    Example query: update driver_wizard set description = 'driver1 description' where username = 'xyang' and topuri = 'top uri gen rest driver 1';
     */
     @PUT
     @Path("/driver/{user}/edit/{topuri}")

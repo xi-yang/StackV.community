@@ -117,8 +117,8 @@
                     <table class="management-table">
                         <thead>
                             <tr>
-                                <th>Driver Name</th>
-                                <th>Description</th>
+                                <th>Driver Template Name</th>
+                                <th>Driver Template Description</th>
                                 <th></th>
                             </tr>
                         </thead>

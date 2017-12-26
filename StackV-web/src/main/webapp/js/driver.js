@@ -607,9 +607,8 @@ function changeNameInstRaw() {
 }
 
 /*
- * Opens an input box for the user to enter the driver name and description
+ * Opens an input box for the user to enter the driver template name and description
  * for the driver they want to save as a template (during the installation process).
- * @returns {undefined}
  */
 function openWindow() {
     $('#info-fields').empty();
@@ -662,7 +661,6 @@ function addDriver() {
 
     $('#black-screen').addClass("off");
     $('#info-panel').removeClass();
-    closeContentPanel();
 
     for (var temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
@@ -700,8 +698,8 @@ function addDriver() {
         contentType: 'application/json',
         data: sentData,
         success: function () {
-            updateDrivers(URI);
-            reloadData();
+            // since the driver is being added during the installation process, do not jump out of the installation process
+           reloadData(); // just reload the data so if users decide to cancel installation, the template still shows up
         },
         error: function () {
         }
@@ -709,9 +707,7 @@ function addDriver() {
 }
 
 /*
- * Deletes saved templates
- * @param {type} clickID
- * @returns {undefined}
+ * Deletes saved templates based on topuri
  */
 
 function removeDriverProfile(clickID) {
@@ -730,16 +726,13 @@ function removeDriverProfile(clickID) {
             reloadData();
         },
         error: function (result) {
+            console.log("Error in removeDriverProfile: " + result);
         }
     });
 }
 
-//update saved driver templates
-//also can be used to show the template's panel
-function updateDrivers(URI) {
-// **Main concern: make sure each template gets the right uri id so other functions can take care of displaying the correct ui
-// **Second concern: have an install button for each template that allows the template to be installed directly (call the right install function with right URI)
-// I don't think the URI parameter is needed since all templates are being reloaded in anyway
+// shows the (latest) template's panel
+function updateDrivers() {
     var userId = keycloak.tokenParsed.preferred_username;
     var table = document.getElementById("saved-table");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/get';
@@ -764,7 +757,6 @@ function updateDrivers(URI) {
              * The result of the query would like this:
              * Driver1Name,Driver1Type,Driver1TopUri,Driver1Desc,Driver1Data,Driver2Name,Driver2Type,Driver2TopUri,Driver2Desc,Driver2Data
              */
-            console.log("updateDrivers rest call result: " + result);
             for (var i = 0; i < result.length; i += 5) {
                 var row = document.createElement("tr");
                 var drivername = document.createElement("td");
@@ -774,53 +766,98 @@ function updateDrivers(URI) {
                 var delButton = document.createElement("button");
                 var edButton = document.createElement("button");
                 var installButton = document.createElement("button");
+                
+                // currently using the topuri as the unique identifier
+                var uri = result[i + 2];
+                
 
                 detButton.className = "button-profile-select btn btn-default";
                 detButton.style.width = "64px";
-
-                delButton.className = "button-profile-select btn btn-danger";
-                delButton.style.width = "64px";
-
                 detButton.innerHTML = "Details";
+                detButton.id = uri;
                 detButton.onclick = function () {
                     $("#driver-content-panel").removeClass("hidden");
                     $("#driver-content-panel").addClass("active");
                     $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
-                    getDetailsProfile(URI); // look at call again - this should be the right call
+                    getDetailsProfile(this.id);
                     openContentPanel();
                 };
-                detButton.id = result[i + 3];
                 
+                
+                delButton.className = "button-profile-select btn btn-danger";
+                delButton.style.width = "64px";
                 delButton.innerHTML = "Delete";
+                delButton.id = uri;
+                
+                //storing driver profile name for deletion confirmation dialog
+                delButton.setAttribute("del-button-for", result[i]);
                 delButton.onclick = function () {
-                    //removeDriverProfile(URI);
+                    var driverId = this.id;
+                    var driverNameFromAttribute = this.getAttribute("del-button-for");
+                    
+                    //setting text of jquery dialog
+                    $("#dialog-confirm-text").text(driverNameFromAttribute);
+                    //jquery dialog
+                    $("#dialog-confirm").dialog({
+                        open: function(event, ui) {
+                            // resolving conflicting close buttons between jquery and boostrao
+                            $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
+                        },
+                        show: "slide",
+                        resizeable: false,
+                        draggable: false,
+                        title: "Are you sure you want to delete this template?",
+                        height: "auto",
+                        width: 400,
+                        modal: true,
+                        buttons: [
+                            {
+                                text: "Delete",
+                                "class": "button-profile-select btn btn-danger",
+                                click: function () {
+                                    removeDriverProfile(driverId);
+                                    $(this).dialog("close");
+                                }
+                            },
+                            {
+                                text:"Close",
+                                "class": "button-profile-select btn btn-default",
+                                click: function () {
+                                    $(this).dialog("close");
+                                }
+                            }
+                        ]
+                    });
                 };
-                delButton.id = result[i + 3];
 
                 edButton.innerHTML = "Edit";
                 edButton.style.width = "64px";
                 edButton.className = "button-profile-select btn btn-warning";
+                edButton.id = uri;
                 edButton.onclick = function () {
                     $("#driver-content-panel").removeClass("hidden");
                     $("#driver-content-panel").addClass("active");
                     $("#info-panel-title").text("Details");
                     clearPanel();
                     activateSide();
-                    //editDriverProfile(URI);
+                    console.log("clicked edit driver profile button for top uri: " + this.id);
+                    editDriverProfile(this.id);
 
                     openContentPanel();
                 };
-                edButton.id = result[i + 3];
+                
                 
                 installButton.innerHTML = "Install";
                 installButton.style.width = "64px";
                 installButton.className = "button-profile-select btn btn-primary";
+                installButton.id = uri;
                 installButton.onclick = function () {
-                    console.log("clicked the install button");
+                    console.log("clicked the install button for uri: " + this.id);
+                    plugDriver(this.id); // Install the profile as a driver
+                    //alert("Result of installation: " + res);
                 }
-                installButton.id = result[i + 3];
                 
 
 
@@ -842,21 +879,70 @@ function updateDrivers(URI) {
     });
 }
 function editDriverProfile(clickID) {
-    getDetailsProfile(clickID);
-    var table = document.getElementById("details_table");
-    for (var i = 1; i < table.rows.length; i++) {
-        var row = table.rows[i];
-        var textbox = document.createElement("input");
-        textbox.type = "text";
-        textbox.innerHTML = row.cells[1].innerHTML;
-        row.cells[1].appendChild(textbox);
-    }
+    var userId = keycloak.tokenParsed.preferred_username;
+    var panel = document.getElementById("install-type");
+    var botpanel = document.getElementById('install-options');
+    var topuri = clickID;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/getdetails/' + topuri;
+    var table = document.createElement("table");
+    var thead = document.createElement("thead");
+    var head_row = document.createElement("tr");
+    var headkey = document.createElement("th");
+    var headval = document.createElement("th");
+    $(table).addClass('management-table');
+    table.id = "details_table";
+    headkey.innerHTML = "Key";
+    headval.innerHTML = "Value";
+    head_row.appendChild(headkey);
+    head_row.appendChild(headval);
+    thead.appendChild(head_row);
+    table.appendChild(thead);
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            $('#installed-type').empty();
+            for (var key in result) {
+                if (result.hasOwnProperty(key)) {
+                    var row = document.createElement("tr");
+                    var tempkey = document.createElement("td");
+                    var tempval = document.createElement("td");
+                    //var editableVal = document.createElement("input");
+                    //editableVal.innerHTML = result[key];
+                    tempval.type = "text";
+                    tempkey.innerHTML = key;
+                    tempval.innerHTML = result[key];
+                    //tempval.appendChild(editableVal);
+                    row.appendChild(tempkey);
+                    row.appendChild(tempval);
+                    table.appendChild(row);
+                }
+            }
+
+            var saveEditedProfileButton = document.createElement("button");
+            saveEditedProfileButton.className = "button-profile-select btn btn-success";
+            saveEditedProfileButton.innerHTML = "Save";
+            saveEditedProfileButton.onclick = function () {
+                //plugDriver(result["TOPURI"]);
+                console.log("Clicked the save button for uri: " + topuri);
+            };
+            botpanel.appendChild(saveEditedProfileButton);
+        },
+        error: function (xhr, status, error) {
+            console.log("Failure. Status: "  + status +  ", errorThrown: " + error);
+        }
+    });
+    panel.appendChild(table);
 }
 
 
 /*
- * @param {type} clickID
- * Making the drivers details profile
+ * @param {string} clickID - the topology URI
+ * Creating the drivers details panel for a saved template/profile
  */
 function getDetailsProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
@@ -885,8 +971,6 @@ function getDetailsProfile(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            console.log("in getDetailsProfile");
-            console.log("getDetailsProfile of topuri (clickid: " + clickID + "): " + result);
             $('#installed-type').empty();
             for (var key in result) {
                 if (result.hasOwnProperty(key)) {
@@ -902,18 +986,15 @@ function getDetailsProfile(clickID) {
             }
 
             var instDetailsButton = document.createElement("button");
-            instDetailsButton.className = "button-profile-select btn btn-default";
+            instDetailsButton.className = "button-profile-select btn btn-primary";
             instDetailsButton.innerHTML = "Install";
-            instDetailsButton.className = "button-profile-select btn btn-default";
-
             instDetailsButton.onclick = function () {
                 plugDriver(result["TOPURI"]);
             };
-            instDetailsButton.className = "button-profile-select btn btn-default";
             botpanel.appendChild(instDetailsButton);
         },
         error: function (xhr, status, error) {
-            alert("Failure. Status: "  + status +  ", errorThrown: " + error);
+            console.log("Failure. Status: "  + status +  ", errorThrown: " + error);
         }
     });
     panel.appendChild(table);
@@ -1059,14 +1140,11 @@ function removeDriver(clickID) {
 
 /*
  * Gets the details of one single driver (should be able to handle both installed and templates)
- * @param {type} clickID
- * @returns {undefined}
  */
 function getDetails(clickID) {
     var driverId = clickID;
     var panel = document.getElementById("install-type");
     var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + driverId;
-    console.log("getDetails: apiUrl - " + apiUrl);
     var table = document.createElement("table");
     var thead = document.createElement("thead");
     var head_row = document.createElement("tr");
@@ -1183,7 +1261,6 @@ function plugDriver(topuri) {
     var URI = topuri;
     var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/install/' + URI;
-    var panel = document.getElementById("install-type");
 
     $.ajax({
         url: apiUrl,
@@ -1194,12 +1271,42 @@ function plugDriver(topuri) {
         },
         success: function (result) {
             getAllDetails();
-            $('#install-type').empty();
-            var data = document.createElement("p");
+            
+            clearPanel();
+            closeContentPanel();
+            console.log("plugdriver result: " + result);
+            //setting text of the jquery dialog
+            $("#dialog-confirm-text").text(result);
+            //jquery dialog
+            $("#dialog-confirm").dialog({
+                open: function(event, ui) {
+                    // bootsrap and jquery have a conflict when displaying certain buttons 
+                    // (in this case the close - 'X' ) in the top right hand corner of the dialog.
+                    // So current solution is to hide that button and still allow us to use
+                    // bootstrap styling within the jquery dialog
+                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
+                },
+                show: "slide",
+                resizable: false,
+                draggable: false,
+                title: "Driver Installation Result",
+                height: "auto",
+                width: 400,
+                modal: true,
+                buttons: [
+                    {
+                        text: "OK",
+                        "class": "button-profile-select btn btn-default",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
 
-            data.style.color = "#333";
-            data.innerHTML = result;
-            panel.appendChild(data);
+            });
+        },
+        error: function(result) {
+            console.log("Error in plugDriver: " + result);
         }
     });
 }
@@ -1229,7 +1336,7 @@ function installDriver() {
             tempData[temp.id] = temp.value;
     }
 
-    tempData["info-panel-title"] = type;
+    tempData["driverType"] = type;
     jsonData.push(tempData);
 
     var settings = JSON.stringify({jsonData});
@@ -1257,24 +1364,6 @@ function installDriver() {
     });
 }
 
-// No longer need since updateDrivers is being repurposed for the same task
-// Will remove once updateDrivers is completely working
-function getAllTemplates() {
-    var userId = keycloak.tokenParsed.preferred_username;
-    var apiUrl = baseUrl + "/StackV-web/restapi/app/driver/" + userId + "/get";
-    
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        success: function (result) {
-            console.log("getAllTemplates result: " + result);
-        }
-    });
-}
 
 function plugRaw() {
     var apiUrl = baseUrl + '/StackV-web/restapi/driver';
