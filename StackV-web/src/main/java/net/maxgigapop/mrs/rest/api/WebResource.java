@@ -606,17 +606,22 @@ public class WebResource {
         Properties front_connectionProps = new Properties();
         front_connectionProps.put("user", front_db_user);
         front_connectionProps.put("password", front_db_pass);
+        // get JSON object here and dump for now
+        String description = "";
+        String driverType = "";
         Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                 front_connectionProps);
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + uri + "\'");
+        PreparedStatement prep = front_conn.prepareStatement("UPDATE driver_wizard SET description =" 
+                +  description
+                + "WHERE username = \'" + username + "\' AND TopUri = \'" + uri + "\'");
 //        prep.setString(1, username);
 //        prep.setString(2, uri);
         ResultSet rs = prep.executeQuery();
 
         commonsClose(front_conn, prep, rs);
 
-        return "Deleted";
+        return "Edited";
     }   
 
     /**

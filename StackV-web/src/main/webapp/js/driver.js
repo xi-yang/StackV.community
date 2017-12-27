@@ -905,32 +905,66 @@ function editDriverProfile(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            $('#installed-type').empty();
             for (var key in result) {
                 if (result.hasOwnProperty(key)) {
                     var row = document.createElement("tr");
                     var tempkey = document.createElement("td");
                     var tempval = document.createElement("td");
-                    //var editableVal = document.createElement("input");
-                    //editableVal.innerHTML = result[key];
-                    tempval.type = "text";
+                    
                     tempkey.innerHTML = key;
-                    tempval.innerHTML = result[key];
-                    //tempval.appendChild(editableVal);
+                    tempval.innerHTML = result[key];                    
+                    tempval.onclick = function(){
+                        
+                        // if the current td element has input children then return false
+                        if ($(this).children("input").length > 0) {
+                            return false;
+                        }
+                        var tdObj = $(this); //get the current td object
+                        var preText = tdObj.html(); //get the current td's html
+                        var inputObj = $("<input type='text' />"); //create a new input
+                        tdObj.html(""); //clear the current td object attributes
+                        
+                        // set the input object's attributes
+                        inputObj.width(tdObj.width())
+                            .height(tdObj.height())
+                            .css({border:"0px",fontSize:"17px"})
+                            .val(preText)
+                            .appendTo(tdObj)
+                            .trigger("focus")
+                            .trigger("select");
+                        //set the triggers for the input object
+                        inputObj.keyup(function(event){
+                            // Enter-key -> save the new text
+                            if (event.which == 13) {
+                                var text = $(this).val();
+                                console.log("edited the cell text to: " + text);
+                                tdObj.html(text); //set the text                                
+                            }
+                        });
+                        inputObj.click(function(){
+                            return false;
+                        });
+                        
+                    };
                     row.appendChild(tempkey);
                     row.appendChild(tempval);
                     table.appendChild(row);
+                    
                 }
             }
 
             var saveEditedProfileButton = document.createElement("button");
             saveEditedProfileButton.className = "button-profile-select btn btn-success";
-            saveEditedProfileButton.innerHTML = "Save";
+            saveEditedProfileButton.innerHTML = "Save Changes";
             saveEditedProfileButton.onclick = function () {
                 //plugDriver(result["TOPURI"]);
                 console.log("Clicked the save button for uri: " + topuri);
+                saveEditedDriverProfile(); // function get values in the install-options div and updates driver
+                
             };
+            
             botpanel.appendChild(saveEditedProfileButton);
+            $("#info-panel-title").text("Edit Details. Press Enter to save changes in cell.");
         },
         error: function (xhr, status, error) {
             console.log("Failure. Status: "  + status +  ", errorThrown: " + error);
@@ -939,6 +973,15 @@ function editDriverProfile(clickID) {
     panel.appendChild(table);
 }
 
+/*
+ * Get value in the install-options divs and updates the driver profile
+ */
+function saveEditedDriverProfile(){
+    var userId = keycloak.tokenParsed.preferred_username;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/edit/';
+    var jsonData = [];
+    var tempData = {};
+}
 
 /*
  * @param {string} clickID - the topology URI
@@ -1128,9 +1171,13 @@ function removeDriver(clickID) {
 
             $("#info-panel-title").text("Failed Due to Service Instances:");
             var body = $("#info-panel-body");
+            console.log("removeDriver failed: result -> " + result);
+            var bodyText = "";
             for (var i = 1; i < result.length; i++) {
-                body.text(body.text() + result[i] + "\n");
+                bodyText += result[i] + "\n"
+                //body.text(body.text() + result[i] + "\n");
             }
+            body.text(bodyText);
 
             openContentPanel();
 
