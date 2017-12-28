@@ -34,31 +34,34 @@ function loadSystemHealthCheck(){
     var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
     var dialogObj = $('#system-health-check');
     var dialogText = $('#system-health-check-text');
-    var sysReady = false;
-    console.log("in loadSystemHealthCheck");
     $.ajax({
         url: apiUrl,
         type: 'GET',
+        dataType: "json",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function(result) {
-            console.log("Sys health check result: " + result);
-            if (result === "true") {
-                sysReady = true;
+            if (result["responseText"] === "true") {
                 dialogText.text("System is fully intialized!");
                 dialogObj.dialog({
                     open: function(event, ui) {
                         // resolving conflicting close buttons between jquery and boostrao
                         $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
                     },
+                    position: {
+                      my: "right bottom",
+                      at: "right bottom",
+                      of: window
+                    },
+                    dialogClass: 'dialog-titlebar-ready',
                     show: "slide",
                     resizeable: false,
                     draggable: true,
                     title: "System Health Check",
                     height: 100,
-                    width: 100,
+                    width: 250,
                     modal: false,
                     buttons: [
                         {
@@ -71,21 +74,30 @@ function loadSystemHealthCheck(){
                     ]
                 });
             } else {
-                dialogText.text("System is not yet fully initialized! Please wait.")
+                dialogText.text("System is not yet fully initialized! Please wait...")
                 dialogObj.dialog({
                     open: function(event, ui) {
                         // resolving conflicting close buttons between jquery and boostrao
                         $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
                     },
+                    position: {
+                      my: "right bottom",
+                      at: "right bottom",
+                      of: window
+                    },
+                    dialogClass: 'dialog-titlebar-not-ready',
                     show: "slide",
                     resizeable: false,
                     draggable: true,
                     title: "System Health Check",
                     height: 100,
-                    width: 100,
+                    width: 250,
                     modal: false,
                 });
             }
+        },
+        error: function(err) {
+            console.log("Error in system health check: " + JSON.stringify(err));
         }
     });
 }
@@ -246,7 +258,7 @@ function loadDriverNavbar() {
 function loadDriverPortal() {
     getAllDetails();
     updateDrivers(); //explicitly calling the function to load the driver templates
-    //loadSystemHealthCheck();
+    setInterval(loadSystemHealthCheck(), 1500);
 
     $(".install-button").click(function () {
         openContentPanel();
