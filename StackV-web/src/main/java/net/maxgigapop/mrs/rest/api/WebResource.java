@@ -434,9 +434,7 @@ public class WebResource {
         JSONObject JSONtemp = (JSONObject) obj;
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
-        String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("drivertype"));
-
+        String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("driverType"));
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();

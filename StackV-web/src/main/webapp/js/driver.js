@@ -258,6 +258,8 @@ function loadDriverNavbar() {
 function loadDriverPortal() {
     getAllDetails();
     updateDrivers(); //explicitly calling the function to load the driver templates
+    
+    // call the system health check every 1.5 seconds when the drivers are loaded
     setInterval(loadSystemHealthCheck(), 1500);
 
     $(".install-button").click(function () {
@@ -1263,6 +1265,7 @@ function getAllDetails() {
 function removeDriver(clickID) {
     var topUri = clickID;
     var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
+    console.log("in removeDriver: topURI -> " + topUri);
     $.ajax({
         url: apiUrl,
         type: 'DELETE',
@@ -1270,14 +1273,14 @@ function removeDriver(clickID) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        success: function () {
+        success: function () {            
             updateDrivers(topUri);
             reloadData();
         },
         error: function (result) {
             clearPanel();
             activateSide();
-            console.log(result);
+            console.log("removeDriver error: " + result);
 
             $("#info-panel-title").text("Failed Due to Service Instances:");
             var body = $("#info-panel-body");
@@ -1296,7 +1299,7 @@ function removeDriver(clickID) {
 }
 
 /*
- * Gets the details of one single driver (should be able to handle both installed and templates)
+ * Gets the details of one single isntalled driver
  */
 function getDetails(clickID) {
     var driverId = clickID;
@@ -1318,12 +1321,11 @@ function getDetails(clickID) {
     $.ajax({
         url: apiUrl,
         type: 'GET',
-        beforeSend: function (xhr) {
+        beforeSend: function(xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        success: function (result) {
-
+        success: function(result) {
             for (var i = 0; i < result.length; i += 2) {
                 var row = document.createElement("tr");
                 var tempkey = document.createElement("td");
@@ -1414,6 +1416,9 @@ function getDetails(clickID) {
     });
 }
 
+/*
+ * Installs a driver from its driver profile
+ */
 function plugDriver(topuri) {
     var URI = topuri;
     var userId = keycloak.tokenParsed.preferred_username;
@@ -1467,6 +1472,9 @@ function plugDriver(topuri) {
     });
 }
 
+/*
+ * Installs a driver from json
+ */
 function installDriver() {
     var panel = document.getElementById("install-type");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/install';
@@ -1507,15 +1515,39 @@ function installDriver() {
         contentType: 'application/json',
         data: settings,
         success: function (result) {
-            var data = document.createElement("p");
 
-            data.style.color = "#333";
-            data.innerHTML = result;
-            panel.appendChild(data);
-            getAllDetails();
+            //setting text of the jquery dialog
+            $("#dialog-confirm-text").text(result);
+            //jquery dialog
+            $("#dialog-confirm").dialog({
+                open: function(event, ui) {
+                    // bootsrap and jquery conflict fix
+                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
+                },
+                show: "slide",
+                resizable: false,
+                draggable: false,
+                title: "Driver Installation Result",
+                height: "auto",
+                width: 400,
+                modal: true,
+                buttons: [
+                    {
+                        text: "OK",
+                        "class": "button-profile-select btn btn-default",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+
+            });
+            
+            //delay the getAllDetails call by 3 seconds
+            setTimeout(getAllDetails(), 3000);
         },
         error: function (textStatus, errorThrown) {
-
+            console.log("installDriver error => textStatus " + textStatus + ", errorThrown: " + errorThrown);
         }
     });
 }
