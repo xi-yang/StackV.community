@@ -594,34 +594,49 @@ public class WebResource {
         }
     }
     
-    /*
-    The SQL query doesn't make sense. The API endpoint is attempting to update the the profile but the query is running a select
-    and the returned string says "Deleted"
-    Example query: update driver_wizard set description = 'driver1 description' where username = 'xyang' and topuri = 'top uri gen rest driver 1';
-    */
+
     @PUT
     @Path("/driver/{user}/edit/{topuri}")
+    @Consumes(value = {"application/json"})
     @RolesAllowed("Drivers")
-    public String editDriverProfile(@PathParam("user") String username, @PathParam("topuri") String uri) throws SQLException {
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        // get JSON object here and dump for now
-        String description = "";
-        String driverType = "";
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
+    public String editDriverProfile(@PathParam(value = "user") String username, @PathParam(value = "topuri") String oldTopUri, final String dataInput) throws SQLException, ParseException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        
+        try {
+            JSONObject inputJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(dataInput);
+                inputJSON = (JSONObject) obj;
 
-        PreparedStatement prep = front_conn.prepareStatement("UPDATE driver_wizard SET description =" 
-                +  description
-                + "WHERE username = \'" + username + "\' AND TopUri = \'" + uri + "\'");
-//        prep.setString(1, username);
-//        prep.setString(2, uri);
-        ResultSet rs = prep.executeQuery();
-
-        commonsClose(front_conn, prep, rs);
-
-        return "Edited";
+            } catch (ParseException ex) {
+                logger.catching("editDriverProfile", ex);
+            }
+            System.out.println(inputJSON.toJSONString());
+            String newTopUri = (String) inputJSON.get("topuri");
+            System.out.println("*** NEW TOP URI: " + newTopUri);
+            String newData = (String) inputJSON.get("data");
+            
+            Properties prop = new Properties();
+            prop.put("user", front_db_user);
+            prop.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
+            
+            prep = front_conn.prepareStatement("UPDATE driver_wizard SET TopUri = ?, data = ? WHERE username = ? AND TopUri = ?");
+            prep.setString(1, newTopUri);
+            prep.setString(2, newData);
+            prep.setString(3, username);
+            prep.setString(4, oldTopUri);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("editDriverProfile", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+        
+        return "Saved edits successfully.";
     }   
 
     /**

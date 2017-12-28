@@ -775,6 +775,7 @@ function updateDrivers() {
                 detButton.style.width = "64px";
                 detButton.innerHTML = "Details";
                 detButton.id = uri;
+                
                 detButton.onclick = function () {
                     $("#driver-content-panel").removeClass("hidden");
                     $("#driver-content-panel").addClass("active");
@@ -841,8 +842,7 @@ function updateDrivers() {
                     $("#driver-content-panel").addClass("active");
                     $("#info-panel-title").text("Details");
                     clearPanel();
-                    activateSide();
-                    console.log("clicked edit driver profile button for top uri: " + this.id);
+                    activateSide();                   
                     editDriverProfile(this.id);
 
                     openContentPanel();
@@ -853,10 +853,8 @@ function updateDrivers() {
                 installButton.style.width = "64px";
                 installButton.className = "button-profile-select btn btn-primary";
                 installButton.id = uri;
-                installButton.onclick = function () {
-                    console.log("clicked the install button for uri: " + this.id);
+                installButton.onclick = function () {                    
                     plugDriver(this.id); // Install the profile as a driver
-                    //alert("Result of installation: " + res);
                 }
                 
 
@@ -905,47 +903,19 @@ function editDriverProfile(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
+            var topuri = result["TOPURI"]; //pulling out the unedited TOPURI key as it is acting as a primary key
             for (var key in result) {
                 if (result.hasOwnProperty(key)) {
                     var row = document.createElement("tr");
                     var tempkey = document.createElement("td");
                     var tempval = document.createElement("td");
+                    var editableVal = document.createElement("textarea");
+                    editableVal.rows = "1";
                     
                     tempkey.innerHTML = key;
-                    tempval.innerHTML = result[key];                    
-                    tempval.onclick = function(){
-                        
-                        // if the current td element has input children then return false
-                        if ($(this).children("input").length > 0) {
-                            return false;
-                        }
-                        var tdObj = $(this); //get the current td object
-                        var preText = tdObj.html(); //get the current td's html
-                        var inputObj = $("<input type='text' />"); //create a new input
-                        tdObj.html(""); //clear the current td object attributes
-                        
-                        // set the input object's attributes
-                        inputObj.width(tdObj.width())
-                            .height(tdObj.height())
-                            .css({border:"0px",fontSize:"17px"})
-                            .val(preText)
-                            .appendTo(tdObj)
-                            .trigger("focus")
-                            .trigger("select");
-                        //set the triggers for the input object
-                        inputObj.keyup(function(event){
-                            // Enter-key -> save the new text
-                            if (event.which == 13) {
-                                var text = $(this).val();
-                                console.log("edited the cell text to: " + text);
-                                tdObj.html(text); //set the text                                
-                            }
-                        });
-                        inputObj.click(function(){
-                            return false;
-                        });
-                        
-                    };
+                    editableVal.id = key;
+                    editableVal.value = result[key];
+                    tempval.appendChild(editableVal);
                     row.appendChild(tempkey);
                     row.appendChild(tempval);
                     table.appendChild(row);
@@ -955,16 +925,17 @@ function editDriverProfile(clickID) {
 
             var saveEditedProfileButton = document.createElement("button");
             saveEditedProfileButton.className = "button-profile-select btn btn-success";
+            
+            //since topuri is the primary key, will pass the unedited topuri into saveEditedDriverProfile as to change that one profile
+            saveEditedProfileButton.id = topuri;
             saveEditedProfileButton.innerHTML = "Save Changes";
             saveEditedProfileButton.onclick = function () {
-                //plugDriver(result["TOPURI"]);
-                console.log("Clicked the save button for uri: " + topuri);
-                saveEditedDriverProfile(); // function get values in the install-options div and updates driver
+                saveEditedDriverProfile(this.id); // function get values in the install-options div and updates driver
                 
             };
             
             botpanel.appendChild(saveEditedProfileButton);
-            $("#info-panel-title").text("Edit Details. Press Enter to save changes in cell.");
+            $("#info-panel-title").text("Edit Details");
         },
         error: function (xhr, status, error) {
             console.log("Failure. Status: "  + status +  ", errorThrown: " + error);
@@ -976,11 +947,75 @@ function editDriverProfile(clickID) {
 /*
  * Get value in the install-options divs and updates the driver profile
  */
-function saveEditedDriverProfile(){
+function saveEditedDriverProfile(oldtopuri){
     var userId = keycloak.tokenParsed.preferred_username;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/edit/';
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/edit/' + oldtopuri;
     var jsonData = [];
     var tempData = {};
+    var newtopuri = document.getElementById("TOPURI").value; // get the new topuri since it also has be to changed in the table
+    
+    
+    
+    // read all the inputs present (should only be the inputs present on the edit details screen)
+    for (var temp of document.getElementsByTagName("textarea")) {
+        if (temp !== '') {            
+            tempData[temp.id] = temp.value;
+        }    
+    }
+    jsonData.push(tempData);
+    
+    var dataColumn = JSON.stringify({jsonData});
+    var sendData = JSON.stringify({
+        username: userId,
+        topuri: newtopuri,
+        data: dataColumn
+    });
+    
+    $.ajax({
+        url: apiUrl,
+        type: 'PUT',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        contentType: 'application/json',
+        data: sendData,
+        success: function(result) {
+            // update all previous id attributes of the old topuri with the new top uri
+            $('button[id=' + oldtopuri + ']').attr("id", newtopuri);
+            
+            closeContentPanel(); //hide the edit driver panel
+            //setting text of the jquery dialog
+            $("#dialog-confirm-text").text(result);
+            //jquery dialog
+            $("#dialog-confirm").dialog({
+                open: function(event, ui) {
+                    //conflict fix for bootstrap and jquery close button
+                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
+                },
+                show: "slide",
+                resizable: false,
+                draggable: false,
+                title: "Edit Driver Result",
+                height: "auto",
+                width: 400,
+                modal: true,
+                buttons: [
+                    {
+                        text: "OK",
+                        "class": "button-profile-select btn btn-default",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+
+            });
+        },
+        error: function(err) {
+            console.log("Error in saveEditedDriverProfile: " + err);
+        }
+    });
 }
 
 /*
@@ -1171,11 +1206,9 @@ function removeDriver(clickID) {
 
             $("#info-panel-title").text("Failed Due to Service Instances:");
             var body = $("#info-panel-body");
-            console.log("removeDriver failed: result -> " + result);
             var bodyText = "";
             for (var i = 1; i < result.length; i++) {
                 bodyText += result[i] + "\n"
-                //body.text(body.text() + result[i] + "\n");
             }
             body.text(bodyText);
 
@@ -1321,7 +1354,6 @@ function plugDriver(topuri) {
             
             clearPanel();
             closeContentPanel();
-            console.log("plugdriver result: " + result);
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
