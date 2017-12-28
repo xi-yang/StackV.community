@@ -10,6 +10,9 @@ div#installed-panel {
     left: 0;
 }
 
+.ui-dialog {
+    z-index:4000;
+}
 /* 
 - Should hide the scrollbar in the installed-content div
     - The overflow-y property is automatically set to auto by browswer

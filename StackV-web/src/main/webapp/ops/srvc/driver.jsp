@@ -164,6 +164,10 @@
                 <div id="dialog-confirm-text"></div>
             </div>
             
+            <!-- jQuery dialog for the system health check -->
+            <div id="system-health-check">
+                <div id="system-health-check-text"></div>
+            </div>
              
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>

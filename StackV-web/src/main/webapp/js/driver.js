@@ -30,6 +30,67 @@ var tweenDriverOverflowDetailsPanel = new TweenLite("#driver-overflow-details-pa
 var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 var view = "center";
 
+function loadSystemHealthCheck(){
+    var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
+    var dialogObj = $('#system-health-check');
+    var dialogText = $('#system-health-check-text');
+    var sysReady = false;
+    console.log("in loadSystemHealthCheck");
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function(result) {
+            console.log("Sys health check result: " + result);
+            if (result === "true") {
+                sysReady = true;
+                dialogText.text("System is fully intialized!");
+                dialogObj.dialog({
+                    open: function(event, ui) {
+                        // resolving conflicting close buttons between jquery and boostrao
+                        $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
+                    },
+                    show: "slide",
+                    resizeable: false,
+                    draggable: true,
+                    title: "System Health Check",
+                    height: 100,
+                    width: 100,
+                    modal: false,
+                    buttons: [
+                        {
+                            text:"Close",
+                            "class": "button-profile-select btn btn-default",
+                            click: function () {
+                                $(this).dialog("close");
+                            }
+                        }
+                    ]
+                });
+            } else {
+                dialogText.text("System is not yet fully initialized! Please wait.")
+                dialogObj.dialog({
+                    open: function(event, ui) {
+                        // resolving conflicting close buttons between jquery and boostrao
+                        $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
+                    },
+                    show: "slide",
+                    resizeable: false,
+                    draggable: true,
+                    title: "System Health Check",
+                    height: 100,
+                    width: 100,
+                    modal: false,
+                });
+            }
+        }
+    });
+}
+
+
 Mousetrap.bind({
     'shift+left': function () {
         window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
@@ -185,6 +246,7 @@ function loadDriverNavbar() {
 function loadDriverPortal() {
     getAllDetails();
     updateDrivers(); //explicitly calling the function to load the driver templates
+    //loadSystemHealthCheck();
 
     $(".install-button").click(function () {
         openContentPanel();
@@ -1203,13 +1265,16 @@ function removeDriver(clickID) {
         error: function (result) {
             clearPanel();
             activateSide();
+            console.log(result);
 
             $("#info-panel-title").text("Failed Due to Service Instances:");
             var body = $("#info-panel-body");
             var bodyText = "";
             for (var i = 1; i < result.length; i++) {
+                console.log("result[i]: " + result[i]);
                 bodyText += result[i] + "\n"
             }
+            console.log("bodyText: " + bodyText);
             body.text(bodyText);
 
             openContentPanel();
@@ -1479,11 +1544,13 @@ function reloadData() {
             setTimeout(function () {
                 // Refresh Operations                        
                 loadDriverPortal();
+                loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 1000);
         } else {
             setTimeout(function () {
                 loadDriverPortal();
+                loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 500);
         }

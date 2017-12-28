@@ -613,9 +613,8 @@ public class WebResource {
             } catch (ParseException ex) {
                 logger.catching("editDriverProfile", ex);
             }
-            System.out.println(inputJSON.toJSONString());
+
             String newTopUri = (String) inputJSON.get("topuri");
-            System.out.println("*** NEW TOP URI: " + newTopUri);
             String newData = (String) inputJSON.get("data");
             
             Properties prop = new Properties();
