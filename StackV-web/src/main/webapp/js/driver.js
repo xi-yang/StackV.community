@@ -43,7 +43,9 @@ function loadSystemHealthCheck(){
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function(result) {
-            if (result["responseText"] === "true") {
+            console.log("Success result: " + result);
+            console.log("Success result type: " + (typeof result));
+            if (result === true) {
                 dialogText.text("System is fully intialized!");
                 dialogObj.dialog({
                     open: function(event, ui) {
@@ -60,8 +62,8 @@ function loadSystemHealthCheck(){
                     resizeable: false,
                     draggable: true,
                     title: "System Health Check",
-                    height: 100,
-                    width: 250,
+                    height: 200,
+                    width: 400,
                     modal: false,
                     buttons: [
                         {
