@@ -155,7 +155,7 @@
                 </div>
             </div>
             
-            <!-- element to display a dialog contain the verbose value of a driver detail -->
+            <!-- jQuery element to display a dialog contain the verbose value of a driver detail -->
             <div id="dialog-overflow-details">
                 <div id="dialog-overflow-details-text"></div>
             </div>
@@ -168,6 +168,11 @@
             <!-- jQuery dialog for the system health check -->
             <div id="system-health-check">
                 <div id="system-health-check-text"></div>
+            </div>
+            
+            <!-- jQuery dialog to display service isntance errors -->
+            <div id="service-instances">
+                <div id="service-instances-body"></div>
             </div>
              
             <!-- LOADING PANEL -->
