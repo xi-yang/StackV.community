@@ -52,7 +52,6 @@ function loadSystemHealthCheck(){
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function(result) {
-            console.log("loadSystemHealthCheck result/status: " + result);
             if (result === true) {
                 dialogText.text("System is fully intialized!");
                 dialogObj.dialog({
@@ -1288,7 +1287,44 @@ function deleteServiceInstance(serviceUUID){
     console.log("deleteService - serviceUUID: " + serviceUUID);
     var apiUrl = baseUrl + "/StackV-web/restapi/service/" + serviceUUID;
     
-    
+    $.ajax({
+        url: apiUrl,
+        type: 'DELETE',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function(result) {
+            //setting text of jquery dialog
+            $("#dialog-confirm-text").text(result);
+            $("#dialog-confirm").dialog({
+                open: function(event, ui) {
+                            // resolving conflicting close buttons between jquery and boostrao
+                            $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
+                        },
+                show: "slide",
+                resizeable: false,
+                draggable: false,
+                title: "Service Instance Deletion Result",
+                height: "auto",
+                width: 400,
+                modal: true,
+                buttons: [                   
+                    {
+                        text:"Close",
+                        "class": "button-profile-select btn btn-default",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+            });
+        }, 
+        error: function(err) {
+            console.log("deleteServiceInstance error: " + err);
+        }
+    });
+    $("#service-instances").dialog("close");
 }
 
 function removeDriver(clickID) {
@@ -1320,39 +1356,34 @@ function removeDriver(clickID) {
              */
             clearPanel();
             activateSide();
-            console.log("removeDriver error result object type: " + (typeof result));
             console.log("removeDriver error: " + JSON.stringify(result));
-            console.log("removeDriver error - responseText type: " + (typeof result["responseText"]));
             console.log("removeDriver error - responseText: " + JSON.stringify(result["responseText"]));
             
             // begin formatting of the responseText
             var badFormatResponseText = result["responseText"];
-            var replaceLeftBrackets = badFormatResponseText.replace(/\[/, '[\"'); // replace a [ with ["
-            var replaceCommas = replaceLeftBrackets.replace(/,/, '","'); // replace commas with ","
-            var replaceRightBrackets = replaceCommas.replace(/\]/, '"]'); //replace a ] with "]
-            var replaceSpaces = replaceRightBrackets.replace(/\s/, ''); // replace spaces with nothing
+            var replaceLeftBrackets = badFormatResponseText.replace(/\[/g, '[\"'); // replace a [ with ["
+            var replaceCommas = replaceLeftBrackets.replace(/,/g, '","'); // replace commas with ","
+            var replaceRightBrackets = replaceCommas.replace(/\]/g, '"]'); //replace a ] with "]
+            var replaceSpaces = replaceRightBrackets.replace(/\s/g, ''); // replace spaces with nothing
             var wellFormattedResult = JSON.parse(replaceSpaces); // parse the formatted string to JS array
             
-            console.log("Well formatted Response Text string: " + replaceSpaces);
             console.log("parsed Well formatted Response Text: " + wellFormattedResult);
 
-            //$("#info-panel-title").text("Failed Due to Service Instances:");
-            //var body = document.getElementById("info-panel-body");
-            //var bodyText = "";
-            var serviceInstancDialog = $("#service-instances");
+            var serviceInstancDialog = $("#service-instances");            
             var serviceInstancDialogBody = $("#service-instances-body");
-            for (var i = 0; i < wellFormattedResult.length; i++) {
-                console.log("result[" + i + "]: " + wellFormattedResult[i]);
+            serviceInstancDialogBody.append("<hr>");
+            for (var i = 0; i < wellFormattedResult.length; i++) {                
                 var serviceUUID = wellFormattedResult[i];
                 var divUUID = document.createElement("div");
                 var pUUID = document.createElement("p");
                 var btnDeleteUUID = document.createElement("button");
                 pUUID.innerHTML = serviceUUID;
-                pUUID.style.display = "inline";
+                pUUID.style.display = "inline-block";
                 btnDeleteUUID.id = serviceUUID;
-                btnDeleteUUID.className = "button-profile-select btn btn-danger";
-                //btnDeleteUUID.style.width = "64px";
-                btnDeleteUUID.style.display = "inline";
+                btnDeleteUUID.title = topUri;
+                btnDeleteUUID.className = "button-profile-select btn btn-danger";                
+                btnDeleteUUID.style.display = "inline-block";
+                btnDeleteUUID.style.margin = "10px";
                 btnDeleteUUID.innerHTML = "Delete Service";
                 btnDeleteUUID.onclick = function() {
                     deleteServiceInstance(this.id);
@@ -1360,22 +1391,23 @@ function removeDriver(clickID) {
                 divUUID.appendChild(pUUID);
                 divUUID.appendChild(btnDeleteUUID);
                 serviceInstancDialogBody.append(divUUID);
-                //bodyText += wellFormattedResult[i] + "\n"
+                serviceInstancDialogBody.append("<hr>");                
             }
-            //console.log("bodyText: " + bodyText);
-            //body.text(bodyText);
             
             serviceInstancDialog.dialog({
                 open: function(event, ui) {
                     // resolving conflicting close buttons between jquery and boostrap
                     $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();  
                 },
+                close: function() {
+                    serviceInstancDialogBody.empty();  
+                },
                 show: "slide",
                 resizeable: true,
                 draggable: true,
-                title: "Deletion Failed Due to Service Instances:",
-                minHeight: "300px",
-                minWidth: "550px",
+                title: "Driver Deletion Failed Due to Service Instances:",
+                height: "auto",
+                width: 450,
                 modal: true,
                 buttons: [
                     {
@@ -1387,8 +1419,6 @@ function removeDriver(clickID) {
                     }
                 ]
             });
-
-            //openContentPanel();
 
         }
     });
