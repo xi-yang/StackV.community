@@ -91,7 +91,7 @@
                 <type>text</type>
                 <valid>string</valid>
             </input>
-            <input>
+            <input required="true">
                 <name>CIDR</name>
                 <type>text</type>
                 <default firstOnly="true">10.0.0.0/24</default>
