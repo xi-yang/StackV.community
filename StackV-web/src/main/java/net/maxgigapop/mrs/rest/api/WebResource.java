@@ -2874,20 +2874,7 @@ public class WebResource {
 
         return instance.status();
     }
-
-    /**
-     * @api {post} /app/service Create Service
-     * @apiVersion 1.0.0
-     * @apiDescription Create new service instance.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     * @apiParam {JSONObject} inputString service JSON
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X POST -d @newservice.json -H "Content-Type: application/json"
-     * http://localhost:8080/StackV-web/restapi/app/service
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
+   
     @POST
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
@@ -3039,19 +3026,6 @@ public class WebResource {
         }
     }
 
-    /**
-     * @api {put} /app/service/:siUUID/:action Operate Service
-     * @apiVersion 1.0.0
-     * @apiDescription Operate on the specified service instance.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     * @apiParam {String} siUUID instance UUID
-     * @apiParam {String} action operation to execute
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X PUT http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/cancel
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
     @RolesAllowed("Services")

@@ -16,7 +16,7 @@ paths:
     get:
       tags:
         - service
-      summary: Instance status.
+      summary: Instance status
       description: Retrieve service instance superstatus and substatus.
       parameters:
         - name: siUUID
@@ -37,7 +37,7 @@ paths:
     get:
       tags:
         - service
-      summary: Instance substatus.
+      summary: Instance substatus
       description: Retrieve only the service instance substatus.
       parameters:
         - name: siUUID
@@ -60,9 +60,87 @@ paths:
         - service
       summary: Create service.
       description: Create a service instance.
+      requestBody:
+        description: Service creation JSON
+        content: {}
+        required: true
       responses:
         '200':
           description: Successful service creation
+    get:
+      tags:
+        - service
+      summary: Initialize service
+      description: Retrieve a newly-generated service instance UUID from the backend.
+      responses:
+        '200':
+          description: Successful service initialization
+  '/service/{siUUID}/superstate/{state}':
+    put:
+      tags:
+        - service
+      summary: Force superstate shift
+      description: Forcibly change the superstate of a service instance.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: path
+          description: new superstate
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful state modification
+  '/service/{siUUID}/{action}':
+    put:
+      tags:
+        - service
+      summary: Operate service
+      description: Execute a service operation, such as cancel or delete.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: path
+          description: operation to be committed
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operation successfully started
+  '/service/{siUUID}/{action}/sync':
+    put:
+      tags:
+        - service
+      summary: Operate service (sync)
+      description: Execute a service operation, such as cancel or delete, synchronously.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: path
+          description: operation to be committed
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operation successfully started
 components:
   securitySchemes:
     keycloak:
