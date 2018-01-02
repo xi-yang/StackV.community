@@ -30,6 +30,15 @@ var tweenDriverOverflowDetailsPanel = new TweenLite("#driver-overflow-details-pa
 var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 var view = "center";
 
+
+/*
+ * Calls '/StackV-web/restapi/service/ready'
+ * The API call returns true or false.
+ * The prerequiste for this function is having a this div structure in the:
+ * <div id="system-health-check">
+        <div id="system-health-check-text"></div>
+    </div>
+ */
 function loadSystemHealthCheck(){
     var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
     var dialogObj = $('#system-health-check');
@@ -43,8 +52,6 @@ function loadSystemHealthCheck(){
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function(result) {
-            console.log("Success result: " + result);
-            console.log("Success result type: " + (typeof result));
             if (result === true) {
                 dialogText.text("System is fully intialized!");
                 dialogObj.dialog({
@@ -62,8 +69,8 @@ function loadSystemHealthCheck(){
                     resizeable: false,
                     draggable: true,
                     title: "System Health Check",
-                    height: 200,
-                    width: 400,
+                    height: 150,
+                    width: 250,
                     modal: false,
                     buttons: [
                         {
@@ -76,7 +83,7 @@ function loadSystemHealthCheck(){
                     ]
                 });
             } else {
-                dialogText.text("System is not yet fully initialized! Please wait...")
+                dialogText.text("System is not yet fully initialized! Please wait...");
                 dialogObj.dialog({
                     open: function(event, ui) {
                         // resolving conflicting close buttons between jquery and boostrao
@@ -329,6 +336,7 @@ function installRaw() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Raw Driver");
+    $("#info-panel-title").prop("title","RawDriver"); //the correct driverEjbPath
 
 
     first.innerHTML = "Enter Raw XML:";
@@ -347,6 +355,7 @@ function installStub() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Stub System Driver");
+    $("#info-panel-title").prop("title","StubSystemDriver"); //the correct driverEjbPath
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -405,6 +414,7 @@ function installAWS() {
 
 
     $("#info-panel-title").text("AWS Driver");
+    $("#info-panel-title").prop("title","AwsDriver"); //the correct driverEjbPath
 
 
     first.innerHTML = "Topology URI:";
@@ -501,6 +511,7 @@ function installOpenstack() {
     var content = [];
 
     $("#info-panel-title").text("Open Stack Driver");
+    $("#info-panel-title").prop("title","OpenStackDriver"); //the correct driverEjbPath
 
     for (var i = 0; i < 26; i += 2) {
         var textbox = document.createElement("p");
@@ -570,6 +581,7 @@ function installStack() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Stack System Driver");
+    $("#info-panel-title").prop("title","StackSystemDriver"); //the correct driverEjbPath
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -613,6 +625,7 @@ function installGeneric() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Generic REST Driver");
+    $("#info-panel-title").prop("title","GenericRESTDriver"); //the correct driverEjbPath
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -636,9 +649,11 @@ function clearPanel() {
     $('#install-type').empty();
     $('#install-options').empty();
     $('#install-type-right').empty();
+    
     document.getElementById("install-type-right").style = "";
     document.getElementById("install-type").style = "";
     document.getElementById("install-options").style = "";
+    
     var closeButton = document.createElement("button");
     closeButton.innerHTML = "Close";
     closeButton.className = "button-profile-select btn btn-default";
@@ -1264,10 +1279,14 @@ function getAllDetails() {
     });
 }
 
-function removeDriver(clickID) {
-    var topUri = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
-    console.log("in removeDriver: topURI -> " + topUri);
+/*
+ * Delete the specified Service Instance
+ * @param {string} serviceUUID
+ */
+function deleteServiceInstance(serviceUUID){
+    console.log("deleteService - serviceUUID: " + serviceUUID);
+    var apiUrl = baseUrl + "/StackV-web/restapi/service/" + serviceUUID;
+    
     $.ajax({
         url: apiUrl,
         type: 'DELETE',
@@ -1275,26 +1294,131 @@ function removeDriver(clickID) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        success: function () {            
+        success: function(result) {
+            //setting text of jquery dialog
+            $("#dialog-confirm-text").text(result);
+            $("#dialog-confirm").dialog({
+                open: function(event, ui) {
+                            // resolving conflicting close buttons between jquery and boostrao
+                            $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
+                        },
+                show: "slide",
+                resizeable: false,
+                draggable: false,
+                title: "Service Instance Deletion Result",
+                height: "auto",
+                width: 400,
+                modal: true,
+                buttons: [                   
+                    {
+                        text:"Close",
+                        "class": "button-profile-select btn btn-default",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+            });
+        }, 
+        error: function(err) {
+            console.log("deleteServiceInstance error: " + err);
+        }
+    });
+    $("#service-instances").dialog("close");
+}
+
+function removeDriver(clickID) {
+    var topUri = clickID;
+    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
+    console.log("in removeDriver: topURI -> " + topUri);
+    $.ajax({
+        url: apiUrl,
+        type: 'DELETE',
+        datatype: 'json',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function () {
+            console.log("***removeDriver success***");
             updateDrivers(topUri);
             reloadData();
         },
         error: function (result) {
+            /*
+             * The format of result in case of an error looks like this:
+             * {"readyState":4,
+             * "responseText":"[507afdf3-11a7-4d9e-b97b-4aa604e2c722, 776f8022-2a84-403f-9255-4d9dbd30753b]",
+             * "status":409,"statusText":"Conflict"}
+             * The above is JS object. What we need are the UUIDs in the "responseText". However, the array is not formatted
+             * properly for JavaScript - it should be quoted as it mixes numbers and characters. So a string replace is needed
+             * in order to replace '[' with '["', ']' with '"]', and commas with '","'
+             */
             clearPanel();
             activateSide();
-            console.log("removeDriver error: " + result);
+            console.log("removeDriver error: " + JSON.stringify(result));
+            console.log("removeDriver error - responseText: " + JSON.stringify(result["responseText"]));
+            
+            // begin formatting of the responseText
+            var badFormatResponseText = result["responseText"];
+            var replaceLeftBrackets = badFormatResponseText.replace(/\[/g, '[\"'); // replace a [ with ["
+            var replaceCommas = replaceLeftBrackets.replace(/,/g, '","'); // replace commas with ","
+            var replaceRightBrackets = replaceCommas.replace(/\]/g, '"]'); //replace a ] with "]
+            var replaceSpaces = replaceRightBrackets.replace(/\s/g, ''); // replace spaces with nothing
+            var wellFormattedResult = JSON.parse(replaceSpaces); // parse the formatted string to JS array
+            
+            console.log("parsed Well formatted Response Text: " + wellFormattedResult);
 
-            $("#info-panel-title").text("Failed Due to Service Instances:");
-            var body = $("#info-panel-body");
-            var bodyText = "";
-            for (var i = 1; i < result.length; i++) {
-                console.log("result[i]: " + result[i]);
-                bodyText += result[i] + "\n"
+            var serviceInstancDialog = $("#service-instances");            
+            var serviceInstancDialogBody = $("#service-instances-body");
+            serviceInstancDialogBody.append("<hr>");
+            for (var i = 0; i < wellFormattedResult.length; i++) {                
+                var serviceUUID = wellFormattedResult[i];
+                var divUUID = document.createElement("div");
+                var pUUID = document.createElement("p");
+                var btnDeleteUUID = document.createElement("button");
+                pUUID.innerHTML = serviceUUID;
+                pUUID.style.display = "inline-block";
+                btnDeleteUUID.id = serviceUUID;
+                btnDeleteUUID.title = topUri;
+                btnDeleteUUID.className = "button-profile-select btn btn-danger";                
+                btnDeleteUUID.style.display = "inline-block";
+                btnDeleteUUID.style.margin = "10px";
+                btnDeleteUUID.innerHTML = "Delete Service";
+                btnDeleteUUID.onclick = function() {
+                    deleteServiceInstance(this.id);
+                };
+                divUUID.appendChild(pUUID);
+                divUUID.appendChild(btnDeleteUUID);
+                serviceInstancDialogBody.append(divUUID);
+                serviceInstancDialogBody.append("<hr>");                
             }
-            console.log("bodyText: " + bodyText);
-            body.text(bodyText);
-
-            openContentPanel();
+            
+            serviceInstancDialog.dialog({
+                open: function(event, ui) {
+                    // resolving conflicting close buttons between jquery and boostrap
+                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();  
+                },
+                close: function() {
+                    serviceInstancDialogBody.empty();  
+                },
+                show: "slide",
+                resizeable: true,
+                draggable: true,
+                title: "Driver Deletion Failed Due to Service Instances:",
+                height: "auto",
+                width: 450,
+                modal: true,
+                buttons: [
+                    {
+                        text: "Close",
+                        "class": "button-profile-select btn btn-default",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+            });
 
         }
     });
@@ -1482,7 +1606,7 @@ function installDriver() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/install';
     var jsonData = [];
     var tempData = {};
-    var type = document.getElementById("info-panel-title").innerHTML;
+    var type = document.getElementById("info-panel-title").title;
 
     for (var temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
