@@ -237,9 +237,6 @@ function subloadRoleACLUsers() {
 function subloadRoleACLGroups() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/groups';
 
-
-
-
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
