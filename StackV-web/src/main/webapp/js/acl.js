@@ -585,10 +585,16 @@ function subloadInstanceACLTable(refUUID) {
                             cell1_3.innerHTML = user[2];
                             var cell1_4 = document.createElement("td");
                             cell1_4.innerHTML = '<button data-username="' + user[0] + '" class="button-acl-remove btn btn-default pull-right">Remove</button>';
-                            row.appendChild(cell1_1);
-                            row.appendChild(cell1_2);
-                            row.appendChild(cell1_3);
-                            row.appendChild(cell1_4);
+                            var cell1_5 = document.createElement("td");
+                            cell1_5.innerHTML = '<input style="display: block; margin: 0 auto" data-access="login" data-username="' + user[0] + '" type="checkbox"/>';
+                            var cell1_6 = document.createElement("td");
+                            cell1_6.innerHTML = '<input style="display: block; margin: 0 auto" data-access="sudo" data-username="' + user[0] + '" type="checkbox"/>';
+                            row.appendChild(cell1_1); //username
+                            row.appendChild(cell1_2); //full name                            
+                            row.appendChild(cell1_3); //email
+                            row.appendChild(cell1_5); //login access
+                            row.appendChild(cell1_6); //sudo access
+                            row.appendChild(cell1_4); //remove button
                             tbody.appendChild(row);
 
                             $(".button-acl-remove").click(function (evt) {

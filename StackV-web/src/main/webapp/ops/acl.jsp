@@ -121,9 +121,11 @@
                     <div id="acl-instance-acl-existing">
                         <table class="management-table">
                             <colgroup>
-                                <col span="1" style="width: 35%;"/>
-                                <col span="1" style="width: 35%;"/>
+                                <col span="1" style="width: 25%;"/>
+                                <col span="1" style="width: 25%;"/>
                                 <col span="1" style="width: 20%;"/>
+                                <col span="1" style="width: 10%;"/>
+                                <col span="1" style="width: 10%;"/>                                
                                 <col span="1" style="width: 10%;"/>
                             </colgroup>
                             <thead>
@@ -131,6 +133,8 @@
                                     <th>Username</th>
                                     <th>Full Name</th>
                                     <th>Email</th>
+                                    <th>Login Access</th>
+                                    <th>Sudo Access</th>                                    
                                     <th><button type="button" class="acl-instance-close close" aria-hidden="true">&times;</button></th>
                                 </tr>
                             </thead>
