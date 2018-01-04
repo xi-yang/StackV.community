@@ -59,7 +59,10 @@ import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
+import java.net.URLDecoder;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -67,10 +70,12 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -141,7 +146,9 @@ public class WebResource {
     private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
 
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
-
+    
+    String ipaBaseServerUrl = "https://179-152.research.maxgigapop.net";
+    
     @Context
     private HttpRequest httpRequest;
 
@@ -398,6 +405,79 @@ public class WebResource {
             logger.catching("getACLwithInfo", ex);
             throw ex;
         }
+    }
+    
+    // >FreeIPA-based ACL
+    @POST
+    @Path("/acl/ipa/login")
+    @Consumes("application/x-www-form-urlencoded")
+    @Produces("text/plain")
+    @RolesAllowed("ACL")
+    public String ipaLogin(final String postData) throws UnsupportedEncodingException {
+        System.out.println("***Beginning of method ipaLogin");
+        String result = "Result not modified";
+        System.out.println("postData body: " + postData);
+        
+        //create a new Mapping of keys to values in the parameters
+        final Map<String, List<String>> postData_params = new HashMap<String, List<String>>();
+        final String[] params = postData.split("&"); // each pair will be separated by &
+        
+        // go thru each pair of variables and extract the key and value
+        for (String pair : params) {
+            final int index = pair.indexOf("="); // a pairing is indicated by =
+            
+            // decode the key using UTF-8 if there is a =, otherwise return the pair
+            final String key = index > 0 ? URLDecoder.decode(pair.substring(0, index), "UTF-8") : pair;
+            
+            //add the key to the map if it does not exist already
+            if (!postData_params.containsKey(key)) {
+                postData_params.put(key, new LinkedList<String>());
+            }
+            
+            // decode the value using UTF-8 if there is a =, otherwise return null
+            final String val = index > 0 && pair.length() > index + 1 ? URLDecoder.decode(pair.substring(index + 1), "UTF-8") : null; 
+            postData_params.get(key).add(val); //add the value to the key
+        }
+        
+        System.out.println("postData params: " + postData_params.toString());
+        
+        //at this point all the parameters are in postData_params
+        String username = postData_params.get("username").get(0);
+        System.out.println("Recieved information: username=> " + username);
+        String pwd = postData_params.get("password").get(0);       
+        System.out.println("Recieved information: password=> " + pwd);
+        
+        try {
+            URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
+            HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+            conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setRequestProperty("Accept", "text/plain");
+            conn.setRequestMethod("POST");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            //conn.setRequestProperty("Cookie", "");
+            DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
+            wr.writeBytes(postData_params.toString());
+            wr.flush();
+            conn.connect();
+            
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+            result = responseStr.toString();
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        
+        return result;
     }
 
     // >Drivers
