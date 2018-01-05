@@ -59,7 +59,15 @@ public class GcpQuery {
             String name = vpcInfo.get("name").toString();
             String key = GcpModelBuilder.getResourceKey("vpc", name);
             
+            if (metadata.containsKey(key)) {
+                uriNames.put(metadata.get(key), name);
+            } else {
+                //System.out.printf("vpc %s has no uri entry\n", name);
+            }
+            
             JSONArray subnetsInfo = (JSONArray) vpcInfo.get("subnetworks");
+            if (subnetsInfo == null) continue;
+            
             for (Object o2 : subnetsInfo) {
                 JSONObject subnetInfo = (JSONObject) o;
                 String subnetName = GcpGet.parseGoogleURI(o2.toString(), "subnetworks");
@@ -69,14 +77,8 @@ public class GcpQuery {
                     uriNames.put(metadata.get(subnetKey), subnetName);
                     subnetRegions.put(metadata.get(subnetKey), region);
                 } else {
-                    System.out.printf("subnet %s %s %s has no uri entry\n", name, region, subnetName);
+                    //System.out.printf("subnet %s %s %s has no uri entry\n", name, region, subnetName);
                 }
-            }
-            
-            if (metadata.containsKey(key)) {
-                uriNames.put(metadata.get(key), name);
-            } else {
-                System.out.printf("vpc %s has no uri entry\n", name);
             }
         }
 
@@ -91,7 +93,7 @@ public class GcpQuery {
                 uriNames.put(metadata.get(key), name);
                 instanceZones.put(metadata.get(key), zone);
             } else {
-                System.out.printf("vm %s %s has no uri entry\n", zone, name);
+                //System.out.printf("vm %s %s has no uri entry\n", zone, name);
             }
         }
         
@@ -206,14 +208,14 @@ public class GcpQuery {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "deleteInstanceRequests";
         
-        String query = "SELECT ?uri WHERE { ?vpc a nml:Topology ; nml:hasNode ?uri . ?uri a nml:Node . } ";
+        String query = "SELECT ?vm WHERE { ?vm a nml:Node } ";
         
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             JSONObject instanceRequest = new JSONObject();
             QuerySolution solution = r.next();
             
-            String uri = solution.get("uri").toString();
+            String uri = solution.get("vm").toString();
             String name = uriNames.get(uri);
             String zone = instanceZones.get(uri);
             
@@ -287,20 +289,25 @@ public class GcpQuery {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "deleteSubnetRequests";
         
-        String query = "SELECT ?vpcUri ?subnetUri\n"
-                + "WHERE { ?service mrs:providesVPC ?vpcUri . \n"
-                + "?vpcUri a nml:Topology ; nml:hasService ?switchingService . \n"
-                + "?switchingService a mrs:SwitchingService ; mrs:providesSubnet ?subnetUri . \n"
-                + "?subnetUri a mrs:SwitchingSubnet . }";
+        String query = "SELECT ?vpc ?subnet\n"
+                + "WHERE { ?service mrs:providesVPC ?vpc . \n"
+                + "?vpc a nml:Topology ; nml:hasService ?switchingService . \n"
+                + "?switchingService a mrs:SwitchingService ; mrs:providesSubnet ?subnet . \n"
+                + "?subnet a mrs:SwitchingSubnet . }";
         
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
             JSONObject subnetRequest = new JSONObject();
             QuerySolution solution = r.next();
             
-            String vpcUri = solution.get("vpcUri").toString();
-            String vpcName = uriNames.get("vpcUri");
-            String uri = solution.get("subnetUri").toString();
+            if (!solution.contains("subnet")) {
+                System.out.println("Error: solution without a subnet");
+                continue;
+            }
+            
+            String vpcUri = solution.get("vpc").toString();
+            String vpcName = uriNames.get(vpcUri);
+            String uri = solution.get("subnet").toString();
             String region = subnetRegions.get(uri);
             String name = uriNames.get(uri);
             
@@ -321,6 +328,7 @@ public class GcpQuery {
     public ArrayList<JSONObject> createVpcRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "createVpcRequests";
+        
         //Find an object that provides a vpc to something else, and is a topology
         //Name is optional. Only URI is mandatory
         String query = "SELECT ?vpcUri ?vpcName"
@@ -350,14 +358,20 @@ public class GcpQuery {
     public ArrayList<JSONObject> deleteVpcRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "deleteVpcRequests";
-        String query = "SELECT ?vpcUri"
-                + "WHERE { ?service mrs:providesVPC ?vpcUri . ?vpcUri a nml:Topology }";
-                
+        String query = "SELECT ?vpc WHERE { ?service a mrs:VirtualCloudService ; "
+                + "mrs:providesVPC ?vpc . ?vpc a nml:Topology }";
+        
         ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        
         while (r.hasNext()) {
             JSONObject vpcRequest = new JSONObject();
             QuerySolution solution = r.next();
-            String uri = solution.get("vpcUri").toString();
+            if (!solution.contains("vpc")) {
+                System.out.println("Error: solution without vpc");
+                continue;
+            }
+            //System.out.printf("solution: %s\n", solution);
+            String uri = solution.get("vpc").toString();
             String name = uriNames.get(uri);
             vpcRequest.put("type", "delete_vpc");
             vpcRequest.put("uri", uri);
@@ -365,6 +379,46 @@ public class GcpQuery {
             
             System.out.printf("DELETE VPC REQUEST: %s\n", vpcRequest);
             output.add(vpcRequest);
+        }
+        
+        return output;
+    }
+    
+    public ArrayList<JSONObject> createBucketsRequest() {
+        ArrayList<JSONObject> output = new ArrayList<>();
+        String method = "createBucketsRequest";
+        String query = "SELECT ?name WHERE { ?service mrs:providesBucket . "
+                + "?bucket a mrs:Bucket ; nml:Name }";
+        
+        ResultSet r = executeQuery(query, modelRef, modelAdd);
+        while (r.hasNext()) {
+            JSONObject bucketRequest = new JSONObject();
+            QuerySolution solution = r.next();
+            
+            String name = solution.get("name").toString();
+            String uri = solution.get("bucket").toString();
+            
+            bucketRequest.put("type", "create_bucket");
+            bucketRequest.put("name", name);
+            bucketRequest.put("uri", uri);
+            
+            output.add(bucketRequest);
+        }
+        
+        return output;
+    }
+    
+    public ArrayList<JSONObject> deleteBucketsRequest() {
+        ArrayList <JSONObject> output = new ArrayList<>();
+        String method = "deleteBucketsRequest";
+        String query = "SELECT ?name WHERE { ?bucket a mrs:Bucket ;"
+                + "nml:name ?name }";
+        
+        ResultSet r = executeQuery(query, modelRef, modelReduct);
+        while (r.hasNext()) {
+            JSONObject request = new JSONObject();
+            
+            //output.add(request);
         }
         
         return output;
@@ -395,7 +449,7 @@ public class GcpQuery {
     private static String getOrDefault(HashMap<String, String> h, String key, String def) {
         //This checks q for the key value, and returns the default if it is not found
         if (h.containsKey(key)) {
-            return h.get(key).toString();
+            return h.get(key);
         } else {
             return def;
         }
@@ -477,6 +531,24 @@ public class GcpQuery {
         }
         
         return output;
-    } 
+    }
     
 }
+/*
+template for query functions:
+
+    public ArrayList<JSONObject> request() {
+        ArrayList<JSONObject> output = new ArrayList<>();
+        String method = "";
+        String query = "";
+        
+        ResultSet r = executeQuery(query, modelRef, );
+        while (r.hasNext()) {
+            JSONObject request = new JSONObject();
+            
+            output.add(request);
+        }
+        
+        return output;
+    }
+*/

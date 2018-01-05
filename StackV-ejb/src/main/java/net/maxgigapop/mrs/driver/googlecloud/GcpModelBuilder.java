@@ -98,9 +98,21 @@ public class GcpModelBuilder {
                         String subnetName = GcpGet.parseGoogleURI(o2.toString(), "subnetworks");
                         String subnetRegion = GcpGet.parseGoogleURI(o2.toString(), "regions");
                         JSONObject subnetInfo = gcpGet.getSubnet(subnetRegion, subnetName);
+                        if (subnetInfo == null) {
+                            //Skip this subnet
+                            logger.warning(method, String.format("error while requesting details for subnet %s in  region %s", subnetName, subnetRegion));
+                            continue;
+                        }
+                        
+                        //System.out.printf("subnet info: %s\n", subnetInfo);
                         String subnetUri = lookupResourceUri(metadata, "subnet", name, subnetRegion, subnetName);
-                        //String subnetUri = recoverGcpUri(subnetInfo);
-                        String cidr = subnetInfo.get("ipCidrRange").toString();
+                        String cidr;
+                        
+                        if (subnetInfo.containsKey("ipCidrRange")) {
+                            cidr = subnetInfo.get("ipCidrRange").toString();
+                        } else {
+                            cidr = null;
+                        }
                         String gateway = subnetInfo.get("gatewayAddress").toString();
                     
                         Resource subnet = RdfOwl.createResource(model, ResourceTool.getResourceUri(subnetUri, GcpPrefix.subnet, name, subnetRegion, subnetName), Mrs.SwitchingSubnet);
@@ -200,13 +212,19 @@ public class GcpModelBuilder {
                         String vpcUri = lookupResourceUri(metadata, "vpc", vpcName);
                         Resource vpc = model.getResource(ResourceTool.getResourceUri(vpcUri, GcpPrefix.vpc, vpcName));
                         String nicName = netiface.get("name").toString();
-                        String nicIP = netiface.get("networkIP").toString();
+                        String nicIP;
+                        if (!netiface.containsKey("networkIP")) {
+                            System.out.printf("No network IP for instance %s, showing json %s\n", instanceName, netiface);
+                            nicIP = "error";
+                        } else {
+                            nicIP = netiface.get("networkIP").toString();
+                        }
                         String subnetName = GcpGet.parseGoogleURI(netiface.get("subnetwork").toString(), "subnetworks");
                         String subnetRegion = GcpGet.parseGoogleURI(netiface.get("subnetwork").toString(), "regions");
                         String nicUri = lookupResourceUri(metadata, "nic", vpcName, instanceName, nicName);
                         
-                        //A instance is considered to be "in" the vpc used by nic0
-                        //All instances have nic0
+                        //A instance is considered to be in the vpc used by nic0
+                        //All instances must have nic0
                         if ("nic0".equals(netiface.get("name").toString())) {
                             String natIP = GcpGet.getInstancePublicIP(netiface);
                             if (!natIP.equals("none")) {
@@ -287,7 +305,9 @@ public class GcpModelBuilder {
     public static String getResourceKey(String type, Object...args) {
         //First argument to this function was changed from Resource to String, so that unique URIs could be assigned to unmodeled resources
         String key = null, method = "getResourceKey";
-        //uncommenting the following line results in uneccessary logging bloat during model pull
+        //uncommenting the following line results in uneccessary logging bloat
+        //during model pull, but may be helpful during debugging
+        //make sure to uncomment logger.end() as well
         //logger.start(method);
         
         switch (type) {

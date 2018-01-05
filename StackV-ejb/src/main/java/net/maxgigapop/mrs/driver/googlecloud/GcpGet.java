@@ -264,7 +264,7 @@ public class GcpGet {
         JSONArray accessConfigs = (JSONArray) netiface.get("accessConfigs");
         if (accessConfigs == null) return "none";
         JSONObject config = (JSONObject) accessConfigs.get(0);
-        if (config == null) return "none";
+        if (config == null || !config.containsKey("natIP")) return "none";
         return config.get("natIP").toString();
     }
 }
