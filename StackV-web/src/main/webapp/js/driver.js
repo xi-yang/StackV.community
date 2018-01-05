@@ -268,8 +268,8 @@ function loadDriverPortal() {
     getAllDetails();
     updateDrivers(); //explicitly calling the function to load the driver templates
     
-    // call the system health check every 1.5 seconds when the drivers are loaded
-    setInterval(loadSystemHealthCheck(), 1500);
+    // call the system health check
+    loadSystemHealthCheck()
 
     $(".install-button").click(function () {
         openContentPanel();
@@ -750,7 +750,7 @@ function addDriver() {
     var description = document.getElementById("description").value;
     var driver = document.getElementById("drivername").value;
     var URI = document.getElementById("TOPURI").value;
-    var type = document.getElementById("info-panel-title").innerHTML;
+    var type = document.getElementById("info-panel-title").title;
 
     $('#black-screen').addClass("off");
     $('#info-panel').removeClass();
@@ -780,6 +780,7 @@ function addDriver() {
         topuri: URI,
         drivertype: type
     });
+    
 
     $.ajax({
         url: apiUrl,
@@ -824,7 +825,7 @@ function removeDriverProfile(clickID) {
     });
 }
 
-// shows the (latest) template's panel
+// shows the (latest) templates' panel
 function updateDrivers() {
     var userId = keycloak.tokenParsed.preferred_username;
     var table = document.getElementById("saved-table");
@@ -1113,7 +1114,7 @@ function saveEditedDriverProfile(oldtopuri){
 
 /*
  * @param {string} clickID - the topology URI
- * Creating the drivers details panel for a saved template/profile
+ * Creating the drivers details panel for one saved template/profile
  */
 function getDetailsProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
@@ -1284,7 +1285,6 @@ function getAllDetails() {
  * @param {string} serviceUUID
  */
 function deleteServiceInstance(serviceUUID){
-    console.log("deleteService - serviceUUID: " + serviceUUID);
     var apiUrl = baseUrl + "/StackV-web/restapi/service/" + serviceUUID;
     
     $.ajax({
@@ -1330,7 +1330,6 @@ function deleteServiceInstance(serviceUUID){
 function removeDriver(clickID) {
     var topUri = clickID;
     var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
-    console.log("in removeDriver: topURI -> " + topUri);
     $.ajax({
         url: apiUrl,
         type: 'DELETE',
@@ -1340,7 +1339,6 @@ function removeDriver(clickID) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function () {
-            console.log("***removeDriver success***");
             updateDrivers(topUri);
             reloadData();
         },
@@ -1357,7 +1355,6 @@ function removeDriver(clickID) {
             clearPanel();
             activateSide();
             console.log("removeDriver error: " + JSON.stringify(result));
-            console.log("removeDriver error - responseText: " + JSON.stringify(result["responseText"]));
             
             // begin formatting of the responseText
             var badFormatResponseText = result["responseText"];
