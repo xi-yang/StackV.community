@@ -127,3 +127,8 @@ div#driver-template-panel {
     z-index    : 1;
     display    : none;
 }
+
+#drivername.invalid {
+    border: 1px solid red;
+    color: red;
+}

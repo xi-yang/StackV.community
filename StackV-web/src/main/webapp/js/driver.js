@@ -650,6 +650,7 @@ function clearPanel() {
     $('#install-options').empty();
     $('#install-type-right').empty();
     
+    document.getElementById("info-panel-title").title = "";
     document.getElementById("install-type-right").style = "";
     document.getElementById("install-type").style = "";
     document.getElementById("install-options").style = "";
@@ -712,19 +713,22 @@ function openWindow() {
     var descname = document.createElement("p");
     var desc = document.createElement("input");
     var saveButton = document.createElement("button");
-    saveButton.className = "button-profile-select btn btn-default";
+    var closeButton = document.createElement("button");
+    
+    saveButton.className = "button-profile-select btn btn-warning";
+    closeButton.className = "button-profile-select btn btn-default";
 
     $('#info-panel').addClass("active");
 
     drivername.innerHTML = "Driver Name:";
     driver.type = "text";
     driver.id = "drivername";
+    
     divContent.appendChild(drivername);
     divContent.appendChild(driver);
 
 
     descname.innerHTML = "Description:";
-
     desc.type = "text";
     desc.id = "description";
 
@@ -732,9 +736,27 @@ function openWindow() {
     divContent.appendChild(desc);
 
     saveButton.innerHTML = "Save Driver";
+    saveButton.style = "margin: 5px";
     saveButton.onclick = function () {
-        addDriver();
+        // force the user have input atleast a driver profile name
+        var driverProfileName = $("#drivername");
+        if (driverProfileName.val().length > 0) {
+            addDriver();
+        } else {
+            driverProfileName.addClass("invalid");
+            driverProfileName.change(function () {
+                $(this).removeClass("invalid");
+            });
+        }        
     };
+    
+    closeButton.innerHTML = "Close";
+    closeButton.style = "margin: 5px";
+    closeButton.onclick = function() {
+        $('#info-panel').removeClass("active");
+    };
+    
+    document.getElementById("info-option").appendChild(closeButton);
     document.getElementById("info-option").appendChild(saveButton);
 }
 
@@ -868,7 +890,7 @@ function updateDrivers() {
                 detButton.className = "button-profile-select btn btn-default";
                 detButton.style.width = "64px";
                 detButton.innerHTML = "Details";
-                detButton.id = uri;
+                detButton.id = uri; //set the topuri as the button id
                 
                 detButton.onclick = function () {
                     $("#driver-content-panel").removeClass("hidden");
@@ -884,7 +906,7 @@ function updateDrivers() {
                 delButton.className = "button-profile-select btn btn-danger";
                 delButton.style.width = "64px";
                 delButton.innerHTML = "Delete";
-                delButton.id = uri;
+                delButton.id = uri; //set the topuri as the button id
                 
                 //storing driver profile name for deletion confirmation dialog
                 delButton.setAttribute("del-button-for", result[i]);
@@ -930,7 +952,7 @@ function updateDrivers() {
                 edButton.innerHTML = "Edit";
                 edButton.style.width = "64px";
                 edButton.className = "button-profile-select btn btn-warning";
-                edButton.id = uri;
+                edButton.id = uri; //set the topuri as the button id
                 edButton.onclick = function () {
                     $("#driver-content-panel").removeClass("hidden");
                     $("#driver-content-panel").addClass("active");
@@ -946,7 +968,7 @@ function updateDrivers() {
                 installButton.innerHTML = "Install";
                 installButton.style.width = "64px";
                 installButton.className = "button-profile-select btn btn-primary";
-                installButton.id = uri;
+                installButton.id = uri; //set the topuri as the button id
                 installButton.onclick = function () {                    
                     plugDriver(this.id); // Install the profile as a driver
                 }
