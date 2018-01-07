@@ -2074,7 +2074,7 @@ public class OpenStackPush {
 
             //1.1 find the device name of the volume
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName. "
-                    + String.format(" FILTER (not exists {?svc mrs:providesVolume <%s>. ?svc mrs:type \"ceph-rbd\". } && not exists {?svc mrs:providesVolume <%s>. ?svc mrs:type \"ceph-fs\". })", volume.asResource())
+                    + String.format(" FILTER (not exists {?svc mrs:providesVolume <%s>. ?svc mrs:type \"ceph-rbd\". } && not exists {?svc mrs:providesVolume <%s>. ?svc mrs:type \"ceph-fs\". })", volume.asResource(), volume.asResource())
                     + "}";
             ResultSet r2 = executeQueryUnion(query, modelRef, modelDelta);
             if (!r2.hasNext()) {
@@ -2807,6 +2807,8 @@ public class OpenStackPush {
             if (!r2.hasNext()) {
                 continue;
             }
+            QuerySolution q2 = r2.next();
+            String cephSvcType = q2.getLiteral("ceph_svc_type").getString();
             Resource resVolume = q.getResource("vol");
             Resource resVM = q.getResource("vm");
             Integer numRbd = 1;
@@ -2814,7 +2816,6 @@ public class OpenStackPush {
                 numRbd = vmRbdMap.get(resVM) + 1;
             }
             vmRbdMap.put(resVM, numRbd);
-            String cephSvcType = q.getResource("ceph_svc_type").asLiteral().getString();
             String diskSize = "102400"; // default=100GB @TODO: configurable driver property
             String mountPoint = "/mnt/ceph"+numRbd; // default mount = /mnt/ceph         
             JSONObject JO = new JSONObject();
