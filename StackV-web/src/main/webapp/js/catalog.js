@@ -63,6 +63,8 @@ function closeCatalog() {
 }
 
 function loadCatalog() {
+    loadSystemHealthCheck();
+    
     loadInstances();
     loadWizard();
     loadEditor();
@@ -85,7 +87,7 @@ function loadCatalog() {
         } else if (this.className === 'active') {
             closeCatalog();
         }
-    });
+    });    
 }
 function loadCatalogNavbar() {
     $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
@@ -173,7 +175,7 @@ function loadWizard() {
                 tbody.appendChild(row);
             }
 
-            $(".button-profile-select").on("click", function (evt) {
+            $("#wizard-body .button-profile-select").on("click", function (evt) {
                 var resultID = this.id,
                         apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
 
@@ -386,7 +388,7 @@ function loadWizard() {
                     $("#info-panel").removeClass("active");
                     evt.preventDefault();
                 } else {
-                    swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');                    
+                    swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');
                 }
             });
 
@@ -430,11 +432,9 @@ function loadEditor() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-            $(document).on('click', '.button-service-select', function (evt) {
+            $(document).on('click', '#editor-body .button-service-select', function (evt) {
                 var ref = "/StackV-web/ops/intent.html?intent=" + this.id.toLowerCase();
                 window.location.href = ref;
-
-                evt.preventDefault();
             });
         }
     });
