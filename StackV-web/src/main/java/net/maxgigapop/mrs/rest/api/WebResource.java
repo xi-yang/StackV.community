@@ -450,6 +450,7 @@ public class WebResource {
         System.out.println("Recieved information: username=> " + username);
         String pwd = postData_params.get("password").get(0);       
         System.out.println("Recieved information: password=> " + pwd);
+
         String formattedLoginData = "user=" + username + "&password=" + pwd;
         
         try {
@@ -517,7 +518,7 @@ public class WebResource {
         System.out.println("ipa-user-find: Before try catch");
         try {
             System.out.println("ipa-user-find: in first try catch");
-            URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
+            URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
             HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
             conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
             conn.setRequestProperty("Content-Type", "application/json");
@@ -565,6 +566,7 @@ public class WebResource {
         }
         
         System.out.println("****ipa user find after try catch");
+        
         return result;
     }
 
