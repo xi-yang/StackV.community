@@ -61,6 +61,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.security.KeyManagementException;
@@ -148,6 +149,9 @@ public class WebResource {
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
     
     String ipaBaseServerUrl = "https://179-152.research.maxgigapop.net";
+    
+    HttpCookie ipaSessionCookie;
+    String ipaCookie;
     
     @Context
     private HttpRequest httpRequest;
@@ -446,8 +450,10 @@ public class WebResource {
         System.out.println("Recieved information: username=> " + username);
         String pwd = postData_params.get("password").get(0);       
         System.out.println("Recieved information: password=> " + pwd);
+        String formattedLoginData = "user=" + username + "&password=" + pwd;
         
         try {
+            System.out.println("[[[In try catch block of login method]]]");
             URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
             HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
             conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
@@ -458,25 +464,107 @@ public class WebResource {
             conn.setDoOutput(true);
             //conn.setRequestProperty("Cookie", "");
             DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
-            wr.writeBytes(postData_params.toString());
+            wr.writeBytes(formattedLoginData);
             wr.flush();
             conn.connect();
-            
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
+            System.out.println("ipaLogin Response code: " + conn.getResponseCode() + " - Response Message: " + conn.getResponseMessage());
+            // if the request is successful
+            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
+                System.out.println("Header fields: " + conn.getHeaderFields().toString() + "\n");
+                System.out.println("Set-Cookie field: " + conn.getHeaderFields().get("Set-Cookie"));
+                String properCookieListFormat = "Set-Cookie: ";                
+                List<String> cookiesList = conn.getHeaderFields().get("Set-Cookie");
+                System.out.println("cookiesList size: " + cookiesList.size());
+                
+                for (String cookie : cookiesList) {
+                    System.out.println("in for loop cookie: " + cookie);
+                    properCookieListFormat += cookie + "; ";
+                    System.out.println("updated proper cookie list: " + properCookieListFormat);
+                }
+                
+                
+                List<HttpCookie> cookies = HttpCookie.parse(properCookieListFormat);
+                System.out.println("Cookies List: " + cookies.toString() + ", number of cookies: " + cookies.size());
+                ipaSessionCookie = cookies.get(0);
+                result = "Login Successful";
+                ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
+            } else { // if the request fails
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
+                    String inputLine;
+                    //responseStr = new StringBuilder();
+                    while ((inputLine = in.readLine()) != null) {
+                        result += inputLine;
+                    }
                 }
             }
-            result = responseStr.toString();
+            
         } catch (MalformedURLException ex) {
             Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        System.out.println("**After try catch block cookie: " + ipaSessionCookie.getValue());
+        return result;
+    }
+    
+    @POST
+    @Path("/acl/ipa/user_find")
+    @Consumes("application/x-www-form-urlencoded")
+    @Produces("text/plain")
+    @RolesAllowed("ACL")
+    public String ipaUserFind(String postData) {
+        String result = "ipaUserFind result not modified";
+        System.out.println("ipa-user-find: Before try catch");
+        try {
+            System.out.println("ipa-user-find: in first try catch");
+            URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
+            HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+            conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            System.out.println("ipaUserfind: cookie -> " + ipaCookie);
+            conn.setRequestProperty("Cookie", ipaCookie);
+            conn.setRequestMethod("POST");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            
+            DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
+            String testJsonQuery = "{\"method\":\"user_find\", \"params\":[[\"\"],{}], \"id\":0}";
+            System.out.println("testJsonQuery: " + testJsonQuery);
+            wr.writeBytes(testJsonQuery);
+            wr.flush();
+            conn.connect();
+            
+            StringBuilder responseStr;
+            // if the request is successful
+            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
+                System.out.println("Header fields: " + conn.getHeaderFields().toString() + "\n");
+                System.out.println("Set-Cookie field: " + conn.getHeaderFields().get("Set-Cookie"));
+                
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    String inputLine;
+                    responseStr = new StringBuilder();
+                    while ((inputLine = in.readLine()) != null) {
+                        responseStr.append(inputLine);
+                    }
+                }
+                ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
+                result = responseStr.toString();
+            } else { // if the request fails
+                System.out.println("ipa-user-find: unsuccessful - responsecode: " + conn.getResponseCode() + ", ResponseMessage: " + conn.getResponseMessage());
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
+                    String inputLine;
+                    //responseStr = new StringBuilder();
+                    while ((inputLine = in.readLine()) != null) {
+                        result += inputLine;
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
         
+        System.out.println("****ipa user find after try catch");
         return result;
     }
 
