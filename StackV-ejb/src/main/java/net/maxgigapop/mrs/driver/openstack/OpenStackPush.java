@@ -1116,7 +1116,7 @@ public class OpenStackPush {
                 } else if (svcType.equals("ceph-fs")) {
                     String cephfsSubdir = (String) o.get("cephfs subdir");
                     String cephfsClient = (String) o.get("cephfs client");
-                    client.setMetadata(servername, "ceph_fs", String.format("{'volume':'%s','client':'%s',''subdir':'%s','mount':'%s','status':'%s'}", volumeName, cephfsClient, cephfsSubdir, mountPoint, status));
+                    client.setMetadata(servername, "ceph_fs:info", String.format("{'volume':'%s','client':'%s','subdir':'%s','mount':'%s','status':'%s'}", volumeName, cephfsClient, cephfsSubdir, mountPoint, status));
                 }
             } else if (o.get("request").toString().equals("VpnEndpointRequest")) {
                 String servername = (String) o.get("server name");

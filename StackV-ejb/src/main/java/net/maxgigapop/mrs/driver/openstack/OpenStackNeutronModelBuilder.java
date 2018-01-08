@@ -500,8 +500,8 @@ public class OpenStackNeutronModelBuilder {
                 }
             }
             // Ceph FS Service
-            if (metadata != null && metadata.containsKey("ceph_fs")) {
-                String cephfsJson = metadata.get("ceph_fs");
+            if (metadata != null && metadata.containsKey("ceph_fs:info")) {
+                String cephfsJson = metadata.get("ceph_fs:info");
                 JSONParser parser = new JSONParser();
                 try {
                     cephfsJson = cephfsJson.replaceAll("'", "\""); // single quotes into double quotes
