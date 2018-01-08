@@ -141,7 +141,7 @@ function loadNavbar() {
         if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
             $(".nav-admin").hide();
         }
-        if (keycloak.tokenParsed.resource_access.StackV && keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
+        if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
             $("#driver-tab").hide();
         }
 
