@@ -64,7 +64,7 @@ function closeCatalog() {
 
 function loadCatalog() {
     loadSystemHealthCheck();
-    
+
     loadInstances();
     loadWizard();
     loadEditor();
@@ -87,7 +87,7 @@ function loadCatalog() {
         } else if (this.className === 'active') {
             closeCatalog();
         }
-    });    
+    });
 }
 function loadCatalogNavbar() {
     $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
@@ -140,7 +140,57 @@ function loadInstances() {
             tweenInstancePanel.play();
         }
     });
+}
+function reloadInstances() {
+    var userId = keycloak.subject;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            $("#status-body tr").addClass("missing");
+            for (i = 0; i < result.length; i++) {
+                var instance = result[i];
+                var $row = $("#status-body tr[data-href='" + instance[1] + "']");
+                if ($row.length === 1) {
+                    // Instance found, update text.
+                    $row.children().last().text(instance[2]);
+                    $row.removeClass("missing");
+                } else {
+                    // Instance not found, need to create.
+                    var tbody = document.getElementById("status-body");
+                    var row = document.createElement("tr");
+                    row.className = "clickable-row";
+                    row.setAttribute("data-href", instance[1]);
 
+                    var cell1_1 = document.createElement("td");
+                    cell1_1.innerHTML = instance[3];
+                    var cell1_2 = document.createElement("td");
+                    cell1_2.innerHTML = instance[0];
+                    var cell1_3 = document.createElement("td");
+                    cell1_3.innerHTML = instance[1];
+                    var cell1_4 = document.createElement("td");
+                    cell1_4.innerHTML = instance[2];
+                    row.appendChild(cell1_1);
+                    row.appendChild(cell1_2);
+                    row.appendChild(cell1_3);
+                    row.appendChild(cell1_4);
+                    tbody.appendChild(row);
+
+                    $(row).click(function () {
+                        sessionStorage.setItem("instance-uuid", $(this).data("href"));
+                        window.document.location = "/StackV-web/ops/details.html";
+                    });
+                }
+            }
+            
+            // Remove missing instance rows, presuming deletion.
+            $("#status-body tr.missing").remove();
+        }
+    });
 }
 
 var originalProfile;
@@ -454,12 +504,12 @@ function reloadData() {
         if (timerSetting > 15) {
             tweenInstancePanel.reverse();
             setTimeout(function () {
-                loadInstances();
+                reloadInstances();
                 refreshSync(refreshed, timerSetting);
             }, 750);
         } else {
             setTimeout(function () {
-                loadInstances();
+                reloadInstances();
                 refreshSync(refreshed, timerSetting);
             }, 500);
         }
