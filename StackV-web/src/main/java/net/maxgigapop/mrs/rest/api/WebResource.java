@@ -61,7 +61,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.security.KeyManagementException;
@@ -150,8 +149,7 @@ public class WebResource {
     
     String ipaBaseServerUrl = "https://179-152.research.maxgigapop.net";
     
-    HttpCookie ipaSessionCookie;
-    String ipaCookie;
+    static String ipaCookie;
     
     @Context
     private HttpRequest httpRequest;
@@ -415,12 +413,10 @@ public class WebResource {
     @POST
     @Path("/acl/ipa/login")
     @Consumes("application/x-www-form-urlencoded")
-    @Produces("text/plain")
+    @Produces("application/json")
     @RolesAllowed("ACL")
     public String ipaLogin(final String postData) throws UnsupportedEncodingException {
-        System.out.println("***Beginning of method ipaLogin");
-        String result = "Result not modified";
-        System.out.println("postData body: " + postData);
+        JSONObject result = new JSONObject();
         
         //create a new Mapping of keys to values in the parameters
         final Map<String, List<String>> postData_params = new HashMap<String, List<String>>();
@@ -443,18 +439,14 @@ public class WebResource {
             postData_params.get(key).add(val); //add the value to the key
         }
         
-        System.out.println("postData params: " + postData_params.toString());
         
         //at this point all the parameters are in postData_params
-        String username = postData_params.get("username").get(0);
-        System.out.println("Recieved information: username=> " + username);
-        String pwd = postData_params.get("password").get(0);       
-        System.out.println("Recieved information: password=> " + pwd);
+        String username = postData_params.get("username").get(0); // there should only be on username
+        String pwd = postData_params.get("password").get(0); // there should only be one password        
 
         String formattedLoginData = "user=" + username + "&password=" + pwd;
         
         try {
-            System.out.println("[[[In try catch block of login method]]]");
             URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
             HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
             conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
@@ -462,41 +454,32 @@ public class WebResource {
             conn.setRequestProperty("Accept", "text/plain");
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
-            conn.setDoOutput(true);
-            //conn.setRequestProperty("Cookie", "");
+            conn.setDoOutput(true);           
             DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
             wr.writeBytes(formattedLoginData);
             wr.flush();
-            conn.connect();
-            System.out.println("ipaLogin Response code: " + conn.getResponseCode() + " - Response Message: " + conn.getResponseMessage());
+            conn.connect();            
+            
             // if the request is successful
-            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
-                System.out.println("Header fields: " + conn.getHeaderFields().toString() + "\n");
-                System.out.println("Set-Cookie field: " + conn.getHeaderFields().get("Set-Cookie"));
-                String properCookieListFormat = "Set-Cookie: ";                
-                List<String> cookiesList = conn.getHeaderFields().get("Set-Cookie");
-                System.out.println("cookiesList size: " + cookiesList.size());
+            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {                             
+                result.put("Result", "Login Successful");
+                result.put("ResponseCode", conn.getResponseCode());
+                result.put("ResponseMessage", conn.getResponseMessage());
                 
-                for (String cookie : cookiesList) {
-                    System.out.println("in for loop cookie: " + cookie);
-                    properCookieListFormat += cookie + "; ";
-                    System.out.println("updated proper cookie list: " + properCookieListFormat);
-                }
-                
-                
-                List<HttpCookie> cookies = HttpCookie.parse(properCookieListFormat);
-                System.out.println("Cookies List: " + cookies.toString() + ", number of cookies: " + cookies.size());
-                ipaSessionCookie = cookies.get(0);
-                result = "Login Successful";
+                // get the ipa_session cookie from the returned header fields and assign it to ipaCookie
                 ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
             } else { // if the request fails
+                String errorStream = "";
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                    String inputLine;
-                    //responseStr = new StringBuilder();
+                    String inputLine;                    
                     while ((inputLine = in.readLine()) != null) {
-                        result += inputLine;
+                        errorStream += inputLine;
                     }
                 }
+                result.put("Result", "Login Unsuccessful");
+                result.put("ResponseCode", conn.getResponseCode());
+                result.put("ResponseMessage", conn.getResponseMessage());
+                result.put("Error", errorStream);
             }
             
         } catch (MalformedURLException ex) {
@@ -504,34 +487,31 @@ public class WebResource {
         } catch (IOException ex) {
             Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        System.out.println("**After try catch block cookie: " + ipaSessionCookie.getValue());
-        return result;
+
+        // return the JSON object as a string
+        return result.toJSONString();
     }
     
     @POST
     @Path("/acl/ipa/user_find")
     @Consumes("application/x-www-form-urlencoded")
-    @Produces("text/plain")
+    @Produces("application/json")
     @RolesAllowed("ACL")
     public String ipaUserFind(String postData) {
-        String result = "ipaUserFind result not modified";
-        System.out.println("ipa-user-find: Before try catch");
-        try {
-            System.out.println("ipa-user-find: in first try catch");
+        JSONObject result = new JSONObject();       
+        try {            
             URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
             HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
-            conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
+            conn.setRequestProperty("referer", ipaBaseServerUrl + "/ipa");
             conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/json");
-            System.out.println("ipaUserfind: cookie -> " + ipaCookie);
+            conn.setRequestProperty("Accept", "application/json");           
             conn.setRequestProperty("Cookie", ipaCookie);
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
             
             DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
-            String testJsonQuery = "{\"method\":\"user_find\", \"params\":[[\"\"],{}], \"id\":0}";
-            System.out.println("testJsonQuery: " + testJsonQuery);
+            String testJsonQuery = "{\"method\":\"user_find\", \"params\":[[\"\"],{}], \"id\":0}";            
             wr.writeBytes(testJsonQuery);
             wr.flush();
             conn.connect();
@@ -539,8 +519,6 @@ public class WebResource {
             StringBuilder responseStr;
             // if the request is successful
             if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
-                System.out.println("Header fields: " + conn.getHeaderFields().toString() + "\n");
-                System.out.println("Set-Cookie field: " + conn.getHeaderFields().get("Set-Cookie"));
                 
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                     String inputLine;
@@ -550,24 +528,23 @@ public class WebResource {
                     }
                 }
                 ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
-                result = responseStr.toString();
-            } else { // if the request fails
-                System.out.println("ipa-user-find: unsuccessful - responsecode: " + conn.getResponseCode() + ", ResponseMessage: " + conn.getResponseMessage());
+                result = (JSONObject) parser.parse(responseStr.toString());
+            } else { // if the request fails                
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
                     String inputLine;
-                    //responseStr = new StringBuilder();
+                    responseStr = new StringBuilder();
                     while ((inputLine = in.readLine()) != null) {
-                        result += inputLine;
+                        responseStr.append(inputLine);
                     }
                 }
+                result.put("Error", responseStr.toString());
             }
-        } catch (IOException ex) {
+        } catch (IOException | ParseException ex) {
             Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         
-        System.out.println("****ipa user find after try catch");
-        
-        return result;
+        // return the JSONObject as a string
+        return result.toJSONString();
     }
 
     // >Drivers
