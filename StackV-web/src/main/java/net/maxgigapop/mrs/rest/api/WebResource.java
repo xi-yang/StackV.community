@@ -546,6 +546,60 @@ public class WebResource {
         // return the JSONObject as a string
         return result.toJSONString();
     }
+    
+    @POST
+    @Path("/acl/ipa/request")
+    @Consumes("application/json")
+    @Produces("application/json")
+    @RolesAllowed("ACL")
+    public String ipaRequest(String postData) {
+        JSONObject result = new JSONObject();       
+        try {            
+            URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
+            HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+            conn.setRequestProperty("referer", ipaBaseServerUrl + "/ipa");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");           
+            conn.setRequestProperty("Cookie", ipaCookie);
+            conn.setRequestMethod("POST");
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            
+            DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));                    
+            wr.writeBytes(postData);
+            wr.flush();
+            conn.connect();
+            
+            StringBuilder responseStr;
+            // if the request is successful
+            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
+                
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    String inputLine;
+                    responseStr = new StringBuilder();
+                    while ((inputLine = in.readLine()) != null) {
+                        responseStr.append(inputLine);
+                    }
+                }
+                ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
+                result = (JSONObject) parser.parse(responseStr.toString());
+            } else { // if the request fails                
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
+                    String inputLine;
+                    responseStr = new StringBuilder();
+                    while ((inputLine = in.readLine()) != null) {
+                        responseStr.append(inputLine);
+                    }
+                }
+                result.put("Error", responseStr.toString());
+            }
+        } catch (IOException | ParseException ex) {
+            Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        
+        // return the JSONObject as a string
+        return result.toJSONString();
+    }
 
     // >Drivers
     /**
