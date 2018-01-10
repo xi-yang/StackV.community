@@ -1270,7 +1270,7 @@ function loadSystemHealthCheck() {
                         title: "System Health Check",
                         height: 150,
                         width: 250,
-                        classes: {"ui-dialog": "health-dialog-pass"},
+                        classes: {"ui-dialog": "ui-corner-all health-dialog-pass"},
                         modal: false,
                         buttons: [
                             {
@@ -1295,7 +1295,7 @@ function loadSystemHealthCheck() {
                         title: "System Health Check",
                         height: 100,
                         width: 250,
-                        classes: {"ui-dialog": "health-dialog-fail"},
+                        classes: {"ui-dialog": "ui-corner-all health-dialog-fail"},
                         modal: false
                     });
                 }
