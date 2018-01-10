@@ -517,3 +517,42 @@ function reloadData() {
         }
     });
 }
+
+
+/*
+ * Calls '/StackV-web/restapi/service/ready'
+ * The API call returns true or false.
+ * The prerequiste for this function is having a this div structure in the:
+ * <div id="system-health-check">
+ <div id="system-health-check-text"></div>
+ </div>
+ */
+var systemHealthPass;
+function loadSystemHealthCheck() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        dataType: "json",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            if (systemHealthPass !== result) {
+                if (result === true) {
+                    $("#system-health-span").removeClass("fail").removeClass("glyphicon-ban-circle")
+                            .addClass("pass").addClass("glyphicon-ok-circle");
+                } else {
+                    $("#system-health-span").removeClass("pass").removeClass("glyphicon-ok-circle")
+                            .addClass("fail").addClass("glyphicon-ban-circle");
+                }
+
+                systemHealthPass = result;
+            }
+        },
+        error: function (err) {
+            console.log("Error in system health check: " + JSON.stringify(err));
+        }
+    });
+}
