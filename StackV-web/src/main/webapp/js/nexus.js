@@ -1273,6 +1273,9 @@ function loadSystemHealthCheck() {
                         classes: {"ui-dialog": "ui-corner-all health-dialog-pass"},
                         modal: false
                     });
+
+                    $("#system-health-span").removeClass("fail").removeClass("glyphicon-ban-circle")
+                            .addClass("pass").addClass("glyphicon-ok-circle");
                 } else {
                     dialogText.text("System is not yet fully initialized! Please wait...");
                     dialogObj.dialog({
@@ -1290,6 +1293,9 @@ function loadSystemHealthCheck() {
                         classes: {"ui-dialog": "ui-corner-all health-dialog-fail"},
                         modal: false
                     });
+
+                    $("#system-health-span").removeClass("pass").removeClass("glyphicon-ok-circle")
+                            .addClass("fail").addClass("glyphicon-ban-circle");
                 }
 
                 systemHealthPass = result;

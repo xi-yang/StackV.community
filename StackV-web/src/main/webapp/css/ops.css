@@ -473,3 +473,19 @@ ul.vcn-progress li, ul.hc-progress li {
 .health-dialog-fail {
     background: #f9dfd2 !important;
 }
+
+#system-health-panel {
+    margin: 15px 0px 15px 5px;
+    padding: 0 10px 0 10px;
+    color: white;
+    font-weight: bold;
+}
+#system-health-panel span {
+    top: 2px;
+}
+#system-health-panel .pass {
+    color: #d2f9d2 !important
+}
+#system-health-panel .fail {
+    color: #f9dfd2 !important
+}
