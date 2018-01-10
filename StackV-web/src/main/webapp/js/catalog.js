@@ -66,7 +66,7 @@ function loadCatalog() {
     loadInstances();
     loadWizard();
     loadEditor();
-    
+
     loadSystemHealthCheck();
 
     if (getURLParameter("profiles")) {
@@ -186,7 +186,7 @@ function reloadInstances() {
                     });
                 }
             }
-            
+
             // Remove missing instance rows, presuming deletion.
             $("#status-body tr.missing").remove();
         }
@@ -482,7 +482,7 @@ function loadEditor() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-            $(document).on('click', '#editor-body .button-service-select', function (evt) {
+            $("#editor-body .button-service-select").click(function () {
                 var ref = "/StackV-web/ops/intent.html?intent=" + this.id.toLowerCase();
                 window.location.href = ref;
             });
@@ -497,7 +497,6 @@ function getURLParameter(name) {
 
 /* REFRESH */
 function reloadData() {
-    loadSystemHealthCheck();
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
@@ -506,11 +505,13 @@ function reloadData() {
             tweenInstancePanel.reverse();
             setTimeout(function () {
                 reloadInstances();
+                loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 750);
         } else {
             setTimeout(function () {
                 reloadInstances();
+                loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 500);
         }
