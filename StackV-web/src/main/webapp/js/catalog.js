@@ -488,7 +488,6 @@ function loadEditor() {
             });
         }
     });
-    loadSystemHealthCheck();
 }
 
 function getURLParameter(name) {
