@@ -16,6 +16,7 @@
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
         <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
+        <link rel="stylesheet" href="/StackV-web/css/driver.css">
     </head>
 
     <body>        
@@ -51,42 +52,42 @@
                                 <td>AWS Driver</td>
                                 <td>Amazon AWS Cloud Services</td>
                                 <td style="width: 180px;">
-                                    <button  onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Generic REST Driver</td>
                                 <td>Generic REST API for Compatible Model Driven Services</td>
                                 <td style="width: 180px;">
-                                    <button onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
+                                    <button onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>OpenStack Driver</td>
                                 <td>OpenStack Cloud Services</td>
                                 <td  style="width: 180px;">
-                                    <button  onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Stack Driver</td>
                                 <td>Stack Over Sub-level StackV in Hierarchical Deployment</td>
                                 <td  style="width: 180px;">
-                                    <button  onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
                                 </td>
                             </tr> 
                             <tr>
                                 <td>Stub Driver</td>
                                 <td>A Dump Driver Instance with Pre-loaded Fixed Model</td>
                                 <td style="width: 180px;">
-                                    <button  onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install install-button button-profile-select btn btn-default'>Install</button>
+                                    <button  onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Raw Driver</td>
                                 <td>Take Raw XML to Plug in "Any" Type of Driver Instance</td>
                                 <td  style="width: 180px;">
-                                    <button onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install install-button button-profile-select btn btn-default'>Install</button>
+                                    <button onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install install-button button-profile-select btn btn-primary'>Install</button>
                                 </td>
                             </tr>
                         </tbody>
@@ -111,13 +112,14 @@
                     </div>
                 </div>
             </div>
+            
             <div id="driver-template-panel">
                 <div id="saved-tab" class="tab-pane fadeIn">
                     <table class="management-table">
                         <thead>
                             <tr>
-                                <th>Driver Name</th>
-                                <th>Description</th>
+                                <th>Driver Template Name</th>
+                                <th>Driver Template Description</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -131,8 +133,8 @@
 
             <div id="driver-content-panel" class="hidden">
                 <div class="modal-content">
-                    <div class = "modal-header">
-                        <h3 id ="info-panel-title"></h3>
+                    <div class="modal-header">
+                        <h3 id="info-panel-title"></h3>
                     </div>
                     <div class ="modal-body " style="background-color:#FFFFFF">
                         <div class="tab-content" style="background-color:#FFFFFF">                                    
@@ -141,20 +143,19 @@
                                     <div id='install-type' style="background-color:#FFFFFF">
                                     </div>
                                     <div id='install-type-right' style="background-color:#FFFFFF"></div>
-                                    <div id = "info-panel-button" class = "modal-footer">
-                                        <div id='install-options'>
-                                            <button onclick="clearPanel(); closeContentPanel();">Close</button>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
+                    <div id="info-panel-button" class="modal-footer">
+                                        <div id='install-options'>
+                                            <button onclick="clearPanel(); closeContentPanel();">Close</button>
+                                        </div>
+                    </div>
                 </div>
             </div>
             
-            <!-- element to display a dialog contain the verbose value of a driver detail -->
+            <!-- jQuery element to display a dialog contain the verbose value of a driver detail -->
             <div id="dialog-overflow-details">
                 <div id="dialog-overflow-details-text"></div>
             </div>
@@ -164,6 +165,15 @@
                 <div id="dialog-confirm-text"></div>
             </div>
             
+            <!-- jQuery dialog for the system health check -->
+            <div id="system-health-check">
+                <div id="system-health-check-text"></div>
+            </div>
+            
+            <!-- jQuery dialog to display service isntance errors -->
+            <div id="service-instances">
+                <div id="service-instances-body"></div>
+            </div>
              
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
@@ -172,9 +182,9 @@
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/jquery-ui.min.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>        
         <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/mousetrap.js"></script>

@@ -354,6 +354,9 @@
                 </group>
                 <group name="VS Functions" passthrough="true">
                     <group name="Globus Connect" collapsible="true">
+		                <fulfilled>
+		                    <name>username</name>
+		                </fulfilled>
                         <input>
                             <name>Username</name>
                             <type>text</type>
@@ -385,7 +388,11 @@
                             <size>small</size>
                         </input>
                     </group>
-                    <group factory="true" name="Ceph RBD" collapsible="true">                    
+                    <group factory="true" name="Ceph RBD" collapsible="true"> 
+                        <fulfilled>
+                            <has>size</has>
+                        </fulfilled>
+                                           
                         <input>
                             <name>Size</name>
                             <type>text</type>                        
@@ -397,6 +404,31 @@
                             <type>text</type>
                             <default>/mnt/ceph1</default>
                             <valid>string</valid>
+                        </input>
+                    </group>            
+                    <group name="Ceph FS" collapsible="true">
+                        <fulfilled>
+                            <has>mount_point</has>
+                        </fulfilled>
+                        <input>
+                            <name>Mount Point</name>
+                            <type>text</type>
+                            <valid>string</valid>
+                            <size>small</size>
+                        </input>
+                        <input>
+                            <name>CephFS Directory</name>
+                            <type>text</type>
+                            <default>/</default>
+                            <valid>string</valid>
+                            <size>small</size>
+                        </input>
+                        <input>
+                            <name>CephFS Client</name>
+                            <type>text</type>
+                            <default>admin</default>
+                            <valid>string</valid>
+                            <size>small</size>
                         </input>
                     </group>            
                     <group name="NFS" collapsible="true">

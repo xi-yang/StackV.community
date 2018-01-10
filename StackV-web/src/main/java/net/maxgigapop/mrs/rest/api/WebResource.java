@@ -434,9 +434,7 @@ public class WebResource {
         JSONObject JSONtemp = (JSONObject) obj;
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
-        String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("drivertype"));
-
+        String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("driverType"));
         try {
             URL url = new URL(String.format("%s/driver", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -477,7 +475,7 @@ public class WebResource {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(auth, refresh);
-        
+
         Properties prop = new Properties();
         prop.put("user", front_db_user);
         prop.put("password", front_db_pass);
@@ -554,7 +552,7 @@ public class WebResource {
             }
 
             String user = (String) inputJSON.get("username");
-            String driver = (String) inputJSON.get("drivername");
+            String drivername = (String) inputJSON.get("drivername");
             String desc = (String) inputJSON.get("driverDescription");
             String data = (String) inputJSON.get("data");
             String uri = (String) inputJSON.get("topuri");
@@ -566,22 +564,23 @@ public class WebResource {
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
 
             if (drivertype.equals("raw")) {
+                // excluding the topuri if the driver type is raw
                 prep = front_conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
                 prep.setString(1, user);
-                prep.setString(2, driver);
-                prep.setString(3, desc);
-                prep.setString(4, data);
-                prep.setString(5, "");
-                prep.setString(6, drivertype);
+                prep.setString(2, drivername);
+                prep.setString(3, drivertype);
+                prep.setString(4, "");
+                prep.setString(5, desc);
+                prep.setString(6, data);
                 prep.executeUpdate();
             } else {
                 prep = front_conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
                 prep.setString(1, user);
-                prep.setString(2, driver);
-                prep.setString(3, desc);
-                prep.setString(4, data);
-                prep.setString(5, uri);
-                prep.setString(6, drivertype);
+                prep.setString(2, drivername);
+                prep.setString(3, drivertype);
+                prep.setString(4, uri);
+                prep.setString(5, desc);
+                prep.setString(6, data);
                 prep.executeUpdate();
 
             }
@@ -595,22 +594,45 @@ public class WebResource {
 
     @PUT
     @Path("/driver/{user}/edit/{topuri}")
+    @Consumes(value = {"application/json"})
     @RolesAllowed("Drivers")
-    public String editDriverProfile(@PathParam("user") String username, @PathParam("topuri") String uri) throws SQLException {
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                front_connectionProps);
+    public String editDriverProfile(@PathParam(value = "user") String username, @PathParam(value = "topuri") String oldTopUri, final String dataInput) throws SQLException, ParseException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + uri + "\'");
-//        prep.setString(1, username);
-//        prep.setString(2, uri);
-        ResultSet rs = prep.executeQuery();
+        try {
+            JSONObject inputJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(dataInput);
+                inputJSON = (JSONObject) obj;
 
-        commonsClose(front_conn, prep, rs);
+            } catch (ParseException ex) {
+                logger.catching("editDriverProfile", ex);
+            }
 
-        return "Deleted";
+            String newTopUri = (String) inputJSON.get("topuri");
+            String newData = (String) inputJSON.get("data");
+
+            Properties prop = new Properties();
+            prop.put("user", front_db_user);
+            prop.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
+
+            prep = front_conn.prepareStatement("UPDATE driver_wizard SET TopUri = ?, data = ? WHERE username = ? AND TopUri = ?");
+            prep.setString(1, newTopUri);
+            prep.setString(2, newData);
+            prep.setString(3, username);
+            prep.setString(4, oldTopUri);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("editDriverProfile", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+
+        return "Saved edits successfully.";
     }
 
     /**
@@ -740,9 +762,10 @@ public class WebResource {
 
             while (ret.next()) {
                 list.add(ret.getString("drivername"));
+                list.add(ret.getString("drivertype"));
+                list.add(ret.getString("TopUri"));
                 list.add(ret.getString("description"));
                 list.add(ret.getString("data"));
-                list.add(ret.getString("TopUri"));
             }
 
             return list;
@@ -1760,7 +1783,7 @@ public class WebResource {
      * info
      */
     @GET
-    @Path("/logging/")    
+    @Path("/logging/")
     @Produces("application/json")
     @RolesAllowed("Logging")
     public String getLogLevel() {
@@ -2426,7 +2449,7 @@ public class WebResource {
                     + "WHERE instanceUUID = ?");
             prep.setString(1, refUUID);
             rs = prep.executeQuery();
-            while (rs.next()) {                
+            while (rs.next()) {
                 BigInteger ONE_BILLION = new BigInteger("1000000000");
                 Timestamp time = rs.getTimestamp(1);
                 if (time == null) {
@@ -2851,19 +2874,6 @@ public class WebResource {
         return instance.status();
     }
 
-    /**
-     * @api {post} /app/service Create Service
-     * @apiVersion 1.0.0
-     * @apiDescription Create new service instance.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     * @apiParam {JSONObject} inputString service JSON
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X POST -d @newservice.json -H "Content-Type: application/json"
-     * http://localhost:8080/StackV-web/restapi/app/service
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
     @POST
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
@@ -2946,17 +2956,6 @@ public class WebResource {
         }
     }
 
-    /**
-     * @api {get} /app/service Initialize Service
-     * @apiVersion 1.0.0
-     * @apiDescription Initialize a service in the backend, and return new UUID.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X GET http://localhost:8080/StackV-web/restapi/app/service
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
     @GET
     @Path(value = "/service")
     @RolesAllowed("Services")
@@ -2992,9 +2991,9 @@ public class WebResource {
     public String adminChangeSuperState(@PathParam(value = "siUUID") final String refUUID,
             @PathParam(value = "state") final String state) throws IOException, SQLException {
         final String method = "adminChangeSuperState";
-        try {            
+        try {
             logger.start(method);
-            
+
             String stateStr = state.toUpperCase();
 
             Properties front_connectionProps = new Properties();
@@ -3015,19 +3014,6 @@ public class WebResource {
         }
     }
 
-    /**
-     * @api {put} /app/service/:siUUID/:action Operate Service
-     * @apiVersion 1.0.0
-     * @apiDescription Operate on the specified service instance.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     * @apiParam {String} siUUID instance UUID
-     * @apiParam {String} action operation to execute
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X PUT http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/cancel
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
     @RolesAllowed("Services")
@@ -3067,20 +3053,6 @@ public class WebResource {
         logger.trace_end(method);
     }
 
-    /**
-     * @api {get} /app/service/:siUUID/call_verify Call Verify
-     * @apiVersion 1.0.0
-     * @apiDescription Single-run of service verification, returning result data
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     * @apiParam {String} siUUID instance UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X GET http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b/call_verify
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONObject} Verification result JSON.
-     */
     @GET
     @Path(value = "/service/{siUUID}/call_verify")
     @RolesAllowed("Services")
@@ -3095,18 +3067,6 @@ public class WebResource {
         return verify.startVerification();
     }
 
-    /**
-     * @api {delete} /app/service/:siUUID/ Delete Service
-     * @apiVersion 1.0.0
-     * @apiDescription Delete the specified service instance.
-     * @apiGroup Service
-     * @apiUse AuthHeader
-     * @apiParam {String} siUUID instance UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
     @DELETE
     @Path(value = "/service/{siUUID}/{action}")
     @RolesAllowed("Services")

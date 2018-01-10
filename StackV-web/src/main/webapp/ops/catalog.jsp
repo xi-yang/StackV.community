@@ -7,6 +7,9 @@
 
         <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
     </head>
 
     <body>
@@ -49,6 +52,11 @@
             <div id="loading-panel"></div>
             <!-- TAG PANEL -->
             <div id="tag-panel"></div>
+
+            <!-- jQuery dialog for the system health check -->
+            <div id="system-health-check">
+                <div id="system-health-check-text"></div>
+            </div>
         </div>
         <div id="catalog-panel" class="closed">
             <ul class="nav nav-tabs catalog-tabs">
@@ -128,23 +136,23 @@
                 </div>
             </div>
         </div>
-
+        
         <script src="/StackV-web/js/keycloak.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/jquery-ui.min.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>        
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
+        <script src="/StackV-web/js/sweetalert.min.js"></script>
+
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
+        
+        <script src="/StackV-web/js/svc/intentEngine.js"></script>
+        <script src="/StackV-web/js/svc/handlebars.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/catalog.js"></script>
-        
-        <script src="/StackV-web/js/svc/intentEngine.js"></script>
-        <script src="/StackV-web/js/svc/handlebars.js"></script>        
 
     </body>
 </html>

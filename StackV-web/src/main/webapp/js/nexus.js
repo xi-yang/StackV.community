@@ -141,7 +141,7 @@ function loadNavbar() {
         if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
             $(".nav-admin").hide();
         }
-        if (keycloak.tokenParsed.resource_access.StackV && keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
+        if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
             $("#driver-tab").hide();
         }
 
@@ -1231,4 +1231,79 @@ function downloadLogs() {
         }
     }
     return ret;
+}
+
+/*
+ * Calls '/StackV-web/restapi/service/ready'
+ * The API call returns true or false.
+ * The prerequiste for this function is having a this div structure in the:
+ * <div id="system-health-check">
+ <div id="system-health-check-text"></div>
+ </div>
+ */
+var systemHealthPass;
+function loadSystemHealthCheck() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
+    var dialogObj = $('#system-health-check');
+    var dialogText = $('#system-health-check-text');
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        dataType: "json",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            if (systemHealthPass !== result) {
+                if (result === true) {
+                    dialogText.text("System is fully intialized!");
+                    dialogObj.dialog({
+                        position: {
+                            my: "right bottom",
+                            at: "right bottom",
+                            of: window
+                        },
+                        show: "slide",
+                        resizeable: false,
+                        draggable: true,
+                        title: "System Health Check",
+                        height: 150,
+                        width: 250,
+                        classes: {"ui-dialog": "health-dialog-pass"},
+                        modal: false,
+                        buttons: [
+                            {
+                                text: "Close",
+                                click: function () {
+                                    $("#system-health-check").dialog('close');
+                                }
+                            }
+                        ]
+                    });
+                } else {
+                    dialogText.text("System is not yet fully initialized! Please wait...");
+                    dialogObj.dialog({
+                        position: {
+                            my: "right bottom",
+                            at: "right bottom",
+                            of: window
+                        },
+                        show: "slide",
+                        resizeable: false,
+                        draggable: true,
+                        title: "System Health Check",
+                        height: 100,
+                        width: 250,
+                        classes: {"ui-dialog": "health-dialog-fail"},
+                        modal: false
+                    });
+                }
+                systemHealthPass = result;
+            }
+        },
+        error: function (err) {
+            console.log("Error in system health check: " + JSON.stringify(err));
+        }
+    });
 }

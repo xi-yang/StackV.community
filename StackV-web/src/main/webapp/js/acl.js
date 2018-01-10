@@ -180,6 +180,7 @@ function loadACLPortal() {
     // Instances
     $(".acl-instance-close").click(function (evt) {
         $(".acl-instance-selected-row").removeClass("acl-instance-selected-row");
+        $(".acl-instance-row").show();
 
         tweenInstanceACLPanel.reverse();
         evt.preventDefault();
@@ -235,9 +236,6 @@ function subloadRoleACLUsers() {
 
 function subloadRoleACLGroups() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/groups';
-
-
-
 
     keycloak.updateToken(30).success(function () {
         $.ajax({
@@ -478,6 +476,7 @@ function subloadInstanceACLInstances() {
                         subloadInstanceACLTable($(this).data("uuid"));
 
                         $(this).addClass("acl-instance-selected-row");
+                        $(".acl-instance-row").not(".acl-instance-selected-row").hide();
                     });
 
                     if (view === "center") {
