@@ -159,12 +159,13 @@ public class GcpPush {
         JSONObject result;
         
         try {
-            gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
             HttpRequest request = gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
-            result = gcpGet.makeRequest(request);
-            logger.trace(method, result.toString());
-            //remove the metadata entry
-            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), null);
+            String error = waitRequest(request);
+            if (error == null) {
+                gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), null);
+            } else {
+                logger.warning(method, error);
+            }
             
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
@@ -222,10 +223,12 @@ public class GcpPush {
         
         try {
             HttpRequest request = gcpGet.getComputeClient().subnetworks().delete(projectID, region, name).buildHttpRequest();
-            JSONObject result = gcpGet.makeRequest(request);
-            logger.trace(method, result.toString());
-            //remove the metadata entry
-            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, region, name), null);
+            String error = waitRequest(request);
+            if (error == null) {
+                gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, region, name), null);
+            } else {
+                logger.warning(method, error);
+            }
             
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());

@@ -247,14 +247,15 @@ public class GcpQuery {
         
         //the newlines make debugging these queries much easier.
         //subnet region and name are optional. vpcname is used to build
-        String query = "SELECT ?vpcUri ?vpcName ?subnetUri ?subnetName ?subnetCIDR ?subnetRegion\n"
+        String query = "SELECT ?vpcUri ?subnetUri ?subnetName ?subnetCIDR ?subnetRegion\n"
                 + "WHERE { ?service mrs:providesVPC ?vpcUri . \n"
                 + "?vpcUri a nml:Topology ; nml:hasService ?switchingService . \n"
                 + "?switchingService a mrs:SwitchingService ; \n"
                 + "mrs:providesSubnet ?subnetUri . \n"
                 + "?subnetUri a mrs:SwitchingSubnet ; mrs:hasNetworkAddress ?addressUri . \n"
                 + "?addressUri a mrs:NetworkAddress ; mrs:value ?subnetCIDR \n"
-                + "OPTIONAL { ?subnetUri mrs:type ?subnetRegion } }";
+                + "OPTIONAL { ?subnetUri mrs:type ?subnetRegion } \n"
+                + "OPTIONAL { ?subnetUri nml:name ?subnetname } } ";
         
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
@@ -264,18 +265,18 @@ public class GcpQuery {
             String vpcName = getOrDefault(uriNames, vpcUri, makeNameFromUri("vpc", vpcUri));
             String subnetUri = solution.get("subnetUri").toString();
             String subnetCIDR = solution.get("subnetCIDR").toString();
-            String subnetName = getOrDefault(uriNames, subnetUri, makeNameFromUri("subnet", subnetUri));
+            String subnetName = getOrDefault(solution, "subnetName", makeNameFromUri("subnet", subnetUri));
             String subnetRegion = getOrDefault(solution, "subnetRegion", defaultRegion);
             
-            if (subnetName == null) {
-                //if the subnet name was not provided, create it
-                subnetName = makeNameFromUri("subnet", subnetUri);
-                //avoid duplicate names
-                subnetName = resolveNameConflicts(subnetName);
-            } else {
-                //else, remove any invalid characters
-                subnetName = removeChars(subnetName);
+            String error = validateCidr(subnetCIDR);
+            if (error != null) {
+                logger.error_throwing(method, error);
             }
+            
+            //remove invalid chars in case subnet was read from ttl model
+            subnetName = removeChars(subnetName);
+            //avoid duplicate names
+            subnetName = resolveNameConflicts(subnetName);
             
             subnetRequest.put("type", "create_subnet");
             subnetRequest.put("vpcName", vpcName);
@@ -570,7 +571,31 @@ public class GcpQuery {
             return name;
         }
     }
-    
+
+    public String validateCidr (String cidr) {
+        //Validate the CIDR
+        String pattern = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\/\\d{1,2}";
+        String parts[] = cidr.split("[/.]");
+        if (!cidr.matches(pattern) || parts.length != 5) {
+            return "CIDR block is invalid: " + cidr;
+        }
+        
+        //validate the CIDR range
+        int temp = Integer.parseInt(parts[4]);
+        if (temp > 32) {
+            return String.format("CIDR range is invalid: %d, must be between 0 and 32 inclusive.", temp);
+        }
+        
+        for (String s : parts) {
+            temp = Integer.parseInt(s);
+            if (temp > 255) {
+                return String.format("IP number is invalid: %d, must be between 0 and 255 inclusive.", temp);
+            }
+        }
+        
+        return null;
+    }
+
 }
 
 /*
