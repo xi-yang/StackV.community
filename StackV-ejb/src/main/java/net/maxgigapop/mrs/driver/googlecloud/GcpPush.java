@@ -77,12 +77,13 @@ public class GcpPush {
     //When deleting an instance, remember to remove it's URI from the lookup table.
     public void commit(JSONArray requests) throws InterruptedException {
         String method = "commit";
+        logger.start(method);
         HttpRequest request;
         
         for (Object o : requests) {
             JSONObject requestInfo = (JSONObject) o;
-            System.out.printf("COMMIT START: %s info: %s \n", requestInfo.get("type"), requestInfo);
             String type = requestInfo.containsKey("type") ? requestInfo.get("type").toString() : "null";
+            logger.trace_start(method+"."+type, requestInfo.toString());
             
             switch (type) {
             case "create_vpc":
@@ -107,7 +108,7 @@ public class GcpPush {
                 createBucket(requestInfo);
             break;
             case "delete_bucket":
-                //deleteBucket(requestInfo);
+                deleteBucket(requestInfo);
             break;
             case "null":
                 logger.warning(method, "encountered request without type");
@@ -116,8 +117,9 @@ public class GcpPush {
                 logger.warning(method, "encountered request of unknown type: "+ type);
             break;
             }
-            System.out.printf("COMMIT END: %s\n", requestInfo.get("type"));
+            logger.trace_end(method+"."+type);
         }
+        logger.end(method);
     }
     
     private void createVpc(JSONObject requestInfo) {
@@ -137,12 +139,11 @@ public class GcpPush {
             JSONObject result;
             HttpRequest request = gcpGet.getComputeClient().networks().insert(projectID, network).buildHttpRequest();
             result = gcpGet.makeRequest(request);
-            System.out.printf("create vpc result: %s\n", result);
+            logger.trace(method, result.toString());
             //Add this vpc's uri to the metadata table
             gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), uri);
         } catch (IOException e) {
-            //TODO log error
-            System.out.printf("COMMIT ERROR\n");
+            logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
     }
     
@@ -158,15 +159,15 @@ public class GcpPush {
         JSONObject result;
         
         try {
-            gcpGet.getComputeClient().networks().delete(projectID, name).execute();
-            //HttpRequest request = gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
-            //result = gcpGet.makeRequest(request);
-            //System.out.printf("result: %s\n", result);
+            gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
+            HttpRequest request = gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
+            result = gcpGet.makeRequest(request);
+            logger.trace(method, result.toString());
             //remove the metadata entry
             gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), null);
             
         } catch (IOException e) {
-            System.out.printf("COMMIT ERROR\n");
+            logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
     }
     
@@ -192,14 +193,15 @@ public class GcpPush {
         
         try {
             HttpRequest request = gcpGet.getComputeClient().subnetworks().insert(projectID, subnetRegion, subnet).buildHttpRequest();
-            if (waitRequest(request)) {
+            String error = waitRequest(request);
+            if (error == null) {
                 gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, subnetRegion, subnetName), subnetUri);
             } else {
-                System.out.printf("an error occurred\n");
+                logger.warning(method, error);
             }
             
         } catch (IOException e) {
-            System.out.printf("COMMIT ERROR\n");
+            logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
     }
     
@@ -221,11 +223,12 @@ public class GcpPush {
         try {
             HttpRequest request = gcpGet.getComputeClient().subnetworks().delete(projectID, region, name).buildHttpRequest();
             JSONObject result = gcpGet.makeRequest(request);
+            logger.trace(method, result.toString());
             //remove the metadata entry
             gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, region, name), null);
             
         } catch (IOException e) {
-            System.out.printf("COMMIT ERROR %s\n", e);
+            logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
     }
     
@@ -278,6 +281,7 @@ public class GcpPush {
                     access.setNatIP(nicInfo.get("ip").toString());
                 }
                 
+                
                 accessList = new ArrayList<>();
                 accessList.add(access);
             
@@ -285,6 +289,7 @@ public class GcpPush {
                     .setNetwork(String.format(vpcFormat, projectID, vpcName))
                     .setSubnetwork(String.format(subnetFormat, projectID, subnetRegion, subnetName))
                     //.setNetworkIP(subnetIP) //This is the internal ip
+                    
                     .setAccessConfigs(accessList);
                 netifaces.add(netiface);
             }
@@ -307,14 +312,14 @@ public class GcpPush {
         try {
             HttpRequest request = gcpGet.getComputeClient().instances().insert(projectID, zone, instance).buildHttpRequest();
             
-            if (waitRequest(request)) {
+            String error = waitRequest(request);
+            if (error == null) {
                 gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vm", zone, name), uri);
             } else {
-                System.out.printf("an error occurred\n");
+                logger.warning(method, error);
             }
         } catch (IOException e) {
-            //TODO
-            System.out.printf("COMMIT ERROR: %s\n", e);
+            logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
     }
     
@@ -333,11 +338,12 @@ public class GcpPush {
         try {
             HttpRequest request = gcpGet.getComputeClient().instances().delete(projectID, zone, name).buildHttpRequest();
             result = gcpGet.makeRequest(request);
+            logger.trace(method, result.toString());
             //remove the metadata entry
             gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vm", zone, name), null);
             
         } catch (IOException e) {
-            System.out.printf("COMMIT ERROR: %s\n", e);
+            logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
     }
     
@@ -357,13 +363,35 @@ public class GcpPush {
         try {
             HttpRequest request = gcpGet.getStorageClient().buckets().insert(projectID, bucket).buildHttpRequest();
             JSONObject result = gcpGet.makeRequest(request);
+            logger.trace(method, result.toString());
             gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("bucket", name), uri);
         } catch (IOException e) {
-            System.out.printf("COMMIT ERROR: %s\n", e);
+            logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
     }
     
-    String checkArgs(JSONObject request, String ...reqArgs) {
+    private void deleteBucket(JSONObject requestInfo) {
+        String method = "createBucket";
+        String missingArgs = checkArgs(requestInfo, "name");
+        if (missingArgs != null) {
+            logger.warning(method, missingArgs);
+            return;
+        }
+        
+        String name = requestInfo.get("name").toString();
+        
+        try {
+            HttpRequest request = gcpGet.getStorageClient().buckets().delete(name).buildHttpRequest();
+            JSONObject result = gcpGet.makeRequest(request);
+            logger.trace(method, result.toString());
+            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("bucket", name), null);
+        } catch (IOException e) {
+            logger.warning(method, "COMMIT ERROR: " + e.toString());
+        }
+        
+    }
+    
+    private String checkArgs(JSONObject request, String ...reqArgs) {
         HashSet<String> missingArgs = new HashSet<>();
         
         for (String arg : reqArgs) {
@@ -392,17 +420,17 @@ public class GcpPush {
             return (JSONObject) errors.get(0);
         } catch (ParseException pe) {
             //It's not even JSON?
-            System.out.printf("Expected JSON, but got %s\n", errorJson);
+            //System.out.printf("Expected JSON, but got %s\n", errorJson);
         }
         return null;
     }
     
-    boolean waitRequest(HttpRequest request) throws IOException {
+    String waitRequest(HttpRequest request) throws IOException {
         //wait 5 seconds between requests, and send up to 5 requests
         return waitRequest(request, 5000, 5);
     }
     
-    boolean waitRequest(HttpRequest request, long requestInterval, int maxRequests) throws IOException {
+    String waitRequest(HttpRequest request, long requestInterval, int maxRequests) throws IOException {
         /*
         this function retries a request multiple times if resourceNotReady is thrown as a response
         the funtion stops attempting after maxRequests has been reached
@@ -417,27 +445,25 @@ public class GcpPush {
         reasons.add("resourceInUseByAnotherResource");
         reasons.add("resourceNotReady");
         
-        if (requestInterval > max) {
-            //This prevents long waits for a single resource
-            requestInterval = max;
-        }
+        //This prevents long waits for a single resource
+        if (requestInterval > max) requestInterval = max;
+        
         
         do {
             if (System.currentTimeMillis() - start > max) {
                 //resource is taking too long
-                System.out.println("Resource timeout");
-                return false;
+                return "Resource timeout";
             }
             
             if (numRequests >= maxRequests) {
                 //too many failures!
-                return false;
+                return "Too many attempts";
             }
             
             try {
                 numRequests++;
                 gcpGet.makeRequest(request);
-                return true;
+                return null;
             } catch (GoogleJsonResponseException e) {
                 JSONObject errorJson = parseJSONException(e);
                 
@@ -449,8 +475,7 @@ public class GcpPush {
                         //TODO
                     }
                 } else {
-                    System.out.println(errorJson);
-                    return false;
+                    return errorJson.toString();
                 }
             }
         } while (true);

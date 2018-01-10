@@ -17,6 +17,7 @@ import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
@@ -31,11 +32,13 @@ public class GcpQuery {
     private static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
     //private static final String defaultRegion = "us-central1";
     //private static final String defaultZone = "us-central1-c";
-    private String jsonAuth, projectID, defaultImage, defaultInstanceType, defaultDiskType, defaultDiskSize, defaultRegion, defaultZone;
-    private GcpGet gcpGet;
-    private HashMap<String, String> uriNames, subnetRegions, instanceZones;
+    private final String jsonAuth, projectID, defaultImage, defaultInstanceType, defaultDiskType, defaultDiskSize, defaultRegion, defaultZone;
+    private final GcpGet gcpGet;
+    private final HashMap<String, String> uriNames, subnetRegions, instanceZones;
+    public static final StackLogger logger = GcpDriver.logger;
     
     public GcpQuery(OntModel modelRef, OntModel modelAdd, OntModel modelReduct, Map<String, String> properties) {
+        String method = "GcpQuery - init";
         this.modelRef = modelRef;
         this.modelAdd = modelAdd;
         this.modelReduct = modelReduct;
@@ -50,51 +53,55 @@ public class GcpQuery {
         
         //get metadata
         HashMap<String, String> metadata = gcpGet.getCommonMetadata();
-        JSONArray result;
-
+        
         //Put all vpcs into the uri lookup table
-        result = (JSONArray) gcpGet.getVPCs().get("items");
-        for (Object o : result) {
-            JSONObject vpcInfo = (JSONObject) o;
-            String name = vpcInfo.get("name").toString();
-            String key = GcpModelBuilder.getResourceKey("vpc", name);
+        JSONObject vpcResult = gcpGet.getVPCs();
+        if (vpcResult.containsKey("items")) {
+            JSONArray result = (JSONArray) vpcResult.get("items");
+            for (Object o : result) {
+                JSONObject vpcInfo = (JSONObject) o;
+                String name = vpcInfo.get("name").toString();
+                String key = GcpModelBuilder.getResourceKey("vpc", name);
             
-            if (metadata.containsKey(key)) {
-                uriNames.put(metadata.get(key), name);
-            } else {
-                //System.out.printf("vpc %s has no uri entry\n", name);
-            }
-            
-            JSONArray subnetsInfo = (JSONArray) vpcInfo.get("subnetworks");
-            if (subnetsInfo == null) continue;
-            
-            for (Object o2 : subnetsInfo) {
-                JSONObject subnetInfo = (JSONObject) o;
-                String subnetName = GcpGet.parseGoogleURI(o2.toString(), "subnetworks");
-                String region = GcpGet.parseGoogleURI(o2.toString(), "regions");
-                String subnetKey = GcpModelBuilder.getResourceKey("subnet", name, region, subnetName);
-                if (metadata.containsKey(subnetKey)) {
-                    uriNames.put(metadata.get(subnetKey), subnetName);
-                    subnetRegions.put(metadata.get(subnetKey), region);
+                if (metadata.containsKey(key)) {
+                    uriNames.put(metadata.get(key), name);
                 } else {
-                    //System.out.printf("subnet %s %s %s has no uri entry\n", name, region, subnetName);
+                    //System.out.printf("vpc %s has no uri entry\n", name);
+                }
+            
+                JSONArray subnetsInfo = (JSONArray) vpcInfo.get("subnetworks");
+                if (subnetsInfo == null) continue;
+                
+                for (Object o2 : subnetsInfo) {
+                    JSONObject subnetInfo = (JSONObject) o;
+                    String subnetName = GcpGet.parseGoogleURI(o2.toString(), "subnetworks");
+                    String region = GcpGet.parseGoogleURI(o2.toString(), "regions");
+                    String subnetKey = GcpModelBuilder.getResourceKey("subnet", name, region, subnetName);
+                    if (metadata.containsKey(subnetKey)) {
+                        uriNames.put(metadata.get(subnetKey), subnetName);
+                        subnetRegions.put(metadata.get(subnetKey), region);
+                    } else {
+                        //System.out.printf("subnet %s %s %s has no uri entry\n", name, region, subnetName);
+                    }
                 }
             }
-        }
 
-        //Put all instances into uri lookup table
-        result = gcpGet.getAggregatedVmInstances();
-        for (Object o : result) {
-            JSONObject vmInfo = (JSONObject) o;
-            String zone = GcpGet.parseGoogleURI(vmInfo.get("zone").toString(), "zones");
-            String name = vmInfo.get("name").toString();
-            String key = GcpModelBuilder.getResourceKey("vm", zone, name);
-            if (metadata.containsKey(key)) {
-                uriNames.put(metadata.get(key), name);
-                instanceZones.put(metadata.get(key), zone);
-            } else {
-                //System.out.printf("vm %s %s has no uri entry\n", zone, name);
+            //Put all instances into uri lookup table
+            result = gcpGet.getAggregatedVmInstances();
+            for (Object o : result) {
+                JSONObject vmInfo = (JSONObject) o;
+                String zone = GcpGet.parseGoogleURI(vmInfo.get("zone").toString(), "zones");
+                String name = vmInfo.get("name").toString();
+                String key = GcpModelBuilder.getResourceKey("vm", zone, name);
+                if (metadata.containsKey(key)) {
+                    uriNames.put(metadata.get(key), name);
+                    instanceZones.put(metadata.get(key), zone);
+                } else {
+                    //System.out.printf("vm %s %s has no uri entry\n", zone, name);
+                }
             }
+        } else {
+            logger.warning(method, "Vpc request error, key \"items\" not found. Displaying JSON: " + vpcResult.toString());
         }
         
         defaultImage = properties.get("defaultImage");
@@ -126,6 +133,8 @@ public class GcpQuery {
             String instanceName = getOrDefault(solution, "name", makeNameFromUri("vm", instanceUri));
             //remove invalid characters such as underscores
             instanceName = removeChars(instanceName).toLowerCase();
+            //avoid duplicate names
+            instanceName = resolveNameConflicts(instanceName);
             
             String machineType = getOrDefault(typeInfo, "instance", defaultInstanceType);
             String sourceImage = getOrDefault(typeInfo, "image", defaultImage);
@@ -135,18 +144,18 @@ public class GcpQuery {
             
             String nicQuery = "SELECT ?ip ?subnetUri ?vpcUri \n"
                     + "WHERE { BIND(<" + instanceUri + "> AS ?uri) \n"
-                    + "?uri nml:hasBidirectionalPort ?nic . \n"
-                    + "?nic a nml:BidirectionalPort ; mrs:hasNetworkAddress ?nicAddr .\n"
-                    + "?nicAddr a mrs:NetworkAddress ; mrs:value ?ip \n"
-                    + "OPTIONAL { ?subnetUri a mrs:SwitchingSubnet ; nml:hasBidirectionalPort ?nic . \n"
+                    + "?uri nml:hasBidirectionalPort ?nic . ?nic a nml:BidirectionalPort . \n"
+                    + "?subnetUri a mrs:SwitchingSubnet ; nml:hasBidirectionalPort ?nic . \n"
                     + "?vpcUri a nml:Topology ; nml:hasService ?switchingService . \n"
-                    + "?switchingService a mrs:SwitchingService ; mrs:providesSubnet ?subnetUri . } }";
+                    + "?switchingService a mrs:SwitchingService ; mrs:providesSubnet ?subnetUri ."
+                    + "OPTIONAL { ?nic mrs:hasNetworkAddress ?nicAddr . \n"
+                    + "?nicAddr a mrs:NetworkAddress ; mrs:value ?ip } } \n";
             
             int i = 0;
             
             JSONArray nics = new JSONArray();
             JSONObject nicInfo;
-            ResultSet nicResult = executeQuery(nicQuery, emptyModel, modelAdd);
+            ResultSet nicResult = executeQuery(nicQuery, modelRef, modelAdd);
             while (nicResult.hasNext()) {
                 QuerySolution nicSolution = nicResult.next();
                 nicInfo = new JSONObject();
@@ -171,11 +180,12 @@ public class GcpQuery {
                 }
                 
                 nics.add(nicInfo);
-                System.out.printf("found nic: %s\n", nicInfo);
+                //System.out.printf("found nic: %s\n", nicInfo);
             }
             
             if (nics.isEmpty()) {
                 //every instance must contain at least 1 nic
+                logger.warning(method, "found instance without NIC, added nic to default subnet");
                 nicInfo = new JSONObject();
                 nicInfo.put("nic", "0");
                 nicInfo.put("subnet", "default");
@@ -197,7 +207,7 @@ public class GcpQuery {
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(instanceUri, instanceName);
             
-            System.out.printf("CREATE INSTANCE REQUEST: %s\n", instanceRequest);
+            //System.out.printf("CREATE INSTANCE REQUEST: %s\n", instanceRequest);
             output.add(instanceRequest);
         }
         
@@ -224,10 +234,9 @@ public class GcpQuery {
             instanceRequest.put("name", name);
             instanceRequest.put("zone", zone);
             
-            System.out.printf("DELETE INSTANCE REQUEST: %s\n", instanceRequest);
+            //System.out.printf("DELETE INSTANCE REQUEST: %s\n", instanceRequest);
             output.add(instanceRequest);
         }
-        
         
         return output;
     }
@@ -245,8 +254,6 @@ public class GcpQuery {
                 + "mrs:providesSubnet ?subnetUri . \n"
                 + "?subnetUri a mrs:SwitchingSubnet ; mrs:hasNetworkAddress ?addressUri . \n"
                 + "?addressUri a mrs:NetworkAddress ; mrs:value ?subnetCIDR \n"
-                + "OPTIONAL { ?vpcUri nml:name ?vpcName } \n"
-                + "OPTIONAL { ?subnetUri nml:name ?subnetName } \n"
                 + "OPTIONAL { ?subnetUri mrs:type ?subnetRegion } }";
         
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
@@ -254,15 +261,17 @@ public class GcpQuery {
             JSONObject subnetRequest = new JSONObject();
             QuerySolution solution = r.next();
             String vpcUri = solution.get("vpcUri").toString();
-            String vpcName = getOrDefault(solution, "vpcName", makeNameFromUri("vpc", vpcUri));
-            String subnetUri = getOrDefault(solution, "subnetUri", "error");
-            String subnetCIDR = getOrDefault(solution, "subnetCIDR", "error");
-            String subnetName = getOrDefault(solution, "subnetName", null);
+            String vpcName = getOrDefault(uriNames, vpcUri, makeNameFromUri("vpc", vpcUri));
+            String subnetUri = solution.get("subnetUri").toString();
+            String subnetCIDR = solution.get("subnetCIDR").toString();
+            String subnetName = getOrDefault(uriNames, subnetUri, makeNameFromUri("subnet", subnetUri));
             String subnetRegion = getOrDefault(solution, "subnetRegion", defaultRegion);
             
             if (subnetName == null) {
                 //if the subnet name was not provided, create it
                 subnetName = makeNameFromUri("subnet", subnetUri);
+                //avoid duplicate names
+                subnetName = resolveNameConflicts(subnetName);
             } else {
                 //else, remove any invalid characters
                 subnetName = removeChars(subnetName);
@@ -278,7 +287,7 @@ public class GcpQuery {
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(subnetUri, subnetName);
             subnetRegions.put(subnetUri, subnetRegion);
-            System.out.printf("CREATE SUBNET REQUEST: %s\n", subnetRequest);
+            //System.out.printf("CREATE SUBNET REQUEST: %s\n", subnetRequest);
             output.add(subnetRequest);
         }
         
@@ -300,11 +309,6 @@ public class GcpQuery {
             JSONObject subnetRequest = new JSONObject();
             QuerySolution solution = r.next();
             
-            if (!solution.contains("subnet")) {
-                System.out.println("Error: solution without a subnet");
-                continue;
-            }
-            
             String vpcUri = solution.get("vpc").toString();
             String vpcName = uriNames.get(vpcUri);
             String uri = solution.get("subnet").toString();
@@ -317,14 +321,13 @@ public class GcpQuery {
             subnetRequest.put("region", region);
             subnetRequest.put("name", name);
             
-            System.out.printf("DELETE SUBNET REQUEST: %s\n", subnetRequest);
+            //System.out.printf("DELETE SUBNET REQUEST: %s\n", subnetRequest);
             output.add(subnetRequest);
         }
         
         return output;
     }
     
-    //Need name
     public ArrayList<JSONObject> createVpcRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "createVpcRequests";
@@ -349,7 +352,7 @@ public class GcpQuery {
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(vpcUri, vpcName);
             
-            System.out.printf("CREATE VPC REQUEST: %s\n", vpcRequest);
+            //System.out.printf("CREATE VPC REQUEST: %s\n", vpcRequest);
             output.add(vpcRequest);
         }
         return output;
@@ -367,7 +370,7 @@ public class GcpQuery {
             JSONObject vpcRequest = new JSONObject();
             QuerySolution solution = r.next();
             if (!solution.contains("vpc")) {
-                System.out.println("Error: solution without vpc");
+                logger.warning(method, "Error: solution without vpc");
                 continue;
             }
             //System.out.printf("solution: %s\n", solution);
@@ -377,7 +380,7 @@ public class GcpQuery {
             vpcRequest.put("uri", uri);
             vpcRequest.put("name", name);
             
-            System.out.printf("DELETE VPC REQUEST: %s\n", vpcRequest);
+            //System.out.printf("DELETE VPC REQUEST: %s\n", vpcRequest);
             output.add(vpcRequest);
         }
         
@@ -387,10 +390,9 @@ public class GcpQuery {
     public ArrayList<JSONObject> createBucketsRequest() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "createBucketsRequest";
-        String query = "SELECT ?name WHERE { ?service mrs:providesBucket . "
-                + "?bucket a mrs:Bucket ; nml:Name }";
+        String query = "SELECT ?name WHERE { ?bucket a mrs:Bucket ; nml:Name ?name }";
         
-        ResultSet r = executeQuery(query, modelRef, modelAdd);
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             JSONObject bucketRequest = new JSONObject();
             QuerySolution solution = r.next();
@@ -402,8 +404,18 @@ public class GcpQuery {
             bucketRequest.put("name", name);
             bucketRequest.put("uri", uri);
             
+            //System.out.printf("CREATE BUCKET REQUEST: %s\n", bucketRequest);
             output.add(bucketRequest);
         }
+        
+        /*
+        //special request for testing only
+        JSONObject debugRequest = new JSONObject();
+        debugRequest.put("type", "create_bucket");
+        debugRequest.put("name", "bucket1owierbg");
+        debugRequest.put("uri", "urn:ogf:network:google.com:google-cloud:bucket1");
+        output.add(debugRequest);
+        //*/
         
         return output;
     }
@@ -414,13 +426,25 @@ public class GcpQuery {
         String query = "SELECT ?name WHERE { ?bucket a mrs:Bucket ;"
                 + "nml:name ?name }";
         
-        ResultSet r = executeQuery(query, modelRef, modelReduct);
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
         while (r.hasNext()) {
-            JSONObject request = new JSONObject();
+            JSONObject bucketRequest = new JSONObject();
+            QuerySolution solution = r.next();
+            String name = solution.get("name").toString();
             
-            //output.add(request);
+            bucketRequest.put("type", "delete_bucket");
+            bucketRequest.put("name", name);
+            
+            //System.out.printf("DELETE BUCKET REQUEST: %s\n", bucketRequest);
+            output.add(bucketRequest);
         }
-        
+        /*
+        //special request for testing only
+        JSONObject debugRequest = new JSONObject();
+        debugRequest.put("type", "delete_bucket");
+        debugRequest.put("name", "delete-this");
+        output.add(debugRequest);
+        //*/
         return output;
     }
     
@@ -533,7 +557,22 @@ public class GcpQuery {
         return output;
     }
     
+    public String resolveNameConflicts(String name) {
+        if (uriNames.containsValue(name)) {
+            String newname;
+            int i = 2;
+            
+            do {
+                newname = name + "-" + i++;
+            } while (uriNames.containsValue(newname));
+            return newname;
+        } else {
+            return name;
+        }
+    }
+    
 }
+
 /*
 template for query functions:
 
@@ -542,7 +581,7 @@ template for query functions:
         String method = "";
         String query = "";
         
-        ResultSet r = executeQuery(query, modelRef, );
+        ResultSet r = executeQuery(query, emptyModel, );
         while (r.hasNext()) {
             JSONObject request = new JSONObject();
             

@@ -60,7 +60,7 @@ public class GcpModelBuilder {
         //get the commonInstanceMetadata, for uri retrieval
         HashMap<String, String> metadata = gcpGet.getCommonMetadata();
         if (metadata == null) {
-            logger.error(method, "failed to get GCP metadata tables; default values will be used for URIs");
+            logger.error(method, "failed to get GCP metadata tables; URI will be constructed automatically");
         }
         
         //Add VPCs to the model
@@ -140,7 +140,7 @@ public class GcpModelBuilder {
                 */
                 JSONObject routeResult = gcpGet.getRoutes();
                 JSONArray routesInfo = null;
-                if (routeResult.containsKey("items")) {
+                if (routeResult != null && routeResult.containsKey("items")) {
                     routesInfo = (JSONArray) routeResult.get("items");
                 } else {
                     logger.error(method, "failed to get routes: "+routeResult);
@@ -214,7 +214,7 @@ public class GcpModelBuilder {
                         String nicName = netiface.get("name").toString();
                         String nicIP;
                         if (!netiface.containsKey("networkIP")) {
-                            System.out.printf("No network IP for instance %s, showing json %s\n", instanceName, netiface);
+                            //System.out.printf("No network IP for instance %s, showing json %s\n", instanceName, netiface);
                             nicIP = "error";
                         } else {
                             nicIP = netiface.get("networkIP").toString();

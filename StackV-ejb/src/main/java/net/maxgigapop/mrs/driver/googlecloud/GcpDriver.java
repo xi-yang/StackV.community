@@ -64,7 +64,6 @@ public class GcpDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        System.out.println("START PROPAGATE DELTA");
         //aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         String method = "propagateDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
@@ -79,10 +78,10 @@ public class GcpDriver implements IHandleDriverSystemCall {
         
         GcpPush push = new GcpPush(driverInstance.getProperties());
         
+        DriverInstancePersistenceManager.merge(driverInstance);
         JSONArray requests = push.propagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID();
         driverInstance.putProperty(requestId, requests.toString());
-        DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);
     }
 
