@@ -67,8 +67,18 @@ public class SystemModelCoordinator {
     
     @Lock(LockType.WRITE)
     public void setBootStrapped(boolean bl) {
-        logger.message("setBootStrapped", String.format("set status from %b into %b", bootStrapped, bl));
+        String method = "setBootStrapped";
+        logger.message(method, String.format("set status from %b into %b", bootStrapped, bl));
         bootStrapped = bl;
+        DataConcurrencyPoster dataConcurrencyPoster;
+        try {
+            Context ejbCxt = new InitialContext();
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (Exception ex) {
+            logger.warning(method, "failed to lookup DataConcurrencyPoster --" + ex);
+            return;
+        }
+        dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
         if (bootStrapped == false) {
             systemVersionGroup = null;
         }
@@ -78,6 +88,7 @@ public class SystemModelCoordinator {
     @Schedule(minute = "*", hour = "*", persistent = false)
     public void autoUpdate() {
         String method = "autoUpdate";
+        logger.trace_start(method);
         DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
@@ -87,7 +98,6 @@ public class SystemModelCoordinator {
             logger.trace_end(method);
             return;
         }
-        logger.trace_start(method);
         if (!bootStrapped) {
             logger.trace(method, "bootstrapping - bootStrapped==false");
         }
