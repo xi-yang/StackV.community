@@ -1363,12 +1363,8 @@ function getDetails(clickID) {
                 var tempval = document.createElement("td");
                 tempkey.innerHTML = result[i];
                 var tempvalString = result[i + 1];
-                // create a shorter version (up to 100 characters) of the values of the driver's keys
-                var tempvalStringShort = tempvalString.substring(0,101) + "...";
                 
                 // handles if the details overflow the size of the table cell
-                // currently handled by replacing text with a button that brings up popup with text of details
-                // can also implement a tooltip
                 if (tempvalString.length > 80) {
                     //if the value is greater than 80 - make a button which will show the info in a pane
                     var valDetailsBtn = document.createElement("button");
@@ -1376,34 +1372,26 @@ function getDetails(clickID) {
                     //assigning the text of the key (detail name) to the btn id
                     valDetailsBtn.id = tempkey.innerHTML;
                     
-                    // need to store the string somewhere unique to the button so it can be accessed later by its onclick function.
-                    // the title attribute value will be used by the tooltip when it is initialized so the string cannot be stored
-                    // in the title attribute. Instead the shortened string is stored in the title attribute and the full string is
-                    // stored in a custom attribute called details-value
-                    valDetailsBtn.title = tempvalStringShort;
-                    valDetailsBtn.setAttribute("details-value", tempvalString);
+                    // storing the value in the title
+                    valDetailsBtn.title = tempvalString;
                     
                     valDetailsBtn.innerHTML = "View Value";
                     
-                    //bootstrap tooltip attribute
-                    valDetailsBtn.setAttribute("data-toggle","tooltip");
-                    valDetailsBtn.setAttribute("data-placement", "right");
                                                             
                     valDetailsBtn.className = "button-profile-select btn btn-default";
                     valDetailsBtn.onclick = function () {
                         var detailName = this.id;
-                        var detailValue = this.getAttribute("details-value");
+                        var detailValue = this.title;
                         
                         // setting the value of the detail to body of the dialog 
                         $("#dialog-overflow-details-text").text(detailValue);
                         
                         $("#dialog-overflow-details").dialog({                            
-                            height: 450,
-                            maxHeight: 0,                            
+                            height: 450,                           
                             show: "slide",
                             width: 400,
-                            resizable: false,
-                            draggable: false,
+                            resizable: true,
+                            draggable: true,
                             title: detailName,
                             modal: true,
                             buttons: [
@@ -1429,7 +1417,6 @@ function getDetails(clickID) {
                 table.appendChild(row);
                 panel.appendChild(table);
             }
-            $('[data-toggle="tooltip"]').tooltip(); //activating tooltip
         }
     });
 }
