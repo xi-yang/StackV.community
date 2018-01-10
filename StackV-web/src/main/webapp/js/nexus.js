@@ -1268,18 +1268,10 @@ function loadSystemHealthCheck() {
                         resizeable: false,
                         draggable: true,
                         title: "System Health Check",
-                        height: 150,
+                        height: 100,
                         width: 250,
-                        classes: {"ui-dialog": "health-dialog-pass"},
-                        modal: false,
-                        buttons: [
-                            {
-                                text: "Close",
-                                click: function () {
-                                    $("#system-health-check").dialog('close');
-                                }
-                            }
-                        ]
+                        classes: {"ui-dialog": "ui-corner-all health-dialog-pass"},
+                        modal: false
                     });
                 } else {
                     dialogText.text("System is not yet fully initialized! Please wait...");
@@ -1295,10 +1287,11 @@ function loadSystemHealthCheck() {
                         title: "System Health Check",
                         height: 100,
                         width: 250,
-                        classes: {"ui-dialog": "health-dialog-fail"},
+                        classes: {"ui-dialog": "ui-corner-all health-dialog-fail"},
                         modal: false
                     });
                 }
+
                 systemHealthPass = result;
             }
         },
