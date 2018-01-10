@@ -309,6 +309,8 @@ public class HandleSystemCall {
         }
         if (sysDelta.getId() != null && !sysDelta.getId().isEmpty()) {
             sysDelta = (SystemDelta) DeltaPersistenceManager.findById(sysDelta.getId());
+        } else {
+            DeltaPersistenceManager.save(sysDelta);
         }
         logger.targetid(sysDelta.getId());
         // Note 1: an initial VG (#1) must exist 
