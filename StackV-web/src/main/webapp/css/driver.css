@@ -10,18 +10,6 @@ div#installed-panel {
     left: 0;
 }
 
-/* css for the system health check dialog if the system is not ready */
-.dialog-titlebar-not-ready {
-    background-color: #ffbb33;
-    background-image: none;
-    color: #ffbb33;
-}
-/* css for the system health check dialog if the system is ready */
-.dialog-titlebar-ready {
-    background-color: #00C851;
-    background-image: none;
-    color: #00C851;
-}
 /* 
 - Should hide the scrollbar in the installed-content div
     - The overflow-y property is automatically set to auto by browswer

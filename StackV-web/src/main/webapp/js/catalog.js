@@ -63,11 +63,11 @@ function closeCatalog() {
 }
 
 function loadCatalog() {
-    loadSystemHealthCheck();
-
     loadInstances();
     loadWizard();
     loadEditor();
+    
+    loadSystemHealthCheck();
 
     if (getURLParameter("profiles")) {
         openCatalog();
@@ -488,6 +488,7 @@ function loadEditor() {
             });
         }
     });
+    loadSystemHealthCheck();
 }
 
 function getURLParameter(name) {
@@ -497,6 +498,7 @@ function getURLParameter(name) {
 
 /* REFRESH */
 function reloadData() {
+    loadSystemHealthCheck();
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {

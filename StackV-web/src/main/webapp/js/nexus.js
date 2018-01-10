@@ -1256,17 +1256,12 @@ function loadSystemHealthCheck() {
         success: function (result) {
             if (result === true) {
                 dialogText.text("System is fully intialized!");
-                dialogObj.dialog({
-                    open: function (event, ui) {
-                        // resolving conflicting close buttons between jquery and boostrao
-                        $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                    },
+                dialogObj.dialog({                    
                     position: {
                         my: "right bottom",
                         at: "right bottom+50px",
                         of: window
                     },
-                    dialogClass: 'dialog-titlebar-ready',
                     show: "slide",
                     resizeable: false,
                     draggable: true,
@@ -1277,9 +1272,8 @@ function loadSystemHealthCheck() {
                     buttons: [
                         {
                             text: "Close",
-                            "class": "btn btn-default",
                             click: function () {
-                                $(this).closest('.ui-dialog-content').dialog('close'); 
+                                $("#system-health-check").dialog('close'); 
                             }
                         }
                     ]
@@ -1287,16 +1281,11 @@ function loadSystemHealthCheck() {
             } else {
                 dialogText.text("System is not yet fully initialized! Please wait...");
                 dialogObj.dialog({
-                    open: function (event, ui) {
-                        // resolving conflicting close buttons between jquery and boostrao
-                        $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                    },
                     position: {
                         my: "right bottom",
                         at: "right bottom+50px",
                         of: window
                     },
-                    dialogClass: 'dialog-titlebar-not-ready',
                     show: "slide",
                     resizeable: false,
                     draggable: true,

@@ -836,11 +836,7 @@ function updateDrivers() {
                     //setting text of jquery dialog
                     $("#dialog-confirm-text").text(driverNameFromAttribute);
                     //jquery dialog
-                    $("#dialog-confirm").dialog({
-                        open: function(event, ui) {
-                            // resolving conflicting close buttons between jquery and boostrao
-                            $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
-                        },
+                    $("#dialog-confirm").dialog({                        
                         show: "slide",
                         resizeable: false,
                         draggable: false,
@@ -851,7 +847,6 @@ function updateDrivers() {
                         buttons: [
                             {
                                 text: "Delete",
-                                "class": "button-profile-select btn btn-danger",
                                 click: function () {
                                     removeDriverProfile(driverId);
                                     $(this).dialog("close");
@@ -859,7 +854,6 @@ function updateDrivers() {
                             },
                             {
                                 text:"Close",
-                                "class": "button-profile-select btn btn-default",
                                 click: function () {
                                     $(this).dialog("close");
                                 }
@@ -1023,11 +1017,7 @@ function saveEditedDriverProfile(oldtopuri){
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
-            $("#dialog-confirm").dialog({
-                open: function(event, ui) {
-                    //conflict fix for bootstrap and jquery close button
-                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                },
+            $("#dialog-confirm").dialog({                
                 show: "slide",
                 resizable: false,
                 draggable: false,
@@ -1038,7 +1028,6 @@ function saveEditedDriverProfile(oldtopuri){
                 buttons: [
                     {
                         text: "OK",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -1163,17 +1152,7 @@ function getAllDetails() {
                    //setting text of the jquery dialog
                    $("#dialog-confirm-text").text(driverNameFromAttr);
                    //jquery dialog
-                   $("#dialog-confirm").dialog({
-                       open: function(event, ui) {
-                           // bootsrap and jquery have a conflict when displaying certain buttons 
-                           // (in this case the close - 'X' ) in the top right hand corner of the dialog.
-                           // So current solution is to hide that button and still allow us to use
-                           // bootstrap styling within the jquery dialog
-                           $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                           
-                           // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
-                           // but prevents use of boostrap styling in the jquery dialog
-                       },
+                   $("#dialog-confirm").dialog({                       
                        show: "slide",
                        resizable: false,
                        draggable: false,
@@ -1184,7 +1163,6 @@ function getAllDetails() {
                        buttons: [
                            {
                                text: "Delete",
-                               "class": "button-profile-select btn btn-danger",
                                click: function () {
                                    removeDriver(driverId);
                                    $(this).dialog("close");
@@ -1192,7 +1170,6 @@ function getAllDetails() {
                            },
                            {
                                text: "Cancel",
-                               "class": "button-profile-select btn btn-default",
                                click: function () {
                                    $(this).dialog("close");
                                }
@@ -1238,11 +1215,7 @@ function deleteServiceInstance(serviceUUID){
         success: function(result) {
             //setting text of jquery dialog
             $("#dialog-confirm-text").text(result);
-            $("#dialog-confirm").dialog({
-                open: function(event, ui) {
-                            // resolving conflicting close buttons between jquery and boostrao
-                            $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
-                        },
+            $("#dialog-confirm").dialog({                
                 show: "slide",
                 resizeable: false,
                 draggable: false,
@@ -1253,7 +1226,6 @@ function deleteServiceInstance(serviceUUID){
                 buttons: [                   
                     {
                         text:"Close",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -1332,11 +1304,7 @@ function removeDriver(clickID) {
                 serviceInstancDialogBody.append("<hr>");                
             }
             
-            serviceInstancDialog.dialog({
-                open: function(event, ui) {
-                    // resolving conflicting close buttons between jquery and boostrap
-                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();  
-                },
+            serviceInstancDialog.dialog({                
                 close: function() {
                     serviceInstancDialogBody.empty();  
                 },
@@ -1350,7 +1318,6 @@ function removeDriver(clickID) {
                 buttons: [
                     {
                         text: "Close",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -1396,8 +1363,8 @@ function getDetails(clickID) {
                 var tempval = document.createElement("td");
                 tempkey.innerHTML = result[i];
                 var tempvalString = result[i + 1];
-                // create a shorter version (up to 120 characters) of the values of the driver's keys
-                var tempvalStringShort = tempvalString.substring(0,121) + "...";
+                // create a shorter version (up to 100 characters) of the values of the driver's keys
+                var tempvalStringShort = tempvalString.substring(0,101) + "...";
                 
                 // handles if the details overflow the size of the table cell
                 // currently handled by replacing text with a button that brings up popup with text of details
@@ -1430,21 +1397,9 @@ function getDetails(clickID) {
                         // setting the value of the detail to body of the dialog 
                         $("#dialog-overflow-details-text").text(detailValue);
                         
-                        $("#dialog-overflow-details").dialog({
-                            open: function(event, ui) {
-                                // bootsrap and jquery have a conflict when displaying certain buttons 
-                                // - in this case the close - 'X'  in the top right hand corner of the dialog.
-                                // So current solution is to hide that button and still allow us to use
-                                // bootstrap within the jquery dialog
-                                $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-
-                                // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
-                                // but prevents use of boostrap styling in the jquery dialog
-                            },
-                            minHeight: 0,
-                            create: function() {
-                              $(this).css("maxHeight",450);  
-                            },
+                        $("#dialog-overflow-details").dialog({                            
+                            height: 450,
+                            maxHeight: 0,                            
                             show: "slide",
                             width: 400,
                             resizable: false,
@@ -1454,7 +1409,6 @@ function getDetails(clickID) {
                             buttons: [
                                 {
                                     text: "Close",
-                                    "class": "button-profile-select btn btn-default",
                                     click: function () {
                                         $(this).dialog("close");
                                     }
@@ -1503,14 +1457,7 @@ function plugDriver(topuri) {
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
-            $("#dialog-confirm").dialog({
-                open: function(event, ui) {
-                    // bootsrap and jquery have a conflict when displaying certain buttons 
-                    // (in this case the close - 'X' ) in the top right hand corner of the dialog.
-                    // So current solution is to hide that button and still allow us to use
-                    // bootstrap styling within the jquery dialog
-                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                },
+            $("#dialog-confirm").dialog({                 
                 show: "slide",
                 resizable: false,
                 draggable: false,
@@ -1521,7 +1468,6 @@ function plugDriver(topuri) {
                 buttons: [
                     {
                         text: "OK",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -1583,11 +1529,7 @@ function installDriver() {
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
-            $("#dialog-confirm").dialog({
-                open: function(event, ui) {
-                    // bootsrap and jquery conflict fix
-                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                },
+            $("#dialog-confirm").dialog({                
                 show: "slide",
                 resizable: false,
                 draggable: false,
@@ -1598,7 +1540,6 @@ function installDriver() {
                 buttons: [
                     {
                         text: "OK",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
