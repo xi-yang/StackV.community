@@ -63,11 +63,11 @@ function closeCatalog() {
 }
 
 function loadCatalog() {
-    loadSystemHealthCheck();
-    
     loadInstances();
     loadWizard();
     loadEditor();
+
+    loadSystemHealthCheck();
 
     if (getURLParameter("profiles")) {
         openCatalog();
@@ -87,7 +87,7 @@ function loadCatalog() {
         } else if (this.className === 'active') {
             closeCatalog();
         }
-    });    
+    });
 }
 function loadCatalogNavbar() {
     $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
@@ -140,7 +140,57 @@ function loadInstances() {
             tweenInstancePanel.play();
         }
     });
+}
+function reloadInstances() {
+    var userId = keycloak.subject;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            $("#status-body tr").addClass("missing");
+            for (i = 0; i < result.length; i++) {
+                var instance = result[i];
+                var $row = $("#status-body tr[data-href='" + instance[1] + "']");
+                if ($row.length === 1) {
+                    // Instance found, update text.
+                    $row.children().last().text(instance[2]);
+                    $row.removeClass("missing");
+                } else {
+                    // Instance not found, need to create.
+                    var tbody = document.getElementById("status-body");
+                    var row = document.createElement("tr");
+                    row.className = "clickable-row";
+                    row.setAttribute("data-href", instance[1]);
 
+                    var cell1_1 = document.createElement("td");
+                    cell1_1.innerHTML = instance[3];
+                    var cell1_2 = document.createElement("td");
+                    cell1_2.innerHTML = instance[0];
+                    var cell1_3 = document.createElement("td");
+                    cell1_3.innerHTML = instance[1];
+                    var cell1_4 = document.createElement("td");
+                    cell1_4.innerHTML = instance[2];
+                    row.appendChild(cell1_1);
+                    row.appendChild(cell1_2);
+                    row.appendChild(cell1_3);
+                    row.appendChild(cell1_4);
+                    tbody.appendChild(row);
+
+                    $(row).click(function () {
+                        sessionStorage.setItem("instance-uuid", $(this).data("href"));
+                        window.document.location = "/StackV-web/ops/details.html";
+                    });
+                }
+            }
+
+            // Remove missing instance rows, presuming deletion.
+            $("#status-body tr.missing").remove();
+        }
+    });
 }
 
 var originalProfile;
@@ -432,7 +482,7 @@ function loadEditor() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-            $(document).on('click', '#editor-body .button-service-select', function (evt) {
+            $("#editor-body .button-service-select").click(function () {
                 var ref = "/StackV-web/ops/intent.html?intent=" + this.id.toLowerCase();
                 window.location.href = ref;
             });
@@ -454,14 +504,55 @@ function reloadData() {
         if (timerSetting > 15) {
             tweenInstancePanel.reverse();
             setTimeout(function () {
-                loadInstances();
+                reloadInstances();
+                loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 750);
         } else {
             setTimeout(function () {
-                loadInstances();
+                reloadInstances();
+                loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 500);
+        }
+    });
+}
+
+
+/*
+ * Calls '/StackV-web/restapi/service/ready'
+ * The API call returns true or false.
+ * The prerequiste for this function is having a this div structure in the:
+ * <div id="system-health-check">
+ <div id="system-health-check-text"></div>
+ </div>
+ */
+var systemHealthPass;
+function loadSystemHealthCheck() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        dataType: "json",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            if (systemHealthPass !== result) {
+                if (result === true) {
+                    $("#system-health-span").removeClass("fail").removeClass("glyphicon-ban-circle")
+                            .addClass("pass").addClass("glyphicon-ok-circle");
+                } else {
+                    $("#system-health-span").removeClass("pass").removeClass("glyphicon-ok-circle")
+                            .addClass("fail").addClass("glyphicon-ban-circle");
+                }
+
+                systemHealthPass = result;
+            }
+        },
+        error: function (err) {
+            console.log("Error in system health check: " + JSON.stringify(err));
         }
     });
 }

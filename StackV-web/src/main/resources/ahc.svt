@@ -335,7 +335,32 @@
                 {{/if size}}
             {{/ceph_rbds}}
         {{/vms}}
+        {{#vms}}
+            {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
+            {{#ceph_fs}}
+                {{$if mount_point}}
+                    &lt;{{VMTag}}&gt;
+                        mrs:hasVolume
+                            &lt;{{VMTag}}:volume+ceph_fs&gt;.
 
+                    &lt;{{@parent}}:ceph-fs&gt;
+                        mrs:providesVolume
+                            &lt;{{VMTag}}:volume+ceph_fs&gt;.
+
+                        &lt;{{VMTag}}:volume+ceph_fs&gt;
+                           a  mrs:Volume;
+                           mrs:mount_point "{{mount_point}}" ;
+                           mrs:hasNetworkAddress &lt;{{VMTag}}:volume+ceph_fs:subdir&gt; ;
+                           mrs:hasNetworkAddress &lt;{{VMTag}}:volume+ceph_fs:client&gt; .
+                        &lt;{{VMTag}}:volume+ceph_fs:subdir&gt;
+                            mrs:type "cephfs-subdir" ;
+                            mrs:value "{{cephfs_directory}}" .
+                        &lt;{{VMTag}}:volume+ceph_fs:client&gt;
+                            mrs:type "cephfs-client" ;
+                            mrs:value "{{cephfs_client}}" .
+                {{/if mount_point}}
+            {{/ceph_fs}}
+        {{/vms}}
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#globus_connect}}

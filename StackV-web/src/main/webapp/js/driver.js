@@ -836,11 +836,7 @@ function updateDrivers() {
                     //setting text of jquery dialog
                     $("#dialog-confirm-text").text(driverNameFromAttribute);
                     //jquery dialog
-                    $("#dialog-confirm").dialog({
-                        open: function(event, ui) {
-                            // resolving conflicting close buttons between jquery and boostrao
-                            $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
-                        },
+                    $("#dialog-confirm").dialog({                        
                         show: "slide",
                         resizeable: false,
                         draggable: false,
@@ -851,7 +847,6 @@ function updateDrivers() {
                         buttons: [
                             {
                                 text: "Delete",
-                                "class": "button-profile-select btn btn-danger",
                                 click: function () {
                                     removeDriverProfile(driverId);
                                     $(this).dialog("close");
@@ -859,7 +854,6 @@ function updateDrivers() {
                             },
                             {
                                 text:"Close",
-                                "class": "button-profile-select btn btn-default",
                                 click: function () {
                                     $(this).dialog("close");
                                 }
@@ -1023,11 +1017,7 @@ function saveEditedDriverProfile(oldtopuri){
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
-            $("#dialog-confirm").dialog({
-                open: function(event, ui) {
-                    //conflict fix for bootstrap and jquery close button
-                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                },
+            $("#dialog-confirm").dialog({                
                 show: "slide",
                 resizable: false,
                 draggable: false,
@@ -1038,7 +1028,6 @@ function saveEditedDriverProfile(oldtopuri){
                 buttons: [
                     {
                         text: "OK",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -1163,17 +1152,7 @@ function getAllDetails() {
                    //setting text of the jquery dialog
                    $("#dialog-confirm-text").text(driverNameFromAttr);
                    //jquery dialog
-                   $("#dialog-confirm").dialog({
-                       open: function(event, ui) {
-                           // bootsrap and jquery have a conflict when displaying certain buttons 
-                           // (in this case the close - 'X' ) in the top right hand corner of the dialog.
-                           // So current solution is to hide that button and still allow us to use
-                           // bootstrap styling within the jquery dialog
-                           $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                           
-                           // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
-                           // but prevents use of boostrap styling in the jquery dialog
-                       },
+                   $("#dialog-confirm").dialog({                       
                        show: "slide",
                        resizable: false,
                        draggable: false,
@@ -1184,7 +1163,6 @@ function getAllDetails() {
                        buttons: [
                            {
                                text: "Delete",
-                               "class": "button-profile-select btn btn-danger",
                                click: function () {
                                    removeDriver(driverId);
                                    $(this).dialog("close");
@@ -1192,7 +1170,6 @@ function getAllDetails() {
                            },
                            {
                                text: "Cancel",
-                               "class": "button-profile-select btn btn-default",
                                click: function () {
                                    $(this).dialog("close");
                                }
@@ -1238,11 +1215,7 @@ function deleteServiceInstance(serviceUUID){
         success: function(result) {
             //setting text of jquery dialog
             $("#dialog-confirm-text").text(result);
-            $("#dialog-confirm").dialog({
-                open: function(event, ui) {
-                            // resolving conflicting close buttons between jquery and boostrao
-                            $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();                           
-                        },
+            $("#dialog-confirm").dialog({                
                 show: "slide",
                 resizeable: false,
                 draggable: false,
@@ -1253,7 +1226,6 @@ function deleteServiceInstance(serviceUUID){
                 buttons: [                   
                     {
                         text:"Close",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -1332,11 +1304,7 @@ function removeDriver(clickID) {
                 serviceInstancDialogBody.append("<hr>");                
             }
             
-            serviceInstancDialog.dialog({
-                open: function(event, ui) {
-                    // resolving conflicting close buttons between jquery and boostrap
-                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();  
-                },
+            serviceInstancDialog.dialog({                
                 close: function() {
                     serviceInstancDialogBody.empty();  
                 },
@@ -1350,7 +1318,6 @@ function removeDriver(clickID) {
                 buttons: [
                     {
                         text: "Close",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -1396,12 +1363,8 @@ function getDetails(clickID) {
                 var tempval = document.createElement("td");
                 tempkey.innerHTML = result[i];
                 var tempvalString = result[i + 1];
-                // create a shorter version (up to 120 characters) of the values of the driver's keys
-                var tempvalStringShort = tempvalString.substring(0,121) + "...";
                 
                 // handles if the details overflow the size of the table cell
-                // currently handled by replacing text with a button that brings up popup with text of details
-                // can also implement a tooltip
                 if (tempvalString.length > 80) {
                     //if the value is greater than 80 - make a button which will show the info in a pane
                     var valDetailsBtn = document.createElement("button");
@@ -1409,52 +1372,31 @@ function getDetails(clickID) {
                     //assigning the text of the key (detail name) to the btn id
                     valDetailsBtn.id = tempkey.innerHTML;
                     
-                    // need to store the string somewhere unique to the button so it can be accessed later by its onclick function.
-                    // the title attribute value will be used by the tooltip when it is initialized so the string cannot be stored
-                    // in the title attribute. Instead the shortened string is stored in the title attribute and the full string is
-                    // stored in a custom attribute called details-value
-                    valDetailsBtn.title = tempvalStringShort;
-                    valDetailsBtn.setAttribute("details-value", tempvalString);
+                    // storing the value in the title
+                    valDetailsBtn.title = tempvalString;
                     
                     valDetailsBtn.innerHTML = "View Value";
                     
-                    //bootstrap tooltip attribute
-                    valDetailsBtn.setAttribute("data-toggle","tooltip");
-                    valDetailsBtn.setAttribute("data-placement", "right");
                                                             
                     valDetailsBtn.className = "button-profile-select btn btn-default";
                     valDetailsBtn.onclick = function () {
                         var detailName = this.id;
-                        var detailValue = this.getAttribute("details-value");
+                        var detailValue = this.title;
                         
                         // setting the value of the detail to body of the dialog 
                         $("#dialog-overflow-details-text").text(detailValue);
                         
-                        $("#dialog-overflow-details").dialog({
-                            open: function(event, ui) {
-                                // bootsrap and jquery have a conflict when displaying certain buttons 
-                                // - in this case the close - 'X'  in the top right hand corner of the dialog.
-                                // So current solution is to hide that button and still allow us to use
-                                // bootstrap within the jquery dialog
-                                $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-
-                                // other solution is to separate the two with: $.fn.bootstrapBtn = $.fn.button.noConflict();
-                                // but prevents use of boostrap styling in the jquery dialog
-                            },
-                            minHeight: 0,
-                            create: function() {
-                              $(this).css("maxHeight",450);  
-                            },
+                        $("#dialog-overflow-details").dialog({                            
+                            height: 450,                           
                             show: "slide",
                             width: 400,
-                            resizable: false,
-                            draggable: false,
+                            resizable: true,
+                            draggable: true,
                             title: detailName,
                             modal: true,
                             buttons: [
                                 {
                                     text: "Close",
-                                    "class": "button-profile-select btn btn-default",
                                     click: function () {
                                         $(this).dialog("close");
                                     }
@@ -1475,7 +1417,6 @@ function getDetails(clickID) {
                 table.appendChild(row);
                 panel.appendChild(table);
             }
-            $('[data-toggle="tooltip"]').tooltip(); //activating tooltip
         }
     });
 }
@@ -1503,14 +1444,7 @@ function plugDriver(topuri) {
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
-            $("#dialog-confirm").dialog({
-                open: function(event, ui) {
-                    // bootsrap and jquery have a conflict when displaying certain buttons 
-                    // (in this case the close - 'X' ) in the top right hand corner of the dialog.
-                    // So current solution is to hide that button and still allow us to use
-                    // bootstrap styling within the jquery dialog
-                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                },
+            $("#dialog-confirm").dialog({                 
                 show: "slide",
                 resizable: false,
                 draggable: false,
@@ -1521,7 +1455,6 @@ function plugDriver(topuri) {
                 buttons: [
                     {
                         text: "OK",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -1583,11 +1516,7 @@ function installDriver() {
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
-            $("#dialog-confirm").dialog({
-                open: function(event, ui) {
-                    // bootsrap and jquery conflict fix
-                    $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
-                },
+            $("#dialog-confirm").dialog({                
                 show: "slide",
                 resizable: false,
                 draggable: false,
@@ -1598,7 +1527,6 @@ function installDriver() {
                 buttons: [
                     {
                         text: "OK",
-                        "class": "button-profile-select btn btn-default",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -1661,6 +1589,73 @@ function reloadData() {
                 loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 500);
+        }
+    });
+}
+
+/*
+ * Calls '/StackV-web/restapi/service/ready'
+ * The API call returns true or false.
+ * The prerequiste for this function is having a this div structure in the:
+ * <div id="system-health-check">
+ <div id="system-health-check-text"></div>
+ </div>
+ */
+var systemHealthPass;
+function loadSystemHealthCheck() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
+    var dialogObj = $('#system-health-check');
+    var dialogText = $('#system-health-check-text');
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        dataType: "json",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            if (systemHealthPass !== result) {
+                if (result === true) {
+                    dialogText.text("System is fully intialized!");
+                    dialogObj.dialog({
+                        position: {
+                            my: "right bottom",
+                            at: "right bottom",
+                            of: window
+                        },
+                        show: "slide",
+                        resizeable: false,
+                        draggable: true,
+                        title: "System Health Check",
+                        height: 100,
+                        width: 250,
+                        classes: {"ui-dialog": "ui-corner-all health-dialog-pass"},
+                        modal: false
+                    });
+                } else {
+                    dialogText.text("System is not yet fully initialized! Please wait...");
+                    dialogObj.dialog({
+                        position: {
+                            my: "right bottom",
+                            at: "right bottom",
+                            of: window
+                        },
+                        show: "slide",
+                        resizeable: false,
+                        draggable: true,
+                        title: "System Health Check",
+                        height: 100,
+                        width: 250,
+                        classes: {"ui-dialog": "ui-corner-all health-dialog-fail"},
+                        modal: false
+                    });
+                }
+                systemHealthPass = result;
+            }
+        },
+        error: function (err) {
+            console.log("Error in system health check: " + JSON.stringify(err));
         }
     });
 }

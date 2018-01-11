@@ -71,6 +71,19 @@
             <artifactId>aws-java-sdk</artifactId>
             <version>1.9.0</version>
         </dependency>
+        
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>1.22.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud</artifactId>
+            <version>0.21.1-alpha</version>
+        </dependency>
+        
+
         <dependency>
             <groupId>org.apache.jena</groupId>
             <artifactId>jena-arq</artifactId>

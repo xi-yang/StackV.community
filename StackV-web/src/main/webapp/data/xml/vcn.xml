@@ -284,6 +284,31 @@
                     <valid>string</valid>
                 </input>
             </group>            
+            <group condition="openstack-form" name="Ceph FS" collapsible="true">
+                <fulfilled>
+                    <has>mount_point</has>
+                </fulfilled>
+                <input>
+                    <name>Mount Point</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                    <size>small</size>
+                </input>
+                <input>
+                    <name>CephFS Directory</name>
+                    <type>text</type>
+                    <default>/</default>
+                    <valid>string</valid>
+                    <size>small</size>
+                </input>
+                <input>
+                    <name>CephFS Client</name>
+                    <type>text</type>
+                    <default>admin</default>
+                    <valid>string</valid>
+                    <size>small</size>
+                </input>
+            </group>            
             <group name="NFS" condition="openstack-form" collapsible="true">
                 <group factory="true" name="Export">                    
                     <input>

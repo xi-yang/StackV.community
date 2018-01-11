@@ -1101,15 +1101,22 @@ public class OpenStackPush {
             } else if (o.get("request").toString().equals("CephStorageRequest")) {
                 String servername = (String) o.get("server name");
                 String volumeName = (String) o.get("volume name");
-                String diskSize = (String) o.get("disk size"); 
-                Integer sizeMB = Integer.parseInt(diskSize)*1024; // convert gb into mb
-                diskSize = sizeMB.toString();
                 String mountPoint = (String) o.get("mount point");
-                String deviceId =  (String) o.get("device id");
                 String status =  (String) o.get("status");
-                client.setMetadata(servername, "ceph_rbd:"+deviceId, String.format("{'volume':'%s','size':'%s','mount':'%s','status':'%s'}", volumeName, diskSize, mountPoint, status));
-                if (status.equals("delete")) {
-                    CephRbdDeletionCheck(servername, deviceId);
+                String svcType = (String) o.get("service type");
+                if (svcType.equals("ceph-rbd")) {
+                    String diskSize = (String) o.get("disk size");
+                    Integer sizeMB = Integer.parseInt(diskSize) * 1024; // convert gb into mb
+                    diskSize = sizeMB.toString();
+                    String deviceId = (String) o.get("device id");
+                    client.setMetadata(servername, "ceph_rbd:" + deviceId, String.format("{'volume':'%s','size':'%s','mount':'%s','status':'%s'}", volumeName, diskSize, mountPoint, status));
+                    if (status.equals("delete")) {
+                        CephRbdDeletionCheck(servername, deviceId);
+                    }
+                } else if (svcType.equals("ceph-fs")) {
+                    String cephfsSubdir = (String) o.get("cephfs subdir");
+                    String cephfsClient = (String) o.get("cephfs client");
+                    client.setMetadata(servername, "ceph_fs:info", String.format("{'volume':'%s','client':'%s','subdir':'%s','mount':'%s','status':'%s'}", volumeName, cephfsClient, cephfsSubdir, mountPoint, status));
                 }
             } else if (o.get("request").toString().equals("VpnEndpointRequest")) {
                 String servername = (String) o.get("server name");
@@ -1439,7 +1446,7 @@ public class OpenStackPush {
             } else {
                 //1.2 check what service is providing the volume
                 query = "SELECT ?service WHERE {?service mrs:providesVolume <" + volume.asResource() + ">"
-                        + " FILTER (not exists {?service mrs:type \"ceph-rbd\". })"
+                        + " FILTER (not exists {?service mrs:type \"ceph-rbd\". } && not exists {?service mrs:type \"ceph-fs\". })"
                         + "}";
                 ResultSet r1 = executeQueryUnion(query, modelRef, model);
                 if (!r1.hasNext()) {
@@ -2067,7 +2074,7 @@ public class OpenStackPush {
 
             //1.1 find the device name of the volume
             query = "SELECT ?deviceName WHERE{<" + volume.asResource() + "> mrs:target_device ?deviceName. "
-                    + String.format(" FILTER (not exists {?svc mrs:providesVolume <%s>. ?svc mrs:type \"ceph-rbd\". })", volume.asResource())
+                    + String.format(" FILTER (not exists {?svc mrs:providesVolume <%s>. ?svc mrs:type \"ceph-rbd\". } && not exists {?svc mrs:providesVolume <%s>. ?svc mrs:type \"ceph-fs\". })", volume.asResource(), volume.asResource())
                     + "}";
             ResultSet r2 = executeQueryUnion(query, modelRef, modelDelta);
             if (!r2.hasNext()) {
@@ -2778,26 +2785,30 @@ public class OpenStackPush {
     private List<JSONObject> cephStorageRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
         String method = "cephStorageRequests";
         List<JSONObject> requests = new ArrayList();
-        String query = "SELECT ?vol ?vm ?size ?mount  WHERE {"
+        String query = "SELECT ?vol ?vm ?mount ?size ?subdir ?client WHERE {"
                 + "?vm mrs:hasVolume ?vol. "
-                + "OPTIONAL {?vol mrs:disk_gb ?size.}. "
                 + "OPTIONAL {?vol mrs:mount_point ?mount.} "
+                + "OPTIONAL {?vol mrs:disk_gb ?size.}. "
+                + "OPTIONAL {?vol mrs:hasNetworkAddress ?cephfs_subdir. ?cephfs_subdir mrs:type \"cephfs-subdir\". ?cephfs_subdir mrs:value ?subdir.} "
+                + "OPTIONAL {?vol mrs:hasNetworkAddress ?cephfs_client. ?cephfs_subdir mrs:type \"cephfs-client\". ?cephfs_client mrs:value ?client.} "
                 + "}";
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
         Map<Resource, Integer> vmRbdMap = new HashMap<>();
         while (r.hasNext()) {
             QuerySolution q = r.next();
-            query = "SELECT ?vm WHERE {"
+            query = "SELECT ?vm ?ceph_svc_type WHERE {"
                     + "?vm mrs:hasVolume ?vol. "
-                    + "?cephrbd a mrs:BlockStorageService. "
-                    + "?cephrbd mrs:type \"ceph-rbd\". "
-                    + "?cephrbd mrs:providesVolume ?vol. "
+                    + "?ceph_svc a mrs:BlockStorageService. "
+                    + "?ceph_svc mrs:type ?ceph_svc_type. "
+                    + "?ceph_svc mrs:providesVolume ?vol. "
                     + String.format("FILTER (?vol = <%s>)", q.getResource("vol").getURI())
                     + "}";
             ResultSet r2 = executeQueryUnion(query, modelRef, modelDelta);
             if (!r2.hasNext()) {
                 continue;
             }
+            QuerySolution q2 = r2.next();
+            String cephSvcType = q2.getLiteral("ceph_svc_type").getString();
             Resource resVolume = q.getResource("vol");
             Resource resVM = q.getResource("vm");
             Integer numRbd = 1;
@@ -2805,11 +2816,8 @@ public class OpenStackPush {
                 numRbd = vmRbdMap.get(resVM) + 1;
             }
             vmRbdMap.put(resVM, numRbd);
-            //@TODO: configurable as drvier_instance_property
-            // default size = 100GB (102400 MB)
-            String diskSize = "102400"; // 
-            // default mount = /mnt/ceph
-            String mountPoint = "/mnt/ceph"+numRbd;            
+            String diskSize = "102400"; // default=100GB @TODO: configurable driver property
+            String mountPoint = "/mnt/ceph"+numRbd; // default mount = /mnt/ceph         
             JSONObject JO = new JSONObject();
             if (q.contains("size")) {
                 diskSize = q.get("size").toString();
@@ -2825,10 +2833,18 @@ public class OpenStackPush {
             }
             String serverName = ResourceTool.getResourceName(resVM.getURI(), OpenstackPrefix.vm);
             JO.put("volume name", resVolume.getURI());
+            JO.put("service type", cephSvcType);
             JO.put("server name", serverName);
-            JO.put("disk size", diskSize);
             JO.put("mount point", mountPoint);
-            JO.put("device id", numRbd.toString());
+            if (cephSvcType.equals("ceph-rbd")) {
+                JO.put("disk size", diskSize);
+                JO.put("device id", numRbd.toString());
+            } else if (cephSvcType.equals("ceph-fs")) {
+                JO.put("cephfs subdir", q.contains("subdir") ? q.get("subdir").asLiteral().toString() : "/");
+                JO.put("cephfs client", q.contains("client") ? q.get("client").asLiteral().toString() : "admin");
+            } else {
+                logger.warning(method, "Unrecognized Ceph service type: "+cephSvcType);
+            }
             requests.add(JO);
         }
         return requests;
