@@ -555,6 +555,43 @@ function subloadInstanceACLUsers() {
         console.log("Fatal Error: Token update failed!");
     });
 }
+/**
+ * Changes the Login Access to a service instance (identified by the UUID) for
+ * the given username based on grantAccess value
+ * @param {string} serviceUUID
+ * @param {string} username
+ * @param {boolean} grantAccess
+ * @returns {boolean} indicates if the change was successful
+ */
+function changeLoginAccess(serviceUUID, username, grantAccess) {
+    console.log("in changeLoginAccess: serviceUUID -> " + serviceUUID + ", username -> " + username + ", grantAccess -> " + grantAccess);
+    var changeSuccess = false;
+    if (grantAccess) {
+        
+    } else {
+        
+    }
+    return changeSuccess;
+}
+
+/**
+ * Changes the Sudo Access to a service instance (identified by the UUID) for
+ * the given username based on grantAccess value
+ * @param {string} serviceUUID
+ * @param {string} username
+ * @param {boolean} grantAccess
+ * @returns {boolean} indicates if the change was successful
+ */
+function changeSudoAccess(serviceUUID, username, grantAccess) {
+    console.log("in changeSudoAcess: serviceUUID -> " + serviceUUID + ", username -> " + username + ", grantAccess -> " + grantAccess);
+    var changeSuccess = false;
+    if (grantAccess) {
+        
+    } else {
+        
+    }
+    return changeSuccess;
+}
 
 function subloadInstanceACLTable(refUUID) {
     tweenInstanceACLPanel.reverse();
@@ -577,23 +614,64 @@ function subloadInstanceACLTable(refUUID) {
                             var user = result[i];
 
                             var row = document.createElement("tr");
+                            
                             var cell1_1 = document.createElement("td");
-                            cell1_1.innerHTML = user[0];
+                            cell1_1.innerHTML = user[0]; // username
+                                                        
                             var cell1_2 = document.createElement("td");
-                            cell1_2.innerHTML = user[1];
+                            cell1_2.innerHTML = user[1]; // full name
+                            
                             var cell1_3 = document.createElement("td");
-                            cell1_3.innerHTML = user[2];
-                            var cell1_4 = document.createElement("td");
+                            cell1_3.innerHTML = user[2]; // email
+                            
+                            var cell1_4 = document.createElement("td"); // remove button
                             cell1_4.innerHTML = '<button data-username="' + user[0] + '" class="button-acl-remove btn btn-default pull-right">Remove</button>';
-                            var cell1_5 = document.createElement("td");
-                            cell1_5.innerHTML = '<input style="display: block; margin: 0 auto" data-access="login" data-username="' + user[0] + '" type="checkbox"/>';
-                            var cell1_6 = document.createElement("td");
-                            cell1_6.innerHTML = '<input style="display: block; margin: 0 auto" data-access="sudo" data-username="' + user[0] + '" type="checkbox"/>';
+                            
+                            var cell1_5 = document.createElement("td"); // login checkbox
+                            var checkBoxLogin = document.createElement("input");                                                        
+                            checkBoxLogin.style = "display: block; margin: 0 auto";
+                            checkBoxLogin.setAttribute("data-access", "login");
+                            checkBoxLogin.setAttribute("data-username", user[0]);
+                            checkBoxLogin.type = "checkbox";
+                            checkBoxLogin.onclick = function () {                                
+                                var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
+                                var username = this.getAttribute("data-username");
+                                if (this.checked) {
+                                    console.log("Checked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
+                                    var result = changeLoginAccess(uuid, username, true);
+                                    // check if result returned succesfully and let the user know
+                                    // if result is false, then the request was unable to be processed, so reset the checkbox
+                                } else {
+                                    console.log("Unchecked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
+                                    var result = changeLoginAccess(uuid, username, false);
+                                }
+                            }
+                            cell1_5.appendChild(checkBoxLogin);
+                            
+                            var cell1_6 = document.createElement("td"); // sudo checkbox
+                            var checkBoxSudo = document.createElement("input");                                                        
+                            checkBoxSudo.style = "display: block; margin: 0 auto";
+                            checkBoxSudo.setAttribute("data-access", "sudo");
+                            checkBoxSudo.setAttribute("data-username", user[0]);
+                            checkBoxSudo.type = "checkbox";
+                            checkBoxSudo.onclick = function() {
+                                var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
+                                var username = this.getAttribute("data-username");
+                                if (this.checked) {
+                                    console.log("Checked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
+                                    var result = changeSudoAccess(uuid, username, true);
+                                } else {
+                                    console.log("Unchecked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
+                                    var result = changeSudoAccess(uuid, username, false);
+                                }
+                            }
+                            cell1_6.appendChild(checkBoxSudo);
+                            
                             row.appendChild(cell1_1); //username
                             row.appendChild(cell1_2); //full name                            
                             row.appendChild(cell1_3); //email
-                            row.appendChild(cell1_5); //login access
-                            row.appendChild(cell1_6); //sudo access
+                            row.appendChild(cell1_5); //login access checkbox
+                            row.appendChild(cell1_6); //sudo access checkbox
                             row.appendChild(cell1_4); //remove button
                             tbody.appendChild(row);
 

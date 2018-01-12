@@ -461,6 +461,8 @@ public class WebResource {
             wr.flush();
             conn.connect();            
             
+            // *** Does the cookie need to be refreshed? Since after every request, the cookie is refreshed by the IPA server
+            
             // if the request is successful
             if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {                             
                 result.put("Result", "Login Successful");
@@ -534,6 +536,7 @@ public class WebResource {
                     responseStr = new StringBuilder();
                     while ((inputLine = in.readLine()) != null) {
                         responseStr.append(inputLine);
+                        System.out.println("inputLine: " + inputLine);
                     }
                 }
                 result.put("Error", responseStr.toString());
