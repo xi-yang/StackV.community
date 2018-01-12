@@ -593,6 +593,47 @@ function changeSudoAccess(serviceUUID, username, grantAccess) {
     return changeSuccess;
 }
 
+/**
+ * Creates the UserGroup for the specified service with given group name
+ * @param {string} serviceUUID
+ * @param {string} groupName
+ * @param {string} desc 
+ * @returns {boolean} returns if the request was successful
+ */
+function createUserGroupForService(serviceUUID, groupName, desc) {
+    console.log("in createUserGroupForService: serviceUUID -> " + serviceUUID + ", groupName -> " + groupName + ", description -> " + desc);
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+    var formattedGroupName = serviceUUID + "-" + groupName;
+    // creating the IPA request
+    var postData = {
+        "method":"group_add",
+        "params":[
+            [formattedGroupName],
+            {"description": desc}
+        ],
+        "id":0
+    };
+    
+    console.log("createUserGroupService postData: " + JSON.stringify(postData));
+    
+    $.ajax({
+        url: apiUrl,
+        type: 'POST',
+        data: JSON.stringify(postData),
+        contentType: 'application/json; charset=utf-8',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function(result) {
+            console.log("in createUserGroupForService success: " + JSON.stringify(result));
+        },
+        error: function(err) {
+            console.log("createUserGroupForService error: " + JSON.stringify(err));
+        }
+    });
+    console.log("in createUserGroupForService end");
+}
+
 function subloadInstanceACLTable(refUUID) {
     tweenInstanceACLPanel.reverse();
     setTimeout(function () {
@@ -641,6 +682,9 @@ function subloadInstanceACLTable(refUUID) {
                                     var result = changeLoginAccess(uuid, username, true);
                                     // check if result returned succesfully and let the user know
                                     // if result is false, then the request was unable to be processed, so reset the checkbox
+                                    
+                                    //testing - create a user group
+                                    createUserGroupForService(uuid,"testusergroup","Testing API call");
                                 } else {
                                     console.log("Unchecked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
                                     var result = changeLoginAccess(uuid, username, false);
