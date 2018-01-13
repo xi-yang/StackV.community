@@ -157,7 +157,7 @@ public class GcpGet {
                 //if the jsonobject contains the key "vpnTunnels", then there are vpns in that zone
                 temp = (JSONObject) result.get(key);
                 if (temp.containsKey("vpnTunnels")) {
-                    System.out.printf("key: %s\nvalue: %s\n", key, result.get(key));
+                    //System.out.printf("key: %s\nvalue: %s\n", key, result.get(key));
                     zoneResult = (JSONArray) temp.get("vpnTunnels");
                     output.addAll(zoneResult);
                 }

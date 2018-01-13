@@ -136,11 +136,12 @@ public class GcpQuery {
             //avoid duplicate names
             instanceName = resolveNameConflicts(instanceName);
             
-            String machineType = getOrDefault(typeInfo, "instance", defaultInstanceType);
+            String instance = getOrDefault(typeInfo, "instance", defaultInstanceType);
             String sourceImage = getOrDefault(typeInfo, "image", defaultImage);
             String zone = getOrDefault(typeInfo, "zone", defaultZone);
             String diskType = getOrDefault(typeInfo, "diskType", defaultDiskType);
             String diskSize = getOrDefault(typeInfo, "diskSizeGb", defaultDiskSize);
+            String firewallTags = getOrDefault(typeInfo, "securityGroup", "allow-all-ingress");
             
             String nicQuery = "SELECT ?nic ?ip ?subnetUri ?vpcUri \n"
                     + "WHERE { BIND(<" + instanceUri + "> AS ?uri) \n"
@@ -202,13 +203,13 @@ public class GcpQuery {
             instanceRequest.put("type", "create_instance");
             instanceRequest.put("uri", instanceUri);
             instanceRequest.put("name", instanceName);
-            instanceRequest.put("machineType", machineType);
+            instanceRequest.put("instance", instance);
             instanceRequest.put("sourceImage", sourceImage);
             instanceRequest.put("zone", zone);
             instanceRequest.put("diskType", diskType);
             instanceRequest.put("diskSize", diskSize);
             instanceRequest.put("nics", nics);
-            instanceRequest.put("firewallTags", "allow-all-ingress");
+            instanceRequest.put("firewallTags", firewallTags);
             
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(instanceUri, instanceName);
