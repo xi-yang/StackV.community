@@ -322,7 +322,7 @@ public class GcpPush {
     private HashMap<String, String> createInstance(JSONObject requestInfo) {
         String method = "createInstance";
         HashMap<String, String> output = new HashMap<>();
-        String missingArgs = checkArgs(requestInfo, "name", "uri", "zone", "machineType", "sourceImage", "diskType", "diskSize", "firewallTags");
+        String missingArgs = checkArgs(requestInfo, "name", "uri", "zone", "instance", "sourceImage", "diskType", "diskSize", "firewallTags");
         if (missingArgs != null) {
             logger.warning(method, "COMMIT ERROR: " + missingArgs);
             return null;
@@ -332,7 +332,7 @@ public class GcpPush {
         String uri = requestInfo.get("uri").toString();
         String zone = requestInfo.get("zone").toString();
         String machineFormat = "zones/%s/machineTypes/%s";
-        String machineType = String.format(machineFormat, zone, requestInfo.get("machineType"));
+        String machineType = String.format(machineFormat, zone, requestInfo.get("instance"));
         String sourceImage = requestInfo.get("sourceImage").toString();
         String diskFormat = "projects/%s/zones/us-central1-c/diskTypes/%s";
         String diskType = String.format(diskFormat, projectID, requestInfo.get("diskType"));
