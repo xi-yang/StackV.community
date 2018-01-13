@@ -142,7 +142,7 @@ public class GcpQuery {
             String diskType = getOrDefault(typeInfo, "diskType", defaultDiskType);
             String diskSize = getOrDefault(typeInfo, "diskSizeGb", defaultDiskSize);
             
-            String nicQuery = "SELECT ?ip ?subnetUri ?vpcUri \n"
+            String nicQuery = "SELECT ?nic ?ip ?subnetUri ?vpcUri \n"
                     + "WHERE { BIND(<" + instanceUri + "> AS ?uri) \n"
                     + "?uri nml:hasBidirectionalPort ?nic . ?nic a nml:BidirectionalPort . \n"
                     + "?subnetUri a mrs:SwitchingSubnet ; nml:hasBidirectionalPort ?nic . \n"
@@ -160,11 +160,16 @@ public class GcpQuery {
                 QuerySolution nicSolution = nicResult.next();
                 nicInfo = new JSONObject();
                 
+                String nicUri = nicSolution.get("nic").toString();
+                
                 nicInfo.put("nic", i++);
+                nicInfo.put("type", "nic");
+                nicInfo.put("uri", nicUri);
                 //either both vpc and subnet will be found, or neither
                 if (nicSolution.contains("subnetUri") && nicSolution.contains("vpcUri")) {
                     String subnetUri = nicSolution.get("subnetUri").toString();
                     String vpcUri = nicSolution.get("vpcUri").toString();
+                    
                     //if the name for either subnet is vpc, make one from uri
                     nicInfo.put("subnet", getOrDefault(uriNames, subnetUri, makeNameFromUri("subnet", subnetUri)));
                     nicInfo.put("vpc", getOrDefault(uriNames, vpcUri, makeNameFromUri("vpc", vpcUri)));
@@ -203,6 +208,7 @@ public class GcpQuery {
             instanceRequest.put("diskType", diskType);
             instanceRequest.put("diskSize", diskSize);
             instanceRequest.put("nics", nics);
+            instanceRequest.put("firewallTags", "allow-all-ingress");
             
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(instanceUri, instanceName);
@@ -355,6 +361,18 @@ public class GcpQuery {
             
             //System.out.printf("CREATE VPC REQUEST: %s\n", vpcRequest);
             output.add(vpcRequest);
+            
+            //Every vpc has this firewall rule. Only instances with the allow-all tag will follow this rule
+            JSONObject allowAll = new JSONObject();
+            allowAll.put("type", "add_firewall_rule_ingress");
+            allowAll.put("name", "allow-all-ingress");
+            allowAll.put("vpc", vpcName);
+            //this rule will apply only to instances with this tag
+            allowAll.put("sources", "0.0.0.0/0");
+            allowAll.put("allowed", "all");
+            allowAll.put("priority", "65535");
+            output.add(allowAll);
+            
         }
         return output;
     }
