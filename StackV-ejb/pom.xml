@@ -80,7 +80,9 @@
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud</artifactId>
-            <version>0.21.1-alpha</version>
+            <!-- Original version was 0.21.1-alpha -->
+            <!-- reverted from 0.32.0-alpha -->
+            <version>0.21.1-alpha</version> 
         </dependency>
         
 

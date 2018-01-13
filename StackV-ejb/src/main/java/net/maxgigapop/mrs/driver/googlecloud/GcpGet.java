@@ -18,6 +18,7 @@ import com.google.api.client.http.HttpRequest;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.compute.model.*;
+import java.util.HashSet;
 
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
@@ -134,6 +135,40 @@ public class GcpGet {
         }
     }
     
+    public JSONObject getVpnConnections(String region) {
+        try {
+            return makeRequest(computeClient.vpnTunnels().list(projectID, region).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+    public JSONArray getAggregatedVpnConnections() {
+        try {
+            JSONObject result, temp;
+            JSONArray zoneResult, output = new JSONArray();
+            result = makeRequest(computeClient.vpnTunnels().aggregatedList(projectID).buildHttpRequest());
+            result = (JSONObject) result.get("items");
+            
+            for (Object key : result.keySet()) {
+                
+                
+                //*
+                //if the jsonobject contains the key "vpnTunnels", then there are vpns in that zone
+                temp = (JSONObject) result.get(key);
+                if (temp.containsKey("vpnTunnels")) {
+                    System.out.printf("key: %s\nvalue: %s\n", key, result.get(key));
+                    zoneResult = (JSONArray) temp.get("vpnTunnels");
+                    output.addAll(zoneResult);
+                }
+            }
+            
+            return output;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
     public JSONObject getBuckets() {
         try {
             return makeRequest(storageClient.buckets().list(projectID).buildHttpRequest());
@@ -180,6 +215,41 @@ public class GcpGet {
             }
         }
         return output;
+    }
+    
+    public JSONObject modifyCommonMetadata(HashMap<String, String> old, HashMap<String, String> add, HashSet<String> remove) {
+        Metadata meta =  new Metadata();
+        Metadata.Items item;
+        ArrayList<Metadata.Items> items = new ArrayList<>();
+        if (old == null) {
+            old = new HashMap<>();
+        }
+        
+        if (remove != null) {
+            for (String key : remove) {
+                old.remove(key);
+            }
+        }
+        
+        if (add != null) {
+            for (String key : add.keySet()) {
+                old.put(key, add.get(key));
+            }
+        }
+        
+        for (String key : old.keySet()) {
+            item = new Metadata.Items();
+            item.setKey(key);
+            item.setValue(old.get(key));
+            items.add(item);
+        }
+        
+        meta.setItems(items);
+        try {
+            return makeRequest(computeClient.projects().setCommonInstanceMetadata(projectID, meta).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
     }
     
     public JSONObject modifyCommonMetadata(String key, String value) {

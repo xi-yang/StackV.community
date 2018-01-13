@@ -23,9 +23,15 @@ import com.google.api.services.compute.model.NetworkInterface;
 import com.google.api.services.storage.model.Bucket;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.services.compute.model.Firewall;
+import com.google.api.services.compute.model.Firewall.Allowed;
+import com.google.api.services.compute.model.Tags;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import net.maxgigapop.mrs.common.StackLogger;
 
 /**
@@ -59,7 +65,7 @@ public class GcpPush {
     public JSONArray propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
         JSONArray requests = new JSONArray();
         GcpQuery gcq = new GcpQuery(modelRef, modelAdd, modelReduct, properties);
-        //Instances, VPCs, subnets
+        //Buckets, Instances, VPCs, Subnets
         
         requests.addAll(gcq.deleteBucketsRequest());
         requests.addAll(gcq.deleteInstanceRequests());
@@ -80,6 +86,10 @@ public class GcpPush {
         logger.start(method);
         HttpRequest request;
         
+        HashMap<String, String> metadata = gcpGet.getCommonMetadata();
+        HashMap<String, String> tempAdd = null, add = new HashMap<>();
+        HashSet<String> tempRemove = null, remove = new HashSet<>();
+        
         for (Object o : requests) {
             JSONObject requestInfo = (JSONObject) o;
             String type = requestInfo.containsKey("type") ? requestInfo.get("type").toString() : "null";
@@ -87,47 +97,58 @@ public class GcpPush {
             
             switch (type) {
             case "create_vpc":
-                createVpc(requestInfo);
+                tempAdd = createVpc(requestInfo);
             break;
             case "delete_vpc":
-                deleteVpc(requestInfo);
+                tempRemove = deleteVpc(requestInfo);
             break;
             case "create_subnet":
-                createSubnet(requestInfo);
+                tempAdd = createSubnet(requestInfo);
             break;
             case "delete_subnet":
-                deleteSubnet(requestInfo);
+                tempRemove = deleteSubnet(requestInfo);
             break;
             case "create_instance":
-                createInstance(requestInfo);
+                tempAdd = createInstance(requestInfo);
             break;
             case "delete_instance":
-                deleteInstance(requestInfo);
+                tempRemove = deleteInstance(requestInfo);
             break;
             case "create_bucket":
-                createBucket(requestInfo);
+                tempAdd = createBucket(requestInfo);
             break;
             case "delete_bucket":
-                deleteBucket(requestInfo);
+                tempRemove = deleteBucket(requestInfo);
+            break;
+            case "add_firewall_rule_ingress":
+                tempAdd = addFirewallRule(requestInfo);
             break;
             case "null":
-                logger.warning(method, "encountered request without type");
+                logger.warning(method, "COMMIT ERROR: encountered request without type");
             break;
             default:
-                logger.warning(method, "encountered request of unknown type: "+ type);
+                logger.warning(method, "COMMIT ERROR: encountered request of unknown type: "+ type);
             break;
             }
             logger.trace_end(method+"."+type);
+            if (tempAdd != null) add.putAll(tempAdd);
+            if (tempRemove != null) remove.addAll(tempRemove);
+            
+            
         }
+        logger.trace(method, "updating metadata");
+        //System.out.printf("old: %s\nadd: %s\nremove: %s\n", metadata, add, remove);
+        gcpGet.modifyCommonMetadata(metadata, add, remove);
         logger.end(method);
     }
     
-    private void createVpc(JSONObject requestInfo) {
+    private HashMap<String, String> createVpc(JSONObject requestInfo) {
         String method = "createVpc";
+        HashMap<String, String> output = new HashMap<>();
         String missingArgs = checkArgs(requestInfo, "name", "uri");
         if (missingArgs != null) {
-            logger.warning(method, missingArgs);
-            return;
+            logger.warning(method, "COMMIT ERROR: " + missingArgs);
+            return output;
         }
         
         String name = requestInfo.get("name").toString();
@@ -141,18 +162,21 @@ public class GcpPush {
             result = gcpGet.makeRequest(request);
             logger.trace(method, result.toString());
             //Add this vpc's uri to the metadata table
-            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), uri);
+            output.put(GcpModelBuilder.getResourceKey("vpc", name), uri);
+            return output;
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
+        return null;
     }
     
-    private void deleteVpc(JSONObject requestInfo) {
+    private HashSet<String> deleteVpc(JSONObject requestInfo) {
         String method = "deleteVpc";
         String missingArgs = checkArgs(requestInfo, "name");
+        HashSet<String> output = new HashSet<>();
         if (missingArgs != null) {
-            logger.warning(method, missingArgs);
-            return;
+            logger.warning(method, "COMMIT ERROR: " + missingArgs);
+            return null;
         }
         
         String name = requestInfo.get("name").toString();
@@ -162,22 +186,78 @@ public class GcpPush {
             HttpRequest request = gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
             String error = waitRequest(request);
             if (error == null) {
-                gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vpc", name), null);
+                output.add(GcpModelBuilder.getResourceKey("vpc", name));
+                return output;
             } else {
-                logger.warning(method, error);
+                logger.warning(method, "COMMIT ERROR: " + error);
             }
             
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
+        return null;
     }
     
-    private void createSubnet(JSONObject requestInfo) {
+    //currently ingress only?
+    private HashMap<String, String> addFirewallRule(JSONObject requestInfo) {
+        String method = "addFirewallRule";
+        String missingArgs = checkArgs(requestInfo, "name", "vpc", "sources", "allowed");
+        if (missingArgs != null) {
+            logger.warning(method, "COMMIT ERROR: " + missingArgs);
+            return null;
+        }
+        
+        //TODO add tags as an optional argument
+        
+        String name = requestInfo.get("name").toString();
+        String vpcName = requestInfo.get("vpc").toString();
+        String vpcUri = String.format("projects/%s/global/networks/%s", projectID, vpcName);
+        String sourceString = requestInfo.get("sources").toString();
+        String allowedString = requestInfo.get("allowed").toString();
+        List<Allowed> allowedList = new ArrayList<>();
+        
+        //TODO regex
+        for (String port : Arrays.asList(allowedString.split(","))) {
+            Allowed allowed = new Allowed();
+            allowed.setIPProtocol(port);
+            allowedList.add(allowed);
+        }
+        
+        //TODO regex to confirm sourcelist matches proper format
+        List<String> sourceList = Arrays.asList(sourceString.split(","));
+        List<String> tagList = new ArrayList<>();
+        tagList.add(name);  //Every firewall's name is a tag
+        
+        Firewall fire = new Firewall();
+        fire.setName(String.format("%s-%s", vpcName, name)); //This ensures that firewall names never collide between vpcs
+        fire.setNetwork(vpcUri);
+        fire.setSourceRanges(sourceList);
+        fire.setTargetTags(tagList);
+        fire.setAllowed(allowedList);
+        
+        try {
+            HttpRequest request = gcpGet.getComputeClient().firewalls().insert(projectID, fire).buildHttpRequest();
+            String error = waitRequest(request);
+            if (error == null) {
+                //possibility to add firewall uri to metadata here.
+                return null;
+            } else {
+                logger.warning(method, "COMMIT ERROR: " + error);
+            }
+        } catch (IOException e) {
+            logger.warning(method, "COMMIT ERROR: " + e.toString());
+        }
+        
+        return null;
+    }
+    
+    private HashMap<String, String> createSubnet(JSONObject requestInfo) {
         String method = "createSubnet";
+        HashMap<String, String> output = new HashMap<>();
         String missingArgs = checkArgs(requestInfo, "vpcName", "uri", "cidr", "region", "name");
         if (missingArgs != null) {
             logger.warning(method, missingArgs);
-            return;
+            return null;
         }
         
         //vpcUri is not a MAX but a google URI
@@ -196,22 +276,24 @@ public class GcpPush {
             HttpRequest request = gcpGet.getComputeClient().subnetworks().insert(projectID, subnetRegion, subnet).buildHttpRequest();
             String error = waitRequest(request);
             if (error == null) {
-                gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, subnetRegion, subnetName), subnetUri);
+                output.put(GcpModelBuilder.getResourceKey("subnet", vpcName, subnetRegion, subnetName), subnetUri);
+                return output;
             } else {
-                logger.warning(method, error);
+                logger.warning(method, "COMMIT ERROR: " + error);
             }
-            
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
+        return null;
     }
     
-    private void deleteSubnet(JSONObject requestInfo) {
+    private HashSet<String> deleteSubnet(JSONObject requestInfo) {
         String method = "deleteSubnet";
         String missingArgs = checkArgs(requestInfo, "name", "vpcName", "region");
+        HashSet<String> output = new HashSet<>();
         if (missingArgs != null) {
-            logger.warning(method, missingArgs);
-            return;
+            logger.warning(method, "COMMIT ERROR: " + missingArgs);
+            return null;
         }
         
         String name = requestInfo.get("name").toString();
@@ -225,7 +307,8 @@ public class GcpPush {
             HttpRequest request = gcpGet.getComputeClient().subnetworks().delete(projectID, region, name).buildHttpRequest();
             String error = waitRequest(request);
             if (error == null) {
-                gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("subnet", vpcName, region, name), null);
+                output.add(GcpModelBuilder.getResourceKey("subnet", vpcName, region, name));
+                return output;
             } else {
                 logger.warning(method, error);
             }
@@ -233,14 +316,16 @@ public class GcpPush {
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
+        return null;
     }
     
-    private void createInstance(JSONObject requestInfo) {
+    private HashMap<String, String> createInstance(JSONObject requestInfo) {
         String method = "createInstance";
-        String missingArgs = checkArgs(requestInfo, "name", "uri", "zone", "machineType", "sourceImage", "diskType", "diskSize");
+        HashMap<String, String> output = new HashMap<>();
+        String missingArgs = checkArgs(requestInfo, "name", "uri", "zone", "machineType", "sourceImage", "diskType", "diskSize", "firewallTags");
         if (missingArgs != null) {
-            logger.warning(method, missingArgs);
-            return;
+            logger.warning(method, "COMMIT ERROR: " + missingArgs);
+            return null;
         }
         
         String name = requestInfo.get("name").toString();
@@ -252,16 +337,21 @@ public class GcpPush {
         String diskFormat = "projects/%s/zones/us-central1-c/diskTypes/%s";
         String diskType = String.format(diskFormat, projectID, requestInfo.get("diskType"));
         long diskSizeGb = Integer.parseInt(requestInfo.get("diskSize").toString());
+        String firewallTags = requestInfo.get("firewallTags").toString();
         
         //Used by NICs
         String vpcFormat = "projects/%s/global/networks/%s";
         String subnetFormat = "projects/%s/regions/%s/subnetworks/%s";
-        String vpcName, subnetRegion, subnetName, subnetIP;
+        String vpcName, subnetRegion, subnetName, subnetIP, nicUri, nicName;
+        
+        Tags tags = new Tags();
+        tags.setItems(Arrays.asList(firewallTags.split(",")));
         
         Instance instance = new Instance()
             .setName(name)
-            .setMachineType(machineType);
-                
+            .setMachineType(machineType)
+            .setTags(tags);
+        
         //Add NICs
         JSONArray nics = (JSONArray) requestInfo.get("nics");
         
@@ -273,9 +363,19 @@ public class GcpPush {
             for (Object o : nics) {
                 JSONObject nicInfo = (JSONObject) o;
                 
+                missingArgs = checkArgs(nicInfo, "vpc", "region", "subnet", "uri");
+                if (missingArgs != null) {
+                    logger.warning(method, "COMMIT ERROR: " + missingArgs);
+                    return null;
+                }
+                
+                nicUri = nicInfo.get("uri").toString();
+                nicName = "nic"+nicInfo.get("nic").toString();
                 vpcName = nicInfo.get("vpc").toString();
                 subnetRegion = nicInfo.get("region").toString();
                 subnetName = nicInfo.get("subnet").toString();
+                
+                output.put(GcpModelBuilder.getResourceKey("nic", vpcName, name, nicName), nicUri);
                 
                 AccessConfig access = new AccessConfig()
                     .setName("External Nat").setType("ONE_TO_ONE_NAT");
@@ -283,7 +383,6 @@ public class GcpPush {
                     //External ip
                     access.setNatIP(nicInfo.get("ip").toString());
                 }
-                
                 
                 accessList = new ArrayList<>();
                 accessList.add(access);
@@ -317,21 +416,24 @@ public class GcpPush {
             
             String error = waitRequest(request);
             if (error == null) {
-                gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vm", zone, name), uri);
+                output.put(GcpModelBuilder.getResourceKey("vm", zone, name), uri);
+                return output;
             } else {
-                logger.warning(method, error);
+                logger.warning(method, "COMMIT ERROR: " + error);
             }
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
+        return null;
     }
     
-    private void deleteInstance(JSONObject requestInfo) {
+    private HashSet<String> deleteInstance(JSONObject requestInfo) {
         String method = "deleteInstance";
         String missingArgs = checkArgs(requestInfo, "name", "zone");
+        HashSet<String> output = new HashSet<>();
         if (missingArgs != null) {
-            logger.warning(method, missingArgs);
-            return;
+            logger.warning(method, "COMMIT ERROR: " + missingArgs);
+            return null;
         }
         
         String name = requestInfo.get("name").toString();
@@ -343,19 +445,21 @@ public class GcpPush {
             result = gcpGet.makeRequest(request);
             logger.trace(method, result.toString());
             //remove the metadata entry
-            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("vm", zone, name), null);
-            
+            output.add(GcpModelBuilder.getResourceKey("vm", zone, name));
+            return output;
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
+        return null;
     }
     
-    private void createBucket(JSONObject requestInfo) {
+    private HashMap<String, String> createBucket(JSONObject requestInfo) {
         String method = "createBucket";
+        HashMap<String, String> output = new HashMap<>();
         String missingArgs = checkArgs(requestInfo, "name", "uri");
         if (missingArgs != null) {
-            logger.warning(method, missingArgs);
-            return;
+            logger.warning(method, "COMMIT ERROR: " + missingArgs);
+            return null;
         }
         
         String name = requestInfo.get("name").toString();
@@ -367,18 +471,21 @@ public class GcpPush {
             HttpRequest request = gcpGet.getStorageClient().buckets().insert(projectID, bucket).buildHttpRequest();
             JSONObject result = gcpGet.makeRequest(request);
             logger.trace(method, result.toString());
-            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("bucket", name), uri);
+            output.put(GcpModelBuilder.getResourceKey("bucket", name), uri);
+            return output;
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
+        return null;
     }
     
-    private void deleteBucket(JSONObject requestInfo) {
+    private HashSet<String> deleteBucket(JSONObject requestInfo) {
         String method = "createBucket";
         String missingArgs = checkArgs(requestInfo, "name");
+        HashSet<String> output = new HashSet<>();
         if (missingArgs != null) {
-            logger.warning(method, missingArgs);
-            return;
+            logger.warning(method, "COMMIT ERROR: " + missingArgs);
+            return null;
         }
         
         String name = requestInfo.get("name").toString();
@@ -387,11 +494,12 @@ public class GcpPush {
             HttpRequest request = gcpGet.getStorageClient().buckets().delete(name).buildHttpRequest();
             JSONObject result = gcpGet.makeRequest(request);
             logger.trace(method, result.toString());
-            gcpGet.modifyCommonMetadata(GcpModelBuilder.getResourceKey("bucket", name), null);
+            output.add(GcpModelBuilder.getResourceKey("bucket", name));
+            return output;
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
-        
+        return null;
     }
     
     private String checkArgs(JSONObject request, String ...reqArgs) {
@@ -430,7 +538,7 @@ public class GcpPush {
     
     String waitRequest(HttpRequest request) throws IOException {
         //wait 5 seconds between requests, and send up to 5 requests
-        return waitRequest(request, 5000, 5);
+        return waitRequest(request, 5000, 10);
     }
     
     String waitRequest(HttpRequest request, long requestInterval, int maxRequests) throws IOException {
@@ -483,5 +591,5 @@ public class GcpPush {
             }
         } while (true);
     }
-    
+
 }

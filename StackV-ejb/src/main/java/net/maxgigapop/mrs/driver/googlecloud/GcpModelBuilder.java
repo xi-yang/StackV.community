@@ -80,14 +80,19 @@ public class GcpModelBuilder {
                 model.add(model.createStatement(vpc, Nml.hasService, switchingService));
                 model.add(model.createStatement(vpcService, Mrs.providesVPC, vpc));
                 
-                Resource routingService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.routingService, name, region), Mrs.RoutingService);
+                Resource routingService = RdfOwl.createResource(model, vpc.getURI()+":routingservice", Mrs.RoutingService);
                 model.add(model.createStatement(vpc, Nml.hasService, routingService));
                 //google cloud does not use a routing table, so all routes for one vpc are placed in one routing table
                 Resource routingTable = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.routingTable, name), Mrs.RoutingTable);
                 model.add(model.createStatement(routingService, Mrs.providesRoutingTable, routingTable));
                 //every vpc has one built-in internet gateway
-                Resource internetGateway = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.internetGateway, name), Nml.BidirectionalPort);
-                model.add(model.createStatement(internetGateway, Mrs.type, "internet-gateway"));
+                Resource igw = RdfOwl.createResource(model, vpc.getURI()+"-igw", Nml.BidirectionalPort);
+                model.add(model.createStatement(igw, Mrs.type, "internet-gateway"));
+                model.add(model.createStatement(vpc, Nml.hasBidirectionalPort, igw));
+                
+                Resource vpngw = RdfOwl.createResource(model, vpc.getURI()+"-vpngw", Nml.BidirectionalPort);
+                model.add(model.createStatement(vpngw, Mrs.type, "vpn-gateway"));
+                model.add(model.createStatement(vpc, Nml.hasBidirectionalPort, vpngw));
                 
                 //subnets
                 JSONArray subnetsInfo = (JSONArray) vpcInfo.get("subnetworks");
@@ -190,7 +195,7 @@ public class GcpModelBuilder {
                 String instanceName = vmInfo.get("name").toString();
                 String machineType = GcpGet.parseGoogleURI(vmInfo.get("machineType").toString(), "machineTypes");
                 String zone = GcpGet.parseGoogleURI(vmInfo.get("zone").toString(), "zones");
-                instanceProperties.put("machineType", machineType);
+                instanceProperties.put("instance", machineType);
                 instanceProperties.put("zone", zone);
                 
                 JSONArray netifaces = (JSONArray) vmInfo.get("networkInterfaces");
@@ -222,6 +227,7 @@ public class GcpModelBuilder {
                         String subnetName = GcpGet.parseGoogleURI(netiface.get("subnetwork").toString(), "subnetworks");
                         String subnetRegion = GcpGet.parseGoogleURI(netiface.get("subnetwork").toString(), "regions");
                         String nicUri = lookupResourceUri(metadata, "nic", vpcName, instanceName, nicName);
+                        String subnetUri = lookupResourceUri(metadata, "subnet", vpcName, subnetRegion, subnetName);
                         
                         //A instance is considered to be in the vpc used by nic0
                         //All instances must have nic0
@@ -241,8 +247,10 @@ public class GcpModelBuilder {
                         }
                         
                         //Create a new biport resource for each netiface
+                        Resource subnet = model.getResource(ResourceTool.getResourceUri(subnetUri, GcpPrefix.subnet, vpcName, subnetRegion, subnetName));
                         Resource biPort = RdfOwl.createResource(model, ResourceTool.getResourceUri(nicUri, GcpPrefix.nic, vpcName, instanceName, nicName), Nml.BidirectionalPort);
                         model.add(model.createStatement(instance, Nml.hasBidirectionalPort, biPort));
+                        model.add(model.createStatement(subnet, Nml.hasBidirectionalPort, biPort));
                         Resource netiAddr = RdfOwl.createResource(model, ResourceTool.getResourceUri(biPort+":ip+"+nicIP, GcpPrefix.nicNetworkAddress, vpcName, subnetRegion, subnetName, nicName, nicIP), Mrs.NetworkAddress);
                         model.add(model.createStatement(biPort, Mrs.hasNetworkAddress, netiAddr));
                         model.add(model.createStatement(netiAddr, Mrs.type, "ipv4:private"));
@@ -275,6 +283,12 @@ public class GcpModelBuilder {
         } else {
             logger.error(method, "failed to get instances due to null response");
         }
+        
+        JSONArray vpnConnectionsInfo = gcpGet.getAggregatedVpnConnections();
+        if (vpnConnectionsInfo != null) {
+            //for ()
+        }
+        
         
         //buckets
         JSONObject bucketsResponse = gcpGet.getBuckets();
