@@ -63,6 +63,15 @@ public class GcpModelBuilder {
             logger.error(method, "failed to get GCP metadata tables; URI will be constructed automatically");
         }
         
+        //The routes are requested here, and added to the model later
+        JSONObject routeResult = gcpGet.getRoutes();
+        JSONArray routesInfo = null;
+        if (routeResult != null && routeResult.containsKey("items")) {
+            routesInfo = (JSONArray) routeResult.get("items");
+        } else {
+            logger.error(method, "failed to get routes: "+routeResult);
+        }
+        
         //Add VPCs to the model
         JSONObject vpcsInfo = gcpGet.getVPCs();
         if (vpcsInfo != null) {
@@ -143,21 +152,16 @@ public class GcpModelBuilder {
                 Routes contain routeTo and nextHop info
                 routeFrom info is not included.
                 */
-                JSONObject routeResult = gcpGet.getRoutes();
-                JSONArray routesInfo = null;
-                if (routeResult != null && routeResult.containsKey("items")) {
-                    routesInfo = (JSONArray) routeResult.get("items");
-                } else {
-                    logger.error(method, "failed to get routes: "+routeResult);
-                }
                 
                 for (Object o2: routesInfo) {
                     JSONObject routeInfo = (JSONObject) o2;
+                    String vpcName = GcpGet.parseGoogleURI(routeInfo.get("network").toString(), "networks");
+                    //this route is for another vpc
+                    if (!name.equals(vpcName)) continue;
                     String routeName = routeInfo.get("name").toString();
                     String routeUri = lookupResourceUri(metadata, "route", name, routeName);
                     String destRange = routeInfo.get("destRange").toString();
                     String nextHop = "unknown";
-                    String vpcName = GcpGet.parseGoogleURI(routeInfo.get("network").toString(), "networks");
                     if (routeInfo.get("nextHopNetwork") != null) {
                         //nextHop is a vpc
                         nextHop = vpc.getURI()+":subnet";
