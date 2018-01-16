@@ -188,7 +188,7 @@ function loadDriverPortal() {
     updateDrivers(); //explicitly calling the function to load the driver templates
     
     // call the system health check
-    loadSystemHealthCheck()
+    loadSystemHealthCheck();
 
     $(".install-button").click(function () {
         openContentPanel();
@@ -255,7 +255,10 @@ function installRaw() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Raw Driver");
-    $("#info-panel-title").prop("title","RawDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","RawDriver"); 
+    document.getElementById("info-panel-title").title = "RawDriver";
 
 
     first.innerHTML = "Enter Raw XML:";
@@ -274,7 +277,10 @@ function installStub() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Stub System Driver");
-    $("#info-panel-title").prop("title","StubSystemDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","StubSystemDriver"); 
+    document.getElementById("info-panel-title").title = "StubSystemDriver";
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -333,7 +339,10 @@ function installAWS() {
 
 
     $("#info-panel-title").text("AWS Driver");
-    $("#info-panel-title").prop("title","AwsDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","AwsDriver");
+    document.getElementById("info-panel-title").title = "AwsDriver";
 
 
     first.innerHTML = "Topology URI:";
@@ -430,7 +439,11 @@ function installOpenstack() {
     var content = [];
 
     $("#info-panel-title").text("Open Stack Driver");
-    $("#info-panel-title").prop("title","OpenStackDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","OpenStackDriver");
+    document.getElementById("info-panel-title").title = "OpenStackDriver";
+    
 
     for (var i = 0; i < 26; i += 2) {
         var textbox = document.createElement("p");
@@ -500,7 +513,10 @@ function installStack() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Stack System Driver");
-    $("#info-panel-title").prop("title","StackSystemDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","StackSystemDriver"); 
+    document.getElementById("info-panel-title").title = "StackSystemDriver";
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -544,7 +560,10 @@ function installGeneric() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Generic REST Driver");
-    $("#info-panel-title").prop("title","GenericRESTDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","GenericRESTDriver"); 
+    document.getElementById("info-panel-title").title = "GenericRESTDriver";
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -1363,12 +1382,8 @@ function getDetails(clickID) {
                 var tempval = document.createElement("td");
                 tempkey.innerHTML = result[i];
                 var tempvalString = result[i + 1];
-                // create a shorter version (up to 100 characters) of the values of the driver's keys
-                var tempvalStringShort = tempvalString.substring(0,101) + "...";
                 
                 // handles if the details overflow the size of the table cell
-                // currently handled by replacing text with a button that brings up popup with text of details
-                // can also implement a tooltip
                 if (tempvalString.length > 80) {
                     //if the value is greater than 80 - make a button which will show the info in a pane
                     var valDetailsBtn = document.createElement("button");
@@ -1376,34 +1391,26 @@ function getDetails(clickID) {
                     //assigning the text of the key (detail name) to the btn id
                     valDetailsBtn.id = tempkey.innerHTML;
                     
-                    // need to store the string somewhere unique to the button so it can be accessed later by its onclick function.
-                    // the title attribute value will be used by the tooltip when it is initialized so the string cannot be stored
-                    // in the title attribute. Instead the shortened string is stored in the title attribute and the full string is
-                    // stored in a custom attribute called details-value
-                    valDetailsBtn.title = tempvalStringShort;
-                    valDetailsBtn.setAttribute("details-value", tempvalString);
+                    // storing the value in the title
+                    valDetailsBtn.title = tempvalString;
                     
                     valDetailsBtn.innerHTML = "View Value";
                     
-                    //bootstrap tooltip attribute
-                    valDetailsBtn.setAttribute("data-toggle","tooltip");
-                    valDetailsBtn.setAttribute("data-placement", "right");
                                                             
                     valDetailsBtn.className = "button-profile-select btn btn-default";
                     valDetailsBtn.onclick = function () {
                         var detailName = this.id;
-                        var detailValue = this.getAttribute("details-value");
+                        var detailValue = this.title;
                         
                         // setting the value of the detail to body of the dialog 
                         $("#dialog-overflow-details-text").text(detailValue);
                         
                         $("#dialog-overflow-details").dialog({                            
-                            height: 450,
-                            maxHeight: 0,                            
+                            height: 450,                           
                             show: "slide",
                             width: 400,
-                            resizable: false,
-                            draggable: false,
+                            resizable: true,
+                            draggable: true,
                             title: detailName,
                             modal: true,
                             buttons: [
@@ -1429,7 +1436,6 @@ function getDetails(clickID) {
                 table.appendChild(row);
                 panel.appendChild(table);
             }
-            $('[data-toggle="tooltip"]').tooltip(); //activating tooltip
         }
     });
 }
@@ -1491,6 +1497,8 @@ function installDriver() {
     var jsonData = [];
     var tempData = {};
     var type = document.getElementById("info-panel-title").title;
+    
+    console.log("installDriver type: " + type);
 
     for (var temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
@@ -1551,8 +1559,33 @@ function installDriver() {
             //delay the getAllDetails call by 3 seconds
             setTimeout(getAllDetails(), 3000);
         },
-        error: function (textStatus, errorThrown) {
-            console.log("installDriver error => textStatus " + textStatus + ", errorThrown: " + errorThrown);
+        error: function (err) {
+            //console.log("installDriver error: " + JSON.stringify(err));
+            var responseText = err['responseText'];
+            var status = err['status'];
+            var statusText = err['statusText'];
+            console.log("installDriver error: \nResponse Text: " + JSON.stringify(responseText) + "\nStatus: " + status + "\nStatus Text: " + statusText);
+            //setting text of the jquery dialog
+            $("#dialog-confirm-text").text("EXCEPTION:" + responseText);
+            //jquery dialog
+            $("#dialog-confirm").dialog({                
+                show: "slide",
+                resizable: true,
+                draggable: true,
+                title: "Driver Installation Failed Due to " + status + " " + statusText,
+                height: 500,
+                width: 600,
+                modal: true,
+                buttons: [
+                    {
+                        text: "OK",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+
+            });
         }
     });
 }
@@ -1602,6 +1635,73 @@ function reloadData() {
                 loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 500);
+        }
+    });
+}
+
+/*
+ * Calls '/StackV-web/restapi/service/ready'
+ * The API call returns true or false.
+ * The prerequiste for this function is having a this div structure in the:
+ * <div id="system-health-check">
+ <div id="system-health-check-text"></div>
+ </div>
+ */
+var systemHealthPass;
+function loadSystemHealthCheck() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
+    var dialogObj = $('#system-health-check');
+    var dialogText = $('#system-health-check-text');
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        dataType: "json",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            if (systemHealthPass !== result) {
+                if (result === true) {
+                    dialogText.text("System is fully intialized!");
+                    dialogObj.dialog({
+                        position: {
+                            my: "right bottom",
+                            at: "right bottom",
+                            of: window
+                        },
+                        show: "slide",
+                        resizeable: false,
+                        draggable: true,
+                        title: "System Health Check",
+                        height: 100,
+                        width: 250,
+                        classes: {"ui-dialog": "ui-corner-all health-dialog-pass"},
+                        modal: false
+                    });
+                } else {
+                    dialogText.text("System is not yet fully initialized! Please wait...");
+                    dialogObj.dialog({
+                        position: {
+                            my: "right bottom",
+                            at: "right bottom",
+                            of: window
+                        },
+                        show: "slide",
+                        resizeable: false,
+                        draggable: true,
+                        title: "System Health Check",
+                        height: 100,
+                        width: 250,
+                        classes: {"ui-dialog": "ui-corner-all health-dialog-fail"},
+                        modal: false
+                    });
+                }
+                systemHealthPass = result;
+            }
+        },
+        error: function (err) {
+            console.log("Error in system health check: " + JSON.stringify(err));
         }
     });
 }

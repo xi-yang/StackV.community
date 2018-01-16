@@ -29,9 +29,8 @@ RUN \
     && ln -s /opt/jboss/keycloak/bin/add-user-keycloak.sh /bin/add-user.sh
 
 
-# Hack
-RUN yum install -y sudo
-RUN echo "jboss ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/jboss && chmod 0440 /etc/sudoers.d/jboss
+#RUN yum install -y sudo
+#RUN echo "jboss ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/jboss && chmod 0440 /etc/sudoers.d/jboss
 
 USER jboss
 

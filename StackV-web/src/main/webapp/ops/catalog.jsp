@@ -138,21 +138,20 @@
         </div>
         
         <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="/StackV-web/js/jquery/jquery.js"></script>
+        <script src="/StackV-web/js/jquery-ui.min.js"></script>
+        <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>        
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/jquery-ui.min.js"></script>
-        <script src="/StackV-web/js/sweetalert.min.js"></script>
-
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
-        
-        <script src="/StackV-web/js/svc/intentEngine.js"></script>
-        <script src="/StackV-web/js/svc/handlebars.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/catalog.js"></script>
-
+        
+        <script src="/StackV-web/js/svc/intentEngine.js"></script>
+        <script src="/StackV-web/js/svc/handlebars.js"></script> 
     </body>
 </html>
