@@ -225,7 +225,7 @@ function loadWizard() {
                 tbody.appendChild(row);
             }
 
-            $("#wizard-body .button-profile-select").on("click", function (evt) {
+            $(".button-profile-select").on("click", function (evt) {
                 var resultID = this.id,
                         apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
 
@@ -482,9 +482,11 @@ function loadEditor() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-            $("#editor-body .button-service-select").click(function () {
+            $(document).on('click', '.button-service-select', function (evt) {
                 var ref = "/StackV-web/ops/intent.html?intent=" + this.id.toLowerCase();
                 window.location.href = ref;
+
+                evt.preventDefault();
             });
         }
     });

@@ -40,7 +40,7 @@ public class Authenticate {
 
         // If the OpenStack controller  is behind NAT, it needs to be specified
         //to authenticate 
-        if (NATServer.isEmpty()) {
+        if (NATServer == null || NATServer.isEmpty()) {
             client = OSFactory.builder()
                     .endpoint(url)
                     .credentials(username, password)

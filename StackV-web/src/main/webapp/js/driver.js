@@ -188,7 +188,7 @@ function loadDriverPortal() {
     updateDrivers(); //explicitly calling the function to load the driver templates
     
     // call the system health check
-    loadSystemHealthCheck()
+    loadSystemHealthCheck();
 
     $(".install-button").click(function () {
         openContentPanel();
@@ -255,7 +255,10 @@ function installRaw() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Raw Driver");
-    $("#info-panel-title").prop("title","RawDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","RawDriver"); 
+    document.getElementById("info-panel-title").title = "RawDriver";
 
 
     first.innerHTML = "Enter Raw XML:";
@@ -274,7 +277,10 @@ function installStub() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Stub System Driver");
-    $("#info-panel-title").prop("title","StubSystemDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","StubSystemDriver"); 
+    document.getElementById("info-panel-title").title = "StubSystemDriver";
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -333,7 +339,10 @@ function installAWS() {
 
 
     $("#info-panel-title").text("AWS Driver");
-    $("#info-panel-title").prop("title","AwsDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","AwsDriver");
+    document.getElementById("info-panel-title").title = "AwsDriver";
 
 
     first.innerHTML = "Topology URI:";
@@ -430,7 +439,11 @@ function installOpenstack() {
     var content = [];
 
     $("#info-panel-title").text("Open Stack Driver");
-    $("#info-panel-title").prop("title","OpenStackDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","OpenStackDriver");
+    document.getElementById("info-panel-title").title = "OpenStackDriver";
+    
 
     for (var i = 0; i < 26; i += 2) {
         var textbox = document.createElement("p");
@@ -500,7 +513,10 @@ function installStack() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Stack System Driver");
-    $("#info-panel-title").prop("title","StackSystemDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","StackSystemDriver"); 
+    document.getElementById("info-panel-title").title = "StackSystemDriver";
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -544,7 +560,10 @@ function installGeneric() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Generic REST Driver");
-    $("#info-panel-title").prop("title","GenericRESTDriver"); //the correct driverEjbPath
+    
+    //the correct driverEjbPath
+    //$("#info-panel-title").prop("title","GenericRESTDriver"); 
+    document.getElementById("info-panel-title").title = "GenericRESTDriver";
 
     first.innerHTML = "Topology URI:";
     first.style.color = "#333";
@@ -1478,6 +1497,8 @@ function installDriver() {
     var jsonData = [];
     var tempData = {};
     var type = document.getElementById("info-panel-title").title;
+    
+    console.log("installDriver type: " + type);
 
     for (var temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
@@ -1538,8 +1559,33 @@ function installDriver() {
             //delay the getAllDetails call by 3 seconds
             setTimeout(getAllDetails(), 3000);
         },
-        error: function (textStatus, errorThrown) {
-            console.log("installDriver error => textStatus " + textStatus + ", errorThrown: " + errorThrown);
+        error: function (err) {
+            //console.log("installDriver error: " + JSON.stringify(err));
+            var responseText = err['responseText'];
+            var status = err['status'];
+            var statusText = err['statusText'];
+            console.log("installDriver error: \nResponse Text: " + JSON.stringify(responseText) + "\nStatus: " + status + "\nStatus Text: " + statusText);
+            //setting text of the jquery dialog
+            $("#dialog-confirm-text").text("EXCEPTION:" + responseText);
+            //jquery dialog
+            $("#dialog-confirm").dialog({                
+                show: "slide",
+                resizable: true,
+                draggable: true,
+                title: "Driver Installation Failed Due to " + status + " " + statusText,
+                height: 500,
+                width: 600,
+                modal: true,
+                buttons: [
+                    {
+                        text: "OK",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+
+            });
         }
     });
 }
