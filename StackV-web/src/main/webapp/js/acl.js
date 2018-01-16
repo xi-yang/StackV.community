@@ -35,6 +35,8 @@ var tweenGroupRolePanel = new TweenLite("div#acl-group-role-div", .5, {ease: Pow
 
 var view = "center";
 
+var ipaServerLoggedIn = false;
+
 Mousetrap.bind({
     'shift+left': function () {
         window.location.href = "/StackV-web/ops/srvc/driver.jsp";
@@ -46,6 +48,32 @@ Mousetrap.bind({
         viewShift("right");
     }
 });
+
+/**
+ * Check if the user is currently logged into IPA server. If not logged in, the log in the user
+ */
+function checkIpaLogin(){
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/acl/ipa/login";
+    
+    return $.ajax({
+        url: apiUrl,
+        type: 'POST',
+        data: {
+            "username":"admin",
+            "password":"max1$fun"
+        },
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function(result) {
+            console.log("checkIpaLogin success: " + JSON.stringify(result));
+        },
+        error: function(err) {
+            console.log("checkIpaLogin error: " + JSON.stringify(err));
+        }
+    });
+}
+
 function viewShift(dir) {
     switch (view) {
         case "left":
@@ -602,8 +630,14 @@ function changeSudoAccess(serviceUUID, username, grantAccess) {
  */
 function createUserGroupForService(serviceUUID, groupName, desc) {
     console.log("in createUserGroupForService: serviceUUID -> " + serviceUUID + ", groupName -> " + groupName + ", description -> " + desc);
+    
+    // login to the IPA server
+    checkIpaLogin();
+    
     var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
     var formattedGroupName = serviceUUID + "-" + groupName;
+    
+    
     // creating the IPA request
     var postData = {
         "method":"group_add",
@@ -616,11 +650,32 @@ function createUserGroupForService(serviceUUID, groupName, desc) {
     
     console.log("createUserGroupService postData: " + JSON.stringify(postData));
     
+    var settings = {
+        "async": true,
+        "crossDomain": true,
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "bearer " + keycloak.token,
+        },
+        "processData": false,
+        "data": JSON.stringify(postData),
+    };
+    
+    // have to ensure the user is logged into the IPA server before sending any request
+    $.when(checkIpaLogin()).done(function(ipaLoginRes){
+        console.log("Done ipaLogin: " + JSON.stringify(ipaLoginRes));
+        $.ajax(settings).done(function (res){
+            console.log("***ajax call done result: " + JSON.stringify(res));
+        });
+    });
+    /*
     $.ajax({
         url: apiUrl,
-        type: 'POST',
+        method: 'POST',
         data: JSON.stringify(postData),
-        contentType: 'application/json; charset=utf-8',
+        contentType: 'application/json',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -631,6 +686,7 @@ function createUserGroupForService(serviceUUID, groupName, desc) {
             console.log("createUserGroupForService error: " + JSON.stringify(err));
         }
     });
+    */
     console.log("in createUserGroupForService end");
 }
 

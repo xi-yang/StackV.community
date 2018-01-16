@@ -501,7 +501,8 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("ACL")
     public String ipaRequest(String postData) {
-        JSONObject result = new JSONObject();       
+        System.out.println("*** in ipaRequest - postData: " + postData);
+        JSONObject result = new JSONObject();
         try {            
             URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
             HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
@@ -513,6 +514,7 @@ public class WebResource {
             conn.setDoInput(true);
             conn.setDoOutput(true);
             
+            //JSONObject postDataJson = (JSONObject) parser.parse(postData);
             DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));                    
             wr.writeBytes(postData);
             wr.flush();
