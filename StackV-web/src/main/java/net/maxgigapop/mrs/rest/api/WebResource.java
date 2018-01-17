@@ -502,6 +502,7 @@ public class WebResource {
     @RolesAllowed("ACL")
     public String ipaRequest(String postData) {
         System.out.println("*** in ipaRequest - postData: " + postData);
+        System.out.println("*** in ipaCheckCookie - cookie: " + ipaCookie);   
         JSONObject result = new JSONObject();
         try {            
             URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
@@ -550,6 +551,31 @@ public class WebResource {
         // return the JSONObject as a string
         return result.toJSONString();
     }
+    
+    @GET
+    @Path("/acl/ipa/checkcookie")
+    @Consumes("application/x-www-form-urlencoded")
+    @Produces("application/json")
+    @RolesAllowed("ACL")
+    public String ipaCheckCookie() {
+        /**
+         * Cookie looks like this:
+         * ipa_session=c3f8669066e3baab2dcabea5a3e42d7e; Domain=179-152.research.maxgigapop.net; Path=/ipa; Expires=Wed, 17 Jan 2018 22:44:09 GMT; Secure; HttpOnly
+         * 
+         * Parse out the Expires attribute and return if the current time/date is within the range. Either use the Java Cookie class or split the string via 
+         * string methods -> see which is more efficient
+         */
+        boolean cookieExpired = true;
+        final String[] cookieAttrs = ipaCookie.split(";");
+        
+        JSONObject result = new JSONObject();
+        result.put("Cookie", ipaCookie);
+        result.put("CookieExpired", cookieExpired);
+        // return the JSONObject as a string
+        return result.toJSONString();
+    }
+    
+    
 
     // >Drivers
     /**

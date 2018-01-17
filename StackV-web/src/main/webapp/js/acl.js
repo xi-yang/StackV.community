@@ -35,7 +35,7 @@ var tweenGroupRolePanel = new TweenLite("div#acl-group-role-div", .5, {ease: Pow
 
 var view = "center";
 
-var ipaServerLoggedIn = false;
+var ipaServerCookieValid = false;
 
 Mousetrap.bind({
     'shift+left': function () {
@@ -52,7 +52,7 @@ Mousetrap.bind({
 /**
  * Check if the user is currently logged into IPA server. If not logged in, the log in the user
  */
-function checkIpaLogin(){
+function ipaLogin(){
     var apiUrl = baseUrl + "/StackV-web/restapi/app/acl/ipa/login";
     
     return $.ajax({
@@ -66,10 +66,39 @@ function checkIpaLogin(){
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function(result) {
-            console.log("checkIpaLogin success: " + JSON.stringify(result));
+            console.log("ipaLogin success: " + JSON.stringify(result));
         },
         error: function(err) {
-            console.log("checkIpaLogin error: " + JSON.stringify(err));
+            console.log("ipaLogin error: " + JSON.stringify(err));
+        }
+    });
+}
+
+/**
+ * Call the checkcookie endpoint to see if cookie is still valid (i.e. the user is logged in)
+ * If the cookie is expired, the method automatically calls the login function
+ * @returns {jqXHR} return the ajax object so it can used with $.when
+ */
+function checkIpaServerCookie() {
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/acl/ipa/checkcookie";
+    
+    return $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function(result) {
+            console.log("checkIpaServerCookie success -> result: " + JSON.stringify(result));
+            console.log("checkIpaServerCookie expired: " + result["CookieExpired"]);
+            if (result["CookieExpired"]) {
+                ipaServerCookieValid = false;
+            } else {
+                ipaServerCookieValid = true;
+            }
+        },
+        error: function(err) {
+            console.log("checkIpaServerCookie error -> err: " + JSON.stringify(err));
         }
     });
 }
@@ -631,9 +660,6 @@ function changeSudoAccess(serviceUUID, username, grantAccess) {
 function createUserGroupForService(serviceUUID, groupName, desc) {
     console.log("in createUserGroupForService: serviceUUID -> " + serviceUUID + ", groupName -> " + groupName + ", description -> " + desc);
     
-    // login to the IPA server
-    checkIpaLogin();
-    
     var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
     var formattedGroupName = serviceUUID + "-" + groupName;
     
@@ -664,11 +690,20 @@ function createUserGroupForService(serviceUUID, groupName, desc) {
     };
     
     // have to ensure the user is logged into the IPA server before sending any request
-    $.when(checkIpaLogin()).done(function(ipaLoginRes){
-        console.log("Done ipaLogin: " + JSON.stringify(ipaLoginRes));
-        $.ajax(settings).done(function (res){
-            console.log("***ajax call done result: " + JSON.stringify(res));
-        });
+    $.when(checkIpaServerCookie()).done(function(ipaCookieRes){
+        console.log("Done ipaCookie: " + ipaCookieRes);
+        if (!ipaServerCookieValid) {
+            $.when(ipaLogin()).done(function (ipaLoginRes) {
+                console.log("Done ipaLogin in createUserGroupForService: " + ipaCookieRes);
+                $.ajax(settings).done(function (res){
+                    console.log("***ajax call done result: " + JSON.stringify(res));
+                });
+            });
+        } else {
+            $.ajax(settings).done(function (res){
+                console.log("***ajax call done result: " + JSON.stringify(res));
+            });
+        }        
     });
     /*
     $.ajax({
