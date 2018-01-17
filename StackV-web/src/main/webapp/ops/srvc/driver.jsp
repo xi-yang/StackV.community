@@ -112,7 +112,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div id="driver-template-panel">
                 <div id="saved-tab" class="tab-pane fadeIn">
                     <table class="management-table">
@@ -129,7 +129,7 @@
                     </table>
                 </div>
             </div>
-            
+
 
             <div id="driver-content-panel" class="hidden">
                 <div class="modal-content">
@@ -148,33 +148,33 @@
                         </div>
                     </div>
                     <div id="info-panel-button" class="modal-footer">
-                                        <div id='install-options'>
-                                            <button onclick="clearPanel(); closeContentPanel();">Close</button>
-                                        </div>
+                        <div id='install-options'>
+                            <button onclick="clearPanel(); closeContentPanel();">Close</button>
+                        </div>
                     </div>
                 </div>
             </div>
-            
+
             <!-- jQuery element to display a dialog contain the verbose value of a driver detail -->
             <div id="dialog-overflow-details">
                 <div id="dialog-overflow-details-text"></div>
             </div>
-            
+
             <!-- element to display confirmation dialogs with jquery -->
             <div id="dialog-confirm">
                 <div id="dialog-confirm-text"></div>
             </div>
-            
+
             <!-- jQuery dialog for the system health check -->
             <div id="system-health-check">
                 <div id="system-health-check-text"></div>
             </div>
-            
+
             <!-- jQuery dialog to display service isntance errors -->
             <div id="service-instances">
                 <div id="service-instances-body"></div>
             </div>
-             
+
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
         </div>
@@ -182,10 +182,21 @@
         <script src="/StackV-web/js/keycloak.js"></script>
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>        
-        <script src="/StackV-web/js/bootstrap.js"></script>
-        <script src="/StackV-web/js/jquery-ui.min.js"></script>
-        <script src="/StackV-web/js/sweetalert.min.js"></script>
+
+        <script src="https://code.jquery.com/jquery-2.2.4.min.js"
+                integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+                crossorigin="anonymous">
+        </script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+                integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+                crossorigin="anonymous">
+        </script>        
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"
+                integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30="
+                crossorigin="anonymous">
+        </script>
+
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
