@@ -305,16 +305,16 @@ public class MCETools {
                 }
                 if (verified && jsonConnReq.containsKey("bandwidth")) {
                     JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
-                    Long maximum = jsonBw.containsKey("maximum") ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
-                    Long available = jsonBw.containsKey("available") ? Long.parseLong(jsonBw.get("available").toString()) : null;
-                    Long reservable = jsonBw.containsKey("reservable") ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
+                    Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
+                    Long available = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null;
+                    Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
                     candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
-                    candidatePath.bandwithProfile.minimumCapacity = jsonBw.containsKey("minimum") ? Long.parseLong(jsonBw.get("minimum").toString()) : null; //default = null
-                    candidatePath.bandwithProfile.individualCapacity = jsonBw.containsKey("individual") ? Long.parseLong(jsonBw.get("individual").toString()) : null; //default = null
-                    candidatePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
-                    candidatePath.bandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
-                    candidatePath.bandwithProfile.unit = jsonBw.containsKey("unit") ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
-                    candidatePath.bandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
+                    candidatePath.bandwithProfile.minimumCapacity = (jsonBw.containsKey("minimum") && jsonBw.get("minimum") != null) ? Long.parseLong(jsonBw.get("minimum").toString()) : null; //default = null
+                    candidatePath.bandwithProfile.individualCapacity = (jsonBw.containsKey("individual") && jsonBw.get("individual") != null) ? Long.parseLong(jsonBw.get("individual").toString()) : null; //default = null
+                    candidatePath.bandwithProfile.granularity = (jsonBw.containsKey("granularity")  && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+                    candidatePath.bandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class")!= null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+                    candidatePath.bandwithProfile.unit = (jsonBw.containsKey("unit") && jsonBw.get("unit") != null) ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
+                    candidatePath.bandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
                     verified = MCETools.verifyPathBandwidthProfile(transformedModel, candidatePath);
                 }
                 if (!verified) {
