@@ -63,6 +63,8 @@ public class GcpModelBuilder {
             logger.error(method, "failed to get GCP metadata tables; URI will be constructed automatically");
         }
         
+        //System.out.printf("FIREWALLS:\n%s\n", gcpGet.getFirewalls());
+        
         //Add VPCs to the model
         JSONObject vpcsInfo = gcpGet.getVPCs();
         if (vpcsInfo != null) {

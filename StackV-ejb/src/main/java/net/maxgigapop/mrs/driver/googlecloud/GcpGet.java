@@ -19,6 +19,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.compute.model.*;
 import java.util.HashSet;
+import net.maxgigapop.mrs.common.StackLogger;
 
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
@@ -36,6 +37,7 @@ public class GcpGet {
     private Storage storageClient;
     private String projectID;
     private JSONParser parser = new JSONParser();
+    public static final StackLogger logger = GcpDriver.logger;
     
     public GcpGet(String jsonAuth, String projectID) {
         authenticate = new GcpAuthenticate(jsonAuth);
@@ -135,6 +137,14 @@ public class GcpGet {
         }
     }
     
+    public JSONObject getFirewalls() {
+        try {
+            return makeRequest(computeClient.firewalls().list(projectID).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
     public JSONObject getVpnConnections(String region) {
         try {
             return makeRequest(computeClient.vpnTunnels().list(projectID, region).buildHttpRequest());
@@ -198,6 +208,7 @@ public class GcpGet {
         this makes a get project request, and then extracts the commonInstanceMetadata
         from the result and places it in a hashmap.
         */
+        String method = "getCommonMetadata";
         JSONObject project = getProject();
         if (project == null || !project.containsKey("commonInstanceMetadata")) return null;
         JSONObject projectMetadata = (JSONObject) getProject().get("commonInstanceMetadata");
@@ -206,8 +217,7 @@ public class GcpGet {
         HashMap<String, String> output = new HashMap();
         
         if (items == null) {
-            //TODO log
-            System.out.printf("found metadata, but items = null. Displaying metadata: %s\n", projectMetadata);
+            logger.warning(method, "found metadata, but items = null. Displaying metadata: " + projectMetadata);
         } else {
             for (Object o : items) {
                 item = (JSONObject) o;

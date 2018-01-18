@@ -64,6 +64,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
+        //System.out.println("DRIVER PROPAGATE START");
         //aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId()); // refresh
         String method = "propagateDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
@@ -79,16 +80,19 @@ public class GcpDriver implements IHandleDriverSystemCall {
         GcpPush push = new GcpPush(driverInstance.getProperties());
         
         DriverInstancePersistenceManager.merge(driverInstance);
+        //System.out.println("DRIVER PROPAGATE QUERY");
         JSONArray requests = push.propagate(model, modelAdd, modelReduc);
         String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID();
         driverInstance.putProperty(requestId, requests.toString());
         logger.end(method);
+        //System.out.println("DRIVER REQUESTS PROPAGATED: "+requests);
     }
 
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     @Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        //System.out.println("DRIVER COMMIT START");
         logger.cleanup();
         String method = "commitDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
@@ -120,6 +124,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
         
         try {
             JSONArray requestArray = (JSONArray) parser.parse(requests);
+            //System.out.println("DRIVER COMMIT PUSH");
             push.commit(requestArray);
         } catch (ParseException | InterruptedException e) {
             throw logger.throwing(method, e);
