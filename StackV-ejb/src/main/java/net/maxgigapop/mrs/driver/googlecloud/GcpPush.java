@@ -120,8 +120,11 @@ public class GcpPush {
             case "delete_bucket":
                 tempRemove = deleteBucket(requestInfo);
             break;
-            case "add_firewall_rule_ingress":
+            case "add_firewall_rule":
                 tempAdd = addFirewallRule(requestInfo);
+            break;
+            case "remove_firewall_rule":
+                tempRemove = removeFirewallRule(requestInfo);
             break;
             case "null":
                 logger.warning(method, "COMMIT ERROR: encountered request without type");
@@ -184,7 +187,7 @@ public class GcpPush {
         
         try {
             HttpRequest request = gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
-            String error = waitRequest(request);
+            String error = waitRequest(request, 5000, 10, true);
             if (error == null) {
                 output.add(GcpModelBuilder.getResourceKey("vpc", name));
                 return output;
@@ -248,6 +251,26 @@ public class GcpPush {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
         }
         
+        return null;
+    }
+    
+    private HashSet<String> removeFirewallRule(JSONObject requestInfo) {
+        String method = "removeFirewallRule";
+        String missingArgs = checkArgs(requestInfo, "name");
+        if (missingArgs != null) {
+            logger.warning(method, "COMMIT ERROR: " + missingArgs);
+            return null;
+        }
+        
+        String name = requestInfo.get("name").toString();
+        
+        try {
+            HttpRequest request = gcpGet.getComputeClient().firewalls().delete(projectID, name).buildHttpRequest();
+            request.execute();
+            
+        } catch (IOException e) {
+            
+        }
         return null;
     }
     
@@ -538,13 +561,16 @@ public class GcpPush {
     
     String waitRequest(HttpRequest request) throws IOException {
         //wait 5 seconds between requests, and send up to 5 requests
-        return waitRequest(request, 5000, 10);
+        return waitRequest(request, 5000, 10, false);
     }
     
-    String waitRequest(HttpRequest request, long requestInterval, int maxRequests) throws IOException {
+    String waitRequest(HttpRequest request, long requestInterval, int maxRequests, boolean require404) throws IOException {
         /*
         this function retries a request multiple times if resourceNotReady is thrown as a response
         the funtion stops attempting after maxRequests has been reached
+        
+        If require404 is true, it means that the request is a delete request and
+        the resource delete requests should be re-sent until the result is 404
         */
         long start = System.currentTimeMillis(), max = 60000;
         int numRequests = 0;
@@ -574,11 +600,20 @@ public class GcpPush {
             try {
                 numRequests++;
                 gcpGet.makeRequest(request);
-                return null;
+                if (!require404) {
+                    return null;
+                }
             } catch (GoogleJsonResponseException e) {
                 JSONObject errorJson = parseJSONException(e);
+                if (errorJson == null || !errorJson.containsKey("reason")) {
+                    return "error while parsing google JSON: "+errorJson;
+                }
                 
-                if (reasons.contains(errorJson.get("reason"))) {
+                String reason = errorJson.get("reason").toString();
+                if (require404 && reason.equals("notFound")) {
+                    //resource was successfully deleted
+                    return null;
+                } if (reasons.contains(reason)) {
                     //wait for resource to become ready
                     try {
                         Thread.sleep(requestInterval);

@@ -365,7 +365,7 @@ public class GcpQuery {
             
             //Every vpc has this firewall rule. Only instances with the allow-all tag will follow this rule
             JSONObject allowAll = new JSONObject();
-            allowAll.put("type", "add_firewall_rule_ingress");
+            allowAll.put("type", "add_firewall_rule");
             allowAll.put("name", "allow-all-ingress");
             allowAll.put("vpc", vpcName);
             //this rule will apply only to instances with this tag
@@ -399,6 +399,28 @@ public class GcpQuery {
             vpcRequest.put("type", "delete_vpc");
             vpcRequest.put("uri", uri);
             vpcRequest.put("name", name);
+            
+            /*
+            temporary solution: 
+            If the vpc has a firewall rule allow-all-ingress, delete this rule
+            Long-term solution will involve adding firewall rules to model
+            */
+            JSONObject firewalls = gcpGet.getFirewalls();
+            if (firewalls == null) continue;
+            JSONArray firewallList = (JSONArray) firewalls.get("items");
+            if (firewallList == null) continue;
+            String firewallName = String.format("%s-allow-all-ingress", name);
+            for (Object o : firewallList) {
+                JSONObject firewall = (JSONObject) o;
+                //System.out.printf("name: %s othername: %s other: %s\n", firewallName, firewall.get("name"), firewall);
+                if (firewallName.equals(firewall.get("name"))) {
+                    JSONObject deleteFirewall = new JSONObject();
+                    deleteFirewall.put("type", "remove_firewall_rule");
+                    deleteFirewall.put("name", firewallName);
+                    output.add(deleteFirewall);
+                    break;
+                }
+            }
             
             //System.out.printf("DELETE VPC REQUEST: %s\n", vpcRequest);
             output.add(vpcRequest);
