@@ -48,7 +48,7 @@
             </div>
             <div id="logging-panel">
                 <div id="logging-header-div">
-                    Logs
+                    Logs - Current time: <p id="log-time"></p>
                     <div style="float:right;">
                         <label for="logging-filter-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
                         <select id="logging-filter-level" onchange="filterLogs(this)">
