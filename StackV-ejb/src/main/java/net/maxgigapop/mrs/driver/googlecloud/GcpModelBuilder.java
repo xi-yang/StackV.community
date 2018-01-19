@@ -168,8 +168,10 @@ public class GcpModelBuilder {
                     } else if (routeInfo.get("nextHopGateway") != null) {
                         //nextHop is the internet gateway of a vpc
                         nextHop = vpc.getURI()+":internetGateway";
+                    } else if (routeInfo.containsKey("nextHopVpnTunnel")) {
+                        logger.warning(method, String.format("route %s routes to a vpn tunnel and is not yet modeled.", routeName));
                     } else {
-                        logger.warning(method, String.format("route %s's destination is not currently modeled."));
+                        logger.warning(method, String.format("route %s's destination is not currently modeled.", routeName));
                     }
                     
                     Resource route = RdfOwl.createResource(model, ResourceTool.getResourceUri(routeUri, GcpPrefix.route, vpcName, routeName), Mrs.Route);
