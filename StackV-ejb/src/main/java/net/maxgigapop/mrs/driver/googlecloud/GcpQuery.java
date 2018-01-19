@@ -503,8 +503,9 @@ public class GcpQuery {
             step 4: create routes using peerCIDR and vgw's vpc
             */
             
-            String vpnUri = q.get("vgw").toString();
-            String vpnName = makeNameFromUri("vpn", vpnUri);
+            String vgwUri = q.get("vgw").toString();
+            String tunnelUri = q.get("tunnel").toString();
+            String vpnName = makeNameFromUri("vpn", vgwUri);
             String vpcUri = q.get("vpc").toString();
             String vpcName = uriNames.get(vpcUri);
             if (vpcName == null) {
@@ -516,7 +517,8 @@ public class GcpQuery {
             String peerCIDR = q.get("peerCIDR").toString();
             
             vpnRequest.put("type", "create_vpn");
-            vpnRequest.put("uri", vpnUri);
+            vpnRequest.put("vgwUri", vgwUri);
+            vpnRequest.put("tunnelUri", tunnelUri);
             vpnRequest.put("region", defaultRegion); //region will eventually be retrieved from vgw
             vpnRequest.put("name", vpnName);
             vpnRequest.put("vpc", vpcName);
@@ -526,11 +528,11 @@ public class GcpQuery {
             output.add(vpnRequest);
         }
         
-        System.out.println(output);
+        //System.out.println(output);
         return output;
     }
     
-    public ArrayList<JSONObject> deleteVpnRequests() {
+    public ArrayList<JSONObject> deleteVpnConnectionRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "createVpnConnectionRequests";
         String query = "SELECT ?vgw WHERE {\n"

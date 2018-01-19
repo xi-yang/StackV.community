@@ -177,7 +177,7 @@ public class GcpModelBuilder {
                         String tunnelName = GcpGet.parseGoogleURI(vpcUri, "vpnTunnels");
                         nextHop = ResourceTool.getResourceUri("", GcpPrefix.vpnTunnel, vpcName, tunnelRegion, tunnelName);
                     } else {
-                        logger.warning(method, String.format("route %s's destination is not currently modeled.", routeName));
+                        logger.warning(method, String.format("route %s's destination is not currently modeled. displaying json: %s", routeName, routeInfo));
                     }
                     
                     if (route == null) {
@@ -220,14 +220,12 @@ public class GcpModelBuilder {
                 String region = GcpGet.parseGoogleURI(vgwInfo.get("region").toString(), "regions");
                 String vpcName = GcpGet.parseGoogleURI(vgwInfo.get("network").toString(), "networks");
                 String vpcUri = lookupResourceUri(metadata, "vpc", vpcName);
+                String vgwUri = lookupResourceUri(metadata, "vgw", region, vgwName);
                 JSONArray tunnels = (JSONArray) vgwInfo.get("tunnels");
                 JSONArray rules = (JSONArray) vgwInfo.get("forwardingRules");
                 
                 Resource vpc = model.getResource(ResourceTool.getResourceUri(vpcUri, GcpPrefix.vpc, vpcName));
-                Resource vgw = RdfOwl.createResource(
-                        model, 
-                        ResourceTool.getResourceUri("", GcpPrefix.vpnGateway, vpcName, region, vgwName), 
-                        Nml.BidirectionalPort);
+                Resource vgw = RdfOwl.createResource(model, ResourceTool.getResourceUri(vgwUri, GcpPrefix.vpnGateway, vpcName, region, vgwName), Nml.BidirectionalPort);
                 model.add(model.createStatement(vgw, Mrs.type, "vpn-gateway"));
                 model.add(model.createStatement(vpc, Nml.hasBidirectionalPort, vgw));
                 
@@ -240,7 +238,12 @@ public class GcpModelBuilder {
                         JSONObject routeInfo = vpnRoutes.get(o2.toString());
                         if (routeInfo == null) {
                             System.out.println("null route: "+o2.toString());
+                            continue;
                         }
+                        
+                        String tunnelRegion = GcpGet.parseGoogleURI(tunnelInfo.get("region").toString(),  "regions");
+                        String tunnelUri = lookupResourceUri(metadata, "vpn", tunnelRegion, tunnelName);
+                        
                         String remoteIp = tunnelInfo.get("peerIp").toString();
                         String remoteCIDR;
                         if (routeInfo.containsKey("destRange")) {
@@ -255,7 +258,7 @@ public class GcpModelBuilder {
                         //System.out.println("tunnel: " + tunnelInfo);
                         //System.out.println("route: "+ routeInfo);
                     
-                        Resource tunnel = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.vpnTunnel, vpcName, region, vgwName, tunnelName), Nml.BidirectionalPort);
+                        Resource tunnel = RdfOwl.createResource(model, ResourceTool.getResourceUri(tunnelUri, GcpPrefix.vpnTunnel, vpcName, region, vgwName, tunnelName), Nml.BidirectionalPort);
                         model.add(model.createStatement(tunnel, Mrs.type, "vpn-tunnel"));
                         model.add(model.createStatement(vgw, Nml.hasBidirectionalPort, tunnel));
                     
@@ -407,7 +410,7 @@ public class GcpModelBuilder {
         } else {
             logger.error(method, "failed to get instances due to null response");
         }
-        
+
         //buckets
         JSONObject bucketsResponse = gcpGet.getBuckets();
         if (bucketsResponse != null) {
@@ -434,8 +437,9 @@ public class GcpModelBuilder {
         return model;
     }
     
-    public static String getResourceKey(String type, Object...args) {
+    public static String getResourceKey(String type, String...args) {
         //First argument to this function was changed from Resource to String, so that unique URIs could be assigned to unmodeled resources
+        int requiredArgs = 0;
         String key = null, method = "getResourceKey";
         //uncommenting the following line results in uneccessary logging bloat
         //during model pull, but may be helpful during debugging
@@ -444,72 +448,54 @@ public class GcpModelBuilder {
         
         switch (type) {
         case "vpc":
-            if (args.length == 1) {
-                //VPCs are identified by name only
-                key = String.format("vpc_%s", args);
-            } else {
-                logger.warning(method, "failed VPC URI retrieval due to incorrect number of args");
-            }
+            //VPCs are identified by name only
+            requiredArgs = 1;
         break;
         case "subnet":
-            if (args.length == 3) {
-                //Subnets are identified by vpc, name, and region, since subnets in different regions or vpcs may have same name
-                key = String.format("subnet_%s_%s_%s", args);
-            } else {
-                logger.warning(method, "failed subnet URI retrieval due to incorrect number of args");
-            }
+            //Subnets are identified by vpc, name, and region, since subnets in different regions or vpcs may have same name
+            requiredArgs = 3;
         break;
         case "route":
-            if (args.length == 2) {
-                //Routes are identified by vpc and name
-                key = String.format("route_%s_%s", args);
-            } else {
-                logger.warning(method, "failed route URI retrieval due to incorrect number of args");
-            }
+            //Routes are identified by vpc and name
+            requiredArgs = 2;
         break;
         case "vm":
-            if (args.length == 2) {
-                //VM instance
-                //identified by zone and name
-                key = String.format("instance_%s_%s", args );
-            } else {
-                logger.warning(method, "failed instance URI retrieval due to incorrect number of args");
-            }
+            //VM instance identified by zone and name
+            requiredArgs = 2;
         break;
         case "volume":
-            if (args.length == 2) {
-                //identified by zone and name
-                key = String.format("volume_%s_%s", args);
-            } else {
-                logger.warning(method, "failed volume URI retrieval due to incorrect number of args");
-            }
-        break;
-        case "bucket":
-            if (args.length == 1) {
-                key = String.format("bucket_%s", args);
-            } else {
-                logger.warning(method, "failed bucket URI retrieval due to incorrect number of args");
-            }
-        break;
-        case "nic":
-            if (args.length == 3) {
-                //nics are identified by vpc - instance - name (nic0-7)
-                key = String.format("nic_%s_%s_%s", args);
-            } else {
-                logger.warning(method, "failed nic URI retrieval due to incorrect number of args");
-            }
+            //identified by zone and name
+            requiredArgs = 2;
         break;
         case "vpn":
-            if (args.length == 2) {
-                //vpns regions - name
-                key = String.format("vpn_%s_%s", args);
-            } else {
-                
-            }
+            //VPN connection tunnel identified by region and name
+            requiredArgs = 2;
+        break;
+        case "vgw":
+            //VGW identified by region and name
+            requiredArgs = 2;
+        break;
+        case "bucket":
+            //buckets are identified by name only
+            requiredArgs = 1;
+        break;
+        case "nic":
+            //nics are identified by vpc - instance - name (nic0-7)
+            requiredArgs = 3;
         break;
         default:
-            logger.warning(method, "failed resource URI retrieval due to unknown resource");
-        break;
+            logger.warning(method, "failed resource URI retrieval due to unknown resource: "+type);
+            return "";
+        }
+        
+        if (requiredArgs == args.length) {
+            //this filters the input to avoid any weird injections and ensures that the key will be valid
+            type = type.replaceAll("[^a-z]", "");
+            //build the format string
+            for (Object o : args) type += "_%s";
+            key = String.format(type, args);
+        } else {
+            logger.warning(method, String.format("failed %s URI retrieval due to incorrect number of args", type));
         }
         
         //logger.end(method);
