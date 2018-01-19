@@ -17,7 +17,7 @@ div#admin-panel {
     position: relative;
     text-shadow: 0 1px 0 #000;
     outline: 1px solid black;
-    height: 54px;
+    height: 40px;
 }
 
 #API-header-div {
@@ -72,7 +72,6 @@ div#admin-panel {
 #logging-body-div {
     padding: 15px;
     background: white;
-    height: calc(100% - 40px);
 }
 
 #log-div {
