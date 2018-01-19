@@ -39,7 +39,10 @@ black-screen: 3
 /*External libraries*/
 @import "animate.min.css";
 @import "font-awesome.min.css";
-@import "bootstrap.min.css";
+@import "https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700";
+@import "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
+@import "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css";
+@import "sweetalert.css";
 
 /*Custom styles*/
 @import "global.css";
@@ -52,3 +55,4 @@ black-screen: 3
 @import "acl.css";
 @import "details.css";
 @import "admin.css";
+@import "intent.css";

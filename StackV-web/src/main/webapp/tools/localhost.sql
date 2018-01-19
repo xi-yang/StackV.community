@@ -1,11 +1,19 @@
--- phpMyAdmin SQL Dump
--- version 4.4.1.1
--- http://www.phpmyadmin.net
+-- MySQL dump 10.13  Distrib 5.5.27, for osx10.6 (i386)
 --
--- Host: localhost:3306
--- Generation Time: Jun 15, 2017 at 07:21 PM
--- Server version: 5.5.42
--- PHP Version: 5.6.7
+-- Host: localhost    Database: frontend
+-- ------------------------------------------------------
+-- Server version	5.5.27
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -17,67 +25,92 @@ DROP DATABASE IF EXISTS `frontend`;
 CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `frontend`;
 
--- --------------------------------------------------------
-
 --
 -- Table structure for table `acl`
 --
 
 DROP TABLE IF EXISTS `acl`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `acl` (
-  `acl_id` int(11) NOT NULL,
+  `acl_id` int(11) NOT NULL AUTO_INCREMENT,
   `subject` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `is_group` tinyint(1) NOT NULL DEFAULT '0',
-  `object` varchar(45) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `object` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`acl_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=146 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- --------------------------------------------------------
+--
+-- Dumping data for table `acl`
+--
+
+LOCK TABLES `acl` WRITE;
+/*!40000 ALTER TABLE `acl` DISABLE KEYS */;
+/*!40000 ALTER TABLE `acl` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `driver_wizard`
 --
 
 DROP TABLE IF EXISTS `driver_wizard`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `driver_wizard` (
   `username` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `drivername` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `data` longtext COLLATE utf8_unicode_ci,
+  `drivertype` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `TopUri` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `drivertype` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
+  `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `data` longtext COLLATE utf8_unicode_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `driver_wizard`
 --
 
-INSERT INTO `driver_wizard` (`username`, `drivername`, `description`, `data`, `TopUri`, `drivertype`) VALUES
-('admin', 'test', 'test', '{"jsonData":[{}]}', '', 'AwsDriver'),
-('admin', 'test2', 'test', '{"jsonData":[{}]}', '', 'OpenStackDriver');
-
--- --------------------------------------------------------
+LOCK TABLES `driver_wizard` WRITE;
+/*!40000 ALTER TABLE `driver_wizard` DISABLE KEYS */;
+INSERT INTO `driver_wizard` VALUES ('admin','Generic Rest','Generic REST Driver','urn:ogf:network:sdn.maxgigapop.net:network','','{\"jsonData\":[{\"TOPURI\":\"urn:ogf:network:sdn.maxgigapop.net:network\",\"subsystemBaseUrl\":\"http://206.196.179.139:8080/VersaNS-0.0.1-SNAPSHOT\"}]}'),('admin','TEST','','{\"jsonData\":[{\"TOPURI\":\"TEST\",\"stubModelTtl\":\"TEST\"}]}','TEST','Stub System Driver'),('admin','TEST','','{\"jsonData\":[{\"stubModelTtl\":\"sbadgadfas\"}]}','','Stub System Driver');
+/*!40000 ALTER TABLE `driver_wizard` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `label`
 --
 
 DROP TABLE IF EXISTS `label`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `label` (
   `identifier` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `username` varchar(40) COLLATE utf8_unicode_ci NOT NULL,
   `label` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `color` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL
+  `color` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- --------------------------------------------------------
+--
+-- Dumping data for table `label`
+--
+
+LOCK TABLES `label` WRITE;
+/*!40000 ALTER TABLE `label` DISABLE KEYS */;
+/*!40000 ALTER TABLE `label` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `log`
 --
 
 DROP TABLE IF EXISTS `log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `log` (
-  `log_id` int(11) NOT NULL,
+  `log_id` int(11) NOT NULL AUTO_INCREMENT,
   `marker` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   `timestamp` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `level` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
@@ -89,52 +122,109 @@ CREATE TABLE `log` (
   `event` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `message` longtext COLLATE utf8_unicode_ci NOT NULL,
   `severity` varchar(10) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `exception` longtext COLLATE utf8_unicode_ci
-) ENGINE=InnoDB AUTO_INCREMENT=85894 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- --------------------------------------------------------
+  `exception` longtext COLLATE utf8_unicode_ci,
+  PRIMARY KEY (`log_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=159291 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `service_delta`
 --
 
 DROP TABLE IF EXISTS `service_delta`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service_delta` (
-  `service_delta_id` int(11) NOT NULL,
+  `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,
   `service_instance_id` int(11) NOT NULL,
   `super_state` varchar(11) COLLATE utf8_unicode_ci NOT NULL,
   `type` varchar(60) COLLATE utf8_unicode_ci NOT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `delta` longtext COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `delta` longtext COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`service_delta_id`,`service_instance_id`,`super_state`),
+  KEY `service_delta-service_instance_idx` (`service_instance_id`),
+  KEY `service_delta-service_history_idx` (`super_state`),
+  CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=144 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- --------------------------------------------------------
+--
+-- Dumping data for table `service_delta`
+--
+
+LOCK TABLES `service_delta` WRITE;
+/*!40000 ALTER TABLE `service_delta` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_delta` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `service_instance`
 --
 
 DROP TABLE IF EXISTS `service_instance`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service_instance` (
-  `service_instance_id` int(11) NOT NULL,
+  `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,
   `type` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `username` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `creation_time` datetime DEFAULT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `alias_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `super_state` varchar(11) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `last_state` varchar(11) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `last_state` varchar(11) COLLATE utf8_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`service_instance_id`),
+  KEY `service_instance-service_idx` (`type`),
+  KEY `service_instance-user_info_idx` (`username`),
+  KEY `service_instance-service_state_idx` (`super_state`)
+) ENGINE=InnoDB AUTO_INCREMENT=138 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- --------------------------------------------------------
+--
+-- Dumping data for table `service_instance`
+--
+
+LOCK TABLES `service_instance` WRITE;
+/*!40000 ALTER TABLE `service_instance` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_instance` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `service_renders`
+--
+
+DROP TABLE IF EXISTS `service_renders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `service_renders` (
+  `id` varchar(8) COLLATE utf8_unicode_ci NOT NULL,
+  `manifest` mediumtext COLLATE utf8_unicode_ci,
+  `package` mediumtext COLLATE utf8_unicode_ci,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `service_renders`
+--
+
+LOCK TABLES `service_renders` WRITE;
+/*!40000 ALTER TABLE `service_renders` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_renders` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `service_verification`
 --
 
 DROP TABLE IF EXISTS `service_verification`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service_verification` (
   `service_instance_id` int(11) NOT NULL,
+  `instanceUUID` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `state` varchar(10) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'INIT',
+  `pending_action` varchar(45) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `verification_state` int(11) DEFAULT NULL,
   `verification_run` int(11) NOT NULL DEFAULT '0',
   `delta_uuid` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -145,132 +235,58 @@ CREATE TABLE `service_verification` (
   `unverified_addition` longtext COLLATE utf8_unicode_ci,
   `reduction` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
   `addition` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `enabled` tinyint(1) NOT NULL DEFAULT '1'
+  `enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `timestamp` datetime DEFAULT NULL,
+  `elapsed_time` varchar(60) COLLATE utf8_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`service_instance_id`),
+  CONSTRAINT `service_verification-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- --------------------------------------------------------
+--
+-- Dumping data for table `service_verification`
+--
+
+LOCK TABLES `service_verification` WRITE;
+/*!40000 ALTER TABLE `service_verification` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_verification` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `service_wizard`
 --
 
 DROP TABLE IF EXISTS `service_wizard`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service_wizard` (
-  `service_wizard_id` int(11) NOT NULL,
-  `service_id` int(11) NOT NULL,
-  `username` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
-  `wizard_json` longtext COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `editable` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `username` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `wizard_json` longtext COLLATE utf8_unicode_ci NOT NULL,
+  `editable` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`service_wizard_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `service_wizard`
 --
 
-INSERT INTO `service_wizard` (`service_wizard_id`, `service_id`, `username`, `name`, `wizard_json`, `description`, `editable`) VALUES
-(1, 11, NULL, 'DNC.1xConn.VLAN_any.v1', '{\n    "userID": "admin",\n    "type": "dnc",\n    "alias": "DNC.1xConn.VLAN_any",\n    "data": {\n        "connections": [\n            {\n                "name": "conn1",\n                "terminals": [\n                    {\n                        "uri": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*",\n                        "vlan_tag": "any"\n                    },\n                    {\n                        "uri": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*",\n                        "vlan_tag": "any"\n                    }\n                ]\n            }\n        ]\n    }\n}', 'DNC w/ 1 x L2 Path + Any VLAN', 0),
-(2, 11, NULL, 'DNC.2xConn.VLAN_range.v1', '{\n    "userID": "admin",\n    "type": "dnc",\n    "alias": "DNC.2xConn.VLAN_range",\n    "data": {\n        "connections": [\n            {\n                "name": "conn1",\n                "terminals": [\n                    {\n                        "uri": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*",\n                        "vlan_tag": "1925-1929"\n                    },\n                    {\n                        "uri": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*",\n                        "vlan_tag": "1925-1929"\n                    }\n                ]\n            },\n            {\n                "name": "conn2",\n                "terminals": [\n                    {\n                        "uri": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*",\n                        "vlan_tag": "1925-1929"\n                    },\n                    {\n                        "uri": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*",\n                        "vlan_tag": "1925-1929"\n                    }\n                ]\n            }\n        ]\n    }\n}', 'DNC w/ 2 x L2 Paths + Same VLAN Range', 0),
-(3, 10, NULL, 'VCN.AWS.1VM_Public.v1', '{\n	"user": "admin",\n	"type": "netcreate",\n	"alias": "VCN.AWS.1VM_Public",\n	"data": {\n		"virtual_clouds": [\n			{\n				"type": "internal",\n				"parent": "urn:ogf:network:aws.amazon.com:aws-cloud",\n				"name": "vpc1",\n				"cidr": "10.0.0.0/16",\n				"subnets": [\n					{\n						"name": "subnet1",\n						"cidr": "10.0.0.0/24",\n						"virtual_machines": [\n							{\n								"name": "vm1",\n								"type": "instance+m4.large,secgroup+geni,keypair+driver_key,image+ami-0d1bf860"\n							}\n						],\n						"routes": [\n							{\n								"to": {\n									"value": "0.0.0.0/0"\n								},\n								"from": {\n									"value": "vpn"\n								},\n								"next_hop": {\n									"value": "vpn"\n								}\n							},\n							{\n								"to": {\n									"value": "0.0.0.0/0",\n									"type": "ipv4-prefix"\n								},\n								"next_hop": {\n									"value": "internet"\n								}\n							}\n						]\n					}\n				],\n				"routes": [\n					{\n						"to": {\n							"value": "0.0.0.0/0",\n							"type": "ipv4-prefix"\n						},\n						"next_hop": {\n							"value": "internet"\n						}\n					}\n				]\n			}\n		]\n	}\n}', 'VCN w/ AWS VTN + 1 VM', 0),
-(4, 10, NULL, 'VCN.AWS.1VM.DC_Stitch.v1', '{\n    "user": "admin",\n    "type": "netcreate",\n    "alias": "VCN.AWS.1VM.DC_Stitch",\n    "data": {\n        "virtual_clouds": [\n            {\n                "type": "internal",\n                "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",\n                "name": "vpc1",\n                "cidr": "10.0.0.0/16",\n                "gateways": [\n                    {\n                        "to": [\n                            {\n                                "value": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*",\n                                "type": "stitch_port"\n                            }\n                        ],\n                        "name": "l2path-aws-dc1",\n                        "type": "aws_direct_connect"\n                    }\n                ],\n                "subnets": [\n                    {\n                        "name": "subnet1",\n                        "cidr": "10.0.0.0/24",\n                        "virtual_machines": [\n                            {\n                                "name": "vm1",\n                                "type": "instance+m4.large,secgroup+geni,keypair+driver_key,image+ami-0d1bf860",\n                                "interfaces": [\n                                    {\n                                        "name": "vm1:eth0",\n                                        "type": "Ethernet",\n                                        "address": "ipv4+52.206.248.139/24"\n                                    }\n                                ]\n                            },\n                            {\n                                "name": "vm2",\n                                "type": "instance+m4.large,secgroup+geni,keypair+driver_key,image+ami-0d1bf860"\n                            }\n                        ],\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0"\n                                },\n                                "from": {\n                                    "value": "vpn"\n                                },\n                                "next_hop": {\n                                    "value": "vpn"\n                                }\n                            },\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0",\n                                    "type": "ipv4-prefix"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ]\n                    },\n                    {\n                        "name": "subnet2",\n                        "cidr": "10.0.1.0/24"\n                    }\n                ],\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ]\n            }\n        ]\n    }\n}', 'VCN w/ AWS VPC + 2 VM + DC + External L2 Stitching', 0),
-(5, 10, NULL, 'VCN.OPS.1VM_Public.v1', '{\n    "user": "admin",\n    "type": "netcreate",\n    "alias": "VCN.OPS.1VM_Public",\n    "data": {\n        "virtual_clouds": [\n            {\n                "name": "vtn1",\n                "type": "internal",\n                "parent": "urn:ogf:network:openstack.com:openstack-cloud",\n                "cidr": "10.0.0.0/16",\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ],\n                "subnets": [\n                    {\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0",\n                                    "type": "ipv4-prefix"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ],\n                        "virtual_machines": [\n                            {\n                                "name": "ops-vtn1-vm1",\n                                "type": "instance+5,secgroup+rains,keypair+demo-key",\n                                "host": "any",\n                                "interfaces": [\n                                    {\n                                        "address": "ipv4+any",\n                                        "name": "ops-vtn1:vm1:eth0",\n                                        "type": "Ethernet"\n                                    }\n                                ]\n                            }\n                        ],\n                        "name": "subnet1",\n                        "cidr": "10.0.0.0/24"\n                    }\n                ]\n            }\n        ]\n    }\n}', 'VCN w/ OpenStack VTN + 1 VM ', 0),
-(6, 10, NULL, 'VCN.OPS.1VM_SRIOV_Ext.v1', '{\n    "user": "admin",\n    "type": "netcreate",\n    "alias": "VCN.OPS.1VM_SRIOV_Ext",\n    "data": {\n        "virtual_clouds": [\n            {\n                "name": "vtn1",\n                "type": "internal",\n                "parent": "urn:ogf:network:openstack.com:openstack-cloud",\n                "cidr": "10.0.0.0/16",\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ],\n                "gateways": [\n                    {\n                        "from": [\n                            {\n                                "value": "External-Access",\n                                "type": "port_profile"\n                            }\n                        ],\n                        "name": "ext-gw1",\n                        "type": "ucs_port_profile"\n                    }\n                ],\n                "subnets": [\n                    {\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0",\n                                    "type": "ipv4-prefix"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ],\n                        "virtual_machines": [\n                            {\n                                "name": "ops-vtn1-vm1",\n                                "type": "instance+5,secgroup+rains,keypair+demo-key",\n                                "host": "any",\n                                "interfaces": [\n                                    {\n                                        "address": "ipv4+any",\n                                        "name": "ops-vtn1:vm1:eth0",\n                                        "type": "Ethernet"\n                                    },\n                                    {\n                                        "address": "ipv4+206.196.179.157/24,mac+aa:bb:cc:dd:01:57",\n                                        "name": "ops-vtn1:vm1:eth1",\n                                        "type": "SRIOV",\n                                        "gateway": "ext-gw1",\n                                        "routes": [\n                                            {\n                                                "to": {\n                                                    "value": "206.196.0.0/16",\n                                                    "type": "ipv4-prefix"\n                                                },\n                                                "next_hop": {\n                                                    "value": "206.196.179.145"\n                                                }\n                                            }\n                                        ]\n                                    }\n                                ]\n                            }\n                        ],\n                        "name": "subnet1",\n                        "cidr": "10.0.0.0/24"\n                    }\n                ]\n            }\n        ]\n    }\n}', 'VCN w/ OpenStack VTN + 1 VM + 1 SRIOV ', 0),
-(7, 13, NULL, 'AHC.AWS_DC.OPS_SRIOV.Ceph_Globus_NFS.v1', '{\n    "username": "admin",\n    "type": "hybridcloud",\n    "alias": "AHC.AWS_DC.OPS_SRIOV.Ceph_Globus_NFS",\n    "data": {\n        "virtual_clouds": [\n            {\n                "type": "internal",\n                "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",\n                "name": "vpc1",\n                "cidr": "10.0.0.0/16",\n                "subnets": [\n                    {\n                        "name": "subnet1",\n                        "cidr": "10.0.0.0/24",\n                        "virtual_machines": [\n                            {\n                                "name": "ec2-vpc1-vm1",\n                                "type": "instance+m4.large,secgroup+geni,keypair+driver_key,image+ami-0d1bf860"\n                            }\n                        ],\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0"\n                                },\n                                "from": {\n                                    "value": "vpn"\n                                },\n                                "next_hop": {\n                                    "value": "vpn"\n                                }\n                            },\n                            {\n                                "to": {\n                                    "value": "206.196.0.0/16"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ]\n                    }\n                ],\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ]\n            },\n            {\n                "name": "vtn2",\n                "type": "internal",\n                "parent": "urn:ogf:network:openstack.com:openstack-cloud",\n                "cidr": "10.1.0.0/16",\n                "routes": [\n                    {\n                        "to": {\n                            "value": "0.0.0.0/0",\n                            "type": "ipv4-prefix"\n                        },\n                        "next_hop": {\n                            "value": "internet"\n                        }\n                    }\n                ],\n                "gateways": [\n                    {\n                        "name": "ceph-net",\n                        "from": [\n                            {\n                                "type": "port_profile",\n                                "value": "Ceph-Storage"\n                            }\n                        ],\n                        "type": "ucs_port_profile"\n                    },\n                    {\n                        "name": "intercloud-1",\n                        "to": [\n                            {\n                                "type": "peer_cloud",\n                                "value": "urn:ogf:network:aws.amazon.com:aws-cloud?vlan=any"\n                            }\n                        ],\n                        "type": "inter_cloud_network"\n                    },\n                    {\n                        "name": "ext-net",\n                        "from": [\n                            {\n                                "type": "port_profile",\n                                "value": "External-Access"\n                            }\n                        ],\n                        "type": "ucs_port_profile"\n                    }\n                ],\n                "subnets": [\n                    {\n                        "routes": [\n                            {\n                                "to": {\n                                    "value": "0.0.0.0/0",\n                                    "type": "ipv4-prefix"\n                                },\n                                "next_hop": {\n                                    "value": "internet"\n                                }\n                            }\n                        ],\n                        "virtual_machines": [\n                            {\n                                "name": "ops-vtn1-vm1",\n                                "type": "instance+5,secgroup+rains,keypair+demo-key,image+03555952-e619-4b26-bffd-6b9a62ae15da",\n                                "host": "any",\n                                "interfaces": [\n                                    {\n                                        "address": "ipv4+any",\n                                        "name": "ops-vtn1:vm2:eth0",\n                                        "type": "Ethernet"\n                                    },\n                                    {\n                                        "address": "ipv4+10.10.0.1/24,mac+aa:bb:cc:ff:01:11",\n                                        "name": "ops-vtn1:vm2:eth1",\n                                        "type": "SRIOV",\n                                        "gateway": "intercloud-1"\n                                    },\n                                    {\n                                        "address": "ipv4+10.10.200.164/24,mac+aa:bb:cc:ff:01:12",\n                                        "name": "ops-vtn1:vm2:eth2",\n                                        "type": "SRIOV",\n                                        "gateway": "ceph-net"\n                                    },\n                                    {\n                                        "address": "ipv4+206.196.179.149/28,mac+aa:bb:cc:dd:01:49",\n                                        "name": "ops-vtn1-vm1:eth1",\n                                        "type": "SRIOV",\n                                        "gateway": "ext-net"\n                                    }\n                                ],\n                                "ceph_rbd": [\n                                    {\n                                        "disk_gb": "1024",\n                                        "mount_point": "/mnt/ceph0_1tb"\n                                    },\n                                    {\n                                        "disk_gb": "1024",\n                                        "mount_point": "/mnt/ceph1_1tb"\n                                    }\n                                ],\n                                "globus_connect": {\n                                    "username": "globus_user",\n                                    "password": "globus_pass",\n                                    "short_name": "MAX-SDMZ-EP-X1",\n                                    "data_interface": "206.196.179.157",\n                                    "default_directory": "/mnt/ceph0_1tb"\n                                },\n                                "nfs": {\n                                    "exports": "[''/mnt/ceph1_1tb 206.196.0.0/16(rw,sync,no_subtree_check)'']"\n                                },\n                                "routes": [\n                                    {\n                                        "to": {\n                                            "value": "10.10.0.0/16",\n                                            "type": "ipv4-prefix"\n                                        },\n                                        "next_hop": {\n                                            "value": "10.1.0.1"\n                                        }\n                                    },\n                                    {\n                                        "to": {\n                                            "value": "0.0.0.0/0",\n                                            "type": "ipv4-prefix"\n                                        },\n                                        "next_hop": {\n                                            "value": "206.196.179.145"\n                                        }\n                                    }\n                                ],\n                                "quagga_bgp": {\n                                    "neighbors": [\n                                        {\n                                            "remote_asn": "7224",\n                                            "bgp_authkey": "versastack"\n                                        }\n                                    ],\n                                    "networks": [\n                                        "10.10.0.0/16"\n                                    ]\n                                }\n                            }\n                        ],\n                        "name": "subnet1",\n                        "cidr": "10.1.0.0/24"\n                    }\n                ]\n            }\n        ]\n    }\n}', 'AHC w/ AWS DC VLAN + OPS SRIOV + BGP + 2 x 1TB Ceph + Globus + NSF', 0);
+LOCK TABLES `service_wizard` WRITE;
+/*!40000 ALTER TABLE `service_wizard` DISABLE KEYS */;
+ INSERT INTO `service_wizard` VALUES (43,'AHC (Demo)','6xVM+SRIOV+Ceph+Globus+DC','xyang','{\"data\":{\"openstack\":{\"parent\":\"urn:ogf:network:openstack.com:openstack-cloud\",\"gateways\":[{\"name\":\"Gateway 1\",\"type\":\"Intercloud Network\"},{\"connects\":[{\"from\":\"External-Access\"}],\"name\":\"Gateway 1_2\",\"type\":\"UCS Port Profile\"},{\"connects\":[{\"from\":\"Ceph-Storage\"}],\"name\":\"Gateway 1_3\",\"type\":\"UCS Port Profile\"},{\"connects\":[{\"from\":\"LustreRtr\"}],\"name\":\"Gateway 1_4\",\"type\":\"UCS Port Profile\"}],\"cidr\":\"10.1.0.0\\/16\",\"subnets\":[{\"name\":\"OpenStack Subnet 1\",\"cidr\":\"10.1.0.0\\/24\",\"vms\":[{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:01\",\"name\":\"SRIOV 1\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.1\\/24\"},{\"mac_address\":\"aa:bd:d1:18:01:36\",\"name\":\"SRIOV 1_2\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.184\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:36\",\"name\":\"SRIOV 1_3\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.184\\/24\"},{\"mac_address\":\"aa:bd:d1:02:50:06\",\"name\":\"SRIOV 1_4\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.10\\/24\"}],\"name\":\"OpenStack VM 1\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.184\",\"short_name\":\"UMD-MAX-SDMZ-DTN-1\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"},{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"10.10.0.1\",\"to\":\"10.0.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:12\",\"name\":\"SRIOV 1_5\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.185\\/24\"},{\"mac_address\":\"aa:bd:d1:18:01:37\",\"name\":\"SRIOV 1_6\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.185\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:37\",\"name\":\"SRIOV 1_7\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.185\\/24\"},{\"mac_address\":\"aa:bd:d1:02:50:22\",\"name\":\"SRIOV 1_8\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.11\\/24\"}],\"name\":\"OpenStack VM 1_2\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.185\",\"short_name\":\"UMD-MAX-SDMZ-DTN-2\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"},{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"10.10.0.1\",\"to\":\"10.0.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:13\",\"name\":\"SRIOV 1_9\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.186\\/24\"},{\"mac_address\":\"aa:bd:d1:18:01:38\",\"name\":\"SRIOV 1_10\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.186\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:38\",\"name\":\"SRIOV 1_11\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.186\\/24\"},{\"mac_address\":\"aa:bd:d1:02:50:38\",\"name\":\"SRIOV 1_12\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.12\\/24\"}],\"name\":\"OpenStack VM 1_3\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.186\",\"short_name\":\"UMD-MAX-SDMZ-DTN-3\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"},{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"10.10.0.1\",\"to\":\"10.0.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:14\",\"name\":\"SRIOV 1_13\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.187\\/24\"},{\"mac_address\":\"aa:bd:d1:18:01:39\",\"name\":\"SRIOV 1_14\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.187\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:39\",\"name\":\"SRIOV 1_15\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.187\\/24\"},{\"mac_address\":\"aa:bd:d1:02:50:86\",\"name\":\"SRIOV 1_16\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.13\\/24\"}],\"name\":\"OpenStack VM 1_4\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.187\",\"short_name\":\"UMD-MAX-SDMZ-DTN-4\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"},{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"10.10.0.1\",\"to\":\"10.0.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:15\",\"name\":\"SRIOV 1_17\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.188\\/24\"},{\"mac_address\":\"aa:bd:d1:30:01:40\",\"name\":\"SRIOV 1_18\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.188\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:40\",\"name\":\"SRIOV 1_19\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.188\\/24\"},{\"mac_address\":\"aa:bd:d1:02:51:02\",\"name\":\"SRIOV 1_20\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.14\\/24\"}],\"name\":\"OpenStack VM 1_5\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.188\",\"short_name\":\"UMD-MAX-SDMZ-DTN-5\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"}],\"internet_routable\":true}]},\"intercloud\":{\"bgp\":{\"authentication_key\":\"secret\",\"amazon_asn\":\"7224\",\"vm_host\":\"OpenStack VM 1\",\"networks\":\"10.10.0.0\\/16\"}},\"aws\":{\"parent\":\"urn:ogf:network:aws.amazon.com:aws-cloud\",\"cidr\":\"10.0.0.0\\/16\",\"direct_connect_vlan\":\"any\",\"subnets\":[{\"vpn_route_propagation\":true,\"name\":\"AWS Subnet 1\",\"cidr\":\"10.0.0.0\\/24\",\"vms\":[{\"image\":\"ami-6d64487a\",\"interfaces\":[{\"public\":true,\"type\":\"Ethernet\",\"elastic_ip\":\"52.206.248.139\"}],\"name\":\"AWS VM 1\",\"instance_type\":\"m4.10xlarge\"}],\"internet_routable\":true}]},\"uuid\":\"974dcc70-a321-45f3-b3ab-2d8aced4dfdd\"},\"service\":\"ahc\"}',0),(44,'VCN-AWS (Demo)','1 VPC 1 VM w/ ElasticIP','xyang','{\"data\":{\"parent\":\"urn:ogf:network:aws.amazon.com:aws-cloud\",\"options\":[\"aws-form\"],\"cidr\":\"10.0.0.0\\/16\",\"subnets\":[{\"vpn_route_propagation\":true,\"name\":\"Subnet 1\",\"cidr\":\"10.0.0.0\\/24\",\"vms\":[{\"interfaces\":[{\"public\":true,\"type\":\"Ethernet\",\"elastic_ip\":\"52.71.182.172\"}],\"name\":\"VM 1\"}],\"internet_routable\":true}],\"uuid\":\"92d4b9f2-a8a5-4586-b8c9-993f64b74d4a\"},\"service\":\"vcn\"}',0),(45,'VCN-OpenStack (Demo)','2xVM SRIOV+Ceph_RDB','xyang','{\"data\":{\"parent\":\"urn:ogf:network:openstack.com:openstack-cloud\",\"gateways\":[{\"connects\":[{\"from\":\"External-Access\"}],\"name\":\"Gateway 1\",\"type\":\"UCS Port Profile\"},{\"connects\":[{\"from\":\"Ceph-Storage\"}],\"name\":\"Gateway 1_2\",\"type\":\"UCS Port Profile\"}],\"options\":[\"openstack-form\"],\"cidr\":\"10.0.0.0\\/16\",\"subnets\":[{\"name\":\"Subnet 1\",\"cidr\":\"10.0.0.0\\/24\",\"vms\":[{\"flavor\":\"4\",\"routes\":[{\"next_hop\":\"10.0.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:cc:12:80:31\",\"name\":\"SRIOV 1\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"206.196.180.131\\/26\"}],\"name\":\"VM 1\",\"host\":\"any\",\"security_group\":\"rains\",\"keypair_name\":\"demo-key\"},{\"flavor\":\"ebeb9636-8675-42bb-b099-517505dd67a2\",\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.0.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:cc:12:80:32\",\"name\":\"SRIOV 1_2\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"206.196.180.132\\/26\"},{\"mac_address\":\"aa:bb:cc:12:20:32\",\"name\":\"SRIOV 1_3\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"10.10.200.132\\/24\"}],\"name\":\"VM 1_2\",\"host\":\"any\",\"security_group\":\"rains\",\"keypair_name\":\"demo-key\",\"ceph_rbds\":[{\"size\":\"600\",\"mount_point\":\"\\/mnt\\/ceph1\"}]}],\"internet_routable\":true}],\"uuid\":\"d6741f88-0e3a-41e5-8f3e-ca1a0be44600\"},\"service\":\"vcn\"}',0),(46,'DNC Single-Conn (Demo)','Best Effort - and VLAN','xyang','{\n    \"data\": {\n        \"type\": \"Multi-Path P2P VLAN\",\n        \"uuid\": \"d2f96199-5538-4e36-82e7-d9f479b55325\",\n        \"connections\": [\n            {\n                \"bandwidth\": {\n                    \"qos_class\": \"bestEffort\"\n                },\n                \"name\": \"connection 1\",\n                \"terminals\": [\n                    {\n                        \"vlan_tag\": \"any\",\n                        \"assign_ip\": false,\n                        \"uri\": \"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*\"\n                    },\n                    {\n                        \"vlan_tag\": \"any\",\n                        \"assign_ip\": false,\n                        \"uri\": \"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*\"\n                    }\n                ]\n            }\n        ]\n    },\n    \"service\": \"dnc\"\n}',0),(47,'DNC Multi-Conns (Demo)','1 BestEffort + 1G Guaranteed - any VLANs  ','xyang','{\"data\":{\"type\":\"Multi-Path P2P VLAN\",\"uuid\":\"d2422c98-7423-4bd8-bdac-5576b14dde16\",\"connections\":[{\"bandwidth\":{\"qos_class\":\"guaranteedCapped\",\"capacity\":\"1000\"},\"name\":\"connection 1\",\"terminals\":[{\"vlan_tag\":\"any\",\"assign_ip\":false,\"uri\":\"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*\"},{\"vlan_tag\":\"any\",\"assign_ip\":false,\"uri\":\"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*\"}]},{\"bandwidth\":{\"qos_class\":\"bestEffort\"},\"name\":\"connection 1_2\",\"terminals\":[{\"vlan_tag\":\"any\",\"assign_ip\":false,\"uri\":\"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*\"},{\"vlan_tag\":\"any\",\"assign_ip\":false,\"uri\":\"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*\"}]}]},\"service\":\"dnc\"}',0);
+/*!40000 ALTER TABLE `service_wizard` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
---
--- Indexes for dumped tables
---
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
---
--- Indexes for table `acl`
---
-ALTER TABLE `acl`
-  ADD PRIMARY KEY (`acl_id`);
-
---
--- Indexes for table `label`
---
-ALTER TABLE `label`
-  ADD PRIMARY KEY (`identifier`);
-
---
--- Indexes for table `log`
---
-ALTER TABLE `log`
-  ADD PRIMARY KEY (`log_id`);
-
---
--- Indexes for table `service_delta`
---
-ALTER TABLE `service_delta`
-  ADD PRIMARY KEY (`service_delta_id`,`service_instance_id`,`super_state`),
-  ADD KEY `service_delta-service_instance_idx` (`service_instance_id`),
-  ADD KEY `service_delta-service_history_idx` (`super_state`);
-
---
--- Indexes for table `service_instance`
---
-ALTER TABLE `service_instance`
-  ADD PRIMARY KEY (`service_instance_id`),
-  ADD KEY `service_instance-service_idx` (`type`),
-  ADD KEY `service_instance-user_info_idx` (`username`),
-  ADD KEY `service_instance-service_state_idx` (`super_state`);
-
---
--- Indexes for table `service_verification`
---
-ALTER TABLE `service_verification`
-  ADD PRIMARY KEY (`service_instance_id`);
-
---
--- Indexes for table `service_wizard`
---
-ALTER TABLE `service_wizard`
-  ADD PRIMARY KEY (`service_wizard_id`),
-  ADD KEY `service_id` (`service_id`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `acl`
---
-ALTER TABLE `acl`
-  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=59;
---
--- AUTO_INCREMENT for table `log`
---
-ALTER TABLE `log`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=85894;
---
--- AUTO_INCREMENT for table `service_delta`
---
-ALTER TABLE `service_delta`
-  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=30;
---
--- AUTO_INCREMENT for table `service_instance`
---
-ALTER TABLE `service_instance`
-  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=49;
---
--- AUTO_INCREMENT for table `service_wizard`
---
-ALTER TABLE `service_wizard`
-  MODIFY `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=11;
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `service_delta`
---
-ALTER TABLE `service_delta`
-  ADD CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
-
---
--- Constraints for table `service_verification`
---
-ALTER TABLE `service_verification`
-  ADD CONSTRAINT `service_verification-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE;
+-- Dump completed on 2018-01-14 11:24:50

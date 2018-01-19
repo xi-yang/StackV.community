@@ -1,0 +1,191 @@
+openapi: 3.0.0
+info:
+  title: StackV API
+  description: StackV Frontend REST API Documentation.
+  version: 0.9.0
+servers:
+  - url: 'http://localhost:8080/StackV-web/restapi/app'
+    description: Frontend Local Server
+tags:
+  - name: acl
+    description: Access control commands
+  - name: service
+    description: Service instance commands
+paths:
+  '/service/{siUUID}/status':
+    get:
+      tags:
+        - service
+      summary: Instance status
+      description: Retrieve service instance superstatus and substatus.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful retrieval of service status
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Create - READY
+  '/service/{siUUID}/substatus':
+    get:
+      tags:
+        - service
+      summary: Instance substatus
+      description: Retrieve only the service instance substatus.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful retrieval of service status
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: READY
+  /service:
+    post:
+      tags:
+        - service
+      summary: Create service.
+      description: Create a service instance.
+      requestBody:
+        description: Service creation JSON
+        content: {}
+        required: true
+      responses:
+        '200':
+          description: Successful service creation
+    get:
+      tags:
+        - service
+      summary: Initialize service
+      description: Retrieve a newly-generated service instance UUID from the backend.
+      responses:
+        '200':
+          description: Successful service initialization
+  '/service/{siUUID}/superstate/{state}':
+    put:
+      tags:
+        - service
+      summary: Force superstate shift
+      description: Forcibly change the superstate of a service instance.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: path
+          description: new superstate
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful state modification
+  '/service/{siUUID}/{action}':
+    put:
+      tags:
+        - service
+      summary: Operate service instance
+      description: 'Execute a service operation, such as cancel or delete.'
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: path
+          description: operation to be committed
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operation successfully started
+    delete:
+      tags:
+        - service
+      summary: Delete service instance
+      description: Delete a service instance.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Instance successfully deleted
+  '/service/{siUUID}/{action}/sync':
+    put:
+      tags:
+        - service
+      summary: Operate service instance (sync)
+      description: 'Execute a service operation, such as cancel or delete, synchronously.'
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: path
+          description: operation to be committed
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operation successfully started
+  '/service/{siUUID}/call_verify':
+    get:
+      tags:
+        - service
+      summary: Single-run verify
+      description: Retrieve current verification data of a service instance.
+      parameters:
+        - name: siUUID
+          in: path
+          description: service instance UUID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful retrieval of service status
+          content:
+            application/json:
+              schema: {}
+components:
+  securitySchemes:
+    keycloak:
+      type: oauth2
+      description: Keycloak OAuth2 Endpoint
+      flows:
+        password:
+          tokenUrl: >-
+            https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token
+          refreshUrl: >-
+            https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token
+          scopes: {}
+security:
+  - keycloak: []

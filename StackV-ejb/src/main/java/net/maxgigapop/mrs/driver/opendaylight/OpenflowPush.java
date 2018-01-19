@@ -42,13 +42,10 @@ public class OpenflowPush {
 
     private static final StackLogger logger = OpenflowRestconfDriver.logger;
 
-    public String propagate(String modelRefTtl, String modelAddTtl, String modelReductTtl) {
+    public String propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
         String method = "propagate";
         JSONObject jRequests = new JSONObject();
         try {
-            OntModel modelRef = ModelUtil.unmarshalOntModel(modelRefTtl);
-            OntModel modelAdd = ModelUtil.unmarshalOntModel(modelAddTtl);
-            OntModel modelReduct = ModelUtil.unmarshalOntModel(modelReductTtl);
             JSONArray jDelete = this.extractFlows(modelRef, modelReduct);
             JSONArray jCreate = this.extractFlows(modelRef, modelAdd);
             jRequests.put("delete", jDelete);
@@ -92,9 +89,10 @@ public class OpenflowPush {
                     resTable = qs2.getResource("table");
                 }
             }
-            query2 = "SELECT ?table ?matchtype ?matchvalue ?action ?actiontype ?actionvalue WHERE {"
+            query2 = "SELECT ?table ?matchtype ?matchvalue ?action ?actiontype ?actionvalue ?actionorder WHERE {"
                     + String.format("?table mrs:hasFlow <%s>. ", flow.getURI())
                     + String.format("<%s> mrs:flowAction ?action. ?action mrs:type ?actiontype. ?action mrs:value ?actionvalue. ", flow.getURI())
+                    + String.format("OPTIONAL {?action mrs:order ?actionorder.} ", flow.getURI())
                     + "}";
             r2 = ModelUtil.executeQuery(query2, null, model);
             SortedMap<String, String> sortedActions = new TreeMap();
@@ -104,7 +102,11 @@ public class OpenflowPush {
                 String actionValue = qs2.get("actionvalue").toString();
                 String actionUri = qs2.get("action").toString();
                 String strAction = (actionType + "=" + actionValue);
-                sortedActions.put(actionUri, strAction);
+                if (qs2.contains("actionorder")) {
+                    sortedActions.put(qs2.get("actionorder").toString(), strAction);
+                } else {
+                    sortedActions.put(actionUri, strAction);                    
+                }
                 if (resTable == null) {
                     resTable = qs2.getResource("table");
                 }

@@ -49,16 +49,23 @@ public class TokenHandler {
     String refreshToken = null;
     int recur = 0;
 
-    public TokenHandler(String refresh) {
-        refreshToken = refresh;
-        accessToken = refreshTokenSub(0);
-        accessCreationTime = System.nanoTime();
+    public TokenHandler(String access, String refresh) {                
+        if (access != null) {           
+            accessToken = access.substring(7);            
+            accessCreationTime = System.nanoTime();
+        }
+        if (refresh != null) {
+            refreshToken = refresh;
+            accessToken = refreshTokenSub(0);
+        }                
     }
 
     public void refreshToken() {
-        long elapsed = (System.nanoTime() - accessCreationTime) / 1000000;        
-        if (elapsed > 45000) {                   
-            accessToken = refreshTokenSub(0);
+        if (refreshToken != null) {
+            long elapsed = (System.nanoTime() - accessCreationTime) / 1000000;
+            if (elapsed > 45000) {
+                accessToken = refreshTokenSub(0);
+            }
         }
     }
 
@@ -108,11 +115,10 @@ public class TokenHandler {
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
 
-            if (recur == 0) {
-                logger.trace_end(method);
-            } else {
+            if (recur != 0) {
                 logger.status(method, "Refresh achieved after " + recur + " retry");
             }
+            accessCreationTime = System.nanoTime();
             return (String) result.get("access_token");
         } catch (SocketTimeoutException | java.net.ConnectException ex) {
             // Keycloak connection timeout

@@ -21,7 +21,7 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap */
+/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap, swal */
 // Tweens
 var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.easeInOut, paused: true, top: "30px"});
 var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
@@ -39,7 +39,7 @@ Mousetrap.bind({
         window.location.href = "/StackV-web/orch/graphTest.jsp";
     },
     'shift+right': function () {
-        window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
+        window.location.href = "/StackV-web/ops/details.html";
     },
     'space': function () {
         if ($("#catalog-panel").hasClass("closed")) {
@@ -66,6 +66,15 @@ function loadCatalog() {
     loadInstances();
     loadWizard();
     loadEditor();
+
+    loadSystemHealthCheck();
+
+    if (getURLParameter("profiles")) {
+        openCatalog();
+        setTimeout(function () {
+            $($("ul.catalog-tabs").children()[0]).children().click();
+        }, 200);
+    }
 
     $("#black-screen").click(function () {
         $("#info-panel").removeClass("active");
@@ -125,15 +134,66 @@ function loadInstances() {
 
             $(".clickable-row").click(function () {
                 sessionStorage.setItem("instance-uuid", $(this).data("href"));
-                window.document.location = "/StackV-web/ops/details/templateDetails.jsp";
+                window.document.location = "/StackV-web/ops/details.html";
             });
 
             tweenInstancePanel.play();
         }
     });
+}
+function reloadInstances() {
+    var userId = keycloak.subject;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            $("#status-body tr").addClass("missing");
+            for (i = 0; i < result.length; i++) {
+                var instance = result[i];
+                var $row = $("#status-body tr[data-href='" + instance[1] + "']");
+                if ($row.length === 1) {
+                    // Instance found, update text.
+                    $row.children().last().text(instance[2]);
+                    $row.removeClass("missing");
+                } else {
+                    // Instance not found, need to create.
+                    var tbody = document.getElementById("status-body");
+                    var row = document.createElement("tr");
+                    row.className = "clickable-row";
+                    row.setAttribute("data-href", instance[1]);
 
+                    var cell1_1 = document.createElement("td");
+                    cell1_1.innerHTML = instance[3];
+                    var cell1_2 = document.createElement("td");
+                    cell1_2.innerHTML = instance[0];
+                    var cell1_3 = document.createElement("td");
+                    cell1_3.innerHTML = instance[1];
+                    var cell1_4 = document.createElement("td");
+                    cell1_4.innerHTML = instance[2];
+                    row.appendChild(cell1_1);
+                    row.appendChild(cell1_2);
+                    row.appendChild(cell1_3);
+                    row.appendChild(cell1_4);
+                    tbody.appendChild(row);
+
+                    $(row).click(function () {
+                        sessionStorage.setItem("instance-uuid", $(this).data("href"));
+                        window.document.location = "/StackV-web/ops/details.html";
+                    });
+                }
+            }
+
+            // Remove missing instance rows, presuming deletion.
+            $("#status-body tr.missing").remove();
+        }
+    });
 }
 
+var originalProfile;
 function loadWizard() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("wizard-body");
@@ -180,6 +240,7 @@ function loadWizard() {
                         $("#profile-modal").modal("show");
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(JSON.stringify(result));
+                        originalProfile = JSON.stringify(result);
                         $(".button-profile-save").attr('id', resultID);
                         $(".button-profile-save-as").attr('id', resultID);
                         $(".button-profile-submit").attr('id', resultID);
@@ -195,19 +256,28 @@ function loadWizard() {
             });
 
             $(".button-profile-delete").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
-                $.ajax({
-                    url: apiUrl,
-                    type: 'DELETE',
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                    },
-                    success: function (result) {
-                        loadWizard();
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
+                swal("Confirm deletion?", {
+                    buttons: {
+                        cancel: "Cancel",
+                        delete: {text: "Delete", value: true}
+                    }
+                }).then((value) => {
+                    if (value) {
+                        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
+                        $.ajax({
+                            url: apiUrl,
+                            type: 'DELETE',
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            },
+                            success: function (result) {
+                                loadWizard();
+                            },
+                            error: function (textStatus, errorThrown) {
+                                console.log(textStatus);
+                                console.log(errorThrown);
+                            }
+                        });
                     }
                 });
 
@@ -215,30 +285,67 @@ function loadWizard() {
             });
 
             $(".button-profile-submit").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
-                $.ajax({
-                    url: apiUrl,
-                    type: 'POST',
-                    data: $("#info-panel-text-area").val(),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function (result) {
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
-                    }
-                });
-                // reload top table and hide modal
-                reloadData();
-                $("div#profile-modal").modal("hide");
-                $("#black-screen").addClass("off");
-                $("#info-panel").removeClass("active");
-                evt.preventDefault();
+                if ($("#profile-alias").val()) {
+                    var profile = JSON.parse($("#info-panel-text-area").val());
+                    profile["alias"] = $("#profile-alias").val();
+
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
+                    $.ajax({
+                        url: apiUrl,
+                        async: false,
+                        type: 'GET',
+                        dataType: "text",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        },
+                        success: function (result) {
+                            var manifest = profile;
+                            manifest["uuid"] = result;
+                            manifest["data"]["uuid"] = result;
+                            manifest["data"]["options"] = manifest["options"];
+                            //manifest["data"] = JSON.parse($("#info-panel-text-area").val());
+
+                            // Render template
+//                            var rendered = render(manifest);
+//                            if (!rendered) {
+//                                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
+//                                return;
+//                            }
+
+                            manifest['proceed'] = "true";
+                            var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                            $.ajax({
+                                url: apiUrl,
+                                type: 'POST',
+                                data: JSON.stringify(manifest),
+                                contentType: "application/json; charset=utf-8",
+                                dataType: "json",
+                                beforeSend: function (xhr) {
+                                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                                    xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                                },
+                                success: function (result) {
+                                },
+                                error: function (textStatus, errorThrown) {
+                                    console.log(textStatus);
+                                    console.log(errorThrown);
+                                }
+                            });
+                        }
+                    });
+                    // reload top table and hide modal
+                    reloadData();
+                    $("div#profile-modal").modal("hide");
+                    $("#black-screen").addClass("off");
+                    $("#info-panel").removeClass("active");
+                    evt.preventDefault();
+                } else {
+                    $("#profile-alias").addClass("invalid");
+                    $("#profile-alias").change(function () {
+                        $(this).removeClass("invalid");
+                    });
+                }
             });
 
             // Hide the regular buttons and reveal the save as box
@@ -256,77 +363,97 @@ function loadWizard() {
 
             // After the user has put a new name and description for the new profile
             $(".button-profile-save-as-confirm").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
-                var data = {
-                    name: $("#new-profile-name").val(),
-                    userID: keycloak.subject,
-                    description: $("#new-profile-description").val(),
-                    data: $("#info-panel-text-area").val()
-                };
+                var profileString = $("#info-panel-text-area").val();
+                if (isJSONString(profileString)) {
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                    var data = {
+                        name: $("#new-profile-name").val(),
+                        username: keycloak.tokenParsed.preferred_username,
+                        description: $("#new-profile-description").val(),
+                        data: JSON.parse($("#info-panel-text-area").val())
+                    };
 
-                $.ajax({
-                    url: apiUrl,
-                    type: 'PUT',
-                    data: JSON.stringify(data), //stringify to get escaped JSON in backend
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function (result) {
-                        // revert to regular buttons and close modal
-                        $("input#new-profile-name").val("");
-                        $("input#new-profile-description").val("");
-                        $("div.info-panel-save-as-description").css("display", "none");
-                        $("div.info-panel-regular-buttons").css("display", "block");
-                        $("div#profile-modal").modal("hide");
-                        // reload table
-                        loadWizard();
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
-                    }
-                });
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'PUT',
+                        data: JSON.stringify(data), //stringify to get escaped JSON in backend
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        },
+                        success: function (result) {
+                            // revert to regular buttons and close modal
+                            $("input#new-profile-name").val("");
+                            $("input#new-profile-description").val("");
+                            $("div.info-panel-save-as-description").css("display", "none");
+                            $("div.info-panel-regular-buttons").css("display", "block");
+                            $("div#profile-modal").modal("hide");
+                            // reload table
+                            loadWizard();
+                        },
+                        error: function (textStatus, errorThrown) {
+                            console.log(textStatus);
+                            console.log(errorThrown);
+                        }
+                    });
 
-                // reload the bottom panel
-                $("#black-screen").addClass("off");
-                $("#info-panel").removeClass("active");
-                evt.preventDefault();
+                    // reload the bottom panel
+                    $("#black-screen").addClass("off");
+                    $("#info-panel").removeClass("active");
+                    evt.preventDefault();
+                } else {
+                    swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');
+                }
             });
 
             $(".button-profile-save").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
+                var profileString = $("#info-panel-text-area").val();
+                if (isJSONString(profileString)) {
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
 
-                $.ajax({
-                    url: apiUrl,
-                    type: 'PUT',
-                    data: $("#info-panel-text-area").val(),
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                        xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                    },
-                    success: function (result) {
-                        // reload the bottom panel
-                        loadWizard();
-                        $("#profile-modal").modal("hide");
-                    },
-                    error: function (textStatus, errorThrown) {
-                        console.log(textStatus);
-                        console.log(errorThrown);
-                    }
-                });
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'PUT',
+                        data: profileString,
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                        },
+                        success: function (result) {
+                            // reload the bottom panel
+                            loadWizard();
+                            $("#profile-modal").modal("hide");
+                        },
+                        error: function (textStatus, errorThrown) {
+                            console.log(textStatus);
+                            console.log(errorThrown);
+                        }
+                    });
 
-                $("#black-screen").addClass("off");
-                $("#info-panel").removeClass("active");
-                evt.preventDefault();
+                    $("#black-screen").addClass("off");
+                    $("#info-panel").removeClass("active");
+                    evt.preventDefault();
+                } else {
+                    swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');
+                }
             });
+
         }
     });
 }
+function isJSONString(str) {
+    try {
+        JSON.parse(str);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 
 function loadEditor() {
     var userId = keycloak.subject;
@@ -355,8 +482,8 @@ function loadEditor() {
                 row.appendChild(cell1_3);
                 tbody.appendChild(row);
             }
-            $(document).on('click', '.button-service-select', function ( evt ) {          
-                var ref = "/StackV-web/ops/srvc/" + this.id.toLowerCase() + ".jsp";
+            $(document).on('click', '.button-service-select', function (evt) {
+                var ref = "/StackV-web/ops/intent.html?intent=" + this.id.toLowerCase();
                 window.location.href = ref;
 
                 evt.preventDefault();
@@ -379,14 +506,55 @@ function reloadData() {
         if (timerSetting > 15) {
             tweenInstancePanel.reverse();
             setTimeout(function () {
-                loadInstances();
+                reloadInstances();
+                loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 750);
         } else {
             setTimeout(function () {
-                loadInstances();
+                reloadInstances();
+                loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 500);
+        }
+    });
+}
+
+
+/*
+ * Calls '/StackV-web/restapi/service/ready'
+ * The API call returns true or false.
+ * The prerequiste for this function is having a this div structure in the:
+ * <div id="system-health-check">
+ <div id="system-health-check-text"></div>
+ </div>
+ */
+var systemHealthPass;
+function loadSystemHealthCheck() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        dataType: "json",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            if (systemHealthPass !== result) {
+                if (result === true) {
+                    $("#system-health-span").removeClass("fail").removeClass("glyphicon-ban-circle")
+                            .addClass("pass").addClass("glyphicon-ok-circle");
+                } else {
+                    $("#system-health-span").removeClass("pass").removeClass("glyphicon-ok-circle")
+                            .addClass("fail").addClass("glyphicon-ban-circle");
+                }
+
+                systemHealthPass = result;
+            }
+        },
+        error: function (err) {
+            console.log("Error in system health check: " + JSON.stringify(err));
         }
     });
 }

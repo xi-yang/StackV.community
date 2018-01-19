@@ -35,6 +35,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.InfModel;
+import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
@@ -78,13 +79,45 @@ public class MCETools {
 
     private static final StackLogger logger = new StackLogger(MCETools.class.getName(), "MCETools");
 
-    public static class Path extends com.hp.hpl.jena.ontology.OntTools.Path {
+    public static class BandwidthProfile {
+        public String type = null; // default  "guaranteedCapped"
+        public String unit = null; // default "bps"
+        public String priority = null; // default "0"
+        public Long granularity = null; // default 1L
+        public Long maximumCapacity = null; // required
+        public Long availableCapacity = null; // required
+        public Long reservableCapacity = null; // required
+        public Long individualCapacity = null;  // optional
+        public Long minimumCapacity = null; // optional
+        public Long usedCapacity = null;  // optional
 
-        private HashSet<Statement> maskedLinks = null;
+        public BandwidthProfile(Long capacity) {
+            this.maximumCapacity = capacity;
+            this.availableCapacity = capacity;
+            this.reservableCapacity = capacity;
+            this.type = "guaranteedCapped";
+            this.unit = "bps";
+            this.granularity = 1L;
+        }
+        
+        public BandwidthProfile(Long maximumCapacity, Long availableCapacity, Long reservableCapacity) {
+            this.maximumCapacity = maximumCapacity;
+            this.availableCapacity = availableCapacity;
+            this.reservableCapacity = reservableCapacity;
+            this.type = "guaranteedCapped";
+            this.unit = "bps";
+            this.granularity = 1L;
+        }
+    }
+    
+    public static class Path extends com.hp.hpl.jena.ontology.OntTools.Path {
+        HashSet<Statement> maskedLinks = null;
         Resource deviationNode = null;
         OntModel ontModel = null;
         double failureProb = 0.0;
-
+        BandwidthProfile bandwithProfile = null;
+        String connectionId = null;
+        
         public Path() {
             super();
         }
@@ -115,6 +148,22 @@ public class MCETools {
 
         public void setOntModel(OntModel ontModel) {
             this.ontModel = ontModel;
+        }
+
+        public BandwidthProfile getBandwithProfile() {
+            return bandwithProfile;
+        }
+
+        public void setBandwithProfile(BandwidthProfile bandwithProfile) {
+            this.bandwithProfile = bandwithProfile;
+        }
+
+        public String getConnectionId() {
+            return connectionId;
+        }
+
+        public void setConnectionId(String connectionId) {
+            this.connectionId = connectionId;
         }
     }
 
@@ -254,11 +303,26 @@ public class MCETools {
                 } catch (Exception ex) {
                     throw new Exception("MCETools.computeFeasibleL2KSP cannot verifyL2Path", ex);
                 }
+                if (verified && jsonConnReq.containsKey("bandwidth")) {
+                    JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
+                    Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
+                    Long available = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null;
+                    Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
+                    candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
+                    candidatePath.bandwithProfile.minimumCapacity = (jsonBw.containsKey("minimum") && jsonBw.get("minimum") != null) ? Long.parseLong(jsonBw.get("minimum").toString()) : null; //default = null
+                    candidatePath.bandwithProfile.individualCapacity = (jsonBw.containsKey("individual") && jsonBw.get("individual") != null) ? Long.parseLong(jsonBw.get("individual").toString()) : null; //default = null
+                    candidatePath.bandwithProfile.granularity = (jsonBw.containsKey("granularity")  && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+                    candidatePath.bandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class")!= null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+                    candidatePath.bandwithProfile.unit = (jsonBw.containsKey("unit") && jsonBw.get("unit") != null) ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
+                    candidatePath.bandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
+                    verified = MCETools.verifyPathBandwidthProfile(transformedModel, candidatePath);
+                }
                 if (!verified) {
                     itP.remove();
                 } else {
                     // generating connection subnets (statements added to candidatePath) while verifying VLAN availability
-                    OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, jsonConnReq);
+                    candidatePath.setConnectionId((String)jsonConnReq.get("id"));
+                    OntModel l2PathModel = MCETools.createL2PathVlanSubnets(transformedModel, candidatePath, (JSONObject)jsonConnReq.get("terminals"));
                     if (l2PathModel == null) {
                         itP.remove();
                     } else {
@@ -511,9 +575,10 @@ public class MCETools {
                 + "?node a ?type. "
                 + "?port a nml:BidirectionalPort."
                 + "?node nml:hasService ?svc. "
+                + "?svc a ?svc_type. "
                 + "?node nml:connectsTo ?port. "
                 + "?svc nml:connectsTo ?port."
-                + "FILTER (?type in (nml:Node, nml:Topology))"
+                + "FILTER (?type in (nml:Node, nml:Topology) && ?svc_type in (nml:SwitchingService, mrs:OpenflowService))"
                 + "}";
         ResultSet rs = ModelUtil.sparqlQuery(infModel, sparql);
         List<Statement> stmtList = new ArrayList();
@@ -523,6 +588,15 @@ public class MCETools {
             Resource resPort = qs.getResource("port");
             stmtList.add(infModel.createLiteralStatement(resNode, Nml.connectsTo, resPort));
             stmtList.add(infModel.createLiteralStatement(resPort, Nml.connectsTo, resNode));
+            sparql = "SELECT ?subport WHERE {"
+                + String.format("<%s> nml:hasBidirectionalPort ?subport.", resPort.getURI())
+                + "}";
+            ResultSet rs2 = ModelUtil.sparqlQuery(infModel, sparql);
+            while (rs2.hasNext()) {
+                QuerySolution qs2 = rs2.next();
+                Resource resSubPort = qs2.getResource("subport");
+                stmtList.add(infModel.createLiteralStatement(resNode, Nml.connectsTo, resSubPort));
+            }
         }
         OntModel outputModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         outputModel.add(infModel);
@@ -589,6 +663,183 @@ public class MCETools {
         return true;
     }
 
+    //@TODO: unit conversion?
+    public static boolean verifyPathBandwidthProfile(Model model, Path path) {
+        if (path.getBandwithProfile() == null) {
+            return true;
+        }
+        BandwidthProfile pathAvailBwProfile = null;
+        Iterator<Statement> itS = path.iterator();
+        while (itS.hasNext()) {
+            Statement link = itS.next();
+            BandwidthProfile hopBwProfile = getHopBandwidthPorfile(model, link.getSubject().asResource());
+            if (pathAvailBwProfile == null && hopBwProfile != null) {
+                hopBwProfile = normalizeBandwidthPorfile(hopBwProfile);
+                pathAvailBwProfile = hopBwProfile;
+            }
+            if (hopBwProfile != null) {
+                hopBwProfile = normalizeBandwidthPorfile(hopBwProfile);
+                pathAvailBwProfile = handleBandwidthProfile(pathAvailBwProfile, hopBwProfile);
+            }
+            if (!itS.hasNext()) {
+                hopBwProfile = getHopBandwidthPorfile(model, link.getObject().asResource());
+                if ( hopBwProfile != null) {
+                    hopBwProfile = normalizeBandwidthPorfile(hopBwProfile);
+                    pathAvailBwProfile = handleBandwidthProfile(pathAvailBwProfile, hopBwProfile);
+                }
+            }
+        }
+        // compare avaialble bandwidth profile to requested badnwidth profile
+        BandwidthProfile pathRequestBwProfile = normalizeBandwidthPorfile(path.getBandwithProfile());
+        if (pathAvailBwProfile != null && !canProvideBandwith(pathAvailBwProfile, pathRequestBwProfile)) {
+            return false;
+        }
+        if (pathAvailBwProfile != null && path.getBandwithProfile().type.equalsIgnoreCase("anyAvailable")) {
+            path.setBandwithProfile(pathAvailBwProfile); // replace requested with available profile
+        }
+        return true;
+    }
+    
+    private static BandwidthProfile getHopBandwidthPorfile(Model model, Resource hop) {
+        String sparql = "SELECT $maximum $available $reservable $granularity $qos_class $unit $minimum $individual $priority WHERE {"
+                + String.format("<%s> a nml:BidirectionalPort. ", hop.getURI())
+                + String.format("<%s> nml:hasService $bw_svc. ", hop.getURI())
+                + "$bw_svc mrs:maximumCapacity $maximum. "
+                + "$bw_svc mrs:availableCapacity $available. "
+                + "$bw_svc mrs:reservableCapacity $reservable. "
+                + "OPTIONAL {$bw_svc mrs:type $qos_class } "
+                + "OPTIONAL {$bw_svc mrs:unit $unit } "
+                + "OPTIONAL {$bw_svc mrs:granularity $granularity } "
+                + "OPTIONAL {$bw_svc mrs:minimumCapacity $minimum } "
+                + "OPTIONAL {$bw_svc mrs:individualCapacity $individual } "
+                + "OPTIONAL {$bw_svc mrs:priority $priority } "
+                + "}";
+        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+        BandwidthProfile bwProfile = null;
+        if (rs.hasNext()) {
+            QuerySolution solution = rs.next();
+            Long maximumBw = solution.get("maximum").asLiteral().getLong();
+            Long availableBw = solution.get("available").asLiteral().getLong();
+            Long reservableBw = solution.get("reservable").asLiteral().getLong();
+            bwProfile = new BandwidthProfile(maximumBw, availableBw, reservableBw);
+            if (solution.contains("granularity")) {
+                bwProfile.granularity = solution.get("granularity").asLiteral().getLong();
+            }
+            if (solution.contains("minimum")) {
+                bwProfile.minimumCapacity = solution.get("minimum").asLiteral().getLong();
+            }
+            if (solution.contains("individual")) {
+                bwProfile.individualCapacity = solution.get("individual").asLiteral().getLong();
+            }
+            if (solution.contains("unit")) {
+                bwProfile.unit = solution.get("unit").asLiteral().getString();
+            }
+            if (solution.contains("qos_class")) {
+                bwProfile.type = solution.get("qos_class").asLiteral().getString();
+            }
+            if (solution.contains("priority")) {
+                bwProfile.priority = solution.get("priority").asLiteral().getString();
+            }
+        }
+        return bwProfile;
+    }
+    
+    private static BandwidthProfile normalizeBandwidthPorfile(BandwidthProfile bwProfile) {
+        if (bwProfile.unit == null || bwProfile.unit.equalsIgnoreCase("bps")) {
+            return bwProfile;
+        } 
+        long factor = 1;
+        if (bwProfile.unit.equalsIgnoreCase("kbps")) {
+            factor = 1000;
+        } else if (bwProfile.unit.equalsIgnoreCase("mbps")) {
+            factor = 1000000;
+        } else if (bwProfile.unit.equalsIgnoreCase("gbps")) {
+            factor = 1000000000;
+        }
+        if (bwProfile.maximumCapacity != null) {
+            bwProfile.maximumCapacity *= factor;
+        }
+        if (bwProfile.availableCapacity != null) {
+            bwProfile.availableCapacity *= factor;
+        }
+        if (bwProfile.reservableCapacity != null) {
+            bwProfile.reservableCapacity *= factor;
+        }
+        if (bwProfile.individualCapacity != null) {
+            bwProfile.individualCapacity *= factor;
+        }
+        if (bwProfile.usedCapacity != null) {
+            bwProfile.usedCapacity *= factor;
+        } 
+        if (bwProfile.minimumCapacity != null) {
+            bwProfile.minimumCapacity *= factor;
+        }
+        if (bwProfile.granularity != null) {
+            bwProfile.granularity *= factor;
+        }
+        bwProfile.unit = "bps";
+        return bwProfile;
+    }
+
+    private static BandwidthProfile handleBandwidthProfile(BandwidthProfile pathBwProfile, BandwidthProfile hopBwProfile) {
+        if (pathBwProfile.maximumCapacity == null || pathBwProfile.maximumCapacity > hopBwProfile.maximumCapacity) {
+            pathBwProfile.maximumCapacity = hopBwProfile.maximumCapacity;
+        }
+        if (pathBwProfile.availableCapacity == null || pathBwProfile.availableCapacity > hopBwProfile.availableCapacity) {
+            pathBwProfile.availableCapacity = hopBwProfile.availableCapacity;
+        }
+        if (pathBwProfile.reservableCapacity == null || pathBwProfile.reservableCapacity > hopBwProfile.reservableCapacity) {
+            pathBwProfile.reservableCapacity = hopBwProfile.reservableCapacity;
+        }
+        if (pathBwProfile.individualCapacity == null || pathBwProfile.individualCapacity > hopBwProfile.individualCapacity) {
+            pathBwProfile.individualCapacity = hopBwProfile.individualCapacity;
+        }
+        if (pathBwProfile.minimumCapacity == null || pathBwProfile.minimumCapacity < hopBwProfile.minimumCapacity) {
+            pathBwProfile.minimumCapacity = hopBwProfile.minimumCapacity;
+        }
+        if (pathBwProfile.granularity == null || pathBwProfile.granularity < hopBwProfile.granularity) {
+            pathBwProfile.granularity = hopBwProfile.granularity;
+        }
+        return pathBwProfile;
+    }
+
+    //@TODO: fine tuning the comparison criteria by types | granularity % constraint | unit
+    private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
+        if (bwpfRequest.type != null
+                && (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped"))) {
+            if (bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity
+                    && (bwpfAvailable.individualCapacity == null || bwpfAvailable.individualCapacity >= bwpfRequest.availableCapacity)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (bwpfRequest.type != null && bwpfRequest.type.equalsIgnoreCase("anyAvailable")) {
+            if (bwpfAvailable.availableCapacity < bwpfAvailable.reservableCapacity) {
+                return false;
+            } else if (bwpfRequest.minimumCapacity != null && bwpfRequest.minimumCapacity > bwpfAvailable.availableCapacity) {
+                return false;
+            } else if (bwpfRequest.granularity != null && bwpfRequest.granularity > bwpfAvailable.availableCapacity) {
+                return false;
+            } else if (bwpfAvailable.availableCapacity  > 0) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (bwpfRequest.type != null && bwpfRequest.type.equalsIgnoreCase("bestEffort")) { 
+            if (bwpfAvailable.availableCapacity  > 0) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (bwpfRequest.maximumCapacity == null || bwpfAvailable.maximumCapacity >= bwpfRequest.maximumCapacity
+                && bwpfRequest.availableCapacity == null || bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity) {
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+    
     public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) throws Exception {
         for (String sparql : constraints) {
             if (ModelUtil.evaluateStatement(model, stmt, sparql)) {
@@ -598,6 +849,9 @@ public class MCETools {
         return false;
     }
 
+    //@TODO: create bandwidth service for all sub-level (client) BidirectionalPort
+        //@@ inherit granularity if available
+        //@@ "any" (max available) bandwidth handling - similar to "any" VLAN
     public static OntModel createL2PathVlanSubnets(Model model, Path path, JSONObject portTeMap) {
         String method = "createL2PathVlanSubnets";
         HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
@@ -677,7 +931,7 @@ public class MCETools {
                 if (portParamMap.get(currentHop).containsKey("openflowService")) {
                     subnetModel = createVlanFlowsOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                 } else {
-                    subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                    subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, path);
                 }
                 if (subnetModel != null) {
                     l2PathModel.add(subnetModel.getBaseModel());
@@ -694,7 +948,7 @@ public class MCETools {
                     if (portParamMap.get(currentHop).containsKey("openflowService")) {
                         subnetModel = createVlanFlowsOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
                     } else {
-                        subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap);
+                        subnetModel = createVlanSubnetOnHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, path);
                     }
                     if (subnetModel != null) {
                         l2PathModel.add(subnetModel.getBaseModel());
@@ -812,15 +1066,20 @@ public class MCETools {
             paramMap.put("egressSwitchingService", egressSwitchingService);
             if (lastParamMap != null) {
                 lastParamMap.put("ingressSwitchingService", egressSwitchingService);
+                if (vlanTranslation) {
+                    lastParamMap.put("vlanTranslation", true);                
+                }
             }
         }
         paramMap.put("vlanTranslation", vlanTranslation);
         portParamMap.put(currentHop, paramMap);
     }
 
-    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap) {
+    private static OntModel createVlanSubnetOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, Path path) {
         String method = "createVlanSubnetOnHop";
         HashMap paramMap = (HashMap) portParamMap.get(currentHop);
+        BandwidthProfile bwProfile = path.getBandwithProfile();
+        String connId = path.getConnectionId();
         if (!paramMap.containsKey("vlanRange")) {
             return null;
         }
@@ -833,17 +1092,25 @@ public class MCETools {
             lastParamMap = (HashMap) portParamMap.get(lastPort);
         }
         Integer suggestedVlan = null;
+        Integer lastVlan = null;
         if (lastParamMap != null && lastParamMap.containsKey("suggestedVlan")) {
             suggestedVlan = (Integer) lastParamMap.get("suggestedVlan");
-            if (!vlanRange.hasTag(suggestedVlan) && // if no continuous vlan
-                    (!paramMap.containsKey("vlanTranslation")
-                    || !(Boolean) paramMap.get("vlanTranslation"))) { // try translation but not able to
-                return null;
+            lastVlan = suggestedVlan;
+            if (!vlanRange.hasTag(suggestedVlan)) { // if no continuous vlan
+                if (!paramMap.containsKey("vlanTranslation")
+                        || !(Boolean) paramMap.get("vlanTranslation")) { // try translation but not able to
+                    return null;
+                } else {
+                    suggestedVlan = null;
+                }
             }
         }
         // init vlan or do tanslation to any tag
         if (suggestedVlan == null) {
             suggestedVlan = vlanRange.getRandom();
+            if (lastVlan == null) {
+                lastVlan = suggestedVlan;
+            }
         }
         paramMap.put("suggestedVlan", suggestedVlan);
         
@@ -927,14 +1194,18 @@ public class MCETools {
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.value, suggestedVlan.toString()));
 
+        String labelSwappable = "true";
+        if ((!paramMap.containsKey("vlanTranslation") || !(Boolean) paramMap.get("vlanTranslation"))) {
+            labelSwappable = "false";
+        }
         // create ingressSubnet for ingressSwitchingService and add port the the new subnet
         if (paramMap.containsKey("ingressSwitchingService")) {
             Resource ingressSwitchingService = (Resource) paramMap.get("ingressSwitchingService");
-            String vlanSubnetUrn = ingressSwitchingService.toString() + ":vlan+" + suggestedVlan;
+            String vlanSubnetUrn = ingressSwitchingService.toString() + ":conn+" + connId + ":vlan+" + lastVlan;
             Resource ingressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingService, Mrs.providesSubnet, ingressSwitchingSubnet));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.labelSwapping, "false"));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.labelSwapping, labelSwappable));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.belongsTo, ingressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, ingressSwitchingSubnet));
@@ -943,19 +1214,50 @@ public class MCETools {
         // get egressSubnet for egressSwitchingService and add port the this existing subnet
         if (paramMap.containsKey("egressSwitchingService")) {
             Resource egressSwitchingService = (Resource) paramMap.get("egressSwitchingService");
-            String vlanSubnetUrn = egressSwitchingService.toString() + ":vlan+" + suggestedVlan;
+            String vlanSubnetUrn = egressSwitchingService.toString() + ":conn+" + connId + ":vlan+" + lastVlan;
             Resource egressSwitchingSubnet = RdfOwl.createResource(vlanSubnetModel, vlanSubnetUrn, Mrs.SwitchingSubnet);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingService, Mrs.providesSubnet, egressSwitchingSubnet));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.labelSwapping, "false"));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.labelSwapping, labelSwappable));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.belongsTo, egressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet));
         }
-
+        
+        // add BandwidthService to vlan port if applicable
+        if (bwProfile != null && bwProfile.type != null && !bwProfile.type.equalsIgnoreCase("bestEffort")) {
+            String vlanBwServiceUrn = vlanPortUrn + ":service+bw";
+            Resource resVlanBwService = RdfOwl.createResource(vlanSubnetModel, vlanBwServiceUrn, Mrs.BandwidthService);
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasService, resVlanBwService));
+            if (bwProfile.type != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.type, bwProfile.type));
+            }
+            if (bwProfile.unit != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.unit, bwProfile.unit));
+            }
+            if (bwProfile.priority != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.priority, bwProfile.priority));
+            }
+            if (bwProfile.maximumCapacity != null) {
+                Literal lMaxBw = model.createTypedLiteral(bwProfile.maximumCapacity);
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.maximumCapacity, lMaxBw));
+            }
+            if (bwProfile.availableCapacity != null) {
+                Literal lAvailBw = model.createTypedLiteral(bwProfile.availableCapacity);
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.availableCapacity, lAvailBw));
+            }
+            if (bwProfile.reservableCapacity != null) {
+                Literal lResvBw = model.createTypedLiteral(bwProfile.availableCapacity);
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.reservableCapacity, lResvBw));
+            }
+            if (bwProfile.granularity != null) {
+                Literal lGranularity = model.createTypedLiteral(bwProfile.granularity);
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.granularity, lGranularity));
+            }
+        }
         return vlanSubnetModel;
     }
-
+    
     public static void tagPathHops(MCETools.Path l2path, String tag) {
         OntModel model = l2path.getOntModel();
         String sparql = String.format("SELECT DISTINCT ?bp ?subnet  WHERE {"
@@ -975,6 +1277,16 @@ public class MCETools {
                 addStmts.add(model.createStatement(resSubnet, Mrs.tag, tag));
             }
         }
+        sparql = String.format("SELECT DISTINCT ?flow  WHERE {"
+                + " ?flow a mrs:Flow. "
+                + " ?of mrs:providesFlow ?flow."
+                + "}");
+        r = ModelUtil.sparqlQuery(model, sparql);
+        while (r.hasNext()) {
+            QuerySolution solution = r.next();
+            Resource resFlow = solution.getResource("flow");
+            addStmts.add(model.createStatement(resFlow, Mrs.tag, tag));
+        }
         model.add(addStmts);
     }
     
@@ -993,6 +1305,7 @@ public class MCETools {
         return solutions;
     }
     
+    //@TODO: use action name and value for URI, add mrs:order 
     private static OntModel createVlanFlowsOnHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap) {
         HashMap paramMap = (HashMap) portParamMap.get(currentHop);
         if (!paramMap.containsKey("vlanRange")) {
@@ -1054,24 +1367,25 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
-
+            Character flowActionOrder = '0';
+            /*
             Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "A"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
-            
+            */
             //$$ add new flow with action output to currentHop + swap suggestedVlan VLAN 
             String outFlowId = currentHop.getURI() + ":flow=output_vlan"+flowNameVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowTable, Mrs.hasFlow, resOutFlow));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowSvc, Mrs.providesFlow, resOutFlow));
 
-            Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "B"), Mrs.FlowRule);
+            Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction2));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "mod_vlan_vid"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, suggestedVlan.toString()));            
 
-            Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "C"), Mrs.FlowRule);
+            Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "output"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, portName));
@@ -1092,22 +1406,23 @@ public class MCETools {
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowMatch, resMatchRule2));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.type, "dl_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resMatchRule2, Mrs.value, suggestedVlan.toString()));
-
+            Character flowActionOrder = '0';
+            /*
             Resource resFlowAction1 = RdfOwl.createResource(vlanFlowsModel, URI_action(resInFlow.getURI(), "A"), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resInFlow, Mrs.flowAction, resFlowAction1));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.type, "strip_vlan"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction1, Mrs.value, "strip_vlan"));
-
+            */
             String outFlowId = lastPort.getURI() + ":flow=input_vlan" + flowNameVlan;
             Resource resOutFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), outFlowId), Mrs.Flow);
 
             //$$ add actions: output to currentHop + swap suggestedVlan 
-            Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "B"), Mrs.FlowRule);
+            Resource resFlowAction2 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction2));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.type, "mod_vlan_vid"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction2, Mrs.value, suggestedVlan.toString()));
 
-            Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), "C"), Mrs.FlowRule);
+            Resource resFlowAction3 = RdfOwl.createResource(vlanFlowsModel, URI_action(resOutFlow.getURI(), (flowActionOrder++).toString()), Mrs.FlowRule);
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resOutFlow, Mrs.flowAction, resFlowAction3));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.type, "output"));
             vlanFlowsModel.add(vlanFlowsModel.createStatement(resFlowAction3, Mrs.value, portName));

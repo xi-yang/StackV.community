@@ -7,6 +7,9 @@
 
         <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700'>
         <link rel="stylesheet" href="/StackV-web/css/style.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.structure.min.css">
+        <link rel="stylesheet" href="/StackV-web/css/jquery-ui.theme.css">
     </head>
 
     <body>
@@ -49,6 +52,11 @@
             <div id="loading-panel"></div>
             <!-- TAG PANEL -->
             <div id="tag-panel"></div>
+
+            <!-- jQuery dialog for the system health check -->
+            <div id="system-health-check">
+                <div id="system-health-check-text"></div>
+            </div>
         </div>
         <div id="catalog-panel" class="closed">
             <ul class="nav nav-tabs catalog-tabs">
@@ -93,7 +101,10 @@
                         <h3 id="info-panel-title"></h3>
                     </div>
                     <div class="modal-body">
-                        <div id="info-panel-text">
+                        <div id="info-panel-input">
+                            <input id="profile-alias" placeholder="Instance Alias"/>
+                        </div>
+                        <div id="info-panel-text">                            
                             <textarea id="info-panel-text-area"></textarea>
                         </div>
                     </div>
@@ -127,9 +138,21 @@
         </div>
 
         <script src="/StackV-web/js/keycloak.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/jquery-ui.min.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
+
+        <script src="https://code.jquery.com/jquery-2.2.4.min.js"
+                integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+                crossorigin="anonymous">
+        </script>   
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+                integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+                crossorigin="anonymous">
+        </script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"
+                integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30="
+                crossorigin="anonymous">
+        </script>
+
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
@@ -139,5 +162,7 @@
         <script src="/StackV-web/js/nexus.js"></script>
         <script src="/StackV-web/js/catalog.js"></script>
 
+        <script src="/StackV-web/js/svc/intentEngine.js"></script>
+        <script src="/StackV-web/js/svc/handlebars.js"></script> 
     </body>
 </html>

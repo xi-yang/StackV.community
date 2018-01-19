@@ -1,7 +1,7 @@
 
 #################
 
-### Deployment Instructions 
+### Deployment Instructions
 
 ### docker build -f Dockerfile -t keycloak .
 ### docker run -p8543:8543 -d -t -e KEYSTORE=/config/keycloak.jks keycloak
@@ -26,7 +26,11 @@ ADD ./restart-keycloak.sh /bin/restart-keycloak.sh
 RUN \
     chown jboss:0 /bin/restart-keycloak.sh \
     && chmod 700 /bin/restart-keycloak.sh \
-    && ln -s /opt/jboss/keycloak/bin/add-user-keycloak.sh /bin/add-user.sh 
+    && ln -s /opt/jboss/keycloak/bin/add-user-keycloak.sh /bin/add-user.sh
+
+
+#RUN yum install -y sudo
+#RUN echo "jboss ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/jboss && chmod 0440 /etc/sudoers.d/jboss
 
 USER jboss
 
@@ -34,7 +38,7 @@ RUN cd /opt/jboss/ \
     && curl -L https://downloads.jboss.org/keycloak/$KEYCLOAK_VERSION/keycloak-$KEYCLOAK_VERSION.tar.gz | tar zx \
     && mv /opt/jboss/keycloak-$KEYCLOAK_VERSION /opt/jboss/keycloak \
     && sed -i "s/-Xms64m -Xmx512m/-Xms1024m -Xmx4096m/g" /opt/jboss/keycloak/bin/standalone.conf
-    
+
 
 ADD standalone.xml /opt/jboss/keycloak/standalone/configuration/standalone.xml
 

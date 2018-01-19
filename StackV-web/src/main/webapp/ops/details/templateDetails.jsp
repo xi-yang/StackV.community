@@ -70,7 +70,10 @@
                                     <button class="btn btn-default hide instance-command" id="modify">Modify</button>
                                     <button class="btn btn-default hide instance-command" id="force_modify">Force Modify</button>
                                     <button class="btn btn-default hide instance-command" id="verify">Verify</button>
+                                    <button class="btn btn-default hide instance-command" id="unverify">Cancel Verification</button>
                                     <button class="btn btn-default hide instance-command" id="delete">Delete</button>
+                                    <button class="btn btn-default hide service-operation instance-command" id="propagate">Propagate</button>
+                                    <button class="btn btn-default hide service-operation instance-command" id="commit">Commit</button>
                                 </div>
                             </td>
                         </tr>
@@ -103,8 +106,8 @@
                     <div style="float:right;">
                         <label for="logging-filter-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
                         <select id="logging-filter-level" onchange="filterLogs()">
-                            <option value="TRACE">TRACE</option>
-                            <option value="INFO" selected>INFO</option>
+                            <option value="TRACE" selected>TRACE</option>
+                            <option value="INFO">INFO</option>
                             <option value="WARN">WARN</option>
                             <option value="ERROR">ERROR</option>
                         </select> 
@@ -146,6 +149,7 @@
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/jquery-ui.min.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>

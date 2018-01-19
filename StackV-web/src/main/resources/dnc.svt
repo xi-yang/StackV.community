@@ -1,0 +1,56 @@
+<serviceDelta>
+<uuid>{{uuid}}</uuid>
+
+<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
+
+<modelAddition>
+
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:   <http://schemas.ogf.org/nml/2013/03/base#> .
+@prefix nml:   <http://schemas.ogf.org/nml/2013/03/base#> .
+@prefix mrs:   <http://schemas.ogf.org/mrs/2013/12/topology#> .
+@prefix spa:   <http://schemas.ogf.org/mrs/2015/02/spa#> .
+
+&lt;urn:ogf:network:service+{{uuid}}:resource+links&gt;
+    a            nml:Link ;
+    spa:type     spa:Abstraction ;
+    spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.
+
+&lt;x-policy-annotation:action:create-path>
+    a            spa:PolicyAction ;
+    spa:type     "{{!DNCType type}}" ;
+
+{{$if ip_ranges}}
+    spa:exportTo  &lt;x-policy-annotation:data:assign-ip-criteria&gt; ;
+{{/if ip_ranges}}
+
+    spa:importFrom <x-policy-annotation:data:conn-criteria&gt; .
+
+&lt;x-policy-annotation:data:conn-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
+    spa:value    """{{!DNCPolicyData}}""".
+
+{{$if ip_ranges}}
+&lt;x-policy-annotation:action:assign-ip&gt;
+     a            spa:PolicyAction ;
+     spa:type     "MCE_AddressStaticAssignment" ;
+    spa:dependOn &lt;x-policy-annotation:action:create-path&gt; ;
+     spa:importFrom &lt;x-policy-annotation:data:assign-ip-criteria&gt; .
+
+&lt;x-policy-annotation:data:assign-ip-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
+    spa:format    """{{!DNCAssignIpAddress}}""".
+
+
+&lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
+    a            nml:Topology;
+    spa:type     spa:Abstraction ;
+    spa:dependOn &lt;x-policy-annotation:action:assign-ip&gt; .
+{{/if ip_ranges}}
+
+</modelAddition>
+</serviceDelta>

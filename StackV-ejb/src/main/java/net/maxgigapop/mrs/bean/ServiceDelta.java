@@ -28,9 +28,11 @@ import javax.persistence.Entity;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Transient;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -52,6 +54,11 @@ public class ServiceDelta extends DeltaBase {
 
     private String status = "INIT";
 
+    //@TODO: @Transient to avoid DB change for now; change back to @Lob later
+    //@Lob
+    @Transient
+    private String negotiationMarkup = null;
+    
     public String getReferenceUUID() {
         return referenceUUID;
     }
@@ -85,6 +92,14 @@ public class ServiceDelta extends DeltaBase {
         this.status = status;
     }
 
+    public String getNegotiationMarkup() {
+        return negotiationMarkup;
+    }
+
+    public void setNegotiationMarkup(String negotiationMarkup) {
+        this.negotiationMarkup = negotiationMarkup;
+    }
+    
     public ServiceDelta clone() {
         ServiceDelta cloned = new ServiceDelta();
         if (this.modelAddition != null) {

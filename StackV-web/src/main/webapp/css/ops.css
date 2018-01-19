@@ -54,16 +54,16 @@ table.management-table#jobs-table {
 }
 
 table.management-table thead {
-  position:sticky;
-  top:0;
-  z-index:3;
-  outline:1px solid black;
+    position:sticky;
+    top:0;
+    z-index:3;
+    outline:1px solid black;
 }
 table.management-table tfoot {
-  position:sticky;
-  bottom:0;
-  z-index:3;
-  outline:1px solid black;
+    position:sticky;
+    bottom:0;
+    z-index:3;
+    outline:1px solid black;
 }
 
 table.management-table th {
@@ -292,11 +292,6 @@ form.stageform input, form.stageform textarea {
     color: #2C3E50;
 }
 
-form.stageform input.invalid, form.stageform select.invalid {
-    border: 1px solid red;
-    color: red;
-}
-
 form.stageform .small-counter {
     width: 12%;
     margin-left: 10px;
@@ -429,17 +424,6 @@ ul#progressbar li:after {
     z-index: -1; /*put it behind the numbers*/
     transition: all 1s ease;
 }
-ul#progressbar li.invalid {
-    color: red;
-}
-ul#progressbar li.invalid:before, ul#progressbar li.invalid:after {
-    color: white;
-    background: red;
-}
-ul#progressbar li.active.invalid:before {
-    color: white;
-    background: red;
-}
 ul#progressbar li:first-child:after {
     /*connector not needed before the first step*/
     content: none;
@@ -481,4 +465,27 @@ ul.vcn-progress li, ul.hc-progress li {
 .dataTables-child {
     width: 100%;
     height: 20em;
+}
+
+.health-dialog-pass {
+    background: #d2f9d2 !important;
+}
+.health-dialog-fail {
+    background: #f9dfd2 !important;
+}
+
+#system-health-panel {
+    margin: 15px 0px 15px 5px;
+    padding: 0 10px 0 10px;
+    color: white;
+    font-weight: bold;
+}
+#system-health-panel span {
+    top: 2px;
+}
+#system-health-panel .pass {
+    color: #d2f9d2 !important
+}
+#system-health-panel .fail {
+    color: #f9dfd2 !important
 }

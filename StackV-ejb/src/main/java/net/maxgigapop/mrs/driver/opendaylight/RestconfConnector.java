@@ -93,7 +93,7 @@ public class RestconfConnector {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         String data = this.makeFlowData(flowId, tableId, matches, actions);
         String[] response = DriverUtil.executeHttpMethod(username, password, conn, "PUT", data);
-        if (!response[1].equals("200")) {
+        if (!response[1].equals("201")) {
             throw logger.error_throwing(method, "failed with HTTP return code:" + response[1]);
         }
 

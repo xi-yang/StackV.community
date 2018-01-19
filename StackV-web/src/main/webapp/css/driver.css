@@ -9,6 +9,18 @@ div#installed-panel {
     top: -100%;
     left: 0;
 }
+
+/* 
+- Should hide the scrollbar in the installed-content div
+    - The overflow-y property is automatically set to auto by browswer
+    - This should override that property
+- The scrollbar issue only affects browsers (Chrome, Safari) based on WebKit. 
+Ex. FireFox does not run into the scrollbar issue since it's based on Gecko
+*/
+div#installed-content {
+    overflow: auto;
+}
+
 div#driver-add-panel {
     left: -100%;
     text-align: left;
@@ -25,7 +37,23 @@ div#driver-template-panel {
     z-index: 10;
 }
 
+#dialog-overflow-details-text {
+    word-wrap: break-word;
+}
 
+.ui-dialog > .ui-widget-header {
+    background: '#333'
+}
+
+
+.tooltip-inner {
+    word-break: break-all;
+    max-width: 80%;
+ }
+
+#install-content input {
+    width: 80%;
+}
 
 .driver-panel {
     padding: 10px 10px 0 10px;
@@ -33,6 +61,7 @@ div#driver-template-panel {
     height: 70%;
     position: absolute;
 }
+
 .no-side-tab {
     width: 88%;
 }
@@ -65,6 +94,7 @@ div#driver-template-panel {
     margin: 20px;
     max-height: 100%;
 }
+
 .divider{
     width:25px;
     height:auto;
@@ -84,4 +114,9 @@ div#driver-template-panel {
     filter     : alpha(opacity=60);
     z-index    : 1;
     display    : none;
+}
+
+#drivername.invalid {
+    border: 1px solid red;
+    color: red;
 }

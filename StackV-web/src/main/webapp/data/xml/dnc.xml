@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="intent.xsd">
+    <meta>
+        <name>Dynamic Network Connection</name>
+        <validation>
+            <constraint>
+                <name>string</name>
+                <regex>\S+</regex>
+                <message>Please enter a valid string.</message>
+            </constraint>
+            <constraint>
+                <name>integer</name>
+                <regex>\d+</regex>
+                <message>Please enter a valid integer.</message>
+            </constraint>
+            <constraint>
+                <name>vlan</name>
+                <regex>^\d{1,4}$|^\d{1,4}-\d{1,4}$|^any$</regex>
+                <message>Please enter a valid VLAN.</message>
+            </constraint>
+            <constraint>
+                <name>macs</name>
+                <regex>^\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2}(,\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2})*$</regex>
+                <message>Please enter a valid comma-separated list of MAC addresses.</message>
+            </constraint>
+            <constraint>
+                <name>cidr</name>
+                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}$</regex>
+                <message>Please enter a valid CIDR.</message>
+            </constraint>
+        </validation>
+    </meta>
+    <stage name="Connections">
+        <input required="true">
+            <name>Type</name>
+            <type>select</type>
+            <options>
+                <option default="true">Multi-Path P2P VLAN</option>
+                <option>Multi-Point VLAN Bridge</option>
+            </options>
+        </input>
+        <group factory="true" name="connection" collapsible="true" opened="true">
+            <input>
+                <name>Name</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>
+            <group name="Bandwidth" collapsible="true" opened="true">
+                <input>
+                    <name>Capacity</name>
+                    <type>text</type>
+                    <hint>(in Mbps)</hint>
+                    <valid>integer</valid>
+                </input>
+                <input required="true">
+                    <name>QoS Class</name>
+                    <type>select</type>
+                    <options>
+                        <option>guaranteedCapped</option>
+                        <option>softCapped</option>
+                        <option>anyAvailable</option>
+                        <option default="true">bestEffort</option>
+                    </options>
+                </input>
+            </group>
+            <group factory="true" name="terminal">
+                <bound>
+                    <name>connections-type</name>
+                    <value>Multi-Path P2P VLAN</value>
+                    <min>2</min>
+                    <max>2</max>
+                </bound>
+                <bound>
+                    <name>connections-type</name>
+                    <value>Multi-Point VLAN Bridge</value>
+                    <min>3</min>
+                </bound>
+
+                <input>
+                    <name>URI</name>
+                    <type>text</type>
+                    <size>xlarge</size>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>VLAN Tag</name>
+                    <type>text</type>
+                    <default>any</default>
+                    <size>small</size>
+                    <valid>vlan</valid>
+                </input>
+                <input condition="type::Multi-Point VLAN Bridge">
+                    <name>MAC Address List</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <valid>macs</valid>
+                </input>
+                <input>
+                    <name>Assign IP</name>
+                    <type>checkbox</type>
+                    <size>small</size>
+                </input>
+            </group>
+        </group>
+        <group factory="true" name="IP Range" collapsible="true" opened="false">
+            <input>
+                <name>Start</name>
+                <type>text</type>
+                <hint>(A.B.C.D/Mask)</hint>
+                <valid>cidr</valid>
+            </input>
+            <input>
+                <name>End</name>
+                <type>text</type>
+                <hint>(A.B.C.D/Mask)</hint>
+                <valid>cidr</valid>
+            </input>
+        </group>
+    </stage>
+</intent>

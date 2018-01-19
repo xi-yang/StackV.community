@@ -1,0 +1,57 @@
+<serviceDelta>
+<uuid>6ad3ed78-7ede-45c2-a3aa-3c7b709e63e7</uuid>
+<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
+
+<modelAddition>
+
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
+
+
+&lt;urn:ogf:network:service+6ad3ed78-7ede-45c2-a3aa-3c7b709e63e7:resource+virtual_clouds:tag+vpc1&gt;
+    a                         nml:Topology ;
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
+ 
+&lt;urn:ogf:network:service+6ad3ed78-7ede-45c2-a3aa-3c7b709e63e7:resource+virtual_machines:tag+VM_1&gt;
+    a           nml:Node ;
+    nml:name    "VM_1";
+    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+6ad3ed78-7ede-45c2-a3aa-3c7b709e63e7:resource+virtual_machines:tag+VM_1:eth0&gt;;
+    spa:dependOn &lt;x-policy-annotation:action:create-VM_1&gt; .
+
+&lt;urn:ogf:network:service+6ad3ed78-7ede-45c2-a3aa-3c7b709e63e7:resource+virtual_machines:tag+VM_1:eth0&gt;
+    a           nml:BidirectionalPort;
+    spa:dependOn &lt;x-policy-annotation:action:create-VM_1&gt;
+
+
+&lt;x-policy-annotation:action:create-6ad3ed78-7ede-45c2-a3aa-3c7b709e63e7&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_VMFilterPlacement" ;
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+    spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-6ad3ed78-7ede-45c2-a3aa-3c7b709e63e7-criteria&gt;.
+
+&lt;x-policy-annotation:data:vpc-subnet-6ad3ed78-7ede-45c2-a3aa-3c7b709e63e7-criteria&gt;
+    a           spa:PolicyData;
+    spa:type    "JSON";
+    spa:format  """{
+        "place_into": "%$.subnets[0].uri%"}""" .
+
+
+
+
+
+
+
+
+&lt;x-policy-annotation:data:vpc-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     nml:Topology;
+    spa:value    """{"gateways":[{"name":"Gateway_1","type":"AWS Direct Connect","connects":[{"to":"testTo"}]}],"subnets":[{"name":"Subnet_1","cidr":"10.0.0.0/24","vpn_route_propagation":true,"internet_routable":false,"vms":[{"name":"VM_1","interfaces":[{"type":"Ethernet","public":false}]}]}],"parent":"urn:ogf:network:sdn.maxgigapop.net:network","cidr":"10.0.0.0/16","type":"internal"}""".
+
+</modelAddition>
+
+</serviceDelta>

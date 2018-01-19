@@ -47,16 +47,21 @@ public class DTNDriver implements IHandleDriverSystemCall {
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
     public void propagateDelta(DriverInstance driverInstance, DriverSystemDelta aDelta) {
-        aDelta = (DriverSystemDelta) DeltaPersistenceManager.findById(aDelta.getId());
-
+        String method = "propagateDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getReferenceUUID());
+        logger.start(method);
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String user_account = driverInstance.getProperty("user_account");
         String access_key = driverInstance.getProperty("access_key");
         String address = driverInstance.getProperty("address");
         String topologyURI = driverInstance.getProperty("topologyUri");
 
-        String model = driverInstance.getHeadVersionItem().getModelRef().getTtlModel();
-        String modelAdd = aDelta.getModelAddition().getTtlModel();
-        String modelReduc = aDelta.getModelReduction().getTtlModel();
+        OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
+        OntModel modelAdd = aDelta.getModelAddition().getOntModel();
+        OntModel modelReduc = aDelta.getModelReduction().getOntModel();
 
         DTNPush push = new DTNPush(user_account, access_key, address, topologyURI);
         String requests = null;
@@ -66,15 +71,21 @@ public class DTNDriver implements IHandleDriverSystemCall {
             Logger.getLogger(DTNDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
         }
 
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
         driverInstance.putProperty(requestId, requests);
-        DriverInstancePersistenceManager.merge(driverInstance);
-        logger.log(Level.INFO, "DTN driver delta models succesfully propagated");
+        logger.end(method);
     }
 
     @Asynchronous
     @Override
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
+        logger.cleanup();
+        String method = "commitDelta";
+        if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
+            logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+        }
+        logger.targetid(aDelta.getReferenceUUID());
+        logger.start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
             throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
@@ -84,7 +95,9 @@ public class DTNDriver implements IHandleDriverSystemCall {
         String access_key = driverInstance.getProperty("access_key");
         String address = driverInstance.getProperty("address");
         String topologyURI = driverInstance.getProperty("topologyUri");
-        String requestId = driverInstance.getId().toString() + aDelta.getId().toString();
+        String map = driverInstance.getProperty("mappingId");
+
+        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
         String requests = driverInstance.getProperty(requestId);
 
         DTNPush push = new DTNPush(user_account, access_key, address, topologyURI);
@@ -134,7 +147,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
             	mapped.add(pullUtilParams);
             	endpointModelConfigMap.put(addresses[i], mapped);
             }
-            
+
             OntModel ontModel = DTNModelBuilder.createOntology(topologyURI, endpoint, pullInvokePattern, endpointModelConfigMap);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {

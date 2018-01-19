@@ -1,0 +1,541 @@
+<serviceDelta>
+<uuid>{{uuid}}</uuid>
+<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
+
+<modelAddition>
+
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
+
+&lt;urn:ogf:network:service+{{uuid}}:resource+virtual_clouds:tag+vpc1&gt;
+    a nml:Topology ;
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;, &lt;x-policy-annotation:action:create-dc1&gt;.
+
+&lt;urn:ogf:network:service+{{uuid}}:resource+virtual_clouds:tag+vpc2&gt;
+    a nml:Topology ;
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc2&gt;.
+
+&lt;x-policy-annotation:action:create-vpc1&gt;
+    a           spa:PolicyAction ;
+    spa:type     "MCE_VirtualNetworkCreation" ;
+    spa:importFrom &lt;x-policy-annotation:data:vpc-aws-criteria&gt;;
+    {{!VPCExport aws}}
+
+&lt;x-policy-annotation:action:create-vpc2&gt;
+    a           spa:PolicyAction ;
+    spa:type     "MCE_VirtualNetworkCreation" ;
+    spa:importFrom &lt;x-policy-annotation:data:vpc-openstack-criteria&gt;;
+    {{!VPCExport openstack}}
+
+&lt;x-policy-annotation:data:vpc-aws-criteria&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:value    """{{!TopologyPolicyData aws}}""".
+
+&lt;x-policy-annotation:data:vpc-openstack-criteria&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:value    """{{!TopologyPolicyData openstack}}""".
+
+&lt;x-policy-annotation:data:vpc-aws-export&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:format   """{
+       "parent":"urn:ogf:network:aws.amazon.com:aws-cloud",
+       "stitch_from": "%$.gateways[?(@.type=='vpn-gateway')].uri%",
+    }""" .
+
+{{#gateways}}
+    spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;, &lt;x-policy-annotation:action:create-mce_dc1&gt; .
+
+    &lt;urn:ogf:network:vo1_maxgigapop_net:link=conn1&gt;
+        a            mrs:SwitchingSubnet;
+        spa:type     spa:Abstraction;
+        spa:dependOn &lt;x-policy-annotation:action:create-path&gt;.
+
+    &lt;x-policy-annotation:action:create-path&gt;
+        a            spa:PolicyAction ;
+        spa:type     "MCE_MPVlanConnection" ;
+        spa:importFrom &lt;x-policy-annotation:data:conn-criteria1&gt; ;
+        spa:exportTo &lt;x-policy-annotation:data:conn-export&gt; .
+
+    &lt;x-policy-annotation:action:create-mce_dc1&gt;
+        a            spa:PolicyAction ;
+        spa:type     "MCE_AwsDxStitching" ;
+        spa:importFrom &lt;x-policy-annotation:data:vpc-export&gt;, &lt;x-policy-annotation:data:conn-export&gt; ;
+        spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;, &lt;x-policy-annotation:action:create-path&gt;.
+
+    &lt;x-policy-annotation:data:vpc-export&gt;
+        a            spa:PolicyData ;
+        spa:type     "JSON" ;
+        spa:format   """{
+            "parent": "{{@aws/parent}}",
+            "stitch_from": "%$.gateways[?(@.type=='vpn-gateway')].uri%",
+        }""" .
+
+    &lt;x-policy-annotation:data:conn-export&gt;
+        a            spa:PolicyData;
+        spa:type     "JSON" ;
+        spa:format   """{
+            "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1[0].hops.*%
+        }""" .
+{{/gateways}}
+
+{{#aws}} {{/ AWS }}
+    {{#subnets}}
+        {{*SubnetIndex @index}}
+        {{#vms}}
+            &lt;{{*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}&gt;
+                a           nml:Node ;
+                nml:name    "{{name}}";
+                {{!VMType}}
+                nml:hasBidirectionalPort   &lt;{{VMTag}}:eth0&gt;;
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt; .
+
+            &lt;{{VMTag}}:eth0&gt;
+                a           nml:BidirectionalPort;
+                {{$if interfaces.0/elastic_ip}}
+                    mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
+                {{/if interfaces.0/elastic_ip}}
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt; .
+            {{$if interfaces}}
+                {{!AddressString name interfaces @uuid}}
+            {{/if interfaces}}
+
+            &lt;x-policy-annotation:action:create-{{name}}&gt;
+                a            spa:PolicyAction ;
+                spa:type     "MCE_VMFilterPlacement" ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt; ;
+                spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
+
+            &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
+                a           spa:PolicyData;
+                spa:type    "JSON";
+                spa:format  """{
+                    "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
+
+            {{$if interfaces.0/elastic_ip}}
+                &lt;{{VMTag}}:eth0floatingip&gt;
+                    a            mrs:NetworkAddress;
+                    mrs:type     "floating-ip";
+                    mrs:value     "{{interfaces.0/elastic_ip}}".
+            {{/if interfaces.0/elastic_ip}}
+        {{/vms}}
+    {{/subnets}}
+
+    {{#subnets}}
+        {{#if vms}}
+            ;
+            spa:exportTo &lt;x-policy-annotation:data:vpc-export&gt;,
+            {{~#vms}}
+                &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;{{#unless @last}},{{/unless}}
+            {{/vms}}
+            .
+        {{/if vms}}
+    {{/subnets}}
+{{/aws}}
+
+{{#openstack}} {{/ OPS }}
+    {{~#subnets}}
+        {{*SubnetIndex @index}}
+        {{#vms}}
+            &lt;{{*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}&gt;
+                a           nml:Node ;
+                nml:name    "{{*VMName}}{{name}}{{/VMName}}";
+                {{!VMType}}
+                nml:hasBidirectionalPort   &lt;{{VMTag}}:eth0&gt; ;
+                        {{$if routes}}
+                nml:hasService  &lt;{{VMTag}}:routingservice&gt; ;
+                        {{/if routes}}
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}&gt;.
+
+            &lt;{{VMTag}}:eth0&gt;
+                a            nml:BidirectionalPort;
+                {{$if floating_ip}}
+                    mrs:hasNetworkAddress &lt;{{VMTag}}:eth0floatingip&gt; ;
+                {{/if floating_ip}}
+                spa:dependOn &lt;x-policy-annotation:action:create-{{name}}-eth0&gt; .
+
+            {{#sriovs}}
+                &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;
+                    a            spa:PolicyAction ;
+                    spa:type     "MCE_UcsSriovStitching" ;
+                    spa:dependOn &lt;x-policy-annotation:action:create-{{VMName}}&gt;, &lt;x-policy-annotation:action:create-aws-ops-path&gt;;
+                    spa:importFrom &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;.
+
+                {{$if !LinkedGatewayType @openstack/gateways = "UCS Port Profile"}}
+                    &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;
+                    a            spa:PolicyData;
+                    spa:type     "JSON";
+                    spa:value    """ {
+                        "stitch_from": "{{VMTag}}",
+                        "mac_address": "{{mac_address}}",
+                        "ip_address": "{{ip_address}}",
+                        "to_port_profile": "{{!LinkedGatewayFrom @openstack/gateways}}"
+                        } """ .
+                {{/if !LinkedGatewayType}}
+                {{$unless !LinkedGatewayType @openstack/gateways = "UCS Port Profile"}}
+                    &lt;x-policy-annotation:data:sriov-criteria-external-{{hosting_gateway}}-{{name}}&gt;
+                        a            spa:PolicyData;
+                        spa:type     "JSON";
+                        spa:format    """ {
+                            "stitch_from": "{{VMTag}}",
+                            "mac_address": "{{mac_address}}",
+                            "ip_address": "{{ip_address}}",
+                            "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1[0].hops.*%
+                            } """ .
+                {{/unless !LinkedGatewayType}}
+
+                &lt;urn:ogf:network:openstack.com:openstack-cloud:vt1&gt;
+                   a  nml:Topology;
+                   spa:type spa:Abstraction;
+                   spa:dependOn     &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{hosting_gateway}}-{{name}}&gt;.
+            {{/sriovs}}
+            {{$if routes}}
+                &lt;{{VMTag}}:routingservice&gt;
+                    a   mrs:RoutingService;
+                    mrs:providesRoutingTable     &lt;{{VMTag}}:routingservice:routingtable+linux&gt; .
+                &lt;{{VMTag}}:routingservice:routingtable+linux&gt;
+                    a   mrs:RoutingTable;
+                    mrs:type   "linux";
+                    mrs:hasRoute
+                {{$unless !isQuaggaHost}}
+                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;,
+                {{/unless !isQuaggaHost}}
+                {{#routes}}
+                    {{$unless ^first}},{{/unless ^first}}
+                    &lt;{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}&gt;
+                    {{$if ^last}}.{{/if ^last}}
+                {{/routes}}
+                {{#routes}}
+                    &lt;{{*RouteTag}}{{VMTag}}:routingservice:routingtable+linux:route+{{!add @index 1}}{{/RouteTag}}&gt;
+                        a  mrs:Route;
+                        {{$if to}}
+                            mrs:routeTo &lt;{{RouteTag}}:route_to&gt;;
+                        {{/if to}}
+                        {{$if from}}
+                            mrs:routeFrom &lt;{{RouteTag}}:route_from&gt;;
+                        {{/if from}}
+                        {{$if next_hop}}
+                            mrs:nextHop &lt;{{RouteTag}}:next_hop&gt;;
+                        {{/if next_hop}}
+                    .
+
+                    {{$if to}}
+                        &lt;{{RouteTag}}:route_to&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-prefix";
+                                mrs:value   "{{to}}".
+                    {{/if to}}
+                    {{$if from}}
+                        &lt;{{RouteTag}}:route_from&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-prefix";
+                                mrs:value   "{{from}}".
+                    {{/if from}}
+                    {{$if next_hop}}
+                        &lt;{{RouteTag}}:next_hop&gt;
+                            a  mrs:NetworkAddress;
+                                mrs:type    "ipv4-address";
+                                mrs:value   "{{next_hop}}".
+                    {{/if next_hop}}
+
+                {{/routes}}
+            {{/if routes}}
+
+            {{$unless !isQuaggaHost}}
+                &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc&gt;
+                    a  mrs:Route;
+                        mrs:routeTo &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt; ;
+                        mrs:nextHop &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt; .
+
+                &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:route_to&gt;
+                    a  mrs:NetworkAddress;
+                        mrs:type    "ipv4-prefix";
+                        mrs:value   "{{@aws/cidr}}".
+
+                &lt;{{VMTag}}:routingservice:routingtable+linux:route+dc:next_hop&gt;
+                    a  mrs:NetworkAddress;
+                        mrs:type    "ipv4-address";
+                        mrs:value   "10.10.0.1".
+            {{/unless !isQuaggaHost}}
+
+            {{$if floating_ip}}
+                &lt;{{VMTag}}:eth0floatingip&gt;
+                    a            mrs:NetworkAddress;
+                    mrs:type     "floating-ip";
+                    mrs:value     "{{floating_ip}}".
+            {{/if floating_ip}}
+
+            {{$if ceph_rbd}} {{/ CEPH Needs to be included in portal manifest }}
+                {{#ceph_rbd}}
+                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
+                       a  mrs:Volume;
+                       mrs:disk_gb "{{disk_gb}}";
+                       mrs:mount_point "{{mount_point}}".
+                {{/ceph_rbd}}
+                &lt;{{VMTag}}&gt;
+                   mrs:hasVolume
+                {{#ceph_rbd}} {{/ ensure that ceph_rbd blocks will be handled in same order regardless of when called, if not, need to make a helper}}
+                    &lt;{{VMTag}}:volume+ceph{{@index}}&gt;{{$unless ^last}},{{/unless ^last}}
+                {{/ceph_rbd}}
+                .
+            {{/if ceph_rbd}}
+
+            &lt;x-policy-annotation:action:create-{{name}}&gt;
+                a            spa:PolicyAction ;
+                spa:type     "MCE_VMFilterPlacement" ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc2&gt; ;
+                spa:importFrom &lt;x-policy-annotation:data:{{name}}-host-criteria&gt;.
+
+            &lt;x-policy-annotation:data:{{name}}-host-criteria&gt;
+                a            spa:PolicyData;
+                spa:type     "JSON";
+                spa:value    """{
+                   "place_into": "{{@openstack/parent}}:host+{{host}}"
+                }""" .
+
+            &lt;x-policy-annotation:action:create-{{name}}-eth0&gt;
+                a            spa:PolicyAction ;
+                spa:type     "MCE_VMFilterPlacement" ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc2&gt; ;
+                spa:importFrom &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;.
+
+
+
+            &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;
+                a           spa:PolicyData;
+                spa:type    "JSON";
+                spa:format  """{ "place_into": "%$.subnets[{{SubnetIndex}}].uri%"}""" .
+        {{/vms}}
+    {{/subnets}}
+    {{~#subnets}}
+        {{#vms}}
+            {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
+            {{#ceph_rbds}}
+                {{$if size}}
+                    &lt;{{VMTag}}&gt;
+                        mrs:hasVolume
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.
+
+                    &lt;{{@openstack/parent}}:ceph-rbd&gt;
+                        mrs:providesVolume
+                            &lt;{{VMTag}}:volume+ceph{{@index}}&gt;.
+
+                        &lt;{{VMTag}}:volume+ceph{{@index}}&gt;
+                           a  mrs:Volume;
+                           mrs:disk_gb "{{size}}" ;
+                           mrs:mount_point "{{mount_point}}" .
+
+                {{/if size}}
+            {{/ceph_rbds}}
+        {{/vms}}
+        {{#vms}}
+            {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
+            {{#ceph_fs}}
+                {{$if mount_point}}
+                    &lt;{{VMTag}}&gt;
+                        mrs:hasVolume
+                            &lt;{{VMTag}}:volume+ceph_fs&gt;.
+
+                    &lt;{{@parent}}:ceph-fs&gt;
+                        mrs:providesVolume
+                            &lt;{{VMTag}}:volume+ceph_fs&gt;.
+
+                        &lt;{{VMTag}}:volume+ceph_fs&gt;
+                           a  mrs:Volume;
+                           mrs:mount_point "{{mount_point}}" ;
+                           mrs:hasNetworkAddress &lt;{{VMTag}}:volume+ceph_fs:subdir&gt; ;
+                           mrs:hasNetworkAddress &lt;{{VMTag}}:volume+ceph_fs:client&gt; .
+                        &lt;{{VMTag}}:volume+ceph_fs:subdir&gt;
+                            mrs:type "cephfs-subdir" ;
+                            mrs:value "{{cephfs_directory}}" .
+                        &lt;{{VMTag}}:volume+ceph_fs:client&gt;
+                            mrs:type "cephfs-client" ;
+                            mrs:value "{{cephfs_client}}" .
+                {{/if mount_point}}
+            {{/ceph_fs}}
+        {{/vms}}
+        {{#vms}}
+            {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
+            {{#globus_connect}}
+              {{$if username}}
+	            &lt;{{VMTag}}:service+globus&gt;
+	                a  mrs:EndPoint ;
+	                mrs:type "globus:connect" ;
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:username&gt; ;
+	            {{$if password}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:password&gt; ;
+	            {{/if password}}
+	            {{$if default_directory}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:directory&gt; ;
+	            {{/if default_directory}}
+	            {{$if data_interface_ip}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:interface&gt; ;
+	            {{/if data_interface_ip}}
+	            {{$if public}}
+	                mrs:hasNetworkAddress &lt;{{VMTag}}:service+globus:public&gt; ;
+	            {{/if public}}
+	                nml:name "{{short_name}}" .
+	            &lt;{{VMTag}}&gt;
+	               nml:hasService       &lt;{{VMTag}}:service+globus&gt;.
+	            &lt;{{VMTag}}:service+globus:username&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:username";
+	               mrs:value "{{username}}" .
+	            &lt;{{VMTag}}:service+globus:password&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:password";
+	               mrs:value "{{password}}" .
+	            &lt;{{VMTag}}:service+globus:directory&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:directory";
+	               mrs:value "{{default_directory}}" .
+	            &lt;{{VMTag}}:service+globus:interface&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:interface";
+	               mrs:value "{{data_interface_ip}}" .
+	            {{$if public}}
+	               &lt;{{VMTag}}:service+globus:public&gt;
+	                  a mrs:NetworkAddress ;
+	                  mrs:type "globus:public";
+	                  mrs:value "{{public}}" .
+	            {{/if public}}
+              {{/if username}}
+            {{/globus_connect}}
+        {{/vms}}
+        {{#vms}}
+            {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
+            {{#nfs}}
+                &lt;{{VMTag}}:service+nfs&gt;
+                    a  mrs:EndPoint ;
+                    mrs:type "nfs";
+                {{$if exports}}
+                    mrs:hasNetworkAddress &lt;{{VMTag}}:service+nfs:exports&gt; .
+                {{/if exports}}
+
+                &lt;{{VMTag}}&gt;
+                    nml:hasService &lt;{{VMTag}}:service+nfs&gt;.
+
+                {{$if exports}}
+                    &lt;{{VMTag}}:service+nfs:exports&gt;
+                        a mrs:NetworkAddress ;
+                        mrs:type "nfs:exports";
+                        mrs:value "{{!ExportData}}".
+                {{/if exports}}
+            {{/nfs}}
+        {{/vms}}
+
+        {{/ dependOn }}
+        {{#vms}}
+            {{#sriovs}}
+                {{*SRIOVIndex @index}}
+                {{#@gateways}}
+                    {{$if connects.0/from}}
+                        {{$if type = "UCS Port Profile"}}
+                            &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
+                               a  nml:Topology;
+                               spa:type spa:Abstraction;
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-sriov-stitch-external-{{name}}-sriov{{SRIOVIndex}}&gt;.
+                        {{/if type}}
+                    {{/if connects.0/from}}
+                    {{$if connects.0/to}}
+                        {{$if type = "stitch_port"}}
+                            &lt;urn:ogf:network:service+{{@uuid}}:vt1&gt;
+                               a  nml:Topology;
+                               spa:type spa:Abstraction;
+                               spa:dependOn  &lt;x-policy-annotation:action:ucs-{{name}}-sriov{{SRIOVIndex}}-stitch&gt;.
+                        {{/if type}}
+                    {{/if connects.0/to}}
+                {{/@gateways}}
+            {{/sriovs}}
+        {{/vms}}
+    {{/subnets}}
+
+    {{#subnets}}
+        {{#if vms}}
+            ;
+            spa:exportTo &lt;x-policy-annotation:data:vpc-export&gt;,
+            {{~#vms}}
+                &lt;x-policy-annotation:data:vpc-subnet-{{name}}-criteria&gt;{{#unless @last}},{{/unless}}
+            {{/vms}}
+            .
+        {{/if vms}}
+    {{/subnets}}
+{{/openstack}}
+
+{{#aws}}
+    &lt;x-policy-annotation:action:create-dc1&gt;
+        a            spa:PolicyAction ;
+        spa:type     "MCE_AwsDxStitching" ;
+        spa:importFrom &lt;x-policy-annotation:data:vpc-aws-export&gt;,
+            &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt; ;
+        spa:exportTo &lt;x-policy-annotation:data:quagga-bgp-remote&gt; ;
+        spa:dependOn &lt;x-policy-annotation:action:create-vpc1&gt;,
+            &lt;x-policy-annotation:action:create-aws-ops-path&gt;.
+{{/aws}}
+
+&lt;x-policy-annotation:data:quagga-bgp-remote&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:format   """{
+       "neighbors":[{"remote_ip":"%$..amazon_ip%","remote_asn":"{{@intercloud/bgp/amazon_asn}}","bgp_authkey":"versastack","local_ip":"%$..customer_ip%"}],
+       "router_id":"%$..customer_ip%",
+       "as_number":"%$..customer_asn%"
+    }""" .
+
+&lt;x-policy-annotation:data:quagga-bgp-local&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:value   """{
+       "parent": "urn:ogf:network:service+{{uuid}}:resource+virtual_machines:tag+{{@intercloud/bgp/vm_host}}",
+       "networks":["{{@intercloud/bgp/networks}}"]
+    }""" .
+
+&lt;x-policy-annotation:action:nfv-quagga-bgp&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_NfvBgpRouting";
+    spa:importFrom &lt;x-policy-annotation:data:quagga-bgp-remote&gt;, &lt;x-policy-annotation:data:quagga-bgp-local&gt;;
+    spa:dependOn &lt;x-policy-annotation:action:create-dc1&gt;
+        , &lt;x-policy-annotation:action:create-{{intercloud/bgp/vm_host}}&gt;
+        {{!DCSRIOVs action}}
+
+&lt;urn:ogf:network:openstack.com:openstack-cloud:vt1&gt;
+   a  nml:Topology;
+   spa:type spa:Abstraction;
+   spa:dependOn  &lt;x-policy-annotation:action:nfv-quagga-bgp&gt;.
+
+&lt;x-policy-annotation:action:create-aws-ops-path&gt;
+    a            spa:PolicyAction ;
+    spa:type     "MCE_MPVlanConnection" ;
+    spa:importFrom &lt;x-policy-annotation:data:aws-ops-criteria&gt; ;
+    spa:exportTo &lt;x-policy-annotation:data:aws-ops-criteriaexport&gt;
+        {{!DCSRIOVs data}}
+
+&lt;x-policy-annotation:data:aws-ops-criteria&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON";
+    spa:value    """{
+        "urn:ogf:network:vo1_maxgigapop_net:link=conn1": {
+            "terminals": {
+                "urn:ogf:network:openstack.com:openstack-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"},
+                "urn:ogf:network:aws.amazon.com:aws-cloud":{"vlan_tag":"{{aws/direct_connect_vlan}}"}
+            }
+        }
+    }""".
+
+&lt;x-policy-annotation:data:aws-ops-criteriaexport&gt;
+    a            spa:PolicyData;
+    spa:type     "JSON" ;
+    spa:format   """{
+       "to_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn1[0].hops.*%
+    }""" .
+
+</modelAddition>
+
+</serviceDelta>

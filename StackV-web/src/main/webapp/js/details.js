@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, swal */
 // Tweens
 var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
     paused: true, top: "0px", opacity: "1", display: "block"});
@@ -143,117 +143,22 @@ function loadDetailsNavbar() {
 
 function loadDetails() {
     var uuid = sessionStorage.getItem("instance-uuid");
-    $("#instance-uuid").html(uuid);
-    subloadDetails();
+    startDetailsEngine(uuid);
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
     loadDataTable(apiUrl);
-    setTimeout(function () {
-        if (view === "left") {
-            tweenLoggingPanel.play();
-            $('div.dataTables_filter input').focus();
-        }
-    }, 1000);
     reloadLogs();
 
-    $(".delta-table-header").click(function () {
-        $("#body-" + this.id).toggleClass("hide");
-    });
-
-    $(document).on('click', '.instance-command', function () {
-        $(".instance-command").attr('disabled', true);
-        pauseRefresh();
-
-        var command = this.id;
-        var apiUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
-        $.ajax({
-            url: apiUrl,
-            type: 'GET',
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-            },
-            success: function (result) {
-                if (subState !== result) {
-                    $(".instance-command").attr('disabled', false);
-                    resumeRefresh();
-                    reloadData();
-                } else {
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/' + command;
-                    $.ajax({
-                        url: apiUrl,
-                        type: 'PUT',
-                        beforeSend: function (xhr) {
-                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-                        },
-                        success: function () {
-                            $(".instance-command").attr('disabled', false);
-                            resumeRefresh();
-                            if (command === "delete" || command === "force_delete") {
-                                setTimeout(function () {
-                                    sessionStorage.removeItem("instance-uuid");
-                                    window.document.location = "/StackV-web/ops/catalog.jsp";
-                                }, 250);
-                            } else {
-                                reloadData();
-                            }
-                        }
-                    });
-                    if (!(command === "delete") && !(command === "force_delete")) {
-                        setTimeout(function () {
-                            $(".instance-command").attr('disabled', false);
-                            resumeRefresh();
-                            reloadData();
-                        }, 250);
-                    }
-                }
-            }
-        });
-    });
-
+    tweenDetailsPanel.play();
 }
 
-function subloadDetails() {
-    var uuid = sessionStorage.getItem("instance-uuid");
-
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (instance) {
-            /*  instance mapping:
-             *      0 - verification_state
-             *      1 - name
-             *      2 - alias_name
-             *      3 - creation_time
-             *      4 - super_state     
-             *      5 - last_state */
-
-            verificationState = instance[0];
-            alias = instance[2];
-            creation = instance[3];
-            superState = instance[4];
-            lastState = instance[5];
-
-            $("#instance-alias").html(alias);
-            $("#instance-creation-time").html(creation);
-            $("#instance-superstate").html(superState);
-
-            // Next steps
-            subloadStatus(uuid);
-        }
-    });
-}
 function subloadStatus(refUuid) {
     var ele = $("#instance-substate");
     var last = $("#instance-laststate");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + refUuid + '/substatus';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -275,109 +180,47 @@ function subloadStatus(refUuid) {
         }
     });
 }
+
+hasDrone = true;
 function subloadVerification() {
     var uuid = sessionStorage.getItem("instance-uuid");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/verification';
     $.ajax({
         url: apiUrl,
+        async: false,
         type: 'GET',
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (verification) {
             /*  verification mapping:
-             *      0 - verification_run
-             *      1 - creation_time
-             *      2 - addition
-             *      3 - reduction
-             *      4 - service_instance_id 
-             *      5 - enabled */
+             *      1 - state
+             *      1 - verification_run
+             *      2 - creation_time
+             *      3 - addition
+             *      4 - reduction
+             *      5 - service_instance_id  */
 
-            verificationRun = verification[0];
-            verificationTime = verification[1];
-            verificationAddition = verification[2];
-            verificationReduction = verification[3];
-            verificationEnabled = verification[5];
+            verifyState = verification[0];
+            verificationRun = verification[1];
+            verificationTime = verification[2];
+            verificationAddition = verification[3];
+            verificationReduction = verification[4];
+
+            $.ajax({
+                url: apiUrl += '/drone',
+                async: false,
+                type: 'GET',
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                },
+                success: function (retCode) {
+                    hasDrone = (retCode === "1");
+                }
+            });
 
             instructionModerate();
             buttonModerate();
-        }
-    });
-}
-
-function subloadACL() {
-    var uuid = sessionStorage.getItem("instance-uuid");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/acl';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function () {
-            /*  acl mapping:
-             */
-            var panel = document.getElementById("details-panel");
-
-            var table = document.createElement("table");
-            table.className = "management-table hide acl-table";
-
-            var thead = document.createElement("thead");
-            thead.className = "delta-table-header";
-            var row = document.createElement("tr");
-            var head = document.createElement("th");
-            row.appendChild(head);
-            head = document.createElement("th");
-            head.innerHTML = "Access Control";
-            row.appendChild(head);
-
-            thead.appendChild(row);
-            table.appendChild(thead);
-
-            var tbody = document.createElement("tbody");
-            tbody.className = "delta-table-body";
-            tbody.id = "acl-body";
-
-            row = document.createElement("tr");
-            var cell = document.createElement("td");
-            cell.innerHTML = '<select id="acl-select" size="5" name="acl-select" multiple></select>';
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            row = document.createElement("tr");
-            cell = document.createElement("td");
-            cell.innerHTML = '<label>Give user access: <input type="text" name="acl-input" /></label>';
-            row.appendChild(cell);
-            tbody.appendChild(row);
-
-            table.appendChild(tbody);
-            panel.appendChild(table);
-
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-
-            // Next step
-            loadACL(uuid);
-        }
-    });
-}
-
-function loadACL() {
-    var select = document.getElementById("acl-select");
-    $("#acl-select").empty();
-
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + keycloak.subject + '/acl';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            for (i = 0; i < result.length; i++) {
-                select.append("<option>" + result[i] + "</option>");
-            }
         }
     });
 }
@@ -442,343 +285,345 @@ function buildDeltaTable(type) {
 }
 
 function loadVisualization() {
-    $("#details-viz").load("/StackV-web/details_viz.html", function () {
-        document.getElementById("visual-panel").innerHTML = "";
+    if (!(subState === "INIT" || (subState === "FAILED" && lastState === "INIT"))) {
+        $("#details-viz").load("/StackV-web/details_viz.html", function () {
+            document.getElementById("visual-panel").innerHTML = "";
 
-        var States = {
-            "INIT": 0,
-            "COMPILED": 1,
-            "COMMITTING": 2,
-            "FAILED": 3,
-            "COMMITTED": 4,
-            "READY": 5
-        };
+            var States = {
+                "INIT": 0,
+                "COMPILED": 1,
+                "COMMITTING": 2,
+                "COMMITTING-PARTIAL": 2,
+                "COMMITTED": 3,
+                "FAILED": 4,
+                "READY": 5
+            };
 
-        var tabs = [
-            {
-                "name": "Service",
-                "state": "INIT",
-                "createContent": createVizTab.bind(undefined, "Service")
-            },
-            {
-                "name": "System",
-                "state": "COMPILED",
-                "createContent": createVizTab.bind(undefined, "System")
-            },
-            {
-                "name": "Verification",
-                "state": "COMMITTING",
-                "createContent": createVizTab.bind(undefined, "Verification")
-            }
-        ];
-
-        createTabs();
-        function createVizTab(viz_type) {
-            var div = document.createElement("div");
-            div.classList.add("viz");
-            div.id = "sd_" + viz_type;
-            div.appendChild(buildViz(viz_type + " Addition"));
-            div.appendChild(buildViz(viz_type + " Reduction"));
-
-            div.classList.add("tab-pane");
-            div.classList.add("fade");
-            div.classList.add("in");
-            div.classList.add("viz-tab-content");
-            return div;
-        }
-
-        function buildHeaderLink(id, text) {
-            var link = document.createElement("a");
-            ;
-            link.href = "#";
-            link.classList.add("viz-hdr");
-            link.classList.add("unexpanded");
-            link.id = id;
-            link.text = text;
-            return link;
-        }
-
-        function buildViz(viz_type) {
-            var table = document.createElement("table");
-            table.classList.add("management-table");
-            table.classList.add("viz-table");
-            var headerRow = document.createElement("tr");
-            var vizRow = document.createElement("tr");
-            var additionHeader = document.createElement("th");
-            var reductionHeader = document.createElement("th");
-            var additionCell = document.createElement("td");
-            additionCell.classList.add("viz-cell");
-            var reductionCell = document.createElement("td");
-            reductionCell.classList.add("viz-cell");
-
-            switch (viz_type) {
-
-                case "System Addition":
-                    table.id = "sd_System_Addition";
-
-                    var a = buildHeaderLink("sd_System_Addition_Link", "Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_System_Addition_Viz";
-
-                    vizRow.appendChild(additionCell);
-
-                    if (!$("#sysa_viz_div").hasClass("emptyViz")) {
-                        var sysa_viz_div = document.getElementById("sysa_viz_div");
-                        additionCell.appendChild(sysa_viz_div);
-                        sysa_viz_div.classList.remove("hidden");
-                    }
-                    break;
-                case "System Reduction":
-                    table.id = "sd_System_Reduction";
-
-                    var a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_System_Reduction_Viz";
-
-                    vizRow.appendChild(reductionCell);
-
-                    if (!$("#sysr_viz_div").hasClass("emptyViz")) {
-                        //  $(".system-delta-table").removeClass("hide");
-                        var sysr_viz_div = document.getElementById("sysr_viz_div");
-                        reductionCell.appendChild(sysr_viz_div);
-                        sysr_viz_div.classList.remove("hidden");
-                    }
-
-                    break;
-                case "Service Addition":
-                    table.id = "sd_Service_Addition";
-
-                    var a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Service_Addition_Viz";
-
-                    vizRow.appendChild(additionCell);
-
-                    if (!$("#serva_viz_div").hasClass("emptyViz")) {
-                        // $(".service-delta-table").removeClass("hide");
-                        var serva_viz_div = document.getElementById("serva_viz_div");
-                        additionCell.appendChild(serva_viz_div);
-                        serva_viz_div.classList.remove("hidden");
-                    }
-
-                    break;
-                case "Service Reduction":
-                    table.id = "sd_Service_Reduction";
-
-                    var a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Service_Addition_Viz";
-
-                    vizRow.appendChild(reductionCell);
-
-                    if (!$("#servr_viz_div").hasClass("emptyViz")) {
-                        var servr_viz_div = document.getElementById("servr_viz_div");
-                        reductionCell.appendChild(servr_viz_div);
-                        servr_viz_div.classList.remove("hidden");
-                    }
-                    break;
-                case "Verification Addition":
-                    var a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Unverified_Addition_Viz";
-
-                    vizRow.appendChild(additionCell);
-
-                    a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Verified_Addition_Viz";
-
-                    vizRow.appendChild(reductionCell);
-
-
-                    if (!$("#va_viz_div").hasClass("emptyViz") || !$("#ua_viz_div").hasClass("emptyViz")) {
-                        var va_viz_div = document.getElementById("va_viz_div");
-                        var ua_viz_div = document.getElementById("ua_viz_div");
-
-                        additionCell.appendChild(ua_viz_div);
-                        reductionCell.appendChild(va_viz_div);
-
-                        ua_viz_div.classList.remove("hidden");
-                        va_viz_div.classList.remove("hidden");
-
-                    }
-
-                    break;
-                case "Verification Reduction":
-
-                    var a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Unverified_Reduction_Viz";
-
-                    vizRow.appendChild(additionCell);
-
-                    a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Verified_Reduction_Viz";
-
-                    vizRow.appendChild(reductionCell);
-
-                    if (!$("#vr_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {
-                        var ur_viz_div = document.getElementById("ur_viz_div");
-                        var vr_viz_div = document.getElementById("vr_viz_div");
-
-                        additionCell.appendChild(ur_viz_div);
-                        reductionCell.appendChild(vr_viz_div);
-
-                        ur_viz_div.classList.remove("hidden");
-                        vr_viz_div.classList.remove("hidden");
-                    }
-                    break;
-            }
-            if (viz_type.includes("Verification")) {
-                headerRow.appendChild(additionHeader);
-                headerRow.appendChild(reductionHeader);
-            } else if (viz_type.includes("Addition")) {
-                headerRow.appendChild(additionHeader);
-            } else {
-                headerRow.appendChild(reductionHeader);
-            }
-            table.appendChild(headerRow);
-            table.appendChild(vizRow);
-
-            return table;
-        }
-
-
-
-        function createTabs() {
-            $(".verification-table").addClass("hide");
-            $(".system-delta-table").addClass("hide");
-            $(".service-delta-table").addClass("hide");
-            $("#delta-Service").addClass("hide");
-            $("#delta-System").addClass("hide");
-
-
-            var tabBar = document.createElement("ul");
-            tabBar.classList.add("nav");
-            tabBar.classList.add("nav-tabs");
-
-            var tabContent = document.createElement("div");
-            tabContent.classList.add("tab-content");
-            tabContent.classList.add("viz-tab-content");
-
-            for (var i = 0; i < tabs.length; i++) {
-                var tab = tabs[i];
-
-                if ((tab.name === "Verification") && (verificationState === null))
-                    continue;
-
-                if (States[tab.state] <= States[subState]) {
-                    createTab(tab, tabBar);
-                    tabContent.appendChild(tab.createContent());
+            var tabs = [
+                {
+                    "name": "Service",
+                    "state": "COMPILED",
+                    "createContent": createVizTab.bind(undefined, "Service")
+                },
+                {
+                    "name": "System",
+                    "state": "COMMITTING",
+                    "createContent": createVizTab.bind(undefined, "System")
+                },
+                {
+                    "name": "Verification",
+                    "state": "COMMITTED",
+                    "createContent": createVizTab.bind(undefined, "Verification")
                 }
+            ];
+
+            createTabs();
+            function createVizTab(viz_type) {
+                var div = document.createElement("div");
+                div.classList.add("viz");
+                div.id = "sd_" + viz_type;
+                div.appendChild(buildViz(viz_type + " Addition"));
+                div.appendChild(buildViz(viz_type + " Reduction"));
+
+                div.classList.add("tab-pane");
+                div.classList.add("fade");
+                div.classList.add("in");
+                div.classList.add("viz-tab-content");
+                return div;
             }
-            if (tabBar.lastChild) {
-                tabBar.lastChild.classList.add("active");
-                tabContent.lastChild.classList.add("active");
 
-                var visualization_panel = document.getElementById("visual-panel");
-                visualization_panel.appendChild(tabBar);
-                visualization_panel.appendChild(tabContent);
-
-                setEvent();
-            }
-        }
-
-        function make_tab_id(tab) {
-            var id = tab.name.replace(/\s+/g, '');
-            return "sd_" + id;
-        }
-        function createTab(tab, tabBar) {
-            var li = document.createElement("li");
-            var a = document.createElement("a");
-            a.href = "#" + make_tab_id(tab);
-            a.text = tab.name;
-            a.setAttribute("data-toggle", "tab");
-            li.appendChild(a);
-            tabBar.appendChild(li);
-        }
-
-        function setEvent(container) {
-            //$(".viz-hdr")
-            //$(".details-viz-button").click();
-
-            $(".viz-hdr").on("click", function () {
-                var tab = $(this).closest(".tab-pane");
-
-                var hdr = $(this).closest("th");
-                var cell = hdr.closest('table').find('td').eq(hdr.index());
-                var table = $(this).closest("table");
-                var viz = cell.children().eq(0);
-                var text_model = viz.children(".details-viz-text-model");
-                var text_model_pre = text_model.children("pre").eq(0);
+            function buildHeaderLink(id, text) {
+                var link = document.createElement("a");
                 ;
+                link.href = "#";
+                link.classList.add("viz-hdr");
+                link.classList.add("unexpanded");
+                link.id = id;
+                link.text = text;
+                return link;
+            }
 
-                var text_model_pre_width = text_model_pre.width();
-                var text_model_pre_height = text_model_pre.height();
+            function buildViz(viz_type) {
+                var table = document.createElement("table");
+                table.classList.add("management-table");
+                table.classList.add("viz-table");
+                var headerRow = document.createElement("tr");
+                var vizRow = document.createElement("tr");
+                var additionHeader = document.createElement("th");
+                var reductionHeader = document.createElement("th");
+                var additionCell = document.createElement("td");
+                additionCell.classList.add("viz-cell");
+                var reductionCell = document.createElement("td");
+                reductionCell.classList.add("viz-cell");
 
-                if (viz.hasClass("emptyViz"))
-                    return;
+                switch (viz_type) {
 
-                var button = viz.children(".details-viz-recenter-button");
+                    case "System Addition":
+                        table.id = "sd_System_Addition";
 
-                if ($(this).hasClass("unexpanded")) {
-                    if (!$("#instance-details-table").hasClass("hide"))
-                        $("#instance-details-table").addClass("hide");
+                        var a = buildHeaderLink("sd_System_Addition_Link", "Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_System_Addition_Viz";
 
-                    tab.find(".viz-cell").not(cell).addClass("hide");
-                    tab.find(".viz-hdr").closest("th").not(hdr).addClass("hide");
-                    tab.find(".viz-table").not(table).addClass("hide");
+                        vizRow.appendChild(additionCell);
 
-                    viz.addClass("expanded-viz-div");
-                    table.height("95%");
-                    $(this).removeClass("unexpanded");
-                    $(this).addClass("expanded");
-                    button.trigger("click", [viz.width(), viz.height()]);
+                        if (!$("#sysa_viz_div").hasClass("emptyViz")) {
+                            var sysa_viz_div = document.getElementById("sysa_viz_div");
+                            additionCell.appendChild(sysa_viz_div);
+                            sysa_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                    case "System Reduction":
+                        table.id = "sd_System_Reduction";
 
-                    text_model_pre.width("inherit");
-                    text_model_pre.addClass("expanded");
-                    text_model_pre.height(viz.height() * 2);
+                        var a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_System_Reduction_Viz";
 
-                    pauseRefresh();
+                        vizRow.appendChild(reductionCell);
+
+                        if (!$("#sysr_viz_div").hasClass("emptyViz")) {
+                            //  $(".system-delta-table").removeClass("hide");
+                            var sysr_viz_div = document.getElementById("sysr_viz_div");
+                            reductionCell.appendChild(sysr_viz_div);
+                            sysr_viz_div.classList.remove("hidden");
+                        }
+
+                        break;
+                    case "Service Addition":
+                        table.id = "sd_Service_Addition";
+
+                        var a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Service_Addition_Viz";
+
+                        vizRow.appendChild(additionCell);
+
+                        if (!$("#serva_viz_div").hasClass("emptyViz")) {
+                            // $(".service-delta-table").removeClass("hide");
+                            var serva_viz_div = document.getElementById("serva_viz_div");
+                            additionCell.appendChild(serva_viz_div);
+                            serva_viz_div.classList.remove("hidden");
+                        }
+
+                        break;
+                    case "Service Reduction":
+                        table.id = "sd_Service_Reduction";
+
+                        var a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Service_Addition_Viz";
+
+                        vizRow.appendChild(reductionCell);
+
+                        if (!$("#servr_viz_div").hasClass("emptyViz")) {
+                            var servr_viz_div = document.getElementById("servr_viz_div");
+                            reductionCell.appendChild(servr_viz_div);
+                            servr_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                    case "Verification Addition":
+                        var a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Unverified_Addition_Viz";
+
+                        vizRow.appendChild(additionCell);
+
+                        a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Verified_Addition_Viz";
+
+                        vizRow.appendChild(reductionCell);
+
+
+                        if (!$("#va_viz_div").hasClass("emptyViz") || !$("#ua_viz_div").hasClass("emptyViz")) {
+                            var va_viz_div = document.getElementById("va_viz_div");
+                            var ua_viz_div = document.getElementById("ua_viz_div");
+
+                            additionCell.appendChild(ua_viz_div);
+                            reductionCell.appendChild(va_viz_div);
+
+                            ua_viz_div.classList.remove("hidden");
+                            va_viz_div.classList.remove("hidden");
+
+                        }
+
+                        break;
+                    case "Verification Reduction":
+
+                        var a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Unverified_Reduction_Viz";
+
+                        vizRow.appendChild(additionCell);
+
+                        a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Verified_Reduction_Viz";
+
+                        vizRow.appendChild(reductionCell);
+
+                        if (!$("#vr_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {
+                            var ur_viz_div = document.getElementById("ur_viz_div");
+                            var vr_viz_div = document.getElementById("vr_viz_div");
+
+                            additionCell.appendChild(ur_viz_div);
+                            reductionCell.appendChild(vr_viz_div);
+
+                            ur_viz_div.classList.remove("hidden");
+                            vr_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                }
+                if (viz_type.includes("Verification")) {
+                    headerRow.appendChild(additionHeader);
+                    headerRow.appendChild(reductionHeader);
+                } else if (viz_type.includes("Addition")) {
+                    headerRow.appendChild(additionHeader);
                 } else {
-                    if ($("#instance-details-table").hasClass("hide") && !$(".viz-hdr.expanded").not(this).length) {
-                        $("#instance-details-table").removeClass("hide");
+                    headerRow.appendChild(reductionHeader);
+                }
+                table.appendChild(headerRow);
+                table.appendChild(vizRow);
+
+                return table;
+            }
+
+
+
+            function createTabs() {
+                $(".verification-table").addClass("hide");
+                $(".system-delta-table").addClass("hide");
+                $(".service-delta-table").addClass("hide");
+                $("#delta-Service").addClass("hide");
+                $("#delta-System").addClass("hide");
+
+
+                var tabBar = document.createElement("ul");
+                tabBar.classList.add("nav");
+                tabBar.classList.add("nav-tabs");
+
+                var tabContent = document.createElement("div");
+                tabContent.classList.add("tab-content");
+                tabContent.classList.add("viz-tab-content");
+
+                for (var i = 0; i < tabs.length; i++) {
+                    var tab = tabs[i];
+
+                    if ((tab.name === "Verification") && (verificationState === null))
+                        continue;
+
+                    if (States[tab.state] <= States[subState]) {
+                        createTab(tab, tabBar);
+                        tabContent.appendChild(tab.createContent());
+                    }
+                }
+                if (tabBar.lastChild) {
+                    tabBar.lastChild.classList.add("active");
+                    tabContent.lastChild.classList.add("active");
+
+                    var visualization_panel = document.getElementById("visual-panel");
+                    visualization_panel.appendChild(tabBar);
+                    visualization_panel.appendChild(tabContent);
+
+                    setEvent();
+                }
+            }
+
+            function make_tab_id(tab) {
+                var id = tab.name.replace(/\s+/g, '');
+                return "sd_" + id;
+            }
+            function createTab(tab, tabBar) {
+                var li = document.createElement("li");
+                var a = document.createElement("a");
+                a.href = "#" + make_tab_id(tab);
+                a.text = tab.name;
+                a.setAttribute("data-toggle", "tab");
+                li.appendChild(a);
+                tabBar.appendChild(li);
+            }
+
+            function setEvent(container) {
+                //$(".viz-hdr")
+                //$(".details-viz-button").click();
+
+                $(".viz-hdr").on("click", function () {
+                    var tab = $(this).closest(".tab-pane");
+
+                    var hdr = $(this).closest("th");
+                    var cell = hdr.closest('table').find('td').eq(hdr.index());
+                    var table = $(this).closest("table");
+                    var viz = cell.children().eq(0);
+                    var text_model = viz.children(".details-viz-text-model");
+                    var text_model_pre = text_model.children("pre").eq(0);
+                    ;
+
+                    var text_model_pre_width = text_model_pre.width();
+                    var text_model_pre_height = text_model_pre.height();
+
+                    if (viz.hasClass("emptyViz"))
+                        return;
+
+                    var button = viz.children(".details-viz-recenter-button");
+
+                    if ($(this).hasClass("unexpanded")) {
+                        if (!$("#instance-details-table").hasClass("hide"))
+                            $("#instance-details-table").addClass("hide");
+
+                        tab.find(".viz-cell").not(cell).addClass("hide");
+                        tab.find(".viz-hdr").closest("th").not(hdr).addClass("hide");
+                        tab.find(".viz-table").not(table).addClass("hide");
+
+                        viz.addClass("expanded-viz-div");
+                        table.height("95%");
+                        $(this).removeClass("unexpanded");
+                        $(this).addClass("expanded");
+                        button.trigger("click", [viz.width(), viz.height()]);
+
+                        text_model_pre.width("inherit");
+                        text_model_pre.addClass("expanded");
+                        text_model_pre.height(viz.height() * 2);
+
+                        pauseRefresh();
+                    } else {
+                        if ($("#instance-details-table").hasClass("hide") && !$(".viz-hdr.expanded").not(this).length) {
+                            $("#instance-details-table").removeClass("hide");
+                        }
+
+                        tab.find(".viz-cell").not(cell).removeClass("hide");
+                        tab.find(".viz-hdr").closest("th").not(hdr).removeClass("hide");
+                        tab.find(".viz-table").not(".emptyVizTable").removeClass("hide");
+
+                        table.height("10%");
+                        viz.removeClass("expanded-viz-div");
+                        $(this).removeClass("expanded");
+                        $(this).addClass("unexpanded");
+                        button.trigger("click", [viz.width(), viz.height()]);
+
+                        text_model_pre.removeClass("expanded");
+                        text_model_pre.width("initial");
+                        text_model_pre.height(text_model_pre_height / 2.5);
+
+                        resumeRefresh();
                     }
 
-                    tab.find(".viz-cell").not(cell).removeClass("hide");
-                    tab.find(".viz-hdr").closest("th").not(hdr).removeClass("hide");
-                    tab.find(".viz-table").not(".emptyVizTable").removeClass("hide");
+                });
+            }
 
-                    table.height("10%");
-                    viz.removeClass("expanded-viz-div");
-                    $(this).removeClass("expanded");
-                    $(this).addClass("unexpanded");
-                    button.trigger("click", [viz.width(), viz.height()]);
-
-                    text_model_pre.removeClass("expanded");
-                    text_model_pre.width("initial");
-                    text_model_pre.height(text_model_pre_height / 2.5);
-
-                    resumeRefresh();
-                }
-
-            });
-        }
-
-        if (view === "right") {
-            tweenVisualPanel.play();
-        }
-    });
-
+            if (view === "right") {
+                tweenVisualPanel.play();
+            }
+        });
+    }
 }
 function closeVisTabs() {
     $(".viz-hdr.expanded").click();
@@ -801,116 +646,6 @@ function toggleTextModel(viz_table, text_table) {
     }
 }
 
-// Moderation Functions
-function instructionModerate() {
-    var blockString = "";
-    if (verificationRun !== null) {
-        switch (subState) {
-            case "INIT":
-                blockString = "Service is being initialized.";
-                break;
-            case "PROPAGATED":
-                blockString = "Service delta has been sent to the backend.";
-                break;
-            case "COMMITTING":
-                blockString = "Service is currently being constructed.";
-                break;
-            case "COMMITTED":
-                blockString = "Service has been constructed, and is now being verified. (Run "
-                        + verificationRun + ")";
-                break;
-            case "FAILED":
-                if (verificationRun > 0) {
-                    blockString = "Service has failed. Please see logging for more information. (Run "
-                            + verificationRun + ")";
-                } else {
-                    blockString = "Service has failed. Please see logging for more information.";
-                }
-                break;
-            case "READY":
-                switch (verificationState) {
-                    case "":
-                    case "null":
-                        blockString = "Service encountered an error during verification."
-                                + " Please contact your technical supervisor for further instructions.";
-                        break;
-                    case "0":
-                        blockString = "Service is verifying.";
-                        break;
-                    case "-1":
-                        blockString = "Service was not able to be verified.";
-                        break;
-                    case "1":
-                        blockString = "Service has been successfully verified.";
-                        break;
-                }
-                break;
-        }
-    }
-
-    document.getElementById("instruction-block").innerHTML = blockString;
-}
-
-function buttonModerate() {
-    var lastStateStr = $("#instance-laststate").html();
-    var lastState = lastStateStr.substring(8, lastStateStr.length - 1);
-    $(".instance-command").addClass("hide");
-
-    if (subState !== "COMMITTED") {
-        $("#delete").removeClass("hide");
-    }
-
-    switch (subState) {
-        case "COMMITTED":
-            $("#verify").removeClass("hide");
-            break;
-        case "FAILED":
-            // Error case
-            if (lastState === "INIT") {
-                $(".instance-command").addClass("hide");
-                $("#delete").removeClass("hide");
-            }
-
-            $("#verify").removeClass("hide");
-            if (lastState === "COMMITTED" ||
-                    lastState === "COMMITTING" ||
-                    lastState === "READY") {
-                switch (superState) {
-                    case "CREATE":
-                    case "REINSTATE":
-                        $("#force_cancel").removeClass("hide");
-                        break;
-                    case "CANCEL":
-                        $("#force_reinstate").removeClass("hide");
-                        break;
-                }
-            }
-            if (lastState === "COMMITTING" ||
-                    lastState === "PROPAGATED" ||
-                    lastState === "COMPILED") {
-                $("#force_retry").removeClass("hide");
-            }
-            break;
-        case "READY":
-            switch (superState) {
-                case "CREATE":
-                case "REINSTATE":
-                    $("#cancel").removeClass("hide");
-                    break;
-                case "CANCEL":
-                    $("#reinstate").removeClass("hide");
-                    break;
-            }
-            break;
-    }
-
-    if (verificationRun > 0) {
-        $("#verify").html("Cancel Verification");
-        $("#verify").attr("id", "unverify");
-    }
-}
-
-
 /* REFRESH */
 function reloadData() {
     keycloak.updateToken(90).error(function () {
@@ -931,19 +666,21 @@ function reloadData() {
             }
             setTimeout(function () {
                 reloadLogs();
-                subloadDetails();
+                updateData();
+                renderDetails();
                 $(".delta-table-header").click(function () {
                     $("#body-" + this.id).toggleClass("hide");
                 });
                 refreshSync(refreshed, timerSetting);
-            }, 1000);
+            }, 250);
         } else {
             reloadLogs();
-            subloadDetails();
+            updateData();
+            renderDetails();
             $(".delta-table-header").click(function () {
                 $("#body-" + this.id).toggleClass("hide");
             });
             refreshSync(refreshed, timerSetting);
         }
     });
-}
+}  
