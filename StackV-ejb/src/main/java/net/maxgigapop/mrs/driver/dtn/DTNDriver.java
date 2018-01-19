@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,10 +26,10 @@ import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.VersionItem;
-import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
 /**
@@ -41,7 +39,7 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 @Stateless
 public class DTNDriver implements IHandleDriverSystemCall {
 
-    Logger logger = Logger.getLogger(DTNDriver.class.getName());
+    private static final StackLogger logger = new StackLogger(DTNDriver.class.getName(), "DTNDriver");
     public static final String delimiterPattern = "[\\(\\)]";
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
@@ -68,7 +66,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
         try {
             requests = push.pushPropagate(model, modelAdd, modelReduc);
         } catch (Exception ex) {
-            Logger.getLogger(DTNDriver.class.getName()).log(Level.SEVERE, ex.getMessage());
+            throw logger.error_throwing(method, ex.getMessage());
         }
 
         String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
@@ -88,7 +86,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
         logger.start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(aDelta.getDriverInstance().getId());
         if (driverInstance == null) {
-            throw new EJBException(String.format("commitDelta see null driverInance for %s", aDelta));
+            throw logger.error_throwing(method, String.format("commitDelta see null driverInance for %s", aDelta));
         }
 
         String user_account = driverInstance.getProperty("user_account");
@@ -106,18 +104,20 @@ public class DTNDriver implements IHandleDriverSystemCall {
         driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
 
-        logger.log(Level.INFO, "DTN driver delta models succesfully commited");
+        logger.message(method, "DTN driver delta models succesfully commited");
+        logger.end(method);
         return new AsyncResult<>("SUCCESS");
     }
 
     @Override
     @Asynchronous
     public Future<String> pullModel(Long driverInstanceId) {
+        String method = "commitDelta";
+        logger.start(method);
         DriverInstance driverInstance = DriverInstancePersistenceManager.findById(driverInstanceId);
         if (driverInstance == null) {
             throw new EJBException(String.format("pullModel cannot find driverInstance(id=%d)", driverInstanceId));
         }
-
         try {
 
         	Map<String, String> properties = driverInstance.getProperties();
@@ -164,11 +164,10 @@ public class DTNDriver implements IHandleDriverSystemCall {
                 driverInstance.setHeadVersionItem(vi);
             }
         } catch (Exception ex) {
-            logger.log(Level.SEVERE, ex.getMessage());
+            logger.error(method, ex.getMessage());
             return new AsyncResult<>("FAILURE");
         }
-
-        logger.log(Level.INFO, "DTN driver ontology model succesfully pulled");
+        logger.end(method);
         return new AsyncResult<>("SUCCESS");
     }
 
