@@ -18,7 +18,6 @@ public class NIC implements Serializable {
     private final String link_type;
     private final String ip_addr;
     private long link_capacity_Mbps;
-    private String link_duplex_type;
 
     public NIC(String id, String link_type, String ip_addr) {
         this.nic_id = id;
@@ -30,10 +29,6 @@ public class NIC implements Serializable {
         this.link_capacity_Mbps = link_cap;
     }
 
-    public void setLinkDuplex(String duplex_type) {
-        this.link_duplex_type = duplex_type;
-    }
-    
     public String getNICid() {
         return this.nic_id;
     }
@@ -48,10 +43,6 @@ public class NIC implements Serializable {
 
     public long getLinkCapacity() {
         return this.link_capacity_Mbps;
-    }
-
-    public String getLinkDuplex() {
-        return this.link_duplex_type;
     }
 
     @Override

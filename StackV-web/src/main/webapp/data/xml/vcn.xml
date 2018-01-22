@@ -91,7 +91,7 @@
                 <type>text</type>
                 <valid>string</valid>
             </input>
-            <input>
+            <input required="true">
                 <name>CIDR</name>
                 <type>text</type>
                 <default firstOnly="true">10.0.0.0/24</default>
@@ -232,6 +232,9 @@
                 </group>
             </group>
             <group name="Globus Connect" condition="openstack-form" collapsible="true">
+                <fulfilled>
+                    <name>username</name>
+                </fulfilled>
                 <input>
                     <name>Username</name>
                     <type>text</type>
@@ -264,6 +267,10 @@
                 </input>
             </group>
             <group factory="true" condition="openstack-form" name="Ceph RBD" collapsible="true">
+                <fulfilled>
+                    <has>size</has>
+                </fulfilled>
+                
                 <input>
                     <name>Size</name>
                     <type>text</type>
@@ -275,6 +282,31 @@
                     <type>text</type>
                     <default>/mnt/ceph1</default>
                     <valid>string</valid>
+                </input>
+            </group>            
+            <group condition="openstack-form" name="Ceph FS" collapsible="true">
+                <fulfilled>
+                    <has>mount_point</has>
+                </fulfilled>
+                <input>
+                    <name>Mount Point</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                    <size>small</size>
+                </input>
+                <input>
+                    <name>CephFS Directory</name>
+                    <type>text</type>
+                    <default>/</default>
+                    <valid>string</valid>
+                    <size>small</size>
+                </input>
+                <input>
+                    <name>CephFS Client</name>
+                    <type>text</type>
+                    <default>admin</default>
+                    <valid>string</valid>
+                    <size>small</size>
                 </input>
             </group>            
             <group name="NFS" condition="openstack-form" collapsible="true">

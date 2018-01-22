@@ -33,7 +33,9 @@ public class TopologyPolicyData implements Helper {
                     JSONObject subnet = (JSONObject) subnetObj;
                     JSONObject net = new JSONObject();
                     net.put("name", subnet.get("name"));
-                    net.put("cidr", subnet.get("cidr"));
+                    if (subnet.containsKey("cidr")) {
+                        net.put("cidr", subnet.get("cidr"));
+                    }
                     if (subnet.containsKey("routes")) {
                         net.put("routes", nextHop((JSONArray) subnet.get("routes")));
                     }

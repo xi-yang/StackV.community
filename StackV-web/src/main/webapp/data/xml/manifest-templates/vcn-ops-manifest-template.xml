@@ -34,6 +34,15 @@
 								"sparql-ext": "SELECT ?vol_gb ?vol_mount WHERE { ?rbd_svc a mrs:BlockStorageService. ?rbd_svc mrs:type \"ceph-rbd\". ?vol mrs:disk_gb ?vol_gb. ?vol mrs:mount_point ?vol_mount. }",
 								"required": "false"
 							}],
+							"Ceph FS": [{
+								"Volume URI": "?vol?",	
+								"Mount Point": "?vol_mount?",	
+								"CephFS Client": "?client?",	
+								"CephFS Directory": "?subdir?",	
+								"sparql": "SELECT ?vol ?ceph_fs_svc WHERE { ?vm mrs:hasVolume ?vol. ?ceph_fs_svc mrs:providesVolume ?vol. }",
+								"sparql-ext": "SELECT ?vol_mount (COALESCE(?ceph_client, \"Unknown\") AS ?client) (COALESCE(?ceph_subdir, \"Unknown\") AS ?subdir) WHERE { ?ceph_fs_svc a mrs:BlockStorageService. ?ceph_fs_svc mrs:type \"ceph-fs\". ?vol mrs:mount_point ?vol_mount. OPTIONAL {?vol mrs:hasNetworkAddress ?ceph_client_addr. ?ceph_client_addr mrs:type \"cephfs-client\". ?ceph_client_addr mrs:value ?ceph_client.} OPTIONAL {?vol mrs:hasNetworkAddress ?ceph_subdir_addr. ?ceph_subdir_addr mrs:type \"cephfs-subdir\". ?ceph_subdir_addr mrs:value ?ceph_subdir.}}",
+								"required": "false"
+							}],
                                                         "Service EndPoints": [{
                                                                 "Name": "?ep_name?",
                                                                 "sparql": "SELECT ?ep ?ep_type ?ep_name WHERE { ?vm nml:hasService ?ep. ?ep mrs:type ?ep_type. OPTIONAL {?ep nml:name ?ep_name.} }",

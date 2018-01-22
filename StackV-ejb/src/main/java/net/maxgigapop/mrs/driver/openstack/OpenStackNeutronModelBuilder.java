@@ -499,7 +499,51 @@ public class OpenStackNeutronModelBuilder {
                     logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), cephRbdJson, cephRbdKey));
                 }
             }
-            
+            // Ceph FS Service
+            if (metadata != null && metadata.containsKey("ceph_fs:info")) {
+                String cephfsJson = metadata.get("ceph_fs:info");
+                JSONParser parser = new JSONParser();
+                try {
+                    cephfsJson = cephfsJson.replaceAll("'", "\""); // single quotes into double quotes
+                    JSONObject jsonObj = (JSONObject) parser.parse(cephfsJson);
+                    if (!jsonObj.get("status").equals("up")) {
+                        continue;
+                    }
+                    String volumeName = (String) jsonObj.get("volume");
+                    String mountPoint =  (String) jsonObj.get("mount");
+                    Resource resVolume = RdfOwl.createResource(model, ResourceTool.getResourceUri(volumeName, OpenstackPrefix.volume, volumeName), Mrs.Volume);
+                    model.add(model.createStatement(VM, Mrs.hasVolume, resVolume));
+                    if (mountPoint != null) {
+                        model.add(model.createStatement(resVolume, Mrs.mount_point, mountPoint));
+                    }
+                    String cephfsSubdir =  (String) jsonObj.get("subdir");
+                    if (cephfsSubdir != null) {
+                        Resource subdirAddr = RdfOwl.createResource(model, resVolume.getURI()+":cephfs_subdir", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resVolume, Mrs.hasNetworkAddress, subdirAddr));
+                        model.add(model.createStatement(subdirAddr, Mrs.type, "cephfs-subdir"));
+                        model.add(model.createStatement(subdirAddr, Mrs.value, cephfsSubdir));
+                    }
+                    String cephfsClient =  (String) jsonObj.get("client");
+                    if (cephfsSubdir != null) {
+                        Resource clientAddr = RdfOwl.createResource(model, resVolume.getURI()+":cephfs_client", Mrs.NetworkAddress);
+                        model.add(model.createStatement(resVolume, Mrs.hasNetworkAddress, clientAddr));
+                        model.add(model.createStatement(clientAddr, Mrs.type, "cephfs-client"));
+                        model.add(model.createStatement(clientAddr, Mrs.value, cephfsClient));
+                    }
+                    // find the ceph blockstorage service that providesVolume
+                    String sparql = "SELECT ?cephfs WHERE {"
+                            + "?cephfs a mrs:BlockStorageService. "
+                            + "?cephfs mrs:type  \"ceph-fs\". "
+                            + "}";
+                    ResultSet r = ModelUtil.sparqlQuery(modelExt, sparql);
+                    if (r.hasNext()) {
+                        Resource resCephRbd = r.next().getResource("cephfs");
+                        model.add(model.createStatement(resCephRbd, Mrs.providesVolume, resVolume));
+                    }
+                } catch (ParseException e) {
+                    logger.warning(method, String.format("cannot parse server '%s' metadata '%s' for '%s' ", server.getName(), cephfsJson, "cephfs:info"));
+                }
+            }
             //Strongswan ipsec vpn
             if (metadata != null && metadata.containsKey("ipsec")) {
                 String input = metadata.get("ipsec");
