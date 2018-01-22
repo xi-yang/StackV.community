@@ -7,6 +7,7 @@ package net.maxgigapop.mrs.driver.dtn;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -15,12 +16,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+//import javax.xml.bind.JAXBContext;
+//import javax.xml.bind.JAXBException;
+//import javax.xml.bind.Marshaller;
+//import javax.xml.bind.Unmarshaller;
+//import org.globusonline.transfer;
+//import java.io.InputStream;
+//import com.jcraft.jsch.Channel;
+//import com.jcraft.jsch.ChannelExec;
+//import com.jcraft.jsch.JSch;
+//import com.jcraft.jsch.Session;
+//import java.io.BufferedReader;
+//import java.io.InputStreamReader;
+//import org.globus.myproxy.MyProxy;
 
 /**
  *
@@ -35,11 +48,12 @@ public class DTNGet {
     private Map<String, String> transfer_service_conf = new HashMap<String, String>();
     private long active_transfers;
     private double cpu_usage;
-    private double mem_usage;
     private String error;
     private String output;
+    private Logger logger = Logger.getLogger(DTNGet.class.getName());
+	private final static long cutoff = 20;
     
-    public DTNGet(String user_account, String cred_file, String proxy_server, String address){
+    public DTNGet(String pullInvokePattern, Map<String, String> pullCommandParamMap) {
         this.dtn = null;
         this.timestamp = null;
         this.transfer_service_type = null;
@@ -49,50 +63,36 @@ public class DTNGet {
         Node tmpNode;
         Element tmpEle;
         try {
-            
-            String filename = "dtn-"+address+".xml";
-            //Get config file from DTN
-            //todo: getting file to memory
-            String src_cred="", dst_cred="";
-            ArrayList<String> cmdarray = new ArrayList<String>();
-            if(!cred_file.isEmpty()){
-                src_cred = cred_file;
-                dst_cred = cred_file;
-                cmdarray.add("globus-url-copy"); 
-                cmdarray.add("-sc");  cmdarray.add(src_cred);
-                cmdarray.add("-dc");  cmdarray.add(dst_cred);
-                cmdarray.add("gsiftp://"+address+"/~/"+filename);
-                cmdarray.add("file:///tmp/");           
-            }
-            
-            String cmd[] = new String[cmdarray.size()];
-            cmd = cmdarray.toArray(cmd);
-            int exit = runcommand(cmd); 
-            if (exit != 0){
-                //error happens, possibly domain name unsolved
-                if(this.error.contains("Authorization denied: The name of the remote entity")) {
-                    String dn = this.error.substring(this.error.indexOf("(")+1, this.error.indexOf(")"));
-                    cmdarray.add(5, "-ss");  
-                    cmdarray.add(6, dn);
-                    cmd = new String[cmdarray.size()];
-                    cmd = cmdarray.toArray(cmd);
-                    exit = runcommand(cmd);
-                }
-            }
-        
-//            int exit=0;
-            if (exit == 0){
-                //Parse xml file
-                //todo: parse from memory
-                File inputFile = new File("/tmp/"+filename);
-                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                Document doc = dBuilder.parse(inputFile);
+			String cmdStr = (new PullCmdAssembler(pullInvokePattern, logger)).generateCmdStr(pullCommandParamMap);
+			String cmd[] = cmdStr.split(" ");
+
+			// Log command issued to shell
+			logger.log(Level.INFO, String.format("Issuing metadata pull command to shell: %s", cmdStr));
+			
+			int exit = runcommand(cmd);
+//			logger.log(Level.INFO, output);
+//			logger.log(Level.INFO, error);
+			
+			if (exit != 0)
+				throw new IllegalStateException("Error transferring file: Error=" + this.error + ", Output=" + this.output);
+			else {
+				// Check every 1 second for the file, abort if the cutoff time is exceeded
+				File metadataFile = new File(pullCommandParamMap.get("dtn-metadata-paths"));
+				long startTime = System.currentTimeMillis() / 1000L;
+				while (!metadataFile.exists()) {
+					Thread.sleep(1000);
+					long currentTime = System.currentTimeMillis() / 1000L;
+					if (currentTime - startTime > cutoff)
+						throw new FileNotFoundException(String.format("DTN metadata not found at %s", metadataFile));
+				}
+				Document doc = DocumentBuilderFactory.newInstance()
+						.newDocumentBuilder()
+						.parse(metadataFile);
                 doc.getDocumentElement().normalize();
                 
                 //Timestamp
-                if (doc.getElementsByTagName("Timestamp_epoch").getLength() != 0) {
-                    this.timestamp = doc.getElementsByTagName("Timestamp_epoch").item(0).getTextContent();
+                if (doc.getElementsByTagName("Timestamp_UTC").getLength() != 0) {
+                    this.timestamp = doc.getElementsByTagName("Timestamp_UTC").item(0).getTextContent();
                 }
                 
                 //DTN node information
@@ -105,11 +105,10 @@ public class DTNGet {
                         this.dtn = new DTNNode(ip, hostname);
 
                         int cpu = Integer.parseInt(dtnNode.getElementsByTagName("CPU").item(0).getTextContent());
-                        double memory = Double.parseDouble(dtnNode.getElementsByTagName("Memory_kB").item(0).getTextContent()) / 1024.0;
-                        double freemem = Double.parseDouble(dtnNode.getElementsByTagName("Free_Mem_kB").item(0).getTextContent()) / 1024.0;
-                        this.mem_usage = 1 - freemem / memory;
                         this.dtn.setCPU(cpu);
-                        this.dtn.setMemory(memory);                        
+                        double memory = Double.parseDouble(dtnNode.getElementsByTagName("Memory_kB").item(0).getTextContent()) / 1024.0;
+                        this.dtn.setMemory(memory);
+
                         //Get NICs
                         if (dtnNode.getElementsByTagName("NICs").getLength() != 0) {
                             tmpNode = dtnNode.getElementsByTagName("NICs").item(0);
@@ -124,9 +123,7 @@ public class DTNGet {
                                             String nic_id = nic.getElementsByTagName("NIC_ID").item(0).getTextContent();
                                             String link_type = nic.getElementsByTagName("Link_type").item(0).getTextContent();
                                             String ip_addr = nic.getElementsByTagName("IP_address").item(0).getTextContent();
-                                            NIC aNic = new NIC(nic_id, link_type, ip_addr);                                            
-                                            String duplex = nic.getElementsByTagName("Link_duplex_type").item(0).getTextContent();
-                                            aNic.setLinkDuplex(duplex);                                            
+                                            NIC aNic = new NIC(nic_id, link_type, ip_addr);
                                             String tmpCap = nic.getElementsByTagName("Link_capacity_Mbps").item(0).getTextContent();
                                             if (tmpCap.length() != 0) {
                                                 long link_cap = Long.parseLong(tmpCap);
@@ -147,14 +144,7 @@ public class DTNGet {
 
                         String wbuff = dtnNode.getElementsByTagName("TCP_write_buffer").item(0).getTextContent();
                         this.dtn.setTCPWriteBuffer(wbuff);
-                        
-                        //internet traffic
-                        String iptraffic_tx = dtnNode.getElementsByTagName("IP_tx_traffic").item(0).getTextContent();
-                        String iptraffic_rx = dtnNode.getElementsByTagName("IP_rx_traffic").item(0).getTextContent();
-                        String ibtraffic_tx = dtnNode.getElementsByTagName("IB_tx_traffic").item(0).getTextContent();
-                        String ibtraffic_rx = dtnNode.getElementsByTagName("IB_rx_traffic").item(0).getTextContent();
-                        this.dtn.setTraffic(iptraffic_tx+"--"+iptraffic_rx+"--"+ibtraffic_tx+"--"+ibtraffic_rx);
-                      
+
                         //GridFTP configuration
                         if (dtnNode.getElementsByTagName("DataTransferService").getLength() != 0) {
                             tmpNode = dtnNode.getElementsByTagName("DataTransferService").item(0);
@@ -204,13 +194,15 @@ public class DTNGet {
                 if (doc.getElementsByTagName("Active_transfers").getLength() != 0) {
                     this.active_transfers = Long.parseLong(doc.getElementsByTagName("Active_transfers").item(0).getTextContent());
                 }
-                
+
                 if (doc.getElementsByTagName("CPU_usage").getLength() != 0) {
                     this.cpu_usage = Double.parseDouble(doc.getElementsByTagName("CPU_usage").item(0).getTextContent());
                 }
             }
 
-        } catch (Exception e) {
+        } catch (FileNotFoundException e) {
+			logger.log(Level.WARNING, String.format("%s...Defaulting to last known configuration (if any)", e.getMessage()) );
+    	} catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -238,13 +230,9 @@ public class DTNGet {
     public long getActiveTransfers() {
         return this.active_transfers;
     }
-    
+
     public double getCPUload() {
         return this.cpu_usage;
-    }
-    
-    public double getMemload() {
-        return this.mem_usage;
     }
     
     private int runcommand(String[] cmd){
@@ -259,7 +247,7 @@ public class DTNGet {
  
             BufferedReader stdError = new BufferedReader(new
                  InputStreamReader(p.getErrorStream()));
-            
+ 
             // read the output from the command
             while ((s = stdInput.readLine()) != null) {
                output += s+"\n";
@@ -275,7 +263,7 @@ public class DTNGet {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException ex) {
-            Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, ex.getMessage());
+            Logger.getLogger(DTNGet.class.getName()).log(Level.SEVERE, null, ex);
         }
         return exitVal;
     }

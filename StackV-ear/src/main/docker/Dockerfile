@@ -87,6 +87,10 @@ RUN \
     && chown jboss:0 /bin/restart-persist.sh \
     && chmod 700 /bin/restart-persist.sh
 
+# Host command relay script
+ADD ./StackV-ear/src/main/docker/hpc-relay.py /usr/bin/hpc-relay.py
+RUN chmod 0755 /usr/bin/hpc-relay.py
+
 # Ensure signals are forwarded to the JVM process correctly for graceful shutdown
 ENV LAUNCH_JBOSS_IN_BACKGROUND true
 
@@ -117,7 +121,6 @@ RUN cd ${JBOSS_HOME} \
     <module name="javax.api"/> \
   </dependencies> \
 </module>' >> ./modules/com/mysql/main/module.xml 
- 
 
 # Expose the ports we're interested in
 EXPOSE 8080 8443 9990 9993

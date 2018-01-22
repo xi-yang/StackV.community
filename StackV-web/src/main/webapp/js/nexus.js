@@ -1086,7 +1086,10 @@ function reloadDataManual() {
 
 /* LOGGING */
 var openLogDetails = 0;
+var now = new Date();
 function loadDataTable(apiUrl) {
+    drawLoggingCurrentTime();
+    
     dataTable = $('#loggingData').DataTable({
         "ajax": {
             url: apiUrl,
@@ -1195,6 +1198,17 @@ function reloadLogs() {
             dataTable.ajax.reload(null, false);
         }
     }
+    
+    now = new Date();
+    drawLoggingCurrentTime();
+}
+function drawLoggingCurrentTime() {
+    var $time = $("#log-time");
+        
+    
+    var nowStr = ('0'+now.getHours()).slice(-2) + ":" + ('0'+now.getMinutes()).slice(-2) + ":" + ('0'+now.getSeconds()).slice(-2) + "," + ('00'+now.getMilliseconds()).slice(-3);
+    
+    $time.text(nowStr);
 }
 function filterLogs() {
     var level = $("#logging-filter-level").val();
