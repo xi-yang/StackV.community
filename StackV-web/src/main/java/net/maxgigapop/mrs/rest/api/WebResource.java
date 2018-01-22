@@ -61,6 +61,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.security.KeyManagementException;
@@ -147,7 +148,7 @@ public class WebResource {
 
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
     
-    String ipaBaseServerUrl = "https://179-152.research.maxgigapop.net";
+    String ipaBaseServerUrl = "https://180-133.research.maxgigapop.net";
     
     static String ipaCookie;
     
@@ -459,9 +460,7 @@ public class WebResource {
             DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
             wr.writeBytes(formattedLoginData);
             wr.flush();
-            conn.connect();            
-            
-            // *** Does the cookie need to be refreshed? Since after every request, the cookie is refreshed by the IPA server
+            conn.connect();                       
             
             // if the request is successful
             if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {                             
@@ -490,7 +489,7 @@ public class WebResource {
         } catch (IOException ex) {
             Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-
+        
         // return the JSON object as a string
         return result.toJSONString();
     }
@@ -550,31 +549,7 @@ public class WebResource {
         
         // return the JSONObject as a string
         return result.toJSONString();
-    }
-    
-    @GET
-    @Path("/acl/ipa/checkcookie")
-    @Consumes("application/x-www-form-urlencoded")
-    @Produces("application/json")
-    @RolesAllowed("ACL")
-    public String ipaCheckCookie() {
-        /**
-         * Cookie looks like this:
-         * ipa_session=c3f8669066e3baab2dcabea5a3e42d7e; Domain=179-152.research.maxgigapop.net; Path=/ipa; Expires=Wed, 17 Jan 2018 22:44:09 GMT; Secure; HttpOnly
-         * 
-         * Parse out the Expires attribute and return if the current time/date is within the range. Either use the Java Cookie class or split the string via 
-         * string methods -> see which is more efficient
-         */
-        boolean cookieExpired = true;
-        final String[] cookieAttrs = ipaCookie.split(";");
-        
-        JSONObject result = new JSONObject();
-        result.put("Cookie", ipaCookie);
-        result.put("CookieExpired", cookieExpired);
-        // return the JSONObject as a string
-        return result.toJSONString();
-    }
-    
+    }  
     
 
     // >Drivers

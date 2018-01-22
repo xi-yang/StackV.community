@@ -35,8 +35,6 @@ var tweenGroupRolePanel = new TweenLite("div#acl-group-role-div", .5, {ease: Pow
 
 var view = "center";
 
-var ipaServerCookieValid = false;
-
 Mousetrap.bind({
     'shift+left': function () {
         window.location.href = "/StackV-web/ops/srvc/driver.jsp";
@@ -48,60 +46,6 @@ Mousetrap.bind({
         viewShift("right");
     }
 });
-
-/**
- * Check if the user is currently logged into IPA server. If not logged in, the log in the user
- */
-function ipaLogin(){
-    var apiUrl = baseUrl + "/StackV-web/restapi/app/acl/ipa/login";
-    
-    return $.ajax({
-        url: apiUrl,
-        type: 'POST',
-        data: {
-            "username":"admin",
-            "password":"max1$fun"
-        },
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function(result) {
-            console.log("ipaLogin success: " + JSON.stringify(result));
-        },
-        error: function(err) {
-            console.log("ipaLogin error: " + JSON.stringify(err));
-        }
-    });
-}
-
-/**
- * Call the checkcookie endpoint to see if cookie is still valid (i.e. the user is logged in)
- * If the cookie is expired, the method automatically calls the login function
- * @returns {jqXHR} return the ajax object so it can used with $.when
- */
-function checkIpaServerCookie() {
-    var apiUrl = baseUrl + "/StackV-web/restapi/app/acl/ipa/checkcookie";
-    
-    return $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function(result) {
-            console.log("checkIpaServerCookie success -> result: " + JSON.stringify(result));
-            console.log("checkIpaServerCookie expired: " + result["CookieExpired"]);
-            if (result["CookieExpired"]) {
-                ipaServerCookieValid = false;
-            } else {
-                ipaServerCookieValid = true;
-            }
-        },
-        error: function(err) {
-            console.log("checkIpaServerCookie error -> err: " + JSON.stringify(err));
-        }
-    });
-}
 
 function viewShift(dir) {
     switch (view) {
@@ -612,43 +556,38 @@ function subloadInstanceACLUsers() {
         console.log("Fatal Error: Token update failed!");
     });
 }
-/**
- * Changes the Login Access to a service instance (identified by the UUID) for
- * the given username based on grantAccess value
- * @param {string} serviceUUID
- * @param {string} username
- * @param {boolean} grantAccess
- * @returns {boolean} indicates if the change was successful
- */
-function changeLoginAccess(serviceUUID, username, grantAccess) {
-    console.log("in changeLoginAccess: serviceUUID -> " + serviceUUID + ", username -> " + username + ", grantAccess -> " + grantAccess);
-    var changeSuccess = false;
-    if (grantAccess) {
-        
-    } else {
-        
-    }
-    return changeSuccess;
-}
+
 
 /**
- * Changes the Sudo Access to a service instance (identified by the UUID) for
- * the given username based on grantAccess value
- * @param {string} serviceUUID
- * @param {string} username
- * @param {boolean} grantAccess
- * @returns {boolean} indicates if the change was successful
+ * Check if the user is currently logged into IPA server. If not logged in, the log in the user
  */
-function changeSudoAccess(serviceUUID, username, grantAccess) {
-    console.log("in changeSudoAcess: serviceUUID -> " + serviceUUID + ", username -> " + username + ", grantAccess -> " + grantAccess);
-    var changeSuccess = false;
-    if (grantAccess) {
-        
-    } else {
-        
-    }
-    return changeSuccess;
+function ipaLogin(){
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/acl/ipa/login";
+    
+    return $.ajax({
+        url: apiUrl,
+        type: 'POST',
+        data: {
+            "username":"admin",
+            "password":"max12345"
+        },
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function(result) {
+            console.log("ipaLogin success: " + JSON.stringify(result));
+            if (result["Result"] === "Login Successful") {
+                return true;
+            } else {
+                return false;
+            }
+        },
+        error: function(err) {
+            console.log("ipaLogin error: " + JSON.stringify(err));
+        }
+    });
 }
+
 
 /**
  * Creates the UserGroup for the specified service with given group name
@@ -657,72 +596,98 @@ function changeSudoAccess(serviceUUID, username, grantAccess) {
  * @param {string} desc 
  * @returns {boolean} returns if the request was successful
  */
-function createUserGroupForService(serviceUUID, groupName, desc) {
+function createUserGroup(serviceUUID, groupName, desc) {
     console.log("in createUserGroupForService: serviceUUID -> " + serviceUUID + ", groupName -> " + groupName + ", description -> " + desc);
     
     var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
-    var formattedGroupName = serviceUUID + "-" + groupName;
     
     
     // creating the IPA request
-    var postData = {
+    var ipaRequestData = {
         "method":"group_add",
         "params":[
-            [formattedGroupName],
+            [groupName],
             {"description": desc}
         ],
         "id":0
     };
     
-    console.log("createUserGroupService postData: " + JSON.stringify(postData));
-    
-    var settings = {
-        "async": true,
-        "crossDomain": true,
+    // ajax call fields
+    // in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
+    var ipaAjaxCall = {
         "url": apiUrl,
         "method": "POST",
         "headers": {
             "Content-Type": "application/json",
             "Authorization": "bearer " + keycloak.token,
         },
-        "processData": false,
-        "data": JSON.stringify(postData),
+        "data": JSON.stringify(ipaRequestData),
     };
     
-    // have to ensure the user is logged into the IPA server before sending any request
-    $.when(checkIpaServerCookie()).done(function(ipaCookieRes){
-        console.log("Done ipaCookie: " + ipaCookieRes);
-        if (!ipaServerCookieValid) {
-            $.when(ipaLogin()).done(function (ipaLoginRes) {
-                console.log("Done ipaLogin in createUserGroupForService: " + ipaCookieRes);
-                $.ajax(settings).done(function (res){
-                    console.log("***ajax call done result: " + JSON.stringify(res));
-                });
-            });
+    return $.ajax(ipaAjaxCall)
+            /*
+            .done(function(res){
+        // need to check if the ipa request succeeded - look for the key "error" in the JSON and check if it equals null (successful)
+        console.log("ipaAjaxCall result in createUserGroupForService: " + JSON.stringify(res));
+        if (res["error"] === null) {                        
+            return {"GroupCreated":true,"Error":null};
         } else {
-            $.ajax(settings).done(function (res){
-                console.log("***ajax call done result: " + JSON.stringify(res));
-            });
-        }        
-    });
-    /*
-    $.ajax({
-        url: apiUrl,
-        method: 'POST',
-        data: JSON.stringify(postData),
-        contentType: 'application/json',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function(result) {
-            console.log("in createUserGroupForService success: " + JSON.stringify(result));
-        },
-        error: function(err) {
-            console.log("createUserGroupForService error: " + JSON.stringify(err));
+            return {"GroupCreated":false,"Error":res["error"]};
         }
+    }).fail(function(err){
+        console.log("ipaAjaxCall error in createUserGroupForService: " + JSON.stringify(err));
+        return {"GroupCreated":false,"Error":JSON.stringify(err)};
     });
     */
-    console.log("in createUserGroupForService end");
+}
+
+/*
+ * Creates a new IPA ACL policy (HBAC Rule with user groups and host groups) for the specified UUID
+ * Abbreviations: ug -> user group, hg -> host group
+ */
+function createAclPolicyForService(serviceUUID, accessType) {        
+    // start by creating login access as both login and sudo require login access
+    var ugLoginName = "ug-login-" + serviceUUID;
+    var hgLoginName = "hg-login-" + serviceUUID;
+    var aclPolicyResult = {};
+    
+    createUserGroup(serviceUUID,ugLoginName,"Test API call: creating usergroup for: " + serviceUUID)
+            .done(function(res){
+                // need to check if the ipa request succeeded - look for the key "error" in the JSON and check if it equals null (successful)
+                console.log("ipaAjaxCall result in createAclPolicyForService: " + JSON.stringify(res));
+                if (res["error"] === null) {                        
+                    aclPolicyResult["LoginUserGroupCreated"] = true;
+                } else {
+                    aclPolicyResult["LoginUserGroupCreated"] = false;
+                    aclPolicyResult["Error"] = res["error"]
+                    return aclPolicyResult;
+                }
+            }).fail(function(err){
+                console.log("ipaAjaxCall error in createAclPolicyForService: " + JSON.stringify(err));
+                aclPolicyResult["LoginUserGroupCreated"] = false;
+                aclPolicyResult["Error"] = JSON.stringify(err);
+                return aclPolicyResult;
+            });
+            
+    // create host group
+    
+    // add hosts to host group
+    
+    // creat HBAC policy
+}
+
+/**
+ * Checks whether the ACL policy has been created for the UUID or not
+ * @param {type} serviceUUID
+ * @param {type} accessType
+ * @returns {Boolean}
+ */
+function checkAclPolicyForService(serviceUUID, accessType) {
+    return false;
+}
+
+function revokeAclPolicyAccessForService(serviceUUID, accessType) {
+    
 }
 
 function subloadInstanceACLTable(refUUID) {
@@ -769,16 +734,21 @@ function subloadInstanceACLTable(refUUID) {
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
                                 var username = this.getAttribute("data-username");
                                 if (this.checked) {
-                                    console.log("Checked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
-                                    var result = changeLoginAccess(uuid, username, true);
-                                    // check if result returned succesfully and let the user know
-                                    // if result is false, then the request was unable to be processed, so reset the checkbox
+                                    console.log("Checked the " + this.getAttribute("data-access") + " checkbox for username: " + username);                                    
                                     
-                                    //testing - create a user group
-                                    createUserGroupForService(uuid,"testusergroup","Testing API call");
+                                    // ensure the user is logged in before making any IPA requests
+                                    $.when(ipaLogin()).done(function(ipaLoginRes) {
+                                       console.log("check box login ipaLoginRes: " + JSON.stringify(ipaLoginRes));
+                                       
+                                       // for future -> check if the policies has been created and just add the people to the corresponding groups
+                                       // ex. $.when(checkAclPolicyforService()).done(func(policyRes){... if false -> createPolicy})
+                                       createAclPolicyForService(uuid,"login"); 
+                                       
+                                       // add user to login group
+                                    });
                                 } else {
                                     console.log("Unchecked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
-                                    var result = changeLoginAccess(uuid, username, false);
+                                    revokeAclPolicyAccessForService(uuid,"login")
                                 }
                             }
                             cell1_5.appendChild(checkBoxLogin);
@@ -794,10 +764,10 @@ function subloadInstanceACLTable(refUUID) {
                                 var username = this.getAttribute("data-username");
                                 if (this.checked) {
                                     console.log("Checked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
-                                    var result = changeSudoAccess(uuid, username, true);
+                                    createAclPolicyForService(uuid,"sudo");
                                 } else {
                                     console.log("Unchecked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
-                                    var result = changeSudoAccess(uuid, username, false);
+                                    revokeAclPolicyAccessForService(uuid,"sudo")
                                 }
                             }
                             cell1_6.appendChild(checkBoxSudo);
