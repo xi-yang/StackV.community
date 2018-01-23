@@ -43,21 +43,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.commons.net.util.SubnetUtils;
-import org.apache.commons.net.util.SubnetUtils.SubnetInfo;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.openstack4j.api.Builders;
 import org.openstack4j.api.OSClient;
-import org.openstack4j.api.identity.TenantService;
 import org.openstack4j.model.compute.ActionResponse;
 import org.openstack4j.model.compute.SecGroupExtension;
 import org.openstack4j.model.compute.Server;
@@ -65,7 +61,6 @@ import org.openstack4j.model.compute.ServerCreate;
 import org.openstack4j.model.compute.builder.ServerCreateBuilder;
 import org.openstack4j.model.identity.Tenant;
 import org.openstack4j.model.network.*;
-import org.openstack4j.model.network.builder.RouterBuilder;
 import org.openstack4j.model.storage.block.*;
 import org.openstack4j.openstack.compute.internal.ServerServiceImpl;
 import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
@@ -220,11 +215,11 @@ public class OpenStackPush {
             } else if (o.get("request").toString().equals("CreateNetworkRequests")) {
                 OpenStackGetUpdate(url, NATServer, username, password, tenantName, topologyUri);
                 Tenant tenant = osClient.identity().tenants().getByName(tenantName);
-                String tenantid = tenant.getId();
+                String tenantid = (tenant == null ? null : tenant.getId()); 
                 Network network = new NeutronNetwork();
                 String network_name = o.get("name").toString();
                 network.toBuilder().name(network_name)
-                        .tenantId(tenantid)
+                        .tenantId(tenantid) // null for current/default tenant
                         .adminStateUp(true); //hard code here
                 osClient.networking().network().create(network);
                 NetworkCreationCheck(network_name, url, NATServer, username, password, tenantName, topologyUri);

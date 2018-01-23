@@ -32,6 +32,7 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
@@ -147,7 +148,8 @@ public class OpenStackNeutronModelBuilder {
 
         for (Hypervisor hv : openstackget.getHypervisors()) {
             String hypervisorName = hv.getHypervisorHostname(); 
-            String hostName = hypervisorName.split("\\.")[0]; 
+            //String hostName = hypervisorName.split("\\.")[0]; 
+            String hostName = hypervisorName; 
             Resource HOST = RdfOwl.createResource(model, topologyURI + ":" + "host+" + hostName, Nml.Node);
             Resource HYPERVISOR = RdfOwl.createResource(model, topologyURI + ":" + "hypervisor+" + hypervisorName, Mrs.HypervisorService);
             model.add(model.createStatement(OpenstackTopology, hasNode, HOST));

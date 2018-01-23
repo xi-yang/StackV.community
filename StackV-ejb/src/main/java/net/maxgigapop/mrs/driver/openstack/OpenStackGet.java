@@ -36,7 +36,6 @@ import org.openstack4j.model.compute.ext.Hypervisor;
 import org.openstack4j.model.network.*;
 import org.openstack4j.model.storage.block.*;
 import org.openstack4j.openstack.compute.domain.NovaFloatingIP;
-import org.openstack4j.openstack.compute.domain.NovaInterfaceAttachment;
 import org.openstack4j.openstack.compute.internal.ext.InterfaceServiceImpl;
 import org.openstack4j.openstack.networking.domain.NeutronRouterInterface;
 
