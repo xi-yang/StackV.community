@@ -92,6 +92,10 @@ $(function () {
         if ($("#tag-panel").length) {
             initTagPanel();
         }
+
+        setInterval(function () {
+            keycloak.updateToken(70);
+        }, (60000));
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
@@ -1088,8 +1092,6 @@ function reloadDataManual() {
 var openLogDetails = 0;
 var now = new Date();
 function loadDataTable(apiUrl) {
-    drawLoggingCurrentTime();
-    
     dataTable = $('#loggingData').DataTable({
         "ajax": {
             url: apiUrl,
@@ -1098,7 +1100,6 @@ function loadDataTable(apiUrl) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             }
         },
-        "dom": 'Bfrtip',
         "buttons": ['csv'],
         "columns": [
             {
@@ -1117,19 +1118,19 @@ function loadDataTable(apiUrl) {
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("row-" + data.level.toLowerCase());
         },
-        "deferRender": true,
+        "dom": 'Bfrtip',
+        "initComplete": function (settings, json) {
+            console.log('DataTables has finished its initialization.');
+        },
         "order": [[1, 'asc']],
         "ordering": false,
         "scroller": {
-            displayBuffer: 10
+            displayBuffer: 15
         },
         "scrollX": true,
         "scrollY": "calc(60vh - 130px)",
-        "initComplete": function (settings, json) {
-            console.log('DataTables has finished its initialisation.');
-        }
+        "serverSide": true
     });
-    new $.fn.dataTable.FixedColumns(dataTable);
 
     // Add event listener for opening and closing details
     $('#loggingData tbody').on('click', 'td.details-control', function () {
@@ -1152,6 +1153,10 @@ function loadDataTable(apiUrl) {
             pauseRefresh();
         }
     });
+
+    setInterval(function () {
+        drawLoggingCurrentTime();
+    }, (1000));
 
     var level = sessionStorage.getItem("logging-level");
     if (level !== null) {
@@ -1198,16 +1203,11 @@ function reloadLogs() {
             dataTable.ajax.reload(null, false);
         }
     }
-    
-    now = new Date();
-    drawLoggingCurrentTime();
 }
 function drawLoggingCurrentTime() {
+    now = new Date();
     var $time = $("#log-time");
-        
-    
-    var nowStr = ('0'+now.getHours()).slice(-2) + ":" + ('0'+now.getMinutes()).slice(-2) + ":" + ('0'+now.getSeconds()).slice(-2) + "," + ('00'+now.getMilliseconds()).slice(-3);
-    
+    var nowStr = ('0' + now.getHours()).slice(-2) + ":" + ('0' + now.getMinutes()).slice(-2) + ":" + ('0' + now.getSeconds()).slice(-2);
     $time.text(nowStr);
 }
 function filterLogs() {
