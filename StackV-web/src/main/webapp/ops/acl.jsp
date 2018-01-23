@@ -186,6 +186,8 @@
                 crossorigin="anonymous">
         </script>
         
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+        
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
