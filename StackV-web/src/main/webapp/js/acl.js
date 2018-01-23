@@ -673,7 +673,7 @@ function createAclPolicyForService(serviceUUID, accessType) {
     
     // add hosts to host group
     
-    // creat HBAC policy
+    // create HBAC policy
 }
 
 /**
