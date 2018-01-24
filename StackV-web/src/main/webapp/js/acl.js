@@ -630,6 +630,45 @@ function createUserGroup(groupName, desc) {
 }
 
 /**
+ * Adds specified users to specified userGroup
+ * @param {type} users
+ * @param {type} userGroup
+ * @returns {jqXHR}
+ */
+function addUsersToUserGroup(users,userGroup) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+    
+    // if only a single user is provided - make sure it is enclosed in an array
+    if (!Array.isArray(users)) {
+        users = [users];
+    }
+        
+    // creating the IPA request
+    var ipaRequestData = {
+        "method":"group_add_member",
+        "params":[
+            [userGroup],
+            {"user": users}
+        ],
+        "id":0
+    };
+    
+    // ajax call fields
+    // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
+    var ipaAjaxCall = {
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "bearer " + keycloak.token
+        },
+        "data": JSON.stringify(ipaRequestData)
+    };
+    
+    return $.ajax(ipaAjaxCall);
+}
+
+/**
  * Creates the HostGroup for the specified service with given group name
  * @param {type} groupName
  * @param {type} desc
@@ -664,20 +703,25 @@ function createHostGroup(groupName, desc) {
 }
 
 /**
- * Adds a single host (identified by serviceUUID) to the specified host group
- * @param {type} serviceUUID - the host to add
+ * Adds a single host (identified by hosts) to the specified host group
+ * @param {type} hosts - the host to add
  * @param {type} hostGroup
  * @returns {jqXHR}
  */
-function addHostToHostGroup(serviceUUID, hostGroup) {
+function addHostsToHostGroup(hosts, hostGroup) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+    
+    // if the hosts variable is just one host, then turn it into an array
+    if (!Array.isArray(hosts)) {
+        hosts = [hosts];
+    }     
         
     // creating the IPA request
     var ipaRequestData = {
-        "method":"hostgroup_add",
+        "method":"hostgroup_add_member",
         "params":[
             [hostGroup],
-            {"host": [serviceUUID]}
+            {"host": hosts}
         ],
         "id":0
     };
@@ -697,6 +741,12 @@ function addHostToHostGroup(serviceUUID, hostGroup) {
     return $.ajax(ipaAjaxCall);
 }
 
+/**
+ * Creates an HBAC rule give the ruleName and description
+ * @param {type} ruleName
+ * @param {type} desc
+ * @returns {jqXHR}
+ */
 function createHBACRule(ruleName, desc) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
         
@@ -725,17 +775,80 @@ function createHBACRule(ruleName, desc) {
     return $.ajax(ipaAjaxCall);
 }
 
+function addUserGroupToHBACRule(userGroup, hbacRule) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+    
+    if (!Array.isArray(userGroup)) {
+        userGroup = [userGroup];
+    }
+        
+    // creating the IPA request
+    var ipaRequestData = {
+        "method":"hbacrule_add_user",
+        "params":[
+            [hbacRule],
+            {"group": userGroup}
+        ],
+        "id":0
+    };
+    
+    // ajax call fields
+    // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
+    var ipaAjaxCall = {
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "bearer " + keycloak.token
+        },
+        "data": JSON.stringify(ipaRequestData)
+    };
+    
+    return $.ajax(ipaAjaxCall);
+}
+
+function addHostGroupToHBACRule(hostGroup, hbacRule) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+    
+    if (!Array.isArray(hostGroup)) {
+        hostGroup = [hostGroup];
+    }
+    
+    // creating the IPA request
+    var ipaRequestData = {
+        "method":"hbacrule_add_host",
+        "params":[
+            [hbacRule],
+            {"hostgroup": hostGroup}
+        ],
+        "id":0
+    };
+    
+    // ajax call fields
+    // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
+    var ipaAjaxCall = {
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "bearer " + keycloak.token
+        },
+        "data": JSON.stringify(ipaRequestData)
+    };
+    
+    return $.ajax(ipaAjaxCall);
+}
 
 /*
  * Creates a new IPA ACL policy (HBAC Rule with user groups and host groups) for the specified UUID
  * Abbreviations: ug -> user group, hg -> host group
  */
-function createAclPolicyForService(serviceUUID, accessType) {        
+function createAclPolicyForService(serviceUUID, username, accessType) {        
     // start by creating login access as both login and sudo require login access
     var ugLoginName = "ug-login-" + serviceUUID;
     var hgLoginName = "hg-login-" + serviceUUID;
-    var hbacName = "hbac-" + serviceUUID;
-    var aclPolicyResult = {};
+    var hbacLoginName = "hbac-login-" + serviceUUID;
+    var aclPolicyResult = {}; // currently a way to debug errors
     
     // need to change it so when all the ajax calls are done - then return the aclPolicyResult
     
@@ -743,45 +856,63 @@ function createAclPolicyForService(serviceUUID, accessType) {
     createUserGroup(ugLoginName,"Test API call: creating usergroup for: " + serviceUUID)
             .done(function(res){
                 // need to check if the ipa request succeeded - look for the key "error" in the JSON and check if it equals null (successful)
-                console.log("Line (~)692: " + JSON.stringify(res));
+                console.log("Line (~)783: " + JSON.stringify(res));
                 if (res["error"] === null) {                        
                     aclPolicyResult["LoginUserGroupCreated"] = true;
                 } else {
                     aclPolicyResult["LoginUserGroupCreated"] = false;
                     aclPolicyResult["Error"] = res["error"];
-                    return aclPolicyResult;
+                    //return aclPolicyResult;
                 }
             }).fail(function(err) {                
-                console.log("Line (~)702: " + JSON.stringify(err));
+                console.log("Line (~)792: " + JSON.stringify(err));
                 aclPolicyResult["LoginUserGroupCreated"] = false;
                 aclPolicyResult["Error"] = JSON.stringify(err);
-                return aclPolicyResult;
+                //return aclPolicyResult;
+            });
+            
+     // add user to newly created login user group
+     addUsersToUserGroup(username, ugLoginName)
+             .done(function(res) {
+                console.log("Line (~801): " + JSON.stringify(res));
+                if (res["error"] === null) {                        
+                    aclPolicyResult["AddedUserToLoginUserGroup"] = true;
+                } else {
+                    aclPolicyResult["AddedUserToLoginUserGroup"] = false;
+                    aclPolicyResult["Error"] = res["error"];
+                    //return aclPolicyResult;
+                }
+            }).fail(function(err) {
+                console.log("Line ~810: " + JSON.stringify(err));
+                aclPolicyResult["AddedUserToLoginUserGroup"] = false;
+                aclPolicyResult["Error"] = JSON.stringify(err);
+                //return aclPolicyResult;
             });
             
     // create login host group
     createHostGroup(hgLoginName, "Test API call: creating hostgroup for: " + serviceUUID)
             .done(function(res) {
-              console.log("Line (~710): " + JSON.stringify(res));
+              console.log("Line (~809): " + JSON.stringify(res));
               if (res["error"] === null) {
                   aclPolicyResult["LoginHostGroupCreated"] = true;
               } else {
                   aclPolicyResult["LoginHostGroupCreated"] = false;
                   aclPolicyResult["Error"] = res["error"];
-                  return aclPolicyResult;
+                  //return aclPolicyResult;
               }
             }).fail(function(err) {
-                console.log("Line (~)719: " + JSON.stringify(err));
+                console.log("Line (~)818: " + JSON.stringify(err));
                 aclPolicyResult["LoginHostGroupCreated"] = false;
                 aclPolicyResult["Error"] = JSON.stringify(err);
-                return aclPolicyResult;
+                //return aclPolicyResult;
             });
     
     // add hosts (in this case the serviceUUID) to login host group
     // still needs to determined which hosts get added to the host groups
     /*
-    addHostToHostGroup(serviceUUID,hgLoginName)
+    addHostsToHostGroup(serviceUUID,hgLoginName)
             .done(function(res) {
-                console.log("Line (~753): " + JSON.stringify(res));
+                console.log("Line (~829): " + JSON.stringify(res));
                 if (res["error"] === null) {
                   aclPolicyResult["ServiceUUIDAddedToLoginHostGroup"] = true;
                 } else {
@@ -790,7 +921,7 @@ function createAclPolicyForService(serviceUUID, accessType) {
                     return aclPolicyResult;
                 }
             }).fail(function(err) {
-                console.log("Line (~)762: " + JSON.stringify(err));
+                console.log("Line (~)838: " + JSON.stringify(err));
                 aclPolicyResult["ServiceUUIDAddedToLoginHostGroup"] = false;
                 aclPolicyResult["Error"] = JSON.stringify(err);
                 return aclPolicyResult;
@@ -798,22 +929,62 @@ function createAclPolicyForService(serviceUUID, accessType) {
     */
     
     // create HBAC policy
-    createHBACRule(hbacName,"HBAC Rule for service: " + serviceUUID)
+    createHBACRule(hbacLoginName,"HBAC Rule for service: " + serviceUUID)
             .done(function(res) {
-                console.log("Line (~710): " + JSON.stringify(res));
+                console.log("Line (~848): " + JSON.stringify(res));
                 if (res["error"] === null) {
                     aclPolicyResult["HBACRuleCreated"] = true;
                 } else {
                     aclPolicyResult["HBACRuleCreated"] = false;
                     aclPolicyResult["Error"] = res["error"];
-                    return aclPolicyResult;
+                    //return aclPolicyResult;
                 }
             }).fail(function(err) {
-                console.log("Line (~)719: " + JSON.stringify(err));
+                console.log("Line (~)857: " + JSON.stringify(err));
                 aclPolicyResult["HBACRuleCreated"] = false;
                 aclPolicyResult["Error"] = JSON.stringify(err);
-                return aclPolicyResult;
+                //return aclPolicyResult;
             });
+    
+    // add Login usergroup to newly created Login HBAC policy
+    addUserGroupToHBACRule(ugLoginName,hbacLoginName)
+            .done(function(res) {
+                console.log("Line (~)916: " + JSON.stringify(res));
+                if (res["error"] === null) {
+                    aclPolicyResult["AddedLoginUserGroupToLoginHBACRule"] = true;
+                } else {
+                    aclPolicyResult["AddedLoginUserGroupToLoginHBACRule"] = false;
+                    aclPolicyResult["Error"] = res["error"];
+                    //return aclPolicyResult;
+                }        
+            }).fail(function(err) {
+                console.log("Line (~)925: " + JSON.stringify(err));
+                aclPolicyResult["AddedLoginUserGroupToLoginHBACRule"] = false;
+                aclPolicyResult["Error"] = JSON.stringify(err);
+                //return aclPolicyResult;
+            });
+    
+    // add Login hostgroup to newly created Login HBAC policy
+    addHostGroupToHBACRule(hgLoginName,hbacLoginName)
+            .done(function(res) {
+                console.log("Line (~)970: " + JSON.stringify(res));
+                if (res["error"] === null) {
+                    aclPolicyResult["AddedLoginHostGroupToLoginHBACRule"] = true;
+                } else {
+                    aclPolicyResult["AddedLoginHostGroupToLoginHBACRule"] = false;
+                    aclPolicyResult["Error"] = res["error"];
+                    //return aclPolicyResult;
+                } 
+            }).fail(function(err) {
+                console.log("Line (~)979: " + JSON.stringify(err));
+                aclPolicyResult["AddedLoginHostGroupToLoginHBACRule"] = false;
+                aclPolicyResult["Error"] = JSON.stringify(err);
+            });
+    
+    // add ssh and login services to Login HBAC policy
+    
+    // check if the grantAccess is sudo and repeat the above steps 
+    // for a sudo user group, sudo host group, and sudo hbac policy
     
     return aclPolicyResult;
 }
@@ -884,7 +1055,7 @@ function subloadInstanceACLTable(refUUID) {
                                        
                                        // for future -> check if the policies has been created and just add the people to the corresponding groups
                                        // ex. $.when(checkAclPolicyforService()).done(func(policyRes){... if false -> createPolicy})
-                                       var aclPolicyResult = createAclPolicyForService(uuid,"login");
+                                       var aclPolicyResult = createAclPolicyForService(uuid,username,"login");
                                        console.log(JSON.stringify(aclPolicyResult));
                                        
                                        // add user to login group

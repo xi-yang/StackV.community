@@ -499,9 +499,7 @@ public class WebResource {
     @Consumes("application/json")
     @Produces("application/json")
     @RolesAllowed("ACL")
-    public String ipaRequest(String postData) {
-        System.out.println("*** in ipaRequest - postData: " + postData);
-        System.out.println("*** in ipaCheckCookie - cookie: " + ipaCookie);   
+    public String ipaRequest(String postData) {  
         JSONObject result = new JSONObject();
         try {            
             URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
