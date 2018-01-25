@@ -1090,6 +1090,8 @@ function reloadDataManual() {
 
 /* LOGGING */
 var openLogDetails = 0;
+var cachedStart = 0;
+var justRefreshed = 0;
 var now = new Date();
 function loadDataTable(apiUrl) {
     dataTable = $('#loggingData').DataTable({
@@ -1098,6 +1100,12 @@ function loadDataTable(apiUrl) {
             type: 'GET',
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            data: function (d) {
+                if (justRefreshed > 0) {
+                    d.start = cachedStart;                    
+                    justRefreshed--;
+                }                
             }
         },
         "buttons": ['csv'],
@@ -1154,6 +1162,10 @@ function loadDataTable(apiUrl) {
         }
     });
 
+    dataTable.on('draw', function () {
+        cachedStart = dataTable.ajax.params().start;
+    });
+
     setInterval(function () {
         drawLoggingCurrentTime();
     }, (1000));
@@ -1196,6 +1208,7 @@ function formatChild(d) {
     return retString;
 }
 function reloadLogs() {
+    justRefreshed = 2;
     if (dataTable) {
         if (sessionStorage.getItem("logging-level") !== null) {
             dataTable.ajax.reload(filterLogs(), false);

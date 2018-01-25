@@ -2022,7 +2022,7 @@ public class WebResource {
                 }
             }
 
-            prepString = prepString + " ORDER BY log_id ASC LIMIT ?,?";
+            prepString = prepString + " ORDER BY log_id DESC LIMIT ?,?";
             prep = front_conn.prepareStatement(prepString);
             if (refUUID != null) {
                 prep.setString(1, refUUID);
