@@ -285,7 +285,10 @@ public class OpenStackNeutronModelBuilder {
                 }
                 linuxRouteNum++;
             }
-            
+            if (metadata != null && metadata.containsKey("alt name")) {
+                String altName = (String) metadata.get("alt name");
+                model.add(model.createStatement(VM, Nml.name, altName));
+            }            
             if (metadata != null && metadata.containsKey("quagga:bgp:info")) {
                 if (vmRoutingSvc == null) {
                     vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
