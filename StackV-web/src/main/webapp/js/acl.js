@@ -839,154 +839,255 @@ function addHostGroupToHBACRule(hostGroup, hbacRule) {
     return $.ajax(ipaAjaxCall);
 }
 
+function addServicesToHBACRule(services, hbacRule) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+    
+    if (!Array.isArray(services)) {
+        services = [services];
+    }
+    
+    // creating the IPA request
+    var ipaRequestData = {
+        "method":"hbacrule_add_service",
+        "params":[
+            [hbacRule],
+            {"hbacsvc": services}
+        ],
+        "id":0
+    };
+    
+    // ajax call fields
+    // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
+    var ipaAjaxCall = {
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "bearer " + keycloak.token
+        },
+        "data": JSON.stringify(ipaRequestData)
+    };
+    
+    return $.ajax(ipaAjaxCall);
+}
+
 /*
- * Creates a new IPA ACL policy (HBAC Rule with user groups and host groups) for the specified UUID
+ * Creates a new IPA ACL Login policy (HBAC Rule with user groups and host groups) for the specified UUID
  * Abbreviations: ug -> user group, hg -> host group
  */
-function createAclPolicyForService(serviceUUID, username, accessType) {        
+function createLoginAclPolicy(serviceUUID, username) {        
     // start by creating login access as both login and sudo require login access
     var ugLoginName = "ug-login-" + serviceUUID;
     var hgLoginName = "hg-login-" + serviceUUID;
-    var hbacLoginName = "hbac-login-" + serviceUUID;
-    var aclPolicyResult = {}; // currently a way to debug errors
+    var hbacLoginName = "hbac-login-" + serviceUUID;    
+    var loginServices = ["login","sshd"];
+    var aclLoginPolicyResult = {}; // currently a way to debug errors
     
     // need to change it so when all the ajax calls are done - then return the aclPolicyResult
     
-    // create login user group
-    createUserGroup(ugLoginName,"Test API call: creating usergroup for: " + serviceUUID)
-            .done(function(res){
-                // need to check if the ipa request succeeded - look for the key "error" in the JSON and check if it equals null (successful)
-                console.log("Line (~)783: " + JSON.stringify(res));
-                if (res["error"] === null) {                        
-                    aclPolicyResult["LoginUserGroupCreated"] = true;
-                } else {
-                    aclPolicyResult["LoginUserGroupCreated"] = false;
-                    aclPolicyResult["Error"] = res["error"];
-                    //return aclPolicyResult;
-                }
-            }).fail(function(err) {                
-                console.log("Line (~)792: " + JSON.stringify(err));
-                aclPolicyResult["LoginUserGroupCreated"] = false;
-                aclPolicyResult["Error"] = JSON.stringify(err);
-                //return aclPolicyResult;
-            });
-            
-     // add user to newly created login user group
-     addUsersToUserGroup(username, ugLoginName)
-             .done(function(res) {
-                console.log("Line (~801): " + JSON.stringify(res));
-                if (res["error"] === null) {                        
-                    aclPolicyResult["AddedUserToLoginUserGroup"] = true;
-                } else {
-                    aclPolicyResult["AddedUserToLoginUserGroup"] = false;
-                    aclPolicyResult["Error"] = res["error"];
-                    //return aclPolicyResult;
-                }
-            }).fail(function(err) {
-                console.log("Line ~810: " + JSON.stringify(err));
-                aclPolicyResult["AddedUserToLoginUserGroup"] = false;
-                aclPolicyResult["Error"] = JSON.stringify(err);
-                //return aclPolicyResult;
-            });
-            
-    // create login host group
-    createHostGroup(hgLoginName, "Test API call: creating hostgroup for: " + serviceUUID)
-            .done(function(res) {
-              console.log("Line (~809): " + JSON.stringify(res));
-              if (res["error"] === null) {
-                  aclPolicyResult["LoginHostGroupCreated"] = true;
-              } else {
-                  aclPolicyResult["LoginHostGroupCreated"] = false;
-                  aclPolicyResult["Error"] = res["error"];
-                  //return aclPolicyResult;
-              }
-            }).fail(function(err) {
-                console.log("Line (~)818: " + JSON.stringify(err));
-                aclPolicyResult["LoginHostGroupCreated"] = false;
-                aclPolicyResult["Error"] = JSON.stringify(err);
-                //return aclPolicyResult;
-            });
+    // the user group, host group, hbac rule all need to created before any
+    // (mainly adding users, hosts, and services) is done to them
     
-    // add hosts (in this case the serviceUUID) to login host group
-    // still needs to determined which hosts get added to the host groups
-    /*
-    addHostsToHostGroup(serviceUUID,hgLoginName)
-            .done(function(res) {
-                console.log("Line (~829): " + JSON.stringify(res));
-                if (res["error"] === null) {
-                  aclPolicyResult["ServiceUUIDAddedToLoginHostGroup"] = true;
-                } else {
-                    aclPolicyResult["ServiceUUIDAddedToLoginHostGroup"] = false;
-                    aclPolicyResult["Error"] = res["error"];
-                    return aclPolicyResult;
-                }
-            }).fail(function(err) {
-                console.log("Line (~)838: " + JSON.stringify(err));
-                aclPolicyResult["ServiceUUIDAddedToLoginHostGroup"] = false;
-                aclPolicyResult["Error"] = JSON.stringify(err);
-                return aclPolicyResult;
-            });
-    */
+    var createLoginUg = createUserGroup(ugLoginName,"Login user group for service instance: " + serviceUUID);
+    var createLoginHg = createHostGroup(hgLoginName, "Login host group for service instance: " + serviceUUID);
+    var createLoginHbac = createHBACRule(hbacLoginName,"Login HBAC Rule for service instance: " + serviceUUID);
     
-    // create HBAC policy
-    createHBACRule(hbacLoginName,"HBAC Rule for service: " + serviceUUID)
-            .done(function(res) {
-                console.log("Line (~848): " + JSON.stringify(res));
-                if (res["error"] === null) {
-                    aclPolicyResult["HBACRuleCreated"] = true;
-                } else {
-                    aclPolicyResult["HBACRuleCreated"] = false;
-                    aclPolicyResult["Error"] = res["error"];
-                    //return aclPolicyResult;
-                }
-            }).fail(function(err) {
-                console.log("Line (~)857: " + JSON.stringify(err));
-                aclPolicyResult["HBACRuleCreated"] = false;
-                aclPolicyResult["Error"] = JSON.stringify(err);
-                //return aclPolicyResult;
-            });
+    return $.when(createLoginUg, createLoginHg, createLoginHbac).done(function(ug, hg, hbac) {
+        var ugError = ug[0]["error"];
+        var hgError = hg[0]["error"];
+        var hbacError = hbac[0]["error"];
+        
+        // if error is null, then the request was successful
+        
+        if (ugError === null) {
+            aclLoginPolicyResult["CreatedLoginUserGroup"] = true;
+        } else {
+            aclLoginPolicyResult["CreatedLoginUserGroup"] = false;
+            aclLoginPolicyResult["CreatedLoginUserGroupError"] = ugError;
+        }
+        
+        if (hgError === null) {
+            aclLoginPolicyResult["CreatedLoginHostGroup"] = true;
+        } else {
+            aclLoginPolicyResult["CreatedLoginHostGroup"] = false;
+            aclLoginPolicyResult["CreatedLoginHostGroupError"] = hgError;
+        }
+        
+        if (hbacError === null) {
+            aclLoginPolicyResult["CreatedLoginHBACRule"] = true;
+        } else {
+            aclLoginPolicyResult["CreatedLoginHBACRule"] = false;
+            aclLoginPolicyResult["CreatedLoginHBACRuleError"] = hbacError;
+        }
+        
+        // if no errors in all three -> null is a falsy value
+        if (!ugError && !hgError && !hbacError) {
+            aclLoginPolicyResult["LoginGroupAndRuleCreated"] = true;
+        }
+        
+    }).then(function() {
+        
+        var addLoginUgUsers = addUsersToUserGroup(username, ugLoginName);
+        //var addLoginHgHosts = addHostsToHostGroup(serviceUUID,hgLoginName);
+        var addLoginUgToHbac = addUserGroupToHBACRule(ugLoginName,hbacLoginName);
+        var addLoginHgToHbac = addHostGroupToHBACRule(hgLoginName,hbacLoginName);
+        var addLoginSrvcsToHbac = addServicesToHBACRule(loginServices, hbacLoginName);
+        
+        return $.when(addLoginUgUsers, addLoginUgToHbac, addLoginHgToHbac, addLoginSrvcsToHbac)
+                .then(function(ugusers, ughbac, hghbac, srvcshbac) {
+                    var ugusersError = ugusers[0]["error"];
+                    var ughbacError = ughbac[0]["error"];
+                    var hghbacError = hghbac[0]["error"];
+                    var srvcshbacError = srvcshbac[0]["error"];
+                    
+                    if (ugusersError === null) {
+                        aclLoginPolicyResult["AddedUsersToLoginUserGroup"] = true;
+                    } else {
+                        aclLoginPolicyResult["AddedUsersToLoginUserGroup"] = false;
+                        aclLoginPolicyResult["AddedUsersToLoginUserGroupError"] = ugusersError;
+                    }
+                    
+                    if (ughbacError === null) {
+                        aclLoginPolicyResult["AddedLoginUserGroupToLoginHBAC"] = true;
+                    } else {
+                        aclLoginPolicyResult["AddedLoginUserGroupToLoginHBAC"] = false;
+                        aclLoginPolicyResult["AddedLoginUserGroupToLoginHBACError"] = ughbacError;
+                    }
+                    
+                    if (hghbacError === null) {
+                        aclLoginPolicyResult["AddedLoginHostGroupToLoginHBAC"] = true;
+                    } else {
+                        aclLoginPolicyResult["AddedLoginHostGroupToLoginHBAC"] = false;
+                        aclLoginPolicyResult["AddedLoginHostGroupToLoginHBACError"] = hghbacError;
+                    }
+                    
+                    if (srvcshbacError === null) {
+                        aclLoginPolicyResult["AddedLoginServicesToLoginHBAC"] = true;
+                    } else {
+                        aclLoginPolicyResult["AddedLoginServicesToLoginHBAC"] = false;
+                        aclLoginPolicyResult["AddedLoginServicesToLoginHBACError"] = srvcshbacError;
+                    }
+                    
+                    
+                    if (!srvcshbacError && !ugusersError && !hghbacError && !ughbacError) {
+                        aclLoginPolicyResult["AddedLoginGroupAndServicesToLoginHBAC"] = true;
+                    }
+                    return aclLoginPolicyResult;
+                }).fail(function(err) {
+                    console.log("IPA ACL Login policy creation failed: " + JSON.stringify(err));
+                });
+    }).fail(function(err) {
+        console.log("IPA ACL Login policy creation failed: " + JSON.stringify(err));
+    });  
+}
+
+/*
+ * Creates a new IPA ACL Sudo policy (HBAC Rule with user groups and host groups) for the specified UUID
+ * Abbreviations: ug -> user group, hg -> host group
+ */
+function createSudoAclPolicy(serviceUUID, username) {                
+    var ugSudoName = "ug-sudo-" + serviceUUID;
+    var hgSudoName = "hg-sudo-" + serviceUUID;
+    var hbacSudoName = "hbac-sudo-" + serviceUUID;
+    var sudoServices = ["login","sshd","sudo"];
+    var aclSudoPolicyResult = {}; // currently a way to debug errors
     
-    // add Login usergroup to newly created Login HBAC policy
-    addUserGroupToHBACRule(ugLoginName,hbacLoginName)
-            .done(function(res) {
-                console.log("Line (~)916: " + JSON.stringify(res));
-                if (res["error"] === null) {
-                    aclPolicyResult["AddedLoginUserGroupToLoginHBACRule"] = true;
-                } else {
-                    aclPolicyResult["AddedLoginUserGroupToLoginHBACRule"] = false;
-                    aclPolicyResult["Error"] = res["error"];
-                    //return aclPolicyResult;
-                }        
-            }).fail(function(err) {
-                console.log("Line (~)925: " + JSON.stringify(err));
-                aclPolicyResult["AddedLoginUserGroupToLoginHBACRule"] = false;
-                aclPolicyResult["Error"] = JSON.stringify(err);
-                //return aclPolicyResult;
-            });
+    // need to change it so when all the ajax calls are done - then return the aclSudoPolicyResult
     
-    // add Login hostgroup to newly created Login HBAC policy
-    addHostGroupToHBACRule(hgLoginName,hbacLoginName)
-            .done(function(res) {
-                console.log("Line (~)970: " + JSON.stringify(res));
-                if (res["error"] === null) {
-                    aclPolicyResult["AddedLoginHostGroupToLoginHBACRule"] = true;
-                } else {
-                    aclPolicyResult["AddedLoginHostGroupToLoginHBACRule"] = false;
-                    aclPolicyResult["Error"] = res["error"];
-                    //return aclPolicyResult;
-                } 
-            }).fail(function(err) {
-                console.log("Line (~)979: " + JSON.stringify(err));
-                aclPolicyResult["AddedLoginHostGroupToLoginHBACRule"] = false;
-                aclPolicyResult["Error"] = JSON.stringify(err);
-            });
+    // the user group, host group, hbac rule all need to created before any
+    // (mainly adding users, hosts, and services) is done to them
     
-    // add ssh and login services to Login HBAC policy
+    var createSudoUg = createUserGroup(ugSudoName,"Sudo user group for service instance: " + serviceUUID);
+    var createSudoHg = createHostGroup(hgSudoName, "Sudo host group for service instance: " + serviceUUID);
+    var createSudoHbac = createHBACRule(hbacSudoName,"Sudo HBAC Rule for service instance: " + serviceUUID);
     
-    // check if the grantAccess is sudo and repeat the above steps 
-    // for a sudo user group, sudo host group, and sudo hbac policy
-    
-    return aclPolicyResult;
+    return $.when(createSudoUg, createSudoHg, createSudoHbac).done(function(ug, hg, hbac) {
+        var ugError = ug[0]["error"];
+        var hgError = hg[0]["error"];
+        var hbacError = hbac[0]["error"];
+        
+        // if error is null, then the request was successful
+        
+        if (ugError === null) {
+            aclSudoPolicyResult["CreatedSudoUserGroup"] = true;
+        } else {
+            aclSudoPolicyResult["CreatedSudoUserGroup"] = false;
+            aclSudoPolicyResult["CreatedSudoUserGroupError"] = ugError;
+        }
+        
+        if (hgError === null) {
+            aclSudoPolicyResult["CreatedSudoHostGroup"] = true;
+        } else {
+            aclSudoPolicyResult["CreatedSudoHostGroup"] = false;
+            aclSudoPolicyResult["CreatedSudoHostGroupError"] = hgError;
+        }
+        
+        if (hbacError === null) {
+            aclSudoPolicyResult["CreatedSudoHBACRule"] = true;
+        } else {
+            aclSudoPolicyResult["CreatedSudoHBACRule"] = false;
+            aclSudoPolicyResult["CreatedSudoHBACRuleError"] = hbacError;
+        }
+        
+        // if no errors in all three -> null is a falsy value
+        if (!ugError && !hgError && !hbacError) {
+            aclSudoPolicyResult["SudoGroupAndRuleCreated"] = true;
+        }
+        
+    }).then(function() {
+        
+        var addSudoUgUsers = addUsersToUserGroup(username, ugSudoName);
+        //var addSudoHgHosts = addHostsToHostGroup(serviceUUID,hgSudoName);
+        var addSudoUgToHbac = addUserGroupToHBACRule(ugSudoName,hbacSudoName);
+        var addSudoHgToHbac = addHostGroupToHBACRule(hgSudoName,hbacSudoName);
+        var addSudoSrvcsToHbac = addServicesToHBACRule(sudoServices, hbacSudoName);
+        
+        return $.when(addSudoUgUsers, addSudoUgToHbac, addSudoHgToHbac, addSudoSrvcsToHbac)
+                .then(function(ugusers, ughbac, hghbac, srvcshbac) {
+                    var ugusersError = ugusers[0]["error"];
+                    var ughbacError = ughbac[0]["error"];
+                    var hghbacError = hghbac[0]["error"];
+                    var srvcshbacError = srvcshbac[0]["error"];
+                    
+                    if (ugusersError === null) {
+                        aclSudoPolicyResult["AddedUsersToSudoUserGroup"] = true;
+                    } else {
+                        aclSudoPolicyResult["AddedUsersToSudoUserGroup"] = false;
+                        aclSudoPolicyResult["AddedUsersToSudoUserGroupError"] = ugusersError;
+                    }
+                    
+                    if (ughbacError === null) {
+                        aclSudoPolicyResult["AddedSudoUserGroupToSudoHBAC"] = true;
+                    } else {
+                        aclSudoPolicyResult["AddedSudoUserGroupToSudoHBAC"] = false;
+                        aclSudoPolicyResult["AddedSudoUserGroupToSudoHBACError"] = ughbacError;
+                    }
+                    
+                    if (hghbacError === null) {
+                        aclSudoPolicyResult["AddedSudoHostGroupToSudoHBAC"] = true;
+                    } else {
+                        aclSudoPolicyResult["AddedSudoHostGroupToSudoHBAC"] = false;
+                        aclSudoPolicyResult["AddedSudoHostGroupToSudoHBACError"] = hghbacError;
+                    }
+                    
+                    if (srvcshbacError === null) {
+                        aclSudoPolicyResult["AddedSudoServicesToSudoHBAC"] = true;
+                    } else {
+                        aclSudoPolicyResult["AddedSudoServicesToSudoHBAC"] = false;
+                        aclSudoPolicyResult["AddedSudoServicesToSudoHBACError"] = srvcshbacError;
+                    }
+                    
+                    
+                    if (!srvcshbacError && !ugusersError && !hghbacError && !ughbacError) {
+                        aclSudoPolicyResult["AddedSudoGroupAndServicesToSudoHBAC"] = true;
+                    }
+                    return aclSudoPolicyResult;
+                }).fail(function(err) {
+                    console.log("IPA ACL Sudo policy creation failed: " + JSON.stringify(err));
+                });
+    }).fail(function(err) {
+        console.log("IPA ACL Sudo policy creation failed: " + JSON.stringify(err));
+    });  
 }
 
 /**
@@ -1050,21 +1151,21 @@ function subloadInstanceACLTable(refUUID) {
                                     console.log("Checked the " + this.getAttribute("data-access") + " checkbox for username: " + username);                                    
                                     
                                     // ensure the user is logged in before making any IPA requests
-                                    $.when(ipaLogin()).done(function(ipaLoginRes) {
-                                       console.log("check box login ipaLoginRes: " + JSON.stringify(ipaLoginRes));
-                                       
-                                       // for future -> check if the policies has been created and just add the people to the corresponding groups
-                                       // ex. $.when(checkAclPolicyforService()).done(func(policyRes){... if false -> createPolicy})
-                                       var aclPolicyResult = createAclPolicyForService(uuid,username,"login");
-                                       console.log(JSON.stringify(aclPolicyResult));
-                                       
-                                       // add user to login group
+                                    $.when(ipaLogin()).done(function() {                                       
+                                        createLoginAclPolicy(uuid,username).done(function(result) {
+                                            console.log(JSON.stringify("AclPolicyResult: " + JSON.stringify(result)));
+                                            if (result["LoginGroupAndRuleCreated"] === true && result["AddedLoginGroupAndServicesToLoginHBAC"]) {
+                                                swal("Login ACL Policy Created Successfully", "Service Instance: " + uuid, "success");
+                                            } else {
+                                                swal("Login ACL Policy Creation Failed", "Service Instance: " + uuid, "error");
+                                            }
+                                        });                                                                              
                                     });
                                 } else {
                                     console.log("Unchecked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
-                                    revokeAclPolicyAccessForService(uuid,"login")
+                                    revokeAclPolicyAccessForService(uuid,"login");
                                 }
-                            }
+                            };
                             cell1_5.appendChild(checkBoxLogin);
                             
                             var cell1_6 = document.createElement("td"); // sudo checkbox
@@ -1078,14 +1179,24 @@ function subloadInstanceACLTable(refUUID) {
                                 var username = this.getAttribute("data-username");
                                 if (this.checked) {
                                     console.log("Checked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
-                                    createAclPolicyForService(uuid,"sudo");
+                                    // ensure the user is logged in before making any IPA requests
+                                    $.when(ipaLogin()).done(function() {                                        
+                                        createSudoAclPolicy(uuid,username).done(function(result) {
+                                            console.log(JSON.stringify("AclPolicyResult: " + JSON.stringify(result)));
+                                            if (result["SudoGroupAndRuleCreated"] === true && result["AddedSudoGroupAndServicesToSudoHBAC"]) {
+                                                swal("Sudo ACL Policy Created Successfully", "Service Instance: " + uuid, "success");
+                                            } else {
+                                                swal("Sudo ACL Policy Creation Failed", "Service Instance: " + uuid, "error");
+                                            }
+                                        });                                                                              
+                                    });
                                     
                                     // add user to the sudo group
                                 } else {
                                     console.log("Unchecked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
-                                    revokeAclPolicyAccessForService(uuid,"sudo")
+                                    revokeAclPolicyAccessForService(uuid,"sudo");
                                 }
-                            }
+                            };
                             cell1_6.appendChild(checkBoxSudo);
                             
                             row.appendChild(cell1_1); //username
