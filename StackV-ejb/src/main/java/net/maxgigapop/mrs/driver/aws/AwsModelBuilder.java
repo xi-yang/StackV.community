@@ -445,7 +445,14 @@ public class AwsModelBuilder {
                             Resource PUBLIC_ADDRESS = RdfOwl.createResource(model, ResourceTool.getResourceUri(INSTANCE.toString()+":public-ip+"+publicIp,awsPrefix.publicAddress(),publicIp), Mrs.NetworkAddress);
                             model.add(model.createStatement(INSTANCE, hasNetworkAddress, PUBLIC_ADDRESS));
                             model.add(model.createStatement(PUBLIC_ADDRESS, type, "ipv4:public"));
-                            model.add(model.createStatement(PUBLIC_ADDRESS, value, publicIp));  
+                            model.add(model.createStatement(PUBLIC_ADDRESS, value, publicIp));
+                            String fqdn = AddressUtil.getNameFromIp(publicIp);
+                            if (fqdn != null) {
+                                Resource naFqdn = RdfOwl.createResource(model, INSTANCE.getURI() + ":fqdn", Mrs.NetworkAddress);
+                                model.add(model.createStatement(INSTANCE, Mrs.hasNetworkAddress, naFqdn));
+                                model.add(model.createStatement(naFqdn, Mrs.type, "fqdn"));
+                                model.add(model.createStatement(naFqdn, Mrs.value, fqdn));
+                            }
                         }
                     }
                 }

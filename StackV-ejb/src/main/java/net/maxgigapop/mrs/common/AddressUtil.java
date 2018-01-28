@@ -5,8 +5,12 @@
  */
 package net.maxgigapop.mrs.common;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -181,5 +185,25 @@ public class AddressUtil {
     
     public static boolean isIpAddressPrefixkRange(String ipRange) {
         return (isIpAddress(ipRange) && ipRange.contains("/"));
+    }
+    
+    public static String getNameFromIp(String ip) {
+        InetAddress addr;
+        try {
+            addr = InetAddress.getByName(ip);
+        } catch (UnknownHostException ex) {
+            return null;
+        }
+        return addr.getHostName();
+    }
+    
+    public static String getIpFromName(String fqdn) {
+        InetAddress addr;
+        try {
+            addr = InetAddress.getByName(fqdn);
+        } catch (UnknownHostException ex) {
+            return null;
+        }
+        return addr.getHostAddress();
     }
 }
