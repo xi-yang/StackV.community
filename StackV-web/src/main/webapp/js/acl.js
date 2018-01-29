@@ -708,23 +708,28 @@ function createHostGroup(groupName, desc) {
  * @param {type} hostGroup
  * @returns {jqXHR}
  */
-function addHostsToHostGroup(hosts, hostGroup) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+function addHostsToHostGroup(hosts, hostGroup, uuid) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/service/manifest/' + uuid;
     
     // if the hosts variable is just one host, then turn it into an array
     if (!Array.isArray(hosts)) {
         hosts = [hosts];
-    }     
+    }
         
-    // creating the IPA request
-    var ipaRequestData = {
-        "method":"hostgroup_add_member",
-        "params":[
-            [hostGroup],
-            {"host": hosts}
-        ],
-        "id":0
+        
+    // creating the JSON template for VM hosts query
+    var jsonTemplate = {
+        "hostgroup": [
+            {
+              "hostname": "?fqdn?",
+              "sparql": "SELECT DISTINCT ?fqdn WHERE {?hypervisor mrs:providesVM ?vm. ?vm mrs:hasNetworkAddress ?na. ?na mrs:type \"fqdn\". ?na mrs:value ?fqdn.}",
+              "required": "false"
+            }
+          ]
     };
+    
+    var xmlActiveServiceQuery = "<serviceManifest><serviceUUID></serviceUUID><jsonTemplate>"
+    + jsonTemplate + "</jsonTemplate></serviceManifest>";
     
     // ajax call fields
     // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
@@ -732,10 +737,13 @@ function addHostsToHostGroup(hosts, hostGroup) {
         "url": apiUrl,
         "method": "POST",
         "headers": {
-            "Content-Type": "application/json",
+            "Content-Type": "application/xml",
             "Authorization": "bearer " + keycloak.token
         },
-        "data": JSON.stringify(ipaRequestData)
+        "data": xmlActiveServiceQuery,
+        "success": function(res) {
+            console.log("addHostsToHostGroup suc: " + res);
+        }
     };
     
     return $.ajax(ipaAjaxCall);
@@ -890,7 +898,7 @@ function createLoginAclPolicy(serviceUUID, username) {
     
     var createLoginUg = createUserGroup(ugLoginName,"Login user group for service instance: " + serviceUUID);
     var createLoginHg = createHostGroup(hgLoginName, "Login host group for service instance: " + serviceUUID);
-    var createLoginHbac = createHBACRule(hbacLoginName,"Login HBAC Rule for service instance: " + serviceUUID);
+    var createLoginHbac = createHBACRule(hbacLoginName,"Login HBAC Rule (login,ssh) for service instance: " + serviceUUID);
     
     return $.when(createLoginUg, createLoginHg, createLoginHbac).done(function(ug, hg, hbac) {
         var ugError = ug[0]["error"];
@@ -999,7 +1007,7 @@ function createSudoAclPolicy(serviceUUID, username) {
     
     var createSudoUg = createUserGroup(ugSudoName,"Sudo user group for service instance: " + serviceUUID);
     var createSudoHg = createHostGroup(hgSudoName, "Sudo host group for service instance: " + serviceUUID);
-    var createSudoHbac = createHBACRule(hbacSudoName,"Sudo HBAC Rule for service instance: " + serviceUUID);
+    var createSudoHbac = createHBACRule(hbacSudoName,"Sudo HBAC Rule (login,ssh,sudo) for service instance: " + serviceUUID);
     
     return $.when(createSudoUg, createSudoHg, createSudoHbac).done(function(ug, hg, hbac) {
         var ugError = ug[0]["error"];
@@ -1091,18 +1099,56 @@ function createSudoAclPolicy(serviceUUID, username) {
 }
 
 /**
- * Checks whether the ACL policy has been created for the UUID or not
- * @param {type} serviceUUID
- * @param {type} accessType
- * @returns {Boolean}
+ * Return the users for an ACL policy
+ * @param {String} serviceUUID
+ * @param {String} accessType
+ * @returns {jqXhr}
  */
-function checkAclPolicyForService(serviceUUID, accessType) {
-    return false;
+function getAclPolicyUsers(serviceUUID, accessType) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+    
+    // creating the IPA request
+    /**
+     * Try to find an user (hence user_find) that is in both the correct
+     * user group and hbac rule
+     */
+    var ipaRequestData = {
+        "method":"user_find",
+        "params":[
+            [],
+            {
+                "in_group": [
+                    "ug-" + accessType + "-" + serviceUUID
+                ],
+                "in_hbacrule": [
+                    "hbac-" + accessType + "-" + serviceUUID
+                ]
+            }
+        ],
+        "id":0
+    };
+    
+    
+    // ajax call fields
+    // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
+    var ipaAjaxCall = {
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "bearer " + keycloak.token
+        },
+        "data": JSON.stringify(ipaRequestData)
+    };
+    
+    return $.ajax(ipaAjaxCall);
 }
 
-function revokeAclPolicyAccessForService(serviceUUID, accessType) {
+
+function removeUserFromACLPolicy(username, serviceUUID, accessType) {
     
 }
+
 
 function subloadInstanceACLTable(refUUID) {
     tweenInstanceACLPanel.reverse();
@@ -1144,14 +1190,28 @@ function subloadInstanceACLTable(refUUID) {
                             checkBoxLogin.setAttribute("data-access", "login");
                             checkBoxLogin.setAttribute("data-username", user[0]);
                             checkBoxLogin.type = "checkbox";
-                            checkBoxLogin.onclick = function () {                                
-                                var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
+                            var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
+                            $.when(ipaLogin()).done(function() {
+                                getAclPolicyUsers(uuid, "login").done(function(aclResult) {
+                                    var uidList = aclResult["result"]["result"][0]["uid"];
+                                    console.log("AclResult login uidList: " + JSON.stringify(uidList));
+                                    if (uidList.includes(user[0])) {
+                                        checkBoxLogin.checked = true;
+                                    }
+                                }); 
+                            });
+                            checkBoxLogin.onclick = function () {                                                                
                                 var username = this.getAttribute("data-username");
                                 if (this.checked) {
                                     console.log("Checked the " + this.getAttribute("data-access") + " checkbox for username: " + username);                                    
                                     
                                     // ensure the user is logged in before making any IPA requests
-                                    $.when(ipaLogin()).done(function() {                                       
+                                    $.when(ipaLogin()).done(function() {
+                                        /**
+                                         * NOTES: check before creation if a policy already exists
+                                         * If it exists, then creation will fail. Instead just add
+                                         * the user to the existing policy
+                                         */
                                         createLoginAclPolicy(uuid,username).done(function(result) {
                                             console.log(JSON.stringify("AclPolicyResult: " + JSON.stringify(result)));
                                             if (result["LoginGroupAndRuleCreated"] === true && result["AddedLoginGroupAndServicesToLoginHBAC"]) {
@@ -1163,7 +1223,7 @@ function subloadInstanceACLTable(refUUID) {
                                     });
                                 } else {
                                     console.log("Unchecked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
-                                    revokeAclPolicyAccessForService(uuid,"login");
+                                    //revokeAclPolicyAccessForService(uuid,"login");
                                 }
                             };
                             cell1_5.appendChild(checkBoxLogin);
@@ -1174,6 +1234,15 @@ function subloadInstanceACLTable(refUUID) {
                             checkBoxSudo.setAttribute("data-access", "sudo");
                             checkBoxSudo.setAttribute("data-username", user[0]);
                             checkBoxSudo.type = "checkbox";
+                            $.when(ipaLogin()).done(function() {
+                                getAclPolicyUsers(uuid, "sudo").done(function(aclResult) {
+                                    var uidList = aclResult["result"]["result"][0]["uid"];
+                                    console.log("AclResult sudo uidList: " + JSON.stringify(uidList));
+                                    if (uidList.includes(user[0])) {
+                                        checkBoxSudo.checked = true;
+                                    }
+                                }); 
+                            });
                             checkBoxSudo.onclick = function() {
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
                                 var username = this.getAttribute("data-username");
@@ -1194,7 +1263,7 @@ function subloadInstanceACLTable(refUUID) {
                                     // add user to the sudo group
                                 } else {
                                     console.log("Unchecked the " + this.getAttribute("data-access") + " checkbox for username: " + username);
-                                    revokeAclPolicyAccessForService(uuid,"sudo");
+                                    //revokeAclPolicyAccessForService(uuid,"sudo");
                                 }
                             };
                             cell1_6.appendChild(checkBoxSudo);
