@@ -24,38 +24,18 @@
 package net.maxgigapop.mrs.core;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Future;
-import javax.annotation.PostConstruct;
-import javax.ejb.AsyncResult;
-import javax.ejb.EJBException;
-import javax.ejb.LocalBean;
-import javax.ejb.Lock;
-import javax.ejb.LockType;
-import static javax.ejb.LockType.READ;
-import javax.ejb.Schedule;
-import javax.ejb.Singleton;
-import javax.ejb.Startup;
-import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import net.maxgigapop.mrs.bean.DriverInstance;
-import net.maxgigapop.mrs.bean.VersionItem;
-import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
-import net.maxgigapop.mrs.bean.persist.PersistenceManager;
-import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.as.server.CurrentServiceContainer; 
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.StartException;
 
 /**
  *
  * @author xyang
  */
-@Singleton
-@LocalBean
-@Startup
+
 public class DataConcurrencyPoster {
     boolean SystemModelCoordinator_bootStrapped = false;
     OntModel SystemModelCoordinator_cachedOntModel = null;
@@ -74,5 +54,15 @@ public class DataConcurrencyPoster {
 
     public void setSystemModelCoordinator_cachedOntModel(OntModel SystemModelCoordinator_cachedOntModel) {
         this.SystemModelCoordinator_cachedOntModel = SystemModelCoordinator_cachedOntModel;
+    }
+
+    static public DataConcurrencyPoster getSingleton() {
+        try {
+            InitialContext ic = new InitialContext();
+            net.maxgigapop.mrs.core.HASingletonService haservice = (net.maxgigapop.mrs.core.HASingletonService) ic.lookup("java:global/HASingletonService");
+            return (DataConcurrencyPoster) haservice.getValue();
+        } catch (NamingException e) {
+            return null;
+        }
     }
 }

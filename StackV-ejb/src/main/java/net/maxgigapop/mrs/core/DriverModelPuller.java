@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import javax.ejb.AsyncResult;
 import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
@@ -34,8 +35,13 @@ import javax.ejb.Lock;
 import javax.ejb.LockType;
 import static javax.ejb.LockType.READ;
 import javax.ejb.Schedule;
+import javax.ejb.ScheduleExpression;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
+import javax.ejb.Timeout;
+import javax.ejb.Timer;
+import javax.ejb.TimerConfig;
+import javax.ejb.TimerService;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -54,29 +60,43 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
  */
 @Singleton
 @LocalBean
-@Startup
 public class DriverModelPuller {
 
     private @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
 
-    private static final StackLogger logger = new StackLogger(DriverModelPuller.class.getName(), "DriverModelPuller");
+    @Resource
+    private TimerService timerService;
 
     private Map<DriverInstance, Future<String>> pullResultMap = new HashMap<DriverInstance, Future<String>>();
 
-    @PostConstruct
-    public void init() {
+    private static final StackLogger logger = new StackLogger(DriverModelPuller.class.getName(), "DriverModelPuller");
+
+    public void start() {
         if (PersistenceManager.getEntityManager() == null) {
             PersistenceManager.initialize(entityManager);
         }
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null) {
             DriverInstancePersistenceManager.refreshAll();
         }
-        logger.init();
-    }
 
+        ScheduleExpression sexpr = new ScheduleExpression();
+        sexpr.hour("*").minute("*").second("0"); // every minute
+        // persistent must be false because the timer is started by the HASingleton service
+        timerService.createCalendarTimer(sexpr, new TimerConfig("", false));
+    }
+    
+    public void stop() {
+        for (Object obj : timerService.getTimers()) {
+            Timer t = (Timer)obj;
+            t.cancel();
+        }
+        timerService.getTimers().clear();
+        pullResultMap.clear();
+    }
+    
     @Lock(LockType.WRITE)
-    @Schedule(minute = "*", hour = "*", persistent = false)
+    @Timeout
     public void run() {
         String method = "run";
         logger.trace_start(method);

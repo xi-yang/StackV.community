@@ -27,19 +27,28 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Resource;
 import javax.ejb.AccessTimeout;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Lock;
 import javax.ejb.LockType;
 import javax.ejb.Schedule;
+import javax.ejb.ScheduleExpression;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
+import javax.ejb.Timeout;
+import javax.ejb.Timer;
+import javax.ejb.TimerConfig;
+import javax.ejb.TimerService;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -51,33 +60,48 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Singleton
 @LocalBean
-@Startup
 @AccessTimeout(value = 10000) // 10 seconds
-public class SystemModelCoordinator {   
-    
+public class SystemModelCoordinator {       
+    private @PersistenceContext(unitName = "RAINSAgentPU")
+    EntityManager entityManager;
+
+    @Resource
+    private TimerService timerService;
+
     @EJB
     HandleSystemCall systemCallHandler;
     
     private static final StackLogger logger = new StackLogger(SystemModelCoordinator.class.getName(), "SystemModelCoordinator");
 
-    // indicator of system being ready for service
-    boolean bootStrapped = false;
     // current VG with cached union ModelBase
     VersionGroup systemVersionGroup = null;
+    
+    public void start() {
+        if (PersistenceManager.getEntityManager() == null) {
+            PersistenceManager.initialize(entityManager);
+        }
+        systemVersionGroup = null;
+        ScheduleExpression sexpr = new ScheduleExpression();
+        sexpr.hour("*").minute("*").second("0"); // every minute
+        // persistent must be false because the timer is started by the HASingleton service
+        timerService.createCalendarTimer(sexpr, new TimerConfig("", false));
+    }
+    
+
+    public void stop() {
+        for (Object obj : timerService.getTimers()) {
+            Timer t = (Timer)obj;
+            t.cancel();
+        }
+        timerService.getTimers().clear();
+    }
     
     @Lock(LockType.WRITE)
     public void setBootStrapped(boolean bl) {
         String method = "setBootStrapped";
+        DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
+        boolean bootStrapped = dataConcurrencyPoster.isSystemModelCoordinator_bootStrapped();
         logger.message(method, String.format("set status from %b into %b", bootStrapped, bl));
-        bootStrapped = bl;
-        DataConcurrencyPoster dataConcurrencyPoster;
-        try {
-            Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
-        } catch (Exception ex) {
-            logger.warning(method, "failed to lookup DataConcurrencyPoster --" + ex);
-            return;
-        }
         dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
         if (bootStrapped == false) {
             systemVersionGroup = null;
@@ -85,19 +109,12 @@ public class SystemModelCoordinator {
     }
 
     @Lock(LockType.WRITE)
-    @Schedule(minute = "*", hour = "*", persistent = false)
+    @Timeout
     public void autoUpdate() {
         String method = "autoUpdate";
         logger.trace_start(method);
-        DataConcurrencyPoster dataConcurrencyPoster;
-        try {
-            Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
-        } catch (Exception ex) {
-            logger.warning(method, "failed to lookup DataConcurrencyPoster --" + ex);
-            logger.trace_end(method);
-            return;
-        }
+        DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
+        boolean bootStrapped = dataConcurrencyPoster.isSystemModelCoordinator_bootStrapped();
         if (!bootStrapped) {
             logger.trace(method, "bootstrapping - bootStrapped==false");
         }
@@ -160,13 +177,7 @@ public class SystemModelCoordinator {
     public VersionGroup getLatest() {
         String method = "getLatest";
         logger.trace_start(method);
-        DataConcurrencyPoster dataConcurrencyPoster = null;
-        try {
-            Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
-        } catch (Exception ex) {
-            logger.warning(method, "failed to lookup DataConcurrencyPoster --" + ex);
-        }
+        DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
         if (this.systemVersionGroup == null) {
             logger.trace(method, "this.systemVersionGroup == null");
             this.systemVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());

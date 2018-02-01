@@ -62,13 +62,7 @@ public class ServiceManifest {
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
-        DataConcurrencyPoster dataConcurrencyPoster;
-        try {
-            Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
-        } catch (Exception ex) {
-            throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + ex);
-        }
+        DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
         OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         
         if (serviceType.equals("Dynamic Network Connection")) {
@@ -101,13 +95,7 @@ public class ServiceManifest {
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
-        DataConcurrencyPoster dataConcurrencyPoster;
-        try {
-            Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
-        } catch (Exception ex) {
-            throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + ex);
-        }
+        DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
         OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd, omRef);
     }
