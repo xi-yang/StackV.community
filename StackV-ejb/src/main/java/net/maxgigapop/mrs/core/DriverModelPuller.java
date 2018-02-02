@@ -63,7 +63,7 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 @Singleton
 @LocalBean
 public class DriverModelPuller {
-
+    //  managed by MSC singleton service
     private @PersistenceContext(unitName = "RAINSAgentPU")
     EntityManager entityManager;
 

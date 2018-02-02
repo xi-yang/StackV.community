@@ -1067,7 +1067,13 @@ public class HandleServiceCall {
     }
     
     public boolean hasSystemBootStrapped() {
-        DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
+        DataConcurrencyPoster dataConcurrencyPoster;
+        try {
+            Context ejbCxt = new InitialContext();
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (NamingException e) {
+            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
+        }
         return dataConcurrencyPoster.isSystemModelCoordinator_bootStrapped();
     }
 
@@ -1097,7 +1103,13 @@ public class HandleServiceCall {
             refModel = systemModelCoordinator.getLatestOntModel();
         } catch (EJBException ex) {
             if (ex.getMessage() != null && ex.getMessage().contains("concurrent access timeout ")) {
-                DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
+                DataConcurrencyPoster dataConcurrencyPoster;
+                try {
+                    Context ejbCxt = new InitialContext();
+                    dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+                } catch (NamingException e) {
+                    throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + e);
+                }
                 refModel = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
             }
         }

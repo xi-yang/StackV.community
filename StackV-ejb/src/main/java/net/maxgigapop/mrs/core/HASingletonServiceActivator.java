@@ -53,12 +53,7 @@ public class HASingletonServiceActivator implements ServiceActivator {
         String method = "activate";
         logger.start(method);
         HASingletonService service = new HASingletonService();
-        
-        //@ for standalone deployment
-        //ServiceName factoryServiceName = ServiceName.parse("jboss.clustering.singleton.server.default");
-        //@ for domain deployment
-        ServiceName factoryServiceName = SingletonServiceName.BUILDER.getServiceName("server", "default");
-        
+        ServiceName factoryServiceName = SingletonServiceName.BUILDER.getServiceName("server", "default");        
         ServiceController<?> factoryService = context.getServiceRegistry().getRequiredService(factoryServiceName);
         SingletonServiceBuilderFactory factory;
         SimpleSingletonElectionPolicy policy = new SimpleSingletonElectionPolicy();

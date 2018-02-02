@@ -62,7 +62,13 @@ public class ServiceManifest {
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
-        DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
+        DataConcurrencyPoster dataConcurrencyPoster;
+        try {
+            Context ejbCxt = new InitialContext();
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (NamingException e) {
+            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
+        }
         OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         
         if (serviceType.equals("Dynamic Network Connection")) {
@@ -95,7 +101,13 @@ public class ServiceManifest {
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
-        DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
+        DataConcurrencyPoster dataConcurrencyPoster;
+        try {
+            Context ejbCxt = new InitialContext();
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (NamingException e) {
+            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
+        }
         OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd, omRef);
     }

@@ -4,22 +4,15 @@
  * and open the template in the editor.
  */
 package net.maxgigapop.mrs.core;
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.Remote;
-
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import net.maxgigapop.mrs.common.StackLogger;
-import org.jboss.as.naming.WritableServiceBasedNamingStore;
 
 /**
  *
@@ -49,35 +42,22 @@ public class HASingletonService implements Service<DataConcurrencyPoster> {
         }
         dataPoster.setSystemModelCoordinator_bootStrapped(false);
         dataPoster.setSystemModelCoordinator_cachedOntModel(null);
-        try {
-            Thread.sleep(30000); // sleep for 10 secs, waiting for JNDI
-        } catch (InterruptedException ex) {
-            ;
-        }
         final String node = System.getProperty("jboss.node.name");
         logger.message(method, "Start HASingleton DriverModelPuller service '" + this.getClass().getName() + "' on Node: "+node);
-        try {
-            InitialContext ic = new InitialContext();
-            ((net.maxgigapop.mrs.core.DriverModelPuller) ic.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DriverModelPuller"))
-                    .start();
-        } catch (NamingException e) {
-            throw new StartException("Could not initialize DriverModelPuller", e);
-        }
-        try {
-            InitialContext ic = new InitialContext();
-            ((net.maxgigapop.mrs.core.SystemModelCoordinator) ic.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/SystemModelCoordinator"))
-                    .start();
-        } catch (NamingException e) {
-            throw new StartException("Could not initialize SystemModelCoordinator", e);
-        }
-        try {
-            InitialContext initialContext = new InitialContext();
-            WritableServiceBasedNamingStore.pushOwner(HASingletonService.SINGLETON_SERVICE_NAME);
-            initialContext.bind("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster", dataPoster);
-        } catch (NamingException ex) {
-            Logger.getLogger(HASingletonServiceActivator.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            WritableServiceBasedNamingStore.popOwner();
+        while(true) {
+            try {
+                InitialContext ic = new InitialContext();
+                ((net.maxgigapop.mrs.core.DriverModelPuller) ic.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DriverModelPuller"))
+                        .start();
+                break;
+            } catch (NamingException e) {
+                logger.warning(method, "DriverModelPuller not ready for JNDI - waiting for 10 secs");
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException ex) {
+                    ;
+                }
+            }
         }
         logger.end(method);
     }
@@ -97,22 +77,6 @@ public class HASingletonService implements Service<DataConcurrencyPoster> {
             } catch (NamingException e) {
                 logger.error(method, "Could not stop DriverModelPuller:" + e.getMessage());
             }
-            try {
-                InitialContext ic = new InitialContext();
-                ((net.maxgigapop.mrs.core.SystemModelCoordinator) ic.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/SystemModelCoordinator"))
-                        .stop();
-            } catch (NamingException e) {
-                logger.error(method, "Could not stop SystemModelCoordinator:" + e.getMessage());
-            }
-        }
-        try {
-            InitialContext initialContext = new InitialContext();
-            WritableServiceBasedNamingStore.pushOwner(HASingletonService.SINGLETON_SERVICE_NAME);
-            initialContext.unbind("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
-        } catch (NamingException ex) {
-            Logger.getLogger(HASingletonServiceActivator.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            WritableServiceBasedNamingStore.popOwner();
         }
         logger.end(method);
     }
