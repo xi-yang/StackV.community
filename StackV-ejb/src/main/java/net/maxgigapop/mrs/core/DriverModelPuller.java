@@ -63,10 +63,7 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 @Singleton
 @LocalBean
 public class DriverModelPuller {
-    //  managed by MSC singleton service
-    private @PersistenceContext(unitName = "RAINSAgentPU")
-    EntityManager entityManager;
-
+    //timerService managed by MSC singleton service
     @Resource
     private TimerService timerService;
 
@@ -75,13 +72,6 @@ public class DriverModelPuller {
     private static final StackLogger logger = new StackLogger(DriverModelPuller.class.getName(), "DriverModelPuller");
 
     public void start() {
-        if (PersistenceManager.getEntityManager() == null) {
-            PersistenceManager.initialize(entityManager);
-        }
-        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null) {
-            DriverInstancePersistenceManager.refreshAll();
-        }
-
         ScheduleExpression sexpr = new ScheduleExpression();
         sexpr.hour("*").minute("*").second("0"); // every minute
         // persistent must be false because the timer is started by the HASingleton service

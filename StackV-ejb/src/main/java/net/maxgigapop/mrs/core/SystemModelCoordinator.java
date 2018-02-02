@@ -27,6 +27,7 @@ import com.hp.hpl.jena.ontology.OntModel;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.PostConstruct;
 import javax.ejb.AccessTimeout;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
@@ -37,9 +38,12 @@ import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.PersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -55,6 +59,9 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 @AccessTimeout(value = 10000) // 10 seconds
 public class SystemModelCoordinator {   
     // Singleton (one per node in cluster, not managed by MSC singleton service)
+    private @PersistenceContext(unitName = "RAINSAgentPU")
+    EntityManager entityManager;
+
     @EJB
     HandleSystemCall systemCallHandler;
     
@@ -64,6 +71,13 @@ public class SystemModelCoordinator {
     boolean bootStrapped = false;
     // current VG with cached union ModelBase
     VersionGroup systemVersionGroup = null;
+    
+    @PostConstruct
+    public void init() {
+        if (PersistenceManager.getEntityManager() == null) {
+            PersistenceManager.initialize(entityManager);
+        }
+    }
     
     @Lock(LockType.WRITE)
     public void setBootStrapped(boolean bl) {
