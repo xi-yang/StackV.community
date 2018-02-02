@@ -25,7 +25,6 @@ import org.jboss.as.naming.WritableServiceBasedNamingStore;
  *
  * @author xyang
  */
-@Remote
 public class HASingletonService implements Service<DataConcurrencyPoster> {
     private static final StackLogger logger = new StackLogger(HASingletonService.class.getName(), "HASingletonService");
     public static final ServiceName SINGLETON_SERVICE_NAME = ServiceName.JBOSS.append("stackv", "ha", "singleton", "service");
@@ -71,6 +70,15 @@ public class HASingletonService implements Service<DataConcurrencyPoster> {
         } catch (NamingException e) {
             throw new StartException("Could not initialize SystemModelCoordinator", e);
         }
+        try {
+            InitialContext initialContext = new InitialContext();
+            WritableServiceBasedNamingStore.pushOwner(HASingletonService.SINGLETON_SERVICE_NAME);
+            initialContext.bind("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster", dataPoster);
+        } catch (NamingException ex) {
+            Logger.getLogger(HASingletonServiceActivator.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            WritableServiceBasedNamingStore.popOwner();
+        }
         logger.end(method);
     }
 
@@ -96,6 +104,15 @@ public class HASingletonService implements Service<DataConcurrencyPoster> {
             } catch (NamingException e) {
                 logger.error(method, "Could not stop SystemModelCoordinator:" + e.getMessage());
             }
+        }
+        try {
+            InitialContext initialContext = new InitialContext();
+            WritableServiceBasedNamingStore.pushOwner(HASingletonService.SINGLETON_SERVICE_NAME);
+            initialContext.unbind("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
+        } catch (NamingException ex) {
+            Logger.getLogger(HASingletonServiceActivator.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            WritableServiceBasedNamingStore.popOwner();
         }
         logger.end(method);
     }

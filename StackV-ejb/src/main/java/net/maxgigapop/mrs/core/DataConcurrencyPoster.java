@@ -24,6 +24,7 @@
 package net.maxgigapop.mrs.core;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import javax.ejb.Remote;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import org.jboss.msc.service.ServiceController;
@@ -35,7 +36,7 @@ import org.jboss.msc.service.StartException;
  *
  * @author xyang
  */
-
+@Remote
 public class DataConcurrencyPoster {
     boolean SystemModelCoordinator_bootStrapped = false;
     OntModel SystemModelCoordinator_cachedOntModel = null;
@@ -59,8 +60,8 @@ public class DataConcurrencyPoster {
     static public DataConcurrencyPoster getSingleton() {
         try {
             InitialContext ic = new InitialContext();
-            Object haservice =  ic.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/HASingletonService");
-            return ((net.maxgigapop.mrs.core.HASingletonService) haservice).getValue();
+            Object dataPoster =  ic.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
+            return (DataConcurrencyPoster)dataPoster;
         } catch (NamingException e) {
             return null;
         }

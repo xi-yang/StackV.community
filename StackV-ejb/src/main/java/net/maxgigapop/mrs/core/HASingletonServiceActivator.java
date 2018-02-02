@@ -53,9 +53,12 @@ public class HASingletonServiceActivator implements ServiceActivator {
         String method = "activate";
         logger.start(method);
         HASingletonService service = new HASingletonService();
-        ServiceName factoryServiceName = ServiceName.parse("jboss.clustering.singleton.server.default");
-        //@Use the below ServiceName for domain deployment
-        //ServiceName factoryServiceName = SingletonServiceName.BUILDER.getServiceName("server", "default");
+        
+        //@ for standalone deployment
+        //ServiceName factoryServiceName = ServiceName.parse("jboss.clustering.singleton.server.default");
+        //@ for domain deployment
+        ServiceName factoryServiceName = SingletonServiceName.BUILDER.getServiceName("server", "default");
+        
         ServiceController<?> factoryService = context.getServiceRegistry().getRequiredService(factoryServiceName);
         SingletonServiceBuilderFactory factory;
         SimpleSingletonElectionPolicy policy = new SimpleSingletonElectionPolicy();
@@ -68,15 +71,6 @@ public class HASingletonServiceActivator implements ServiceActivator {
                     .install();
         } catch (InterruptedException ex) {
             throw new ServiceRegistryException(ex);
-        }
-        try {
-            InitialContext initialContext = new InitialContext();
-            WritableServiceBasedNamingStore.pushOwner(HASingletonService.SINGLETON_SERVICE_NAME);
-            initialContext.bind("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/HASingletonService", service);
-        } catch (NamingException ex) {
-            Logger.getLogger(HASingletonServiceActivator.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            WritableServiceBasedNamingStore.popOwner();
         }
         logger.end(method);
     }
