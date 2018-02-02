@@ -704,33 +704,45 @@ function createHostGroup(groupName, desc) {
 }
 
 /**
- * Adds a single host (identified by hosts) to the specified host group
- * @param {type} hosts - the host to add
- * @param {type} hostGroup
+ * Gets hosts for the specified service instance
+ * @param {String} serviceUUID
  * @returns {jqXHR}
  */
-function addHostsToHostGroup(hosts, hostGroup, uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/service/manifest/' + uuid;
+function getHostsForServiceInstance(serviceUUID) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/service/manifest/' + serviceUUID;
     
-    // if the hosts variable is just one host, then turn it into an array
+    // ajax call fields
+    var settings = {
+        "async": true,
+        "crossDomain": true,
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/xml",
+          "Authorization": "bearer " + keycloak.token
+        },
+        "data": "<serviceManifest>\n<serviceUUID></serviceUUID>\n<jsonTemplate>\n{\n    \"hostgroup\": [\n        {\n          \"hostname\": \"?fqdn?\",\n          \"sparql\": \"SELECT DISTINCT ?fqdn WHERE {?hypervisor mrs:providesVM ?vm. ?vm mrs:hasNetworkAddress ?na. ?na mrs:type \\\"fqdn\\\". ?na mrs:value ?fqdn.}\",\n          \"required\": \"false\"\n        }\n      ]\n}\n</jsonTemplate>\n</serviceManifest>"
+      };
+    
+    return $.ajax(settings);
+}
+
+function addHostsToHostGroup(hosts, hostGroupName) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+    
     if (!Array.isArray(hosts)) {
         hosts = [hosts];
     }
         
-        
-    // creating the JSON template for VM hosts query
-    var jsonTemplate = {
-        "hostgroup": [
-            {
-              "hostname": "?fqdn?",
-              "sparql": "SELECT DISTINCT ?fqdn WHERE {?hypervisor mrs:providesVM ?vm. ?vm mrs:hasNetworkAddress ?na. ?na mrs:type \"fqdn\". ?na mrs:value ?fqdn.}",
-              "required": "false"
-            }
-          ]
+    // creating the IPA request
+    var ipaRequestData = {
+        "method":"hostgroup_add_member",
+        "params":[
+            [hostGroupName],
+            {"host":hosts}
+        ],
+        "id":0
     };
-    
-    var xmlActiveServiceQuery = "<serviceManifest><serviceUUID></serviceUUID><jsonTemplate>"
-    + jsonTemplate + "</jsonTemplate></serviceManifest>";
     
     // ajax call fields
     // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
@@ -738,13 +750,10 @@ function addHostsToHostGroup(hosts, hostGroup, uuid) {
         "url": apiUrl,
         "method": "POST",
         "headers": {
-            "Content-Type": "application/xml",
+            "Content-Type": "application/json",
             "Authorization": "bearer " + keycloak.token
         },
-        "data": xmlActiveServiceQuery,
-        "success": function(res) {
-            console.log("addHostsToHostGroup suc: " + res);
-        }
+        "data": JSON.stringify(ipaRequestData)
     };
     
     return $.ajax(ipaAjaxCall);
@@ -890,6 +899,7 @@ function createLoginAclPolicy(serviceUUID, username) {
     var hgLoginName = "hg-login-" + serviceUUID;
     var hbacLoginName = "hbac-login-" + serviceUUID;    
     var loginServices = ["login","sshd"];
+    var hosts;
     var aclLoginPolicyResult = {}; // currently a way to debug errors
     
     // need to change it so when all the ajax calls are done - then return the aclPolicyResult
@@ -900,13 +910,35 @@ function createLoginAclPolicy(serviceUUID, username) {
     var createLoginUg = createUserGroup(ugLoginName,"Login user group for service instance: " + serviceUUID);
     var createLoginHg = createHostGroup(hgLoginName, "Login host group for service instance: " + serviceUUID);
     var createLoginHbac = createHBACRule(hbacLoginName,"Login HBAC Rule (login,ssh) for service instance: " + serviceUUID);
+    var getLoginHosts = getHostsForServiceInstance(serviceUUID);
     
-    return $.when(createLoginUg, createLoginHg, createLoginHbac).done(function(ug, hg, hbac) {
+    return $.when(createLoginUg, createLoginHg, createLoginHbac, getLoginHosts).done(function(ug, hg, hbac, hostsQuery) {
         var ugError = ug[0]["error"];
         var hgError = hg[0]["error"];
         var hbacError = hbac[0]["error"];
+        var hostsQueryError = true;        
         
-        // if error is null, then the request was successful
+        console.log("login getHostsForServiceInstance: " + JSON.stringify(hostsQuery));
+        // verify and parse the loginHosts data
+        // looks like below
+        //{ serviceUUID: "5578c890-9a1c-4e23-9686-ab70ad274a92", jsonTemplate: "{\"hostgroup\":[{\"hostname\":\"180-146.research.maxgigapop.net\"}]}", jsonModel: null }
+        
+        // just to verify the right data is gotten
+        if (hostsQuery["serviceUUID"] === serviceUUID) {
+            hostsQueryError = false;
+            aclLoginPolicyResult["RecievedRightHostsForServiceInstance"] = true;
+            var parsed = JSON.parse(hostsQuery["jsonTemplate"]);
+            var hostsObjs = parsed["hostgroup"];
+            hostsObjs.forEach(function(h) {
+                hosts.push(h["hostname"]);
+            });
+            console.log("parsed login hosts: " + hosts);
+        } else {
+            aclLoginPolicyResult["RecievedRightHostsForServiceInstance"] = false;
+            aclLoginPolicyResult["RecievedRightHostsForServiceInstanceError"] = JSON.stringify(hostsQuery);
+        }
+        
+        // if error is null for the IPA requests, then the request was successful
         
         if (ugError === null) {
             aclLoginPolicyResult["CreatedLoginUserGroup"] = true;
@@ -930,30 +962,39 @@ function createLoginAclPolicy(serviceUUID, username) {
         }
         
         // if no errors in all three -> null is a falsy value
-        if (!ugError && !hgError && !hbacError) {
-            aclLoginPolicyResult["LoginGroupAndRuleCreated"] = true;
+        if (!ugError && !hgError && !hbacError && !hostsQueryError) {
+            aclLoginPolicyResult["LoginGroupAndRuleCreatedAndRightHostsFound"] = true;
         }
         
     }).then(function() {
         
         var addLoginUgUsers = addUsersToUserGroup(username, ugLoginName);
-        //var addLoginHgHosts = addHostsToHostGroup(serviceUUID,hgLoginName);
+        var addLoginHgHosts = addHostsToHostGroup(hosts, hgLoginName);
         var addLoginUgToHbac = addUserGroupToHBACRule(ugLoginName,hbacLoginName);
         var addLoginHgToHbac = addHostGroupToHBACRule(hgLoginName,hbacLoginName);
         var addLoginSrvcsToHbac = addServicesToHBACRule(loginServices, hbacLoginName);
         
-        return $.when(addLoginUgUsers, addLoginUgToHbac, addLoginHgToHbac, addLoginSrvcsToHbac)
-                .then(function(ugusers, ughbac, hghbac, srvcshbac) {
+        return $.when(addLoginUgUsers, addLoginHgHosts, addLoginUgToHbac, addLoginHgToHbac, addLoginSrvcsToHbac)
+                .then(function(ugusers, hghosts, ughbac, hghbac, srvcshbac) {
                     var ugusersError = ugusers[0]["error"];
+                    var hghostsError = hghosts[0]["error"];
                     var ughbacError = ughbac[0]["error"];
                     var hghbacError = hghbac[0]["error"];
                     var srvcshbacError = srvcshbac[0]["error"];
+                                        
                     
                     if (ugusersError === null) {
                         aclLoginPolicyResult["AddedUsersToLoginUserGroup"] = true;
                     } else {
                         aclLoginPolicyResult["AddedUsersToLoginUserGroup"] = false;
                         aclLoginPolicyResult["AddedUsersToLoginUserGroupError"] = ugusersError;
+                    }
+                    
+                    if (hghostsError === null) {
+                        aclLoginPolicyResult["AddedHostsToLoginHostGroup"] = true;
+                    } else {
+                        aclLoginPolicyResult["AddedHostsToLoginHostGroup"] = false;
+                        aclLoginPolicyResult["AddedHostsToLoginHostGroupError"] = hghostsError;
                     }
                     
                     if (ughbacError === null) {
@@ -999,6 +1040,7 @@ function createSudoAclPolicy(serviceUUID, username) {
     var hgSudoName = "hg-sudo-" + serviceUUID;
     var hbacSudoName = "hbac-sudo-" + serviceUUID;
     var sudoServices = ["login","sshd","sudo"];
+    var hosts;
     var aclSudoPolicyResult = {}; // currently a way to debug errors
     
     // need to change it so when all the ajax calls are done - then return the aclSudoPolicyResult
@@ -1009,13 +1051,35 @@ function createSudoAclPolicy(serviceUUID, username) {
     var createSudoUg = createUserGroup(ugSudoName,"Sudo user group for service instance: " + serviceUUID);
     var createSudoHg = createHostGroup(hgSudoName, "Sudo host group for service instance: " + serviceUUID);
     var createSudoHbac = createHBACRule(hbacSudoName,"Sudo HBAC Rule (login,ssh,sudo) for service instance: " + serviceUUID);
+    var getSudoHosts = getHostsForServiceInstance(serviceUUID);
     
-    return $.when(createSudoUg, createSudoHg, createSudoHbac).done(function(ug, hg, hbac) {
+    return $.when(createSudoUg, createSudoHg, createSudoHbac, getSudoHosts).done(function(ug, hg, hbac, hostsQuery) {
         var ugError = ug[0]["error"];
         var hgError = hg[0]["error"];
         var hbacError = hbac[0]["error"];
+        var hostsQueryError = true;        
         
-        // if error is null, then the request was successful
+        console.log("login getHostsForServiceInstance: " + JSON.stringify(hostsQuery));
+        // verify and parse the loginHosts data
+        // looks like below
+        //{ serviceUUID: "5578c890-9a1c-4e23-9686-ab70ad274a92", jsonTemplate: "{\"hostgroup\":[{\"hostname\":\"180-146.research.maxgigapop.net\"}]}", jsonModel: null }
+        
+        // just to verify the right data is gotten
+        if (hostsQuery["serviceUUID"] === serviceUUID) {
+            hostsQueryError = false;
+            aclSudoPolicyResult["RecievedRightHostsForServiceInstance"] = true;
+            var parsed = JSON.parse(hostsQuery["jsonTemplate"]);
+            var hostsObjs = parsed["hostgroup"];
+            hostsObjs.forEach(function(h) {
+                hosts.push(h["hostname"]);
+            });
+            console.log("parsed login hosts: " + hosts);
+        } else {
+            aclSudoPolicyResult["RecievedRightHostsForServiceInstance"] = false;
+            aclSudoPolicyResult["RecievedRightHostsForServiceInstanceError"] = JSON.stringify(hostsQuery);
+        }
+        
+        // if error for ipa requests is null, then the request was successful
         
         if (ugError === null) {
             aclSudoPolicyResult["CreatedSudoUserGroup"] = true;
@@ -1039,21 +1103,22 @@ function createSudoAclPolicy(serviceUUID, username) {
         }
         
         // if no errors in all three -> null is a falsy value
-        if (!ugError && !hgError && !hbacError) {
-            aclSudoPolicyResult["SudoGroupAndRuleCreated"] = true;
+        if (!ugError && !hgError && !hbacError && !hostsQueryError) {
+            aclSudoPolicyResult["SudoGroupAndRuleCreatedAndRightHostsFound"] = true;
         }
         
     }).then(function() {
         
         var addSudoUgUsers = addUsersToUserGroup(username, ugSudoName);
-        //var addSudoHgHosts = addHostsToHostGroup(serviceUUID,hgSudoName);
+        var addSudoHgHosts = addHostsToHostGroup(hosts, hgSudoName);
         var addSudoUgToHbac = addUserGroupToHBACRule(ugSudoName,hbacSudoName);
         var addSudoHgToHbac = addHostGroupToHBACRule(hgSudoName,hbacSudoName);
         var addSudoSrvcsToHbac = addServicesToHBACRule(sudoServices, hbacSudoName);
         
-        return $.when(addSudoUgUsers, addSudoUgToHbac, addSudoHgToHbac, addSudoSrvcsToHbac)
-                .then(function(ugusers, ughbac, hghbac, srvcshbac) {
+        return $.when(addSudoUgUsers, addSudoHgHosts, addSudoUgToHbac, addSudoHgToHbac, addSudoSrvcsToHbac)
+                .then(function(ugusers, hghosts, ughbac, hghbac, srvcshbac) {
                     var ugusersError = ugusers[0]["error"];
+                    var hghostsError = hghosts[0]["error"];
                     var ughbacError = ughbac[0]["error"];
                     var hghbacError = hghbac[0]["error"];
                     var srvcshbacError = srvcshbac[0]["error"];
@@ -1063,6 +1128,13 @@ function createSudoAclPolicy(serviceUUID, username) {
                     } else {
                         aclSudoPolicyResult["AddedUsersToSudoUserGroup"] = false;
                         aclSudoPolicyResult["AddedUsersToSudoUserGroupError"] = ugusersError;
+                    }
+                    
+                    if (hghostsError === null) {
+                        aclSudoPolicyResult["AddedHostsToSudoHostGroup"] = true;
+                    } else {
+                        aclSudoPolicyResult["AddedHostsToSudoHostGroup"] = false;
+                        aclSudoPolicyResult["AddedHostsToSudoHostGroupError"] = hghostsError;
                     }
                     
                     if (ughbacError === null) {
@@ -1227,15 +1299,105 @@ function removeUserFromACLPolicy(username, serviceUUID, accessType) {
     return $.ajax(ipaAjaxCall);
 }
 
-function deleteHostGroup(serviceUUID, accessType) {
+
+function deleteHostGroup(hostgroupName) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
     
+    if (!Array.isArray(hostgroupName)) {
+        hostgroupName = [hostgroupName];
+    }
+    
+    // creating the IPA request
+    var ipaRequestData = {
+        "method":"hostgroup_del",
+        "params":[
+            hostgroupName,
+            {}
+        ],
+        "id":0
+    };    
+    
+    // ajax call fields
+    // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
+    var ipaAjaxCall = {
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "bearer " + keycloak.token
+        },
+        "data": JSON.stringify(ipaRequestData)
+    };
+    
+    return $.ajax(ipaAjaxCall);
 }
 
-function deleteUserGroup(serviceUUID, accessType) {
+function deleteUserGroup(usergroupName) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
     
+    if (!Array.isArray(usergroupName)) {
+        usergroupName = [usergroupName];
+    }
+    
+    // creating the IPA request
+    var ipaRequestData = {
+        "method":"group_del",
+        "params":[
+            usergroupName,
+            {}
+        ],
+        "id":0
+    };    
+    
+    // ajax call fields
+    // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
+    var ipaAjaxCall = {
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "bearer " + keycloak.token
+        },
+        "data": JSON.stringify(ipaRequestData)
+    };
+    
+    return $.ajax(ipaAjaxCall);
 }
 
-function deleteHBACRule(serviceUUID, accessType) {
+function deleteHBACRule(hbacruleName) {
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/ipa/request';
+    
+    if (!Array.isArray(hbacruleName)) {
+        hbacruleName = [hbacruleName];
+    }
+    
+    // creating the IPA request
+    var ipaRequestData = {
+        "method":"hbacrule_del",
+        "params":[
+            hbacruleName,
+            {}
+        ],
+        "id":0
+    };    
+    
+    // ajax call fields
+    // future use: in the beforeSend field, if false is return the request will be cancelled. Can be used to check if the user is logged in
+    var ipaAjaxCall = {
+        "url": apiUrl,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "bearer " + keycloak.token
+        },
+        "data": JSON.stringify(ipaRequestData)
+    };
+    
+    return $.ajax(ipaAjaxCall);
+}
+
+// Delete the ACL Policy when the service instance is cancelled.
+function removeACLPolicy(serviceUUID, accessType) {
     
 }
 
@@ -1256,9 +1418,11 @@ function subloadInstanceACLTable(refUUID) {
                     xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 },
                 success: function (result) {
-                    if (result) {
+                    var allowedUsers = [];
+                    if (result) {                        
                         for (i = 0; i < result.length; i++) {
                             var user = result[i];
+                            allowedUsers.push(user[0]);
 
                             var row = document.createElement("tr");
                             
@@ -1275,35 +1439,27 @@ function subloadInstanceACLTable(refUUID) {
                             cell1_4.innerHTML = '<button data-username="' + user[0] + '" class="button-acl-remove btn btn-default pull-right">Remove</button>';
                             
                             var cell1_5 = document.createElement("td"); // login checkbox
-                            var checkBoxLogin = document.createElement("input");                                                        
+                            var checkBoxLogin = document.createElement("input");
+                            checkBoxLogin.id = "loginaccess-" + user[0];
                             checkBoxLogin.style = "display: block; margin: 0 auto";
                             checkBoxLogin.setAttribute("data-access", "login");
                             checkBoxLogin.setAttribute("data-username", user[0]);
                             checkBoxLogin.type = "checkbox";
-                            var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
-                            
-                            // check whether the user is already added to the ACL policy and check the checkbox accordingly
-                            $.when(ipaLogin()).done(function() {
-                                isUserInAclPolicy(uuid, "login", user[0]).done(function(aclResult) {
-                                    var count = aclResult["result"]["count"];
-                                    
-                                    // only one user should be matched
-                                    if (count === 1) {
-                                        // the uid of the user is stored as a list
-                                        var uidList = aclResult["result"]["result"][0]["uid"];                                        
-                                        if (uidList.includes(user[0])) {
-                                            checkBoxLogin.checked = true;
-                                        }
-                                    }                                                                                                     
-                                }); 
-                            });
+                            var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");                                                        
                             
                             
-                            checkBoxLogin.onclick = function () {
+                            // NOTE: whole ACL process relies on the username displayed in the table to the username in the IPA server
+                            
+                            checkBoxLogin.onclick = function () {                                
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
-                                var username = this.getAttribute("data-username");
+                                var username = this.getAttribute("data-username");                             
                                 if (this.checked) {                                                                
-                                    
+                                    swal({
+                                        title: "Adding " + username + "...",
+                                        text: "Please wait",
+                                        icon: "../img/ajax-loader.gif",
+                                        buttons: false
+                                    });
                                     // ensure the user is logged in before making any IPA requests
                                     $.when(ipaLogin()).done(function() {
                                         $.when(checkForExistingACLPolicy(uuid, "login")).done(function(existsRes) {
@@ -1317,9 +1473,9 @@ function subloadInstanceACLTable(refUUID) {
                                             if (existsRes["result"]["count"] === 0) {
                                                  createLoginAclPolicy(uuid,username).done(function(result) {                                                    
                                                      if (result["LoginGroupAndRuleCreated"] === true && result["AddedLoginGroupAndServicesToLoginHBAC"]) {
-                                                         swal("Login ACL Policy Created Successfully", "Service Instance: " + uuid, "success");
+                                                         swal("Login ACL Policy Created Successfully!", "Added " + username + " to the Login ACL Policy", "success");
                                                      } else {
-                                                         swal("Login ACL Policy Creation Failed", "Service Instance: " + uuid, "error");
+                                                         swal("Login ACL Policy Creation Failed!", "Error: " + JSON.stringify(result), "error");
                                                      }
                                                  });
                                             } else {
@@ -1328,7 +1484,7 @@ function subloadInstanceACLTable(refUUID) {
                                                 addUsersToUserGroup(username, usergroupLogin).done(function(result) {                                                    
                                                     if (result["error"] === null) {
                                                        swal({
-                                                           title: "Added " + username + " to the ACL Policy",
+                                                           title: "Added " + username + " to the Login ACL Policy!",
                                                            icon: "success"
                                                        });
                                                     } else {
@@ -1336,55 +1492,51 @@ function subloadInstanceACLTable(refUUID) {
                                                     }
                                                  });
                                             }
+                                            
                                                                                        
                                         });                                                                                                                      
                                     });
                                 } else {
+                                    swal({
+                                        title: "Removing " + username + "...",
+                                        text: "Please wait",
+                                        icon: "../img/ajax-loader.gif",
+                                        buttons: false
+                                    });
                                     removeUserFromACLPolicy(username, uuid, "login").done(function(result) {
                                         // if no error
                                         if (result["error"] === null) {
                                             swal({
-                                                title: "Removed " + username + " from ACL Policy",
+                                                title: "Removed " + username + " from Login ACL Policy",
                                                 icon: "success"
                                             });
                                         } else {
-                                            swal("Not able to remove " + username + " from ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                            swal("Not able to remove " + username + " from Login ACL Policy", "Error: " + JSON.stringify(result), "error");
                                         }
                                     });
-                                }
+                                }                                
                             };
                             
                             cell1_5.appendChild(checkBoxLogin);
                             
                             var cell1_6 = document.createElement("td"); // sudo checkbox
-                            var checkBoxSudo = document.createElement("input");                                                        
+                            var checkBoxSudo = document.createElement("input");
+                            checkBoxSudo.id = "sudoaccess-" + user[0];
                             checkBoxSudo.style = "display: block; margin: 0 auto";
                             checkBoxSudo.setAttribute("data-access", "sudo");
                             checkBoxSudo.setAttribute("data-username", user[0]);
-                            checkBoxSudo.type = "checkbox";
-                            
-                            // check whether the user is already added to the ACL policy and check the checkbox accordingly
-                            $.when(ipaLogin()).done(function() {
-                                isUserInAclPolicy(uuid, "sudo", user[0]).done(function(aclResult) {
-                                    var count = aclResult["result"]["count"];
-                                    
-                                    // only one user should be matched
-                                    if (count === 1) {
-                                        // the uid of the user is stored as a list
-                                        var uidList = aclResult["result"]["result"][0]["uid"];                                        
-                                        if (uidList.includes(user[0])) {
-                                            checkBoxSudo.checked = true;
-                                        }
-                                    }                                                                                                     
-                                }); 
-                            });
-                            
+                            checkBoxSudo.type = "checkbox";                            
                             
                             checkBoxSudo.onclick = function () {
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
                                 var username = this.getAttribute("data-username");
                                 if (this.checked) {                                                                     
-                                    
+                                    swal({
+                                        title: "Adding " + username + "...",
+                                        text: "Please wait",
+                                        icon: "../img/ajax-loader.gif",
+                                        buttons: false
+                                    });
                                     // ensure the user is logged in before making any IPA requests
                                     $.when(ipaLogin()).done(function() {
                                         $.when(checkForExistingACLPolicy(uuid, "sudo")).done(function(existsRes) {
@@ -1399,9 +1551,9 @@ function subloadInstanceACLTable(refUUID) {
                                             if (existsRes["result"]["count"] === 0) {
                                                  createSudoAclPolicy(uuid,username).done(function(result) {                                                     
                                                      if (result["SudoGroupAndRuleCreated"] === true && result["AddedSudoGroupAndServicesToSudoHBAC"]) {
-                                                         swal("Sudo ACL Policy Created Successfully", "Service Instance: " + uuid, "success");
+                                                         swal("Sudo ACL Policy Created Successfully", "Added " + username + " to the Sudo ACL Policy", "success");
                                                      } else {
-                                                         swal("Sudo ACL Policy Creation Failed", "Service Instance: " + uuid, "error");
+                                                         swal("Sudo ACL Policy Creation Failed", "Error: " + JSON.stringify(result), "error");
                                                      }
                                                  });
                                             } else {
@@ -1410,30 +1562,38 @@ function subloadInstanceACLTable(refUUID) {
                                                  addUsersToUserGroup(username, usergroupSudo).done(function(result) {                                                    
                                                     if (result["error"] === null) {
                                                         swal({
-                                                            title: "Added " + username + " to the ACL Policy",
+                                                            title: "Added " + username + " to the Sudo ACL Policy",
                                                             icon: "success"
                                                         });
                                                     } else {
-                                                        swal("Could not add " + username + " to ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                                        swal("Could not add " + username + " to Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
                                                     }
                                                  });
                                             }
                                                                                        
                                         });                                                                                                                      
                                     });
-                                } else {                                    
+                                } else {
+                                    swal({
+                                        title: "Removing " + username + "...",
+                                        text: "Please wait",
+                                        icon: "../img/ajax-loader.gif",
+                                        buttons: false
+                                    });
                                     removeUserFromACLPolicy(username, uuid, "sudo").done(function(result) {                                                                                
                                         // if no error
                                         if (result["error"] === null) {
                                             swal({
-                                                title: "Removed " + username + " from ACL Policy",
+                                                title: "Removed " + username + " from Sudo ACL Policy",
                                                 icon: "success"
                                             });
                                         } else {
-                                            swal("Not able to remove " + username + " from ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                            swal("Not able to remove " + username + " from Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
                                         }                                    
                                     });
                                 }
+                                
+                                
                             };
                             
                             cell1_6.appendChild(checkBoxSudo);
@@ -1482,10 +1642,43 @@ function subloadInstanceACLTable(refUUID) {
                                     userRows[userindex].className = "hide";
                                 }
                             }
-                        }
-
+                        }                                                                        
                         tweenInstanceACLPanel.play();
                     }
+                    allowedUsers.forEach(function(u) {
+                           // check whether the user is already added to the ACL policy and check the checkbox accordingly                            
+                            $.when(ipaLogin()).done(function() {                                
+                                isUserInAclPolicy(uuid, "login", u).done(function(aclResult) {                                    
+                                    var count = aclResult["result"]["count"];
+                                    
+                                    // only one user should be matched
+                                    if (count === 1) {
+                                        // the uid of the user is stored as a list
+                                        var uidList = aclResult["result"]["result"][0]["uid"];                                        
+                                        if (uidList.includes(u)) {                                            
+                                            $('#loginaccess-' + u).prop('checked', true);
+                                        } else {                                            
+                                            $('#loginaccess-' + u).prop('checked', false);
+                                        }
+                                    }                                                                                                     
+                                });
+                                
+                                isUserInAclPolicy(uuid, "sudo", u).done(function(aclResult) {                                    
+                                    var count = aclResult["result"]["count"];
+                                    
+                                    // only one user should be matched
+                                    if (count === 1) {
+                                        // the uid of the user is stored as a list
+                                        var uidList = aclResult["result"]["result"][0]["uid"];                                        
+                                        if (uidList.includes(u)) {                                            
+                                            $('#sudoaccess-' + u).prop('checked', true);
+                                        } else {                                            
+                                            $('#sudoaccess-' + u).prop('checked', false);
+                                        }
+                                    }                                                                                                     
+                                }); 
+                            }); 
+                        });
                 }
             });
         }).error(function () {
