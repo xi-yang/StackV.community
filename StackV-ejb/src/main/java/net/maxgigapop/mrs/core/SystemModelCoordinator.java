@@ -101,7 +101,8 @@ public class SystemModelCoordinator {
         if (!bootStrapped) {
             logger.trace(method, "bootstrapping - bootStrapped==false");
         }
-        //check driverInstances (catch: if someone unplug and plug a driver within a minute, we will have problem)
+        //@TODO: add a persistent timestamp for DriverInstanceByTopologyMap. Then refreshAll only if recently updated
+        DriverInstancePersistenceManager.refreshAll();
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null || ditMap.isEmpty()) {
             bootStrapped = false;
