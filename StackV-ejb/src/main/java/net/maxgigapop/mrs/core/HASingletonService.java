@@ -6,6 +6,7 @@
 package net.maxgigapop.mrs.core;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.Remote;
 
@@ -49,6 +50,11 @@ public class HASingletonService implements Service<DataConcurrencyPoster> {
         }
         dataPoster.setSystemModelCoordinator_bootStrapped(false);
         dataPoster.setSystemModelCoordinator_cachedOntModel(null);
+        try {
+            Thread.sleep(30000); // sleep for 10 secs, waiting for JNDI
+        } catch (InterruptedException ex) {
+            ;
+        }
         final String node = System.getProperty("jboss.node.name");
         logger.message(method, "Start HASingleton DriverModelPuller service '" + this.getClass().getName() + "' on Node: "+node);
         try {

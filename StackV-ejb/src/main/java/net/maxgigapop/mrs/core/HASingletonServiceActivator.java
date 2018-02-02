@@ -61,7 +61,6 @@ public class HASingletonServiceActivator implements ServiceActivator {
         SimpleSingletonElectionPolicy policy = new SimpleSingletonElectionPolicy();
         try {
             factory = (SingletonServiceBuilderFactory) factoryService.awaitValue();
-            Thread.sleep(30000); // sleep for 10 secs, waiting for JNDI
             factory.createSingletonServiceBuilder(HASingletonService.SINGLETON_SERVICE_NAME, service)
                     .electionPolicy(policy)
                     .build(context.getServiceTarget())
