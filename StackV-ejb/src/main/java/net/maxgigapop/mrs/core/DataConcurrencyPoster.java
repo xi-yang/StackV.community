@@ -59,8 +59,8 @@ public class DataConcurrencyPoster {
     static public DataConcurrencyPoster getSingleton() {
         try {
             InitialContext ic = new InitialContext();
-            net.maxgigapop.mrs.core.HASingletonService haservice = (net.maxgigapop.mrs.core.HASingletonService) ic.lookup("java:global/HASingletonService");
-            return (DataConcurrencyPoster) haservice.getValue();
+            Object haservice =  ic.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/HASingletonService");
+            return ((net.maxgigapop.mrs.core.HASingletonService) haservice).getValue();
         } catch (NamingException e) {
             return null;
         }

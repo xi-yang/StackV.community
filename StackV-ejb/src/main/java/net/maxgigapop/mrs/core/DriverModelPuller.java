@@ -23,6 +23,8 @@
 
 package net.maxgigapop.mrs.core;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -99,7 +101,13 @@ public class DriverModelPuller {
     @Timeout
     public void run() {
         String method = "run";
-        logger.trace_start(method);
+        logger.start(method);
+        try {
+            String hostname = InetAddress.getLocalHost().getHostName();
+            logger.message(method, "running on host="+hostname);
+        } catch (UnknownHostException ex) {
+            ;
+        }
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
             DriverInstancePersistenceManager.refreshAll();

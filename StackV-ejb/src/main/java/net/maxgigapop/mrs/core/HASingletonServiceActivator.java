@@ -36,6 +36,9 @@ import org.wildfly.clustering.singleton.SingletonServiceBuilderFactory;
 import org.wildfly.clustering.singleton.election.SimpleSingletonElectionPolicy;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.jboss.as.naming.WritableServiceBasedNamingStore;
+import org.jboss.as.server.ServerEnvironment;
+import org.jboss.as.server.ServerEnvironmentService;
+import org.jboss.msc.value.InjectedValue;
 import org.wildfly.clustering.singleton.SingletonServiceName;
 
 /**
@@ -50,16 +53,19 @@ public class HASingletonServiceActivator implements ServiceActivator {
         String method = "activate";
         logger.start(method);
         HASingletonService service = new HASingletonService();
-        //ServiceName factoryServiceName = ServiceName.parse("jboss.clustering.singleton.server.default");
-        ServiceName factoryServiceName = SingletonServiceName.BUILDER.getServiceName("server", "default");
+        ServiceName factoryServiceName = ServiceName.parse("jboss.clustering.singleton.server.default");
+        //@Use the below ServiceName for domain deployment
+        //ServiceName factoryServiceName = SingletonServiceName.BUILDER.getServiceName("server", "default");
         ServiceController<?> factoryService = context.getServiceRegistry().getRequiredService(factoryServiceName);
         SingletonServiceBuilderFactory factory;
         SimpleSingletonElectionPolicy policy = new SimpleSingletonElectionPolicy();
         try {
             factory = (SingletonServiceBuilderFactory) factoryService.awaitValue();
+            Thread.sleep(30000); // sleep for 10 secs, waiting for JNDI
             factory.createSingletonServiceBuilder(HASingletonService.SINGLETON_SERVICE_NAME, service)
                     .electionPolicy(policy)
                     .build(context.getServiceTarget())
+                    .setInitialMode(ServiceController.Mode.ACTIVE) 
                     .install();
         } catch (InterruptedException ex) {
             throw new ServiceRegistryException(ex);
@@ -67,7 +73,7 @@ public class HASingletonServiceActivator implements ServiceActivator {
         try {
             InitialContext initialContext = new InitialContext();
             WritableServiceBasedNamingStore.pushOwner(HASingletonService.SINGLETON_SERVICE_NAME);
-            initialContext.bind("java:global/HASingletonService", service);
+            initialContext.bind("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/HASingletonService", service);
         } catch (NamingException ex) {
             Logger.getLogger(HASingletonServiceActivator.class.getName()).log(Level.SEVERE, null, ex);
         } finally {

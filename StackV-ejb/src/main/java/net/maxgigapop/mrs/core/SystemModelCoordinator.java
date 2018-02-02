@@ -24,6 +24,8 @@
 package net.maxgigapop.mrs.core;
 
 import com.hp.hpl.jena.ontology.OntModel;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -112,7 +114,13 @@ public class SystemModelCoordinator {
     @Timeout
     public void autoUpdate() {
         String method = "autoUpdate";
-        logger.trace_start(method);
+        logger.start(method);
+        try {
+            String hostname = InetAddress.getLocalHost().getHostName();
+            logger.message(method, "running on host="+hostname);
+        } catch (UnknownHostException ex) {
+            ;
+        }
         DataConcurrencyPoster dataConcurrencyPoster = DataConcurrencyPoster.getSingleton();
         boolean bootStrapped = dataConcurrencyPoster.isSystemModelCoordinator_bootStrapped();
         if (!bootStrapped) {
@@ -208,7 +216,7 @@ public class SystemModelCoordinator {
         if (dataConcurrencyPoster != null) {
             dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(systemVersionGroup.getCachedModelBase().getOntModel());
         }
-        logger.trace_end(method);
+        logger.end(method);
         return this.systemVersionGroup;
     }
 

@@ -7,6 +7,7 @@ package net.maxgigapop.mrs.core;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
+import javax.ejb.Remote;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -17,11 +18,13 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import net.maxgigapop.mrs.common.StackLogger;
+import org.jboss.as.naming.WritableServiceBasedNamingStore;
 
 /**
  *
  * @author xyang
  */
+@Remote
 public class HASingletonService implements Service<DataConcurrencyPoster> {
     private static final StackLogger logger = new StackLogger(HASingletonService.class.getName(), "HASingletonService");
     public static final ServiceName SINGLETON_SERVICE_NAME = ServiceName.JBOSS.append("stackv", "ha", "singleton", "service");
@@ -75,7 +78,7 @@ public class HASingletonService implements Service<DataConcurrencyPoster> {
             logger.message(method, "Stop HASingleton timer service '" + this.getClass().getName() + "'");
             try {
                 InitialContext ic = new InitialContext();
-                ((net.maxgigapop.mrs.core.DriverModelPuller) ic.lookup("glojava:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DriverModelPuller"))
+                ((net.maxgigapop.mrs.core.DriverModelPuller) ic.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DriverModelPuller"))
                         .stop();
             } catch (NamingException e) {
                 logger.error(method, "Could not stop DriverModelPuller:" + e.getMessage());
