@@ -5,6 +5,7 @@
  */
 package net.maxgigapop.mrs.core;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import org.jboss.msc.service.Service;
@@ -18,7 +19,7 @@ import net.maxgigapop.mrs.common.StackLogger;
  *
  * @author xyang
  */
-public class HASingletonService implements Service<DataConcurrencyPoster> {
+public class HASingletonService implements Service<String> {
     private static final StackLogger logger = new StackLogger(HASingletonService.class.getName(), "HASingletonService");
     public static final ServiceName SINGLETON_SERVICE_NAME = ServiceName.JBOSS.append("stackv", "ha", "singleton", "service");
 
@@ -26,12 +27,6 @@ public class HASingletonService implements Service<DataConcurrencyPoster> {
      * A flag whether the service is started.
      */
     private final AtomicBoolean started = new AtomicBoolean(false);
-    private DataConcurrencyPoster dataPoster = new DataConcurrencyPoster();
-
-    @Override
-    public DataConcurrencyPoster getValue() throws IllegalStateException, IllegalArgumentException {
-        return dataPoster;
-    }
 
     @Override
     public void start(StartContext arg0) throws StartException {
@@ -40,8 +35,6 @@ public class HASingletonService implements Service<DataConcurrencyPoster> {
         if (!started.compareAndSet(false, true)) {
             throw new StartException("The service is still started!");
         }
-        dataPoster.setSystemModelCoordinator_bootStrapped(false);
-        dataPoster.setSystemModelCoordinator_cachedOntModel(null);
         final String node = System.getProperty("jboss.node.name");
         logger.message(method, "Start HASingleton DriverModelPuller service '" + this.getClass().getName() + "' on Node: "+node);
         while(true) {
@@ -78,6 +71,20 @@ public class HASingletonService implements Service<DataConcurrencyPoster> {
                 logger.error(method, "Could not stop DriverModelPuller:" + e.getMessage());
             }
         }
+        DataConcurrencyPoster dataConcurrencyPoster;
+        try {
+            Context ejbCxt = new InitialContext();
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (NamingException e) {
+            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
+        }
+        dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(false);
+        dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(null);
         logger.end(method);
+    }
+
+    @Override
+    public String getValue() throws IllegalStateException, IllegalArgumentException {
+        return System.getProperty("jboss.node.name");
     }
 }

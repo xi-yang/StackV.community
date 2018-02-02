@@ -38,6 +38,7 @@ import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import net.maxgigapop.mrs.bean.DriverInstance;
@@ -77,6 +78,15 @@ public class SystemModelCoordinator {
         if (PersistenceManager.getEntityManager() == null) {
             PersistenceManager.initialize(entityManager);
         }
+        DataConcurrencyPoster dataConcurrencyPoster;
+        try {
+            Context ejbCxt = new InitialContext();
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (NamingException e) {
+            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
+        }
+        dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(false);
+        dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(null);
     }
     
     @Lock(LockType.WRITE)
