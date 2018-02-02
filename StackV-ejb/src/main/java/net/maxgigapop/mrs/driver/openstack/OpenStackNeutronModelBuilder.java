@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import net.maxgigapop.mrs.common.AddressUtil;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
@@ -285,7 +286,16 @@ public class OpenStackNeutronModelBuilder {
                 }
                 linuxRouteNum++;
             }
-            
+            if (metadata != null && metadata.containsKey("alt name")) {
+                String altName = (String) metadata.get("alt name");
+                model.add(model.createStatement(VM, Nml.name, altName));
+                if (AddressUtil.getIpFromName(altName) != null) {
+                    Resource naFqdn = RdfOwl.createResource(model, VM.getURI() + ":fqdn", Mrs.NetworkAddress);
+                    model.add(model.createStatement(VM, Mrs.hasNetworkAddress, naFqdn));
+                    model.add(model.createStatement(naFqdn, Mrs.type, "fqdn"));
+                    model.add(model.createStatement(naFqdn, Mrs.value, altName));
+                }
+            }            
             if (metadata != null && metadata.containsKey("quagga:bgp:info")) {
                 if (vmRoutingSvc == null) {
                     vmRoutingSvc = RdfOwl.createResource(model, ResourceTool.getResourceUri(server_name + ":routingservice", OpenstackPrefix.routingService, server_name), Mrs.RoutingService);
