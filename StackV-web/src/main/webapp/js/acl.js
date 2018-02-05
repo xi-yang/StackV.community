@@ -899,7 +899,7 @@ function createLoginAclPolicy(serviceUUID, username) {
     var hgLoginName = "hg-login-" + serviceUUID;
     var hbacLoginName = "hbac-login-" + serviceUUID;    
     var loginServices = ["login","sshd"];
-    var hosts;
+    
     var aclLoginPolicyResult = {}; // currently a way to debug errors
     
     // need to change it so when all the ajax calls are done - then return the aclPolicyResult
@@ -916,18 +916,21 @@ function createLoginAclPolicy(serviceUUID, username) {
         var ugError = ug[0]["error"];
         var hgError = hg[0]["error"];
         var hbacError = hbac[0]["error"];
-        var hostsQueryError = true;        
+        var hostsQueryError = true;
+        var hosts;
         
-        console.log("login getHostsForServiceInstance: " + JSON.stringify(hostsQuery));
+        console.log("**** login getHostsForServiceInstance hostsQuery raw: " + hostsQuery);
+        console.log("*login getHostsForServiceInstance first element in array: " + JSON.stringify(hostsQuery[0]));
+        console.log("**login getHostsForServiceInstance: " + JSON.stringify(hostsQuery));
         // verify and parse the loginHosts data
         // looks like below
         //{ serviceUUID: "5578c890-9a1c-4e23-9686-ab70ad274a92", jsonTemplate: "{\"hostgroup\":[{\"hostname\":\"180-146.research.maxgigapop.net\"}]}", jsonModel: null }
         
         // just to verify the right data is gotten
-        if (hostsQuery["serviceUUID"] === serviceUUID) {
+        if (hostsQuery[0]["serviceUUID"] === serviceUUID) {
             hostsQueryError = false;
             aclLoginPolicyResult["RecievedRightHostsForServiceInstance"] = true;
-            var parsed = JSON.parse(hostsQuery["jsonTemplate"]);
+            var parsed = JSON.parse(hostsQuery[0]["jsonTemplate"]);
             var hostsObjs = parsed["hostgroup"];
             hostsObjs.forEach(function(h) {
                 hosts.push(h["hostname"]);
@@ -966,7 +969,9 @@ function createLoginAclPolicy(serviceUUID, username) {
             aclLoginPolicyResult["LoginGroupAndRuleCreatedAndRightHostsFound"] = true;
         }
         
-    }).then(function() {
+    }).then(function(hosts) {
+        
+        console.log("hosts: " + hosts);
         
         var addLoginUgUsers = addUsersToUserGroup(username, ugLoginName);
         var addLoginHgHosts = addHostsToHostGroup(hosts, hgLoginName);
@@ -1039,8 +1044,7 @@ function createSudoAclPolicy(serviceUUID, username) {
     var ugSudoName = "ug-sudo-" + serviceUUID;
     var hgSudoName = "hg-sudo-" + serviceUUID;
     var hbacSudoName = "hbac-sudo-" + serviceUUID;
-    var sudoServices = ["login","sshd","sudo"];
-    var hosts;
+    var sudoServices = ["login","sshd","sudo"];    
     var aclSudoPolicyResult = {}; // currently a way to debug errors
     
     // need to change it so when all the ajax calls are done - then return the aclSudoPolicyResult
@@ -1057,18 +1061,21 @@ function createSudoAclPolicy(serviceUUID, username) {
         var ugError = ug[0]["error"];
         var hgError = hg[0]["error"];
         var hbacError = hbac[0]["error"];
-        var hostsQueryError = true;        
+        var hostsQueryError = true;
+        var hosts;
         
-        console.log("login getHostsForServiceInstance: " + JSON.stringify(hostsQuery));
+        console.log("**** sudo getHostsForServiceInstance hostsQuery raw: " + hostsQuery);
+        console.log("*sudo getHostsForServiceInstance first element in array: " + JSON.stringify(hostsQuery[0]));
+        console.log("**sudo getHostsForServiceInstance: " + JSON.stringify(hostsQuery));
         // verify and parse the loginHosts data
         // looks like below
         //{ serviceUUID: "5578c890-9a1c-4e23-9686-ab70ad274a92", jsonTemplate: "{\"hostgroup\":[{\"hostname\":\"180-146.research.maxgigapop.net\"}]}", jsonModel: null }
         
         // just to verify the right data is gotten
-        if (hostsQuery["serviceUUID"] === serviceUUID) {
+        if (hostsQuery[0]["serviceUUID"] === serviceUUID) {
             hostsQueryError = false;
             aclSudoPolicyResult["RecievedRightHostsForServiceInstance"] = true;
-            var parsed = JSON.parse(hostsQuery["jsonTemplate"]);
+            var parsed = JSON.parse(hostsQuery[0]["jsonTemplate"]);
             var hostsObjs = parsed["hostgroup"];
             hostsObjs.forEach(function(h) {
                 hosts.push(h["hostname"]);
@@ -1107,7 +1114,9 @@ function createSudoAclPolicy(serviceUUID, username) {
             aclSudoPolicyResult["SudoGroupAndRuleCreatedAndRightHostsFound"] = true;
         }
         
-    }).then(function() {
+    }).then(function(hosts) {
+        
+        console.log("sudo hosts: " + hosts);
         
         var addSudoUgUsers = addUsersToUserGroup(username, ugSudoName);
         var addSudoHgHosts = addHostsToHostGroup(hosts, hgSudoName);
@@ -1398,7 +1407,27 @@ function deleteHBACRule(hbacruleName) {
 
 // Delete the ACL Policy when the service instance is cancelled.
 function removeACLPolicy(serviceUUID, accessType) {
+    var ugName = "ug-" + accessType + "-" + serviceUUID;
+    var hgName = "hg-" + accessType + "-" + serviceUUID;
+    var hbacName = "hbac-" + accessType + "-" + serviceUUID;
+    var removeAclPolicyResult = {}; // currently a way to debug errors
     
+    // need to change it so when all the ajax calls are done - then return the aclSudoPolicyResult
+    
+    // the user group, host group, hbac rule all need to created before any
+    // (mainly adding users, hosts, and services) is done to them
+    
+    var deleteUg = deleteUserGroup(ugName);
+    var deleteHg = deleteHostGroup(hgName);
+    var deleteHbac = deleteHBACRule(hbacName);
+    
+    return $.when(deleteUg, deleteHg, deleteHbac).done(function(delUg, delHg, delHbac) {
+        removeAclPolicyResult["DeletedUserGroup"] = JSON.stringify(delUg);
+        removeAclPolicyResult["DeletedHostGroup"] = JSON.stringify(delHg);
+        removeAclPolicyResult["DeletedHBAC"] = JSON.stringify(delHbac);
+        console.log("Remove ACL policy: " + JSON.stringify(removeAclPolicyResult));
+        return removeAclPolicyResult;
+    });
 }
 
 
