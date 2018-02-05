@@ -118,7 +118,7 @@ function newView(panel) {
 }
 
 function loadAdmin() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs';
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs/serverside';
     loadDataTable(apiUrl);
     setTimeout(function () {
         if (view === "left") {
@@ -142,7 +142,7 @@ function reloadData() {
             refreshSync(refreshed, timerSetting);
 
             // Refresh Operations
-            reloadLogs();
+            reloadLogs();            
         }, 500);
     });
 }

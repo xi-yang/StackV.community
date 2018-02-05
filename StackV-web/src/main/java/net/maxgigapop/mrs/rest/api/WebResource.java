@@ -79,6 +79,9 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -1943,6 +1946,118 @@ public class WebResource {
                 logArr.add(logJSON);
             }
             retJSON.put("data", logArr);
+
+            return retJSON.toJSONString();
+        } catch (UnhandledException ex) {
+            logger.trace(method, "Logging connection lost?");
+            return null;
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    @GET
+    @Path("/logging/logs/serverside")
+    @Produces("application/json")
+    public String getLogsServerSide(@Context UriInfo uriInfo) throws SQLException {
+        MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
+        String level = queryParams.getFirst("level");
+        String refUUID = queryParams.getFirst("refUUID");
+        int draw = Integer.parseInt(queryParams.getFirst("draw"));
+        int start = Integer.parseInt(queryParams.getFirst("start"));
+        int length = Integer.parseInt(queryParams.getFirst("length"));
+
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "getLogsServerSide";
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", front_db_user);
+            front_connectionProps.put("password", front_db_pass);
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            String prepString = "SELECT * FROM log";
+            // Filtering by UUID alone
+            if (refUUID != null && (level == null || level.equalsIgnoreCase("TRACE"))) {
+                prepString = prepString + " WHERE referenceUUID = ?";
+            } // Filtering by level alone 
+            else if (refUUID == null && level != null) {
+                switch (level) {
+                    case "INFO":
+                        prepString = prepString + " WHERE level != 'TRACE'";
+                        break;
+                    case "WARN":
+                        prepString = prepString + " WHERE level != 'TRACE' AND level != 'INFO'";
+                        break;
+                    case "ERROR":
+                        prepString = prepString + " WHERE level = 'ERROR'";
+                        break;
+                }
+            } // Filtering by both
+            else if (refUUID != null && level != null) {
+                switch (level) {
+                    case "TRACE":
+                        prepString = prepString + " WHERE referenceUUID = ?";
+                        break;
+                    case "INFO":
+                        prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE'";
+                        break;
+                    case "WARN":
+                        prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO'";
+                        break;
+                    case "ERROR":
+                        prepString = prepString + " WHERE referenceUUID = ? AND level = 'ERROR'";
+                        break;
+                }
+            }
+
+            String prepStringCount = prepString.replace("SELECT *", "SELECT COUNT(*)");
+            prep = front_conn.prepareStatement(prepStringCount);
+            if (refUUID != null) {
+                prep.setString(1, refUUID);
+            }
+            rs = prep.executeQuery();
+            rs.next();
+            int count = rs.getInt(1);
+
+            prepString = prepString + " ORDER BY log_id DESC LIMIT ?,?";
+            prep = front_conn.prepareStatement(prepString);
+            if (refUUID != null) {
+                prep.setString(1, refUUID);
+                prep.setInt(2, start);
+                prep.setInt(3, length);
+            } else {
+                prep.setInt(1, start);
+                prep.setInt(2, length);
+            }
+
+            rs = prep.executeQuery();
+            JSONObject retJSON = new JSONObject();
+            JSONArray logArr = new JSONArray();
+            while (rs.next()) {
+                JSONObject logJSON = new JSONObject();
+
+                logJSON.put("referenceUUID", rs.getString("referenceUUID"));
+                logJSON.put("marker", rs.getString("marker"));
+                logJSON.put("timestamp", rs.getString("timestamp"));
+                logJSON.put("level", rs.getString("level"));
+                logJSON.put("logger", rs.getString("logger"));
+                logJSON.put("message", rs.getString("message"));
+                logJSON.put("event", rs.getString("event"));
+                logJSON.put("exception", rs.getString("exception"));
+
+                logArr.add(logJSON);
+            }
+
+            retJSON.put("data", logArr);
+            retJSON.put("draw", draw);
+            retJSON.put("recordsTotal", count);
+            retJSON.put("recordsFiltered", count);
 
             return retJSON.toJSONString();
         } catch (UnhandledException ex) {

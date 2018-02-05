@@ -23,7 +23,7 @@
 /* global XDomainRequest, baseUrl, loggedIn, TweenLite, Power2, tweenBlackScreen */
 // Service JavaScript Library
 var baseUrl = window.location.origin;
-var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
+var keycloak = Keycloak('/StackV-web/resources/keycloak.json');
 var refreshTimer;
 var countdownTimer;
 var dataTable;
@@ -33,7 +33,10 @@ var dataTable;
 $(function () {
     $.ajaxSetup({
         cache: false,
-        timeout: 60000
+        timeout: 60000,
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        }
     });
 
     keycloak.init().success(function (authenticated) {
@@ -92,6 +95,10 @@ $(function () {
         if ($("#tag-panel").length) {
             initTagPanel();
         }
+
+        setInterval(function () {
+            keycloak.updateToken(70);
+        }, (60000));
     };
     keycloak.onTokenExpire = function () {
         keycloak.updateToken(20).success(function () {
@@ -1039,12 +1046,10 @@ function pauseRefresh() {
     clearInterval(countdownTimer);
     document.getElementById('refresh-button').innerHTML = 'Paused';
     $("#refresh-timer").attr('disabled', true);
-    $("#refresh-button").attr('disabled', true);
 }
 function resumeRefresh() {
     var timer = $("#refresh-timer");
     if (timer.attr('disabled')) {
-        $("#refresh-button").attr('disabled', false);
         timer.attr('disabled', false);
         if (timer.val() === "off") {
             $("#refresh-button").html('Manually Refresh Now');
@@ -1076,29 +1081,47 @@ function refreshCountdown() {
     countdown--;
 }
 function reloadDataManual() {
-    var sel = document.getElementById("refresh-timer");
-    if (sel.value !== 'off') {
-        timerChange(sel);
+    var timer = $("#refresh-timer");
+    if (timer.attr('disabled')) {
+        openLogDetails = 0;
+        $("tr.shown").each(function () {
+            var row = dataTable.row(this);
+            row.child.hide();
+            $(this).removeClass('shown');
+        });
+
+        resumeRefresh();
+    } else {
+
+        var sel = document.getElementById("refresh-timer");
+        if (sel.value !== 'off') {
+            timerChange(sel);
+        }
+        reloadData();
     }
-    reloadData();
 }
 
 
 /* LOGGING */
 var openLogDetails = 0;
+var cachedStart = 0;
+var justRefreshed = 0;
 var now = new Date();
 function loadDataTable(apiUrl) {
-    drawLoggingCurrentTime();
-    
     dataTable = $('#loggingData').DataTable({
         "ajax": {
             url: apiUrl,
             type: 'GET',
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            data: function (d) {
+                if (justRefreshed > 0) {
+                    d.start = cachedStart;
+                    justRefreshed--;
+                }
             }
         },
-        "dom": 'Bfrtip',
         "buttons": ['csv'],
         "columns": [
             {
@@ -1117,19 +1140,19 @@ function loadDataTable(apiUrl) {
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("row-" + data.level.toLowerCase());
         },
-        "deferRender": true,
+        "dom": 'Bfrtip',
+        "initComplete": function (settings, json) {
+            console.log('DataTables has finished its initialization.');
+        },
         "order": [[1, 'asc']],
         "ordering": false,
         "scroller": {
-            displayBuffer: 10
+            displayBuffer: 15
         },
         "scrollX": true,
         "scrollY": "calc(60vh - 130px)",
-        "initComplete": function (settings, json) {
-            console.log('DataTables has finished its initialisation.');
-        }
+        "serverSide": true
     });
-    new $.fn.dataTable.FixedColumns(dataTable);
 
     // Add event listener for opening and closing details
     $('#loggingData tbody').on('click', 'td.details-control', function () {
@@ -1140,7 +1163,7 @@ function loadDataTable(apiUrl) {
             // This row is already open - close it
             row.child.hide();
             tr.removeClass('shown');
-            if (openLogDetails === 0) {
+            if (openLogDetails === 0 && dataTable.scroller.page().start === 0) {
                 resumeRefresh();
             }
         } else {
@@ -1152,6 +1175,22 @@ function loadDataTable(apiUrl) {
             pauseRefresh();
         }
     });
+
+    $('div.dataTables_scrollBody').scroll(function () {
+        if (dataTable.scroller.page().start === 0 && openLogDetails === 0) {
+            resumeRefresh();
+        } else {
+            pauseRefresh();
+        }
+    });
+
+    dataTable.on('draw', function () {
+        cachedStart = dataTable.ajax.params().start;
+    });
+
+    setInterval(function () {
+        drawLoggingCurrentTime();
+    }, (1000));
 
     var level = sessionStorage.getItem("logging-level");
     if (level !== null) {
@@ -1191,6 +1230,7 @@ function formatChild(d) {
     return retString;
 }
 function reloadLogs() {
+    justRefreshed = 2;
     if (dataTable) {
         if (sessionStorage.getItem("logging-level") !== null) {
             dataTable.ajax.reload(filterLogs(), false);
@@ -1198,16 +1238,11 @@ function reloadLogs() {
             dataTable.ajax.reload(null, false);
         }
     }
-    
-    now = new Date();
-    drawLoggingCurrentTime();
 }
 function drawLoggingCurrentTime() {
+    now = new Date();
     var $time = $("#log-time");
-        
-    
-    var nowStr = ('0'+now.getHours()).slice(-2) + ":" + ('0'+now.getMinutes()).slice(-2) + ":" + ('0'+now.getSeconds()).slice(-2) + "," + ('00'+now.getMilliseconds()).slice(-3);
-    
+    var nowStr = ('0' + now.getHours()).slice(-2) + ":" + ('0' + now.getMinutes()).slice(-2) + ":" + ('0' + now.getSeconds()).slice(-2);
     $time.text(nowStr);
 }
 function filterLogs() {

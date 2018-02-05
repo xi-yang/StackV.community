@@ -289,7 +289,7 @@
         <div id="tag-panel">
         </div>
         <!-- JS -->
-        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>
         <script src="/StackV-web/js/bootstrap.js"></script>
         <script src="/StackV-web/js/nexus.js"></script>
