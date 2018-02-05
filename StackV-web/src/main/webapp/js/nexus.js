@@ -23,7 +23,7 @@
 /* global XDomainRequest, baseUrl, loggedIn, TweenLite, Power2, tweenBlackScreen */
 // Service JavaScript Library
 var baseUrl = window.location.origin;
-var keycloak = Keycloak('/StackV-web/data/json/keycloak.json');
+var keycloak = Keycloak('/StackV-web/resources/keycloak.json');
 var refreshTimer;
 var countdownTimer;
 var dataTable;
@@ -33,7 +33,10 @@ var dataTable;
 $(function () {
     $.ajaxSetup({
         cache: false,
-        timeout: 60000
+        timeout: 60000,
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        }
     });
 
     keycloak.init().success(function (authenticated) {
@@ -1043,12 +1046,10 @@ function pauseRefresh() {
     clearInterval(countdownTimer);
     document.getElementById('refresh-button').innerHTML = 'Paused';
     $("#refresh-timer").attr('disabled', true);
-    $("#refresh-button").attr('disabled', true);
 }
 function resumeRefresh() {
     var timer = $("#refresh-timer");
     if (timer.attr('disabled')) {
-        $("#refresh-button").attr('disabled', false);
         timer.attr('disabled', false);
         if (timer.val() === "off") {
             $("#refresh-button").html('Manually Refresh Now');
@@ -1080,11 +1081,24 @@ function refreshCountdown() {
     countdown--;
 }
 function reloadDataManual() {
-    var sel = document.getElementById("refresh-timer");
-    if (sel.value !== 'off') {
-        timerChange(sel);
+    var timer = $("#refresh-timer");
+    if (timer.attr('disabled')) {
+        openLogDetails = 0;
+        $("tr.shown").each(function () {
+            var row = dataTable.row(this);
+            row.child.hide();
+            $(this).removeClass('shown');
+        });
+
+        resumeRefresh();
+    } else {
+
+        var sel = document.getElementById("refresh-timer");
+        if (sel.value !== 'off') {
+            timerChange(sel);
+        }
+        reloadData();
     }
-    reloadData();
 }
 
 
@@ -1103,9 +1117,9 @@ function loadDataTable(apiUrl) {
             },
             data: function (d) {
                 if (justRefreshed > 0) {
-                    d.start = cachedStart;                    
+                    d.start = cachedStart;
                     justRefreshed--;
-                }                
+                }
             }
         },
         "buttons": ['csv'],
@@ -1149,7 +1163,7 @@ function loadDataTable(apiUrl) {
             // This row is already open - close it
             row.child.hide();
             tr.removeClass('shown');
-            if (openLogDetails === 0) {
+            if (openLogDetails === 0 && dataTable.scroller.page().start === 0) {
                 resumeRefresh();
             }
         } else {
@@ -1158,6 +1172,14 @@ function loadDataTable(apiUrl) {
             // Open this row
             row.child(formatChild(row.data())).show();
             tr.addClass('shown');
+            pauseRefresh();
+        }
+    });
+
+    $('div.dataTables_scrollBody').scroll(function () {
+        if (dataTable.scroller.page().start === 0 && openLogDetails === 0) {
+            resumeRefresh();
+        } else {
             pauseRefresh();
         }
     });

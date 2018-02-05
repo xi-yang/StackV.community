@@ -1980,14 +1980,8 @@ public class WebResource {
             front_connectionProps.put("password", front_db_pass);
             front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
                     front_connectionProps);
-            
-            prep = front_conn.prepareStatement("SELECT COUNT(log_id) FROM log");
-            rs = prep.executeQuery();
-            rs.next();
-            int count = rs.getInt(1);
 
             String prepString = "SELECT * FROM log";
-
             // Filtering by UUID alone
             if (refUUID != null && (level == null || level.equalsIgnoreCase("TRACE"))) {
                 prepString = prepString + " WHERE referenceUUID = ?";
@@ -2022,6 +2016,15 @@ public class WebResource {
                 }
             }
 
+            String prepStringCount = prepString.replace("SELECT *", "SELECT COUNT(*)");
+            prep = front_conn.prepareStatement(prepStringCount);
+            if (refUUID != null) {
+                prep.setString(1, refUUID);
+            }
+            rs = prep.executeQuery();
+            rs.next();
+            int count = rs.getInt(1);
+
             prepString = prepString + " ORDER BY log_id DESC LIMIT ?,?";
             prep = front_conn.prepareStatement(prepString);
             if (refUUID != null) {
@@ -2032,7 +2035,7 @@ public class WebResource {
                 prep.setInt(1, start);
                 prep.setInt(2, length);
             }
-            
+
             rs = prep.executeQuery();
             JSONObject retJSON = new JSONObject();
             JSONArray logArr = new JSONArray();
@@ -2049,12 +2052,12 @@ public class WebResource {
                 logJSON.put("exception", rs.getString("exception"));
 
                 logArr.add(logJSON);
-            }            
-            
+            }
+
             retJSON.put("data", logArr);
             retJSON.put("draw", draw);
             retJSON.put("recordsTotal", count);
-            retJSON.put("recordsFiltered", count);            
+            retJSON.put("recordsFiltered", count);
 
             return retJSON.toJSONString();
         } catch (UnhandledException ex) {
