@@ -76,6 +76,7 @@ public class ServiceEngine {
             int instanceID = results;
 
             result = initInstance(refUUID, svcDelta, token.auth());
+            lastState = "COMPILED";
             logger.trace(method, "Initialized");
             cacheSystemDelta(instanceID, result);
 
