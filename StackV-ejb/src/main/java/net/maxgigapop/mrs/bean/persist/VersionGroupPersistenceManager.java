@@ -143,7 +143,8 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     logger.trace("cleanupAll", vg + " deleted.");
                 }
             }
-            // remove all empty VGs
+            // remove all empty VGs ? (redundant, still need to exclude ones with dependencies)
+            /*
             q = createQuery(String.format("SELECT id FROM %s", VersionGroup.class.getSimpleName()));
             listVG = (List<Long>) q.getResultList();
             if (listVG != null) {
@@ -157,6 +158,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     }
                 }
             }
+            */
         } catch (Exception e) {
             logger.warning("cleanupAll",  "exception raised and ignored: " + e);
         }
