@@ -15,8 +15,8 @@
 <jsp:setProperty name="user" property="*" /> 
 
 
-<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />  
+
+  
 
 
 

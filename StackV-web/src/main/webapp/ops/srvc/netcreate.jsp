@@ -3,8 +3,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
-<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />
+
+
 <!DOCTYPE html>
 <html>
     <head>

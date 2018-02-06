@@ -26,8 +26,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql"%>
 <jsp:useBean id="user" class="web.beans.userBeans" scope="session" />
 <jsp:setProperty name="user" property="*" />
-<jsp:useBean id="serv" class="web.beans.serviceBeans" scope="page" />
-<jsp:setProperty name="serv" property="*" />
+
+
 <!DOCTYPE html>
 <html>
     <head>
