@@ -24,7 +24,6 @@
 package net.maxgigapop.mrs.rest.api;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -32,8 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -61,6 +58,8 @@ public class DriverResource {
 
     private final String front_db_user = "root";
     private final String front_db_pass = "root";
+    
+    private final JNDIFactory factory = new JNDIFactory();
 
     @Context
     private UriInfo context;
@@ -79,11 +78,7 @@ public class DriverResource {
         Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
         ArrayList<String> retList = new ArrayList<>();
         
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
-                prop);
+        Connection front_conn = factory.getConnection("frontend");
         
         for (String instance : instanceSet) {
             PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance WHERE topologyUri = ?");
@@ -108,11 +103,7 @@ public class DriverResource {
         logger.targetid(driverId);
         logger.trace_start(method);
         
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/rainsdb",
-                prop);
+        Connection front_conn = factory.getConnection("frontend");
         
         PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ?");
         prep.setString(1, driverId);

@@ -28,16 +28,15 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
+import net.maxgigapop.mrs.rest.api.JNDIFactory;
 import net.maxgigapop.mrs.rest.api.WebResource;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
@@ -50,9 +49,8 @@ import org.json.simple.JSONObject;
 public class ServiceEngine {
 
     private final static StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceEngine");
-    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
-    private final static String FRONT_DB_USER = "front_view";
-    private final static String FRONT_DB_PASS = "frontuser";   
+    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";   
+    private final static JNDIFactory factory = new JNDIFactory();
 
     // OPERATION FUNCTIONS    
     static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
@@ -123,12 +121,7 @@ public class ServiceEngine {
             PreparedStatement prep = null;
             ResultSet rs = null;
             try {
-                Properties front_connectionProps = new Properties();
-                front_connectionProps.put("user", FRONT_DB_USER);
-                front_connectionProps.put("password", FRONT_DB_PASS);
-
-                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                        front_connectionProps);
+                front_conn = factory.getConnection("frontend");
 
                 prep = front_conn.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
                 prep.setString(1, lastState);
@@ -155,12 +148,7 @@ public class ServiceEngine {
         // Cache serviceDelta.
         int instanceID = -1;
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT service_instance_id"
                     + " FROM service_instance WHERE referenceUUID = ?");
@@ -195,16 +183,7 @@ public class ServiceEngine {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
-
-            // Retrieve UUID from delta
-            /*
-            
-             */
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             String formatDelta = result.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
