@@ -77,6 +77,8 @@ public class DriverResource {
         Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
         ArrayList<String> retList = new ArrayList<>();
         
+        logger.trace(method, "Post Drivermap keyset");
+        
         Connection front_conn = factory.getConnection("frontend");
         
         for (String instance : instanceSet) {
