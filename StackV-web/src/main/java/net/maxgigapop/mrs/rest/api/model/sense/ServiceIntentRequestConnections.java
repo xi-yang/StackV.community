@@ -3,7 +3,6 @@ package net.maxgigapop.mrs.rest.api.model.sense;
 import java.util.ArrayList;
 import java.util.List;
 import net.maxgigapop.mrs.rest.api.model.sense.BandwidthProfile;
-import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestQueries;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceTerminationPoint;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
@@ -19,7 +18,6 @@ public class ServiceIntentRequestConnections   {
   private @Valid String name = null;
   private @Valid BandwidthProfile bandwidth = null;
   private @Valid List<ServiceTerminationPoint> terminals = new ArrayList<ServiceTerminationPoint>();
-  private @Valid List<ServiceIntentRequestQueries> queries = new ArrayList<ServiceIntentRequestQueries>();
 
   /**
    **/
@@ -72,23 +70,6 @@ public class ServiceIntentRequestConnections   {
     this.terminals = terminals;
   }
 
-  /**
-   **/
-  public ServiceIntentRequestConnections queries(List<ServiceIntentRequestQueries> queries) {
-    this.queries = queries;
-    return this;
-  }
-
-  
-  @ApiModelProperty(value = "")
-  @JsonProperty("queries")
-  public List<ServiceIntentRequestQueries> getQueries() {
-    return queries;
-  }
-  public void setQueries(List<ServiceIntentRequestQueries> queries) {
-    this.queries = queries;
-  }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -101,13 +82,12 @@ public class ServiceIntentRequestConnections   {
     ServiceIntentRequestConnections serviceIntentRequestConnections = (ServiceIntentRequestConnections) o;
     return Objects.equals(name, serviceIntentRequestConnections.name) &&
         Objects.equals(bandwidth, serviceIntentRequestConnections.bandwidth) &&
-        Objects.equals(terminals, serviceIntentRequestConnections.terminals) &&
-        Objects.equals(queries, serviceIntentRequestConnections.queries);
+        Objects.equals(terminals, serviceIntentRequestConnections.terminals);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, bandwidth, terminals, queries);
+    return Objects.hash(name, bandwidth, terminals);
   }
 
   @Override
@@ -118,7 +98,6 @@ public class ServiceIntentRequestConnections   {
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    bandwidth: ").append(toIndentedString(bandwidth)).append("\n");
     sb.append("    terminals: ").append(toIndentedString(terminals)).append("\n");
-    sb.append("    queries: ").append(toIndentedString(queries)).append("\n");
     sb.append("}");
     return sb.toString();
   }
