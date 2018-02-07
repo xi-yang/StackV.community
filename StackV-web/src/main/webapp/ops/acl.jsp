@@ -173,7 +173,7 @@
         <!--<script src="/StackV-web/js/jquery/jquery.js"></script>-->
         <!--<script src="/StackV-web/js/jquery-ui.min.js"></script>-->
         <!--<script src="/StackV-web/js/bootstrap.js"></script>-->
-        <script src="http://code.jquery.com/jquery-2.2.4.min.js" 
+        <script src="//code.jquery.com/jquery-2.2.4.min.js" 
                 integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" 
         crossorigin="anonymous"></script>
         
@@ -181,7 +181,7 @@
         integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
         crossorigin="anonymous"></script>
         
-        <script src="http://code.jquery.com/ui/1.12.1/jquery-ui.min.js" 
+        <script src="//code.jquery.com/ui/1.12.1/jquery-ui.min.js" 
                 integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
         crossorigin="anonymous"></script>
         

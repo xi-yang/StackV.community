@@ -899,6 +899,7 @@ function createLoginAclPolicy(serviceUUID, username) {
     var hgLoginName = "hg-login-" + serviceUUID;
     var hbacLoginName = "hbac-login-" + serviceUUID;    
     var loginServices = ["login","sshd"];
+    var hosts = [];
     
     var aclLoginPolicyResult = {}; // currently a way to debug errors
     
@@ -917,7 +918,7 @@ function createLoginAclPolicy(serviceUUID, username) {
         var hgError = hg[0]["error"];
         var hbacError = hbac[0]["error"];
         var hostsQueryError = true;
-        var hosts;
+        
         
         console.log("**** login getHostsForServiceInstance hostsQuery raw: " + hostsQuery);
         console.log("*login getHostsForServiceInstance first element in array: " + JSON.stringify(hostsQuery[0]));
@@ -969,9 +970,9 @@ function createLoginAclPolicy(serviceUUID, username) {
             aclLoginPolicyResult["LoginGroupAndRuleCreatedAndRightHostsFound"] = true;
         }
         
-    }).then(function(hosts) {
+    }).then(function() {
         
-        console.log("hosts: " + hosts);
+        console.log("in then function hosts: " + hosts);
         
         var addLoginUgUsers = addUsersToUserGroup(username, ugLoginName);
         var addLoginHgHosts = addHostsToHostGroup(hosts, hgLoginName);
@@ -1046,6 +1047,7 @@ function createSudoAclPolicy(serviceUUID, username) {
     var hbacSudoName = "hbac-sudo-" + serviceUUID;
     var sudoServices = ["login","sshd","sudo"];    
     var aclSudoPolicyResult = {}; // currently a way to debug errors
+    var hosts = [];
     
     // need to change it so when all the ajax calls are done - then return the aclSudoPolicyResult
     
@@ -1061,8 +1063,7 @@ function createSudoAclPolicy(serviceUUID, username) {
         var ugError = ug[0]["error"];
         var hgError = hg[0]["error"];
         var hbacError = hbac[0]["error"];
-        var hostsQueryError = true;
-        var hosts;
+        var hostsQueryError = true;        
         
         console.log("**** sudo getHostsForServiceInstance hostsQuery raw: " + hostsQuery);
         console.log("*sudo getHostsForServiceInstance first element in array: " + JSON.stringify(hostsQuery[0]));
@@ -1114,9 +1115,9 @@ function createSudoAclPolicy(serviceUUID, username) {
             aclSudoPolicyResult["SudoGroupAndRuleCreatedAndRightHostsFound"] = true;
         }
         
-    }).then(function(hosts) {
+    }).then(function() {
         
-        console.log("sudo hosts: " + hosts);
+        console.log("in then function sudo hosts: " + hosts);
         
         var addSudoUgUsers = addUsersToUserGroup(username, ugSudoName);
         var addSudoHgHosts = addHostsToHostGroup(hosts, hgSudoName);
@@ -1405,7 +1406,7 @@ function deleteHBACRule(hbacruleName) {
     return $.ajax(ipaAjaxCall);
 }
 
-// Delete the ACL Policy when the service instance is cancelled.
+// Delete the ACL Policy of the specified access when the service instance is cancelled.
 function removeACLPolicy(serviceUUID, accessType) {
     var ugName = "ug-" + accessType + "-" + serviceUUID;
     var hgName = "hg-" + accessType + "-" + serviceUUID;
@@ -1427,6 +1428,25 @@ function removeACLPolicy(serviceUUID, accessType) {
         removeAclPolicyResult["DeletedHBAC"] = JSON.stringify(delHbac);
         console.log("Remove ACL policy: " + JSON.stringify(removeAclPolicyResult));
         return removeAclPolicyResult;
+    });
+}
+
+/**
+ * Removes both types (login and sudo) ACL policies
+ * @param {type} serviceUUID
+ * @returns {undefined}
+ */
+function removeAllACLPolicies(serviceUUID) {
+    var removedAllACLPolicies = {};
+    
+    var removeLoginPolicy = removeACLPolicy(serviceUUID,"login");
+    var removeSudoPolicy = removeACLPolicy(serviceUUID,"sudo");
+    
+    return $.when(removeLoginPolicy, removeSudoPolicy).done(function(rmLogin, rmSudo) {
+        removedAllACLPolicies["RemovedLoginACLPolicy"] = JSON.stringify(rmLogin);
+        removedAllACLPolicies["RemovedSudoACLPolicy"] = JSON.stringify(rmSudo);
+        console.log("Remove All ACL policies: " + JSON.stringify(removedAllACLPolicies));
+        return removedAllACLPolicies;
     });
 }
 
@@ -1500,8 +1520,9 @@ function subloadInstanceACLTable(refUUID) {
 
                                             // if no ACL policy exists, then create it
                                             if (existsRes["result"]["count"] === 0) {
-                                                 createLoginAclPolicy(uuid,username).done(function(result) {                                                    
-                                                     if (result["LoginGroupAndRuleCreated"] === true && result["AddedLoginGroupAndServicesToLoginHBAC"]) {
+                                                 createLoginAclPolicy(uuid,username).done(function(result) {
+                                                     console.log("after createLoginPolicy result: " + JSON.stringify(result));
+                                                     if (result["LoginGroupAndRuleCreatedAndRightHostsFound"] === true && result["AddedLoginGroupAndServicesToLoginHBAC"] === true) {
                                                          swal("Login ACL Policy Created Successfully!", "Added " + username + " to the Login ACL Policy", "success");
                                                      } else {
                                                          swal("Login ACL Policy Creation Failed!", "Error: " + JSON.stringify(result), "error");
@@ -1517,7 +1538,7 @@ function subloadInstanceACLTable(refUUID) {
                                                            icon: "success"
                                                        });
                                                     } else {
-                                                        swal("Could not add " + username + " to ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                                        swal("Could not add " + username + " to the Login ACL Policy", "Error: " + JSON.stringify(result), "error");
                                                     }
                                                  });
                                             }
@@ -1532,17 +1553,32 @@ function subloadInstanceACLTable(refUUID) {
                                         icon: "../img/ajax-loader.gif",
                                         buttons: false
                                     });
-                                    removeUserFromACLPolicy(username, uuid, "login").done(function(result) {
-                                        // if no error
-                                        if (result["error"] === null) {
-                                            swal({
-                                                title: "Removed " + username + " from Login ACL Policy",
-                                                icon: "success"
-                                            });
-                                        } else {
-                                            swal("Not able to remove " + username + " from Login ACL Policy", "Error: " + JSON.stringify(result), "error");
-                                        }
-                                    });
+                                    $.when(ipaLogin()).done(function() {
+                                        removeUserFromACLPolicy(username, uuid, "login").done(function(result) {
+                                            // if no error
+                                            if (result["error"] === null) {
+                                                swal({
+                                                    title: "Removed " + username + " from Login ACL Policy",
+                                                    icon: "success"
+                                                });
+                                            } else {
+                                                swal("Not able to remove " + username + " from Login ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                            }
+
+                                            // if the login checkbox is unchecked, 
+                                            // then uncheck (if checked) the sudo checkbox (which should remove the sudo access for the user)
+                                            var sudoCheckbox = document.getElementById("sudoaccess-" + username);
+                                            console.log("sudo check box checked?: " + sudoCheckbox.checked);
+                                            if (sudoCheckbox.checked) {
+                                                // there are browser caveats to .click() (https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click)
+                                                sudoCheckbox.click();
+                                                
+                                                // tried setting the checkbox to boolean but this wouldn't run the onclick function 
+                                                // and neither would using jquery's triggers function
+                                            }
+                                        
+                                        });                                    
+                                    });                                    
                                 }                                
                             };
                             
@@ -1559,7 +1595,8 @@ function subloadInstanceACLTable(refUUID) {
                             checkBoxSudo.onclick = function () {
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
                                 var username = this.getAttribute("data-username");
-                                if (this.checked) {                                                                     
+                                if (this.checked) {                                                                        
+                                    
                                     swal({
                                         title: "Adding " + username + "...",
                                         text: "Please wait",
@@ -1579,7 +1616,7 @@ function subloadInstanceACLTable(refUUID) {
                                             // if no ACL policy exists, then create it
                                             if (existsRes["result"]["count"] === 0) {
                                                  createSudoAclPolicy(uuid,username).done(function(result) {                                                     
-                                                     if (result["SudoGroupAndRuleCreated"] === true && result["AddedSudoGroupAndServicesToSudoHBAC"]) {
+                                                     if (result["SudoGroupAndRuleCreatedAndRightHostsFound"] === true && result["AddedSudoGroupAndServicesToSudoHBAC"] === true) {
                                                          swal("Sudo ACL Policy Created Successfully", "Added " + username + " to the Sudo ACL Policy", "success");
                                                      } else {
                                                          swal("Sudo ACL Policy Creation Failed", "Error: " + JSON.stringify(result), "error");
@@ -1588,16 +1625,28 @@ function subloadInstanceACLTable(refUUID) {
                                             } else {
                                                 // just add the user to the existing policy by adding them to the right user group
                                                 var usergroupSudo = "ug-sudo-" + uuid;
-                                                 addUsersToUserGroup(username, usergroupSudo).done(function(result) {                                                    
-                                                    if (result["error"] === null) {
-                                                        swal({
-                                                            title: "Added " + username + " to the Sudo ACL Policy",
-                                                            icon: "success"
-                                                        });
-                                                    } else {
-                                                        swal("Could not add " + username + " to Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
-                                                    }
-                                                 });
+                                                addUsersToUserGroup(username, usergroupSudo).done(function(result) {                                                    
+                                                   if (result["error"] === null) {
+                                                       swal({
+                                                           title: "Added " + username + " to the Sudo ACL Policy",
+                                                           icon: "success"
+                                                       });
+                                                   } else {
+                                                       swal("Could not add " + username + " to Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                                   }
+                                                });
+                                            }
+                                            
+                                            // if the sudo checkbox is checked, 
+                                            // then check the login checkbox (which should autorun the login ACL policy creation)
+                                            var loginCheckbox = document.getElementById("loginaccess-" + username);
+                                            console.log("login check box checked?: " + loginCheckbox.checked);
+                                            if (loginCheckbox.checked === false) {                                                
+                                                // there are browser caveats to .click() (https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click)
+                                                loginCheckbox.click();
+                                                
+                                                // tried setting the checkbox to boolean but this wouldn't run the onclick function 
+                                                // and neither would using jquery's triggers function
                                             }
                                                                                        
                                         });                                                                                                                      
@@ -1609,16 +1658,19 @@ function subloadInstanceACLTable(refUUID) {
                                         icon: "../img/ajax-loader.gif",
                                         buttons: false
                                     });
-                                    removeUserFromACLPolicy(username, uuid, "sudo").done(function(result) {                                                                                
-                                        // if no error
-                                        if (result["error"] === null) {
-                                            swal({
-                                                title: "Removed " + username + " from Sudo ACL Policy",
-                                                icon: "success"
-                                            });
-                                        } else {
-                                            swal("Not able to remove " + username + " from Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
-                                        }                                    
+                                    $.when(ipaLogin()).done(function() {
+                                        removeUserFromACLPolicy(username, uuid, "sudo").done(function(result) {                                                                                
+                                            // if no error
+                                            if (result["error"] === null) {
+                                                swal({
+                                                    title: "Removed " + username + " from Sudo ACL Policy",
+                                                    icon: "success"
+                                                });
+                                            } else {
+                                                swal("Not able to remove " + username + " from Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                            }
+                                                                                        
+                                        });
                                     });
                                 }
                                 
