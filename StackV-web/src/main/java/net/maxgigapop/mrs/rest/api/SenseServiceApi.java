@@ -1,7 +1,7 @@
 package net.maxgigapop.mrs.rest.api;
 
-import net.maxgigapop.mrs.rest.api.model.ServiceIntentRequest;
-import net.maxgigapop.mrs.rest.api.model.ServiceIntentResponse;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequest;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentResponse;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;

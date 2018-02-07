@@ -1,9 +1,9 @@
-package net.maxgigapop.mrs.rest.api.model;
+package net.maxgigapop.mrs.rest.api.model.sense;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.maxgigapop.mrs.rest.api.model.CapabilityDescription;
-import net.maxgigapop.mrs.rest.api.model.ServiceTerminationPoint;
+import net.maxgigapop.mrs.rest.api.model.sense.CapabilityDescription;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceTerminationPoint;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 

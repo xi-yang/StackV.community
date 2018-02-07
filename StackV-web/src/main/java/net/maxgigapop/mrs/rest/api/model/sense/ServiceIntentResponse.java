@@ -1,8 +1,8 @@
-package net.maxgigapop.mrs.rest.api.model;
+package net.maxgigapop.mrs.rest.api.model.sense;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.maxgigapop.mrs.rest.api.model.ServiceIntentResponseQueries;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentResponseQueries;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 

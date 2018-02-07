@@ -1,10 +1,10 @@
-package net.maxgigapop.mrs.rest.api.model;
+package net.maxgigapop.mrs.rest.api.model.sense;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.maxgigapop.mrs.rest.api.model.BandwidthProfile;
-import net.maxgigapop.mrs.rest.api.model.ServiceIntentRequestQueries;
-import net.maxgigapop.mrs.rest.api.model.ServiceTerminationPoint;
+import net.maxgigapop.mrs.rest.api.model.sense.BandwidthProfile;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestQueries;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceTerminationPoint;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
 

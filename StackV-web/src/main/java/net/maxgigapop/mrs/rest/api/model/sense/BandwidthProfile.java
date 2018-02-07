@@ -1,4 +1,4 @@
-package net.maxgigapop.mrs.rest.api.model;
+package net.maxgigapop.mrs.rest.api.model.sense;
 
 import javax.validation.constraints.*;
 import javax.validation.Valid;

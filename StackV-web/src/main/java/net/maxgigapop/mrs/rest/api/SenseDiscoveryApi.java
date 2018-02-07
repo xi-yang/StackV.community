@@ -1,9 +1,9 @@
 package net.maxgigapop.mrs.rest.api;
 
-import net.maxgigapop.mrs.rest.api.model.DiscoveryDescription;
-import net.maxgigapop.mrs.rest.api.model.DomainDescription;
-import net.maxgigapop.mrs.rest.api.model.ServiceDescription;
-import net.maxgigapop.mrs.rest.api.model.TopologyDescription;
+import net.maxgigapop.mrs.rest.api.model.sense.DiscoveryDescription;
+import net.maxgigapop.mrs.rest.api.model.sense.DomainDescription;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceDescription;
+import net.maxgigapop.mrs.rest.api.model.sense.TopologyDescription;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
