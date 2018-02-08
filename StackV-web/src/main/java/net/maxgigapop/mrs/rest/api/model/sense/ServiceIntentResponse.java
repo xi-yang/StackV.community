@@ -15,7 +15,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class ServiceIntentResponse   {
   
   private @Valid String serviceUuid = null;
-  private @Valid String queryUuid = null;
   private @Valid List<ServiceIntentResponseQueries> queries = new ArrayList<ServiceIntentResponseQueries>();
   private @Valid String model = null;
 
@@ -35,23 +34,6 @@ public class ServiceIntentResponse   {
   }
   public void setServiceUuid(String serviceUuid) {
     this.serviceUuid = serviceUuid;
-  }
-
-  /**
-   **/
-  public ServiceIntentResponse queryUuid(String queryUuid) {
-    this.queryUuid = queryUuid;
-    return this;
-  }
-
-  
-  @ApiModelProperty(value = "")
-  @JsonProperty("query_uuid")
-  public String getQueryUuid() {
-    return queryUuid;
-  }
-  public void setQueryUuid(String queryUuid) {
-    this.queryUuid = queryUuid;
   }
 
   /**
@@ -99,14 +81,13 @@ public class ServiceIntentResponse   {
     }
     ServiceIntentResponse serviceIntentResponse = (ServiceIntentResponse) o;
     return Objects.equals(serviceUuid, serviceIntentResponse.serviceUuid) &&
-        Objects.equals(queryUuid, serviceIntentResponse.queryUuid) &&
         Objects.equals(queries, serviceIntentResponse.queries) &&
         Objects.equals(model, serviceIntentResponse.model);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(serviceUuid, queryUuid, queries, model);
+    return Objects.hash(serviceUuid, queries, model);
   }
 
   @Override
@@ -115,7 +96,6 @@ public class ServiceIntentResponse   {
     sb.append("class ServiceIntentResponse {\n");
     
     sb.append("    serviceUuid: ").append(toIndentedString(serviceUuid)).append("\n");
-    sb.append("    queryUuid: ").append(toIndentedString(queryUuid)).append("\n");
     sb.append("    queries: ").append(toIndentedString(queries)).append("\n");
     sb.append("    model: ").append(toIndentedString(model)).append("\n");
     sb.append("}");

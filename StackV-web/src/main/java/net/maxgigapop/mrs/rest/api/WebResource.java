@@ -139,7 +139,6 @@ public class WebResource {
     private final String front_db_pass = "frontuser";
     String host = "http://127.0.0.1:8080/StackV-web/restapi";
     String kc_url = System.getProperty("kc_url");
-    private final serviceBeans servBean = new serviceBeans();
     JSONParser parser = new JSONParser();
     private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
 
@@ -2071,6 +2070,7 @@ public class WebResource {
         }
     }
 
+    
     // >Manifests
     /**
      * @api {get} /app/manifest/:svcUUID Get Manifest
@@ -2093,7 +2093,7 @@ public class WebResource {
     @RolesAllowed("Manifests")
     public String getManifest(@PathParam("svcUUID") String svcUUID) throws SQLException {
         logger.refuuid(svcUUID);
-        String method = "getManifest";
+        String method = "getManifest(svcUUID)";
         logger.trace_start(method);
 
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
