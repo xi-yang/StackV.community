@@ -25,34 +25,27 @@ package net.maxgigapop.mrs.core;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import javax.ejb.AsyncResult;
-import javax.ejb.EJBException;
 import javax.ejb.LocalBean;
 import javax.ejb.Lock;
 import javax.ejb.LockType;
-import static javax.ejb.LockType.READ;
-import javax.ejb.Schedule;
 import javax.ejb.ScheduleExpression;
 import javax.ejb.Singleton;
-import javax.ejb.Startup;
 import javax.ejb.Timeout;
 import javax.ejb.Timer;
 import javax.ejb.TimerConfig;
 import javax.ejb.TimerService;
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import net.maxgigapop.mrs.bean.DriverInstance;
-import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
-import net.maxgigapop.mrs.bean.persist.PersistenceManager;
+import net.maxgigapop.mrs.bean.persist.GlobalPropertyPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
@@ -72,6 +65,9 @@ public class DriverModelPuller {
     private static final StackLogger logger = new StackLogger(DriverModelPuller.class.getName(), "DriverModelPuller");
 
     public void start() {
+        // bootStrapped set to false
+        GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "false");
+        // schedule model pull timer
         ScheduleExpression sexpr = new ScheduleExpression();
         sexpr.hour("*").minute("*").second("0"); // every minute
         // persistent must be false because the timer is started by the HASingleton service
@@ -98,6 +94,11 @@ public class DriverModelPuller {
         } catch (UnknownHostException ex) {
             ;
         }
+        boolean bootStrapped = GlobalPropertyPersistenceManager.getProperty("system.boot_strapped").equals("true");
+        if (!bootStrapped) {
+            logger.trace(method, "bootstrapping - bootStrapped==false");
+        }
+
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
             DriverInstancePersistenceManager.refreshAll();
@@ -133,6 +134,16 @@ public class DriverModelPuller {
             } catch (Exception ex) {
                 logger.catching(method, ex);
             }
+        }
+        if (!bootStrapped) {
+            // cleanning up from recovery
+            logger.message(method, "cleanning up from recovery");
+            VersionGroupPersistenceManager.cleanupAndUpdateAll(null);
+            Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
+            VersionItemPersistenceManager.cleanupAllBefore(before24h);
+            bootStrapped = true;
+            GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", bootStrapped ? "true" : "false");
+            logger.message(method, "Done! - bootStrapped changed to true");
         }
         logger.trace_end(method);
     }
