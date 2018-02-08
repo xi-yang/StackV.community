@@ -24,7 +24,6 @@
 package net.maxgigapop.mrs.core;
 
 import com.hp.hpl.jena.ontology.OntModel;
-import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
@@ -45,8 +44,6 @@ import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
-import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
-import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
@@ -68,8 +65,6 @@ public class SystemModelCoordinator {
     
     private static final StackLogger logger = new StackLogger(SystemModelCoordinator.class.getName(), "SystemModelCoordinator");
 
-    // indicator of system being ready for service
-    boolean bootStrapped = false;
     // current VG with cached union ModelBase
     VersionGroup systemVersionGroup = null;
     
@@ -90,10 +85,9 @@ public class SystemModelCoordinator {
     }
     
     @Lock(LockType.WRITE)
-    public void setBootStrapped(boolean bl) {
+    public void setBootStrapped(boolean bootStrapped) {
         String method = "setBootStrapped";
-        logger.message(method, String.format("set status from %b into %b", bootStrapped, bl));
-        bootStrapped = bl;
+        logger.message(method, String.format("set status into %b", bootStrapped));
         DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
@@ -122,15 +116,11 @@ public class SystemModelCoordinator {
             logger.trace_end(method);
             return;
         }
-        if (!bootStrapped) {
-            logger.trace(method, "bootstrapping - bootStrapped==false");
-        }
+
         //@TODO: add a persistent timestamp for DriverInstanceByTopologyMap. Then refreshAll only if recently updated
         DriverInstancePersistenceManager.refreshAll();
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
         if (ditMap == null || ditMap.isEmpty()) {
-            bootStrapped = false;
-            dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
             systemVersionGroup = null;
             logger.warning(method, "ditMap == null or ditMap.isEmpty");
             logger.trace_end(method);
@@ -138,8 +128,6 @@ public class SystemModelCoordinator {
         }
         for (DriverInstance di : ditMap.values()) {
                 if (di.getHeadVersionItem() == null) {
-                    bootStrapped = false;
-                    dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
                     systemVersionGroup = null;
                     logger.warning(method, di + "has null headVersionItem");
                     logger.trace_end(method);
@@ -157,8 +145,6 @@ public class SystemModelCoordinator {
                 newVersionGroup = systemCallHandler.updateHeadVersionGroup(systemVersionGroup.getRefUuid());
             } catch (Exception ex) {
                 this.systemVersionGroup = null;
-                bootStrapped = false;
-                dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
                 logger.catching(method, ex);
                 return;
             }
@@ -168,16 +154,6 @@ public class SystemModelCoordinator {
             }
         }
         dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(systemVersionGroup.getCachedModelBase().getOntModel());
-        if (!bootStrapped) {
-            // cleanning up from recovery
-            logger.message(method, "cleanning up from recovery");
-            VersionGroupPersistenceManager.cleanupAndUpdateAll(systemVersionGroup);
-            Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
-            VersionItemPersistenceManager.cleanupAllBefore(before24h);
-            bootStrapped = true;
-            dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(bootStrapped);
-            logger.message(method, "Done! - bootStrapped changed to true");
-        }
         logger.trace_end(method);
     }
 
