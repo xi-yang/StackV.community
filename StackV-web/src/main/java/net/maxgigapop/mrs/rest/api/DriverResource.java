@@ -20,7 +20,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-
 package net.maxgigapop.mrs.rest.api;
 
 import java.sql.Connection;
@@ -43,6 +42,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.common.StackLogger;
+import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
@@ -52,12 +52,8 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Path("driver")
 public class DriverResource {
-    
-    private final StackLogger logger = new StackLogger(DriverResource.class.getName(), "DriverResource");
 
-    private final String front_db_user = "root";
-    private final String front_db_pass = "root";
-    
+    private final StackLogger logger = new StackLogger(WebResource.class.getName(), "DriverResource");
     private final JNDIFactory factory = new JNDIFactory();
 
     @Context
@@ -71,30 +67,40 @@ public class DriverResource {
 
     @GET
     @Produces({"application/json"})
-    public ArrayList<String> pullAll() throws SQLException {
+    public ArrayList<String> pullAll() {
         String method = "pullAll";
         logger.trace_start(method);
-        Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
-        ArrayList<String> retList = new ArrayList<>();
-        
-        logger.trace(method, "Post Drivermap keyset");
-        
-        Connection front_conn = factory.getConnection("frontend");
-        
-        for (String instance : instanceSet) {
-            PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance WHERE topologyUri = ?");
-            prep.setString(1, instance);
-            ResultSet ret = prep.executeQuery();
-            while (ret.next()) {
-                retList.add(ret.getString("id"));
-                retList.add(ret.getString("driverEjbPath"));
-                retList.add(ret.getString("topologyUri"));
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet ret = null;
+        try {
+            Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
+            ArrayList<String> retList = new ArrayList<>();
+
+            logger.trace(method, "Post Drivermap keyset");
+
+            front_conn = factory.getConnection("frontend");
+
+            for (String instance : instanceSet) {
+                prep = front_conn.prepareStatement("SELECT * FROM driver_instance WHERE topologyUri = ?");
+                prep.setString(1, instance);
+                ret = prep.executeQuery();
+                while (ret.next()) {
+                    retList.add(ret.getString("id"));
+                    retList.add(ret.getString("driverEjbPath"));
+                    retList.add(ret.getString("topologyUri"));
+                }
             }
+            logger.trace_end(method);
+            return retList;
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            return null;
+        } finally {
+            commonsClose(front_conn, prep, ret);
         }
-        logger.trace_end(method);
-        return retList;
     }
-    
+
     @GET
     @Produces({"application/json"})
     @Path("/{driverId}")
@@ -103,13 +109,13 @@ public class DriverResource {
         String method = "pull";
         logger.targetid(driverId);
         logger.trace_start(method);
-        
+
         Connection front_conn = factory.getConnection("frontend");
-        
+
         PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ?");
         prep.setString(1, driverId);
         ResultSet ret = prep.executeQuery();
-        
+
         while (ret.next()) {
             retList.add(ret.getString("property"));
             retList.add(ret.getString("value"));
@@ -120,7 +126,8 @@ public class DriverResource {
 
     @DELETE
     @Path("/{topoUri}")
-    public Response unplug(@PathParam("topoUri") String topoUri) {
+    public Response unplug(@PathParam("topoUri") String topoUri
+    ) {
         String method = "unplug";
         logger.targetid(topoUri);
         logger.trace_start(method);
@@ -135,11 +142,12 @@ public class DriverResource {
         }
         logger.trace_end(method);
         return Response.ok().entity("unplug successfully").build();
-    }   
+    }
 
     @POST
     @Consumes({"application/xml", "application/json"})
-    public String plug(ApiDriverInstance di) {
+    public String plug(ApiDriverInstance di
+    ) {
         String method = "plug";
         try {
             logger.targetid(di.getTopologyUri());
