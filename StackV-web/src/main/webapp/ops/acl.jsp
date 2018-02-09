@@ -190,7 +190,8 @@
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
-        <script src="/StackV-web/js/nexus.js"></script>        
-        <script src="/StackV-web/js/acl.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/ipa.js"></script>        
+        <script src="/StackV-web/js/acl.js"></script>        
     </body>
 </html>
