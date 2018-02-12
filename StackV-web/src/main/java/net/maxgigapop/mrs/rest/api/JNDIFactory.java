@@ -32,11 +32,14 @@ import net.maxgigapop.mrs.common.StackLogger;
 
 public class JNDIFactory {
 
-    private final StackLogger logger = new StackLogger(WebResource.class.getName(), "JNDIFactory");       
-    
+    private final StackLogger logger = new StackLogger(WebResource.class.getName(), "JNDIFactory");
+
     public Connection getConnection(String tag) {
         String method = "getConnection";
-        String jndi = System.getProperty(tag + "_jndi");        
+        String jndi = System.getProperty(tag + "_jndi");
+        if (jndi == null) {
+            jndi = "java:jboss/datasources/" + tag;
+        }
         Connection result = null;
         try {
             Context initialContext = new InitialContext();
@@ -47,7 +50,7 @@ public class JNDIFactory {
                 logger.error(method, "Datasource not found");
             }
         } catch (NamingException | SQLException ex) {
-            logger.catching(method, ex);
+            throw logger.throwing(method, ex);
         }
         return result;
     }

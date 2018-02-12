@@ -76,6 +76,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.QueryParam;
+import net.maxgigapop.mrs.common.AuditService;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -2061,6 +2062,7 @@ public class WebResource {
 
                         retList.add(instanceList);
                     } catch (IOException ex) {
+                        AuditService.cleanInstances("frontend");
                         logger.catching(method, ex);
                     }
                 }
@@ -2068,6 +2070,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException ex) {
+            AuditService.cleanInstances("frontend");
             logger.catching(method, ex);
             throw ex;
         } finally {
