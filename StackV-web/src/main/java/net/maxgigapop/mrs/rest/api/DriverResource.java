@@ -77,9 +77,7 @@ public class DriverResource {
             Set<String> instanceSet = systemCallHandler.retrieveAllDriverInstanceMap().keySet();
             ArrayList<String> retList = new ArrayList<>();
 
-            logger.trace(method, "Post Drivermap keyset");
-
-            front_conn = factory.getConnection("frontend");
+            front_conn = factory.getConnection("rainsdb");
 
             for (String instance : instanceSet) {
                 prep = front_conn.prepareStatement("SELECT * FROM driver_instance WHERE topologyUri = ?");
@@ -110,7 +108,7 @@ public class DriverResource {
         logger.targetid(driverId);
         logger.trace_start(method);
 
-        Connection front_conn = factory.getConnection("frontend");
+        Connection front_conn = factory.getConnection("rainsdb");
 
         PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ?");
         prep.setString(1, driverId);

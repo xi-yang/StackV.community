@@ -37,8 +37,12 @@ public class JNDIFactory {
     public Connection getConnection(String tag) {
         String method = "getConnection";
         String jndi = System.getProperty(tag + "_jndi");
-        if (jndi == null) {
-            jndi = "java:jboss/datasources/" + tag;
+        if (jndi == null || jndi.isEmpty()) {
+            if (tag.equals("rainsdb")) {
+                jndi = "java:jboss/datasources/MysqlDS";
+            } else if (tag.equals("frontend")) {
+                jndi = "java:jboss/datasources/FrontendDS";
+            } 
         }
         Connection result = null;
         try {
