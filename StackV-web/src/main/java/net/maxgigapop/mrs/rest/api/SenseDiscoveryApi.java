@@ -44,6 +44,7 @@ public class SenseDiscoveryApi {
 
     @GET
     @Path("/edgepoints/{domainID}")
+    @Produces("application/json")
     @ApiOperation(value = "Edge points discovery and description for a specific domain", notes = "List all associated edge points (and capabilities)", response = DomainDescription.class, tags={ "discovery",  })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Successful retrieval of topology desciptions", response = DomainDescription.class),
@@ -52,16 +53,16 @@ public class SenseDiscoveryApi {
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class)})
     public Response discoveryEdgepointsDomainIDGet(@PathParam("domainID") @ApiParam("Name of URI of a target domain") String domainID) {
         final String jsonTemplate = "{\n" +
-"	\"domain_uri\": \"?domain?\",\n" +
-"	\"domain_name\": \"?name?\",\n" +
+"	\"domain\": \"?domain?\",\n" +
+"	\"domain_name\": \"?domain_name?\",\n" +
 "	\"edge_points\": [\n" +
 "		{\n" +
 "			\"stp\": \"?ep?\",\n" +
-"			\"peer\": \"?peer?\"\n" +
-"		},\n" +
-"		\"sparql\": \"SELECT ?ep ?peer WHERE {?domain? nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. ?other_domain nml:hasBidirectonalPort ?peer. ?other_domain a nml:Topology. FILTER (?other_domain != ?domain)} UNION {?domain? nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. ?other_domain nml:hasNode ?other_node. ?node_node nml:hasBidirectonalPort ?peer. ?other_domain a nml:Topology. FILTER (?other_domain != ?domain)}\"\n" +
+"			\"peer\": \"?peer?\",\n" +
+"      \"sparql\": \"SELECT DISTINCT ?ep ?peer WHERE { {?domain nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. FILTER (NOT EXISTS {?other_domain nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology} &amp;&amp; NOT EXISTS {?other_domain nml:hasNode ?other_node. ?other_node nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology}) } UNION {?domain nml:hasNode ?node. ?node nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. FILTER (NOT EXISTS {?other_domain nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology} &amp;&amp; NOT EXISTS {?other_domain nml:hasNode ?other_node. ?other_node nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology}) } }\"\n" +
+"		}\n" +
 "	],\n" +
-String.format("	\"sparql\": \"SELECT ?domain ?name WHERE {?domain a nml:Topology. OPTIONAL {?domain nml:name ?name} FILTER (?domain = \"%s\" || ?name = \"%s\") }\",\n", domainID, domainID) +
+String.format("	\"sparql\": \"SELECT DISTINCT ?domain ?domain_name WHERE {?domain a nml:Topology. OPTIONAL {?domain nml:name ?domain_name} FILTER (?domain=&lt;%s&gt; || ?domain_name=&lt;%s&gt;) }\",\n", domainID, domainID) +
 "	\"required\": \"true\"\n" +
 "}";
         String responseStr;
@@ -81,15 +82,16 @@ String.format("	\"sparql\": \"SELECT ?domain ?name WHERE {?domain a nml:Topology
         DomainDescription response = new DomainDescription();
         try {
             JSONObject jo = (JSONObject)parser.parse(responseStr);
-            if (jo.containsKey("domain_name")) {
+            jo = (JSONObject)parser.parse((String)jo.get("jsonTemplate"));
+            if (jo.containsKey("domain_name") && !((String)jo.get("domain_name")).startsWith("?")) {
                 response.setName((String)jo.get("domain_name"));
             }
-            if (jo.containsKey("domain_uri")) {
-             response.setUri((String)jo.get("domain_uri"));
+            if (jo.containsKey("domain")) {
+             response.setUri((String)jo.get("domain"));
             }
             if (jo.containsKey("edge_points")) {
                 JSONArray ja = (JSONArray) jo.get("edge_points");
-                List<DomainDescriptionEdgePoints> edgePoints = new ArrayList<DomainDescriptionEdgePoints>();
+                List<DomainDescriptionEdgePoints> edgePoints = new ArrayList();
                 response.setEdgePoints(edgePoints);
                 for (Object obj: ja) {
                     DomainDescriptionEdgePoints ep = new DomainDescriptionEdgePoints();
@@ -99,6 +101,7 @@ String.format("	\"sparql\": \"SELECT ?domain ?name WHERE {?domain a nml:Topology
                     stp.setUri((String) joEp.get("stp"));
                     stp.setType("ethernet/vlan"); // temp hardcoded
                     ep.setStp(stp);
+                    edgePoints.add(ep);
                 }
             }
         } catch (ParseException ex) {
@@ -109,29 +112,156 @@ String.format("	\"sparql\": \"SELECT ?domain ?name WHERE {?domain a nml:Topology
 
     @GET
     @Path("/edgepoints/{domainID}/peer")
-    @ApiOperation(value = "edge points discovery and description of peer domain for a given domain or end-site", notes = "List peer domain edge points (and capabilities) that connect this domain (by URI or name)", response = DomainDescription.class, tags={ "discovery",  })
+    @Produces("application/json")
+    @ApiOperation(value = "edge points discovery and description of peer domain for a given domain or end-site", notes = "List peer domain edge points (and capabilities) that connect this domain (by URI or name)", response = DomainDescription.class, responseContainer = "List", tags={ "discovery",  })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Successful retrieval of topology desciptions", response = DomainDescription.class),
         @ApiResponse(code = 401, message = "Request unauthorized", response = Void.class),
         @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response discoveryEdgepointsDomainIDPeerGet(@PathParam("domainID") @ApiParam("Name of URI of a target end-site domain") String domainID) {
-        return Response.ok().entity("magic!").build();
+        final String jsonTemplate = "{\n" +
+"    \"edge_points\": [\n" +
+"        {\n" +
+"           \"peer_stp\": \"?peer_stp?\",\n" +
+"           \"peer_domain\": \"?peer_domain?\",\n" +
+"           \"peer_domain_name\": \"?peer_domain_name?\",\n" +
+String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?peer_domain_name WHERE { {?peer_domain nml:hasBidirectionalPort ?peer_stp. ?peer_domain a nml:Topology. ?peer_stp nml:isAlias ?stp. OPTIONAL {?peer_domain nml:name ?peer_domain_name} OPTIONAL {?domain nml:name ?domain_name} FILTER (?stp=&lt;%s&gt; || ?domain=&lt;%s&gt; || ?domain_name='%s') } UNION {?peer_domain nml:hasNode ?peer_node. ?peer_domain a nml:Topology. ?peer_node nml:hasBidirectionalPort ?peer_stp. ?peer_stp nml:isAlias ?stp.  OPTIONAL {?peer_domain nml:name ?peer_domain_name} OPTIONAL {?domain nml:name ?domain_name} FILTER (?stp=&lt;%s&gt; || ?domain=&lt;%s&gt; || ?domain_name='%s') } }\"\n", domainID, domainID, domainID, domainID, domainID, domainID) +
+"		}\n" +
+"    ]\n" +
+"}";
+        String responseStr;
+        try {
+            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+            final TokenHandler token = new TokenHandler(auth, refresh);
+            URL url = new URL(String.format("%s/service/manifest", host));
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+                    + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
+                    jsonTemplate);
+            responseStr = executeHttpMethod(url, conn, "POST", data, auth);
+        } catch (IOException ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
+        }
+        List<DomainDescription> response = new ArrayList();
+        try {
+            JSONObject jo = (JSONObject)parser.parse(responseStr);
+            jo = (JSONObject)parser.parse((String)jo.get("jsonTemplate"));
+            if (jo.containsKey("edge_points")) {
+                JSONArray ja = (JSONArray) jo.get("edge_points");
+                for (Object obj: ja) {
+                    JSONObject joEp = (JSONObject) obj;
+                    String peerStp = (String) joEp.get("peer_stp");
+                    String peerDomainUri = (String) joEp.get("peer_domain");
+                    String peerDomainName = (String) joEp.get("peer_domain_name");
+                    if (peerDomainName.startsWith("?")) {
+                        peerDomainName = null;
+                    }
+                    DomainDescription domainInList = null;
+                    for (DomainDescription domainDesc: response) {
+                        if (domainDesc.getUri().equals(peerDomainUri)) {
+                            domainInList = domainDesc;
+                            break;
+                        }
+                    }
+                    if (domainInList == null) {
+                        domainInList = new DomainDescription().uri(peerDomainUri)
+                                .name(peerDomainName)
+                                .edgePoints(new ArrayList());
+                        response.add(domainInList);
+                    }
+                    DomainDescriptionEdgePoints ep = new DomainDescriptionEdgePoints().stp(new ServiceTerminationPoint().uri(peerStp));
+                    domainInList.getEdgePoints().add(ep);
+                }
+            }
+        } catch (ParseException ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
+        }
+        return Response.ok().entity(response).build();
     }
 
     @GET
     @Path("/edgepoints")
-    @ApiOperation(value = "Topology edge points discovery and description", notes = "List all known domains (and capabilities?)", response = TopologyDescription.class, tags={ "discovery",  })
+    @Produces("application/json")
+    @ApiOperation(value = "Topology edge points discovery and description", notes = "List all known domains (and capabilities?)", response = DomainDescription.class, responseContainer = "List", tags={ "discovery",  })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Successful retrieval of topoogy desciptions", response = TopologyDescription.class),
         @ApiResponse(code = 401, message = "Request unauthorized", response = Void.class),
         @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response discoveryEdgepointsGet() {
-        return Response.ok().entity("magic!").build();
+        final String jsonTemplate = "{\n" +
+"    \"all_domains\": [\n" +
+"        {\n" +
+"	\"domain\": \"?domain?\",\n" +
+"	\"domain_name\": \"?domain_name?\",\n" +
+"	\"edge_points\": [\n" +
+"		{\n" +
+"			\"stp\": \"?ep?\",\n" +
+"			\"peer\": \"?peer?\",\n" +
+"      \"sparql\": \"SELECT DISTINCT ?ep ?peer WHERE { {?domain nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. FILTER (NOT EXISTS {?other_domain nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology} &amp;&amp; NOT EXISTS {?other_domain nml:hasNode ?other_node. ?other_node nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology}) } UNION {?domain nml:hasNode ?node. ?node nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. FILTER (NOT EXISTS {?other_domain nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology} &amp;&amp; NOT EXISTS {?other_domain nml:hasNode ?other_node. ?other_node nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology}) } }\"\n" +
+"		}\n" +
+"	],\n" +
+"	\"sparql\": \"SELECT DISTINCT ?domain ?domain_name WHERE {?domain a nml:Topology. OPTIONAL {?domain nml:name ?domain_name} }\",\n" +
+"	\"required\": \"true\"\n" +
+"       }\n" +
+"    ]\n" +
+"}";
+        String responseStr;
+        try {
+            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+            final TokenHandler token = new TokenHandler(auth, refresh);
+            URL url = new URL(String.format("%s/service/manifest", host));
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+                    + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
+                    jsonTemplate);
+            responseStr = executeHttpMethod(url, conn, "POST", data, auth);
+        } catch (IOException ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
+        }
+        List<DomainDescription> response = new ArrayList();
+        try {
+            JSONObject jo = (JSONObject)parser.parse(responseStr);
+            jo = (JSONObject)parser.parse((String)jo.get("jsonTemplate"));
+            if (jo.containsKey("all_domains")) {
+                JSONArray ja = (JSONArray) jo.get("all_domains");
+                for (Object obj : ja) {
+                    JSONObject joDomain = (JSONObject) obj;
+                    String domainUri = (String) joDomain.get("domain");
+                    String domainName = (String) joDomain.get("domain_name");
+                    if (domainName.startsWith("?")) {
+                        domainName = null;
+                    }
+                    DomainDescription domainDesc = new DomainDescription().uri(domainUri)
+                                .name(domainName)
+                                .edgePoints(new ArrayList());
+                    response.add(domainDesc);
+                    if (joDomain.containsKey("edge_points")) {
+                        JSONArray jaEp = (JSONArray) joDomain.get("edge_points");
+                        for (Object objEp : jaEp) {
+                            DomainDescriptionEdgePoints ep = new DomainDescriptionEdgePoints();
+                            JSONObject joEp = (JSONObject) objEp;
+                            ep.setPeerUri((String) joEp.get("peer"));
+                            ServiceTerminationPoint stp = new ServiceTerminationPoint();
+                            stp.setUri((String) joEp.get("stp"));
+                            stp.setType("ethernet/vlan"); // temp hardcoded
+                            ep.setStp(stp);
+                            domainDesc.getEdgePoints().add(ep);
+                        }
+                    }
+                }
+            }
+        } catch (ParseException ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
+        }
+        return Response.ok().entity(response).build();
     }
 
     @GET
+    @Produces("application/json")
     @ApiOperation(value = "Orchestrator API discovery and description", notes = "List API dpoints, supported service types and capabilities", response = DiscoveryDescription.class, tags={ "discovery",  })
     @ApiResponses(value = { 
         @ApiResponse(code = 200, message = "Successful service creation", response = DiscoveryDescription.class),
@@ -143,6 +273,7 @@ String.format("	\"sparql\": \"SELECT ?domain ?name WHERE {?domain a nml:Topology
     }
 
     @GET
+    @Produces("application/json")
     @Path("/services")
     @ApiOperation(value = "Service discovery and description", notes = "List service instances", response = ServiceDescription.class, responseContainer = "List", tags={ "discovery" })
     @ApiResponses(value = { 
