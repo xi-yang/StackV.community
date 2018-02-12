@@ -615,7 +615,8 @@ function subloadInstanceACLTable(refUUID) {
                                         title: "Adding " + username + "...",
                                         text: "Please wait",
                                         icon: "/StackV-web/img/ajax-loader.gif",
-                                        buttons: false
+                                        buttons: false,
+                                        timer: 10000,
                                     });
                                     // ensure the user is logged in before making any IPA requests
                                     $.when(ipaLogin()).done(function() {
@@ -652,6 +653,8 @@ function subloadInstanceACLTable(refUUID) {
                                             }
                                             
                                                                                        
+                                        }).fail(function(err) {
+                                            swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
                                         });                                                                                                                      
                                     });
                                 } else {
@@ -659,7 +662,8 @@ function subloadInstanceACLTable(refUUID) {
                                         title: "Removing " + username + "...",
                                         text: "Please wait",
                                         icon: "/StackV-web/img/ajax-loader.gif",
-                                        buttons: false
+                                        buttons: false,
+                                        timer: 10000
                                     });
                                     $.when(ipaLogin()).done(function() {
                                         removeUserFromACLPolicy(username, uuid, "login").done(function(result) {
@@ -686,6 +690,8 @@ function subloadInstanceACLTable(refUUID) {
                                             }
                                         
                                         });                                    
+                                    }).fail(function(err) {
+                                        swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
                                     });                                    
                                 }                                
                             };
@@ -709,7 +715,8 @@ function subloadInstanceACLTable(refUUID) {
                                         title: "Adding " + username + "...",
                                         text: "Please wait",
                                         icon: "/StackV-web/img/ajax-loader.gif",
-                                        buttons: false
+                                        buttons: false,
+                                        timer: 10000
                                     });
                                     // ensure the user is logged in before making any IPA requests
                                     $.when(ipaLogin()).done(function() {
@@ -757,6 +764,8 @@ function subloadInstanceACLTable(refUUID) {
                                                 // and neither would using jquery's triggers function
                                             }
                                                                                        
+                                        }).fail(function(err) {
+                                            swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
                                         });                                                                                                                      
                                     });
                                 } else {
@@ -764,7 +773,8 @@ function subloadInstanceACLTable(refUUID) {
                                         title: "Removing " + username + "...",
                                         text: "Please wait",
                                         icon: "/StackV-web/img/ajax-loader.gif",
-                                        buttons: false
+                                        buttons: false,
+                                        timer: 10000
                                     });
                                     $.when(ipaLogin()).done(function() {
                                         removeUserFromACLPolicy(username, uuid, "sudo").done(function(result) {                                                                                
@@ -778,6 +788,8 @@ function subloadInstanceACLTable(refUUID) {
                                                 swal("Not able to remove " + username + " from Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
                                             }
                                                                                         
+                                        }).fail(function(err) {
+                                            swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
                                         });
                                     });
                                 }

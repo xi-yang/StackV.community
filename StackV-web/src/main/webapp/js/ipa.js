@@ -188,10 +188,8 @@ function addHostsToHostGroup(hosts, hostGroupName) {
     
     var badHosts = [];
     // before adding the hosts - make sure each one exists by creating them
-    hosts.forEach(function(h) {
-        console.log("checking for new hosts -> hostname: " + h);
-        $.when(createHost(h)).done(function(hRes) {
-            console.log("hRes line (~)195: " + JSON.stringify(hRes));
+    hosts.forEach(function(h) {        
+        $.when(createHost(h)).done(function(hRes) {            
             
             /**
              * if error is null (in which result will not be null) then the new host
@@ -434,11 +432,7 @@ function createLoginAclPolicy(serviceUUID, username) {
         var hgError = hg[0]["error"];
         var hbacError = hbac[0]["error"];
         var hostsQueryError = true;        
-        
-        
-        console.log("**** login getHostsForServiceInstance hostsQuery raw: " + hostsQuery);
-        console.log("*login getHostsForServiceInstance first element in array: " + JSON.stringify(hostsQuery[0]));
-        console.log("**login getHostsForServiceInstance: " + JSON.stringify(hostsQuery));
+                
         // verify and parse the loginHosts data
         // looks like below
         //{ serviceUUID: "5578c890-9a1c-4e23-9686-ab70ad274a92", jsonTemplate: "{\"hostgroup\":[{\"hostname\":\"180-146.research.maxgigapop.net\"}]}", jsonModel: null }
@@ -488,10 +482,7 @@ function createLoginAclPolicy(serviceUUID, username) {
             aclLoginPolicyResult["LoginGroupAndRuleCreatedAndRightHostsFound"] = false;
         }
         
-    }).then(function() {
-        
-        console.log("in then function hosts: " + hosts);
-        
+    }).then(function() {                        
         var addLoginUgUsers = addUsersToUserGroup(username, ugLoginName);
         var addLoginHgHosts = addHostsToHostGroup(hosts, hgLoginName);
         var addLoginUgToHbac = addUserGroupToHBACRule(ugLoginName,hbacLoginName);
@@ -583,9 +574,6 @@ function createSudoAclPolicy(serviceUUID, username) {
         var hbacError = hbac[0]["error"];
         var hostsQueryError = true;        
         
-        console.log("**** sudo getHostsForServiceInstance hostsQuery raw: " + hostsQuery);
-        console.log("*sudo getHostsForServiceInstance first element in array: " + JSON.stringify(hostsQuery[0]));
-        console.log("**sudo getHostsForServiceInstance: " + JSON.stringify(hostsQuery));
         // verify and parse the loginHosts data
         // looks like below
         //{ serviceUUID: "5578c890-9a1c-4e23-9686-ab70ad274a92", jsonTemplate: "{\"hostgroup\":[{\"hostname\":\"180-146.research.maxgigapop.net\"}]}", jsonModel: null }
@@ -635,10 +623,7 @@ function createSudoAclPolicy(serviceUUID, username) {
             aclSudoPolicyResult["SudoGroupAndRuleCreatedAndRightHostsFound"] = false;
         }
         
-    }).then(function() {
-        
-        console.log("in then function sudo hosts: " + hosts);
-        
+    }).then(function() {                        
         var addSudoUgUsers = addUsersToUserGroup(username, ugSudoName);
         var addSudoHgHosts = addHostsToHostGroup(hosts, hgSudoName);
         var addSudoUgToHbac = addUserGroupToHBACRule(ugSudoName,hbacSudoName);
@@ -932,10 +917,31 @@ function removeACLPolicy(serviceUUID, accessType) {
     var deleteHbac = deleteHBACRule(hbacName);
     
     return $.when(deleteUg, deleteHg, deleteHbac).done(function(delUg, delHg, delHbac) {
-        removeAclPolicyResult["DeletedUserGroup"] = JSON.stringify(delUg);
-        removeAclPolicyResult["DeletedHostGroup"] = JSON.stringify(delHg);
-        removeAclPolicyResult["DeletedHBAC"] = JSON.stringify(delHbac);
-        console.log("Remove ACL policy: " + JSON.stringify(removeAclPolicyResult));
+        var delUgError = delUg[0]["error"];
+        var delHgError = delHg[0]["error"];
+        var delHbacError = delHbac[0]["error"];
+        
+        if (delUgError === null) {
+            removeAclPolicyResult["DeletedUserGroup"] = true;
+        } else {
+            removeAclPolicyResult["DeletedUserGroup"] = false;
+            removeAclPolicyResult["DeletedUserGroupError"] = JSON.stringify(delUg);
+        }
+        
+        if (delHgError === null) {
+            removeAclPolicyResult["DeletedHostGroup"] = true;
+        } else {
+            removeAclPolicyResult["DeletedHostGroup"] = false;
+            removeAclPolicyResult["DeletedHostGroupError"] = JSON.stringify(delHg);
+        }
+        
+        if (delHbacError === null) {
+            removeAclPolicyResult["DeletedHBAC"] = true;
+        } else {
+            removeAclPolicyResult["DeletedHBAC"] = false;
+            removeAclPolicyResult["DeletedHBACError"] = JSON.stringify(delHbac);
+        }
+                 
         return removeAclPolicyResult;
     });
 }
@@ -953,8 +959,7 @@ function removeAllACLPolicies(serviceUUID) {
     
     return $.when(removeLoginPolicy, removeSudoPolicy).done(function(rmLogin, rmSudo) {
         removedAllACLPolicies["RemovedLoginACLPolicy"] = JSON.stringify(rmLogin);
-        removedAllACLPolicies["RemovedSudoACLPolicy"] = JSON.stringify(rmSudo);
-        console.log("Remove All ACL policies: " + JSON.stringify(removedAllACLPolicies));
+        removedAllACLPolicies["RemovedSudoACLPolicy"] = JSON.stringify(rmSudo);        
         return removedAllACLPolicies;
     });
 }
