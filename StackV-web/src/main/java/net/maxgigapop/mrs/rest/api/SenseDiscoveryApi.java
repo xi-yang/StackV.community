@@ -15,10 +15,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import java.util.concurrent.ExecutorService;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import javax.ws.rs.core.Context;
 import net.maxgigapop.mrs.common.TokenHandler;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
@@ -34,9 +30,7 @@ import org.json.simple.parser.ParseException;
 @Api(description = "the discovery API")
 @javax.annotation.Generated(value = "io.swagger.codegen.languages.JavaJAXRSSpecServerCodegen", date = "2018-02-08T15:27:04.431Z")
 public class SenseDiscoveryApi {
-    private final String host = "http://127.0.0.1:8080/StackV-web/restapi";
-    private final String kc_url = System.getProperty("kc_url");
-    private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
+    private final String restapi = "http://127.0.0.1:8080/StackV-web/restapi";
     JSONParser parser = new JSONParser();
 
     @Context
@@ -70,7 +64,7 @@ String.format("	\"sparql\": \"SELECT DISTINCT ?domain ?domain_name WHERE {?domai
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(auth, refresh);
-            URL url = new URL(String.format("%s/service/manifest", host));
+            URL url = new URL(String.format("%s/service/manifest", restapi));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
                     + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
@@ -126,7 +120,7 @@ String.format("	\"sparql\": \"SELECT DISTINCT ?domain ?domain_name WHERE {?domai
 "           \"peer_stp\": \"?peer_stp?\",\n" +
 "           \"peer_domain\": \"?peer_domain?\",\n" +
 "           \"peer_domain_name\": \"?peer_domain_name?\",\n" +
-String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?peer_domain_name WHERE { {?peer_domain nml:hasBidirectionalPort ?peer_stp. ?peer_domain a nml:Topology. ?peer_stp nml:isAlias ?stp. OPTIONAL {?peer_domain nml:name ?peer_domain_name} OPTIONAL {?domain nml:name ?domain_name} FILTER (?stp=&lt;%s&gt; || ?domain=&lt;%s&gt; || ?domain_name='%s') } UNION {?peer_domain nml:hasNode ?peer_node. ?peer_domain a nml:Topology. ?peer_node nml:hasBidirectionalPort ?peer_stp. ?peer_stp nml:isAlias ?stp.  OPTIONAL {?peer_domain nml:name ?peer_domain_name} OPTIONAL {?domain nml:name ?domain_name} FILTER (?stp=&lt;%s&gt; || ?domain=&lt;%s&gt; || ?domain_name='%s') } }\"\n", domainID, domainID, domainID, domainID, domainID, domainID) +
+String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?peer_domain_name WHERE { {?peer_domain nml:hasBidirectionalPort ?peer_stp. ?peer_domain a nml:Topology. ?peer_stp nml:isAlias ?stp. OPTIONAL {?peer_domain nml:name ?peer_domain_name} OPTIONAL {?domain nml:name ?domain_name} OPTIONAL {?domain nml:hasBidirectionalPort ?stp} OPTIONAL {?domain nml:hasNode ?node. ?node nml:hasBidirectionalPort ?stp} FILTER (?stp=<%s> || ?domain=<%s> || ?domain_name='%s') } UNION {?peer_domain nml:hasNode ?peer_node. ?peer_domain a nml:Topology. ?peer_node nml:hasBidirectionalPort ?peer_stp. ?peer_stp nml:isAlias ?stp.  OPTIONAL {?peer_domain nml:name ?peer_domain_name} OPTIONAL {?domain nml:name ?domain_name} OPTIONAL {?domain nml:hasBidirectionalPort ?stp} OPTIONAL {?domain nml:hasNode ?node. ?node nml:hasBidirectionalPort ?stp} FILTER (?stp=<%s> || ?domain=<%s> || ?domain_name='%s') } }\"\n", domainID, domainID, domainID, domainID, domainID, domainID) +
 "		}\n" +
 "    ]\n" +
 "}";
@@ -135,7 +129,7 @@ String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(auth, refresh);
-            URL url = new URL(String.format("%s/service/manifest", host));
+            URL url = new URL(String.format("%s/service/manifest", restapi));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
                     + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
@@ -200,10 +194,10 @@ String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?
 "		{\n" +
 "			\"stp\": \"?ep?\",\n" +
 "			\"peer\": \"?peer?\",\n" +
-"      \"sparql\": \"SELECT DISTINCT ?ep ?peer WHERE { {?domain nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. FILTER (NOT EXISTS {?other_domain nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology} &amp;&amp; NOT EXISTS {?other_domain nml:hasNode ?other_node. ?other_node nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology}) } UNION {?domain nml:hasNode ?node. ?node nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. FILTER (NOT EXISTS {?other_domain nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology} &amp;&amp; NOT EXISTS {?other_domain nml:hasNode ?other_node. ?other_node nml:hasBidirectionalPort ?peer. ?other_domain a nml:Topology}) } }\"\n" +
+"      \"sparql\": \"SELECT DISTINCT ?ep ?peer WHERE { {?domain nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. FILTER (NOT EXISTS {?domain nml:hasBidirectionalPort ?peer.} &amp;&amp; NOT EXISTS {?domain nml:hasNode ?other_node. ?other_node nml:hasBidirectionalPort ?peer}) } UNION {?domain nml:hasNode ?node. ?node nml:hasBidirectionalPort ?ep. ?ep nml:isAlias ?peer. FILTER (NOT EXISTS {?domain nml:hasBidirectionalPort ?peer} &amp;&amp; NOT EXISTS {?domain nml:hasNode ?other_node. ?other_node nml:hasBidirectionalPort ?peer}) } }\"\n" +
 "		}\n" +
 "	],\n" +
-"	\"sparql\": \"SELECT DISTINCT ?domain ?domain_name WHERE {?domain a nml:Topology. OPTIONAL {?domain nml:name ?domain_name} }\",\n" +
+"	\"sparql\": \"SELECT DISTINCT ?domain ?domain_name WHERE {?domain a nml:Topology. OPTIONAL {?domain nml:name ?domain_name} FILTER NOT EXISTS {?parent_domain nml:hasTopology ?domain} }\",\n" +
 "	\"required\": \"true\"\n" +
 "       }\n" +
 "    ]\n" +
@@ -213,7 +207,7 @@ String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(auth, refresh);
-            URL url = new URL(String.format("%s/service/manifest", host));
+            URL url = new URL(String.format("%s/service/manifest", restapi));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
                     + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",

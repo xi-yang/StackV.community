@@ -347,4 +347,41 @@ public class ServiceEngine {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, conn, "POST", value, auth);
     }
+    
+    
+
+    public static String getCachedSystemDelta(String refUuid)  {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", "root");
+            front_connectionProps.put("password", "root");
+
+
+            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
+                    front_connectionProps);
+
+            prep = front_conn.prepareStatement("SELECT service_instance_id"
+                    + " FROM service_instance WHERE referenceUUID = ?");
+            prep.setString(1, refUuid);
+            ResultSet rs1 = prep.executeQuery();
+            rs1.next();
+            int instanceID = rs1.getInt(1);
+
+            
+            prep = front_conn.prepareStatement("SELECT delta FROM frontend.service_delta "
+                    + "WHERE service_instance_id = ? AND type='System'");
+            prep.setInt(1, instanceID);
+            ResultSet rs2 = prep.executeQuery();
+            rs2.next();
+            return rs2.getString(1);
+        } catch (SQLException ex) {
+            logger.catching("getCachedSystemDelta", ex);
+        } finally {
+            WebResource.commonsClose(front_conn, prep, rs);
+        }
+        return null;
+    }
 }
