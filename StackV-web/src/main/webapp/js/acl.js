@@ -604,19 +604,42 @@ function subloadInstanceACLTable(refUUID) {
                             checkBoxLogin.setAttribute("data-username", user[0]);
                             checkBoxLogin.type = "checkbox";                                                                                  
                             
+                            checkBoxLogin.onmouseover = function() {
+                                var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
+                                var apiServiceStatusUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
+                                
+                                var ajaxSettings = {
+                                    "url": apiServiceStatusUrl,
+                                    "method": "GET",
+                                    "headers": {
+                                        "authorization": "bearer " + keycloak.token,
+                                        "Refresh": keycloak.refreshToken
+                                    }
+                                };
+                            
+                                $.ajax(ajaxSettings).done(function(response) {
+                                    if (response === "READY") {
+                                        this.enable = true;
+                                    } else {
+                                        this.disable = true;
+                                        swal("Service Instance is not yet ready","Please wait...", "warning");
+                                    }
+                                });
+                            };
                             
                             // NOTE: whole ACL process relies on the username displayed in the table to the username in the IPA server
                             
                             checkBoxLogin.onclick = function () {                                
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
-                                var username = this.getAttribute("data-username");                             
+                                var username = this.getAttribute("data-username");                                                                                                                                                                                                                               
+                                
                                 if (this.checked) {                                                                
                                     swal({
                                         title: "Adding " + username + "...",
                                         text: "Please wait",
                                         icon: "/StackV-web/img/ajax-loader.gif",
                                         buttons: false,
-                                        timer: 10000,
+                                        timer: 10000
                                     });
                                     // ensure the user is logged in before making any IPA requests
                                     $.when(ipaLogin()).done(function() {
@@ -635,6 +658,7 @@ function subloadInstanceACLTable(refUUID) {
                                                          swal("Login ACL Policy Created Successfully!", "Added " + username + " to the Login ACL Policy", "success");
                                                      } else {
                                                          swal("Login ACL Policy Creation Failed!", "Error: " + JSON.stringify(result), "error");
+                                                         $('loginaccess-' + username).prop(":checked", false);
                                                      }
                                                  });
                                             } else {
@@ -648,13 +672,15 @@ function subloadInstanceACLTable(refUUID) {
                                                        });
                                                     } else {
                                                         swal("Could not add " + username + " to the Login ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                                        $('loginaccess-' + username).prop(":checked", false);
                                                     }
                                                  });
                                             }
-                                            
-                                                                                       
+
+
                                         }).fail(function(err) {
                                             swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
+                                            $('loginaccess-' + username).prop(":checked", false);
                                         });                                                                                                                      
                                     });
                                 } else {
@@ -675,6 +701,7 @@ function subloadInstanceACLTable(refUUID) {
                                                 });
                                             } else {
                                                 swal("Not able to remove " + username + " from Login ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                                $('loginaccess-' + username).prop(":checked", true);
                                             }
 
                                             // if the login checkbox is unchecked, 
@@ -684,16 +711,20 @@ function subloadInstanceACLTable(refUUID) {
                                             if (sudoCheckbox.checked) {
                                                 // there are browser caveats to .click() (https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click)
                                                 sudoCheckbox.click();
-                                                
+
                                                 // tried setting the checkbox to boolean but this wouldn't run the onclick function 
                                                 // and neither would using jquery's triggers function
                                             }
-                                        
+
                                         });                                    
                                     }).fail(function(err) {
                                         swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
+                                        $('loginaccess-' + username).prop(":checked", true);
                                     });                                    
-                                }                                
+                                }
+                                    
+                                                                                             
+                                                                
                             };
                             
                             cell1_5.appendChild(checkBoxLogin);
@@ -704,13 +735,36 @@ function subloadInstanceACLTable(refUUID) {
                             checkBoxSudo.style = "display: block; margin: 0 auto";
                             checkBoxSudo.setAttribute("data-access", "sudo");
                             checkBoxSudo.setAttribute("data-username", user[0]);
-                            checkBoxSudo.type = "checkbox";                            
+                            checkBoxSudo.type = "checkbox";
                             
-                            checkBoxSudo.onclick = function () {
+                            checkBoxSudo.onmouseover = function() {
+                                var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
+                                var apiServiceStatusUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
+                                
+                                var ajaxSettings = {
+                                    "url": apiServiceStatusUrl,
+                                    "method": "GET",
+                                    "headers": {
+                                        "authorization": "bearer " + keycloak.token,
+                                        "Refresh": keycloak.refreshToken
+                                    }
+                                };
+                            
+                                $.ajax(ajaxSettings).done(function(response) {
+                                    if (response === "READY") {
+                                        this.enable = true;
+                                    } else {
+                                        this.disable = true;
+                                        swal("Service Instance is not yet ready","Please wait...", "warning");
+                                    }
+                                });
+                            };
+                            
+                            checkBoxSudo.onclick = function () {                                                                                                                                 
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
                                 var username = this.getAttribute("data-username");
-                                if (this.checked) {                                                                        
-                                    
+                                
+                                if (this.checked) {                                                                                                            
                                     swal({
                                         title: "Adding " + username + "...",
                                         text: "Please wait",
@@ -721,7 +775,7 @@ function subloadInstanceACLTable(refUUID) {
                                     // ensure the user is logged in before making any IPA requests
                                     $.when(ipaLogin()).done(function() {
                                         $.when(checkForExistingACLPolicy(uuid, "sudo")).done(function(existsRes) {
-                                            
+
                                             /**
                                              * Check before creation if a policy already exists
                                              * If it exists, then creation will fail. Instead just add
@@ -735,6 +789,7 @@ function subloadInstanceACLTable(refUUID) {
                                                          swal("Sudo ACL Policy Created Successfully", "Added " + username + " to the Sudo ACL Policy", "success");
                                                      } else {
                                                          swal("Sudo ACL Policy Creation Failed", "Error: " + JSON.stringify(result), "error");
+                                                         $('sudoaccess-' + username).prop(":checked", false);
                                                      }
                                                  });
                                             } else {
@@ -748,10 +803,11 @@ function subloadInstanceACLTable(refUUID) {
                                                        });
                                                    } else {
                                                        swal("Could not add " + username + " to Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                                       $('sudoaccess-' + username).prop(":checked", false);
                                                    }
                                                 });
                                             }
-                                            
+
                                             // if the sudo checkbox is checked, 
                                             // then check the login checkbox (which should autorun the login ACL policy creation)
                                             var loginCheckbox = document.getElementById("loginaccess-" + username);
@@ -759,13 +815,14 @@ function subloadInstanceACLTable(refUUID) {
                                             if (loginCheckbox.checked === false) {                                                
                                                 // there are browser caveats to .click() (https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click)
                                                 loginCheckbox.click();
-                                                
+
                                                 // tried setting the checkbox to boolean but this wouldn't run the onclick function 
                                                 // and neither would using jquery's triggers function
                                             }
-                                                                                       
+
                                         }).fail(function(err) {
                                             swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
+                                            $('sudoaccess-' + username).prop(":checked", false);
                                         });                                                                                                                      
                                     });
                                 } else {
@@ -786,15 +843,16 @@ function subloadInstanceACLTable(refUUID) {
                                                 });
                                             } else {
                                                 swal("Not able to remove " + username + " from Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                                $('sudoaccess-' + username).prop(":checked", true);
                                             }
-                                                                                        
+
                                         }).fail(function(err) {
                                             swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
+                                            $('sudoaccess-' + username).prop(":checked", true);
                                         });
                                     });
                                 }
-                                
-                                
+ 
                             };
                             
                             cell1_6.appendChild(checkBoxSudo);

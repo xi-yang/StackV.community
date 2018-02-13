@@ -151,7 +151,10 @@ public class WebResource {
 
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
     
-    String ipaBaseServerUrl = "https://180-133.research.maxgigapop.net";
+    String ipaBaseServerUrl = System.getProperty("ipa_url");
+    String ipaUsername = System.getProperty("ipa_username");
+    String ipaPasswd = System.getProperty("ipa_passwd");
+    
     
     static String ipaCookie;
     
@@ -449,7 +452,7 @@ public class WebResource {
         String username = postData_params.get("username").get(0); // there should only be one username
         String pwd = postData_params.get("password").get(0); // there should only be one password        
 
-        String formattedLoginData = "user=" + username + "&password=" + pwd;
+        String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
         
         try {
             URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
