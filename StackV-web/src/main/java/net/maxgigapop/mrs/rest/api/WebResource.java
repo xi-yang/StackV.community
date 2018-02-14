@@ -532,7 +532,8 @@ public class WebResource {
     @Path("/acl/ipa/servicepolicies/{serviceUUID}")    
     @Produces("application/json")
     @RolesAllowed("ACL")
-    public String ipaDeleteAllPoliciesForService(@PathParam("serviceUUID") String uuid, String data) throws UnsupportedEncodingException {  
+    public String ipaDeleteAllPoliciesForService(@PathParam("serviceUUID") String uuid, String data) throws UnsupportedEncodingException {
+        ipaLogin(); // ensure the ipa server cookie has been refreshed in case it was expired.
         JSONObject result = new JSONObject();                                    
         
         // formatting all the groups and rules names

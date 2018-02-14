@@ -258,11 +258,7 @@ function executeCommand(command) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function () {
-            if (command === "delete" || command === "force_delete") {
-                // delete the IPA ACL policies associated with this service instance
-                $.when(ipaLogin()).done(function() {
-                    removeAllACLPolicies(refUUID);
-                });                
+            if (command === "delete" || command === "force_delete") {               
                 setTimeout(function () {
                     sessionStorage.removeItem("instance-uuid");
                     window.document.location = "/StackV-web/ops/catalog.jsp";
