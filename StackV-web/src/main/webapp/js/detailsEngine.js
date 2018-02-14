@@ -72,7 +72,7 @@ function renderDetails() {
     }
     if (verificationHasDrone) {
         instruction += " (Verification elapsed time: " + verificationElapsed + ")";
-    } 
+    }
     $instruction.html(instruction);
 
     // Buttons
@@ -240,9 +240,13 @@ function attachListeners() {
                             }
                         });
                     } else {
+                        swal("Loading!", {
+                            buttons: false,
+                            timer: 3000
+                        });
+
                         executeCommand(command);
                     }
-
                 }
             }
         });

@@ -58,13 +58,9 @@ public class VerificationHandler {
         sync = _sync;
         instanceUUID = _instanceUUID;
         logger.refuuid(instanceUUID);
-        try {
-            conn = factory.getConnection("frontend");
+        conn = factory.getConnection("frontend");
 
-            logger.trace_end(method);
-        } finally {
-            commonsClose(conn, prep, rs);
-        }
+        logger.trace_end(method);
     }
 
     public String startVerification() {
@@ -75,10 +71,11 @@ public class VerificationHandler {
             return null;
         }
     }
-    
+
     private void asyncVerification() {
         new Thread(new VerificationDrone(instanceUUID, token, conn)).start();
     }
+
     private String syncVerification() {
         VerificationDrone drone = new VerificationDrone(instanceUUID, token, conn);
         drone.run();
@@ -91,7 +88,7 @@ public class VerificationHandler {
 
     public void stopVerification() {
         sendAction("STOP");
-    }   
+    }
 
     public void clearVerification() {
         try {
