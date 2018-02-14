@@ -30,8 +30,6 @@ public class GcpQuery {
     */
     private final OntModel modelRef, modelAdd, modelReduct;
     private static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-    //private static final String defaultRegion = "us-central1";
-    //private static final String defaultZone = "us-central1-c";
     private final String jsonAuth, projectID, defaultImage, defaultInstanceType, defaultDiskType, defaultDiskSize, defaultRegion, defaultZone;
     private final GcpGet gcpGet;
     private final HashMap<String, String> uriNames, subnetRegions, instanceZones;
@@ -429,9 +427,9 @@ public class GcpQuery {
         return output;
     }
     
-    public ArrayList<JSONObject> createBucketsRequest() {
+    public ArrayList<JSONObject> createBucketRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
-        String method = "createBucketsRequest";
+        String method = "createBucketRequests";
         String query = "SELECT ?name WHERE { ?bucket a mrs:Bucket ; nml:Name ?name }";
         
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
@@ -450,21 +448,12 @@ public class GcpQuery {
             output.add(bucketRequest);
         }
         
-        /*
-        //special request for testing only
-        JSONObject debugRequest = new JSONObject();
-        debugRequest.put("type", "create_bucket");
-        debugRequest.put("name", "bucket1owierbg");
-        debugRequest.put("uri", "urn:ogf:network:google.com:google-cloud:bucket1");
-        output.add(debugRequest);
-        //*/
-        
         return output;
     }
     
-    public ArrayList<JSONObject> deleteBucketsRequest() {
+    public ArrayList<JSONObject> deleteBucketRequests() {
         ArrayList <JSONObject> output = new ArrayList<>();
-        String method = "deleteBucketsRequest";
+        String method = "deleteBucketRequests";
         String query = "SELECT ?name WHERE { ?bucket a mrs:Bucket ;"
                 + "nml:name ?name }";
         
@@ -480,21 +469,85 @@ public class GcpQuery {
             //System.out.printf("DELETE BUCKET REQUEST: %s\n", bucketRequest);
             output.add(bucketRequest);
         }
+        return output;
+    }
+    
+    public ArrayList<JSONObject> createVpnConnectionRequests() {
+        ArrayList<JSONObject> output = new ArrayList<>();
+        String method = "createVpnConnectionRequests";
+        String query = "SELECT ?vpc ?vgw ?tunnel ?peerIP ?peerCIDR WHERE {\n"
+                + "?vpc nml:hasBidirectionalPort ?vgw .\n"
+                + "?vgw a nml:BidirectionalPort ; \n"
+                + "nml:hasBidirectionalPort ?tunnel .\n"
+                + "?tunnel a nml:BidirectionalPort ; \n"
+                + "mrs:hasNetworkAddress ?peerIPUri , ?peerCIDRUri ; \n"
+                + "mrs:type \"vpn-tunnel\" . \n"
+                + "?peerCIDRUri a mrs:NetworkAddress ; \n"
+                + "mrs:type \"ipv4-prefix-list:customer\" ; \n"
+                + "mrs:value ?peerCIDR . \n"
+                + "?peerIPUri a mrs:NetworkAddress ; \n"
+                + "mrs:type \"ipv4-address:customer\" ; \n"
+                + "mrs:value ?peerIP . \n"
+                + "}";
+        
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject vpnRequest = new JSONObject();
+            /*
+            step 1: create vgw.
+            step 2: create forwarding rules using google IP
+            step 3: create tunnel using peerIP and shared secret
+            step 4: create routes using peerCIDR and vgw's vpc
+            */
+            
+            String tunnelUri = q.get("tunnel").toString();
+            String tunnelName = makeNameFromUri("tunnel", tunnelUri);
+            String vpcUri = q.get("vpc").toString();
+            String vpcName = uriNames.get(vpcUri);
+            String peerIP = q.get("peerIP").toString();
+            String peerCIDR = q.get("peerCIDR").toString();
+            
+            vpnRequest.put("type", "create_vpn");
+            vpnRequest.put("uri", tunnelUri);
+            vpnRequest.put("region", defaultRegion); //region will eventually be retrieved from vgw
+            vpnRequest.put("name", tunnelName);
+            vpnRequest.put("vpc", vpcName);
+            vpnRequest.put("peerIP", peerIP);
+            vpnRequest.put("peerCIDR", peerCIDR);
+            
+            output.add(vpnRequest);
+        }
+        
         /*
-        //special request for testing only
-        JSONObject debugRequest = new JSONObject();
-        debugRequest.put("type", "delete_bucket");
-        debugRequest.put("name", "delete-this");
-        output.add(debugRequest);
+        Temporary debug code only for testing vpn commit
+        */
+        /*
+        JSONObject test = new JSONObject();
+        test.put("type", "create_vpn");
+        test.put("uri", "urn:ogf:network:google.com:google-cloud:test-vpn-2");
+        test.put("region", "us-central1");
+        test.put("name", "test-vpn-2");
+        test.put("vpc", "default");
+        test.put("peerIP", "18.217.163.249");
+        test.put("peerCIDR", "172.31.32.0/20");
+        output.add(test);
         //*/
+        
         return output;
     }
     
     public static String makeNameFromUri(String type, String uri) {
         //given a uri, returns a string that can be used to name a resource.
         //useful when a name for a resource is not available in model
+        String output;
         
-        String output = String.format("%s-%s", type, uri.substring(23, 60));
+        if (uri.length() < 60) {
+            output = uri.replace("urn:ogf:network:google.com:google-cloud:", "");
+        } else {
+            output = String.format("%s-%s", type, uri.substring(23, 60));
+        }
+            
         return removeChars(output);
     }
     
@@ -503,7 +556,7 @@ public class GcpQuery {
         return input.replaceAll("[^a-zA-Z0-9\\-]", "");
     }
     
-    private static String getOrDefault(QuerySolution q, String key, String def) {
+    public static String getOrDefault(QuerySolution q, String key, String def) {
         //This checks q for the key value, and returns the default if it is not found
         if (q.contains(key)) {
             return q.get(key).toString();
@@ -512,7 +565,7 @@ public class GcpQuery {
         }
     }
     
-    private static String getOrDefault(HashMap<String, String> h, String key, String def) {
+    public static String getOrDefault(HashMap<String, String> h, String key, String def) {
         //This checks q for the key value, and returns the default if it is not found
         if (h.containsKey(key)) {
             return h.get(key);
