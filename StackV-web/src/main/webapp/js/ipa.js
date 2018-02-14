@@ -4,22 +4,16 @@
 var ipaApiUrl = baseUrl + "/StackV-web/restapi/app/acl/ipa/request";
 
 /**
- * Currently, just logs in the user using default credentials
- * Check if the user is currently logged into IPA server. If not logged in, the log in the user.
- * @param {type} username
- * @param {type} password
+ * Currently, just logs in the user in order to maintain a fresh cookie. Called
+ * before any call involving the IPA server.
  * @returns {jqXHR}
  */
-function ipaLogin(username, password){
+function ipaLogin(){
     var apiUrl = baseUrl + "/StackV-web/restapi/app/acl/ipa/login";
     
     return $.ajax({
         url: apiUrl,
         type: 'POST',
-        data: {
-            "username":"admin",
-            "password":"max12345"
-        },
         beforeSend: function (xhr) {
             // check here if the user is already logged in and the cookie did not expire
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -550,6 +544,8 @@ function createLoginAclPolicy(serviceUUID, username) {
                     });
         } else {
             aclLoginPolicyResult["LoginGroupAndRuleCreatedAndRightHostsFound"] = false;
+            // if something went wrong - delete the ACL policy
+            removeACLPolicy(serviceUUID, "login");
             return aclLoginPolicyResult; 
         }                    
         }).fail(function(err) {
@@ -703,6 +699,8 @@ function createSudoAclPolicy(serviceUUID, username) {
                     });
         } else {
             aclSudoPolicyResult["SudoGroupAndRuleCreatedAndRightHostsFound"] = false;
+            // if something went wrong - delete the ACL policy
+            removeACLPolicy(serviceUUID, "sudo");
             return aclSudoPolicyResult;
         }
     }).fail(function(err) {
@@ -971,7 +969,7 @@ function removeACLPolicy(serviceUUID, accessType) {
 }
 
 /**
- * Removes both types (login and sudo) ACL policies
+ * Removes both types (login and sudo) ACL policies.
  * @param {type} serviceUUID
  * @returns {undefined}
  */

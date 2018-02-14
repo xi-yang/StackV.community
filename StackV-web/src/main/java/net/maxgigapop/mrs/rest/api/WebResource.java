@@ -420,37 +420,10 @@ public class WebResource {
     
     @POST
     @Path("/acl/ipa/login")
-    @Consumes("application/x-www-form-urlencoded")
     @Produces("application/json")
     @RolesAllowed("ACL")
-    public String ipaLogin(final String postData) throws UnsupportedEncodingException {
+    public String ipaLogin() throws UnsupportedEncodingException {
         JSONObject result = new JSONObject();
-        
-        //create a new Mapping of keys to values in the parameters
-        final Map<String, List<String>> postData_params = new HashMap<String, List<String>>();
-        final String[] params = postData.split("&"); // each pair will be separated by &
-        
-        // go thru each pair of variables and extract the key and value
-        for (String pair : params) {
-            final int index = pair.indexOf("="); // a pairing is indicated by =
-            
-            // decode the key using UTF-8 if there is a =, otherwise return the pair
-            final String key = index > 0 ? URLDecoder.decode(pair.substring(0, index), "UTF-8") : pair;
-            
-            //add the key to the map if it does not exist already
-            if (!postData_params.containsKey(key)) {
-                postData_params.put(key, new LinkedList<String>());
-            }
-            
-            // decode the value using UTF-8 if there is a =, otherwise return null
-            final String val = index > 0 && pair.length() > index + 1 ? URLDecoder.decode(pair.substring(index + 1), "UTF-8") : null; 
-            postData_params.get(key).add(val); //add the value to the key
-        }
-        
-        
-        //at this point all the parameters are in postData_params
-        String username = postData_params.get("username").get(0); // there should only be one username
-        String pwd = postData_params.get("password").get(0); // there should only be one password        
 
         String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
         
