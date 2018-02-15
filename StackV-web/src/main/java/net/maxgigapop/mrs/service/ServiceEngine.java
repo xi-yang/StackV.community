@@ -55,7 +55,7 @@ public class ServiceEngine {
     private final static String FRONT_DB_PASS = "frontuser";   
 
     // OPERATION FUNCTIONS    
-    static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
+    public static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
         String method = "orchestrateInstance";
         String result;
         String lastState = "INIT";
@@ -255,6 +255,16 @@ public class ServiceEngine {
         return result;
     }
 
+    static String revertInstance(String refUuid, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/revert", HOST, refUuid));
+        HttpURLConnection revert = (HttpURLConnection) url.openConnection();
+        String result = WebResource.executeHttpMethod(url, revert, "PUT", null, auth);
+        if (!result.contains("-PARTIAL")) {
+            throw new EJBException("Revert Failed!");
+        }
+        return result;
+    }
+    
     public static String verifyInstance(String refUUID, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/verify/%s", HOST, refUUID));
         HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
@@ -348,8 +358,7 @@ public class ServiceEngine {
         String result = executeHttpMethod(url, conn, "POST", value, auth);
     }
     
-    
-
+    //@TODO: change front_conn into using DataSource mechanism 
     public static String getCachedSystemDelta(String refUuid)  {
         Connection front_conn = null;
         PreparedStatement prep = null;
