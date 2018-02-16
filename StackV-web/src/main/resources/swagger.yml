@@ -2,16 +2,160 @@ openapi: 3.0.0
 info:
   title: StackV API
   description: StackV Frontend REST API Documentation.
-  version: 0.9.0
+  version: "0.9.1"
 servers:
-  - url: 'http://localhost:8080/StackV-web/restapi/app'
+  - url: 'https://k153.maxgigapop.net:8443/StackV-web/restapi/app'
     description: Frontend Local Server
 tags:
-  - name: acl
-    description: Access control commands
+  - name: drivers
+    description: Driver management commands.
   - name: service
-    description: Service instance commands
+    description: Service instance commands.
 paths:
+  '/driver/install':
+    put:
+      tags:
+        - drivers
+      summary: Install driver
+      description: Install driver from raw backend JSON.
+      requestBody:
+        description: Driver manifest JSON
+        content: {}
+        required: true
+      responses:
+        '200':
+          description: Successful driver plug.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: PLUGIN SUCCEEDED
+  '/driver/{user}/install/{topuri}':
+    put:
+      tags:
+        - drivers
+      summary: Install driver profile
+      description: Install driver corresponding to saved frontend profile.
+      parameters:
+        - name: user
+          in: path
+          description: Username.
+          required: true
+          schema:
+            type: string
+        - name: topuri
+          in: path
+          description: Topology URI of saved profile.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful driver plug.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: PLUGIN SUCCEEDED
+  '/driver/{user}/add':
+    put:
+      tags:
+        - drivers
+      summary: Save driver profile
+      description: Save new driver profile to DB.
+      parameters:
+        - name: user
+          in: path
+          description: Username.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Driver profile JSON to be saved.
+        content: {}
+        required: true
+      responses:
+        '200':
+          description: Saved profile successfully.
+  '/driver/{user}/edit/{topuri}':
+    put:
+      tags:
+        - drivers
+      summary: Edit driver profile
+      description: Edit existing driver profile.
+      parameters:
+        - name: user
+          in: path
+          description: Username.
+          required: true
+          schema:
+            type: string
+        - name: topuri
+          in: path
+          description: Topology URI of profile to be edited.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Driver profile JSON.
+        content: {}
+        required: true
+      responses:
+        '200':
+          description: Edited profile successfully.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Saved edits successfully.
+  '/driver/{user}/delete/{topuri}':
+    delete:
+      tags:
+        - drivers
+      summary: Delete driver profile
+      description: Delete existing driver profile.
+      parameters:
+        - name: user
+          in: path
+          description: Username.
+          required: true
+          schema:
+            type: string
+        - name: topuri
+          in: path
+          description: Topology URI of profile to be deleted.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted profile successfully.
+  '/driver/{user}/getdetails/{topuri}':
+    get:
+      tags:
+        - drivers
+      summary: Get driver profile
+      description: Retrieve existing driver profile.
+      parameters:
+        - name: user
+          in: path
+          description: Username.
+          required: true
+          schema:
+            type: string
+        - name: topuri
+          in: path
+          description: Topology URI of profile to be retrieved.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Retrieved profile successfully.
+          content:
+            application/json:
+              schema: {}
+              
   '/service/{siUUID}/status':
     get:
       tags:
@@ -174,12 +318,13 @@ paths:
           description: Successful retrieval of service status
           content:
             application/json:
-              schema: {}
+              schema: {}              
+              
 components:
   securitySchemes:
-    keycloak:
+    keycloak1:
       type: oauth2
-      description: Keycloak OAuth2 Endpoint
+      description: Keycloak OAuth2 Endpoint.
       flows:
         password:
           tokenUrl: >-
@@ -187,5 +332,7 @@ components:
           refreshUrl: >-
             https://k152.maxgigapop.net:8543/auth/realms/StackV/protocol/openid-connect/token
           scopes: {}
+      
+      
 security:
   - keycloak: []

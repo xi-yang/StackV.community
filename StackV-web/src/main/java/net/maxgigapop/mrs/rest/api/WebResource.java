@@ -385,26 +385,7 @@ public class WebResource {
         }
     }
 
-    // >Drivers
-    /**
-     * @api {put} /app/driver/install Install Driver
-     * @apiVersion 1.0.0
-     * @apiDescription Install driver from JSON
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {JSONObject} dataInput driver json
-     * @apiParamExample {JSONObject} Example JSON:
-     * {
-     * TODO - Add Example JSON
-     * }
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
+    // >Drivers    
     @PUT
     @Path("/driver/install")
     @Consumes("application/json")
@@ -436,22 +417,6 @@ public class WebResource {
         return "PLUGIN SUCCEEDED";
     }
 
-    /**
-     * @api {put} /app/driver/:user/install/:topuri Install Driver Profile
-     * @apiVersion 1.0.0
-     * @apiDescription Install driver from StackV profile
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} user username
-     * @apiParam {String} topuri profile topology uri
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
     @PUT
     @Path("/driver/{user}/install/{topuri}")
     @Produces("text/plain")
@@ -493,26 +458,6 @@ public class WebResource {
         return "PLUGIN SUCCEEDED";
     }
 
-    /**
-     * @api {put} /app/driver/:user/add Add Driver Profile
-     * @apiVersion 1.0.0
-     * @apiDescription Add new StackV profile
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} user username
-     * @apiParam {JSONObject} dataInput profile JSON
-     * @apiParamExample {JSONObject} Example JSON:
-     * {
-     * TODO - Add Example JSON
-     * }
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {JSONObject} Example Response:
-     * TODO - Add Example Response
-     */
     @PUT
     @Path("/driver/{user}/add")
     @Consumes(value = {"application/json"})
@@ -609,22 +554,6 @@ public class WebResource {
         return "Saved edits successfully.";
     }
 
-    /**
-     * @api {delete} /app/driver/:username/delete/:topuri Delete Driver Profile
-     * @apiVersion 1.0.0
-     * @apiDescription Delete saved driver profile.
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} username user
-     * @apiParam {String} topuri profile topology uri
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
     @DELETE
     @Path(value = "driver/{username}/delete/{topuri}")
     @RolesAllowed("Drivers")
@@ -649,22 +578,6 @@ public class WebResource {
         }
     }
 
-    /**
-     * @api {get} /app/driver/:username/getdetails/:topuri Get Driver Profile
-     * @apiVersion 1.0.0
-     * @apiDescription Get saved driver profile.
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} user username
-     * @apiParam {String} topuri profile topology uri
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
     @GET
     @Path("/driver/{user}/getdetails/{topuri}")
     @Produces("application/json")
@@ -688,23 +601,7 @@ public class WebResource {
 
         return JSONdata;
     }
-
-    /**
-     * @api {get} /app/driver/:user/get Get Profile Information
-     * @apiVersion 1.0.0
-     * @apiDescription Get saved driver profile information.
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} user username
-     * @apiParam {String} topuri profile topology uri
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
+    
     @GET
     @Path("/driver/{user}/get")
     @Produces("application/json")
