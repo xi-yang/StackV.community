@@ -78,7 +78,6 @@ public class SenseServiceApi {
         jsonReq.put("synchronous", "true");
         jsonReq.put("proceed", "false");
         jsonData.put("type", "Multi-Path P2P VLAN");
-        //jsonData.put("uuid", UUID.randomUUID().toString().toLowerCase());
         JSONArray jsonConns = new JSONArray();
         jsonData.put("connections", jsonConns);
         for (ServiceIntentRequestConnections conn: body.getConnections()) {
@@ -98,7 +97,7 @@ public class SenseServiceApi {
                 JSONObject jsonTerminal = new JSONObject();
                 jsonTerminals.add(jsonTerminal);
                 jsonTerminal.put("uri", stp.getUri());
-                if (stp.getType().equals("ethernet/vlan") || stp.getType() == null || stp.getType().isEmpty()) {
+                if (stp.getType() == null || stp.getType().isEmpty() || stp.getType().equals("ethernet/vlan")) {
                     jsonTerminal.put("vlan_tag", stp.getLabel());
                 }
             }
@@ -165,10 +164,11 @@ public class SenseServiceApi {
         @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
         @ApiResponse(code = 409, message = "Resource conflict", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
-    public Response serviceSiUUIDReservePost(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID,@Valid ServiceIntentRequest body) {
-        Response response = this.servicePost(body);
-        ServiceIntentResponse intentResponse = (ServiceIntentResponse) response.getEntity();
-        //@TODO: error handling        
+    public Response serviceSiUUIDReservePost(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID, @Valid ServiceIntentRequest body) {
+        Response response = this.serviceSiUUIDPost(siUUID, body);
+        if (!response.getStatusInfo().equals(Response.Status.OK)) {
+            return response;
+        }
         return this.serviceSiUUIDReservePut(siUUID);
     }
 
@@ -184,13 +184,24 @@ public class SenseServiceApi {
         @ApiResponse(code = 409, message = "Resource conflict", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDReservePut(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID) {
-        //@TODO: verify the service is in Create - COMPILED status
-        //@TODO Use propagate_forced for FAILED status! -- using "service/{uuid}/propagate_forcedretry" directly
+        Response response = serviceSiUUIDStatusGet(siUUID);
+        if (!response.getStatusInfo().equals(Response.Status.OK)) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Resource unfound:"+siUUID).build();
+        }
+        String status = response.getEntity().toString();
+        String operation;
+        if (status.equals("CREATE - COMPILED")) {
+            operation = "propagate";
+        } else if (status.equals("CREATE - FAILED")) {
+            operation = "propagate_forcedretry";
+        } else {
+            return Response.status(Response.Status.NOT_ACCEPTABLE).entity("Request unacceptable under status:"+status).build();
+        }
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(auth, refresh);
-            URL url = new URL(String.format("%s/app/service/%s/propagate", restapi, siUUID));
+            URL url = new URL(String.format("%s/service/%s/" + operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
             executeHttpMethod(url, conn, "PUT", null, auth);
@@ -201,6 +212,7 @@ public class SenseServiceApi {
         return Response.status(Response.Status.CREATED).build();
     }
 
+    //@TODO: make commit sync => poll with GET status and verify after COMMITTED
     @PUT
     @Path("/{siUUID}/commit")
     @Produces({ "application/json" })
@@ -211,13 +223,24 @@ public class SenseServiceApi {
         @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDCommitPut(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID) {
-        //@TODO: verify the service is in Create - PROPAGATED status
-        //@TODO Use force_retry for FAILED status!
+        Response response = serviceSiUUIDStatusGet(siUUID);
+        if (!response.getStatusInfo().equals(Response.Status.OK)) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Resource unfound:"+siUUID).build();
+        }
+        String status = response.getEntity().toString();
+        String operation;
+        if (status.startsWith("CREATE - PROPAGATED")) {
+            operation = "commit";
+        } else if (status.equals("CREATE - FAILED")) {
+            operation = "force_retry";
+        } else {
+            return Response.status(Response.Status.NOT_ACCEPTABLE).entity("Request unacceptable under status:"+status).build();
+        }
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(auth, refresh);
-            URL url = new URL(String.format("%s/app/service/%s/commit", restapi, siUUID));
+            URL url = new URL(String.format("%s/app/service/%s/" + operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
             executeHttpMethod(url, conn, "PUT", null, auth);
@@ -227,6 +250,8 @@ public class SenseServiceApi {
         //@TODO: catch and parse other exceptions
         return Response.ok().build();
     }
+    
+    //@TODO: add commit_async and verify calls
     
     @GET
     @Path("/{siUUID}/status")
@@ -238,7 +263,6 @@ public class SenseServiceApi {
         @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDStatusGet(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID) {
-        //@TODO: verify the service is in Create - COMPILED status
         String status;
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -268,13 +292,26 @@ public class SenseServiceApi {
         @ApiResponse(code = 409, message = "Resource conflict", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDReleasePut(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID) {
-        //@TODO: verify the service is in Create - COMPILED status
-        //@TODO Use force_release for FAILED status!
+        Response response = serviceSiUUIDStatusGet(siUUID);
+        if (!response.getStatusInfo().equals(Response.Status.OK)) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Resource unfound:"+siUUID).build();
+        }
+        String status = response.getEntity().toString();
+        String operation;
+        if (status.equals("CREATE - READY")) {
+            operation = "release";
+        } else if (status.equals("CREATE - COMMITTED") || status.equals("CREATE - FAILED") ) {
+            operation = "force_release";
+        } else if (status.equals("CANCEL - FAILED")) {
+            operation = "force_retry";
+        } else {
+            return Response.status(Response.Status.NOT_ACCEPTABLE).entity("Request unacceptable under status:"+status).build();
+        }        
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(auth, refresh);
         try {
-            URL url = new URL(String.format("%s/app/service/%s/release", restapi, siUUID));
+            URL url = new URL(String.format("%s/app/service/%s/"+operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
             executeHttpMethod(url, conn, "PUT", null, auth);
@@ -296,13 +333,24 @@ public class SenseServiceApi {
         @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDTerminatePut(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID) {
-        //@TODO: verify the service is in Cancel - PROPAGATED status
-        //@TODO Use force_retry for FAILED status!
+        Response response = serviceSiUUIDStatusGet(siUUID);
+        if (!response.getStatusInfo().equals(Response.Status.OK)) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Resource unfound:"+siUUID).build();
+        }
+        String status = response.getEntity().toString();
+        String operation;
+        if (status.startsWith("CANCEL - PROPAGATED")) {
+            operation = "commit";
+        } else if (status.equals("CANCEL - FAILED")) {
+            operation = "force_retry";
+        } else {
+            return Response.status(Response.Status.NOT_ACCEPTABLE).entity("Request unacceptable under status:"+status).build();
+        }
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(auth, refresh);
-            URL url = new URL(String.format("%s/app/service/%s/commit", restapi, siUUID));
+            URL url = new URL(String.format("%s/app/service/%s/"+operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
             executeHttpMethod(url, conn, "PUT", null, auth);

@@ -492,12 +492,12 @@ public class HandleServiceCall {
             }
         }
         //serviceInstance.setStatus("INIT");
-        if (hasInitiated && hasPropagated) {
+        if (hasPropagated && isCommitting) {
+            serviceInstance.setStatus("COMMITTING-PARTIAL");
+        } else if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else if (hasPropagated && !isCommitting) {
             serviceInstance.setStatus("PROPAGATED");
-        } else if (hasPropagated && isCommitting) {
-            serviceInstance.setStatus("COMMITTING-PARTIAL");
         } else if (!hasPropagated && isCommitting) {
             serviceInstance.setStatus("COMMITTING");
         }
@@ -800,12 +800,26 @@ public class HandleServiceCall {
         if (serviceInstance.getServiceDeltas() == null || serviceInstance.getServiceDeltas().isEmpty()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to retry.");
         }
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         boolean canMultiPropagate = false;
         String multiPropagate = serviceInstance.getProperty("multiPropagate");
         if (multiPropagate != null && multiPropagate.equalsIgnoreCase("true")) {
             canMultiPropagate = true;
+        } else {
+            // change status from INIT to SKIP for all but last - in non-multiPropagate mode, we only propagate the latest with INIT status
+            Iterator<ServiceDelta> it = serviceInstance.getServiceDeltas().iterator();
+            ServiceDelta serviceDeltaInit = null;
+            while (it.hasNext()) {
+                ServiceDelta serviceDelta = it.next();
+                if (serviceDelta.getStatus().equals("INIT")) {
+                    serviceDeltaInit = serviceDelta;
+                    it.remove();
+                }
+            }
+            if (serviceDeltaInit != null) {
+                serviceInstance.getServiceDeltas().add(serviceDeltaInit);
+            }
         }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getSystemDelta() == null) {
