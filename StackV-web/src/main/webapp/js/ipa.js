@@ -444,7 +444,7 @@ function createLoginAclPolicy(serviceUUID, username) {
                 hostsObjs.forEach(function(h) {                
                     hosts.push(h["hostname"]);               
                 });
-                aclLoginPolicyResult["RecievedRightHostsForServiceInstance"] = true; 
+                aclLoginPolicyResult["ReceivedHostsForServiceInstance"] = true; 
             } else {
                 aclLoginPolicyResult["ReceivedHostsForServiceInstance"] = false;
                 aclLoginPolicyResult["ReceivedHostsForServiceInstanceError"] = JSON.stringify(hostsQuery);
@@ -458,31 +458,32 @@ function createLoginAclPolicy(serviceUUID, username) {
         // if error is null for the IPA requests, then the request was successful
         
         if (ugError === null) {
-            aclLoginPolicyResult["CreatedLoginUserGroup"] = true;
+            aclLoginPolicyResult["CreatedUserGroup"] = true;
         } else {
-            aclLoginPolicyResult["CreatedLoginUserGroup"] = false;
-            aclLoginPolicyResult["CreatedLoginUserGroupError"] = ugError;
+            aclLoginPolicyResult["CreatedUserGroup"] = false;
+            aclLoginPolicyResult["CreatedUserGroupError"] = ugError;
         }
         
         if (hgError === null) {
-            aclLoginPolicyResult["CreatedLoginHostGroup"] = true;
+            aclLoginPolicyResult["CreatedHostGroup"] = true;
         } else {
-            aclLoginPolicyResult["CreatedLoginHostGroup"] = false;
-            aclLoginPolicyResult["CreatedLoginHostGroupError"] = hgError;
+            aclLoginPolicyResult["CreatedHostGroup"] = false;
+            aclLoginPolicyResult["CreatedHostGroupError"] = hgError;
         }
         
         if (hbacError === null) {
-            aclLoginPolicyResult["CreatedLoginHBACRule"] = true;
+            aclLoginPolicyResult["CreatedHBACRule"] = true;
         } else {
-            aclLoginPolicyResult["CreatedLoginHBACRule"] = false;
-            aclLoginPolicyResult["CreatedLoginHBACRuleError"] = hbacError;
+            aclLoginPolicyResult["CreatedHBACRule"] = false;
+            aclLoginPolicyResult["CreatedHBACRuleError"] = hbacError;
         }                
         
     }).then(function() {
         
-        // if no errors in all three -> null is a falsy value
+        // if no errors in all three creation/query calls -> continue the process
+        // null is a falsy value
         if (!ugError && !hgError && !hbacError && !hostsQueryError) {
-            aclLoginPolicyResult["LoginGroupAndRuleCreatedAndRightHostsFound"] = true;
+            aclLoginPolicyResult["GroupAndRuleCreatedAndRightHostsFound"] = true;
             
             var addLoginUgUsers = addUsersToUserGroup(username, ugLoginName);
             var addLoginHgHosts = addHostsToHostGroup(hosts, hgLoginName);
@@ -493,57 +494,70 @@ function createLoginAclPolicy(serviceUUID, username) {
             return $.when(addLoginUgUsers, addLoginHgHosts, addLoginUgToHbac, addLoginHgToHbac, addLoginSrvcsToHbac)
                     .then(function(ugusers, hghosts, ughbac, hghbac, srvcshbac) {
                         var ugusersError = ugusers[0]["error"];
+                        
+                        // get the number of users that have been successfully added to the user group
+                        // since in this case only one user can be added at a time (due to clicking on 
+                        // checkbox immediately adding the user / creating the policy). 
+                        // just check if the completed is equal to 1 which shows that the user has been added
+                        var ugusersCompleted = ugusers[0]["result"]["completed"];
+                        
                         var hghostsError = hghosts[0]["error"];
                         var ughbacError = ughbac[0]["error"];
                         var hghbacError = hghbac[0]["error"];
                         var srvcshbacError = srvcshbac[0]["error"];
 
 
-                        if (ugusersError === null) {
-                            aclLoginPolicyResult["AddedUsersToLoginUserGroup"] = true;
+                        if (ugusersError === null && ugusersCompleted === 1) {
+                            aclLoginPolicyResult["AddedUsersToUserGroup"] = true;
                         } else {
-                            aclLoginPolicyResult["AddedUsersToLoginUserGroup"] = false;
-                            aclLoginPolicyResult["AddedUsersToLoginUserGroupError"] = ugusersError;
+                            aclLoginPolicyResult["AddedUsersToUserGroup"] = false;
+                            aclLoginPolicyResult["AddedUsersToUserGroupError"] = ugusersError;
                         }
 
                         if (hghostsError === null) {
-                            aclLoginPolicyResult["AddedHostsToLoginHostGroup"] = true;
+                            aclLoginPolicyResult["AddedHostsToHostGroup"] = true;
                         } else {
-                            aclLoginPolicyResult["AddedHostsToLoginHostGroup"] = false;
-                            aclLoginPolicyResult["AddedHostsToLoginHostGroupError"] = hghostsError;
+                            aclLoginPolicyResult["AddedHostsToHostGroup"] = false;
+                            aclLoginPolicyResult["AddedHostsToHostGroupError"] = hghostsError;
                         }
 
                         if (ughbacError === null) {
-                            aclLoginPolicyResult["AddedLoginUserGroupToLoginHBAC"] = true;
+                            aclLoginPolicyResult["AddedUserGroupToHBAC"] = true;
                         } else {
-                            aclLoginPolicyResult["AddedLoginUserGroupToLoginHBAC"] = false;
-                            aclLoginPolicyResult["AddedLoginUserGroupToLoginHBACError"] = ughbacError;
+                            aclLoginPolicyResult["AddedUserGroupToHBAC"] = false;
+                            aclLoginPolicyResult["AddedUserGroupToHBACError"] = ughbacError;
                         }
 
                         if (hghbacError === null) {
-                            aclLoginPolicyResult["AddedLoginHostGroupToLoginHBAC"] = true;
+                            aclLoginPolicyResult["AddedHostGroupToHBAC"] = true;
                         } else {
-                            aclLoginPolicyResult["AddedLoginHostGroupToLoginHBAC"] = false;
-                            aclLoginPolicyResult["AddedLoginHostGroupToLoginHBACError"] = hghbacError;
+                            aclLoginPolicyResult["AddedHostGroupToHBAC"] = false;
+                            aclLoginPolicyResult["AddedHostGroupToHBACError"] = hghbacError;
                         }
 
                         if (srvcshbacError === null) {
-                            aclLoginPolicyResult["AddedLoginServicesToLoginHBAC"] = true;
+                            aclLoginPolicyResult["AddedServicesToHBAC"] = true;
                         } else {
-                            aclLoginPolicyResult["AddedLoginServicesToLoginHBAC"] = false;
-                            aclLoginPolicyResult["AddedLoginServicesToLoginHBACError"] = srvcshbacError;
+                            aclLoginPolicyResult["AddedServicesToHBAC"] = false;
+                            aclLoginPolicyResult["AddedServicesToHBACError"] = srvcshbacError;
                         }
-
-
-                        if (!srvcshbacError && !ugusersError && !hghbacError && !ughbacError) {
-                            aclLoginPolicyResult["AddedLoginGroupAndServicesToLoginHBAC"] = true;
+                        
+                        // if no errors in adding users/services/hosts -> give true 
+                        if (!srvcshbacError && !ugusersError && ugusersCompleted === 1 && !hghbacError && !ughbacError) {
+                            aclLoginPolicyResult["AddedUsersHostsToGroupAndServicesToRule"] = true;
+                        } else {
+                            // return an error
+                            aclLoginPolicyResult["AddedUsersHostsToGroupAndServicesToRule"] = false;
+                            
+                            // if something went wrong - delete the ACL policy
+                            removeACLPolicy(serviceUUID,"login"); 
                         }
                         return aclLoginPolicyResult;
                     }).fail(function(err) {
                         console.log("IPA ACL Login policy creation failed: " + JSON.stringify(err));
                     });
         } else {
-            aclLoginPolicyResult["LoginGroupAndRuleCreatedAndRightHostsFound"] = false;
+            aclLoginPolicyResult["GroupAndRuleCreatedAndRightHostsFound"] = false;
             // if something went wrong - delete the ACL policy
             removeACLPolicy(serviceUUID, "login");
             return aclLoginPolicyResult; 
@@ -592,45 +606,47 @@ function createSudoAclPolicy(serviceUUID, username) {
         // just to verify the right data is gotten
         if (hostsQuery[0]["serviceUUID"] === serviceUUID) {
             hostsQueryError = false;
-            aclSudoPolicyResult["RecievedRightHostsForServiceInstance"] = true;
+            aclSudoPolicyResult["ReceivedHostsForServiceInstance"] = true;
             var parsed = JSON.parse(hostsQuery[0]["jsonTemplate"]);
             var hostsObjs = parsed["hostgroup"];
+            
+            // check if any hosts were recieved.
             if (hostsObjs) {
                 hostsObjs.forEach(function(h) {                
                     hosts.push(h["hostname"]);               
                 });
-                aclSudoPolicyResult["RecievedRightHostsForServiceInstance"] = true; 
+                aclSudoPolicyResult["ReceivedHostsForServiceInstance"] = true; 
             } else {
                 aclSudoPolicyResult["ReceivedHostsForServiceInstance"] = false;
                 aclSudoPolicyResult["ReceivedHostsForServiceInstanceError"] = JSON.stringify(hostsQuery);
                 hostsQueryError = true;
             }            
         } else {
-            aclSudoPolicyResult["RecievedRightHostsForServiceInstance"] = false;
-            aclSudoPolicyResult["RecievedRightHostsForServiceInstanceError"] = JSON.stringify(hostsQuery);
+            aclSudoPolicyResult["ReceivedHostsForServiceInstance"] = false;
+            aclSudoPolicyResult["ReceivedHostsForServiceInstanceError"] = JSON.stringify(hostsQuery);
         }
         
         // if error for ipa requests is null, then the request was successful
         
         if (ugError === null) {
-            aclSudoPolicyResult["CreatedSudoUserGroup"] = true;
+            aclSudoPolicyResult["CreatedUserGroup"] = true;
         } else {
-            aclSudoPolicyResult["CreatedSudoUserGroup"] = false;
-            aclSudoPolicyResult["CreatedSudoUserGroupError"] = ugError;
+            aclSudoPolicyResult["CreatedUserGroup"] = false;
+            aclSudoPolicyResult["CreatedUserGroupError"] = ugError;
         }
         
         if (hgError === null) {
-            aclSudoPolicyResult["CreatedSudoHostGroup"] = true;
+            aclSudoPolicyResult["CreatedHostGroup"] = true;
         } else {
-            aclSudoPolicyResult["CreatedSudoHostGroup"] = false;
-            aclSudoPolicyResult["CreatedSudoHostGroupError"] = hgError;
+            aclSudoPolicyResult["CreatedHostGroup"] = false;
+            aclSudoPolicyResult["CreatedHostGroupError"] = hgError;
         }
         
         if (hbacError === null) {
-            aclSudoPolicyResult["CreatedSudoHBACRule"] = true;
+            aclSudoPolicyResult["CreatedHBACRule"] = true;
         } else {
-            aclSudoPolicyResult["CreatedSudoHBACRule"] = false;
-            aclSudoPolicyResult["CreatedSudoHBACRuleError"] = hbacError;
+            aclSudoPolicyResult["CreatedHBACRule"] = false;
+            aclSudoPolicyResult["CreatedHBACRuleError"] = hbacError;
         }
                  
         
@@ -638,7 +654,7 @@ function createSudoAclPolicy(serviceUUID, username) {
         
         // if no errors in all three -> null is a falsy value
         if (!ugError && !hgError && !hbacError && !hostsQueryError) {
-            aclSudoPolicyResult["SudoGroupAndRuleCreatedAndRightHostsFound"] = true;
+            aclSudoPolicyResult["GroupAndRuleCreatedAndRightHostsFound"] = true;
             
             var addSudoUgUsers = addUsersToUserGroup(username, ugSudoName);
             var addSudoHgHosts = addHostsToHostGroup(hosts, hgSudoName);
@@ -649,56 +665,69 @@ function createSudoAclPolicy(serviceUUID, username) {
             return $.when(addSudoUgUsers, addSudoHgHosts, addSudoUgToHbac, addSudoHgToHbac, addSudoSrvcsToHbac)
                     .then(function(ugusers, hghosts, ughbac, hghbac, srvcshbac) {
                         var ugusersError = ugusers[0]["error"];
+                        
+                        // get the number of users that have been successfully added to the user group
+                        // since in this case only one user can be added at a time (due to clicking on 
+                        // checkbox immediately adding the user / creating the policy). 
+                        // just check if the completed is equal to 1 which shows that the user has been added
+                        var ugusersCompleted = ugusers[0]["result"]["completed"];
+                
                         var hghostsError = hghosts[0]["error"];
                         var ughbacError = ughbac[0]["error"];
                         var hghbacError = hghbac[0]["error"];
                         var srvcshbacError = srvcshbac[0]["error"];
 
-                        if (ugusersError === null) {
-                            aclSudoPolicyResult["AddedUsersToSudoUserGroup"] = true;
+                        if (ugusersError === null && ugusersCompleted === 1) {
+                            aclSudoPolicyResult["AddedUsersToUserGroup"] = true;
                         } else {
-                            aclSudoPolicyResult["AddedUsersToSudoUserGroup"] = false;
-                            aclSudoPolicyResult["AddedUsersToSudoUserGroupError"] = ugusersError;
+                            aclSudoPolicyResult["AddedUsersToUserGroup"] = false;
+                            aclSudoPolicyResult["AddedUsersToUserGroupError"] = ugusersError;
                         }
 
                         if (hghostsError === null) {
-                            aclSudoPolicyResult["AddedHostsToSudoHostGroup"] = true;
+                            aclSudoPolicyResult["AddedHostsToHostGroup"] = true;
                         } else {
-                            aclSudoPolicyResult["AddedHostsToSudoHostGroup"] = false;
-                            aclSudoPolicyResult["AddedHostsToSudoHostGroupError"] = hghostsError;
+                            aclSudoPolicyResult["AddedHostsToHostGroup"] = false;
+                            aclSudoPolicyResult["AddedHostsToHostGroupError"] = hghostsError;
                         }
 
                         if (ughbacError === null) {
-                            aclSudoPolicyResult["AddedSudoUserGroupToSudoHBAC"] = true;
+                            aclSudoPolicyResult["AddedUserGroupToHBAC"] = true;
                         } else {
-                            aclSudoPolicyResult["AddedSudoUserGroupToSudoHBAC"] = false;
-                            aclSudoPolicyResult["AddedSudoUserGroupToSudoHBACError"] = ughbacError;
+                            aclSudoPolicyResult["AddedUserGroupToHBAC"] = false;
+                            aclSudoPolicyResult["AddedUserGroupToHBACError"] = ughbacError;
                         }
 
                         if (hghbacError === null) {
-                            aclSudoPolicyResult["AddedSudoHostGroupToSudoHBAC"] = true;
+                            aclSudoPolicyResult["AddedHostGroupToHBAC"] = true;
                         } else {
-                            aclSudoPolicyResult["AddedSudoHostGroupToSudoHBAC"] = false;
-                            aclSudoPolicyResult["AddedSudoHostGroupToSudoHBACError"] = hghbacError;
+                            aclSudoPolicyResult["AddedHostGroupToHBAC"] = false;
+                            aclSudoPolicyResult["AddedHostGroupToHBACError"] = hghbacError;
                         }
 
                         if (srvcshbacError === null) {
-                            aclSudoPolicyResult["AddedSudoServicesToSudoHBAC"] = true;
+                            aclSudoPolicyResult["AddedServicesToHBAC"] = true;
                         } else {
-                            aclSudoPolicyResult["AddedSudoServicesToSudoHBAC"] = false;
-                            aclSudoPolicyResult["AddedSudoServicesToSudoHBACError"] = srvcshbacError;
+                            aclSudoPolicyResult["AddedServicesToHBAC"] = false;
+                            aclSudoPolicyResult["AddedServicesToHBACError"] = srvcshbacError;
                         }
 
 
-                        if (!srvcshbacError && !ugusersError && !hghbacError && !ughbacError) {
-                            aclSudoPolicyResult["AddedSudoGroupAndServicesToSudoHBAC"] = true;
+                        if (!srvcshbacError && !ugusersError && ugusersCompleted === 1 && !hghbacError && !ughbacError) {
+                            aclSudoPolicyResult["AddedUsersHostsToGroupAndServicesToRule"] = true;
+                        } else {
+                            // return an error
+                            aclSudoPolicyResult["AddedUsersHostsToGroupAndServicesToRule"] = false;
+                            
+                            // if something went wrong - delete the ACL policy
+                            removeACLPolicy(serviceUUID,"sudo"); 
                         }
                         return aclSudoPolicyResult;
                     }).fail(function(err) {
                         console.log("IPA ACL Sudo policy creation failed: " + JSON.stringify(err));
                     });
         } else {
-            aclSudoPolicyResult["SudoGroupAndRuleCreatedAndRightHostsFound"] = false;
+            aclSudoPolicyResult["GroupAndRuleCreatedAndRightHostsFound"] = false;
             // if something went wrong - delete the ACL policy
             removeACLPolicy(serviceUUID, "sudo");
             return aclSudoPolicyResult;
@@ -984,4 +1013,117 @@ function removeAllACLPolicies(serviceUUID) {
         removedAllACLPolicies["RemovedSudoACLPolicy"] = JSON.stringify(rmSudo);        
         return removedAllACLPolicies;
     });
+}
+
+/**
+ * Parses an acl function result JSON object (created by the ACL 
+ * functions) and returns a pretty string to display to the user.
+ * Mainly used to parse and pretty print failures/error messages 
+ *
+ * @param {JSON} resultJSON
+ * @returns {String}
+ */
+function parseACLPolicyResult(resultJSON) {
+    var prettyResults = "";
+    
+    // general keys for the create*AclPolicy functions 
+    // these are the keys in the json that indicate success or error
+    // policy creation is done in 2 steps
+    // step 1 - create groups and rules and find the hosts
+    // step 2 - add the users, hosts, services to the groups and rules
+
+    var stepOne = "GroupAndRuleCreatedAndRightHostsFound";
+    var stepTwo = "AddedUsersHostsToGroupAndServicesToRule";
+
+    // check step 1
+    if (resultJSON[stepOne] === false) {    	
+    	var receivedHosts = "ReceivedHostsForServiceInstance";
+        var createdUg = "CreatedUserGroup";
+        var createdHg = "CreatedHostGroup";
+        var createdHbac = "CreatedHBACRule";
+
+    	if (resultJSON[receivedHosts] === false) {
+            prettyResults += "Could not find or receive hosts for service instance.\n";
+            console.log("Error: " + resultJSON[receivedHosts + "Error"]);
+    	}
+
+    	if (resultJSON[createdUg] === false) {
+            prettyResults += "Could not create user group.\n";
+            console.log("Error: " + resultJSON[createdUg + "Error"]);
+    	}
+
+    	if (resultJSON[createdHg] === false) {
+            prettyResults += "Could not create host group.\n";
+            console.log("Error: " + resultJSON[createdHg + "Error"]);
+    	}
+
+    	if (resultJSON[createdHbac] === false) {
+            prettyResults += "Could not create HBAC rule.\n";
+            console.log("Error: " + createdHbac[createdHg + "Error"]);
+    	}
+    		
+    }
+
+    // check step 2
+    if (resultJSON[stepTwo] === false) {
+    	var addedUsersToUg = "AddedUsersToUserGroup";
+    	var addedHostsToHg = "AddedHostsToHostGroup";
+    	var addedUgToHbac = "AddedUserGroupToHBAC";
+    	var addedHgToHbac = "AddedHostGroupToHBAC";
+    	var addedSrvcToHbac = "AddedServicesToHBAC";
+
+    	if (resultJSON[addedUsersToUg] === false) {
+            prettyResults += "Could not add user to user group. Ensure user is registered with IPA server and is NOT already in ACL policy.\n";
+            console.log("Error: " + resultJSON[addedUsersToUg + "Error"]);
+    	}
+
+    	if (resultJSON[addedHostsToHg] === false) {
+            prettyResults += "Could not add hosts to host group. Ensure hosts has a fully qualied domain name.\n";
+            console.log("Error: " + resultJSON[addedHostsToHg + "Error"]);
+    	}
+
+    	if (resultJSON[addedUgToHbac] === false) {
+            prettyResults += "Could not add user group to HBAC Rule.\n";
+            console.log("Error: " + resultJSON[addedUgToHbac + "Error"]);
+    	}
+
+    	if (resultJSON[addedHgToHbac] === false) {
+            prettyResults += "Could not add host group to HBAC Rule.\n";
+            console.log("Error: " + resultJSON[addedHgToHbac + "Error"]);
+    	}
+
+    	if (resultJSON[addedSrvcToHbac] === false) {
+            prettyResults += "Could not add services to HBAC Rule.\n";
+            console.log("Error: " + resultJSON[addedSrvcToHbac + "Error"]);
+    	}    	
+    		
+    }
+
+    // keys for removeACLPolicy
+    var deletedUg = "DeletedUserGroup";
+    var deletedHg = "DeletedHostGroup";
+    var deletedHbac = "DeletedHBAC";
+
+    if (resultJSON[deletedUg] === false) {
+        prettyResults += "Could not delete user group.\n";
+        console.log("Error: " + resultJSON[deletedUg + "Error"]);
+    } 
+
+    if (resultJSON[deletedHg] === false) {
+        prettyResults += "Could not delete host group.\n";
+        console.log("Error: " + resultJSON[deletedHg + "Error"]);
+    }
+
+    if (resultJSON[deletedHbac] === false) {
+        prettyResults += "Could not delete HBAC Rule.\n";
+        console.log("Error: " + resultJSON[deletedHbac + "Error"]);
+    }
+
+
+    // fif none of the above errors were caught - just output the stringified json
+    if (prettyResults.length === 0) {
+    	prettyResults += "Unkown error. Error output: " + JSON.stringify(resultJSON);
+    }
+
+    return prettyResults;
 }
