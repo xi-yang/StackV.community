@@ -145,7 +145,7 @@ function loadDetails() {
     var uuid = sessionStorage.getItem("instance-uuid");
     startDetailsEngine(uuid);
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs?refUUID=' + uuid;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs/serverside?refUUID=' + uuid;
     loadDataTable(apiUrl);
     reloadLogs();
 

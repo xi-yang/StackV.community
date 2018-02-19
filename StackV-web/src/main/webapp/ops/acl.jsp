@@ -163,7 +163,7 @@
             <div id="loading-panel"></div>
         </div>
 
-        <script src="/StackV-web/js/keycloak.js"></script>
+        <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
         <script src="/StackV-web/js/jquery/jquery.js"></script>

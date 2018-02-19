@@ -60,7 +60,7 @@ public class ServiceInstancePersistenceManager extends PersistenceManager {
             return listSI.get(0);
         } catch (Exception e) {
             logger.targetid(uuid);
-            if (e.getMessage().contains("No entity found")) {
+            if (e.getMessage() == null || e.getMessage().contains("No entity found")) {
                 logger.warning("findByReferenceUUID", "target:ServiceInstance - no entity found");
                 return null;
             }

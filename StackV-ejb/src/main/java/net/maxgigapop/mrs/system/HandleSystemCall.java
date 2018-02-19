@@ -630,6 +630,7 @@ public class HandleSystemCall {
         if (di == null) {
             throw logger.error_throwing(method, String.format("canot find DriverInstance with topologyURI='%s'.", topoUri));
         }
+        di = DriverInstancePersistenceManager.findById(di.getId());
         // remove all related versionItems
         VersionItemPersistenceManager.deleteByDriverInstance(di);
         // remove all empty versionGroups
