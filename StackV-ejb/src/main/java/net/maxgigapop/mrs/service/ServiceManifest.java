@@ -65,9 +65,9 @@ public class ServiceManifest {
         DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
-        } catch (Exception ex) {
-            throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + ex);
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (NamingException e) {
+            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
         }
         OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         
@@ -104,9 +104,9 @@ public class ServiceManifest {
         DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
-        } catch (Exception ex) {
-            throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + ex);
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+        } catch (NamingException e) {
+            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
         }
         OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd, omRef);

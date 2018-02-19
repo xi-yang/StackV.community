@@ -20,7 +20,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-
 package net.maxgigapop.mrs.bean.persist;
 
 import java.util.ArrayList;
@@ -43,6 +42,7 @@ import net.maxgigapop.mrs.service.HandleServiceCall;
  */
 @SuppressWarnings("unchecked")
 public class VersionGroupPersistenceManager extends PersistenceManager {
+
     private static final StackLogger logger = new StackLogger(VersionGroupPersistenceManager.class.getName(), "VersionGroupPersistenceManager");
 
     public static VersionGroup findById(Long id) {
@@ -96,17 +96,17 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         }
         for (DriverInstance di : ditMap.values()) {
             if (!listDI.contains(di)) {
-                    VersionItem newVi = di.getHeadVersionItem();
-                    if (newVi == null) {
-                        logger.targetid(di.getId().toString());
-                        throw logger.error_throwing("refreshToHead", "target:VersionGroup encounters null head versionItem in "+di);
-                    }
-                    if (!newVi.getVersionGroups().contains(vg)) {
-                        newVi.addVersionGroup(vg);
-                    }
-                    if (!vg.getVersionItems().contains(newVi)) {
-                        vg.addVersionItem(newVi);
-                    }
+                VersionItem newVi = di.getHeadVersionItem();
+                if (newVi == null) {
+                    logger.targetid(di.getId().toString());
+                    throw logger.error_throwing("refreshToHead", "target:VersionGroup encounters null head versionItem in " + di);
+                }
+                if (!newVi.getVersionGroups().contains(vg)) {
+                    newVi.addVersionGroup(vg);
+                }
+                if (!vg.getVersionItems().contains(newVi)) {
+                    vg.addVersionItem(newVi);
+                }
                 needToUpdate = true;
             }
         }
@@ -160,12 +160,12 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             }
             */
         } catch (Exception e) {
-            logger.warning("cleanupAll",  "exception raised and ignored: " + e);
+            logger.warning("cleanupAll", "exception raised and ignored: " + e);
         }
         logger.message("cleanupAll", count + " version groups have been deleted");
         logger.end("cleanupAll");
     }
-    
+
     public static void cleanupAndUpdateAll(VersionGroup butVG) {
         logger.start("cleanupAndUpdateAll");
         Integer count = 0;
@@ -206,7 +206,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     VersionGroupPersistenceManager.refreshToHead(vg, true);
                     logger.trace("cleanupAndUpdateAll", vg + " refreshed.");
                 }
-                
+
             }
         } catch (Exception e) {
             logger.warning("cleanupAndUpdateAll", "exception raised and ignored: " + e);

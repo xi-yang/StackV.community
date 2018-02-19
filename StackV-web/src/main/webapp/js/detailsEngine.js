@@ -70,9 +70,9 @@ function renderDetails() {
             instruction = instruction.replace("{{" + str + "}}", result);
         }
     }
-    if (verificationHasDrone) {
+    if (verificationHasDrone && verificationElapsed) {
         instruction += " (Verification elapsed time: " + verificationElapsed + ")";
-    } 
+    }
     $instruction.html(instruction);
 
     // Buttons
@@ -80,7 +80,7 @@ function renderDetails() {
     for (var i in buttons) {
         var button = buttons[i];
         if (button === "verify" && verificationHasDrone) {
-            ;
+            $("#unverify").removeClass("hide");
         } else if (button === "cancel" && superState === "CANCEL") {
             $("#reinstate").removeClass("hide");
         } else if (button === "force_cancel" && superState === "CANCEL") {
@@ -240,9 +240,15 @@ function attachListeners() {
                             }
                         });
                     } else {
+                        swal({
+                            buttons: false,
+                            icon: "success",
+                            closeOnEsc: false,
+                            timer: 3000
+                        });
+
                         executeCommand(command);
                     }
-
                 }
             }
         });

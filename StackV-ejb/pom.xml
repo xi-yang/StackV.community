@@ -145,6 +145,23 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.jboss.msc</groupId>
+            <artifactId>jboss-msc</artifactId>
+            <version>1.3.0.Final</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly</groupId>
+            <artifactId>wildfly-clustering-singleton-api</artifactId>
+            <version>11.0.0.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly</groupId>
+            <artifactId>wildfly-server</artifactId>
+            <version>8.2.1.Final</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
             <version>7.0</version>
@@ -160,6 +177,11 @@
             <artifactId>wildfly-arquillian-container-managed</artifactId>
             <version>8.1.0.CR1</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.as</groupId>
+            <artifactId>jboss-as-naming</artifactId>
+            <version>7.2.0.Final</version>
         </dependency>
         <dependency>  
             <groupId>org.jboss.arquillian</groupId>  

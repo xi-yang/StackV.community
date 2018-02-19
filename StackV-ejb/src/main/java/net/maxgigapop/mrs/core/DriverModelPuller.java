@@ -23,28 +23,29 @@
 
 package net.maxgigapop.mrs.core;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
-import javax.annotation.PostConstruct;
-import javax.ejb.AsyncResult;
-import javax.ejb.EJBException;
+import javax.annotation.Resource;
 import javax.ejb.LocalBean;
 import javax.ejb.Lock;
 import javax.ejb.LockType;
-import static javax.ejb.LockType.READ;
-import javax.ejb.Schedule;
+import javax.ejb.ScheduleExpression;
 import javax.ejb.Singleton;
-import javax.ejb.Startup;
+import javax.ejb.Timeout;
+import javax.ejb.Timer;
+import javax.ejb.TimerConfig;
+import javax.ejb.TimerService;
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import net.maxgigapop.mrs.bean.DriverInstance;
-import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
-import net.maxgigapop.mrs.bean.persist.PersistenceManager;
+import net.maxgigapop.mrs.bean.persist.GlobalPropertyPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionGroupPersistenceManager;
+import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 
@@ -54,35 +55,57 @@ import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
  */
 @Singleton
 @LocalBean
-@Startup
 public class DriverModelPuller {
-
-    private @PersistenceContext(unitName = "RAINSAgentPU")
-    EntityManager entityManager;
-
-    private static final StackLogger logger = new StackLogger(DriverModelPuller.class.getName(), "DriverModelPuller");
+    //timerService managed by MSC singleton service
+    @Resource
+    private TimerService timerService;
 
     private Map<DriverInstance, Future<String>> pullResultMap = new HashMap<DriverInstance, Future<String>>();
 
-    @PostConstruct
-    public void init() {
-        if (PersistenceManager.getEntityManager() == null) {
-            PersistenceManager.initialize(entityManager);
-        }
-        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null) {
-            DriverInstancePersistenceManager.refreshAll();
-        }
-        logger.init();
-    }
+    private static final StackLogger logger = new StackLogger(DriverModelPuller.class.getName(), "DriverModelPuller");
 
+    public void start() {
+        // bootStrapped set to false
+        GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "false");
+        // schedule model pull timer
+        ScheduleExpression sexpr = new ScheduleExpression();
+        sexpr.hour("*").minute("*").second("0"); // every minute
+        // persistent must be false because the timer is started by the HASingleton service
+        timerService.createCalendarTimer(sexpr, new TimerConfig("", false));
+    }
+    
+    public void stop() {
+        for (Object obj : timerService.getTimers()) {
+            Timer t = (Timer)obj;
+            t.cancel();
+        }
+        timerService.getTimers().clear();
+        pullResultMap.clear();
+    }
+    
     @Lock(LockType.WRITE)
-    @Schedule(minute = "*", hour = "*", persistent = false)
+    @Timeout
     public void run() {
         String method = "run";
-        logger.trace_start(method);
+        logger.start(method);
+        try {
+            String hostname = InetAddress.getLocalHost().getHostName();
+            logger.message(method, "running on host="+hostname);
+        } catch (UnknownHostException ex) {
+            ;
+        }
+        boolean bootStrapped = GlobalPropertyPersistenceManager.getProperty("system.boot_strapped").equals("true");
+        if (!bootStrapped) {
+            logger.trace(method, "bootstrapping - bootStrapped==false");
+        }
+
+        boolean pullNormal = true;
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
                 || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
             DriverInstancePersistenceManager.refreshAll();
+        }
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
+            pullNormal = false;
         }
         Context ejbCxt = null;
         for (String topoUri : DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().keySet()) {
@@ -114,7 +137,17 @@ public class DriverModelPuller {
                 logger.trace(method, "model pulling - putting async result for topologyURI="+topoUri);
             } catch (Exception ex) {
                 logger.catching(method, ex);
+                pullNormal = false;
             }
+        }
+        if (!bootStrapped && pullNormal) {
+            // cleanning up from recovery
+            logger.message(method, "cleanning up from recovery");
+            VersionGroupPersistenceManager.cleanupAndUpdateAll(null);
+            Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
+            VersionItemPersistenceManager.cleanupAllBefore(before24h);
+            GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "true");
+            logger.message(method, "Done! - bootStrapped changed to true");
         }
         logger.trace_end(method);
     }
