@@ -69,7 +69,7 @@ String.format("	\"sparql\": \"SELECT DISTINCT ?domain ?domain_name WHERE {?domai
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
                     + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
                     jsonTemplate);
-            responseStr = executeHttpMethod(url, conn, "POST", data, auth);
+            responseStr = executeHttpMethod(url, conn, "POST", data, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         }
@@ -134,7 +134,7 @@ String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
                     + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
                     jsonTemplate);
-            responseStr = executeHttpMethod(url, conn, "POST", data, auth);
+            responseStr = executeHttpMethod(url, conn, "POST", data, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         }
@@ -212,7 +212,7 @@ String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
                     + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
                     jsonTemplate);
-            responseStr = executeHttpMethod(url, conn, "POST", data, auth);
+            responseStr = executeHttpMethod(url, conn, "POST", data, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         }

@@ -115,7 +115,7 @@ public class SenseServiceApi {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
             String data = jsonReq.toJSONString();
-            svcUUID = executeHttpMethod(url, conn, "POST", data, auth);
+            svcUUID = executeHttpMethod(url, conn, "POST", data, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
@@ -147,7 +147,7 @@ public class SenseServiceApi {
             URL url = new URL(String.format("%s/app/service/%s/delete", restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
-            executeHttpMethod(url, conn, "DELETE", null, auth);
+            executeHttpMethod(url, conn, "DELETE", null, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
@@ -207,7 +207,7 @@ public class SenseServiceApi {
             URL url = new URL(String.format("%s/service/%s/" + operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
-            executeHttpMethod(url, conn, "PUT", null, auth);
+            executeHttpMethod(url, conn, "PUT", null, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
@@ -246,7 +246,7 @@ public class SenseServiceApi {
             URL url = new URL(String.format("%s/app/service/%s/" + operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
-            executeHttpMethod(url, conn, "PUT", null, auth);
+            executeHttpMethod(url, conn, "PUT", null, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
@@ -276,7 +276,7 @@ public class SenseServiceApi {
                         URL url = new URL(String.format("%s/app/service/%s/verify", restapi, siUUID));
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                         conn.setRequestProperty("Refresh", refresh);
-                        executeHttpMethod(url, conn, "PUT", null, auth);
+                        executeHttpMethod(url, conn, "PUT", null, token.auth());
                         verifyStarted = true;
                     } catch (IOException ex) {
                         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
@@ -318,7 +318,7 @@ public class SenseServiceApi {
             URL url = new URL(String.format("%s/app/service/%s/status", restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
-            status = executeHttpMethod(url, conn, "GET", null, auth);
+            status = executeHttpMethod(url, conn, "GET", null, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
@@ -361,7 +361,7 @@ public class SenseServiceApi {
             URL url = new URL(String.format("%s/app/service/%s/"+operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
-            executeHttpMethod(url, conn, "PUT", null, auth);
+            executeHttpMethod(url, conn, "PUT", null, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
@@ -400,7 +400,7 @@ public class SenseServiceApi {
             URL url = new URL(String.format("%s/app/service/%s/"+operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
-            executeHttpMethod(url, conn, "PUT", null, auth);
+            executeHttpMethod(url, conn, "PUT", null, token.auth());
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
@@ -430,7 +430,7 @@ public class SenseServiceApi {
                         URL url = new URL(String.format("%s/app/service/%s/verify", restapi, siUUID));
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                         conn.setRequestProperty("Refresh", refresh);
-                        executeHttpMethod(url, conn, "PUT", null, auth);
+                        executeHttpMethod(url, conn, "PUT", null, token.auth());
                         verifyStarted = true;
                     } catch (IOException ex) {
                         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
