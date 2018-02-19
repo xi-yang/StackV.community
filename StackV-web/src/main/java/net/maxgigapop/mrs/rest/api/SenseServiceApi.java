@@ -12,6 +12,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJB;
 
 import javax.validation.Valid;
@@ -24,6 +26,7 @@ import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentResponseQueries;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceTerminationPoint;
 import net.maxgigapop.mrs.service.HandleServiceCall;
 import net.maxgigapop.mrs.service.ServiceEngine;
+import net.maxgigapop.mrs.service.VerificationHandler;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -212,7 +215,7 @@ public class SenseServiceApi {
         return Response.status(Response.Status.CREATED).build();
     }
 
-    //@TODO: make commit sync => poll with GET status and verify after COMMITTED
+    // commit is a sync operation => poll with GET status and verify after COMMITTED
     @PUT
     @Path("/{siUUID}/commit")
     @Produces({ "application/json" })
@@ -248,9 +251,53 @@ public class SenseServiceApi {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
         //@TODO: catch and parse other exceptions
+        if (operation.equals("commit")) {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException ex) {
+                ;
+            }
+            boolean verifyStarted = false;
+            while (true) {
+                response = serviceSiUUIDStatusGet(siUUID);
+                if (!response.getStatusInfo().equals(Response.Status.OK)) {
+                    if (response.getEntity().toString().contains("Server returned HTTP response code: 401") || response.getStatusInfo().equals(Response.Status.UNAUTHORIZED)) {
+                        continue;
+                    }
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to poll status after commit").build();
+                }
+                status = response.getEntity().toString();
+
+                if (status.startsWith("CREATE - COMMITTED") && !verifyStarted) {
+                    try {
+                        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+                        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+                        final TokenHandler token = new TokenHandler(auth, refresh);
+                        URL url = new URL(String.format("%s/app/service/%s/verify", restapi, siUUID));
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestProperty("Refresh", refresh);
+                        executeHttpMethod(url, conn, "PUT", null, auth);
+                        verifyStarted = true;
+                    } catch (IOException ex) {
+                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
+                    }
+                } else if (status.equals("CREATE - READY")) {
+                    return Response.ok().build();
+                } else if (status.equals("CREATE - COMMITTING")) {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ex) {
+                        ;
+                    }
+                } else {
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Request unacceptable under status:" + status).build();
+                }
+            }
+        }
+
         return Response.ok().build();
     }
-    
+
     //@TODO: add commit_async and verify calls
     
     @GET
@@ -358,6 +405,50 @@ public class SenseServiceApi {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
         //@TODO: catch and parse other exceptions
+        if (operation.equals("commit")) {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException ex) {
+                ;
+            }
+            boolean verifyStarted = false;
+            while (true) {
+                response = serviceSiUUIDStatusGet(siUUID);
+                if (!response.getStatusInfo().equals(Response.Status.OK)) {
+                    if (response.getEntity().toString().contains("Server returned HTTP response code: 401") || response.getStatusInfo().equals(Response.Status.UNAUTHORIZED)) {
+                        continue;
+                    }
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Failed to poll status after commit").build();
+                }
+                status = response.getEntity().toString();
+
+                if (status.startsWith("CANCEL - COMMITTED") && !verifyStarted) {
+                    try {
+                        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+                        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+                        final TokenHandler token = new TokenHandler(auth, refresh);
+                        URL url = new URL(String.format("%s/app/service/%s/verify", restapi, siUUID));
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestProperty("Refresh", refresh);
+                        executeHttpMethod(url, conn, "PUT", null, auth);
+                        verifyStarted = true;
+                    } catch (IOException ex) {
+                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
+                    }
+                } else if (status.equals("CANCEL - READY")) {
+                    return Response.ok().build();
+                } else if (status.equals("CANCEL - COMMITTING") || (status.startsWith("CANCEL - COMMITTED") && verifyStarted)) {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ex) {
+                        ;
+                    }
+                } else {
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Request unacceptable under status:" + status).build();
+                }
+            }
+        }
+
         return Response.ok().build();
     }
 }
