@@ -1814,11 +1814,7 @@ public class WebResource {
         ResultSet rs = null;
         String method = "getLogsServerSide";
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             String prepString = "SELECT * FROM log";
             // Filtering by UUID alone
