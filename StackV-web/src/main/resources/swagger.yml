@@ -9,6 +9,8 @@ servers:
 tags:
   - name: drivers
     description: Driver management commands.
+  - name: logging
+    description: Logging retrieval commands.
   - name: service
     description: Service instance commands.
 paths:
@@ -318,7 +320,111 @@ paths:
           description: Successful retrieval of service status
           content:
             application/json:
-              schema: {}              
+              schema: {}
+              
+  '/logging/':
+    get:
+      tags:
+        - logging
+      summary: Get logging level
+      description: Retrieve current system level.
+      responses:
+        '200':
+          description: Successful retrieval of logging module.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: TRACE        
+  '/logging/{level}':
+    put:
+      tags:
+        - logging
+      summary: Set logging level
+      description: Configure system logging level.
+      parameters:
+        - name: level
+          in: path
+          description: New logging level
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful configuration of logging module.
+  '/logging/logs':
+    get:
+      tags:
+        - logging
+      summary: Get logs
+      description: Retrieve logs according to query parameters.
+      parameters:
+        - name: refUUID
+          in: query
+          description: UUID of instance being queried.
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          description: Logging level cutoff. (INFO will only return INFO, WARN, ERROR; etc.)
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful retrieval of logging module.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: TRACE   
+      deprecated: true
+  '/logging/logs/serverside':
+    get:
+      tags:
+        - logging
+      summary: Get logs
+      description: Retrieve logs according to query parameters using serverside configuration.
+      parameters:
+        - name: refUUID
+          in: query
+          description: UUID of instance being queried.
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          description: Logging level cutoff. (INFO will only return INFO, WARN, ERROR; etc.)
+          required: false
+          schema:
+            type: string
+        - name: draw
+          in: query
+          description: Draw request ID.
+          required: false
+          schema:
+            type: integer
+        - name: start
+          in: query
+          description: Starting row.
+          required: false
+          schema:
+            type: integer
+        - name: length
+          in: query
+          description: Size of data batch request.
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful retrieval of logging module.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: TRACE   
               
 components:
   securitySchemes:

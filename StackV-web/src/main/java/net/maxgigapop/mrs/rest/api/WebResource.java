@@ -1614,20 +1614,6 @@ public class WebResource {
     }
 
     // >Logging
-    /**
-     * @api {get} /app/logging/ Get Logging
-     * @apiVersion 1.0.0
-     * @apiDescription Get system logging level.
-     * @apiGroup Logging
-     * @apiUse AuthHeader
-     *
-     ** @apiExample {curl} Example Call:
-     * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/ -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess String logging level
-     * @apiSuccessExample {json} Example Response:
-     * info
-     */
     @GET
     @Path("/logging/")
     @Produces("application/json")
@@ -1636,17 +1622,6 @@ public class WebResource {
         return logger.getLogger().getLevel().name();
     }
 
-    /**
-     * @api {put} /app/logging/:level Set Logging
-     * @apiVersion 1.0.0
-     * @apiDescription Set system logging level.
-     * @apiGroup Logging
-     * @apiUse AuthHeader
-     * @apiParam {String} level logging level, one of the following: TRACE, DEBUG, INFO, WARN, ERROR
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X PUT -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/trace -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
     @PUT
     @Path("/logging/{level}")
     @Produces("application/json")
@@ -1682,41 +1657,10 @@ public class WebResource {
         }
     }
 
-    /**
-     * @api {get} /app/logging/logs? Get Logs
-     * @apiVersion 1.0.0
-     * @apiDescription Get logs according to filters.
-     * @apiGroup Logging
-     * @apiUse AuthHeader
-     * @apiParam {String} username Optional - username
-     * @apiParam {String} username Optional - username
-     *
-     * @apiExample {curl} Example Call:
-     * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/logs?refUUID=e4d3bfd6-c269-4063-b02b-44aaef71d5b6 -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} logs logs JSON
-     * @apiSuccess {JSONObject} logs.log log JSON
-     * @apiSuccess {String} logs.log.marker log marker
-     * @apiSuccess {String} logs.log.timestamp log timestamp
-     * @apiSuccess {String} logs.log.level log level
-     * @apiSuccess {String} logs.log.logger log source
-     * @apiSuccess {String} logs.log.message log message
-     * @apiSuccess {String} logs.log.exception log exception
-     * @apiSuccessExample {json} Example Response:
-     * [
-     * {
-     * "exception": "",
-     * "level": "INFO",
-     * "marker": "",
-     * "logger": "net.maxgigapop.mrs.rest.api.WebResource",
-     * "message": "Initialized.",
-     * "timestamp": "2017-03-17 12:23:16.0"
-     * },
-     * ...]
-     */
     @GET
     @Path("/logging/logs")
     @Produces("application/json")
+    @RolesAllowed("Logging")
     public String getLogs(@QueryParam("refUUID") String refUUID, @QueryParam("level") String level) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -1801,6 +1745,7 @@ public class WebResource {
     @GET
     @Path("/logging/logs/serverside")
     @Produces("application/json")
+    @RolesAllowed("Logging")
     public String getLogsServerSide(@Context UriInfo uriInfo) throws SQLException {
         MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
         String level = queryParams.getFirst("level");
