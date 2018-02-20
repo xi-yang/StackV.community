@@ -55,7 +55,7 @@ public class AuditService {
                 frontList.add(rs.getString(1));
             }
             
-            backConn = factory.getConnection("MysqlDS");
+            backConn = factory.getConnection("rainsdb");
             prep = backConn.prepareStatement("SELECT DISTINCT referenceUUID FROM service_instance");
             rs = prep.executeQuery();
             while (rs.next()) {
