@@ -633,15 +633,18 @@ function subloadInstanceACLTable(refUUID) {
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
                                 var username = this.getAttribute("data-username");                                                                                                                                                                                                                               
                                 
-                                if (this.checked) {                                                                
+                                if (this.checked) {
+                                    // show a loading alert, if after 15 seconds the process doesn't complete - show an error message
                                     swal({
                                         title: "Adding " + username + "...",
                                         text: "Please wait",
                                         icon: "/StackV-web/img/ajax-loader.gif",
                                         buttons: false,
-                                        timer: 10000
+                                        timer: 15000
                                     }).then(function(res) {
                                         swal("The ACL Request could not be completed.","Please try again.", "error");
+                                        subloadInstanceACLTable(uuid);
+                                        removeACLPolicy(uuid, "login"); //remove any completed steps
                                     });
                                     // ensure the user is logged in before making any IPA requests
                                     $.when(ipaLogin()).done(function() {
@@ -655,7 +658,7 @@ function subloadInstanceACLTable(refUUID) {
                                             // if no ACL policy exists, then create it
                                             if (existsRes["result"]["count"] === 0) {
                                                  createLoginAclPolicy(uuid,username).done(function(result) {
-                                                     console.log("after createLoginPolicy result: " + JSON.stringify(result));
+                                                     // success keys in the returned json (see ipa.js creation methods for json structure)
                                                      if (result["GroupAndRuleCreatedAndRightHostsFound"] === true && result["AddedUsersHostsToGroupAndServicesToRule"] === true) {
                                                          swal("Login ACL Policy Created Successfully!", "Added " + username + " to the Login ACL Policy", "success");
                                                      } else {
@@ -666,7 +669,7 @@ function subloadInstanceACLTable(refUUID) {
                                             } else {
                                                 // just add the user to the existing policy by adding them to the right user group
                                                 var usergroupLogin = "ug-login-" + uuid;
-                                                addUsersToUserGroup(username, usergroupLogin).done(function(result) {                                                    
+                                                addUsersToUserGroup(username, usergroupLogin).done(function(result) {                                                   
                                                     if (result["error"] === null && result["result"]["completed"] === 1) {
                                                        swal({
                                                            title: "Added " + username + " to the Login ACL Policy!",
@@ -681,21 +684,24 @@ function subloadInstanceACLTable(refUUID) {
 
 
                                         }).fail(function(err) {
+                                            // if something fails due not due to the content of the request
                                             subloadInstanceACLTable(uuid);
                                             swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
                                             removeACLPolicy(uuid, "login");                                            
                                         });                                                                                                                      
                                     });
                                 } else {
+                                    // show a loading alert, if after 15 seconds the process doesn't complete - show an error message
                                     swal({
                                         title: "Removing " + username + "...",
                                         text: "Please wait",
                                         icon: "/StackV-web/img/ajax-loader.gif",
                                         buttons: false,
-                                        timer: 10000
+                                        timer: 15000
                                     }).then(function(res) {
                                         swal("The ACL Request could not be completed.","Please try again.", "error");
                                         subloadInstanceACLTable(uuid);
+                                        removeACLPolicy(uuid, "login"); //remove any completed steps
                                     });;
                                     $.when(ipaLogin()).done(function() {
                                         removeUserFromACLPolicy(username, uuid, "login").done(function(result) {
@@ -726,7 +732,7 @@ function subloadInstanceACLTable(refUUID) {
                                     }).fail(function(err) {
                                         subloadInstanceACLTable(uuid);
                                         swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
-                                        removeACLPolicy(uuid, "login");                                        
+                                        removeACLPolicy(uuid, "login"); //remove any completed steps                                    
                                     });                                    
                                 }
                                     
@@ -771,16 +777,18 @@ function subloadInstanceACLTable(refUUID) {
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
                                 var username = this.getAttribute("data-username");
                                 
-                                if (this.checked) {                                                                                                            
+                                if (this.checked) {
+                                    // show a loading alert, if after 15 seconds the process doesn't complete - show an error message
                                     swal({
                                         title: "Adding " + username + "...",
                                         text: "Please wait",
                                         icon: "/StackV-web/img/ajax-loader.gif",
                                         buttons: false,
-                                        timer: 10000
+                                        timer: 15000
                                     }).then(function(res) {
                                         subloadInstanceACLTable(uuid);
                                         swal("The ACL Request could not be completed.","Please try again.", "error");
+                                        removeACLPolicy(uuid, "sudo"); //remove any completed steps
                                     });
                                     // ensure the user is logged in before making any IPA requests
                                     $.when(ipaLogin()).done(function() {
@@ -837,14 +845,17 @@ function subloadInstanceACLTable(refUUID) {
                                         });                                                                                                                      
                                     });
                                 } else {
+                                    // show a loading alert, if after 15 seconds the process doesn't complete - show an error message
                                     swal({
                                         title: "Removing " + username + "...",
                                         text: "Please wait",
                                         icon: "/StackV-web/img/ajax-loader.gif",
                                         buttons: false,
-                                        timer: 10000
+                                        timer: 15000
                                     }).then(function(res) {
                                         swal("The ACL Request could not be completed.","Please try again.", "error");
+                                        subloadInstanceACLTable(uuid);
+                                        removeACLPolicy(uuid, "sudo"); //remove any completed steps
                                     });
                                     $.when(ipaLogin()).done(function() {
                                         removeUserFromACLPolicy(username, uuid, "sudo").done(function(result) {                                                                                
@@ -863,7 +874,7 @@ function subloadInstanceACLTable(refUUID) {
                                         }).fail(function(err) {
                                             subloadInstanceACLTable(uuid);
                                             swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");                                            
-                                            removeACLPolicy(uuid, "sudo");
+                                            removeACLPolicy(uuid, "sudo"); //remove any completed steps
                                         });
                                     });
                                 }

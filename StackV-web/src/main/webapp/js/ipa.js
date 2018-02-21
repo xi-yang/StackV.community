@@ -400,6 +400,11 @@ function addServicesToHBACRule(services, hbacRule) {
 /*
  * Creates a new IPA ACL Login policy (HBAC Rule with user groups and host groups) for the specified UUID
  * Abbreviations: ug -> user group, hg -> host group
+ * Policy creation happens in two stages -
+ * - First stage: create the user group, host group, hbac rule, and get the hosts
+ * - Second stage: if the first stage was successful, then add the users and hosts 
+ * to their respective groups, add services to the hbac rule, and add the groups
+ * to the hbac rule.
  */
 function createLoginAclPolicy(serviceUUID, username) {        
     // start by creating login access as both login and sudo require login access
@@ -570,6 +575,11 @@ function createLoginAclPolicy(serviceUUID, username) {
 /*
  * Creates a new IPA ACL Sudo policy (HBAC Rule with user groups and host groups) for the specified UUID
  * Abbreviations: ug -> user group, hg -> host group
+ *  * Policy creation happens in two stages -
+ * - First stage: create the user group, host group, hbac rule, and get the hosts
+ * - Second stage: if the first stage was successful, then add the users and hosts 
+ * to their respective groups, add services to the hbac rule, and add the groups
+ * to the hbac rule.
  */
 function createSudoAclPolicy(serviceUUID, username) {                
     var ugSudoName = "ug-sudo-" + serviceUUID;
@@ -1120,7 +1130,7 @@ function parseACLPolicyResult(resultJSON) {
     }
 
 
-    // fif none of the above errors were caught - just output the stringified json
+    // if none of the above errors were caught - just output the stringified json
     if (prettyResults.length === 0) {
     	prettyResults += "Unkown error. Error output: " + JSON.stringify(resultJSON);
     }
