@@ -659,8 +659,8 @@ function subloadInstanceACLTable(refUUID) {
                                                      if (result["GroupAndRuleCreatedAndRightHostsFound"] === true && result["AddedUsersHostsToGroupAndServicesToRule"] === true) {
                                                          swal("Login ACL Policy Created Successfully!", "Added " + username + " to the Login ACL Policy", "success");
                                                      } else {
-                                                         swal("Login ACL Policy Creation Failed!", parseACLPolicyResult(result), "error");
-                                                         $('#loginaccess-' + username).prop("checked", false);
+                                                         subloadInstanceACLTable(uuid);
+                                                         swal("Login ACL Policy Creation Failed!", parseACLPolicyResult(result), "error");                                                         
                                                      }
                                                  });
                                             } else {
@@ -673,16 +673,17 @@ function subloadInstanceACLTable(refUUID) {
                                                            icon: "success"
                                                        });
                                                     } else {
-                                                        swal("Could not add " + username + " to the Login ACL Policy","Ensure " + username + " is registered with the IPA server.", "error");
-                                                        $('#loginaccess-' + username).prop("checked", false);
+                                                        subloadInstanceACLTable(uuid);
+                                                        swal("Could not add " + username + " to the Login ACL Policy","Ensure " + username + " is registered with the IPA server.", "error");                                                        
                                                     }
                                                  });
                                             }
 
 
                                         }).fail(function(err) {
+                                            subloadInstanceACLTable(uuid);
                                             swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
-                                            $('#loginaccess-' + username).prop("checked", false);
+                                            removeACLPolicy(uuid, "login");                                            
                                         });                                                                                                                      
                                     });
                                 } else {
@@ -694,6 +695,7 @@ function subloadInstanceACLTable(refUUID) {
                                         timer: 10000
                                     }).then(function(res) {
                                         swal("The ACL Request could not be completed.","Please try again.", "error");
+                                        subloadInstanceACLTable(uuid);
                                     });;
                                     $.when(ipaLogin()).done(function() {
                                         removeUserFromACLPolicy(username, uuid, "login").done(function(result) {
@@ -705,14 +707,13 @@ function subloadInstanceACLTable(refUUID) {
                                                 });
                                             } else {
                                                 console.log("Could not remove " + username + "from Login ACL Policy. Error: " + JSON.stringify(result));
-                                                swal("Not able to remove " + username + " from Login ACL Policy", "Ensure " + username + " is in the ACL policy", "error");
-                                                $('#loginaccess-' + username).prop("checked", true);
+                                                subloadInstanceACLTable(uuid);
+                                                swal("Not able to remove " + username + " from Login ACL Policy", "Ensure " + username + " is in the ACL policy", "error");                                                
                                             }
 
                                             // if the login checkbox is unchecked, 
                                             // then uncheck (if checked) the sudo checkbox (which should remove the sudo access for the user)
-                                            var sudoCheckbox = document.getElementById("sudoaccess-" + username);
-                                            console.log("sudo check box checked?: " + sudoCheckbox.checked);
+                                            var sudoCheckbox = document.getElementById("sudoaccess-" + username);                                            
                                             if (sudoCheckbox.checked) {
                                                 // there are browser caveats to .click() (https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click)
                                                 sudoCheckbox.click();
@@ -723,8 +724,9 @@ function subloadInstanceACLTable(refUUID) {
 
                                         });                                    
                                     }).fail(function(err) {
+                                        subloadInstanceACLTable(uuid);
                                         swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
-                                        $('#loginaccess-' + username).prop("checked", true);
+                                        removeACLPolicy(uuid, "login");                                        
                                     });                                    
                                 }
                                     
@@ -777,6 +779,7 @@ function subloadInstanceACLTable(refUUID) {
                                         buttons: false,
                                         timer: 10000
                                     }).then(function(res) {
+                                        subloadInstanceACLTable(uuid);
                                         swal("The ACL Request could not be completed.","Please try again.", "error");
                                     });
                                     // ensure the user is logged in before making any IPA requests
@@ -796,7 +799,7 @@ function subloadInstanceACLTable(refUUID) {
                                                          swal("Sudo ACL Policy Created Successfully", "Added " + username + " to the Sudo ACL Policy", "success");
                                                      } else {
                                                          swal("Sudo ACL Policy Creation Failed", parseACLPolicyResult(result), "error");
-                                                         $('#sudoaccess-' + username).prop("checked", false);
+                                                         $('#sudoaccess-' + username).attr("checked", false);
                                                      }
                                                  });
                                             } else {
@@ -809,8 +812,8 @@ function subloadInstanceACLTable(refUUID) {
                                                            icon: "success"
                                                        });
                                                    } else {
-                                                       swal("Could not add " + username + " to Sudo ACL Policy", "Ensure " + username + " is registered with the IPA server.", "error");
-                                                       $('#sudoaccess-' + username).prop("checked", false);
+                                                       subloadInstanceACLTable(uuid);
+                                                       swal("Could not add " + username + " to Sudo ACL Policy", "Ensure " + username + " is registered with the IPA server.", "error");                                                       
                                                    }
                                                 });
                                             }
@@ -828,9 +831,9 @@ function subloadInstanceACLTable(refUUID) {
                                             }
 
                                         }).fail(function(err) {
-                                            swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
-                                            $('#sudoaccess-' + username).prop("checked", false);
-                                            
+                                            subloadInstanceACLTable(uuid);
+                                            swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");                                            
+                                            removeACLPolicy(uuid, "sudo");
                                         });                                                                                                                      
                                     });
                                 } else {
@@ -852,15 +855,15 @@ function subloadInstanceACLTable(refUUID) {
                                                     icon: "success"
                                                 });
                                             } else {
+                                                subloadInstanceACLTable(uuid);
                                                 console.log("Could not remove " + username + "from Sudo ACL Policy. Error: " + JSON.stringify(result));
-                                                swal("Not able to remove " + username + " from Sudo ACL Policy", "Ensure " + username + " is in the ACL policy", "error");
-                                                $('#sudoaccess-' + username).prop("checked", true);
-                                                
+                                                swal("Not able to remove " + username + " from Sudo ACL Policy", "Ensure " + username + " is in the ACL policy", "error");                                                                                                
                                             }
 
                                         }).fail(function(err) {
-                                            swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");
-                                            $('#sudoaccess-' + username).prop("checked", true);
+                                            subloadInstanceACLTable(uuid);
+                                            swal("Request could not be completed","Error: "  + JSON.stringify(err), "error");                                            
+                                            removeACLPolicy(uuid, "sudo");
                                         });
                                     });
                                 }
