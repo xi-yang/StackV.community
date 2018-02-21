@@ -52,7 +52,7 @@ import org.json.simple.parser.ParseException;
 public class ServiceManifest {
     private static final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "ServiceManifest");
 
-    static public JSONObject resolveManifestJsonTemplate (String serviceTemplate, String jsonModel) {
+    static public JSONObject resolveManifestJsonTemplate (String serviceTemplate, String providedModel) {
         String method = "resolveManifestJsonTemplate";
         DataConcurrencyPoster dataConcurrencyPoster;
         try {
@@ -63,9 +63,13 @@ public class ServiceManifest {
         }
         OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         OntModel omAdd = null;
-        if (jsonModel != null) {
+        if (providedModel != null) {
             try {
-                omAdd = ModelUtil.unmarshalOntModelJson(jsonModel);
+                if (!providedModel.startsWith("{") && providedModel.contains("@prefix")) {
+                    omAdd = ModelUtil.unmarshalOntModel(providedModel);
+                } else {
+                    omAdd = ModelUtil.unmarshalOntModelJson(providedModel);
+                }
             } catch (Exception ex) {
                 throw logger.throwing(method, ex);
             }

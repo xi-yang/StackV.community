@@ -31,6 +31,7 @@ import org.jboss.resteasy.spi.HttpRequest;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 @Path("/sense/service")
 @Api(description = "the service API")
@@ -51,6 +52,7 @@ public class SenseServiceApi {
         @ApiResponse(code = 400, message = "Malformed or bad request", response = Void.class),
         @ApiResponse(code = 401, message = "Request unauthorized", response = Void.class),
         @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
+        @ApiResponse(code = 406, message = "Request unacceptable", response = Void.class),
         @ApiResponse(code = 409, message = "Resource conflict", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response servicePost(@Valid ServiceIntentRequest body) {
@@ -67,6 +69,7 @@ public class SenseServiceApi {
         @ApiResponse(code = 400, message = "Malformed or bad request", response = Void.class),
         @ApiResponse(code = 401, message = "Request unauthorized", response = Void.class),
         @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
+        @ApiResponse(code = 406, message = "Request unacceptable", response = Void.class),
         @ApiResponse(code = 409, message = "Resource conflict", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDPost(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID,@Valid ServiceIntentRequest body) {
@@ -120,13 +123,26 @@ public class SenseServiceApi {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
         //@TODO: catch and parse Intent parsing, templating and MCE computation exceptions
-        
+        String sysDelta = ServiceEngine.getCachedSystemDelta(svcUUID);
+        String ttlModel = null;
+        if (sysDelta != null) {
+            try {
+                Object obj = parser.parse(sysDelta);
+                ttlModel = (String) ((JSONObject) obj).get("modelAddition");
+            } catch (ParseException ex) {
+                ;
+            }
+        }
         ServiceIntentResponse response = new ServiceIntentResponse()
                 .serviceUuid(svcUUID)
-                .model(ServiceEngine.getCachedSystemDelta(svcUUID));
-        
-        // body.queries -> SPARQL -> response.queries
-        SenseServiceQuery.postQueries(body.getQueries(), response.getQueries());
+                .model(ttlModel);
+
+        try {
+            // body.queries -> SPARQL -> response.queries
+            SenseServiceQuery.postQueries(body.getQueries(), response.getQueries(), ttlModel, httpRequest);
+        } catch (IOException ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
+        }
         return Response.ok().entity(response).build();
     }
     
@@ -165,9 +181,13 @@ public class SenseServiceApi {
         @ApiResponse(code = 400, message = "Malformed or bad request", response = Void.class),
         @ApiResponse(code = 401, message = "Request unauthorized", response = Void.class),
         @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
+        @ApiResponse(code = 406, message = "Request unacceptable", response = Void.class),
         @ApiResponse(code = 409, message = "Resource conflict", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDReservePost(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID, @Valid ServiceIntentRequest body) {
+        if (body.getQueries() != null && !body.getQueries().isEmpty()) {
+            return Response.status(Response.Status.NOT_ACCEPTABLE).entity("No query should be posted to reserve method").build();
+        }
         Response response = this.serviceSiUUIDPost(siUUID, body);
         if (!response.getStatusInfo().equals(Response.Status.OK)) {
             return response;
