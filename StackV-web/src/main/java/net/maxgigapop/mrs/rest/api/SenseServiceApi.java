@@ -186,7 +186,7 @@ public class SenseServiceApi {
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDReservePost(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID, @Valid ServiceIntentRequest body) {
         if (body.getQueries() != null && !body.getQueries().isEmpty()) {
-            return Response.status(Response.Status.NOT_ACCEPTABLE).entity("No query should be posted to reserve method").build();
+            return Response.status(Response.Status.NOT_ACCEPTABLE).entity("Intent posted to reserve method should be final and without query.").build();
         }
         Response response = this.serviceSiUUIDPost(siUUID, body);
         if (!response.getStatusInfo().equals(Response.Status.OK)) {
