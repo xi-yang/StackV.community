@@ -271,6 +271,7 @@ public class SenseServiceApi {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         } 
         //@TODO: catch and parse other exceptions
+        
         if (operation.equals("commit")) {
             try {
                 Thread.sleep(5000);
@@ -278,7 +279,8 @@ public class SenseServiceApi {
                 ;
             }
             boolean verifyStarted = false;
-            while (true) {
+            int numTriesBeforeTimeout = 60; // 5 minutes
+            while (--numTriesBeforeTimeout > 0) {
                 response = serviceSiUUIDStatusGet(siUUID);
                 if (!response.getStatusInfo().equals(Response.Status.OK)) {
                     if (response.getEntity().toString().contains("Server returned HTTP response code: 401") || response.getStatusInfo().equals(Response.Status.UNAUTHORIZED)) {
@@ -303,7 +305,7 @@ public class SenseServiceApi {
                     }
                 } else if (status.equals("CREATE - READY")) {
                     return Response.ok().build();
-                } else if (status.equals("CREATE - COMMITTING")) {
+                } else if (status.equals("CREATE - COMMITTING") || (status.startsWith("CANCEL - COMMITTED") && verifyStarted)) {
                     try {
                         Thread.sleep(5000);
                     } catch (InterruptedException ex) {
@@ -312,6 +314,9 @@ public class SenseServiceApi {
                 } else {
                     return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Request unacceptable under status:" + status).build();
                 }
+            }
+            if (numTriesBeforeTimeout < 0) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Commit timeout with status:" + status).build();
             }
         }
 
@@ -432,7 +437,8 @@ public class SenseServiceApi {
                 ;
             }
             boolean verifyStarted = false;
-            while (true) {
+            int numTriesBeforeTimeout = 60; // 5 minutes
+            while (--numTriesBeforeTimeout > 0) {
                 response = serviceSiUUIDStatusGet(siUUID);
                 if (!response.getStatusInfo().equals(Response.Status.OK)) {
                     if (response.getEntity().toString().contains("Server returned HTTP response code: 401") || response.getStatusInfo().equals(Response.Status.UNAUTHORIZED)) {
@@ -466,6 +472,9 @@ public class SenseServiceApi {
                 } else {
                     return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Request unacceptable under status:" + status).build();
                 }
+            }
+            if (numTriesBeforeTimeout < 0) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Terminate timeout with status:" + status).build();
             }
         }
 
