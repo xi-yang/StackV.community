@@ -108,7 +108,7 @@ public class SenseServiceQuery {
                     Map result = new LinkedHashMap();
                     result.put("name", connName);
                     results.add(result);
-                    if (jo != null && jo.isEmpty()) {
+                    if (jo != null && !jo.isEmpty()) {
                         JSONArray jsonConns = (JSONArray) jo.get("connections");
                         if (!jsonConns.isEmpty()) {
                             JSONObject jsonConn = (JSONObject) jsonConns.get(0);
