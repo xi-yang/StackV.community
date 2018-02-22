@@ -140,9 +140,9 @@ public class SenseServiceApi {
         try {
             // body.queries -> SPARQL -> response.queries
             SenseServiceQuery.postQueries(body.getQueries(), response.getQueries(), ttlModel, httpRequest);
-        } catch (IOException ex) {
+        } catch (IOException |  ParseException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
-        }
+        } 
         return Response.ok().entity(response).build();
     }
     

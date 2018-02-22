@@ -37,7 +37,7 @@ public class SenseServiceQuery {
         }
     }
     
-    public static void postQueries(List<ServiceIntentRequestQueries> queries, List<ServiceIntentResponseQueries> responseQueries, String ttlModel, HttpRequest httpRequest) throws IOException {
+    public static void postQueries(List<ServiceIntentRequestQueries> queries, List<ServiceIntentResponseQueries> responseQueries, String ttlModel, HttpRequest httpRequest) throws IOException, ParseException {
         for (ServiceIntentRequestQueries queryRequest: queries) {
             String query = queryRequest.getAsk();
             ServiceIntentResponseQueries queryResponse = new ServiceIntentResponseQueries()
@@ -72,7 +72,7 @@ public class SenseServiceQuery {
         }
     }
 
-    public static List<Object> handlePostQuery(String query, List<Object> options, String ttlModel, HttpRequest httpRequest) throws IOException {
+    public static List<Object> handlePostQuery(String query, List<Object> options, String ttlModel, HttpRequest httpRequest) throws IOException, ParseException {
         List<Object> results = new ArrayList();
         //@TODO break up clauses into seprate methods
         if (query.equalsIgnoreCase("maximum-bandwidth")) {
@@ -103,13 +103,20 @@ public class SenseServiceQuery {
                     responseStr = executeHttpMethod(url, conn, "POST", data, token.auth());
                     JSONParser parser = new JSONParser();
                     JSONObject jo;
-                    try {
-                        jo = (JSONObject)parser.parse(responseStr);
-                        jo = (JSONObject)parser.parse((String)jo.get("jsonTemplate"));
-                        //$$ further parse the template result 
-                            //$$ empty jsonTemplate '{}' means no answer for the question
-                    } catch (ParseException ex) {
-                        Logger.getLogger(SenseServiceQuery.class.getName()).log(Level.SEVERE, null, ex);
+                    jo = (JSONObject) parser.parse(responseStr);
+                    jo = (JSONObject) parser.parse((String) jo.get("jsonTemplate"));
+                    Map result = new LinkedHashMap();
+                    result.put("name", connName);
+                    results.add(result);
+                    if (jo != null && jo.isEmpty()) {
+                        JSONArray jsonConns = (JSONArray) jo.get("connections");
+                        if (!jsonConns.isEmpty()) {
+                            JSONObject jsonConn = (JSONObject) jsonConns.get(0);
+                            if (jsonConn.containsKey("maximum-bandwidth")) {
+                                String bandwidth = (String) jsonConn.get("maximum-bandwidth");
+                                result.put("bandwidth", bandwidth);
+                            }
+                        }
                     }
                 }
             }
