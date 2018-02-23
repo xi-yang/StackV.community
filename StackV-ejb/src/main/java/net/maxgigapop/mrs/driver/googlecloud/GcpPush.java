@@ -145,6 +145,9 @@ public class GcpPush {
             case "create_vpn":
                 tempAdd = createVpnConnection(requestInfo);
             break;
+            case "delete_vpn":
+                tempRemove = deleteVpnConnection(requestInfo);
+            break;
             case "null":
                 logger.warning(method, "COMMIT ERROR: encountered request without type");
             break;
@@ -618,6 +621,8 @@ public class GcpPush {
             request = gcpGet.getComputeClient().routes().insert(projectID, route).buildHttpRequest();
             gcpGet.makeRequest(request);
             
+            output.put(GcpModelBuilder.getResourceKey("vpn", vpnRegion, vpnName), vpnUri);
+            
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: "+e.toString());
         }
@@ -625,6 +630,47 @@ public class GcpPush {
         return null;
     }
     
+    public HashSet<String> deleteVpnConnection(JSONObject requestInfo) {
+        String method = "deleteVpnConnection";
+        String missingArgs = checkArgs(requestInfo, "name", "region");
+        HashSet<String> output = new HashSet<>();
+        if (missingArgs != null) {
+            logger.warning(method, missingArgs);
+            return null;
+        }
+        
+        String name = requestInfo.get("name").toString();
+        String region = requestInfo.get("region").toString();
+        String [] rules = new String[3];
+        rules[0] = name + "-rule-esp";
+        rules[1] = name + "-rule-udp500";
+        rules[2] = name + "-rule-udpp4500";
+        
+        try {
+            HttpRequest request = gcpGet.getComputeClient().vpnTunnels().delete(projectID, region, name).buildHttpRequest();
+            gcpGet.makeRequest(request);
+            
+            for (String s : rules) {
+                request = gcpGet.getComputeClient().forwardingRules().delete(projectID, region, s).buildHttpRequest();
+                gcpGet.makeRequest(request);
+            }
+            
+            request = gcpGet.getComputeClient().targetVpnGateways().delete(projectID, region, name).buildHttpRequest();
+            waitRequest(request);
+            
+            request = gcpGet.getComputeClient().addresses().delete(projectID, region, name+"-ip").buildHttpRequest();
+            gcpGet.makeRequest(request);
+            
+            request = gcpGet.getComputeClient().routes().delete(projectID, name+"-route").buildHttpRequest();
+            gcpGet.makeRequest(request);
+            
+            output.add(GcpModelBuilder.getResourceKey("vpn", region, name));
+            
+        } catch (IOException e) {
+            logger.warning(method, "COMMIT ERROR: "+e.toString());
+        }
+        return output;
+    }
     
     
     

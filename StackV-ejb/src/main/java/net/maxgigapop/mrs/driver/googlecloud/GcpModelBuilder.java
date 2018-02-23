@@ -198,6 +198,9 @@ public class GcpModelBuilder {
         }
         
         //map all the vpn routes by vpn tunnel
+        if (routesInfo == null) {
+            
+        }
         for (Object o : routesInfo) {
             JSONObject route = (JSONObject) o;
             String key = "nextHopVpnTunnel";
@@ -249,8 +252,8 @@ public class GcpModelBuilder {
                         }
                         //String vpcName = GcpGet.parseGoogleURI(routeInfo.get("network").toString(), "networks");
                         String routeName = routeInfo.get("name").toString();
-                        System.out.println("tunnel: " + tunnelInfo);
-                        System.out.println("route: "+ routeInfo);
+                        //System.out.println("tunnel: " + tunnelInfo);
+                        //System.out.println("route: "+ routeInfo);
                     
                         Resource tunnel = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.vpnTunnel, vpcName, region, vgwName, tunnelName), Nml.BidirectionalPort);
                         model.add(model.createStatement(tunnel, Mrs.type, "vpn-tunnel"));
@@ -288,8 +291,8 @@ public class GcpModelBuilder {
                         type.put("protocol", protocol);
                         type.put("portRange", portRange);
                         String typeStr = GcpQuery.createTypeStr(type);
-                    
-                        System.out.println("rule: " + ruleInfo);
+                        
+                        //System.out.println("rule: " + ruleInfo);
                     
                         Resource forwardingRule = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.rule, ruleRegion, ruleName), Nml.Link);
                         model.add(model.createStatement(vgw, Nml.hasLink, forwardingRule));
@@ -494,6 +497,14 @@ public class GcpModelBuilder {
                 key = String.format("nic_%s_%s_%s", args);
             } else {
                 logger.warning(method, "failed nic URI retrieval due to incorrect number of args");
+            }
+        break;
+        case "vpn":
+            if (args.length == 2) {
+                //vpns regions - name
+                key = String.format("vpn_%s_%s", args);
+            } else {
+                
             }
         break;
         default:

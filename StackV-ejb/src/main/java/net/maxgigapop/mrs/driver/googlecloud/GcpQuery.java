@@ -65,6 +65,8 @@ public class GcpQuery {
                     uriNames.put(metadata.get(key), name);
                 } else {
                     //System.out.printf("vpc %s has no uri entry\n", name);
+                    
+                    
                 }
             
                 JSONArray subnetsInfo = (JSONArray) vpcInfo.get("subnetworks");
@@ -501,17 +503,22 @@ public class GcpQuery {
             step 4: create routes using peerCIDR and vgw's vpc
             */
             
-            String tunnelUri = q.get("tunnel").toString();
-            String tunnelName = makeNameFromUri("tunnel", tunnelUri);
+            String vpnUri = q.get("vgw").toString();
+            String vpnName = makeNameFromUri("vpn", vpnUri);
             String vpcUri = q.get("vpc").toString();
             String vpcName = uriNames.get(vpcUri);
+            if (vpcName == null) {
+                logger.warning(method, "Trying to attach a VGW to a VPC ("+vpcUri+") that does not exist");
+                //skip this request
+                continue;
+            }
             String peerIP = q.get("peerIP").toString();
             String peerCIDR = q.get("peerCIDR").toString();
             
             vpnRequest.put("type", "create_vpn");
-            vpnRequest.put("uri", tunnelUri);
+            vpnRequest.put("uri", vpnUri);
             vpnRequest.put("region", defaultRegion); //region will eventually be retrieved from vgw
-            vpnRequest.put("name", tunnelName);
+            vpnRequest.put("name", vpnName);
             vpnRequest.put("vpc", vpcName);
             vpnRequest.put("peerIP", peerIP);
             vpnRequest.put("peerCIDR", peerCIDR);
@@ -519,20 +526,39 @@ public class GcpQuery {
             output.add(vpnRequest);
         }
         
-        /*
-        Temporary debug code only for testing vpn commit
-        */
-        /*
-        JSONObject test = new JSONObject();
-        test.put("type", "create_vpn");
-        test.put("uri", "urn:ogf:network:google.com:google-cloud:test-vpn-2");
-        test.put("region", "us-central1");
-        test.put("name", "test-vpn-2");
-        test.put("vpc", "default");
-        test.put("peerIP", "18.217.163.249");
-        test.put("peerCIDR", "172.31.32.0/20");
-        output.add(test);
-        //*/
+        System.out.println(output);
+        return output;
+    }
+    
+    public ArrayList<JSONObject> deleteVpnRequests() {
+        ArrayList<JSONObject> output = new ArrayList<>();
+        String method = "createVpnConnectionRequests";
+        String query = "SELECT ?vgw WHERE {\n"
+                + "?vpc nml:hasBidirectionalPort ?vgw .\n"
+                + "?vgw a nml:BidirectionalPort ; \n"
+                + "nml:hasBidirectionalPort ?tunnel .\n"
+                + "?tunnel a nml:BidirectionalPort ; \n"
+                + "mrs:hasNetworkAddress ?peerIPUri , ?peerCIDRUri ; \n"
+                + "mrs:type \"vpn-tunnel\" . \n"
+                + "}";
+        
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject vpnRequest = new JSONObject();
+            
+            String uri = q.get("vgw").toString();
+            String name = uriNames.get(uri);
+            
+            vpnRequest.put("type", "delete_vpn");
+            vpnRequest.put("uri", uri);
+            vpnRequest.put("name", name);
+            vpnRequest.put("region", defaultRegion);
+            
+            output.add(vpnRequest);
+        }
+        
+        
         
         return output;
     }
