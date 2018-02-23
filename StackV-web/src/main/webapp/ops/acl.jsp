@@ -121,9 +121,11 @@
                     <div id="acl-instance-acl-existing">
                         <table class="management-table">
                             <colgroup>
-                                <col span="1" style="width: 35%;"/>
-                                <col span="1" style="width: 35%;"/>
+                                <col span="1" style="width: 25%;"/>
+                                <col span="1" style="width: 25%;"/>
                                 <col span="1" style="width: 20%;"/>
+                                <col span="1" style="width: 10%;"/>
+                                <col span="1" style="width: 10%;"/>                                
                                 <col span="1" style="width: 10%;"/>
                             </colgroup>
                             <thead>
@@ -131,6 +133,8 @@
                                     <th>Username</th>
                                     <th>Full Name</th>
                                     <th>Email</th>
+                                    <th>Login Access</th>
+                                    <th>Sudo Access</th>                                    
                                     <th><button type="button" class="acl-instance-close close" aria-hidden="true">&times;</button></th>
                                 </tr>
                             </thead>
@@ -166,14 +170,28 @@
         <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
         <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
         <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-        <script src="/StackV-web/js/jquery/jquery.js"></script>
-        <script src="/StackV-web/js/jquery-ui.min.js"></script>
-        <script src="/StackV-web/js/bootstrap.js"></script>
+        <!--<script src="/StackV-web/js/jquery/jquery.js"></script>-->
+        <!--<script src="/StackV-web/js/jquery-ui.min.js"></script>-->
+        <!--<script src="/StackV-web/js/bootstrap.js"></script>-->
+        <script src="//code.jquery.com/jquery-2.2.4.min.js" 
+                integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" 
+        crossorigin="anonymous"></script>
+        
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+        crossorigin="anonymous"></script>
+        
+        <script src="//code.jquery.com/ui/1.12.1/jquery-ui.min.js" 
+                integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+        crossorigin="anonymous"></script>
+        
+        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
         
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
-        <script src="/StackV-web/js/nexus.js"></script>        
-        <script src="/StackV-web/js/acl.js"></script>
+        <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/ipa.js"></script>        
+        <script src="/StackV-web/js/acl.js"></script>        
     </body>
 </html>
