@@ -28,13 +28,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import javax.ejb.EJB;
 import javax.ejb.EJBException;
@@ -52,7 +50,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import web.beans.serviceBeans;
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -85,6 +82,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.QueryParam;
+import net.maxgigapop.mrs.common.AuditService;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -140,24 +138,20 @@ public class WebResource {
     }
 
     private final StackLogger logger = new StackLogger(WebResource.class.getName(), "WebResource");
-
-    private final String front_db_user = "front_view";
-    private final String front_db_pass = "frontuser";
     String host = "http://127.0.0.1:8080/StackV-web/restapi";
     String kc_url = System.getProperty("kc_url");
-    private final serviceBeans servBean = new serviceBeans();
     JSONParser parser = new JSONParser();
     private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
 
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
-    
+  
     String ipaBaseServerUrl = System.getProperty("ipa_url");
     String ipaUsername = System.getProperty("ipa_username");
     String ipaPasswd = System.getProperty("ipa_passwd");
-    
-    
     static String ipaCookie;
-    
+  
+    private final JNDIFactory factory = new JNDIFactory();  
+  
     @Context
     private HttpRequest httpRequest;
 
@@ -243,11 +237,7 @@ public class WebResource {
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
                     + "VALUES (?, '0', ?)");
@@ -294,11 +284,7 @@ public class WebResource {
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE subject = ? AND object = ?");
             prep.setString(1, subject);
@@ -348,12 +334,9 @@ public class WebResource {
             logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             ArrayList<String> sqlList = new ArrayList<>();
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
+
             try {
-                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                        front_connectionProps);
+                front_conn = factory.getConnection("frontend");
 
                 prep = front_conn.prepareStatement("SELECT A.subject FROM acl A WHERE A.object = ?");
                 prep.setString(1, refUUID);
@@ -574,26 +557,7 @@ public class WebResource {
     }
     
 
-    // >Drivers
-    /**
-     * @api {put} /app/driver/install Install Driver
-     * @apiVersion 1.0.0
-     * @apiDescription Install driver from JSON
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {JSONObject} dataInput driver json
-     * @apiParamExample {JSONObject} Example JSON:
-     * {
-     * TODO - Add Example JSON
-     * }
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
+    // >Drivers    
     @PUT
     @Path("/driver/install")
     @Consumes("application/json")
@@ -625,22 +589,6 @@ public class WebResource {
         return "PLUGIN SUCCEEDED";
     }
 
-    /**
-     * @api {put} /app/driver/:user/install/:topuri Install Driver Profile
-     * @apiVersion 1.0.0
-     * @apiDescription Install driver from StackV profile
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} user username
-     * @apiParam {String} topuri profile topology uri
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
     @PUT
     @Path("/driver/{user}/install/{topuri}")
     @Produces("text/plain")
@@ -650,12 +598,7 @@ public class WebResource {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(auth, refresh);
 
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                prop);
-
+        Connection front_conn = factory.getConnection("frontend");
         PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
         prep.setString(1, username);
         prep.setString(2, topuri);
@@ -687,26 +630,6 @@ public class WebResource {
         return "PLUGIN SUCCEEDED";
     }
 
-    /**
-     * @api {put} /app/driver/:user/add Add Driver Profile
-     * @apiVersion 1.0.0
-     * @apiDescription Add new StackV profile
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} user username
-     * @apiParam {JSONObject} dataInput profile JSON
-     * @apiParamExample {JSONObject} Example JSON:
-     * {
-     * TODO - Add Example JSON
-     * }
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {JSONObject} Example Response:
-     * TODO - Add Example Response
-     */
     @PUT
     @Path("/driver/{user}/add")
     @Consumes(value = {"application/json"})
@@ -732,10 +655,7 @@ public class WebResource {
             String uri = (String) inputJSON.get("topuri");
             String drivertype = (String) inputJSON.get("drivertype");
 
-            Properties prop = new Properties();
-            prop.put("user", front_db_user);
-            prop.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
+            front_conn = factory.getConnection("frontend");
 
             if (drivertype.equals("raw")) {
                 // excluding the topuri if the driver type is raw
@@ -788,10 +708,7 @@ public class WebResource {
             String newTopUri = (String) inputJSON.get("topuri");
             String newData = (String) inputJSON.get("data");
 
-            Properties prop = new Properties();
-            prop.put("user", front_db_user);
-            prop.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", prop);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("UPDATE driver_wizard SET TopUri = ?, data = ? WHERE username = ? AND TopUri = ?");
             prep.setString(1, newTopUri);
@@ -809,22 +726,6 @@ public class WebResource {
         return "Saved edits successfully.";
     }
 
-    /**
-     * @api {delete} /app/driver/:username/delete/:topuri Delete Driver Profile
-     * @apiVersion 1.0.0
-     * @apiDescription Delete saved driver profile.
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} username user
-     * @apiParam {String} topuri profile topology uri
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
     @DELETE
     @Path(value = "driver/{username}/delete/{topuri}")
     @RolesAllowed("Drivers")
@@ -833,11 +734,7 @@ public class WebResource {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("DELETE FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
 //            prep.setString(1, username);
@@ -853,32 +750,12 @@ public class WebResource {
         }
     }
 
-    /**
-     * @api {get} /app/driver/:username/getdetails/:topuri Get Driver Profile
-     * @apiVersion 1.0.0
-     * @apiDescription Get saved driver profile.
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} user username
-     * @apiParam {String} topuri profile topology uri
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
     @GET
     @Path("/driver/{user}/getdetails/{topuri}")
     @Produces("application/json")
     @RolesAllowed("Drivers")
     public JSONObject getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
-        Properties prop = new Properties();
-        prop.put("user", front_db_user);
-        prop.put("password", front_db_pass);
-        Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                prop);
+        Connection front_conn = factory.getConnection("frontend");
 
         PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
 //        prep.setString(1, username);
@@ -896,23 +773,7 @@ public class WebResource {
 
         return JSONdata;
     }
-
-    /**
-     * @api {get} /app/driver/:user/get Get Profile Information
-     * @apiVersion 1.0.0
-     * @apiDescription Get saved driver profile information.
-     * @apiGroup Driver
-     * @apiUse AuthHeader
-     * @apiParam {String} user username
-     * @apiParam {String} topuri profile topology uri
-     *
-     * @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
+    
     @GET
     @Path("/driver/{user}/get")
     @Produces("application/json")
@@ -924,11 +785,7 @@ public class WebResource {
         try {
             ArrayList<String> list = new ArrayList<>();
 
-            Properties prop = new Properties();
-            prop.put("user", front_db_user);
-            prop.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    prop);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ?");
             prep.setString(1, username);
@@ -1757,11 +1614,7 @@ public class WebResource {
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT * FROM label WHERE username = ?");
             prep.setString(1, username);
@@ -1826,11 +1679,7 @@ public class WebResource {
             String label = (String) inputJSON.get("label");
             String color = (String) inputJSON.get("color");
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`label` (`identifier`, `username`, `label`, `color`) VALUES (?, ?, ?, ?)");
             prep.setString(1, identifier);
@@ -1875,11 +1724,7 @@ public class WebResource {
         try {
             String method = "deleteLabel";
             logger.start(method);
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("DELETE FROM `frontend` .`label` WHERE username = ? AND identifier = ?");
             prep.setString(1, username);
@@ -1921,11 +1766,7 @@ public class WebResource {
         try {
             String method = "clearLabels";
             logger.start(method);
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("DELETE FROM `frontend`.`label` WHERE username = ? ");
             prep.setString(1, username);
@@ -1942,20 +1783,6 @@ public class WebResource {
     }
 
     // >Logging
-    /**
-     * @api {get} /app/logging/ Get Logging
-     * @apiVersion 1.0.0
-     * @apiDescription Get system logging level.
-     * @apiGroup Logging
-     * @apiUse AuthHeader
-     *
-     ** @apiExample {curl} Example Call:
-     * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/ -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess String logging level
-     * @apiSuccessExample {json} Example Response:
-     * info
-     */
     @GET
     @Path("/logging/")
     @Produces("application/json")
@@ -1964,17 +1791,6 @@ public class WebResource {
         return logger.getLogger().getLevel().name();
     }
 
-    /**
-     * @api {put} /app/logging/:level Set Logging
-     * @apiVersion 1.0.0
-     * @apiDescription Set system logging level.
-     * @apiGroup Logging
-     * @apiUse AuthHeader
-     * @apiParam {String} level logging level, one of the following: TRACE, DEBUG, INFO, WARN, ERROR
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X PUT -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/trace -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
     @PUT
     @Path("/logging/{level}")
     @Produces("application/json")
@@ -2010,52 +1826,17 @@ public class WebResource {
         }
     }
 
-    /**
-     * @api {get} /app/logging/logs? Get Logs
-     * @apiVersion 1.0.0
-     * @apiDescription Get logs according to filters.
-     * @apiGroup Logging
-     * @apiUse AuthHeader
-     * @apiParam {String} username Optional - username
-     * @apiParam {String} username Optional - username
-     *
-     * @apiExample {curl} Example Call:
-     * curl -k -v http://127.0.0.1:8080/StackV-web/restapi/app/logging/logs?refUUID=e4d3bfd6-c269-4063-b02b-44aaef71d5b6 -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} logs logs JSON
-     * @apiSuccess {JSONObject} logs.log log JSON
-     * @apiSuccess {String} logs.log.marker log marker
-     * @apiSuccess {String} logs.log.timestamp log timestamp
-     * @apiSuccess {String} logs.log.level log level
-     * @apiSuccess {String} logs.log.logger log source
-     * @apiSuccess {String} logs.log.message log message
-     * @apiSuccess {String} logs.log.exception log exception
-     * @apiSuccessExample {json} Example Response:
-     * [
-     * {
-     * "exception": "",
-     * "level": "INFO",
-     * "marker": "",
-     * "logger": "net.maxgigapop.mrs.rest.api.WebResource",
-     * "message": "Initialized.",
-     * "timestamp": "2017-03-17 12:23:16.0"
-     * },
-     * ...]
-     */
     @GET
     @Path("/logging/logs")
     @Produces("application/json")
+    @RolesAllowed("Logging")
     public String getLogs(@QueryParam("refUUID") String refUUID, @QueryParam("level") String level) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         String method = "getLogs";
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             // Filtering by UUID alone
             if (refUUID != null && (level == null || level.equalsIgnoreCase("TRACE"))) {
@@ -2133,6 +1914,7 @@ public class WebResource {
     @GET
     @Path("/logging/logs/serverside")
     @Produces("application/json")
+    @RolesAllowed("Logging")
     public String getLogsServerSide(@Context UriInfo uriInfo) throws SQLException {
         MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
         String level = queryParams.getFirst("level");
@@ -2146,11 +1928,7 @@ public class WebResource {
         ResultSet rs = null;
         String method = "getLogsServerSide";
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             String prepString = "SELECT * FROM log";
             // Filtering by UUID alone
@@ -2273,12 +2051,8 @@ public class WebResource {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        Properties front_connectionProps = new Properties();
-        front_connectionProps.put("user", front_db_user);
-        front_connectionProps.put("password", front_db_pass);
         try {
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("select S.name from service_instance I, service S "
                     + "where I.referenceUUID=? AND I.service_id=S.service_id");
@@ -2376,11 +2150,7 @@ public class WebResource {
 
             banList.add("Driver Management");
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             if (verifyUserRole("admin")) {
                 prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state "
@@ -2414,6 +2184,7 @@ public class WebResource {
 
                         retList.add(instanceList);
                     } catch (IOException ex) {
+                        AuditService.cleanInstances("frontend");
                         logger.catching(method, ex);
                     }
                 }
@@ -2421,6 +2192,7 @@ public class WebResource {
 
             return retList;
         } catch (SQLException ex) {
+            AuditService.cleanInstances("frontend");
             logger.catching(method, ex);
             throw ex;
         } finally {
@@ -2446,12 +2218,7 @@ public class WebResource {
                 return retList;
             }
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             if (username.equals("admin")) {
                 prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
@@ -2518,11 +2285,7 @@ public class WebResource {
         try {
             ArrayList<String> retList = new ArrayList<>();
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT A.subject FROM acl A WHERE A.object = ?");
             prep.setString(1, refUuid);
@@ -2555,11 +2318,7 @@ public class WebResource {
 
             ArrayList<String> retList = new ArrayList<>();
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT A.object FROM acl A WHERE A.subject = ?");
             prep.setString(1, username);
@@ -2589,12 +2348,7 @@ public class WebResource {
         try {
             ArrayList<String> retList = new ArrayList<>();
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, I.last_state "
                     + "FROM service_instance I WHERE I.referenceUUID = ?");
@@ -2618,47 +2372,6 @@ public class WebResource {
         }
     }
 
-    /*@GET
-    @Path("/details/{uuid}/delta")
-    @Produces("application/json")
-    @RolesAllowed("Panels")
-    public ArrayList<ArrayList<String>> loadInstanceDelta(@PathParam("uuid") String uuid) {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        logger.refuuid(uuid);
-        try {
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
-            prep = front_conn.prepareStatement("SELECT D.service_delta_id, D.delta, D.type, I.super_state FROM service_delta D, service_instance I, service_history H "
-                    + "WHERE I.referenceUUID = ? AND I.service_instance_id = D.service_instance_id AND D.service_history_id = H.service_history_id AND D.service_instance_id = H.service_instance_id");
-            prep.setString(1, uuid);
-
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                ArrayList<String> deltaList = new ArrayList<>();
-                deltaList.add(rs.getString("type"));
-                deltaList.add(rs.getString("service_delta_id"));
-                deltaList.add(rs.getString("super_state"));
-                deltaList.add(rs.getString("delta"));
-                retList.add(deltaList);
-            }
-
-            return retList;
-        } catch (SQLException ex) {
-            logger.catching("loadInstanceDelta", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
-    }*/
     @GET
     @Path("/details/{uuid}/verification")
     @Produces("application/json")
@@ -2671,12 +2384,7 @@ public class WebResource {
         try {
             ArrayList<String> retList = new ArrayList<>();
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT * FROM service_verification V, service_instance I "
                     + "WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
@@ -2725,11 +2433,7 @@ public class WebResource {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT timestamp FROM service_verification "
                     + "WHERE instanceUUID = ?");
@@ -2776,12 +2480,7 @@ public class WebResource {
         try {
             ArrayList<String> retList = new ArrayList<>();
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT * FROM `acl`");
 
@@ -2809,12 +2508,7 @@ public class WebResource {
         logger.refuuid(serviceUUID);
         try {
             HashMap<String, String> retMap = new HashMap<>();
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
-
+            front_conn = factory.getConnection("frontend");
             prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
             prep.setString(1, serviceUUID);
             rs = prep.executeQuery();
@@ -2850,11 +2544,7 @@ public class WebResource {
         logger.refuuid(serviceUUID);
         try {
             HashMap<String, String> retMap = new HashMap<>();
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
             prep.setString(1, serviceUUID);
@@ -2907,11 +2597,7 @@ public class WebResource {
         ResultSet rs = null;
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
             prep.setString(1, serviceUUID);
@@ -2963,11 +2649,7 @@ public class WebResource {
         try {
             String method = "getProfile";
             logger.trace_start(method);
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT wizard_json FROM service_wizard WHERE service_wizard_id = ?");
             prep.setInt(1, wizardID);
@@ -3011,11 +2693,7 @@ public class WebResource {
             String method = "editProfile";
             logger.start(method);
             // Connect to the DB
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
-
+            front_conn = factory.getConnection("frontend");
             // TODO: Sanitize the input!
             prep = front_conn.prepareStatement("UPDATE service_wizard SET wizard_json = ? WHERE service_wizard_id = ? ");
             prep.setString(1, inputString);
@@ -3055,11 +2733,7 @@ public class WebResource {
             String method = "newProfile";
             logger.start(method);
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
+            front_conn = factory.getConnection("frontend");
             Object obj = parser.parse(inputString);
             JSONObject inputJSON = (JSONObject) obj;
 
@@ -3114,11 +2788,7 @@ public class WebResource {
         try {
             String method = "deleteProfile";
             logger.start(method);
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("DELETE FROM service_wizard WHERE service_wizard_id = ?");
             prep.setInt(1, wizardId);
@@ -3277,17 +2947,16 @@ public class WebResource {
     public String adminChangeSuperState(@PathParam(value = "siUUID") final String refUUID,
             @PathParam(value = "state") final String state) throws IOException, SQLException {
         final String method = "adminChangeSuperState";
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
         try {
             logger.start(method);
 
             String stateStr = state.toUpperCase();
 
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", front_db_user);
-            front_connectionProps.put("password", front_db_pass);
-
-            Connection front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend", front_connectionProps);
-            PreparedStatement prep = front_conn.prepareStatement("UPDATE `frontend`.`service_instance` SET `super_state` = ? WHERE `service_instance`.`referenceUUID` = ?");
+            front_conn = factory.getConnection("frontend");
+            prep = front_conn.prepareStatement("UPDATE `frontend`.`service_instance` SET `super_state` = ? WHERE `service_instance`.`referenceUUID` = ?");
             prep.setString(1, stateStr);
             prep.setString(2, refUUID);
             prep.executeUpdate();
@@ -3297,6 +2966,8 @@ public class WebResource {
         } catch (SQLException ex) {
             logger.catching(method, ex);
             throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
         }
     }
 

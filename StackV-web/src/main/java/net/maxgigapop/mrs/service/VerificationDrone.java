@@ -95,6 +95,7 @@ public class VerificationDrone implements Runnable {
         currentRun++;
         try {
             while (currentRun <= 50) {
+                String durationStr = "N/A";
                 try {
                     // Step 1: Check for pending actions
                     updateData();
@@ -125,7 +126,19 @@ public class VerificationDrone implements Runnable {
                         return;
                     }
 
+                    if (state.equals("FINISHED")) {
+                        logger.status(method, "Drone terminated prematurely.");
+                        return;
+                    }
+
                     logger.trace(method, "Run " + currentRun + "/50 | Instance in " + instanceSubstate);
+
+                    Duration duration = Duration.between(start, Instant.now());
+                    long absSeconds = Math.abs(duration.getSeconds());
+                    durationStr = String.format("%d:%02d:%02d",
+                            absSeconds / 3600,
+                            (absSeconds % 3600) / 60,
+                            absSeconds % 60);
 
                     // Step 2: Update state
                     boolean redVerified = true, addVerified = true;
@@ -133,7 +146,7 @@ public class VerificationDrone implements Runnable {
                     URL url = new URL(String.format("%s/service/verify/%s", HOST, instanceUUID));
                     HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
                     String result = WebResource.executeHttpMethod(url, urlConn, "GET", null, token.auth());
-                    lastResult = result;                    
+                    lastResult = result;
 
                     // Pull data from JSON.
                     JSONParser parser = new JSONParser();
@@ -148,13 +161,6 @@ public class VerificationDrone implements Runnable {
                             && ((String) verifyJSON.get("additionVerified")).equals("false")) {
                         addVerified = false;
                     }
-
-                    Duration duration = Duration.between(start, Instant.now());
-                    long absSeconds = Math.abs(duration.getSeconds());
-                    String durationStr = String.format("%d:%02d:%02d",
-                            absSeconds / 3600,
-                            (absSeconds % 3600) / 60,
-                            absSeconds % 60);
 
                     // Step 3: Update verification data
                     prep = conn.prepareStatement("UPDATE `service_verification` SET `verification_state` = '0', `state`='RUNNING',`delta_uuid`=?,`creation_time`=?,`verified_reduction`=?,`verified_addition`=?,"
@@ -187,6 +193,13 @@ public class VerificationDrone implements Runnable {
                         return;
                     }
                 } catch (IOException ex) {
+                    prep = conn.prepareStatement("UPDATE `frontend`.`service_verification` SET `state` = ?, `timestamp` = ?, `elapsed_time` = ? "
+                            + "WHERE `instanceUUID` = ? ");
+                    prep.setString(1, state);
+                    prep.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+                    prep.setString(3, durationStr);
+                    prep.setString(4, instanceUUID);
+                    prep.executeUpdate();
                     logger.error(method, "Run " + currentRun + "/50 | Verification received IOException from backend.");
                 }
 

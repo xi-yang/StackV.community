@@ -40,7 +40,7 @@ public class DriverInstancePersistenceManager extends PersistenceManager {
 
     private static final StackLogger logger = new StackLogger(DriverInstancePersistenceManager.class.getName(), "DriverInstancePersistenceManager");
 
-    private static Map<String, DriverInstance> driverInstanceByTopologyMap = null;
+    private static Map<String, DriverInstance> driverInstanceByTopologyMap = new HashMap();
 
     public static Map<String, DriverInstance> getDriverInstanceByTopologyMap() {
         return driverInstanceByTopologyMap;
