@@ -305,7 +305,7 @@ public class SenseServiceApi {
                     }
                 } else if (status.equals("CREATE - READY")) {
                     return Response.ok().build();
-                } else if (status.equals("CREATE - COMMITTING") || (status.startsWith("CANCEL - COMMITTED") && verifyStarted)) {
+                } else if (status.equals("CREATE - COMMITTING") || (status.startsWith("CREATE - COMMITTED") && verifyStarted)) {
                     try {
                         Thread.sleep(5000);
                     } catch (InterruptedException ex) {

@@ -445,13 +445,29 @@ public class HandleServiceCall {
         if (serviceInstance.getServiceDeltas() == null || serviceInstance.getServiceDeltas().isEmpty()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to commit.");
         }
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         // By default commit a delta if it is the first with propagated status in queue or there is only committing ones before.
         // Also commit only one delta at a time.
         boolean canMultiCommit = false;
         String multiCommit = serviceInstance.getProperty("multiCommit");
         if (multiCommit != null && multiCommit.equalsIgnoreCase("true")) {
             canMultiCommit = true;
+        } else {
+            // change status from INIT to SKIP for all but last - in non-multiPropagate mode, we only propagate the latest with INIT status
+            Iterator<ServiceDelta> it = serviceInstance.getServiceDeltas().iterator();
+            ServiceDelta serviceDeltaInit = null;
+            while (it.hasNext()) {
+                ServiceDelta serviceDelta = it.next();
+                if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
+                    it.remove();
+                }
+            }
+            if (serviceDeltaInit != null) {
+                serviceInstance.getServiceDeltas().add(serviceDeltaInit);
+            }
+        }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        if (!itSD.hasNext()) {
+            throw logger.error_throwing(method, "ref:ServiceInstance has none delta to propagate.");
         }
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
