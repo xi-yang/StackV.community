@@ -30,7 +30,7 @@ public class GcpModelBuilder {
         String jsonAuth = properties.get("jsonAuth");
         String projectID = properties.get("projectID");
         String topologyUri = properties.get("topologyUri");
-        String region = "global";
+        String topologyRegion = "global";
         String method = "createOntology";
         logger.start(method);
         
@@ -47,10 +47,10 @@ public class GcpModelBuilder {
         GcpGet gcpGet = new GcpGet(jsonAuth, projectID);
         
         Resource gcpTopology = RdfOwl.createResource(model, topologyUri, Nml.Topology);
-        Resource vpcService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.vpcService, region), Mrs.VirtualCloudService);
-        Resource computeService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.computeService, region), Mrs.HypervisorService);
-        Resource objectStorageService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.objectStorageService, region), Mrs.ObjectStorageService);
-        Resource blockStorageService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.blockStorageService, region), Mrs.BlockStorageService);
+        Resource vpcService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.vpcService, topologyRegion), Mrs.VirtualCloudService);
+        Resource computeService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.computeService, topologyRegion), Mrs.HypervisorService);
+        Resource objectStorageService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.objectStorageService, topologyRegion), Mrs.ObjectStorageService);
+        Resource blockStorageService = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.blockStorageService, topologyRegion), Mrs.BlockStorageService);
         
         model.add(model.createStatement(gcpTopology, Nml.hasService, vpcService));
         model.add(model.createStatement(gcpTopology, Nml.hasService, computeService));
@@ -63,6 +63,7 @@ public class GcpModelBuilder {
             logger.error(method, "failed to get GCP metadata tables; URI will be constructed automatically");
         }
         
+        HashMap<String, JSONObject> vpnRoutes = new HashMap<>();
         //The routes are requested here, and added to the model later
         JSONObject routeResult = gcpGet.getRoutes();
         JSONArray routesInfo = null;
@@ -83,6 +84,8 @@ public class GcpModelBuilder {
                 String vpcUri = lookupResourceUri(metadata, "vpc", name);
                 //String vpcUri = vpcInfo.get("description").toString();
                 
+                //System.out.println("vpc info: "+vpcInfo);
+                
                 Resource vpc = RdfOwl.createResource(model, ResourceTool.getResourceUri(vpcUri, GcpPrefix.vpc, name), Nml.Topology);
                 model.add(model.createStatement(gcpTopology, Nml.hasTopology, vpc));
                 Resource switchingService = RdfOwl.createResource(model, vpc.getURI()+":switchingservice", Mrs.SwitchingService);
@@ -99,9 +102,6 @@ public class GcpModelBuilder {
                 model.add(model.createStatement(igw, Mrs.type, "internet-gateway"));
                 model.add(model.createStatement(vpc, Nml.hasBidirectionalPort, igw));
                 
-                Resource vpngw = RdfOwl.createResource(model, vpc.getURI()+"-vpngw", Nml.BidirectionalPort);
-                model.add(model.createStatement(vpngw, Mrs.type, "vpn-gateway"));
-                model.add(model.createStatement(vpc, Nml.hasBidirectionalPort, vpngw));
                 
                 //subnets
                 JSONArray subnetsInfo = (JSONArray) vpcInfo.get("subnetworks");
@@ -125,7 +125,7 @@ public class GcpModelBuilder {
                         if (subnetInfo.containsKey("ipCidrRange")) {
                             cidr = subnetInfo.get("ipCidrRange").toString();
                         } else {
-                            cidr = null;
+                            cidr = "none";
                         }
                         String gateway = subnetInfo.get("gatewayAddress").toString();
                     
@@ -162,17 +162,27 @@ public class GcpModelBuilder {
                     String routeUri = lookupResourceUri(metadata, "route", name, routeName);
                     String destRange = routeInfo.get("destRange").toString();
                     String nextHop = "unknown";
+                    
+                    Resource route = null;
+                    
                     if (routeInfo.get("nextHopNetwork") != null) {
                         //nextHop is a vpc
                         nextHop = vpc.getURI()+":subnet";
                     } else if (routeInfo.get("nextHopGateway") != null) {
                         //nextHop is the internet gateway of a vpc
                         nextHop = vpc.getURI()+":internetGateway";
+                    } else if (routeInfo.containsKey("nextHopVpnTunnel")) {
+                        String googleUri = routeInfo.get("nextHopVpnTunnel").toString();
+                        String tunnelRegion = GcpGet.parseGoogleURI(googleUri, "regions");
+                        String tunnelName = GcpGet.parseGoogleURI(vpcUri, "vpnTunnels");
+                        nextHop = ResourceTool.getResourceUri("", GcpPrefix.vpnTunnel, vpcName, tunnelRegion, tunnelName);
                     } else {
-                        logger.warning(method, String.format("route %s's destination is not currently modeled."));
+                        logger.warning(method, String.format("route %s's destination is not currently modeled.", routeName));
                     }
                     
-                    Resource route = RdfOwl.createResource(model, ResourceTool.getResourceUri(routeUri, GcpPrefix.route, vpcName, routeName), Mrs.Route);
+                    if (route == null) {
+                        route = RdfOwl.createResource(model, ResourceTool.getResourceUri(routeUri, GcpPrefix.route, vpcName, routeName), Mrs.Route);
+                    }
                     Resource routeTo = RdfOwl.createResource(model, route.getURI()+":route-to", Mrs.NetworkAddress);
                     model.add(model.createStatement(routeTo, Mrs.type, "ipv4-prefix-list"));
                     model.add(model.createStatement(routeTo, Mrs.value , destRange));
@@ -185,6 +195,113 @@ public class GcpModelBuilder {
             }
         } else {
             logger.error(method, "failed to get VPCs due to null response");
+        }
+        
+        //map all the vpn routes by vpn tunnel
+        for (Object o : routesInfo) {
+            JSONObject route = (JSONObject) o;
+            String key = "nextHopVpnTunnel";
+            
+            if (route.containsKey(key)) {
+                vpnRoutes.put(route.get(key).toString(), route);
+            }
+        }
+        
+        //Add VPNs to the model
+        JSONArray vgwsInfo = gcpGet.getAggregatedTargetVGWs();
+        if (vgwsInfo != null) {
+            for (Object o : vgwsInfo) {
+                JSONObject vgwInfo = (JSONObject) o;
+                System.out.println("vgw: "+vgwInfo);
+                String vgwName = vgwInfo.get("name").toString();
+                String region = GcpGet.parseGoogleURI(vgwInfo.get("region").toString(), "regions");
+                String vpcName = GcpGet.parseGoogleURI(vgwInfo.get("network").toString(), "networks");
+                String vpcUri = lookupResourceUri(metadata, "vpc", vpcName);
+                JSONArray tunnels = (JSONArray) vgwInfo.get("tunnels");
+                JSONArray rules = (JSONArray) vgwInfo.get("forwardingRules");
+                
+                Resource vpc = model.getResource(ResourceTool.getResourceUri(vpcUri, GcpPrefix.vpc, vpcName));
+                Resource vgw = RdfOwl.createResource(
+                        model, 
+                        ResourceTool.getResourceUri("", GcpPrefix.vpnGateway, vpcName, region, vgwName), 
+                        Nml.BidirectionalPort);
+                model.add(model.createStatement(vgw, Mrs.type, "vpn-gateway"));
+                model.add(model.createStatement(vpc, Nml.hasBidirectionalPort, vgw));
+                
+                if (tunnels == null) {
+                    logger.warning(method, "vgw "+vgwName+" has no tunnels");
+                } else {
+                    for (Object o2 : tunnels) {
+                        String tunnelName = GcpGet.parseGoogleURI(o2.toString(), "vpnTunnels");
+                        JSONObject tunnelInfo = gcpGet.getVpnTunnel(region, tunnelName);
+                        JSONObject routeInfo = vpnRoutes.get(o2.toString());
+                        if (routeInfo == null) {
+                            System.out.println("null route: "+o2.toString());
+                        }
+                        String remoteIp = tunnelInfo.get("peerIp").toString();
+                        String remoteCIDR;
+                        if (routeInfo.containsKey("destRange")) {
+                            remoteCIDR = routeInfo.get("destRange").toString();
+                        } else {
+                            String routeName = routeInfo.get("name").toString();
+                            remoteCIDR = "error";
+                            logger.warning(method, "unable to find cidr for route "+routeName+". displaying JSON: "+routeInfo);
+                        }
+                        //String vpcName = GcpGet.parseGoogleURI(routeInfo.get("network").toString(), "networks");
+                        String routeName = routeInfo.get("name").toString();
+                        System.out.println("tunnel: " + tunnelInfo);
+                        System.out.println("route: "+ routeInfo);
+                    
+                        Resource tunnel = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.vpnTunnel, vpcName, region, vgwName, tunnelName), Nml.BidirectionalPort);
+                        model.add(model.createStatement(tunnel, Mrs.type, "vpn-tunnel"));
+                        model.add(model.createStatement(vgw, Nml.hasBidirectionalPort, tunnel));
+                    
+                        Resource peerIp = RdfOwl.createResource(model, tunnel.getURI()+":ip", Mrs.NetworkAddress);
+                        model.add(model.createStatement(peerIp, Mrs.type, "ipv4-address:customer"));
+                        model.add(model.createStatement(peerIp, Mrs.value, remoteIp));
+                        model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, peerIp));
+                    
+                        //Resource route = model.getResource(ResourceTool.getResourceUri("", GcpPrefix.route, vpcName, routeName));
+                            //RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.route, "vpc", "route"), Mrs.Route);
+                        //model.add(model.createStatement(tunnel, Mrs.hasRoute, route));
+                    
+                        //*
+                        Resource peerCidr = RdfOwl.createResource(model, tunnel.getURI()+":customer-cidr", Mrs.NetworkAddress);
+                        model.add(model.createStatement(peerCidr, Mrs.type, "ipv4-prefix-list:customer"));
+                        model.add(model.createStatement(peerCidr, Mrs.value, remoteCIDR));
+                        model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, peerCidr));
+                        //*/
+                    }
+                }
+                
+                if (rules == null) {
+                    logger.warning(method, "vgw "+vgwName+" has no rules");
+                } else {
+                    for (Object o2 : rules) {
+                        String ruleName = GcpGet.parseGoogleURI(o2.toString(), "forwardingRules");
+                        JSONObject ruleInfo = gcpGet.getForwardingRules(region, ruleName);
+                        String ip = ruleInfo.get("IPAddress").toString();
+                        String ruleRegion = GcpGet.parseGoogleURI(ruleInfo.get("region").toString(), "regions");
+                        String protocol = GcpQuery.getOrDefault(ruleInfo, "IPProtocol", "null");
+                        String portRange = GcpQuery.getOrDefault(ruleInfo, "portRange", "null");
+                        HashMap<String, String> type = new HashMap<>();
+                        type.put("protocol", protocol);
+                        type.put("portRange", portRange);
+                        String typeStr = GcpQuery.createTypeStr(type);
+                    
+                        System.out.println("rule: " + ruleInfo);
+                    
+                        Resource forwardingRule = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.rule, ruleRegion, ruleName), Nml.Link);
+                        model.add(model.createStatement(vgw, Nml.hasLink, forwardingRule));
+                        model.add(model.createStatement(forwardingRule, Mrs.type, typeStr));
+                        
+                        Resource ruleIp = RdfOwl.createResource(model, forwardingRule.getURI()+":ip", Mrs.NetworkAddress);
+                        model.add(model.createStatement(forwardingRule, Mrs.hasNetworkAddress, ruleIp));
+                        model.add(model.createStatement(ruleIp, Mrs.type, "ipv4-address"));
+                        model.add(model.createStatement(ruleIp, Mrs.value, ip));
+                    }
+                }
+            }
         }
         
         //Add VMs to model
@@ -287,12 +404,6 @@ public class GcpModelBuilder {
         } else {
             logger.error(method, "failed to get instances due to null response");
         }
-        
-        JSONArray vpnConnectionsInfo = gcpGet.getAggregatedVpnConnections();
-        if (vpnConnectionsInfo != null) {
-            //for ()
-        }
-        
         
         //buckets
         JSONObject bucketsResponse = gcpGet.getBuckets();

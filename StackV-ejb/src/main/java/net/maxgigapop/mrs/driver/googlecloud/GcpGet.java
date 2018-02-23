@@ -145,35 +145,41 @@ public class GcpGet {
         }
     }
     
-    public JSONObject getVpnConnections(String region) {
-        try {
-            return makeRequest(computeClient.vpnTunnels().list(projectID, region).buildHttpRequest());
-        } catch (IOException e) {
-            return null;
-        }
-    }
-    
-    public JSONArray getAggregatedVpnConnections() {
+    public JSONArray getAggregatedTargetVGWs() {
         try {
             JSONObject result, temp;
             JSONArray zoneResult, output = new JSONArray();
-            result = makeRequest(computeClient.vpnTunnels().aggregatedList(projectID).buildHttpRequest());
+            result = makeRequest(computeClient.targetVpnGateways().aggregatedList(projectID).buildHttpRequest());
             result = (JSONObject) result.get("items");
             
             for (Object key : result.keySet()) {
-                
-                
                 //*
-                //if the jsonobject contains the key "vpnTunnels", then there are vpns in that zone
+                //if the jsonobject contains the key "targetVpnGateways", then there are vpns in that zone
                 temp = (JSONObject) result.get(key);
-                if (temp.containsKey("vpnTunnels")) {
-                    //System.out.printf("key: %s\nvalue: %s\n", key, result.get(key));
-                    zoneResult = (JSONArray) temp.get("vpnTunnels");
+                zoneResult = (JSONArray) temp.get("targetVpnGateways");
+                if (zoneResult != null) {
+                    //System.out.printf("vgw key: %s\nvalue: %s\n", key, zoneResult);
                     output.addAll(zoneResult);
                 }
             }
             
             return output;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+    public JSONObject getVpnTunnel(String region, String name) {
+        try {
+            return makeRequest(computeClient.vpnTunnels().get(projectID, region, name).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+    public JSONObject getForwardingRules(String region, String name) {
+        try {
+            return makeRequest(computeClient.forwardingRules().get(projectID, region, name).buildHttpRequest());
         } catch (IOException e) {
             return null;
         }

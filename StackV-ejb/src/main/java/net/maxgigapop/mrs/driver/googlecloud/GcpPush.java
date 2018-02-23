@@ -23,9 +23,14 @@ import com.google.api.services.compute.model.NetworkInterface;
 import com.google.api.services.storage.model.Bucket;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.services.compute.model.Address;
 import com.google.api.services.compute.model.Firewall;
 import com.google.api.services.compute.model.Firewall.Allowed;
+import com.google.api.services.compute.model.ForwardingRule;
+import com.google.api.services.compute.model.Route;
 import com.google.api.services.compute.model.Tags;
+import com.google.api.services.compute.model.TargetVpnGateway;
+import com.google.api.services.compute.model.VpnTunnel;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import java.util.Arrays;
@@ -47,6 +52,8 @@ public class GcpPush {
     //Default region is currently used by subnetss
     private String defaultImage = null, defaultInstanceType, defaultRegion, defaultZone;
     public static final StackLogger logger = GcpDriver.logger;
+    //during debug mode, push requests are logged but not committed
+    public static final boolean debug = false;
     
     public GcpPush(Map<String, String> properties) {
         this.properties = properties;
@@ -65,9 +72,11 @@ public class GcpPush {
     public JSONArray propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
         JSONArray requests = new JSONArray();
         GcpQuery gcq = new GcpQuery(modelRef, modelAdd, modelReduct, properties);
+        String method = "propagate";
         //Buckets, Instances, VPCs, Subnets
         
-        requests.addAll(gcq.deleteBucketsRequest());
+        //requests.addAll(gcq.deleteVpnConnectionRequests());
+        requests.addAll(gcq.deleteBucketRequests());
         requests.addAll(gcq.deleteInstanceRequests());
         requests.addAll(gcq.deleteSubnetRequests());
         requests.addAll(gcq.deleteVpcRequests());
@@ -75,7 +84,14 @@ public class GcpPush {
         requests.addAll(gcq.createVpcRequests());
         requests.addAll(gcq.createSubnetRequests());
         requests.addAll(gcq.createInstanceRequests());
-        requests.addAll(gcq.createBucketsRequest());
+        requests.addAll(gcq.createBucketRequests());
+        requests.addAll(gcq.createVpnConnectionRequests());
+        
+        if (debug) {
+            //log the requests, but do not commit them
+            logger.debug(method, String.format("listing push requests: \n%s\n", requests.toJSONString()));
+            requests.clear();
+        }
         
         return requests;
     }
@@ -125,6 +141,9 @@ public class GcpPush {
             break;
             case "remove_firewall_rule":
                 tempRemove = removeFirewallRule(requestInfo);
+            break;
+            case "create_vpn":
+                tempAdd = createVpnConnection(requestInfo);
             break;
             case "null":
                 logger.warning(method, "COMMIT ERROR: encountered request without type");
@@ -503,7 +522,7 @@ public class GcpPush {
     }
     
     private HashSet<String> deleteBucket(JSONObject requestInfo) {
-        String method = "createBucket";
+        String method = "deleteBucket";
         String missingArgs = checkArgs(requestInfo, "name");
         HashSet<String> output = new HashSet<>();
         if (missingArgs != null) {
@@ -524,6 +543,90 @@ public class GcpPush {
         }
         return null;
     }
+    
+    private HashMap<String, String> createVpnConnection(JSONObject requestInfo) {
+        String method = "createVpnConnection";
+        String missingArgs = checkArgs(requestInfo, "name", "uri", "vpc", "peerIP", "peerCIDR");
+        HashMap<String, String> output = new HashMap<>();
+        if (missingArgs != null) {
+            logger.warning(method, missingArgs);
+            return null;
+        }
+        
+        String vpnName = requestInfo.get("name").toString();
+        String vpnUri = requestInfo.get("uri").toString();
+        String vpnRegion = requestInfo.get("region").toString();
+        String vpnIP; //defined later
+        String vpcName = requestInfo.get("vpc").toString();
+        String vpcFormat = "projects/%s/global/networks/%s";
+        String vpcUri = String.format(vpcFormat, projectID, vpcName); //Not a MAX but a google uri
+        String tunnelName = vpnName+"-tunnel";
+        String peerIP = requestInfo.get("peerIP").toString();
+        String peerCIDR = requestInfo.get("peerCIDR").toString(); 
+        
+        try {
+            Address googleIP = new Address();
+            googleIP.setName(vpnName+"-ip");
+            HttpRequest request = gcpGet.getComputeClient().addresses().insert(projectID, vpnRegion, googleIP).buildHttpRequest();
+            gcpGet.makeRequest(request);
+            vpnIP = gcpGet.getComputeClient().addresses().get(projectID, vpnRegion, vpnName+"-ip").execute().getAddress();
+            
+            TargetVpnGateway tvgw = new TargetVpnGateway();
+            tvgw.setName(vpnName).setNetwork(vpcUri);
+            
+            ForwardingRule rule;
+            ForwardingRule[] rules = new ForwardingRule[3];
+            
+            rule = new ForwardingRule();
+            rule.setIPProtocol("ESP").setIPAddress(vpnIP).setName(vpnName + "-rule-esp")
+            	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vpnName);
+            rules[0] = rule;
+            
+            rule = new ForwardingRule();
+            rule.setIPProtocol("UDP").setIPAddress(vpnIP).setName(vpnName + "-rule-udp500").setPortRange("500-500")
+            	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vpnName);
+            rules[1] = rule;
+            
+            rule = new ForwardingRule();
+            rule.setIPProtocol("UDP").setIPAddress(vpnIP).setName(vpnName + "-rule-udp4500").setPortRange("4500-4500")
+            	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vpnName);
+            rules[2] = rule;
+            
+            //*
+            VpnTunnel vpnTunnel = new VpnTunnel();
+            vpnTunnel.setName(tunnelName)
+            .setPeerIp(peerIP)//.setLocalTrafficSelector()
+            .setSharedSecret("abc123")
+            .setTargetVpnGateway("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vpnName);
+            //*/
+            
+            Route route = new Route();
+            route.setDestRange(peerCIDR).setName(vpnName+"-route").setNetwork(vpcUri)
+            	.setNextHopVpnTunnel("projects/stackv-devel/regions/"+vpnRegion+"/vpnTunnels/"+tunnelName);
+            
+            request = gcpGet.getComputeClient().targetVpnGateways().insert(projectID, vpnRegion, tvgw).buildHttpRequest();
+            gcpGet.makeRequest(request);
+            
+            for (ForwardingRule r : rules) {
+            	request = gcpGet.getComputeClient().forwardingRules().insert(projectID, vpnRegion, r).buildHttpRequest();
+                waitRequest(request);
+            }
+            
+            request = gcpGet.getComputeClient().vpnTunnels().insert(projectID, vpnRegion, vpnTunnel).buildHttpRequest();
+            waitRequest(request);
+            
+            request = gcpGet.getComputeClient().routes().insert(projectID, route).buildHttpRequest();
+            gcpGet.makeRequest(request);
+            
+        } catch (IOException e) {
+            logger.warning(method, "COMMIT ERROR: "+e.toString());
+        }
+        
+        return null;
+    }
+    
+    
+    
     
     private String checkArgs(JSONObject request, String ...reqArgs) {
         HashSet<String> missingArgs = new HashSet<>();

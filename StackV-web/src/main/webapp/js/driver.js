@@ -152,7 +152,6 @@ function closeContentPanel() {
     }
 }
 
-
 function loadDriverNavbar() {
     $("#sub-nav").load("/StackV-web/nav/driver_navbar.html", function () {
         setRefresh($("#refresh-timer").val());
@@ -195,7 +194,6 @@ function loadDriverPortal() {
     });
 }
 
-
 function driver_tab_fix() {
     document.getElementById("driver-tab1").style.display = "block";
     document.getElementById("saved-tab").style.display = "none";
@@ -204,7 +202,6 @@ function driver_tab_fix() {
     document.getElementById("driver-nav-tab").className = "active";
     document.getElementById("installed-driver-tab").className = "";
 }
-
 
 function saved_tab_fix() {
     document.getElementById("saved-tab").style.display = "block";
@@ -222,7 +219,6 @@ function installed_tab_fix() {
     document.getElementById("driver-nav-tab").className = "";
     document.getElementById("saved-nav-tab").className = "";
 }
-
 
 function activateSide() {
     $("#driver-content-panel").removeClass("hidden");
@@ -481,9 +477,6 @@ function installOpenstack() {
     content[24].innerHTML = "Default Sec Group";
     content[25].id = "sec-group";
 
-
-
-
     extName.innerHTML = "ModelExt:";
     extName.style.color = "#333";
     ext.id = "modelExt";
@@ -494,8 +487,6 @@ function installOpenstack() {
     for (var i = 0; i < 26; i++) {
         divContent.appendChild(content[i]);
     }
-
-
 
 
     divContent.appendChild(extName);
@@ -755,7 +746,26 @@ function addDriver() {
             // since the driver is being added during the installation process, do not jump out of the installation process
            reloadData(); // just reload the data so if users decide to cancel installation, the template still shows up
         },
-        error: function () {
+        error: function (err) {
+            //setting text of jquery dialog
+            $("#dialog-confirm-text").text(err);
+            $("#dialog-confirm").dialog({                
+                show: "slide",
+                resizeable: false,
+                draggable: false,
+                title: "Saving Driver Profile Failed",
+                height: "auto",
+                width: 400,
+                modal: true,
+                buttons: [                   
+                    {
+                        text:"Close",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+            });
         }
     });
 }
@@ -763,7 +773,6 @@ function addDriver() {
 /*
  * Deletes saved templates based on topuri
  */
-
 function removeDriverProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var topuri = clickID;
@@ -779,8 +788,33 @@ function removeDriverProfile(clickID) {
             updateDrivers(topuri);
             reloadData();
         },
-        error: function (result) {
-            console.log("Error in removeDriverProfile: " + result);
+        error: function (err) {
+            var responseText = err['responseText'];
+            var status = err['status'];
+            var statusText = err['statusText'];
+            console.log("removeDriverProfile error: \nResponse Text: " + JSON.stringify(responseText) + "\nStatus: " + status + "\nStatus Text: " + statusText);
+            //setting text of the jquery dialog
+            $("#dialog-confirm-text").text("EXCEPTION:" + responseText);
+            //jquery dialog
+            $("#dialog-confirm").dialog({                
+                show: "slide",
+                resizable: true,
+                draggable: true,
+                title: "Driver Profile Deletion Failed Due to " + status + " " + statusText,
+                height: 500,
+                width: 600,
+                modal: true,
+                buttons: [
+                    {
+                        text: "OK",
+                        click: function () {
+                            $(this).dialog("close");
+                        }
+                    }
+                ]
+
+            });
+            
         }
     });
 }
@@ -1287,6 +1321,8 @@ function removeDriver(clickID) {
             clearPanel();
             activateSide();
             console.log("removeDriver error: " + JSON.stringify(result));
+            console.log("removeDriver error status: " + JSON.stringify(result["status"]));
+            console.log("removeDriver error statusText: " + JSON.stringify(result["statusText"]));
             
             // begin formatting of the responseText
             var badFormatResponseText = result["responseText"];
@@ -1294,7 +1330,35 @@ function removeDriver(clickID) {
             var replaceCommas = replaceLeftBrackets.replace(/,/g, '","'); // replace commas with ","
             var replaceRightBrackets = replaceCommas.replace(/\]/g, '"]'); //replace a ] with "]
             var replaceSpaces = replaceRightBrackets.replace(/\s/g, ''); // replace spaces with nothing
-            var wellFormattedResult = JSON.parse(replaceSpaces); // parse the formatted string to JS array
+            var wellFormattedResult; // parse the formatted string to JS array intoi this variable
+            
+            //in case the error cannot be parsed since it is in Java 
+            try {
+                wellFormattedResult = JSON.parse(replaceSpaces);
+            } catch (err) {
+                console.log("removeDriver syntax error: " + err);
+                
+                //setting text of jquery dialog
+                $("#dialog-confirm-text").text(JSON.stringify(result));
+                $("#dialog-confirm").dialog({                
+                    show: "slide",
+                    resizeable: false,
+                    draggable: false,
+                    title: "Driver Deletion Failed Due to " + result["status"] + " " + result["statusText"],
+                    height: "auto",
+                    width: 400,
+                    modal: true,
+                    buttons: [                   
+                        {
+                            text:"Close",
+                            click: function () {
+                                $(this).dialog("close");
+                            }
+                        }
+                    ]
+                });
+                return;
+            }
             
             console.log("parsed Well formatted Response Text: " + wellFormattedResult);
 
@@ -1325,7 +1389,7 @@ function removeDriver(clickID) {
             
             serviceInstancDialog.dialog({                
                 close: function() {
-                    serviceInstancDialogBody.empty();  
+                    $("#service-instances-body").empty();  
                 },
                 show: "slide",
                 resizeable: true,
@@ -1560,7 +1624,6 @@ function installDriver() {
             setTimeout(getAllDetails(), 3000);
         },
         error: function (err) {
-            //console.log("installDriver error: " + JSON.stringify(err));
             var responseText = err['responseText'];
             var status = err['status'];
             var statusText = err['statusText'];

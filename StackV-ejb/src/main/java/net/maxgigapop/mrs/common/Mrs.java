@@ -64,6 +64,10 @@ public class Mrs {
      */
     public static final Resource NAMESPACE = m_model.createResource(NS);
 
+    public static final Property active_jobs = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#active_jobs");
+    
+    public static final Property assigned_nodes = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#assigned_nodes");
+    
     public static final Property average_iops_4kb_read = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#average_iops_4kb_read");
 
     public static final Property average_iops_4kb_write = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#average_iops_4kb_write");
@@ -78,6 +82,10 @@ public class Mrs {
 
     public static final Property capacity = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#capacity");
 
+    public static final Property cluster_nodes_available = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#cluster_nodes_available");
+    
+    public static final Property cluster_nodes_total = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#cluster_nodes_total");
+    
     public static final Property disk_gb = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#disk_gb");
 
     public static final Property hasBatch = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasBatch");
@@ -100,12 +108,16 @@ public class Mrs {
 
     public static final Property hasNetworkAddress = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasNetworkAddress");
 
+    public static final Property hasPartition = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasPartition");
+    
     public static final Property hasRoute = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasRoute");
 
     public static final Property hasTransfer = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasTransfer");
 
     public static final Property hasVolume = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#hasVolume");
 
+    public static final Property inbound_load_kbps = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#inbound_load_kbps");
+    
     public static final Property latency_usec = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#latency_usec");
 
     public static final Property line_rate_kbps = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#line_rate_kbps");
@@ -124,6 +136,10 @@ public class Mrs {
 
     public static final Property num_core = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#num_core");
 
+    public static final Property num_core_avail = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#num_core_avail");
+    
+    public static final Property outbound_load_kbps = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#outbound_load_kbps");
+    
     public static final Property peak_rate_kbps = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#peak_rate_kbps");
 
     public static final Property prefix = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#prefix");
@@ -138,6 +154,8 @@ public class Mrs {
 
     public static final Property providesFlowTable = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#providesFlowTable");
 
+    public static final Property providesJobQueueService = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#providesJobQueueService");
+    
     public static final Property providesRoute = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#providesRoute");
 
     public static final Property providesRoutingTable = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#providesRoutingTable");
@@ -156,10 +174,14 @@ public class Mrs {
 
     public static final Property providesVolume = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#providesVolume");
 
+    public static final Property queued_jobs = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#queued_jobs");
+    
     public static final Property routeFrom = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#routeFrom");
 
     public static final Property routeTo = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#routeTo");
 
+    public static final Property stopped_jobs = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#stopped_jobs");
+    
     public static final Property target_device = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#target_device");
 
     public static final Property mount_point = m_model.createProperty("http://schemas.ogf.org/mrs/2013/12/topology#mount_point");
@@ -204,6 +226,8 @@ public class Mrs {
 
     public static final Resource ClusterNetworkService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#ClusterNetworkService");
 
+    public static final Resource ComputeClusterService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#ComputeClusterService");
+    
     public static final Resource DataTransfer = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#DataTransfer");
 
     public static final Resource DataTransferClusterService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#DataTransferClusterService");
@@ -226,6 +250,8 @@ public class Mrs {
 
     public static final Resource IOPerformanceMeasurementService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#IOPerformanceMeasurementService");
 
+    public static final Resource JobQueueService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#JobQueueService");
+    
     public static final Resource NetworkAddress = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#NetworkAddress");
 
     public static final Resource NetworkObject = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#NetworkObject");
@@ -234,6 +260,8 @@ public class Mrs {
 
     public static final Resource OpenflowService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#OpenflowService");
 
+    public static final Resource PhysicalPartition = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#PhysicalPartition");
+    
     public static final Resource POSIX_IOBenchmark = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#POSIX_IOBenchmark");
 
     public static final Resource Route = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#Route");
@@ -244,6 +272,8 @@ public class Mrs {
 
     public static final Resource S3_IOBenchmark = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#S3_IOBenchmark");
 
+    public static final Resource SchedulerService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#SchedulerService");
+    
     public static final Resource StorageService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#StorageService");
 
     public static final Resource SwitchingService = m_model.createResource("http://schemas.ogf.org/mrs/2013/12/topology#SwitchingService");
