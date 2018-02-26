@@ -119,7 +119,7 @@ function newView(panel) {
 
 function loadAdmin() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs/serverside';
-    loadDataTable(apiUrl);
+    loadLoggingDataTable(apiUrl);
     setTimeout(function () {
         if (view === "left") {
             tweenLoggingPanel.play();

@@ -22,72 +22,22 @@
  */
 
 /* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap, swal */
-// Tweens
-var tweenInstancePanel = new TweenLite("#instance-panel", .5, {ease: Power2.easeInOut, paused: true, top: "30px"});
-var tweenCatalogPanel = new TweenLite("#catalog-panel", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
-var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 
-Mousetrap.bind('space', function () {
-    if ($("#catalog-panel").hasClass("closed")) {
-        openCatalog();
-    } else {
-        closeCatalog();
-    }
-});
 Mousetrap.bind({
     'shift+left': function () {
         window.location.href = "/StackV-web/orch/graphTest.jsp";
     },
     'shift+right': function () {
         window.location.href = "/StackV-web/portal/details/";
-    },
-    'space': function () {
-        if ($("#catalog-panel").hasClass("closed")) {
-            openCatalog();
-        } else {
-            closeCatalog();
-        }
-    }
+    }    
 });
-
-
-function openCatalog() {
-    tweenCatalogPanel.play();
-    tweenBlackScreen.play();
-    $("#catalog-panel").removeClass("closed");
-}
-function closeCatalog() {
-    tweenCatalogPanel.reverse();
-    tweenBlackScreen.reverse();
-    $("#catalog-panel").addClass("closed");
-}
 
 function loadCatalog() {
     loadInstances();
     loadWizard();
     loadEditor();
-
-    loadSystemHealthCheck();
-
-    if (getURLParameter("profiles")) {
-        openCatalog();
-        setTimeout(function () {
-            $($("ul.catalog-tabs").children()[0]).children().click();
-        }, 200);
-    }
-
-    $("#black-screen").click(function () {
-        $("#info-panel").removeClass("active");
-        closeCatalog();
-    });
-
-    $(".nav-tabs li").click(function () {
-        if ($("#catalog-panel").hasClass("closed")) {
-            openCatalog();
-        } else if (this.className === 'active') {
-            closeCatalog();
-        }
-    });
+    
+    loadSystemHealthCheck();    
 }
 function loadCatalogNavbar() {
     $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
@@ -95,102 +45,9 @@ function loadCatalogNavbar() {
     });
 }
 
-function loadInstances() {
-    var userId = keycloak.subject;
-    var tbody = document.getElementById("status-body");
-    tbody.innerHTML = "";
-
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            $("#status-body").empty();
-
-            for (i = 0; i < result.length; i++) {
-                var instance = result[i];
-
-                var row = document.createElement("tr");
-                row.className = "clickable-row";
-                row.setAttribute("data-href", instance[1]);
-
-                var cell1_1 = document.createElement("td");
-                cell1_1.innerHTML = instance[3];
-                var cell1_2 = document.createElement("td");
-                cell1_2.innerHTML = instance[0];
-                var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = instance[1];
-                var cell1_4 = document.createElement("td");
-                cell1_4.innerHTML = instance[2];
-                row.appendChild(cell1_1);
-                row.appendChild(cell1_2);
-                row.appendChild(cell1_3);
-                row.appendChild(cell1_4);
-                tbody.appendChild(row);
-            }
-
-            $(".clickable-row").click(function () {
-                sessionStorage.setItem("instance-uuid", $(this).data("href"));
-                window.document.location = "/StackV-web/portal/details/";
-            });
-
-            tweenInstancePanel.play();
-        }
-    });
-}
-function reloadInstances() {
-    var userId = keycloak.subject;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            $("#status-body tr").addClass("missing");
-            for (i = 0; i < result.length; i++) {
-                var instance = result[i];
-                var $row = $("#status-body tr[data-href='" + instance[1] + "']");
-                if ($row.length === 1) {
-                    // Instance found, update text.
-                    $row.children().last().text(instance[2]);
-                    $row.removeClass("missing");
-                } else {
-                    // Instance not found, need to create.
-                    var tbody = document.getElementById("status-body");
-                    var row = document.createElement("tr");
-                    row.className = "clickable-row";
-                    row.setAttribute("data-href", instance[1]);
-
-                    var cell1_1 = document.createElement("td");
-                    cell1_1.innerHTML = instance[3];
-                    var cell1_2 = document.createElement("td");
-                    cell1_2.innerHTML = instance[0];
-                    var cell1_3 = document.createElement("td");
-                    cell1_3.innerHTML = instance[1];
-                    var cell1_4 = document.createElement("td");
-                    cell1_4.innerHTML = instance[2];
-                    row.appendChild(cell1_1);
-                    row.appendChild(cell1_2);
-                    row.appendChild(cell1_3);
-                    row.appendChild(cell1_4);
-                    tbody.appendChild(row);
-
-                    $(row).click(function () {
-                        sessionStorage.setItem("instance-uuid", $(this).data("href"));
-                        window.document.location = "/StackV-web/portal/details/";
-                    });
-                }
-            }
-
-            // Remove missing instance rows, presuming deletion.
-            $("#status-body tr.missing").remove();
-        }
-    });
+function loadInstances() {    
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/instances';
+    loadInstanceDataTable(apiUrl);        
 }
 
 var originalProfile;
@@ -503,16 +360,15 @@ function reloadData() {
         console.log("Error updating token!");
     }).success(function (refreshed) {
         var timerSetting = $("#refresh-timer").val();
-        if (timerSetting > 15) {
-            tweenInstancePanel.reverse();
+        if (timerSetting > 15) {            
             setTimeout(function () {
-                reloadInstances();
+                reloadLogs();
                 loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 750);
         } else {
             setTimeout(function () {
-                reloadInstances();
+                reloadLogs();
                 loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
             }, 500);
