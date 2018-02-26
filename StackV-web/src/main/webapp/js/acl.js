@@ -39,7 +39,7 @@ var view = "center";
 
 Mousetrap.bind({
     'shift+left': function () {
-        window.location.href = "/StackV-web/ops/srvc/driver.jsp";
+        window.location.href = "/StackV-web/portal/driver/";
     },
     'left': function () {
         viewShift("left");

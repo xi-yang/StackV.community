@@ -39,7 +39,7 @@ Mousetrap.bind({
         window.location.href = "/StackV-web/orch/graphTest.jsp";
     },
     'shift+right': function () {
-        window.location.href = "/StackV-web/ops/details.html";
+        window.location.href = "/StackV-web/portal/details/";
     },
     'space': function () {
         if ($("#catalog-panel").hasClass("closed")) {
@@ -134,7 +134,7 @@ function loadInstances() {
 
             $(".clickable-row").click(function () {
                 sessionStorage.setItem("instance-uuid", $(this).data("href"));
-                window.document.location = "/StackV-web/ops/details.html";
+                window.document.location = "/StackV-web/portal/details/";
             });
 
             tweenInstancePanel.play();
@@ -182,7 +182,7 @@ function reloadInstances() {
 
                     $(row).click(function () {
                         sessionStorage.setItem("instance-uuid", $(this).data("href"));
-                        window.document.location = "/StackV-web/ops/details.html";
+                        window.document.location = "/StackV-web/portal/details/";
                     });
                 }
             }
@@ -483,7 +483,7 @@ function loadEditor() {
                 tbody.appendChild(row);
             }
             $(document).on('click', '.button-service-select', function (evt) {
-                var ref = "/StackV-web/ops/intent.html?intent=" + this.id.toLowerCase();
+                var ref = "/StackV-web/portal/intent?intent=" + this.id.toLowerCase();
                 window.location.href = ref;
 
                 evt.preventDefault();
