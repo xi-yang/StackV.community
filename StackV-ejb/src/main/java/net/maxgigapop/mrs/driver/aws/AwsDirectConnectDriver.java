@@ -246,12 +246,14 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
                         model.add(model.createStatement(vifCustomerIp, Mrs.type, "ipv4-address:customer"));
                         model.add(model.createStatement(vifCustomerIp, Mrs.value, vi.getCustomerAddress()));
                     }
+                    /*
                     if (vi.getAuthKey() != null && !vi.getAuthKey().isEmpty()) {
                         Resource vifBgpAuthKey = RdfOwl.createResource(model, resVirtualIf.getURI() + ":bgp_authkey", Mrs.NetworkAddress);
                         model.add(model.createStatement(resVirtualIf, Mrs.hasNetworkAddress, vifBgpAuthKey));
                         model.add(model.createStatement(vifBgpAuthKey, Mrs.type, "bgp-authkey"));
                         model.add(model.createStatement(vifBgpAuthKey, Mrs.value, vi.getAuthKey()));
                     }
+                    */
                     // owner account info
                     if (vi.getOwnerAccount()!= null && !vi.getOwnerAccount().isEmpty()) {
                         Resource vifOwnerAccount = RdfOwl.createResource(model, resVirtualIf.getURI() + ":owner_account", Mrs.NetworkAddress);
