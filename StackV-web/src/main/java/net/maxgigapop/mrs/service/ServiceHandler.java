@@ -34,6 +34,7 @@ import java.sql.Timestamp;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
+import net.maxgigapop.mrs.rest.api.WebResource;
 import net.maxgigapop.mrs.rest.api.JNDIFactory;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import static net.maxgigapop.mrs.rest.api.WebResource.SuperState;
@@ -292,6 +293,10 @@ public class ServiceHandler {
 
         commonsClose(front_conn, prep, null);
 
+        URL url = new URL(String.format("%s/app/acl/ipa/servicepolicies/%s", HOST, refUuid));
+        HttpURLConnection delete = (HttpURLConnection) url.openConnection();
+        executeHttpMethod(url, delete, "DELETE", null, token.auth());
+        
         String result = delete(refUuid, token.auth());
         if (result.equalsIgnoreCase("Successfully terminated")) {
             return 0;
