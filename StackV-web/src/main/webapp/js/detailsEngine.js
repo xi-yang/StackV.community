@@ -267,7 +267,7 @@ function executeCommand(command) {
             if (command === "delete" || command === "force_delete") {
                 setTimeout(function () {
                     sessionStorage.removeItem("instance-uuid");
-                    window.document.location = "/StackV-web/ops/catalog.jsp";
+                    window.document.location = "/StackV-web/portal/";
                 }, 250);
             }
         }

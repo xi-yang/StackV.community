@@ -36,7 +36,7 @@ Mousetrap.bind({
         window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
     },
     'shift+right': function () {
-        window.location.href = "/StackV-web/ops/acl.jsp";
+        window.location.href = "/StackV-web/portal/acl/";
     },
     'left': function () {
         viewShift("left");

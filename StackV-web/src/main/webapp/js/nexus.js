@@ -58,34 +58,30 @@ $(function () {
     keycloak.onAuthSuccess = function () {
         loadNavbar();
 
-        if (window.location.pathname === "/StackV-web/ops/catalog.jsp") {
+        if (window.location.pathname === "/StackV-web/portal/") {
+            $("li#catalog-tab").addClass("active");
             loadCatalogNavbar();
             loadCatalog();
-        } else if (window.location.pathname === "/StackV-web/ops/details/templateDetails.jsp") {
-            var uuid = sessionStorage.getItem("instance-uuid");
-            if (!uuid) {
-                alert("No Service Instance Selected!");
-                window.location.replace('/StackV-web/ops/catalog.jsp');
-            } else {
-                loadDetailsNavbar();
-                loadDetails();
-            }
-        } else if (window.location.pathname === "/StackV-web/ops/admin.jsp") {
+        } else if (window.location.pathname === "/StackV-web/portal/admin/") {
+            $("li#admin-tab").addClass("active");
             loadAdminNavbar();
             loadAdmin();
-        } else if (window.location.pathname === "/StackV-web/ops/acl.jsp") {
+        } else if (window.location.pathname === "/StackV-web/portal/acl/") {
+            $("li#acl-tab").addClass("active");
             loadACLNavbar();
             loadACLPortal();
-        } else if (window.location.pathname === "/StackV-web/ops/srvc/driver.jsp") {
+        } else if (window.location.pathname === "/StackV-web/portal/driver/") {
+            $("li#driver-tab").addClass("active");
             loadDriverNavbar();
             loadDriverPortal();
-        } else if (window.location.pathname === "/StackV-web/ops/intent.html") {
+        } else if (window.location.pathname === "/StackV-web/portal/intent/") {
             loadIntent(getURLParameter("intent"));
-        } else if (window.location.pathname === "/StackV-web/ops/details.html") {
+        } else if (window.location.pathname === "/StackV-web/portal/details/") {
+            $("li#details-tab").addClass("active");
             var uuid = sessionStorage.getItem("instance-uuid");
             if (!uuid) {
                 alert("No Service Instance Selected!");
-                window.location.replace('/StackV-web/ops/catalog.jsp');
+                window.location.replace('/StackV-web/');
             } else {
                 loadDetailsNavbar();
                 loadDetails();
@@ -108,20 +104,6 @@ $(function () {
             console.log("Automatic token update failed!");
         });
     };
-
-    $("#button-service-cancel").click(function (evt) {
-        $("#service-specific").empty();
-        $("#button-service-cancel").toggleClass("hide");
-        $("#service-overview").toggleClass("hide");
-
-        clearCounters();
-    });
-
-    $("#button-service-return").click(function (evt) {
-        window.location.href = "/StackV-web/ops/catalog.jsp";
-
-        evt.preventDefault();
-    });
 
     $(".button-group-select").click(function (evt) {
         $ref = "user_groups.jsp?id=" + this.id;
@@ -152,21 +134,20 @@ function loadNavbar() {
             $("#driver-tab").hide();
         }
 
-        // set the active link - get everything after StackV-web
-        var url = $(location).attr('href').split(/\/StackV-web\//)[1];
-        if (/driver.jsp/.test(url))
-            $("li#driver-tab").addClass("active");
-        else if (/catalog.jsp/.test(url))
+        if (window.location.pathname === "/StackV-web/portal/") {
             $("li#catalog-tab").addClass("active");
-        else if (/graphTest.jsp/.test(url))
-            $("li#visualization-tab").addClass("active");
-        else if (/acl.jsp/.test(url))
-            $("li#acl-tab").addClass("active");
-        else if (/templateDetails.jsp/.test(url))
-            $("li#details-tab").addClass("active");
-        else if (/admin.jsp/.test(url))
+        } else if (window.location.pathname === "/StackV-web/portal/admin/") {
             $("li#admin-tab").addClass("active");
-
+        } else if (window.location.pathname === "/StackV-web/portal/acl/") {
+            $("li#acl-tab").addClass("active");
+        } else if (window.location.pathname === "/StackV-web/portal/driver/") {
+            $("li#driver-tab").addClass("active");
+        } else if (window.location.pathname === "/StackV-web/portal/details/") {
+            $("li#details-tab").addClass("active");            
+        } else if (window.location.pathname === "/StackV-web/orch/graphTest.jsp") {
+            $("li#visualization-tab").addClass("active");
+        }
+        
         var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
         $.ajax({
             url: apiUrl,
@@ -213,12 +194,12 @@ function aclSelect(sel) {
 
 function installSelect(sel) {
     if (sel.value !== null) {
-        $ref = "/StackV-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-menu";
-        $ref2 = "/StackV-web/ops/srvc/driver.jsp?form_install=" + sel.value + " #service-fields";
+        $ref = "/StackV-web/portal/driver/?form_install=" + sel.value + " #service-menu";
+        $ref2 = "/StackV-web/portal/driver/?form_install=" + sel.value + " #service-fields";
     } else {
-        $ref = "/StackV-web/ops/srvc/driver.jsp #service-menu";
+        $ref = "/StackV-web/portal/driver/ #service-menu";
 
-        $ref2 = "/StackV-web/ops/srvc/driver.jsp #service-fields";
+        $ref2 = "/StackV-web/portal/driver/ #service-fields";
 
 
     }
@@ -243,9 +224,9 @@ function viewmodeSelect(sel) {
 
 function driverSelect(sel) {
     if (sel.value !== null) {
-        $ref = "/StackV-web/ops/srvc/driver.jsp?form_install=install&driver_id=" + sel.value + " #service-fields";
+        $ref = "/StackV-web/portal/driver/?form_install=install&driver_id=" + sel.value + " #service-fields";
     } else
-        $ref = "/StackV-web/ops/srvc/driver.jsp?form_install=install #service-fields";
+        $ref = "/StackV-web/portal/driver/?form_install=install #service-fields";
     $("#service-bottom").load($ref);
 
 
@@ -706,7 +687,7 @@ function cancelInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
+    //window.location.replace('/StackV-web/');
 }
 function forceCancelInstance(uuid) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/force_cancel';
@@ -720,7 +701,7 @@ function forceCancelInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
+    //window.location.replace('/StackV-web/');
 }
 
 function reinstateInstance(uuid) {
@@ -735,7 +716,7 @@ function reinstateInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
+    //window.location.replace('/StackV-web/');
 }
 function forceReinstateInstance(uuid) {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/force_reinstate';
@@ -749,7 +730,7 @@ function forceReinstateInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
+    //window.location.replace('/StackV-web/');
 }
 
 function forceRetryInstance(uuid) {
@@ -764,7 +745,7 @@ function forceRetryInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
+    //window.location.replace('/StackV-web/');
 }
 
 function modifyInstance(uuid) {
@@ -779,7 +760,7 @@ function modifyInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
+    //window.location.replace('/StackV-web/');
 }
 
 function forceModifyInstance(uuid) {
@@ -794,7 +775,7 @@ function forceModifyInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
+    //window.location.replace('/StackV-web/');
 }
 
 function verifyInstance(uuid) {
@@ -810,7 +791,7 @@ function verifyInstance(uuid) {
             window.location.reload(true);
         }
     });
-    //window.location.replace('/StackV-web/ops/catalog.jsp');
+    //window.location.replace('/StackV-web/');
 }
 
 function deleteInstance(uuid) {
@@ -823,7 +804,7 @@ function deleteInstance(uuid) {
         },
         success: function (result) {
             console.log("DELETION SUCCESSFUL");
-            window.location.replace('/StackV-web/ops/catalog.jsp');
+            window.location.replace('/StackV-web/');
         }
     });
 }
