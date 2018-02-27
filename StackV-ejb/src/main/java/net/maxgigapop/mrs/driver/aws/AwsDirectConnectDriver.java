@@ -23,20 +23,28 @@
  */
 package net.maxgigapop.mrs.driver.aws;
 
-import net.maxgigapop.mrs.driver.aws.AwsModelBuilder;
-import net.maxgigapop.mrs.driver.aws.AwsPush;
-import net.maxgigapop.mrs.driver.aws.AwsDirectConnectDriver;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.directconnect.model.AllocatePrivateVirtualInterfaceRequest;
+import com.amazonaws.services.directconnect.model.AllocatePrivateVirtualInterfaceResult;
 import com.amazonaws.services.directconnect.model.Connection;
+import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceRequest;
+import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceResult;
+import com.amazonaws.services.directconnect.model.NewPrivateVirtualInterfaceAllocation;
 import com.amazonaws.services.directconnect.model.VirtualInterface;
 import com.amazonaws.services.directconnect.model.VirtualInterfaceState;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
@@ -47,17 +55,20 @@ import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.VersionItem;
-import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
+import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -132,7 +143,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         DriverInstancePersistenceManager.merge(driverInstance);
         try {
             AwsDCGet dcClient = new AwsDCGet(access_key_id, secret_access_key, region);
-            this.pushCommit(dcClient, topologyURI, requests);
+            this.pushCommit(dcClient, requests);
         } catch (com.amazonaws.AmazonServiceException ex) {
             throw logger.throwing(method, ex);
         }
@@ -195,7 +206,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
             Resource resDC = RdfOwl.createResource(model, ResourceTool.getResourceUri(dc.getConnectionId(), awsPrefix.directConnectService(), dc.getConnectionId()), Nml.BidirectionalPort);
             model.add(model.createStatement(resTopology, Nml.hasBidirectionalLink, resDC));
             model.add(model.createStatement(resDC, Nml.name, dc.getConnectionId()));
-            model.add(model.createStatement(resDC, Nml.name, dc.getConnectionName()));
+            //model.add(model.createStatement(resDC, Nml.name, dc.getConnectionName()));
             Resource resVlanRange = RdfOwl.createResource(model, String.format(awsPrefix.labelGroup(), resDC.getURI(), "vlan-range"), Nml.LabelGroup);
             model.add(model.createStatement(resVlanRange, Nml.values, defaultVlanRange));
             model.add(model.createStatement(resDC, Nml.hasLabelGroup, resVlanRange));
@@ -246,7 +257,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
                         model.add(model.createStatement(vifCustomerIp, Mrs.type, "ipv4-address:customer"));
                         model.add(model.createStatement(vifCustomerIp, Mrs.value, vi.getCustomerAddress()));
                     }
-                    /*
+                    /* do not expose bgp authkey (secret) in model
                     if (vi.getAuthKey() != null && !vi.getAuthKey().isEmpty()) {
                         Resource vifBgpAuthKey = RdfOwl.createResource(model, resVirtualIf.getURI() + ":bgp_authkey", Mrs.NetworkAddress);
                         model.add(model.createStatement(resVirtualIf, Mrs.hasNetworkAddress, vifBgpAuthKey));
@@ -269,12 +280,157 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
     }
 
     private String pushPropagate(String topologyURI, OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
-        JSONObject jsonRequests = new JSONObject();
+        String method = "pushPropagate";
+        JSONArray jsonRequests = new JSONArray();
+        // delete DirectConnect virtual interface
+        String query = "SELECT DISTINCT ?dxconn ?dxvif_id WHERE {"
+                + "?dxconn nml:hasBidirectionalPort ?dxvif ."
+                + "?dxvif a nml:BidirectionalPort . "
+                + "?dxvif nml:name ?dxvif_id ."
+                + "?dxvif mrs:type 'direct-connect-vif' "
+                + "}";
+        ResultSet r = ModelUtil.executeQuery(query, null, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject jsonReq = new JSONObject();
+            jsonReq.put("command", "deleteDxvif");
+            Resource dxConn = q.get("dxconn").asResource();
+            String dxVifId = q.get("dxvif_id").asLiteral().getString();
+            NodeIterator itNode = modelRef.listObjectsOfProperty(dxConn, Nml.name);
+            if (itNode.hasNext()) {
+                String dxConnId = itNode.next().asLiteral().getString();
+                jsonReq.put("dxconn", dxConnId);
+            } else {
+                throw logger.error_throwing(method, "cannot find ID of direct-connect:" + dxConn.getURI());
+            }
+            jsonReq.put("dxvif", dxVifId);
+            jsonRequests.add(jsonReq);            
+        }
+        // add DirectConnect virtual interface
+        query = "SELECT DISTINCT ?dxconn ?dxvif_vlan ?customer_acct ?customer_asn ?customer_ip ?amazon_ip ?bgp_authkey WHERE {"
+                + "?dxconn nml:hasBidirectionalPort ?dxvif ."
+                + "?dxvif a nml:BidirectionalPort . "
+                + "?dxvif mrs:type 'direct-connect-vif'. "
+                + "?dxvif nml:hasLabelGroup ?dxvif ?dxvif_lg ."
+                + "?dxvif_lg nml:values ?dxvif ?dxvif_vlan ."
+                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_c_acct. ?na_c_acct mrs:type 'owner-account'. ?na_c_acct mrs:value ?customer_acct } "
+                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_c_asn. ?na_c_asn mrs:type 'bgp-asn'. ?na_c_asn mrs:value ?customer_asn } "
+                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_bgp_authkey. ?na_bgp_authkey mrs:type 'bgp-authkey'. ?na_bgp_authkey mrs:value ?bgp_authkey } "
+                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_c_ip. ?na_c_ip mrs:type 'ipv4-address:customer'. ?na_c_ip mrs:value ?customer_ip } "
+                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_a_ip. ?na_a_ip mrs:type 'ipv4-address:amazon'. ?na_c_ip mrs:value ?amazon_ip } "
+                + "}";
+        r = ModelUtil.executeQuery(query, null, modelAdd);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject jsonReq = new JSONObject();
+            jsonReq.put("command", "addDxvif");
+            Resource dxConn = q.get("dxconn").asResource();
+            NodeIterator itNode = modelRef.listObjectsOfProperty(dxConn, Nml.name);
+            if (itNode.hasNext()) {
+                String dxConnId = itNode.next().asLiteral().getString();
+                jsonReq.put("dxconn", dxConnId);
+            } else {
+                logger.warning(method, "cannot find ID of direct-connect:" + dxConn.getURI());
+                continue;
+            }
+            String dxVifVlan = q.get("dxvif_vlan").asLiteral().getString();
+            jsonReq.put("dxvif_vlan", dxVifVlan);
+            if (q.contains("customer_acct")) {
+                String dxVifOwnerAcct = q.get("customer_acct").asLiteral().getString();
+                jsonReq.put("customer_acct", dxVifOwnerAcct);
+            } else {
+                throw logger.error_throwing(method, "Owner account must be provided when adding a Direct Connect VLAN: " + dxVifVlan);
+            }
+            if (q.contains("customer_asn")) {
+                String dxVifAttr = q.get("customer_asn").asLiteral().getString();
+                jsonReq.put("customer_asn", dxVifAttr);
+            } else {
+                //@TODO: default from driver property
+                throw logger.error_throwing(method, "Customer side BGP ASN must be provided when adding a Direct Connect VLAN: " + dxVifVlan);
+            }
+            if (q.contains("bgp_authkey")) {
+                String dxVifAttr = q.get("bgp_authkey").asLiteral().getString();
+                jsonReq.put("bgp_authkey", dxVifAttr);
+            } else {
+                //@TODO: default from driver property
+                throw logger.error_throwing(method, "BGP authkey must be provided when adding a Direct Connect VLAN: " + dxVifVlan);
+            }
+            if (q.contains("customer_ip")) {
+                String dxVifAttr = q.get("customer_ip").asLiteral().getString();
+                jsonReq.put("customer_ip", dxVifAttr);
+            } else {
+                //@TODO: default from driver property
+                throw logger.error_throwing(method, "Customer side IP address must be provided when adding a Direct Connect VLAN: " + dxVifVlan);
+            }
+            if (q.contains("amazon_ip")) {
+                String dxVifAttr = q.get("amazon_ip").asLiteral().getString();
+                jsonReq.put("amazon_ip", dxVifAttr);
+            } else {
+                //@TODO: default from driver property
+                throw logger.error_throwing(method, "Amazon side IP address must be provided when adding a Direct Connect VLAN: " + dxVifVlan);
+            }
+            jsonRequests.add(jsonReq);            
+        }
         return jsonRequests.toJSONString();
     }
 
-    private void pushCommit(AwsDCGet dcClient, String topologyURI, String requests) {
-
+    private void pushCommit(AwsDCGet dcClient, String requests) {
+        String method = "pushCommit";
+        JSONParser jsonParser = new JSONParser();
+        JSONArray jRequests = null;
+        try {
+            jRequests = (JSONArray) jsonParser.parse(requests);
+        } catch (ParseException ex) {
+            throw logger.throwing(method, "failed to parse  JSON requests=" + requests, ex);
+        }
+        List<Future> asyncResults = new ArrayList<Future>();
+        for (Object obj: jRequests) {
+            JSONObject jReq = (JSONObject) obj;
+            String command = (String)jReq.get("command");
+            if (command.equals("deleteDxvif")) {
+                String virtualInterfaceId = (String)jReq.get("dxvif_id");
+                DeleteVirtualInterfaceRequest interfaceRequest = new DeleteVirtualInterfaceRequest();
+                interfaceRequest.withVirtualInterfaceId(virtualInterfaceId);
+                Future<DeleteVirtualInterfaceResult> asyncResult = dcClient.getClient().deleteVirtualInterfaceAsync(interfaceRequest);
+                asyncResults.add(asyncResult);
+            } else if (command.equals("addDxvif")) {
+                String connectionId = (String)jReq.get("dxconn");
+                String ownerAccount = (String)jReq.get("customer_acct");
+                String dxVifVlan = (String)jReq.get("dxvif_vlan");
+                String customerAsn = (String)jReq.get("customer_asn");
+                String bgpAuthkey = (String)jReq.get("bgp_authkey");
+                String customerIp = (String)jReq.get("customer_ip");
+                String amazonIp = (String)jReq.get("amazon_ip");
+                NewPrivateVirtualInterfaceAllocation dxVifAllocation = new NewPrivateVirtualInterfaceAllocation()
+                        .withVlan(Integer.parseInt(dxVifVlan))
+                        .withAsn(Integer.parseInt(customerAsn))
+                        .withAuthKey(bgpAuthkey)
+                        .withAmazonAddress(amazonIp)
+                        .withCustomerAddress(customerIp);
+                AllocatePrivateVirtualInterfaceRequest interfaceRequest = new AllocatePrivateVirtualInterfaceRequest()
+                        .withConnectionId(connectionId)
+                        .withOwnerAccount(ownerAccount)
+                        .withNewPrivateVirtualInterfaceAllocation(dxVifAllocation);
+                Future<AllocatePrivateVirtualInterfaceResult> asyncResult = dcClient.getClient().allocatePrivateVirtualInterfaceAsync(interfaceRequest);
+                asyncResults.add(asyncResult);
+            }
+        }
+        for (Future asyncResult : asyncResults) {
+            // wait for each virtual interface operation in an error-retry loop for up to 10 minutes
+            for (int i = 0; i < 10; i++) {
+                try {
+                    dcClient.dxvifOperationCheck(asyncResult);
+                    break;
+                } catch (ExecutionException e) {
+                    try {
+                        Thread.sleep(60000L); // sleep 60 secs
+                    } catch (InterruptedException ex) {
+                        ; 
+                    }
+                    continue;
+                }
+            }
+        }
     }
 
 }
