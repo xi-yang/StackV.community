@@ -39,6 +39,12 @@ $(function () {
         }
     });
 
+    $(".hide-on-load").addClass("hidden");
+    setTimeout(function () {
+        $(".hide-on-load").removeClass("hidden");
+        $(".hide-on-load").removeClass("hide-on-load");
+    }, 2000);
+
     keycloak.init().success(function (authenticated) {
         if (authenticated) {
             var test = keycloak.isTokenExpired();
@@ -1089,6 +1095,7 @@ var cachedStart = 0;
 var justRefreshed = 0;
 var now = new Date();
 function loadLoggingDataTable(apiUrl) {
+    dataTableClass = "logging";
     dataTable = $('#loggingData').DataTable({
         "ajax": {
             url: apiUrl,
@@ -1223,11 +1230,10 @@ function loadInstanceDataTable(apiUrl) {
         },
         "buttons": ['csv'],
         "columns": [
-            {"data": "alias", "width": "150px"},
-            {"data": "type"},
+            {"data": "alias"},
+            {"data": "type", width: "110px"},
             {"data": "referenceUUID", "width": "250px"},
-            {"data": "state", "width": "70px"},
-            {"data": "timestamp", "visible": false, "searchable": false}
+            {"data": "state", "width": "125px"}
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("instance-row");
@@ -1236,12 +1242,11 @@ function loadInstanceDataTable(apiUrl) {
         "initComplete": function (settings, json) {
             console.log('DataTables has finished its initialization.');
         },
-        "order": [[1, 'asc']],
         "ordering": false
     });
 
-    $(".instance-row").click(function () {
-        sessionStorage.setItem("instance-uuid", $(this).data("href"));
+    $('#loggingData tbody').on('click', 'tr.instance-row', function () {
+        sessionStorage.setItem("instance-uuid", this.children[2].innerHTML);
         window.document.location = "/StackV-web/portal/details/";
     });
 }

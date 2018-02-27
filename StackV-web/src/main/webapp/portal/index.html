@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <title>StackV Portal</title>
-        
+
         <link rel="stylesheet" href="/StackV-web/css/style.css">        
     </head>
 
@@ -19,20 +19,23 @@
         <!-- MAIN PANEL -->
         <div class="sub-main" id="main-pane">
             <div id="instance-panel">
-                <table id="loggingData" class="table table-striped table-bordered display nowrap" cellspacing="0" width="100%">
-                    <thead>
-                        <tr>
-                            <th>Alias</th>
-                            <th>Type</th>
-                            <th>Reference UUID</th>
-                            <th>State</th>                             
-                        </tr>
-                    </thead>                                                
-                </table>
-            </div>            
-            <br>
-            <button type="button" class="hide" id="button-service-cancel">Cancel</button>
-            <div id="service-specific"></div>
+                <div id="instance-header">
+                    <b>Service Instances</b>
+                    <button class="button-service-create btn btn-primary" data-izimodal-open="#catalog-modal">Create New</button>
+                </div>
+                <div id="instance-body">
+                    <table id="loggingData" class="table table-striped table-bordered display nowrap" cellspacing="0" width="100%">
+                        <thead>
+                            <tr>
+                                <th>Alias</th>
+                                <th>Type</th>
+                                <th>Reference UUID</th>
+                                <th>State</th>                             
+                            </tr>
+                        </thead>                                                
+                    </table>
+                </div>            
+            </div>
 
             <!-- LOADING PANEL -->
             <div id="loading-panel"></div>
@@ -44,42 +47,27 @@
                 <div id="system-health-check-text"></div>
             </div>
         </div>
-        <div id="catalog-panel" class="closed">
-            <ul class="nav nav-tabs catalog-tabs">
-                <li><a data-toggle="tab" href="#wizard-tab">Profiles</a></li>
-                <li class="active"><a data-toggle="tab" href="#editor-tab">Intents</a></li>
-            </ul>
 
-            <div class="tab-content" id="catalog-tab-content">
-                <div id="wizard-tab" class="tab-pane fadeIn">
-                    <table class="management-table tab-table">
-                        <thead>
-                            <tr>
-                                <th>Profile Name</th>
-                                <th>Description</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="wizard-body">
-                        </tbody>
-                    </table>
-                </div>
-
-                <div id="editor-tab" class="tab-pane fadeIn active">
-                    <table class="management-table tab-table">
-                        <thead>
-                            <tr>
-                                <th>Service Name</th>
-                                <th>Description</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="editor-body">
-                        </tbody>
-                    </table>
-                </div>
+        <!-- Catalog Modal -->
+        <div id="catalog-modal" data-iziModal-title="Service Catalog" data-iziModal-icon="icon-home">
+            <div class="catalog-modal-body">
+                <p class="catalog-modal-body-header">Select a service type:</p>
+                <div id="catalog-modal-service-meta" class="list-group"></div>
+                <hr>
+                <button class="button-catalog-modal-switch btn btn-primary" data-izimodal-open="#profiles-modal">Load Saved Profile</button>
             </div>
         </div>
+
+        <!-- Profile Modal -->
+        <div id="profiles-modal" data-iziModal-title="Service Profiles" data-iziModal-icon="icon-home">
+            <div class="profiles-modal-body">
+                <p class="profiles-modal-body-header">Select a service type:</p>
+                <div id="profiles-modal-service-meta" class="list-group"></div>
+                <hr>
+                <button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button>
+            </div>
+        </div>
+
         <div id="profile-modal" class="modal fade" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -154,6 +142,8 @@
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/vfs_fonts.js"></script>
         <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.js"></script>
         <!---->
+
+        <script src="/StackV-web/js/iziModal.min.js"></script>
 
         <script src="/StackV-web/js/catalog.js"></script>
         <script src="/StackV-web/js/intentEngine.js"></script>

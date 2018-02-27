@@ -2036,11 +2036,11 @@ public class WebResource {
 
             if (verifyUserRole("admin")) {
                 prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time "
-                        + "FROM service_instance I, acl A");
+                        + "FROM service_instance I, acl A ORDER BY I.creation_time");
             } else {
                 prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time "
                         + "FROM service_instance I, acl A "
-                        + "WHERE I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?)");
+                        + "WHERE I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?) ORDER BY I.creation_time");
                 prep.setString(1, username);
                 prep.setString(2, username);
             }

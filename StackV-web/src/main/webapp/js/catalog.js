@@ -22,6 +22,8 @@
  */
 
 /* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap, swal */
+// Tweens
+var tweenInstancePanel = new TweenLite("#instance-panel", .75, {ease: Power2.easeInOut, paused: true, top: "40px"});
 
 Mousetrap.bind({
     'shift+left': function () {
@@ -29,15 +31,15 @@ Mousetrap.bind({
     },
     'shift+right': function () {
         window.location.href = "/StackV-web/portal/details/";
-    }    
+    }
 });
 
 function loadCatalog() {
     loadInstances();
-    loadWizard();
-    loadEditor();
-    
-    loadSystemHealthCheck();    
+    loadModals();
+
+    loadSystemHealthCheck();
+    tweenInstancePanel.play();
 }
 function loadCatalogNavbar() {
     $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
@@ -45,9 +47,55 @@ function loadCatalogNavbar() {
     });
 }
 
-function loadInstances() {    
+function loadInstances() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/instances';
-    loadInstanceDataTable(apiUrl);        
+    loadInstanceDataTable(apiUrl);
+}
+
+function loadModals() {
+    // Initialize
+    var $catModal = $("#catalog-modal");
+    $catModal.iziModal({
+        width: 750,
+        group: "cat"
+    });
+    var $profModal = $("#profiles-modal");
+    $profModal.iziModal({
+        width: 750,
+        group: "cat"
+    });
+
+    // Load service metadata    
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + keycloak.subject + '/editor';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            for (i = 0; i < result.length; i++) {
+                var meta = result[i];
+
+                var name = meta[0];
+                var desc = meta[1];
+                var tag = meta[2];
+
+                var $service = $('<a></a>');
+                $service.addClass("list-group-item list-group-item-action flex-column align-items-start");
+                $service.attr("data-tag", tag);
+
+                $service.append('<h4>' + name + '</h4>');
+                $service.append('<p>' + desc + '</p>');
+
+                $("#catalog-modal-service-meta").append($service);
+            }
+
+            $("#catalog-modal-service-meta").on("click", "a", function (evt) {
+                window.location.href = "/StackV-web/portal/intent?intent=" + $(this).data("tag");
+            });
+        }
+    });
 }
 
 var originalProfile;
@@ -64,8 +112,6 @@ function loadWizard() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
-            // unbind all click functions!
-            $("button").off("click");
             for (i = 0; i < result.length; i++) {
                 var profile = result[i];
 
@@ -360,7 +406,7 @@ function reloadData() {
         console.log("Error updating token!");
     }).success(function (refreshed) {
         var timerSetting = $("#refresh-timer").val();
-        if (timerSetting > 15) {            
+        if (timerSetting > 15) {
             setTimeout(function () {
                 reloadLogs();
                 loadSystemHealthCheck();

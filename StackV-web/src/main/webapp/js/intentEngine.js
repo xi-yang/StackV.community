@@ -35,15 +35,17 @@ var manifest;
 var package = {};
 var transit = false;
 var proceeding = false;
-var activeStage;
+var $activeStage;
 var simpleManifest = false;
 
 Mousetrap.bind({
     'left': function () {
-        prevStage();
+        if ($activeStage)
+            prevStage();
     },
     'right': function () {
-        nextStage();
+        if ($activeStage)
+            nextStage();
     }
 });
 
@@ -1521,10 +1523,10 @@ function checkFulfillment() {
                 if (entry[key] instanceof Array) {
                     for (var k in entry[key]) {
                         if (!(constraint in entry[key][k])) {
-                            entry[key].splice(entry[key].indexOf(entry[key][k]),1);
+                            entry[key].splice(entry[key].indexOf(entry[key][k]), 1);
                         }
                     }
-                    
+
                     if (entry[key].length === 0) {
                         delete entry[key];
                     }
