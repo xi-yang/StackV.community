@@ -29,6 +29,8 @@ import com.amazonaws.services.directconnect.model.AllocatePrivateVirtualInterfac
 import com.amazonaws.services.directconnect.model.Connection;
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceRequest;
 import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceResult;
+import com.amazonaws.services.directconnect.model.DescribeVirtualInterfacesRequest;
+import com.amazonaws.services.directconnect.model.DescribeVirtualInterfacesResult;
 import com.amazonaws.services.directconnect.model.NewPrivateVirtualInterfaceAllocation;
 import com.amazonaws.services.directconnect.model.VirtualInterface;
 import com.amazonaws.services.directconnect.model.VirtualInterfaceState;
@@ -40,12 +42,15 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
+import static java.lang.Thread.sleep;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
@@ -206,6 +211,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
             Resource resDC = RdfOwl.createResource(model, ResourceTool.getResourceUri(dc.getConnectionId(), awsPrefix.directConnectService(), dc.getConnectionId()), Nml.BidirectionalPort);
             model.add(model.createStatement(resTopology, Nml.hasBidirectionalLink, resDC));
             model.add(model.createStatement(resDC, Nml.name, dc.getConnectionId()));
+            model.add(model.createStatement(resDC, Mrs.type, "direct-connect"));
             //model.add(model.createStatement(resDC, Nml.name, dc.getConnectionName()));
             Resource resVlanRange = RdfOwl.createResource(model, String.format(awsPrefix.labelGroup(), resDC.getURI(), "vlan-range"), Nml.LabelGroup);
             model.add(model.createStatement(resVlanRange, Nml.values, defaultVlanRange));
@@ -235,7 +241,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
                     model.add(model.createStatement(resDC, Nml.hasLabel, resVirtualIfVlan));
                     // VLAN also considered as "allocated" under the Virtual Interface if associcated with a VGW
                     String[] acceptedStates = {VirtualInterfaceState.Available.toString(), VirtualInterfaceState.Deleting.toString(), 
-                        VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
+                        VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Confirming.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
                     if(vi.getVirtualGatewayId() != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
                     {
                         model.add(model.createStatement(resVirtualIf, Nml.hasLabel, resVirtualIfVlan));
@@ -287,7 +293,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
                 + "?dxconn nml:hasBidirectionalPort ?dxvif ."
                 + "?dxvif a nml:BidirectionalPort . "
                 + "?dxvif nml:name ?dxvif_id ."
-                + "?dxvif mrs:type 'direct-connect-vif' "
+                + "?dxvif mrs:type \"direct-connect-vif\" "
                 + "}";
         ResultSet r = ModelUtil.executeQuery(query, null, modelReduct);
         while (r.hasNext()) {
@@ -310,14 +316,14 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         query = "SELECT DISTINCT ?dxconn ?dxvif_vlan ?customer_acct ?customer_asn ?customer_ip ?amazon_ip ?bgp_authkey WHERE {"
                 + "?dxconn nml:hasBidirectionalPort ?dxvif ."
                 + "?dxvif a nml:BidirectionalPort . "
-                + "?dxvif mrs:type 'direct-connect-vif'. "
-                + "?dxvif nml:hasLabelGroup ?dxvif ?dxvif_lg ."
-                + "?dxvif_lg nml:values ?dxvif ?dxvif_vlan ."
-                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_c_acct. ?na_c_acct mrs:type 'owner-account'. ?na_c_acct mrs:value ?customer_acct } "
-                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_c_asn. ?na_c_asn mrs:type 'bgp-asn'. ?na_c_asn mrs:value ?customer_asn } "
-                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_bgp_authkey. ?na_bgp_authkey mrs:type 'bgp-authkey'. ?na_bgp_authkey mrs:value ?bgp_authkey } "
-                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_c_ip. ?na_c_ip mrs:type 'ipv4-address:customer'. ?na_c_ip mrs:value ?customer_ip } "
-                + "OPTIONAL {?dxvif nml:hasNetworkAddress ?na_a_ip. ?na_a_ip mrs:type 'ipv4-address:amazon'. ?na_c_ip mrs:value ?amazon_ip } "
+                + "?dxvif mrs:type \"direct-connect-vif\". "
+                + "?dxvif nml:hasLabelGroup ?dxvif_lg ."
+                + "?dxvif_lg nml:values ?dxvif_vlan ."
+                + "OPTIONAL {?dxvif mrs:hasNetworkAddress ?na_c_acct. ?na_c_acct mrs:type \"owner-account\". ?na_c_acct mrs:value ?customer_acct } "
+                + "OPTIONAL {?dxvif mrs:hasNetworkAddress ?na_c_asn. ?na_c_asn mrs:type \"bgp-asn\". ?na_c_asn mrs:value ?customer_asn } "
+                + "OPTIONAL {?dxvif mrs:hasNetworkAddress ?na_bgp_authkey. ?na_bgp_authkey mrs:type \"bgp-authkey\". ?na_bgp_authkey mrs:value ?bgp_authkey } "
+                + "OPTIONAL {?dxvif mrs:hasNetworkAddress ?na_c_ip. ?na_c_ip mrs:type \"ipv4-address:customer\". ?na_c_ip mrs:value ?customer_ip } "
+                + "OPTIONAL {?dxvif mrs:hasNetworkAddress ?na_a_ip. ?na_a_ip mrs:type \"ipv4-address:amazon\". ?na_a_ip mrs:value ?amazon_ip } "
                 + "}";
         r = ModelUtil.executeQuery(query, null, modelAdd);
         while (r.hasNext()) {
@@ -383,7 +389,8 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         } catch (ParseException ex) {
             throw logger.throwing(method, "failed to parse  JSON requests=" + requests, ex);
         }
-        List<Future> asyncResults = new ArrayList<Future>();
+        List<String> delDxvifList = new ArrayList();
+        List<Future<AllocatePrivateVirtualInterfaceResult>> addDxvifList = new ArrayList();
         for (Object obj: jRequests) {
             JSONObject jReq = (JSONObject) obj;
             String command = (String)jReq.get("command");
@@ -392,7 +399,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
                 DeleteVirtualInterfaceRequest interfaceRequest = new DeleteVirtualInterfaceRequest();
                 interfaceRequest.withVirtualInterfaceId(virtualInterfaceId);
                 Future<DeleteVirtualInterfaceResult> asyncResult = dcClient.getClient().deleteVirtualInterfaceAsync(interfaceRequest);
-                asyncResults.add(asyncResult);
+                delDxvifList.add(virtualInterfaceId);
             } else if (command.equals("addDxvif")) {
                 String connectionId = (String)jReq.get("dxconn");
                 String ownerAccount = (String)jReq.get("customer_acct");
@@ -406,29 +413,72 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
                         .withAsn(Integer.parseInt(customerAsn))
                         .withAuthKey(bgpAuthkey)
                         .withAmazonAddress(amazonIp)
-                        .withCustomerAddress(customerIp);
+                        .withCustomerAddress(customerIp)
+                        .withVirtualInterfaceName(ownerAccount+" - VLAN"+dxVifVlan);
                 AllocatePrivateVirtualInterfaceRequest interfaceRequest = new AllocatePrivateVirtualInterfaceRequest()
                         .withConnectionId(connectionId)
                         .withOwnerAccount(ownerAccount)
                         .withNewPrivateVirtualInterfaceAllocation(dxVifAllocation);
                 Future<AllocatePrivateVirtualInterfaceResult> asyncResult = dcClient.getClient().allocatePrivateVirtualInterfaceAsync(interfaceRequest);
-                asyncResults.add(asyncResult);
+                addDxvifList.add(asyncResult);
             }
         }
-        for (Future asyncResult : asyncResults) {
-            // wait for each virtual interface operation in an error-retry loop for up to 10 minutes
-            for (int i = 0; i < 10; i++) {
+        for (String dxvifId : delDxvifList) {
+            this.dxvifDeletionCheck(dcClient, dxvifId);
+        }
+        for (Future<AllocatePrivateVirtualInterfaceResult> asyncResult : addDxvifList) {
+            this.dxvifAdditionCheck(dcClient, asyncResult);
+        }
+    }
+
+    private void dxvifDeletionCheck(AwsDCGet dcClient, String dxvifId) {
+        long delay = 5000L; // 5 sec
+        int numTries = 60; // 5x60 sec = 5 minutes
+        while (--numTries > 0) {
+            DescribeVirtualInterfacesRequest descReq = new DescribeVirtualInterfacesRequest()
+                    .withVirtualInterfaceId(dxvifId);
+            DescribeVirtualInterfacesResult virtualInterfacesResult = dcClient.getClient().describeVirtualInterfaces(descReq);
+            if (virtualInterfacesResult.getVirtualInterfaces().isEmpty()) {
+                return;
+            }
+            String state = virtualInterfacesResult.getVirtualInterfaces().get(0).getVirtualInterfaceState();
+            if (state.equalsIgnoreCase("deleted")) {
+                return;
+            }
+            try {
+                sleep(delay);
+            } catch (InterruptedException ex1) {
+                ;
+            }
+        }
+    }
+
+    private void dxvifAdditionCheck(AwsDCGet dcClient, Future<AllocatePrivateVirtualInterfaceResult> asyncResult) {
+        long delay = 5000L; // 5 sec
+        int numTries = 60; // 5x60 sec = 5 minutes
+        while (--numTries > 0) {
+            AllocatePrivateVirtualInterfaceResult result;
+            if (asyncResult.isDone()) {
                 try {
-                    dcClient.dxvifOperationCheck(asyncResult);
-                    break;
-                } catch (ExecutionException e) {
-                    try {
-                        Thread.sleep(60000L); // sleep 60 secs
-                    } catch (InterruptedException ex) {
-                        ; 
-                    }
-                    continue;
+                    result = asyncResult.get();
+                } catch (InterruptedException | ExecutionException ex) {
+                    throw logger.throwing("pushCommit", ex);
                 }
+                DescribeVirtualInterfacesRequest descReq = new DescribeVirtualInterfacesRequest()
+                        .withVirtualInterfaceId(result.getVirtualInterfaceId());
+                DescribeVirtualInterfacesResult virtualInterfacesResult = dcClient.getClient().describeVirtualInterfaces(descReq);
+                if (virtualInterfacesResult.getVirtualInterfaces().isEmpty()) {
+                    return;
+                }
+                String state = virtualInterfacesResult.getVirtualInterfaces().get(0).getVirtualInterfaceState();
+                if (state.equalsIgnoreCase("confirming") || state.toLowerCase().startsWith("pending")) {
+                    return;
+                }
+            }
+            try {
+                sleep(delay);
+            } catch (InterruptedException ex1) {
+                ;
             }
         }
     }

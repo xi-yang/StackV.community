@@ -155,30 +155,4 @@ public class AwsDCGet {
         }
     }
 
-    public void dxvifOperationCheck(Future asyncResult) throws ExecutionException {
-        long delay = 1000L;
-        while (true) {
-            if (asyncResult.isDone()) {
-                try {
-                    Object result = asyncResult.get();
-                    if (result instanceof DeleteVirtualInterfaceResult 
-                            && !((DeleteVirtualInterfaceResult)result).getVirtualInterfaceState().equalsIgnoreCase("deleted")) {
-                        throw new ExecutionException(null);
-                    } else if (result instanceof AllocatePrivateVirtualInterfaceResult 
-                            && !((AllocatePrivateVirtualInterfaceResult)result).getVirtualInterfaceState().contains("pending")
-                            && !((AllocatePrivateVirtualInterfaceResult)result).getVirtualInterfaceState().contains("PENDING")) {
-                        throw new ExecutionException(null);
-                    }
-                    break;
-                } catch (InterruptedException ex) {
-                    AwsDriver.logger.catching("dxvifOperationCheck", ex);
-                }
-            }
-            try {
-                sleep(delay);
-            } catch (InterruptedException ex1) {
-                ;
-            }
-        }
-    }
 }

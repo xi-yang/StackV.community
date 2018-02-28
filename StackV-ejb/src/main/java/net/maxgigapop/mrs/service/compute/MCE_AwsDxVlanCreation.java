@@ -33,6 +33,8 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
@@ -44,6 +46,7 @@ import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.common.TagSet;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -57,31 +60,22 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
     private static final StackLogger logger = new StackLogger(MCE_AwsDxVlanCreation.class.getName(), "MCE_AwsDxVlanCreation");
 
     private static final String OSpec_Template
-            = "{\n"
-            + "\"vlan\": \"?vlan?\",\n"
-            + "\"dxvif_name\": \"?dxvif_name?\",\n"
-            + "\"vgw_name\": \"?vgw_name?\",\n"
-            + "\"amazon_ip\": \"?amazon_ip?\",\n"
-            + "\"customer_ip\": \"?customer_ip?\",\n"
-            + "\"authkey\": \"?authkey?\",\n"
-            + "\"customer_asn\": \"?customer_asn?\",\n"
-            + "\"#sparql\": \"SELECT ?dxvif ?vgw WHERE {?dxvif mrs:type \\\"direct-connect-vif\\\". ?dxvif nml:isAlias ?vgw. }\",\n"
-            + "\"#required\": \"true\",\n"
-            + "\"#sparql-ext\": \"SELECT ?dxvif_name ?vgw_name ?customer_asn ?vlan ?amazon_ip ?customer_ip ?authkey "
-            + "WHERE {"
-            + "?dxvif mrs:hasNetworkAddress ?netaddr_asn. "
-            + "?netaddr_asn mrs:type \\\"bgp-asn\\\". "
-            + "?netaddr_asn mrs:value ?customer_asn. "
-            + "?dxvif nml:hasLabelGroup ?lg_vlan. "
-            + "?lg_vlan nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
-            + "?lg_vlan nml:values ?vlan. "
-            + "OPTIONAL { ?dxvif nml:name ?dxvif_name. } "
-            + "OPTIONAL {?dxvif mrs:hasNetworkAddress ?netaddr_amazon_ip. ?netaddr_amazon_ip mrs:type \\\"ipv4-address:amazon\\\". "
-            + "?netaddr_amazon_ip mrs:value ?amazon_ip. ?dxvif mrs:hasNetworkAddress ?netaddr_customer_ip. "
-            + "?netaddr_customer_ip mrs:type \\\"ipv4-address:customer\\\". ?netaddr_customer_ip mrs:value ?customer_ip. }"
-            + "OPTIONAL {?dxvif mrs:hasNetworkAddress ?netaddr_authkey. ?netaddr_authkey mrs:type \\\"bgp-authkey\\\". ?netaddr_authkey mrs:value ?authkey. }"
-            + "}\""
-            + "}";
+            = "{\n" +
+"	\"connections\": [\n" +
+"		{\n" +
+"			\"id\": \"?dxconn_id?\",\n" +
+"			\"virtual_interfaces\": [\n" +
+"				{\n" +
+"					\"uri\": \"?dxvif?\",\n" +
+"					\"vlan\": \"?dxvif_vlan?\",\n" +
+"					\"#sparsql\": \"SELECT DISTINCT ?dxvif ?dxvif_vlan WHERE {?dxconn nml:hasBidirectionalPort ?dxvif. ?dxvif mrs:type \\\"direct-connect-vif\\\". ?dxvif nml:hasLabelGroup ?lg . ?lg nml:values ?dxvif_vlan. }\"\n" +
+"				}\n" +
+"			],\n" +
+"			\"#sparsql\": \"SELECT DISTINCT ?dxconn WHERE { ?dxconn nml:hasBidirectionalPort ?dxvif. ?dxvif mrs:type \\\"direct-connect-vif\\\". }\",\n" +
+"			\"#sparsql-ext\": \"SELECT  ?dxconn_id WHERE { ?dxconn nml:name  ?dxconn_id. }\"\n" +
+"		}\n" +
+"	]\n" +
+"}";
 
     @Override
     @Asynchronous
@@ -130,30 +124,101 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
         String dxConn = (String) jsonStitchReq.get("direct_connect");
         String dxVifVlan = (String) jsonStitchReq.get("dxvif_vlan");
 
-        //$$ find dxConn URI if given ID
+        // find dxConn URI if given namd/ID
         if (!dxConn.startsWith("urn:")) {
-            
+            String sparql = "SELECT DISTINCT ?dxconn WHERE {"
+                    + "?dxconn a nml:BidirectionalPort . "
+                    + String.format("?dxconn nml:name \"%s\".", dxConn)
+                    + "}";
+            ResultSet r = ModelUtil.executeQuery(sparql, null, systemModel);
+            if (r.hasNext()) {
+                QuerySolution q = r.next();
+                dxConn = q.get("dxconn").asResource().getURI();
+            }
         }
         Resource resDC = dxvifModel.createResource(dxConn);
-        //$$ compute VLAN tag if any.
-        if (dxVifVlan.equalsIgnoreCase("any") || dxVifVlan.matches("^\\d+-\\d+$")) {
-            Model unionSysModel = spaModel.union(systemModel);
-            //$$ sparql for VLAN range of resDC
-            
-            //$$ sparql for VLAN labels
-            
-            //$$ get availalbe range (with intersection of given range in dxVifVlan)
-            
-            //$$ pick random to rewrite dxVifVlan
+
+        // sparql for VLAN range of resDC
+        String sparql = "SELECT ?vlan_range WHERE {"
+                + String.format("<%s> nml:hasLabelGroup ?lg. ", dxConn)
+                + "?lg nml:values ?vlan_range. "
+                + "}";
+        ResultSet r = ModelUtil.sparqlQuery(systemModel, sparql);
+        if (!r.hasNext()) {
+            throw logger.error_throwing(method, "Cannot get VLAN range for DirectConnect: " + dxConn);
         }
-        
+        QuerySolution q = r.next();
+        String dxConnVlanRange = q.get("vlan_range").asLiteral().getString();
+        TagSet vlanRange;
+        try {
+            vlanRange = new TagSet(dxConnVlanRange);
+        } catch (TagSet.InvalidVlanRangeExeption ex) {
+            throw logger.error_throwing(method, "Malformed VLAN range [" + dxConnVlanRange + "] for DirectConnect:" + dxConn);
+        }
+
+        Model unionSysModel = spaModel.union(systemModel);
+
+        // sparql for allocated VLANs
+        sparql = "SELECT DISTINCT ?dxvif ?vlan WHERE {"
+                + String.format("<%s> nml:hasBidirectionalPort ?dxvif. ", dxConn)
+                + "?dxvif mrs:type \"direct-connect-vif\" . "
+                + "?dxvif nml:hasLabelGroup ?lg . "
+                + "?lg nml:values ?vlan. "
+                + "}";
+        r = ModelUtil.sparqlQuery(unionSysModel, sparql);
+        // get availalbe range (with intersection of given range in dxVifVlan)
+        while (!r.hasNext()) {
+            q = r.next();
+            String dxvifUri = q.get("dxvif").asResource().getURI();
+            String vlanTag = q.get("vlan").asLiteral().getString();
+            Integer vlan;
+            try {
+                vlan = Integer.parseInt(vlanTag);
+            } catch (NumberFormatException ex) {
+                logger.warning(method, String.format("Malformed VLAN '%s' for DC virtual-interface: %s", vlanTag, dxvifUri));
+                continue;
+            }
+            vlanRange.removeTag(vlan);
+        }
+        if (vlanRange.isEmpty()) {
+            throw logger.error_throwing(method, "No more VLAN available for DirectConnect:" + dxConn);
+        }
+        // compute VLAN tag if given 'any' or a range.
+        if (dxVifVlan.equalsIgnoreCase("any")) {
+            dxVifVlan = Integer.toString(vlanRange.getRandom());
+        } else if (dxVifVlan.matches("^\\d+-\\d+$")) {
+            TagSet vlanRangeNarrowed;
+            try {
+                vlanRangeNarrowed = new TagSet(dxVifVlan);
+            } catch (TagSet.InvalidVlanRangeExeption ex) {
+                throw logger.error_throwing(method, "Malformed VLAN range [" + dxVifVlan + "] as provided input to this MCE");
+            }
+            vlanRange.intersect(vlanRangeNarrowed);
+            if (vlanRange.isEmpty()) {
+                throw logger.error_throwing(method, "No more VLAN available for DirectConnect:" + dxConn);
+            }
+            // pick random to rewrite dxVifVlan
+            dxVifVlan = Integer.toString(vlanRange.getRandom());
+        } else { // verify availability of the assumed single given VLAN 
+            Integer vlan;
+            try {
+                vlan = Integer.parseInt(dxVifVlan);
+            } catch (NumberFormatException ex) {
+                throw logger.error_throwing(method, "Malformed VLAN [" + dxVifVlan + "] as provided input to this MCE");
+            }
+            if (!vlanRange.hasTag(vlan)) {
+                throw logger.error_throwing(method, "VLAN " + dxVifVlan + " is not available for DirectConnect:" + dxConn);
+            }
+        }
+
         Resource resDxvif = RdfOwl.createResource(dxvifModel, String.format("%s:dxvif+vlan%s", dxConn, dxVifVlan), Nml.BidirectionalPort);
+        dxvifModel.add(dxvifModel.createStatement(resDC, Nml.hasBidirectionalPort, resDxvif));
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.type, "direct-connect-vif"));
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.value, "direct-connect-vif+private"));
         Resource resVirtualIfVG = RdfOwl.createResource(dxvifModel, String.format("%s:labelgroup+%s", resDxvif.getURI(), dxVifVlan), Nml.LabelGroup);
         dxvifModel.add(dxvifModel.createStatement(resVirtualIfVG, Nml.labeltype, RdfOwl.labelTypeVLAN));
         dxvifModel.add(dxvifModel.createStatement(resVirtualIfVG, Nml.values, dxVifVlan));
-        dxvifModel.add(dxvifModel.createStatement(resDC, Nml.hasLabelGroup, resVirtualIfVG));
+        dxvifModel.add(dxvifModel.createStatement(resDxvif, Nml.hasLabelGroup, resVirtualIfVG));
 
         Resource vifAttr = RdfOwl.createResource(dxvifModel, resDxvif.getURI() + ":owner_account", Mrs.NetworkAddress);
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.hasNetworkAddress, vifAttr));
@@ -174,13 +239,13 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
         if (jsonStitchReq.containsKey("customer_asn")) {
             vifAttr = RdfOwl.createResource(dxvifModel, resDxvif.getURI() + ":asn", Mrs.NetworkAddress);
             dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.hasNetworkAddress, vifAttr));
-            dxvifModel.add(dxvifModel.createStatement(vifAttr, Mrs.type, "bgp-authkey"));
+            dxvifModel.add(dxvifModel.createStatement(vifAttr, Mrs.type, "bgp-asn"));
             dxvifModel.add(dxvifModel.createStatement(vifAttr, Mrs.value, (String) jsonStitchReq.get("customer_asn")));            
         }
         if (jsonStitchReq.containsKey("authkey")) {
             vifAttr = RdfOwl.createResource(dxvifModel, resDxvif.getURI() + ":authkey", Mrs.NetworkAddress);
             dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.hasNetworkAddress, vifAttr));
-            dxvifModel.add(dxvifModel.createStatement(vifAttr, Mrs.type, "authkey"));
+            dxvifModel.add(dxvifModel.createStatement(vifAttr, Mrs.type, "bgp-authkey"));
             dxvifModel.add(dxvifModel.createStatement(vifAttr, Mrs.value, (String) jsonStitchReq.get("authkey")));
         }
 
