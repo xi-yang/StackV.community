@@ -133,12 +133,7 @@ $(function () {
 
 function loadNavbar() {
     $("#nav").load("/StackV-web/nav/navbar.html", function () {
-        if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
-            $(".nav-admin").hide();
-        }
-        if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
-            $("#driver-tab").hide();
-        }
+        verifyPageRoles();
 
         if (window.location.pathname === "/StackV-web/portal/") {
             $("li#catalog-tab").addClass("active");
@@ -183,6 +178,41 @@ function loadNavbar() {
             evt.preventDefault();
         });
     });
+}
+
+function verifyPageRoles() {
+    if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
+        $(".nav-admin").hide();
+    }
+    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
+        $("#driver-tab").hide();
+    }
+    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("ACL")) {
+        $("#acl-tab").hide();
+    }
+    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Visualization")) {
+        $("#visualization-tab").hide();
+    }
+
+    switch (window.location.pathname) {
+        case "/StackV-web/portal/details/":
+            var uuid = sessionStorage.getItem("instance-uuid");
+            var apiUrl = baseUrl + '/StackV-web/restapi/app/access/instances/' + uuid;
+            $.ajax({
+                url: apiUrl,
+                type: 'GET',
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                },
+                success: function (result) {
+                    if (result === "false") {
+                        sessionStorage.removeItem("instance-uuid");
+                        window.location.href = "/StackV-web/portal/";
+                    }
+                }
+            });
+            break;
+    }
 }
 
 function prettyPrintInfo() {

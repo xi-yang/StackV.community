@@ -65,14 +65,19 @@ div#instance-body {
     background: white;
 }
 
-.catalog-modal-body {
+.catalog-modal-body, .profiles-modal-body {
     padding: 20px 30px 10px 30px;
     text-align: left;
 }
-.catalog-modal-body-header {
+.catalog-modal-body-header, profiles-modal-body-header {
     font-size: 1.25em;
     vertical-align: top;
     padding-right: 40px;
+}
+.catalog-modal-body .list-group, .profiles-modal-body .list-group {
+    cursor: pointer;
+    max-height: 600px;
+    overflow: scroll;
 }
 
 
@@ -125,6 +130,9 @@ div#profile-modal div.info-panel-save-as-description input {
 div#profile-modal textarea#info-panel-text-area {
     width: 100%;
     min-height: 600px;
+}
+#info-panel-text-area[readonly] {
+    background: #eee;
 }
 
 #profile-alias {

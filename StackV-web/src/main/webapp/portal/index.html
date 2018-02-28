@@ -49,24 +49,10 @@
         </div>
 
         <!-- Catalog Modal -->
-        <div id="catalog-modal" data-iziModal-title="Service Catalog" data-iziModal-icon="icon-home">
-            <div class="catalog-modal-body">
-                <p class="catalog-modal-body-header">Select a service type:</p>
-                <div id="catalog-modal-service-meta" class="list-group"></div>
-                <hr>
-                <button class="button-catalog-modal-switch btn btn-primary" data-izimodal-open="#profiles-modal">Load Saved Profile</button>
-            </div>
-        </div>
+        <div id="catalog-modal" data-iziModal-title="Service Catalog" data-iziModal-icon="icon-home"></div>
 
         <!-- Profile Modal -->
-        <div id="profiles-modal" data-iziModal-title="Service Profiles" data-iziModal-icon="icon-home">
-            <div class="profiles-modal-body">
-                <p class="profiles-modal-body-header">Select a service type:</p>
-                <div id="profiles-modal-service-meta" class="list-group"></div>
-                <hr>
-                <button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button>
-            </div>
-        </div>
+        <div id="profiles-modal" data-iziModal-title="Service Profiles" data-iziModal-icon="icon-home"></div>        
 
         <div id="profile-modal" class="modal fade" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
@@ -79,7 +65,7 @@
                             <input id="profile-alias" placeholder="Instance Alias"/>
                         </div>
                         <div id="info-panel-text">                            
-                            <textarea id="info-panel-text-area"></textarea>
+                            <textarea readonly id="info-panel-text-area"></textarea>
                         </div>
                     </div>
                     <div id="info-panel-button" class="modal-footer">
@@ -87,16 +73,21 @@
                             <form class="form-inline">
                                 <div class="form-group">
                                     <label for="new-profile-name"/>
-                                    <input type="text" class="form-control" id="new-profile-name" placeholder="Name">
+                                    <input type="text" class="form-control" id="new-profile-name" placeholder="Name" />
                                 </div>
                                 <div class="form-group">
                                     <label for="new-profile-description"/>
-                                    <input type="text" class="form-control" id="new-profile-description" placeholder="Description">
+                                    <input type="text" class="form-control" id="new-profile-description" placeholder="Description" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-profile-licenses"/>
+                                    <input type="text" class="form-control" id="new-profile-licenses" style="width: 347px;" placeholder="Shared users (Comma-separated)" />
                                 </div>
                             </form>
                         </div>
                         <div class="info-panel-footer">
                             <div class="info-panel-regular-buttons">
+                                <p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;float: left;padding-left: 20px;">Read Only</p>
                                 <button type="button" name="button" class="button-profile-save btn btn-default">Save</button>
                                 <button class="button-profile-save-as btn btn-default">Save As</button>
                                 <button class="button-profile-submit btn btn-default">Submit</button>

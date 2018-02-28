@@ -25,12 +25,51 @@
 // Tweens
 var tweenInstancePanel = new TweenLite("#instance-panel", .75, {ease: Power2.easeInOut, paused: true, top: "40px"});
 
+var $catModal = $("#catalog-modal");
+var $profModal = $("#profiles-modal");
+
 Mousetrap.bind({
     'shift+left': function () {
         window.location.href = "/StackV-web/orch/graphTest.jsp";
     },
     'shift+right': function () {
         window.location.href = "/StackV-web/portal/details/";
+    },
+    'space': function () {
+        // Toggle catalog modal
+        switch ($catModal.iziModal('getState')) {
+            case "closed":
+                switch ($profModal.iziModal('getState')) {
+                    case "closed":
+                        $catModal.iziModal('open');
+                        break;
+                    case "opened":
+                        $profModal.iziModal('prev');
+                        break;
+                }
+                break;
+            case "opened":
+                $catModal.iziModal('close');
+                break;
+        }
+    },
+    'shift+space': function () {
+        // Toggle profile modal
+        switch ($catModal.iziModal('getState')) {
+            case "closed":
+                switch ($profModal.iziModal('getState')) {
+                    case "closed":
+                        $profModal.iziModal('open');
+                        break;
+                    case "opened":
+                        $profModal.iziModal('close');
+                        break;
+                }
+                break;
+            case "opened":
+                $catModal.iziModal('next');
+                break;
+        }
     }
 });
 
@@ -54,19 +93,28 @@ function loadInstances() {
 
 function loadModals() {
     // Initialize
-    var $catModal = $("#catalog-modal");
+    $("#catalog-modal").html('<div class="catalog-modal-body">' +
+            '<p class="catalog-modal-body-header">Select a service type:</p>' +
+            '<div id="catalog-modal-service-meta" class="list-group" style="cursor: pointer;"></div>' +
+            '<hr><button class="button-catalog-modal-switch btn btn-primary" data-izimodal-open="#profiles-modal">Load Saved Profile</button>' +
+            '</div>');
+    $("#profiles-modal").html('<div class="profiles-modal-body">' +
+            '<p class="profiles-modal-body-header">Select a saved service profile:</p>' +
+            '<div id="profiles-modal-service-meta" class="list-group" style="cursor: pointer;"></div>' +
+            '<hr><button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button>' +
+            '</div>');
+
     $catModal.iziModal({
         width: 750,
         group: "cat"
     });
-    var $profModal = $("#profiles-modal");
     $profModal.iziModal({
         width: 750,
         group: "cat"
     });
 
-    // Load service metadata    
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + keycloak.subject + '/editor';
+    // Load service metadata. 
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/editor';
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -85,8 +133,10 @@ function loadModals() {
                 $service.addClass("list-group-item list-group-item-action flex-column align-items-start");
                 $service.attr("data-tag", tag);
 
-                $service.append('<h4>' + name + '</h4>');
-                $service.append('<p>' + desc + '</p>');
+                $service.append('<h4 style="display: inline-block;">' + name + '</h4>');
+                if (desc) {
+                    $service.append('<p>' + desc + '</p>');
+                }
 
                 $("#catalog-modal-service-meta").append($service);
             }
@@ -96,15 +146,10 @@ function loadModals() {
             });
         }
     });
-}
 
-var originalProfile;
-function loadWizard() {
-    var userId = keycloak.subject;
-    var tbody = document.getElementById("wizard-body");
-    $("tbody#wizard-body").find("tr").remove();
-
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/wizard';
+    // Load service profiles.
+    var originalProfile;
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/wizard';
     $.ajax({
         url: apiUrl,
         type: 'GET',
@@ -115,23 +160,52 @@ function loadWizard() {
             for (i = 0; i < result.length; i++) {
                 var profile = result[i];
 
-                var row = document.createElement("tr");
-                var cell1_1 = document.createElement("td");
-                cell1_1.innerHTML = profile[0];
-                var cell1_2 = document.createElement("td");
-                cell1_2.innerHTML = profile[1];
-                var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-profile-select btn btn-default' id='" + profile[2] + "'>Select</button><button class='button-profile-delete btn btn' id='" + profile[2] + "'>Delete</button>";
-                row.appendChild(cell1_1);
-                row.appendChild(cell1_2);
-                row.appendChild(cell1_3);
-                tbody.appendChild(row);
+                var name = profile[0];
+                var desc = profile[1];
+                var id = profile[2];
+                var owner = profile[3];
+                var editable = profile[4];
+                var created = profile[5];
+                var lastEdited = profile[6];
+
+                var $profile = $('<a></a>');
+                $profile.addClass("list-group-item list-group-item-action flex-column align-items-start");
+                $profile.attr("data-id", id);
+
+                $profile.append('<h4 style="display: inline-block;">' + name + '</h4>');
+
+                // Properties                
+                var $note = $('<small></small>');
+                if (owner !== keycloak.tokenParsed.preferred_username) {
+                    $note.css({"color": "#777", "padding": "5px"});
+                    $note.text("created by " + owner + " ");
+                    $profile.append($note);
+                    if (editable === "0") {
+                        $profile.css("box-shadow", "inset 0px 0px 2px 0px #ff5f5f");
+                        $note.text($note.text() + "(Read only)");
+                    }
+                }
+
+                var $time = $('<small></small>');
+                $time.css({"float": "right", "text-align": "right", "padding-top": "10px"});
+                var timeStr = "Created: " + created;
+                if (lastEdited) {
+                    timeStr += "<br>Last edited: " + lastEdited;
+                }
+                $time.html(timeStr);
+                $profile.append($time);
+
+                if (desc) {
+                    $profile.append('<p>' + desc + '</p>');
+                }
+                // ***
+
+                $("#profiles-modal-service-meta").append($profile);
             }
 
-            $(".button-profile-select").on("click", function (evt) {
-                var resultID = this.id,
-                        apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
-
+            $("#profiles-modal-service-meta").on("click", "a", function (evt) {
+                var resultID = $(this).data("id");
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
                 $.ajax({
                     url: apiUrl,
                     type: 'GET',
@@ -139,11 +213,24 @@ function loadWizard() {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
                     success: function (result) {
+                        if (result["owner"] === keycloak.tokenParsed.preferred_username
+                                || result["editable"] === "1") {
+                            $("#info-panel-text-area").removeAttr("readonly");
+                            $(".button-profile-save").removeAttr("disabled");
+                            $(".button-profile-save-as").removeAttr("disabled");
+                            $(".read-only-flag").addClass("hidden");
+                        } else {
+                            $("#info-panel-text-area").attr("readonly", true);
+                            $(".button-profile-save").attr('disabled', true);
+                            $(".button-profile-save-as").attr('disabled', true);
+                            $(".read-only-flag").removeClass("hidden");
+                        }
+
                         $("#black-screen").removeClass("off");
                         $("#profile-modal").modal("show");
                         $("#info-panel-title").html("Profile Details");
-                        $("#info-panel-text-area").val(JSON.stringify(result));
-                        originalProfile = JSON.stringify(result);
+                        $("#info-panel-text-area").val(result["wizard_json"]);
+                        originalProfile = result["wizard_json"];
                         $(".button-profile-save").attr('id', resultID);
                         $(".button-profile-save-as").attr('id', resultID);
                         $(".button-profile-submit").attr('id', resultID);
@@ -158,6 +245,8 @@ function loadWizard() {
                 evt.preventDefault();
             });
 
+
+            // Legacy modal listeners.
             $(".button-profile-delete").on("click", function (evt) {
                 swal("Confirm deletion?", {
                     buttons: {
@@ -174,7 +263,6 @@ function loadWizard() {
                                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             },
                             success: function (result) {
-                                loadWizard();
                             },
                             error: function (textStatus, errorThrown) {
                                 console.log(textStatus);
@@ -207,17 +295,9 @@ function loadWizard() {
                             manifest["uuid"] = result;
                             manifest["data"]["uuid"] = result;
                             manifest["data"]["options"] = manifest["options"];
-                            //manifest["data"] = JSON.parse($("#info-panel-text-area").val());
-
-                            // Render template
-//                            var rendered = render(manifest);
-//                            if (!rendered) {
-//                                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
-//                                return;
-//                            }
 
                             manifest['proceed'] = "true";
-                            var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                            var apiUrl = baseUrl + '/StackV-web/restapi/app/profile';
                             $.ajax({
                                 url: apiUrl,
                                 type: 'POST',
@@ -273,6 +353,7 @@ function loadWizard() {
                         name: $("#new-profile-name").val(),
                         username: keycloak.tokenParsed.preferred_username,
                         description: $("#new-profile-description").val(),
+                        licenses: $("#new-profile-licenses").val(),
                         data: JSON.parse($("#info-panel-text-area").val())
                     };
 
@@ -294,7 +375,6 @@ function loadWizard() {
                             $("div.info-panel-regular-buttons").css("display", "block");
                             $("div#profile-modal").modal("hide");
                             // reload table
-                            loadWizard();
                         },
                         error: function (textStatus, errorThrown) {
                             console.log(textStatus);
@@ -328,7 +408,6 @@ function loadWizard() {
                         },
                         success: function (result) {
                             // reload the bottom panel
-                            loadWizard();
                             $("#profile-modal").modal("hide");
                         },
                         error: function (textStatus, errorThrown) {
@@ -344,7 +423,96 @@ function loadWizard() {
                     swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');
                 }
             });
+        }
+    });
+}
+function reloadModals() {
+    // Load service metadata. 
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/editor';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            $("#catalog-modal-service-meta").empty();
+            for (i = 0; i < result.length; i++) {
+                var meta = result[i];
 
+                var name = meta[0];
+                var desc = meta[1];
+                var tag = meta[2];
+
+                var $service = $('<a></a>');
+                $service.addClass("list-group-item list-group-item-action flex-column align-items-start");
+                $service.attr("data-tag", tag);
+
+                $service.append('<h4 style="display: inline-block;">' + name + '</h4>');
+                if (desc) {
+                    $service.append('<p>' + desc + '</p>');
+                }
+
+                $("#catalog-modal-service-meta").append($service);
+            }
+        }
+    });
+
+    // Load service profiles.
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/wizard';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            $("#profiles-modal-service-meta").empty();
+            for (i = 0; i < result.length; i++) {
+                var profile = result[i];
+
+                var name = profile[0];
+                var desc = profile[1];
+                var id = profile[2];
+                var owner = profile[3];
+                var editable = profile[4];
+                var created = profile[5];
+                var lastEdited = profile[6];
+
+                var $profile = $('<a></a>');
+                $profile.addClass("list-group-item list-group-item-action flex-column align-items-start");
+                $profile.attr("data-id", id);
+
+                $profile.append('<h4 style="display: inline-block;">' + name + '</h4>');
+
+                // Properties                
+                var $note = $('<small></small>');
+                if (owner !== keycloak.tokenParsed.preferred_username) {
+                    $note.css({"color": "#777", "padding": "5px"});
+                    $note.text("created by " + owner + " ");
+                    $profile.append($note);
+                    if (editable === "0") {
+                        $profile.css("box-shadow", "inset 0px 0px 2px 0px #ff5f5f");
+                        $note.text($note.text() + "(Read only)");
+                    }
+                }
+
+                var $time = $('<small></small>');
+                $time.css({"float": "right", "text-align": "right", "padding-top": "10px"});
+                var timeStr = "Created: " + created;
+                if (lastEdited) {
+                    timeStr += "<br>Last edited: " + lastEdited;
+                }
+                $time.html(timeStr);
+                $profile.append($time);
+
+                if (desc) {
+                    $profile.append('<p>' + desc + '</p>');
+                }
+                // ***
+
+                $("#profiles-modal-service-meta").append($profile);
+            }
         }
     });
 }
@@ -355,44 +523,6 @@ function isJSONString(str) {
     } catch (e) {
         return false;
     }
-}
-
-
-function loadEditor() {
-    var userId = keycloak.subject;
-    var tbody = document.getElementById("editor-body");
-
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/editor';
-    $.ajax({
-        url: apiUrl,
-        type: 'GET',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            for (i = 0; i < result.length; i++) {
-                var profile = result[i];
-
-                var row = document.createElement("tr");
-                var cell1_1 = document.createElement("td");
-                cell1_1.innerHTML = profile[0];
-                var cell1_2 = document.createElement("td");
-                cell1_2.innerHTML = profile[1];
-                var cell1_3 = document.createElement("td");
-                cell1_3.innerHTML = "<button class='button-service-select btn btn-default' id='" + profile[2] + "'>Select</button";
-                row.appendChild(cell1_1);
-                row.appendChild(cell1_2);
-                row.appendChild(cell1_3);
-                tbody.appendChild(row);
-            }
-            $(document).on('click', '.button-service-select', function (evt) {
-                var ref = "/StackV-web/portal/intent?intent=" + this.id.toLowerCase();
-                window.location.href = ref;
-
-                evt.preventDefault();
-            });
-        }
-    });
 }
 
 function getURLParameter(name) {
@@ -406,19 +536,12 @@ function reloadData() {
         console.log("Error updating token!");
     }).success(function (refreshed) {
         var timerSetting = $("#refresh-timer").val();
-        if (timerSetting > 15) {
-            setTimeout(function () {
-                reloadLogs();
-                loadSystemHealthCheck();
-                refreshSync(refreshed, timerSetting);
-            }, 750);
-        } else {
-            setTimeout(function () {
-                reloadLogs();
-                loadSystemHealthCheck();
-                refreshSync(refreshed, timerSetting);
-            }, 500);
-        }
+        setTimeout(function () {
+            reloadLogs();
+            reloadModals();
+            loadSystemHealthCheck();
+            refreshSync(refreshed, timerSetting);
+        }, 500);
     });
 }
 
