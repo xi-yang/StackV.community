@@ -144,7 +144,7 @@ public class DriverModelPuller {
             // cleanning up from recovery
             logger.message(method, "cleanning up from recovery");
             GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "true");
-            VersionGroupPersistenceManager.cleanupAndUpdateAll(null);
+            //VersionGroupPersistenceManager.cleanupAndUpdateAll(null);
             Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
             VersionItemPersistenceManager.cleanupAllBefore(before24h);
             logger.message(method, "Done! - bootStrapped changed to true");
