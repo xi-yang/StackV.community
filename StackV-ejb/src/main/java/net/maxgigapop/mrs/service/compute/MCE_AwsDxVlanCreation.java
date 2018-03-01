@@ -112,6 +112,7 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
         return new AsyncResult(outputDelta);
     }
 
+    //@TODO: make dxvif / labelgroup etc format the same as from MCE_L2path (update awsPrefix and use awsPrefix)
     private OntModel doCreation(OntModel systemModel, OntModel spaModel, Resource res, JSONObject jsonStitchReq) {
         String method = "doCreation";
         logger.message(method, "@doCreation -> " + res);
@@ -258,6 +259,11 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
         } else {
             spaModel.remove(resDxvif, Nml.hasLabel, resDxvifLabel);
             spaModel.removeAll(resDxvif, null, null);
+            // add label to DC level - conforming with :vlanport+NUM format
+            Resource resVlanLabel = RdfOwl.createResource(dxvifModel, String.format("%s:dxvif+vlan%s:label+%s", resDC.getURI(), dxVifVlan, dxVifVlan), Nml.Label);
+            dxvifModel.add(dxvifModel.createStatement(resVlanLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
+            dxvifModel.add(dxvifModel.createStatement(resVlanLabel, Nml.values, dxVifVlan));
+            dxvifModel.add(dxvifModel.createStatement(resDC, Nml.hasLabel, resVlanLabel));
         }
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.type, "direct-connect-vif"));
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.value, "direct-connect-vif+private"));

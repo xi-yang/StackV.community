@@ -201,6 +201,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         return new AsyncResult<>("SUCCESS");
     }
     
+    //@TODO: make dxvif / labelgroup etc format the same as from MCE_L2path (update awsPrefix?)
     private OntModel createOntology(AwsDCGet dcClient, String topologyURI, String defaultVlanRange) throws IOException {
         AwsPrefix awsPrefix = new AwsPrefix(topologyURI);
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -311,6 +312,43 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
             }
             jsonReq.put("dxvif", dxVifId);
             jsonRequests.add(jsonReq);            
+        }
+        // delete DirectConnect virtual interface - scenario 2
+        query = "SELECT DISTINCT ?dxconn ?dxvlan WHERE {"
+                + "?dxconn nml:hasLabel ?label ."
+                + "?label nml:value ?dxvlan. "
+                + "}";
+        r = ModelUtil.executeQuery(query, null, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject jsonReq = new JSONObject();
+            jsonReq.put("command", "deleteDxvif");
+            Resource dxConn = q.get("dxconn").asResource();
+            NodeIterator itNode = modelRef.listObjectsOfProperty(dxConn, Nml.name);
+            if (itNode.hasNext()) {
+                String dxConnId = itNode.next().asLiteral().getString();
+                jsonReq.put("dxconn", dxConnId);
+            } else {
+                throw logger.error_throwing(method, "cannot find ID of direct-connect:" + dxConn.getURI());
+            }
+            String dxVlan = q.get("dxvlan").asLiteral().getString();
+            query = "SELECT DISTINCT ?dxvif_id WHERE {"
+                + String.format("<%s> nml:hasBidirectionalPort ?dxvif .", dxConn.getURI())
+                + "?dxvif a nml:BidirectionalPort . "
+                + "?dxvif nml:name ?dxvif_id . "
+                + "?dxvif mrs:type \"direct-connect-vif\". "
+                + "?dxvif nml:hasLabelGroup ?lg . "
+                + String.format("?lg nml:values \"%s\" .", dxVlan)
+                + "}";
+            ResultSet r2 = ModelUtil.executeQuery(query, null, modelRef);
+            if (!r2.hasNext()) {
+                throw logger.error_throwing(method, String.format("cannot find virtual intrface of direct-connect '%s' for VLAN:%s", dxConn.getURI(), dxVlan));
+            }
+            QuerySolution q2 = r2.next();
+            String dxVifId = q2.get("dxvif_id").asLiteral().getString();
+            jsonReq.put("dxvif", dxVifId);
+            //@TODO: check if dxvif id has already been added
+            jsonRequests.add(jsonReq);
         }
         // add DirectConnect virtual interface
         query = "SELECT DISTINCT ?dxconn ?dxvif_vlan ?customer_acct ?customer_asn ?customer_ip ?amazon_ip ?bgp_authkey WHERE {"

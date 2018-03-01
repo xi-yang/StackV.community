@@ -77,10 +77,6 @@ public class AwsPrefix {
     public String gateway() {  return prefix+":gateway+%s";  }
 
     public String instance() {  return prefix+":vpc+%s:subnet+%s:instance+%s";  }
-
-    public String label() { return "%s:label+%s";  }
-
-    public String labelGroup() { return "%s:labelgroup+%s";  }
     
     public String nic() {  return prefix+":vpc+%s:subnet+%s:nic+%s";  }
     
@@ -106,10 +102,6 @@ public class AwsPrefix {
 
     public String switchingService() {  return prefix+":vpc+%s:switchingservice";  }
 
-    public String vif() { return "%s:dxvif+vlan%s";  }
-
-    public String vlan() {  return prefix+":vif+%s:vlan+%s";  }
-
     public String volume() {  return prefix+":volume+%s";  }
 
     public String vpc() {  return prefix+":vpc+%s";  }
@@ -119,4 +111,12 @@ public class AwsPrefix {
     public String vpcService() {  return prefix+":vpcservice+%s";  }
     
     public String vpn() {  return prefix+":vpn+%s";  }
+    
+    // DirectConnect related
+    public String vif() { return "%s:dxvif+vlan%s";  }
+
+    public String label() { return "%s:label+%s";  }
+
+    public String labelGroup() { return "%s:labelgroup+%s";  }
+
 }
