@@ -497,7 +497,6 @@ public class WebResource {
                     responseStr = new StringBuilder();
                     while ((inputLine = in.readLine()) != null) {
                         responseStr.append(inputLine);
-                        System.out.println("inputLine: " + inputLine);
                     }
                 }
                 result.put("Error", responseStr.toString());
@@ -2890,26 +2889,43 @@ public class WebResource {
      *
      */
     @POST
-    @Path("/profile")
+    @Path(value = "/profile")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("Profiles-E")
     public String executeProfile(final String inputString) throws SQLException, IOException, ParseException, InterruptedException {
         final String method = "executeProfile";
         logger.start(method);
         try {
+            logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(null, refresh);
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
+            String serviceType = (String) inputJSON.get("service");
 
+            // Authorize service.
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
+            Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
             String username = accessToken.getPreferredUsername();
+
+            // Instance Creation
+            final String refUUID;
+            try {
+                URL url = new URL(String.format("%s/service/instance", host));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
+            } catch (IOException ex) {
+                logger.catching("doCreateService", ex);
+                throw ex;
+            }
+
             inputJSON.remove("username");
             inputJSON.put("username", username);
+            inputJSON.put("uuid", refUUID);
+            ((JSONObject) inputJSON.get("data")).put("uuid", refUUID);
 
-            final String refUUID = (String) inputJSON.get("uuid");
             String sync = (String) inputJSON.get("synchronous");
             String proceed = (String) inputJSON.get("proceed");
             if (sync != null && sync.equals("true")) {
@@ -2941,12 +2957,13 @@ public class WebResource {
                     }
                 });
             }
-        } catch (IOException | InterruptedException | ParseException ex) {
+
+            logger.end(method);
+            return refUUID;
+        } catch (ParseException ex) {
             logger.catching(method, ex);
-            throw ex;
+            return null;
         }
-        logger.end(method);
-        return null;
     }
 
     // >Services   
@@ -2979,11 +2996,10 @@ public class WebResource {
     @POST
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
-    @RolesAllowed("Services")
+    @RolesAllowed({"Services"})
     public String createService(final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
         final String method = "createService";
         try {
-            System.out.println("Creation Input: " + inputString);
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(null, refresh);
@@ -3186,10 +3202,8 @@ public class WebResource {
     private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         TemplateEngine template = new TemplateEngine();
 
-        System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
         String retString = template.apply(inputJSON);
         retString = retString.replace("&lt;", "<").replace("&gt;", ">");
-        System.out.println("\n\n\nResult:\n" + retString);
 
         if (((JSONObject) inputJSON.get("data")).containsKey("parent")) {
             String parent = (String) ((JSONObject) inputJSON.get("data")).get("parent");
@@ -3389,7 +3403,7 @@ public class WebResource {
                         result = (owner.contains(username) || licenses.contains(username));
                     }
                     break;
-                    
+
             }
 
             if (result) {
@@ -3435,7 +3449,7 @@ public class WebResource {
                         }
                     }
                     break;
-                    
+
             }
 
             if (result) {

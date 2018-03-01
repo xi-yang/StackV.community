@@ -41,13 +41,13 @@ div#refresh-panel {
 }
 
 div#instance-panel {
-    left: 50px;
-    padding: 20px 30px;
+    margin: auto;
+    padding: 50px 30px 0px 30px;
     max-height: calc(90% - 42px);
-    width: calc(100% - 100px);
-    position: absolute;
-    top: calc(-90% - 42px);
+    width: calc(100% - 75);
+    max-width: 1000px;
     text-align: left;
+    visibility:hidden;
 }
 div#instance-header {
     background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
@@ -63,6 +63,9 @@ div#instance-body {
     padding: 20px;
     outline: 1px solid #ccc;
     background: white;
+}
+tr.instance-row {
+    cursor: pointer;
 }
 
 .catalog-modal-body, .profiles-modal-body {

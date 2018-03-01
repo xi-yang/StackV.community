@@ -23,7 +23,7 @@
 
 /* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap, swal */
 // Tweens
-var tweenInstancePanel = new TweenLite("#instance-panel", .75, {ease: Power2.easeInOut, paused: true, top: "40px"});
+var tweenInstancePanel = new TweenLite("#instance-panel", .75, {ease: Power2.easeInOut, paused: true, autoAlpha: 1});
 
 var $catModal = $("#catalog-modal");
 var $profModal = $("#profiles-modal");

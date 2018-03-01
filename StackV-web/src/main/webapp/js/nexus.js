@@ -195,6 +195,16 @@ function verifyPageRoles() {
     }
 
     switch (window.location.pathname) {
+        case "/StackV-web/portal/acl/":
+            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("ACL") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "/StackV-web/portal/admin/":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
         case "/StackV-web/portal/details/":
             var uuid = sessionStorage.getItem("instance-uuid");
             var apiUrl = baseUrl + '/StackV-web/restapi/app/access/instances/' + uuid;
@@ -212,6 +222,18 @@ function verifyPageRoles() {
                 }
             });
             break;
+        case "/StackV-web/portal/driver/":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("Drivers") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "/StackV-web/portal/intent/":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("vcn") === -1
+                    && keycloak.tokenParsed.realm_access.roles.indexOf("ahc") === -1
+                    && keycloak.tokenParsed.realm_access.roles.indexOf("dnc") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
     }
 }
 
@@ -223,11 +245,6 @@ function prettyPrintInfo() {
 }
 
 //Select Function
-function aclSelect(sel) {
-    $ref = "privileges.jsp?id=" + sel.value + " #acl-tables";
-    $("#acl-tables").load($ref);
-}
-
 function installSelect(sel) {
     if (sel.value !== null) {
         $ref = "/StackV-web/portal/driver/?form_install=" + sel.value + " #service-menu";
@@ -243,21 +260,6 @@ function installSelect(sel) {
     $("#service-bottom").load($ref2);
 }
 
-function viewmodeSelect(sel) {
-    if (sel.value !== null) {
-        $ref = "/StackV-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-menu";
-        $ref2 = "/StackV-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-fields";
-    } else {
-        $ref = "/StackV-web/ops/srvc/viewcreate.jsp #service-menu";
-        $ref2 = "/StackV-web/ops/srvc/viewcreate.jsp #service-fields";
-
-    }
-    $("#service-top").load($ref);
-    $("#service-bottom").load($ref2);
-
-    clearCounters();
-}
-
 function driverSelect(sel) {
     if (sel.value !== null) {
         $ref = "/StackV-web/portal/driver/?form_install=install&driver_id=" + sel.value + " #service-fields";
@@ -267,54 +269,6 @@ function driverSelect(sel) {
 
 
     fieldCounter = 0;
-}
-
-function topoSelect(sel) {
-    if (sel.value !== null) {
-
-        if (sel.value.indexOf("aws") > -1) {
-            $ref = "/StackV-web/ops/srvc/vmadd.jsp?vm_type=aws&topo=" + sel.value + " #service-fields";
-        } else if (sel.value.indexOf("openstack") > -1) {
-            $ref = "/StackV-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
-        } else if (sel.value.indexOf("versa") > -1) {
-            $ref = "/StackV-web/ops/srvc/vmadd.jsp?vm_type=vs #service-fields";
-        } else {
-            $ref = "/StackV-web/ops/srvc/vmadd.jsp #service-fields";
-        }
-    } else
-        $ref = "/StackV-web/ops/srvc/vmadd.jsp #service-fields";
-
-    $("#service-bottom").load($ref);
-
-    clearCounters();
-}
-
-
-
-function instanceSelect(sel) {
-    if (sel.value !== null) {
-        if (sel.value === "instance1") {
-            document.getElementsByName("root-path")[0].value = "/dev/xvda";
-            document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        } else if (sel.value === "instance2") {
-            document.getElementsByName("root-path")[0].value = "/dev/sdb";
-            document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        } else if (sel.value === "instance3") {
-            document.getElementsByName("root-path")[0].value = "/dev/sdc";
-            document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        }
-    }
-}
-
-function networkSelect(sel) {
-    if (sel.value !== null) {
-        $ref2 = "/StackV-web/ops/srvc/netcreate.jsp?networkType=" + sel.value + " #service-fields";
-    } else {
-        $ref2 = "/StackV-web/ops/srvc/netcreate.jsp #service-fields";
-    }
-    $("#service-bottom").load($ref2);
-
-    clearCounters();
 }
 
 // Field Addition Functions
@@ -845,127 +799,7 @@ function deleteInstance(uuid) {
     });
 }
 
-// TEMPLATING
-
-function resetForm() {
-    var form = document.getElementById('custom-form');
-    form.reset();
-}
-
-function applyDNCTemplate(code) {
-    var form = document.getElementById('custom-form');
-    form.reset();
-
-    switch (code) {
-        case 1:
-            //form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
-            form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
-            form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
-            form.elements['link1-src-vlan'].value = '3021-3029';
-            form.elements['link1-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['link1-des-vlan'].value = '3021-3029';
-
-            break;
-        case 2:
-            if (linkCounter === 1) {
-                addLink();
-            }
-
-            form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
-            form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
-            form.elements['link1-src-vlan'].value = '3021-3029';
-            form.elements['link1-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['link1-des-vlan'].value = '3021-3029';
-            form.elements['linkUri2'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn2';
-            form.elements['link2-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
-            form.elements['link2-src-vlan'].value = '3021-3029';
-            form.elements['link2-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['link2-des-vlan'].value = '3021-3029';
-
-            break;
-        default:
-
-    }
-}
-
-function dncModerate() {
-    var superstate = document.getElementById("instance-superstate").innerHTML;
-    var substate = document.getElementById("instance-substate").innerHTML;
-
-    if (superstate === 'Create') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-cancel").toggleClass("hide");
-                break;
-
-            case 'INIT':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Cancel') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-}
-
-
-function fl2pModerate(uuid) {
-    var superstate = document.getElementById("instance-superstate").innerHTML;
-    var substate = document.getElementById("instance-substate").innerHTML;
-
-    if (superstate === 'Create') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-cancel").toggleClass("hide");
-                break;
-
-            case 'INIT':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Cancel') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Reinstate') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-reinstate").toggleClass("hide");
-                break;
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-        }
-    }
-}
-
 /* UTILITY */
-
 function getURLParameter(name) {
     return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
 }
@@ -1272,7 +1106,10 @@ function loadInstanceDataTable(apiUrl) {
         "initComplete": function (settings, json) {
             console.log('DataTables has finished its initialization.');
         },
-        "ordering": false
+        "ordering": false,
+        "pageLength": 5,
+        "scrollX": true,
+        "scrollY": "calc(60vh - 130px)"
     });
 
     $('#loggingData tbody').on('click', 'tr.instance-row', function () {
