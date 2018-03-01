@@ -208,8 +208,8 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         Resource resTopology = RdfOwl.createResource(model, topologyURI, Nml.Topology);
         
         for (Connection dc : dcClient.getConnections()) {
-            Resource resDC = RdfOwl.createResource(model, ResourceTool.getResourceUri(dc.getConnectionId(), awsPrefix.directConnectService(), dc.getConnectionId()), Nml.BidirectionalPort);
-            model.add(model.createStatement(resTopology, Nml.hasBidirectionalLink, resDC));
+            Resource resDC = RdfOwl.createResource(model, ResourceTool.getResourceUri(dc.getConnectionId(), awsPrefix.directConnect(), dc.getConnectionId()), Nml.BidirectionalPort);
+            model.add(model.createStatement(resTopology, Nml.hasBidirectionalPort, resDC));
             model.add(model.createStatement(resDC, Nml.name, dc.getConnectionId()));
             model.add(model.createStatement(resDC, Mrs.type, "direct-connect"));
             //model.add(model.createStatement(resDC, Nml.name, dc.getConnectionName()));
@@ -395,7 +395,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
             JSONObject jReq = (JSONObject) obj;
             String command = (String)jReq.get("command");
             if (command.equals("deleteDxvif")) {
-                String virtualInterfaceId = (String)jReq.get("dxvif_id");
+                String virtualInterfaceId = (String)jReq.get("dxvif");
                 DeleteVirtualInterfaceRequest interfaceRequest = new DeleteVirtualInterfaceRequest();
                 interfaceRequest.withVirtualInterfaceId(virtualInterfaceId);
                 Future<DeleteVirtualInterfaceResult> asyncResult = dcClient.getClient().deleteVirtualInterfaceAsync(interfaceRequest);
@@ -467,12 +467,11 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
                 DescribeVirtualInterfacesRequest descReq = new DescribeVirtualInterfacesRequest()
                         .withVirtualInterfaceId(result.getVirtualInterfaceId());
                 DescribeVirtualInterfacesResult virtualInterfacesResult = dcClient.getClient().describeVirtualInterfaces(descReq);
-                if (virtualInterfacesResult.getVirtualInterfaces().isEmpty()) {
-                    return;
-                }
-                String state = virtualInterfacesResult.getVirtualInterfaces().get(0).getVirtualInterfaceState();
-                if (state.equalsIgnoreCase("confirming") || state.toLowerCase().startsWith("pending")) {
-                    return;
+                if (!virtualInterfacesResult.getVirtualInterfaces().isEmpty()) {
+                    String state = virtualInterfacesResult.getVirtualInterfaces().get(0).getVirtualInterfaceState();
+                    if (state.equalsIgnoreCase("confirming") || state.toLowerCase().startsWith("pending")) {
+                        return;
+                    }
                 }
             }
             try {

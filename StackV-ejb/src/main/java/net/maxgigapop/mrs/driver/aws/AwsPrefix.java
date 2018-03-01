@@ -72,6 +72,8 @@ public class AwsPrefix {
 
     public String directConnectService() {  return defaultPrefix+":directconnect+%s";  }
 
+    public String directConnect() {  return prefix+":directconnect+%s";  }
+
     public String gateway() {  return prefix+":gateway+%s";  }
 
     public String instance() {  return prefix+":vpc+%s:subnet+%s:instance+%s";  }
@@ -106,7 +108,7 @@ public class AwsPrefix {
 
     public String vif() { return "%s:dxvif+vlan%s";  }
 
-    public String vlan() {  return defaultPrefix+":vif+%s:vlan+%s";  }
+    public String vlan() {  return prefix+":vif+%s:vlan+%s";  }
 
     public String volume() {  return prefix+":volume+%s";  }
 

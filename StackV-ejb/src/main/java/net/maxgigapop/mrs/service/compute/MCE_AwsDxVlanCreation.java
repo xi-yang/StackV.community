@@ -116,14 +116,58 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
         String method = "doCreation";
         logger.message(method, "@doCreation -> " + res);
 
+        Model unionSysModel = spaModel.union(systemModel);
+
         OntModel dxvifModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
 
-        if (!jsonStitchReq.containsKey("direct_connect") || !jsonStitchReq.containsKey("dxvif_vlan") || !jsonStitchReq.containsKey("owner_account")) {
-            throw logger.error_throwing(method, "imported incomplete JSON data: require at least direct_connect uri/id, dxvif vlan and owner account number.");
+        if ( (!jsonStitchReq.containsKey("dxvif_l2path") && 
+                (!jsonStitchReq.containsKey("direct_connect") || !jsonStitchReq.containsKey("dxvif_vlan")))
+                || !jsonStitchReq.containsKey("owner_account")) {
+            throw logger.error_throwing(method, "imported incomplete JSON data: require at least dxvif_l2path and owner_account or direct_connect, dxvif_vlan and owner_account.");
         }
-        String dxConn = (String) jsonStitchReq.get("direct_connect");
-        String dxVifVlan = (String) jsonStitchReq.get("dxvif_vlan");
-
+        String dxConn = null;
+        String dxVifVlan = null;
+        Resource resDxvif = null;
+        Resource resDxvifLabel = null;
+        boolean vlanProvided;
+        if (jsonStitchReq.containsKey("dxvif_l2path")) {
+            vlanProvided = false;
+            JSONArray stitchToPath = (JSONArray) jsonStitchReq.get("dxvif_l2path");
+            if (stitchToPath.isEmpty()) {
+                throw logger.error_throwing(method, String.format("cannot parse JSON data 'dxvif_l2path': %s", stitchToPath));
+            }
+            for (Object obj : stitchToPath) {
+                JSONObject jsonObj = (JSONObject) obj;
+                if (!jsonObj.containsKey("hop")) {
+                    throw logger.error_throwing(method, String.format("cannot parse JSON data 'dxvif_l2path': %s - invalid hop: %s", stitchToPath, jsonObj.toJSONString()));
+                }
+                String hopUri = (String) jsonObj.get("hop");
+                // find a port profile that the hop connects to via a VLAN
+                String sparql = "SELECT DISTINCT ?dxconn ?dxvif ?label ?dxvif_vlan WHERE {"
+                        + "?dxconn mrs:type \"direct-connect\" . "
+                        + "?dxconn nml:hasBidirectionalPort ?dxvif. "
+                        + "?dxvif nml:hasLabel ?label. "
+                        + "?label nml:value ?dxvif_vlan. "
+                        + String.format("FILTER (?dxvif = <%s>) ", hopUri)
+                        + "}";
+                ResultSet r = ModelUtil.sparqlQuery(unionSysModel, sparql);
+                if (r.hasNext()) {
+                    QuerySolution q = r.nextSolution();
+                    dxConn = q.get("dxconn").asResource().getURI();
+                    dxVifVlan = q.get("dxvif_vlan").asLiteral().getString();
+                    resDxvif = q.get("dxvif").asResource();
+                    resDxvifLabel = q.get("label").asResource();
+                    break;
+                }
+            }
+            if (resDxvif == null) {
+                throw logger.error_throwing(method, String.format("cannot extract dxvif VLAN from 'dxvif_l2path': %s ", stitchToPath));
+            }
+        } else {
+            vlanProvided = true;
+            dxConn = (String) jsonStitchReq.get("direct_connect");
+            dxVifVlan = (String) jsonStitchReq.get("dxvif_vlan");
+        }
         // find dxConn URI if given namd/ID
         if (!dxConn.startsWith("urn:")) {
             String sparql = "SELECT DISTINCT ?dxconn WHERE {"
@@ -155,8 +199,6 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
         } catch (TagSet.InvalidVlanRangeExeption ex) {
             throw logger.error_throwing(method, "Malformed VLAN range [" + dxConnVlanRange + "] for DirectConnect:" + dxConn);
         }
-
-        Model unionSysModel = spaModel.union(systemModel);
 
         // sparql for allocated VLANs
         sparql = "SELECT DISTINCT ?dxvif ?vlan WHERE {"
@@ -199,7 +241,7 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
             }
             // pick random to rewrite dxVifVlan
             dxVifVlan = Integer.toString(vlanRange.getRandom());
-        } else { // verify availability of the assumed single given VLAN 
+        } else if (vlanProvided) { // verify availability of the assumed single VLAN if provided as JSON intent input
             Integer vlan;
             try {
                 vlan = Integer.parseInt(dxVifVlan);
@@ -210,9 +252,13 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
                 throw logger.error_throwing(method, "VLAN " + dxVifVlan + " is not available for DirectConnect:" + dxConn);
             }
         }
-
-        Resource resDxvif = RdfOwl.createResource(dxvifModel, String.format("%s:dxvif+vlan%s", dxConn, dxVifVlan), Nml.BidirectionalPort);
-        dxvifModel.add(dxvifModel.createStatement(resDC, Nml.hasBidirectionalPort, resDxvif));
+        if (vlanProvided) {
+            resDxvif = RdfOwl.createResource(dxvifModel, String.format("%s:dxvif+vlan%s", dxConn, dxVifVlan), Nml.BidirectionalPort);
+            dxvifModel.add(dxvifModel.createStatement(resDC, Nml.hasBidirectionalPort, resDxvif));
+        } else {
+            spaModel.remove(resDxvif, Nml.hasLabel, resDxvifLabel);
+            spaModel.removeAll(resDxvif, null, null);
+        }
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.type, "direct-connect-vif"));
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.value, "direct-connect-vif+private"));
         Resource resVirtualIfVG = RdfOwl.createResource(dxvifModel, String.format("%s:labelgroup+%s", resDxvif.getURI(), dxVifVlan), Nml.LabelGroup);
