@@ -65,8 +65,6 @@ public class GcpQuery {
                     uriNames.put(metadata.get(key), name);
                 } else {
                     //System.out.printf("vpc %s has no uri entry\n", name);
-                    
-                    
                 }
             
                 JSONArray subnetsInfo = (JSONArray) vpcInfo.get("subnetworks");
@@ -186,7 +184,6 @@ public class GcpQuery {
                 }
                 
                 nics.add(nicInfo);
-                //System.out.printf("found nic: %s\n", nicInfo);
             }
             
             if (nics.isEmpty()) {
@@ -214,7 +211,6 @@ public class GcpQuery {
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(instanceUri, instanceName);
             
-            //System.out.printf("CREATE INSTANCE REQUEST: %s\n", instanceRequest);
             output.add(instanceRequest);
         }
         
@@ -241,7 +237,6 @@ public class GcpQuery {
             instanceRequest.put("name", name);
             instanceRequest.put("zone", zone);
             
-            //System.out.printf("DELETE INSTANCE REQUEST: %s\n", instanceRequest);
             output.add(instanceRequest);
         }
         
@@ -295,7 +290,6 @@ public class GcpQuery {
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(subnetUri, subnetName);
             subnetRegions.put(subnetUri, subnetRegion);
-            //System.out.printf("CREATE SUBNET REQUEST: %s\n", subnetRequest);
             output.add(subnetRequest);
         }
         
@@ -329,7 +323,6 @@ public class GcpQuery {
             subnetRequest.put("region", region);
             subnetRequest.put("name", name);
             
-            //System.out.printf("DELETE SUBNET REQUEST: %s\n", subnetRequest);
             output.add(subnetRequest);
         }
         
@@ -360,7 +353,6 @@ public class GcpQuery {
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(vpcUri, vpcName);
             
-            //System.out.printf("CREATE VPC REQUEST: %s\n", vpcRequest);
             output.add(vpcRequest);
             
             //Every vpc has this firewall rule. Only instances with the allow-all tag will follow this rule
@@ -393,7 +385,6 @@ public class GcpQuery {
                 logger.warning(method, "Error: solution without vpc");
                 continue;
             }
-            //System.out.printf("solution: %s\n", solution);
             String uri = solution.get("vpc").toString();
             String name = uriNames.get(uri);
             vpcRequest.put("type", "delete_vpc");
@@ -422,7 +413,6 @@ public class GcpQuery {
                 }
             }
             
-            //System.out.printf("DELETE VPC REQUEST: %s\n", vpcRequest);
             output.add(vpcRequest);
         }
         
@@ -446,7 +436,6 @@ public class GcpQuery {
             bucketRequest.put("name", name);
             bucketRequest.put("uri", uri);
             
-            //System.out.printf("CREATE BUCKET REQUEST: %s\n", bucketRequest);
             output.add(bucketRequest);
         }
         
@@ -468,7 +457,6 @@ public class GcpQuery {
             bucketRequest.put("type", "delete_bucket");
             bucketRequest.put("name", name);
             
-            //System.out.printf("DELETE BUCKET REQUEST: %s\n", bucketRequest);
             output.add(bucketRequest);
         }
         return output;
@@ -519,7 +507,7 @@ public class GcpQuery {
             vpnRequest.put("type", "create_vpn");
             vpnRequest.put("vgwUri", vgwUri);
             vpnRequest.put("tunnelUri", tunnelUri);
-            vpnRequest.put("region", defaultRegion); //region will eventually be retrieved from vgw
+            vpnRequest.put("region", defaultRegion);
             vpnRequest.put("name", vpnName);
             vpnRequest.put("vpc", vpcName);
             vpnRequest.put("peerIP", peerIP);
@@ -527,8 +515,6 @@ public class GcpQuery {
             
             output.add(vpnRequest);
         }
-        
-        //System.out.println(output);
         return output;
     }
     

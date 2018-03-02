@@ -625,12 +625,11 @@ public class GcpPush {
             output.put(GcpModelBuilder.getResourceKey("vgw", vpnRegion, vgwName), vgwUri);
             output.put(GcpModelBuilder.getResourceKey("vpn", vpnRegion, tunnelName), tunnelUri);
             
-            
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: "+e.toString());
         }
         
-        return null;
+        return output;
     }
     
     public HashSet<String> deleteVpnConnection(JSONObject requestInfo) {
