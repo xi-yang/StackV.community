@@ -79,7 +79,7 @@ tr.instance-row {
 }
 .catalog-modal-body .list-group, .profiles-modal-body .list-group {
     cursor: pointer;
-    max-height: 600px;
+    max-height: 65vh;
     overflow: scroll;
 }
 
