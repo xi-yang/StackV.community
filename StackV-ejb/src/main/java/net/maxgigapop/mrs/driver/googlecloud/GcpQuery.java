@@ -535,7 +535,7 @@ public class GcpQuery {
     public ArrayList<JSONObject> deleteVpnConnectionRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "createVpnConnectionRequests";
-        String query = "SELECT ?vgw WHERE {\n"
+        String query = "SELECT ?vgw ?tunnel WHERE {\n"
                 + "?vpc nml:hasBidirectionalPort ?vgw .\n"
                 + "?vgw a nml:BidirectionalPort ; \n"
                 + "nml:hasBidirectionalPort ?tunnel .\n"
@@ -549,12 +549,14 @@ public class GcpQuery {
             QuerySolution q = r.next();
             JSONObject vpnRequest = new JSONObject();
             
-            String uri = q.get("vgw").toString();
-            String name = uriNames.get(uri);
+            String vgwUri = q.get("vgw").toString();
+            String tunnelUri = q.get("tunnel").toString();
+            String vgwName = uriNames.get(vgwUri);
+            String tunnelName = uriNames.get(tunnelUri);
             
             vpnRequest.put("type", "delete_vpn");
-            vpnRequest.put("uri", uri);
-            vpnRequest.put("name", name);
+            vpnRequest.put("vgwName", vgwName);
+            vpnRequest.put("tunnelName", tunnelName);
             vpnRequest.put("region", defaultRegion);
             
             output.add(vpnRequest);

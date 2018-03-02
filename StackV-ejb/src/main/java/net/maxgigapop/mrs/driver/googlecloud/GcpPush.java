@@ -549,50 +549,51 @@ public class GcpPush {
     
     private HashMap<String, String> createVpnConnection(JSONObject requestInfo) {
         String method = "createVpnConnection";
-        String missingArgs = checkArgs(requestInfo, "name", "uri", "vpc", "peerIP", "peerCIDR");
+        String missingArgs = checkArgs(requestInfo, "name", "vgwUri", "tunnelUri", "vpc", "peerIP", "peerCIDR");
         HashMap<String, String> output = new HashMap<>();
         if (missingArgs != null) {
             logger.warning(method, missingArgs);
             return null;
         }
         
-        String vpnName = requestInfo.get("name").toString();
-        String vpnUri = requestInfo.get("uri").toString();
+        String vgwName = requestInfo.get("name").toString();
+        String vgwUri = requestInfo.get("vgwUri").toString();
+        String tunnelUri = requestInfo.get("tunnelUri").toString();
         String vpnRegion = requestInfo.get("region").toString();
-        String vpnIP; //defined later
+        String vpnIP;
         String vpcName = requestInfo.get("vpc").toString();
         String vpcFormat = "projects/%s/global/networks/%s";
         String vpcUri = String.format(vpcFormat, projectID, vpcName); //Not a MAX but a google uri
-        String tunnelName = vpnName+"-tunnel";
+        String tunnelName = vgwName+"-tunnel";
         String peerIP = requestInfo.get("peerIP").toString();
         String peerCIDR = requestInfo.get("peerCIDR").toString(); 
         
         try {
             Address googleIP = new Address();
-            googleIP.setName(vpnName+"-ip");
+            googleIP.setName(vgwName+"-ip");
             HttpRequest request = gcpGet.getComputeClient().addresses().insert(projectID, vpnRegion, googleIP).buildHttpRequest();
             gcpGet.makeRequest(request);
-            vpnIP = gcpGet.getComputeClient().addresses().get(projectID, vpnRegion, vpnName+"-ip").execute().getAddress();
+            vpnIP = gcpGet.getComputeClient().addresses().get(projectID, vpnRegion, vgwName+"-ip").execute().getAddress();
             
             TargetVpnGateway tvgw = new TargetVpnGateway();
-            tvgw.setName(vpnName).setNetwork(vpcUri);
+            tvgw.setName(vgwName).setNetwork(vpcUri);
             
             ForwardingRule rule;
             ForwardingRule[] rules = new ForwardingRule[3];
             
             rule = new ForwardingRule();
-            rule.setIPProtocol("ESP").setIPAddress(vpnIP).setName(vpnName + "-rule-esp")
-            	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vpnName);
+            rule.setIPProtocol("ESP").setIPAddress(vpnIP).setName(vgwName + "-rule-esp")
+            	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vgwName);
             rules[0] = rule;
             
             rule = new ForwardingRule();
-            rule.setIPProtocol("UDP").setIPAddress(vpnIP).setName(vpnName + "-rule-udp500").setPortRange("500-500")
-            	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vpnName);
+            rule.setIPProtocol("UDP").setIPAddress(vpnIP).setName(vgwName + "-rule-udp500").setPortRange("500-500")
+            	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vgwName);
             rules[1] = rule;
             
             rule = new ForwardingRule();
-            rule.setIPProtocol("UDP").setIPAddress(vpnIP).setName(vpnName + "-rule-udp4500").setPortRange("4500-4500")
-            	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vpnName);
+            rule.setIPProtocol("UDP").setIPAddress(vpnIP).setName(vgwName + "-rule-udp4500").setPortRange("4500-4500")
+            	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vgwName);
             rules[2] = rule;
             
             //*
@@ -600,11 +601,11 @@ public class GcpPush {
             vpnTunnel.setName(tunnelName)
             .setPeerIp(peerIP)//.setLocalTrafficSelector()
             .setSharedSecret("abc123")
-            .setTargetVpnGateway("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vpnName);
+            .setTargetVpnGateway("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vgwName);
             //*/
             
             Route route = new Route();
-            route.setDestRange(peerCIDR).setName(vpnName+"-route").setNetwork(vpcUri)
+            route.setDestRange(peerCIDR).setName(vgwName+"-route").setNetwork(vpcUri)
             	.setNextHopVpnTunnel("projects/stackv-devel/regions/"+vpnRegion+"/vpnTunnels/"+tunnelName);
             
             request = gcpGet.getComputeClient().targetVpnGateways().insert(projectID, vpnRegion, tvgw).buildHttpRequest();
@@ -621,7 +622,9 @@ public class GcpPush {
             request = gcpGet.getComputeClient().routes().insert(projectID, route).buildHttpRequest();
             gcpGet.makeRequest(request);
             
-            output.put(GcpModelBuilder.getResourceKey("vpn", vpnRegion, vpnName), vpnUri);
+            output.put(GcpModelBuilder.getResourceKey("vgw", vpnRegion, vgwName), vgwUri);
+            output.put(GcpModelBuilder.getResourceKey("vpn", vpnRegion, tunnelName), tunnelUri);
+            
             
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: "+e.toString());
@@ -632,22 +635,23 @@ public class GcpPush {
     
     public HashSet<String> deleteVpnConnection(JSONObject requestInfo) {
         String method = "deleteVpnConnection";
-        String missingArgs = checkArgs(requestInfo, "name", "region");
+        String missingArgs = checkArgs(requestInfo, "vgwName", "tunnelName", "region");
         HashSet<String> output = new HashSet<>();
         if (missingArgs != null) {
             logger.warning(method, missingArgs);
             return null;
         }
         
-        String name = requestInfo.get("name").toString();
+        String vgwName = requestInfo.get("vgwName").toString();
+        String tunnelName = requestInfo.get("tunnelName").toString();
         String region = requestInfo.get("region").toString();
         String [] rules = new String[3];
-        rules[0] = name + "-rule-esp";
-        rules[1] = name + "-rule-udp500";
-        rules[2] = name + "-rule-udpp4500";
+        rules[0] = vgwName + "-rule-esp";
+        rules[1] = vgwName + "-rule-udp500";
+        rules[2] = vgwName + "-rule-udpp4500";
         
         try {
-            HttpRequest request = gcpGet.getComputeClient().vpnTunnels().delete(projectID, region, name).buildHttpRequest();
+            HttpRequest request = gcpGet.getComputeClient().vpnTunnels().delete(projectID, region, tunnelName).buildHttpRequest();
             gcpGet.makeRequest(request);
             
             for (String s : rules) {
@@ -655,16 +659,18 @@ public class GcpPush {
                 gcpGet.makeRequest(request);
             }
             
-            request = gcpGet.getComputeClient().targetVpnGateways().delete(projectID, region, name).buildHttpRequest();
+            request = gcpGet.getComputeClient().targetVpnGateways().delete(projectID, region, vgwName).buildHttpRequest();
             waitRequest(request);
             
-            request = gcpGet.getComputeClient().addresses().delete(projectID, region, name+"-ip").buildHttpRequest();
+            request = gcpGet.getComputeClient().addresses().delete(projectID, region, vgwName+"-ip").buildHttpRequest();
             gcpGet.makeRequest(request);
             
-            request = gcpGet.getComputeClient().routes().delete(projectID, name+"-route").buildHttpRequest();
+            request = gcpGet.getComputeClient().routes().delete(projectID, vgwName+"-route").buildHttpRequest();
             gcpGet.makeRequest(request);
             
-            output.add(GcpModelBuilder.getResourceKey("vpn", region, name));
+            //remove both uris from metadata table
+            output.add(GcpModelBuilder.getResourceKey("vgw", region, vgwName));
+            output.add(GcpModelBuilder.getResourceKey("vpn", region, tunnelName));
             
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: "+e.toString());
