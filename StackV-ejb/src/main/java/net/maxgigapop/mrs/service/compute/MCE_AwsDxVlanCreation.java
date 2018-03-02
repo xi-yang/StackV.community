@@ -47,6 +47,7 @@ import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TagSet;
+import net.maxgigapop.mrs.driver.aws.AwsPrefix;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -116,7 +117,7 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
     private OntModel doCreation(OntModel systemModel, OntModel spaModel, Resource res, JSONObject jsonStitchReq) {
         String method = "doCreation";
         logger.message(method, "@doCreation -> " + res);
-
+        
         Model unionSysModel = spaModel.union(systemModel);
 
         OntModel dxvifModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -254,20 +255,20 @@ public class MCE_AwsDxVlanCreation extends MCEBase {
             }
         }
         if (vlanProvided) {
-            resDxvif = RdfOwl.createResource(dxvifModel, String.format("%s:dxvif+vlan%s", dxConn, dxVifVlan), Nml.BidirectionalPort);
+            resDxvif = RdfOwl.createResource(dxvifModel, String.format(AwsPrefix.vif(), dxConn, dxVifVlan), Nml.BidirectionalPort);
             dxvifModel.add(dxvifModel.createStatement(resDC, Nml.hasBidirectionalPort, resDxvif));
         } else {
             spaModel.remove(resDxvif, Nml.hasLabel, resDxvifLabel);
             spaModel.removeAll(resDxvif, null, null);
             // add label to DC level - conforming with :vlanport+NUM format
-            Resource resVlanLabel = RdfOwl.createResource(dxvifModel, String.format("%s:dxvif+vlan%s:label+%s", resDC.getURI(), dxVifVlan, dxVifVlan), Nml.Label);
+            Resource resVlanLabel = RdfOwl.createResource(dxvifModel, String.format(AwsPrefix.label(), resDC.getURI(), dxVifVlan, dxVifVlan), Nml.Label);
             dxvifModel.add(dxvifModel.createStatement(resVlanLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
             dxvifModel.add(dxvifModel.createStatement(resVlanLabel, Nml.values, dxVifVlan));
             dxvifModel.add(dxvifModel.createStatement(resDC, Nml.hasLabel, resVlanLabel));
         }
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.type, "direct-connect-vif"));
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Mrs.value, "direct-connect-vif+private"));
-        Resource resVirtualIfVG = RdfOwl.createResource(dxvifModel, String.format("%s:labelgroup+%s", resDxvif.getURI(), dxVifVlan), Nml.LabelGroup);
+        Resource resVirtualIfVG = RdfOwl.createResource(dxvifModel, String.format(AwsPrefix.labelGroup(), resDxvif.getURI(), dxVifVlan), Nml.LabelGroup);
         dxvifModel.add(dxvifModel.createStatement(resVirtualIfVG, Nml.labeltype, RdfOwl.labelTypeVLAN));
         dxvifModel.add(dxvifModel.createStatement(resVirtualIfVG, Nml.values, dxVifVlan));
         dxvifModel.add(dxvifModel.createStatement(resDxvif, Nml.hasLabelGroup, resVirtualIfVG));

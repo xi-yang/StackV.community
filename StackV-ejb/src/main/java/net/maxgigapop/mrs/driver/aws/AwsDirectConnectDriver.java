@@ -49,8 +49,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
@@ -201,7 +199,6 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         return new AsyncResult<>("SUCCESS");
     }
     
-    //@TODO: make dxvif / labelgroup etc format the same as from MCE_L2path (update awsPrefix?)
     private OntModel createOntology(AwsDCGet dcClient, String topologyURI, String defaultVlanRange) throws IOException {
         AwsPrefix awsPrefix = new AwsPrefix(topologyURI);
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -347,8 +344,16 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
             QuerySolution q2 = r2.next();
             String dxVifId = q2.get("dxvif_id").asLiteral().getString();
             jsonReq.put("dxvif", dxVifId);
-            //@TODO: check if dxvif id has already been added
-            jsonRequests.add(jsonReq);
+            // check if dxvif id has already been added
+            for (Object obj: jsonRequests) {
+                if (((JSONObject)obj).containsKey("dxvif") && dxVifId.equals(((JSONObject)obj).get("dxvif"))) {
+                    jsonReq = null;
+                    break;
+                }
+            }
+            if (jsonReq != null) {
+                jsonRequests.add(jsonReq);
+            }
         }
         // add DirectConnect virtual interface
         query = "SELECT DISTINCT ?dxconn ?dxvif_vlan ?customer_acct ?customer_asn ?customer_ip ?amazon_ip ?bgp_authkey WHERE {"

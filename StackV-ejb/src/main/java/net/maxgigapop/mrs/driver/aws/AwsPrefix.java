@@ -35,11 +35,11 @@ public class AwsPrefix {
 
     Logger log = Logger.getLogger(AwsDriver.class.getName());
 
-    AwsPrefix () {
+    public AwsPrefix () {
         prefix = defaultPrefix;
     }
     
-    AwsPrefix (String uri) {
+    public AwsPrefix (String uri) {
         setTopologyPrefix(uri);
     }
     
@@ -113,10 +113,10 @@ public class AwsPrefix {
     public String vpn() {  return prefix+":vpn+%s";  }
     
     // DirectConnect related
-    public String vif() { return "%s:dxvif+vlan%s";  }
+    static public String vif() { return "%s:vlanport+%s";  }
 
-    public String label() { return "%s:label+%s";  }
+    static public String label() { return "%s:label+%s";  }
 
-    public String labelGroup() { return "%s:labelgroup+%s";  }
+    static public String labelGroup() { return "%s:labelgroup+%s";  }
 
 }
