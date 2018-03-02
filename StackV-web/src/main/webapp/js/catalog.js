@@ -36,42 +36,63 @@ Mousetrap.bind({
         window.location.href = "/StackV-web/portal/details/";
     },
     'space': function () {
-        // Toggle catalog modal
-        switch ($catModal.iziModal('getState')) {
-            case "closed":
-                switch ($profModal.iziModal('getState')) {
-                    case "closed":
-                        $catModal.iziModal('open');
-                        break;
-                    case "opened":
-                        $profModal.iziModal('prev');
-                        break;
-                }
-                break;
-            case "opened":
-                $catModal.iziModal('close');
-                break;
-        }
+        toggleModal('catalog');
     },
     'shift+space': function () {
-        // Toggle profile modal
-        switch ($catModal.iziModal('getState')) {
-            case "closed":
-                switch ($profModal.iziModal('getState')) {
-                    case "closed":
-                        $profModal.iziModal('open');
-                        break;
-                    case "opened":
-                        $profModal.iziModal('close');
-                        break;
-                }
-                break;
-            case "opened":
-                $catModal.iziModal('next');
-                break;
-        }
+        toggleModal('profile');
     }
 });
+function toggleModal(modalName) {
+    switch (modalName) {
+        case "catalog":
+            // Toggle catalog modal
+            switch ($catModal.iziModal('getState')) {
+                case "opened":
+                    $catModal.iziModal('close');
+                    break;
+                case "closed":
+                    switch ($profModal.iziModal('getState')) {
+                        case "closed":
+                            $catModal.iziModal('open');
+                            break;
+                        case "opened":
+                            $profModal.iziModal('prev');
+                            break;
+                    }
+                    break;
+                default:
+                    switch ($profModal.iziModal('getState')) {
+                        case "closed":
+                            $profModal.iziModal('open');
+                            break;
+                        case "opened":
+                            $profModal.iziModal('close');
+                            break;
+                    }
+                    break;
+            }
+            break;
+        case "profile":
+            // Toggle profile modal
+            switch ($catModal.iziModal('getState')) {
+                case "opened":
+                    $catModal.iziModal('next');
+                    break;
+                case "closed":
+                default:
+                    switch ($profModal.iziModal('getState')) {
+                        case "closed":
+                            $profModal.iziModal('open');
+                            break;
+                        case "opened":
+                            $profModal.iziModal('close');
+                            break;
+                    }
+                    break;
+            }
+            break;
+    }
+}
 
 function loadCatalog() {
     loadInstances();
@@ -79,6 +100,12 @@ function loadCatalog() {
 
     loadSystemHealthCheck();
     tweenInstancePanel.play();
+    
+    $(".button-service-create").click(function (evt) {
+        evt.preventDefault();
+        
+        toggleModal("catalog"); 
+   });
 }
 function loadCatalogNavbar() {
     $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
@@ -91,6 +118,16 @@ function loadInstances() {
     loadInstanceDataTable(apiUrl);
 }
 
+var catCount = 0;
+var catConfig = {
+    width: 750,
+    group: "cat"
+};
+var profCount = 0;
+var profConfig = {
+    width: 750,
+    group: "cat"
+};
 function loadModals() {
     // Initialize
     $("#catalog-modal").html('<div class="catalog-modal-body">' +
@@ -104,14 +141,8 @@ function loadModals() {
             '<hr><button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button>' +
             '</div>');
 
-    $catModal.iziModal({
-        width: 750,
-        group: "cat"
-    });
-    $profModal.iziModal({
-        width: 750,
-        group: "cat"
-    });
+    $catModal.iziModal(catConfig);
+    $profModal.iziModal(profConfig);
 
     // Load service metadata. 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/editor';
@@ -139,11 +170,14 @@ function loadModals() {
                 }
 
                 $("#catalog-modal-service-meta").append($service);
+                catCount++;
             }
 
             $("#catalog-modal-service-meta").on("click", "a", function (evt) {
                 window.location.href = "/StackV-web/portal/intent?intent=" + $(this).data("tag");
             });
+
+            moderateModals();
         }
     });
 
@@ -201,6 +235,7 @@ function loadModals() {
                 // ***
 
                 $("#profiles-modal-service-meta").append($profile);
+                profCount++;
             }
 
             $("#profiles-modal-service-meta").on("click", "a", function (evt) {
@@ -428,6 +463,8 @@ function loadModals() {
 }
 function reloadModals() {
     // Load service metadata. 
+    catCount = 0, profCount = 0;
+
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/editor';
     $.ajax({
         url: apiUrl,
@@ -454,6 +491,7 @@ function reloadModals() {
                 }
 
                 $("#catalog-modal-service-meta").append($service);
+                catCount++;
             }
         }
     });
@@ -512,10 +550,27 @@ function reloadModals() {
                 // ***
 
                 $("#profiles-modal-service-meta").append($profile);
+                profCount++;
             }
         }
     });
 }
+
+function moderateModals() {
+    // Check if catalog modal has been destroyed.
+    if (typeof $catModal.iziModal('getState') === "object") {
+        // Check if it requires reconstruction.
+        if (catCount > 0) {
+            $catModal.iziModal(catConfig);
+        }
+    } else {
+        // Check if it requires destruction.
+        if (catCount === 0) {
+            $catModal.iziModal('destroy');
+        }
+    }
+}
+
 function isJSONString(str) {
     try {
         JSON.parse(str);
