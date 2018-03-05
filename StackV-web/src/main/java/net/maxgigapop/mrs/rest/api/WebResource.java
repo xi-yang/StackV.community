@@ -2715,7 +2715,7 @@ public class WebResource {
                 logger.trace_start(method);
                 front_conn = factory.getConnection("frontend");
 
-                prep = front_conn.prepareStatement("SELECT wizard_json, owner, editable, licenses FROM service_wizard WHERE service_wizard_id = ?");
+                prep = front_conn.prepareStatement("SELECT wizard_json, owner, editable, licenses, authorized FROM service_wizard WHERE service_wizard_id = ?");
                 prep.setInt(1, wizardID);
                 rs = prep.executeQuery();
                 while (rs.next()) {
@@ -2725,6 +2725,7 @@ public class WebResource {
                     profJSON.put("owner", rs.getString("owner"));
                     profJSON.put("editable", rs.getString("editable"));
                     profJSON.put("licenses", rs.getString("licenses"));
+                    profJSON.put("licenses", rs.getString("authorized"));
 
                     return profJSON.toJSONString();
                 }
@@ -2782,7 +2783,7 @@ public class WebResource {
             commonsClose(front_conn, prep, rs);
         }
     }
-    
+
     /**
      * @api {put} /app/profile/:wizardID/edit/licenses Modify Profile
      * @apiVersion 1.0.0
@@ -2865,13 +2866,16 @@ public class WebResource {
             }
             String inputDataString = inputData.toJSONString();
 
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (owner, name, wizard_json, description, editable, licenses) VALUES (?, ?, ?, ?, ?, ?)");
+            int authorized = (verifyUserRole("admin")) ? 1 : 0;
+            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
+                    + "(owner, name, wizard_json, description, editable, authorized, licenses) VALUES (?, ?, ?, ?, ?, ?, ?)");
             prep.setString(1, username);
             prep.setString(2, name);
             prep.setString(3, inputDataString);
             prep.setString(4, description);
             prep.setInt(5, 0);
-            prep.setString(6, licenses);
+            prep.setInt(6, authorized);
+            prep.setString(7, licenses);
             prep.executeUpdate();
 
             logger.end(method);
@@ -2935,9 +2939,12 @@ public class WebResource {
     @Path(value = "/profile")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("Profiles-E")
-    public String executeProfile(final String inputString) throws SQLException, IOException, ParseException, InterruptedException {
+    public void executeProfile(final String inputString) throws SQLException, IOException, ParseException, InterruptedException {
         final String method = "executeProfile";
         logger.start(method);
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;        
         try {
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
@@ -2953,59 +2960,70 @@ public class WebResource {
             Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
             String username = accessToken.getPreferredUsername();
 
-            // Instance Creation
-            final String refUUID;
-            try {
-                URL url = new URL(String.format("%s/service/instance", host));
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
-            } catch (IOException ex) {
-                logger.catching("doCreateService", ex);
-                throw ex;
+            front_conn = factory.getConnection("frontend");
+            int profileAuthorized = 0;
+            prep = front_conn.prepareStatement("SELECT authorized FROM service_wizard WHERE service_wizard_id = ?");
+            prep.setString(1, (String) inputJSON.get("profileID"));
+            rs = prep.executeQuery();
+            while (rs.next()) {
+                profileAuthorized = rs.getInt(1);
             }
-
-            inputJSON.remove("username");
-            inputJSON.put("username", username);
-            inputJSON.put("uuid", refUUID);
-            ((JSONObject) inputJSON.get("data")).put("uuid", refUUID);
-
-            String sync = (String) inputJSON.get("synchronous");
-            String proceed = (String) inputJSON.get("proceed");
-            if (sync != null && sync.equals("true")) {
-                if (proceed != null && proceed.equals("true")) {
-                    doCreateService(inputJSON, token, refUUID, true);
-                } else {
-                    doCreateService(inputJSON, token, refUUID, false);
+                        
+            if (roleSet.contains(serviceType) || profileAuthorized == 1) {
+                // Instance Creation
+                final String refUUID;
+                try {
+                    URL url = new URL(String.format("%s/service/instance", host));
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
+                } catch (IOException ex) {
+                    logger.catching("doCreateService", ex);
+                    throw ex;
                 }
-            } else if (proceed != null && proceed.equals("true")) {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            doCreateService(inputJSON, token, refUUID, true);
-                        } catch (SQLException | EJBException | IOException | InterruptedException ex) {
-                            logger.catching(method, ex);
-                        }
+
+                inputJSON.remove("username");
+                inputJSON.put("username", username);
+                inputJSON.put("uuid", refUUID);
+                ((JSONObject) inputJSON.get("data")).put("uuid", refUUID);
+
+                String sync = (String) inputJSON.get("synchronous");
+                String proceed = (String) inputJSON.get("proceed");
+                if (sync != null && sync.equals("true")) {
+                    if (proceed != null && proceed.equals("true")) {
+                        doCreateService(inputJSON, token, refUUID, true);
+                    } else {
+                        doCreateService(inputJSON, token, refUUID, false);
                     }
-                });
-            } else {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            doCreateService(inputJSON, token, refUUID, false);
-                        } catch (SQLException | EJBException | IOException | InterruptedException ex) {
-                            logger.catching(method, ex);
+                } else if (proceed != null && proceed.equals("true")) {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                doCreateService(inputJSON, token, refUUID, true);
+                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
+                                logger.catching(method, ex);
+                            }
                         }
-                    }
-                });
+                    });
+                } else {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                doCreateService(inputJSON, token, refUUID, false);
+                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
+                                logger.catching(method, ex);
+                            }
+                        }
+                    });
+                }
             }
 
             logger.end(method);
-            return refUUID;
         } catch (ParseException ex) {
             logger.catching(method, ex);
-            return null;
+        } finally {
+            commonsClose(front_conn, prep, rs);
         }
     }
 

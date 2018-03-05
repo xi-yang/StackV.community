@@ -365,6 +365,7 @@ function loadModals() {
                             manifest["uuid"] = result;
                             manifest["data"]["uuid"] = result;
                             manifest["data"]["options"] = manifest["options"];
+                            manifest["profileID"] = $(".button-profile-submit").attr('id');
 
                             manifest['proceed'] = "true";
                             var apiUrl = baseUrl + '/StackV-web/restapi/app/profile';

@@ -223,14 +223,14 @@ function verifyPageRoles() {
             });
             break;
         case "/StackV-web/portal/driver/":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("Drivers") === -1) {
+            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("Drivers") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
         case "/StackV-web/portal/intent/":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("vcn") === -1
-                    && keycloak.tokenParsed.realm_access.roles.indexOf("ahc") === -1
-                    && keycloak.tokenParsed.realm_access.roles.indexOf("dnc") === -1) {
+            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("vcn") === -1
+                    && keycloak.tokenParsed.resource_access.StackV.roles.indexOf("ahc") === -1
+                    && keycloak.tokenParsed.resource_access.StackV.roles.indexOf("dnc") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
