@@ -2715,7 +2715,7 @@ public class WebResource {
                 logger.trace_start(method);
                 front_conn = factory.getConnection("frontend");
 
-                prep = front_conn.prepareStatement("SELECT wizard_json, owner, editable FROM service_wizard WHERE service_wizard_id = ?");
+                prep = front_conn.prepareStatement("SELECT wizard_json, owner, editable, licenses FROM service_wizard WHERE service_wizard_id = ?");
                 prep.setInt(1, wizardID);
                 rs = prep.executeQuery();
                 while (rs.next()) {
@@ -2724,6 +2724,7 @@ public class WebResource {
                     profJSON.put("wizard_json", rs.getString("wizard_json"));
                     profJSON.put("owner", rs.getString("owner"));
                     profJSON.put("editable", rs.getString("editable"));
+                    profJSON.put("licenses", rs.getString("licenses"));
 
                     return profJSON.toJSONString();
                 }
@@ -2763,7 +2764,7 @@ public class WebResource {
         String method = "editProfile";
         try {
             if (verifyAccess("profiles", wizardID)) {
-                logger.start(method);
+                logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
                 // TODO: Sanitize the input!
@@ -2773,7 +2774,49 @@ public class WebResource {
                 prep.setInt(3, wizardID);
                 prep.executeUpdate();
             }
-            logger.end(method);
+            logger.trace_end(method);
+        } catch (SQLException ex) {
+            logger.catching("editProfile", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+    
+    /**
+     * @api {put} /app/profile/:wizardID/edit/licenses Modify Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Modify the specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
+    @PUT
+    @Path("/profile/{wizardID}/edit/licenses")
+    @RolesAllowed("Profiles-W")
+    public void editProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "editProfile";
+        try {
+            if (verifyAccess("profiles", wizardID)) {
+                logger.trace_start(method);
+                // Connect to the DB
+                front_conn = factory.getConnection("frontend");
+                // TODO: Sanitize the input!
+                prep = front_conn.prepareStatement("UPDATE service_wizard SET licenses = ? WHERE service_wizard_id = ? ");
+                prep.setString(1, inputString);
+                prep.setInt(2, wizardID);
+                prep.executeUpdate();
+            }
+            logger.trace_end(method);
         } catch (SQLException ex) {
             logger.catching("editProfile", ex);
             throw ex;

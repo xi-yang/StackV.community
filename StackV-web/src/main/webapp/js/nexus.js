@@ -1107,9 +1107,9 @@ function loadInstanceDataTable(apiUrl) {
             console.log('DataTables has finished its initialization.');
         },
         "ordering": false,
-        "pageLength": 5,
+        "pageLength": 6,
         "scrollX": true,
-        "scrollY": "calc(60vh - 130px)"
+        "scrollY": "375px"
     });
 
     $('#loggingData tbody').on('click', 'tr.instance-row', function () {

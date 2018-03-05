@@ -72,10 +72,11 @@ tr.instance-row {
     padding: 20px 30px 10px 30px;
     text-align: left;
 }
-.catalog-modal-body-header, profiles-modal-body-header {
+.catalog-modal-body-header, .profiles-modal-body-header {
     font-size: 1.25em;
     vertical-align: top;
     padding-right: 40px;
+    padding-bottom: 10px;
 }
 .catalog-modal-body .list-group, .profiles-modal-body .list-group {
     cursor: pointer;

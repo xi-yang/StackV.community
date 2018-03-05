@@ -777,7 +777,7 @@ function submitIntent(mode) {
                             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                         }
                     });
-                    window.location.href = "/StackV-web/ops/catalog.jsp";
+                    window.location.href = "/StackV-web/portal/";
                 }
             } else {
                 /*setTimeout(function () {
@@ -1720,7 +1720,7 @@ function saveManifest() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
-            window.location.href = "/StackV-web/ops/catalog.jsp?profiles=open";
+            window.location.href = "/StackV-web/portal/";
         }
     });
 }

@@ -60,6 +60,9 @@ function toggleModal(modalName) {
                             break;
                     }
                     break;
+                case "opening":
+                case "closing":
+                    break;
                 default:
                     switch ($profModal.iziModal('getState')) {
                         case "closed":
@@ -77,6 +80,9 @@ function toggleModal(modalName) {
             switch ($catModal.iziModal('getState')) {
                 case "opened":
                     $catModal.iziModal('next');
+                    break;
+                case "opening":
+                case "closing":
                     break;
                 case "closed":
                 default:
@@ -100,12 +106,12 @@ function loadCatalog() {
 
     loadSystemHealthCheck();
     tweenInstancePanel.play();
-    
+
     $(".button-service-create").click(function (evt) {
         evt.preventDefault();
-        
-        toggleModal("catalog"); 
-   });
+
+        toggleModal("catalog");
+    });
 }
 function loadCatalogNavbar() {
     $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
@@ -117,6 +123,8 @@ function loadInstances() {
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/instances';
     loadInstanceDataTable(apiUrl);
 }
+
+var profileUpdateTimeout = null;
 
 var catCount = 0;
 var catConfig = {
@@ -199,8 +207,11 @@ function loadModals() {
                 var id = profile[2];
                 var owner = profile[3];
                 var editable = profile[4];
-                var created = profile[5];
+                var created = profile[5].split(".")[0];
                 var lastEdited = profile[6];
+                if (lastEdited) {
+                    lastEdited = lastEdited.split(".")[0];
+                }
 
                 var $profile = $('<a></a>');
                 $profile.addClass("list-group-item list-group-item-action flex-column align-items-start");
@@ -248,6 +259,8 @@ function loadModals() {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
                     success: function (result) {
+                        resetProfileModal();
+
                         if (result["owner"] === keycloak.tokenParsed.preferred_username
                                 || result["editable"] === "1") {
                             $("#info-panel-text-area").removeAttr("readonly");
@@ -261,7 +274,6 @@ function loadModals() {
                             $(".read-only-flag").removeClass("hidden");
                         }
 
-                        $("#black-screen").removeClass("off");
                         $("#profile-modal").modal("show");
                         $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(result["wizard_json"]);
@@ -269,6 +281,13 @@ function loadModals() {
                         $(".button-profile-save").attr('id', resultID);
                         $(".button-profile-save-as").attr('id', resultID);
                         $(".button-profile-submit").attr('id', resultID);
+
+                        if (result["owner"] === keycloak.tokenParsed.preferred_username) {
+                            $("#info-panel-management").show();
+                            $("#edit-profile-licenses").val(result["licenses"]);
+                            
+                            $(".button-profile-delete").show();
+                        }
                         prettyPrintInfo();
                     },
                     error: function (textStatus, errorThrown) {
@@ -281,7 +300,21 @@ function loadModals() {
             });
 
 
-            // Legacy modal listeners.
+            // Legacy modal listeners.            
+            $("#edit-profile-licenses").on("keyup", function () {
+                clearTimeout(profileUpdateTimeout);
+                profileUpdateTimeout = setTimeout(function () {
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/edit/licenses';
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'PUT',
+                        data: $("#edit-profile-licenses").val(),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json"
+                    });
+                }, 1000);
+            });
+
             $(".button-profile-delete").on("click", function (evt) {
                 swal("Confirm deletion?", {
                     buttons: {
@@ -290,7 +323,7 @@ function loadModals() {
                     }
                 }).then((value) => {
                     if (value) {
-                        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id;
+                        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id");
                         $.ajax({
                             url: apiUrl,
                             type: 'DELETE',
@@ -298,6 +331,8 @@ function loadModals() {
                                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             },
                             success: function (result) {
+                                $("#profile-modal").modal("hide");
+                                reloadModals();
                             },
                             error: function (textStatus, errorThrown) {
                                 console.log(textStatus);
@@ -355,7 +390,6 @@ function loadModals() {
                     // reload top table and hide modal
                     reloadData();
                     $("div#profile-modal").modal("hide");
-                    $("#black-screen").addClass("off");
                     $("#info-panel").removeClass("active");
                     evt.preventDefault();
                 } else {
@@ -369,13 +403,13 @@ function loadModals() {
             // Hide the regular buttons and reveal the save as box
             $("button.button-profile-save-as").on("click", function (evt) {
                 $("div.info-panel-regular-buttons").css("display", "none");
-                $("div.info-panel-save-as-description").css("display", "block");
+                $("div.info-panel-save-as-description").css("display", "inline-block");
             });
 
             // Reveal the regular buttons and hide the save as boxes
             $("button.button-profile-save-as-cancel").on("click", function (evt) {
                 $("div.info-panel-save-as-description").css("display", "none");
-                $("div.info-panel-regular-buttons").css("display", "block");
+                $("div.info-panel-regular-buttons").css("display", "inline-block");
             });
 
 
@@ -418,7 +452,6 @@ function loadModals() {
                     });
 
                     // reload the bottom panel
-                    $("#black-screen").addClass("off");
                     $("#info-panel").removeClass("active");
                     evt.preventDefault();
                 } else {
@@ -451,7 +484,6 @@ function loadModals() {
                         }
                     });
 
-                    $("#black-screen").addClass("off");
                     $("#info-panel").removeClass("active");
                     evt.preventDefault();
                 } else {
@@ -461,6 +493,17 @@ function loadModals() {
         }
     });
 }
+function resetProfileModal() {
+    clearTimeout(profileUpdateTimeout);
+
+    $("#info-panel-management").hide();
+    $("#edit-profile-licenses").val("");
+
+    $("#profile-alias").val("");
+    
+    $(".button-profile-delete").hide();
+}
+
 function reloadModals() {
     // Load service metadata. 
     catCount = 0, profCount = 0;
@@ -514,8 +557,11 @@ function reloadModals() {
                 var id = profile[2];
                 var owner = profile[3];
                 var editable = profile[4];
-                var created = profile[5];
+                var created = profile[5].split(".")[0];
                 var lastEdited = profile[6];
+                if (lastEdited) {
+                    lastEdited = lastEdited.split(".")[0];
+                }
 
                 var $profile = $('<a></a>');
                 $profile.addClass("list-group-item list-group-item-action flex-column align-items-start");

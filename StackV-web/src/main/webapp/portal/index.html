@@ -61,11 +61,13 @@
                         <h3 id="info-panel-title"></h3>
                     </div>
                     <div class="modal-body">
-                        <div id="info-panel-input">
-                            <input id="profile-alias" placeholder="Instance Alias"/>
-                        </div>
                         <div id="info-panel-text">                            
                             <textarea readonly id="info-panel-text-area"></textarea>
+                        </div>
+                        <div style="text-align: left;display: none;" id="info-panel-management">
+                            <hr>
+                            <label for="edit-profile-licenses">Shared Users</label>
+                            <input type="text" class="form-control" id="edit-profile-licenses" placeholder="Shared users (Comma-separated)" />
                         </div>
                     </div>
                     <div id="info-panel-button" class="modal-footer">
@@ -85,10 +87,11 @@
                                 </div>
                             </form>
                         </div>
-                        <div class="info-panel-footer">
+                        <div class="info-panel-footer" style="display:inline-block;">
                             <div class="info-panel-regular-buttons">
-                                <p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;float: left;padding-left: 20px;">Read Only</p>
-                                <button type="button" name="button" class="button-profile-save btn btn-default">Save</button>
+                                <p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;float: left;padding-right: 50px;">Read Only</p>
+                                <button style="display: none;" class="button-profile-delete btn btn-danger">Delete</button>
+                                <button class="button-profile-save btn btn-default">Save</button>
                                 <button class="button-profile-save-as btn btn-default">Save As</button>
                                 <button class="button-profile-submit btn btn-default">Submit</button>
                             </div>
@@ -97,6 +100,7 @@
                                 <button class="button-profile-save-as-cancel btn btn-default">Cancel</button>
                             </div>
                         </div>
+                        <input id="profile-alias" placeholder="Instance Alias"/>
                     </div>
                 </div>
             </div>
