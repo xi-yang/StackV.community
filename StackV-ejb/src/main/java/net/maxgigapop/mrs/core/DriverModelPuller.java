@@ -143,10 +143,10 @@ public class DriverModelPuller {
         if (!bootStrapped && pullNormal) {
             // cleanning up from recovery
             logger.message(method, "cleanning up from recovery");
-            VersionGroupPersistenceManager.cleanupAndUpdateAll(null);
+            GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "true");
+            //VersionGroupPersistenceManager.cleanupAndUpdateAll(null);
             Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
             VersionItemPersistenceManager.cleanupAllBefore(before24h);
-            GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "true");
             logger.message(method, "Done! - bootStrapped changed to true");
         }
         logger.trace_end(method);
