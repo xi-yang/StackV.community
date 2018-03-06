@@ -275,7 +275,7 @@ public class OESSDriver implements IHandleDriverSystemCall {
             JSONObject jsonCircuit = (JSONObject) obj;
             String circuitId = (String) jsonCircuit.get("circuit_id");
             Resource resSubnet = RdfOwl.createResource(model, resSwSvc.getURI()+":circult+"+circuitId, Mrs.SwitchingSubnet);
-            model.add(model.createStatement(resTopology, Mrs.providesSubnet, resSubnet));
+            model.add(model.createStatement(resSwSvc, Mrs.providesSubnet, resSubnet));
             model.add(model.createStatement(resSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
             model.add(model.createStatement(resSubnet, Nml.labelSwapping, "true"));
             Resource resNaCircuitId = RdfOwl.createResource(model, resSubnet.getURI() + ":circuit_id", Mrs.NetworkAddress);
@@ -441,11 +441,11 @@ public class OESSDriver implements IHandleDriverSystemCall {
                     } catch (ParseException ex) {
                         throw logger.throwing(method, ex);
                     }
-                    if (jsonResponse.containsKey("error") && (int)jsonResponse.get("error") == 1) {
+                    if (jsonResponse.containsKey("error") && ((Long)jsonResponse.get("error")) == 1) {
                         throw logger.error_throwing(method, jsonResponse.get("error_text") + " for subnet: " + jReq.get("subnet_uri"));
                     }
                     JSONObject jsonResult = (JSONObject) jsonResponse.get("results");
-                    if (!jsonResult.containsKey("success") || ((int)jsonResult.get("success")) != 1) {
+                    if (!jsonResult.containsKey("success") || ((Long)jsonResult.get("success")) != 1) {
                         throw logger.error_throwing(method, "remove_circuit call failed for circuit: "+jReq.get("circuit_id"));
                     }
                 } catch (IOException ex) {
@@ -476,7 +476,7 @@ public class OESSDriver implements IHandleDriverSystemCall {
                     } catch (ParseException ex) {
                         throw logger.throwing(method, ex);
                     }
-                    if (jsonResponse.containsKey("error") && (int)jsonResponse.get("error") == 1) {
+                    if (jsonResponse.containsKey("error") && ((Long)jsonResponse.get("error")) == 1) {
                         throw logger.error_throwing(method, jsonResponse.get("error_text") + " for subnet: " + jReq.get("subnet_uri"));
                     }
                     JSONArray jsonResults = (JSONArray) jsonResponse.get("results");
@@ -496,11 +496,11 @@ public class OESSDriver implements IHandleDriverSystemCall {
                     } catch (ParseException ex) {
                         throw logger.throwing(method, ex);
                     }
-                    if (jsonResponse.containsKey("error") && (int)jsonResponse.get("error") == 1) {
+                    if (jsonResponse.containsKey("error") && ((Long)jsonResponse.get("error")) == 1) {
                         throw logger.error_throwing(method, jsonResponse.get("error_text") + " for subnet: " + jReq.get("subnet_uri"));
                     }
                     JSONObject jsonResult = (JSONObject) jsonResponse.get("results");
-                    if (!jsonResult.containsKey("success") || ((int) jsonResult.get("success")) != 1) {
+                    if (!jsonResult.containsKey("success") || ((Long) jsonResult.get("success")) != 1) {
                         throw logger.error_throwing(method, "provision_circuit call failed for subnet: " + jReq.get("subnet_uri"));
                     }
                 } catch (IOException ex) {
