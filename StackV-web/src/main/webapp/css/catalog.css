@@ -133,8 +133,9 @@ div#profile-modal div.info-panel-save-as-description input {
 }
 div#profile-modal textarea#info-panel-text-area {
     width: 100%;
-    min-height: 600px;
+    min-height: 50vh;
 }
+
 #info-panel-text-area[readonly] {
     background: #eee;
 }

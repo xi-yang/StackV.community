@@ -1915,6 +1915,7 @@ public class WebResource {
         MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
         String level = queryParams.getFirst("level");
         String refUUID = queryParams.getFirst("refUUID");
+        String search = queryParams.getFirst("search[value]");
         int draw = Integer.parseInt(queryParams.getFirst("draw"));
         int start = Integer.parseInt(queryParams.getFirst("start"));
         int length = Integer.parseInt(queryParams.getFirst("length"));
@@ -1960,6 +1961,25 @@ public class WebResource {
                         break;
                 }
             }
+            
+            if (!search.equals("")) {               
+                if (prepString.contains("WHERE")) {
+                    prepString = prepString + " AND (logger LIKE '%" + search + "%' "
+                        + "OR module LIKE '%" + search + "%' "
+                        + "OR method LIKE '%" + search + "%' "
+                        + "OR event LIKE '%" + search + "%' "
+                        + "OR message LIKE '%" + search + "%') ";
+                } else {                    
+                    prepString = prepString + " WHERE logger LIKE '%" + search + "%' "
+                        + "OR module LIKE '%" + search + "%' "
+                        + "OR method LIKE '%" + search + "%' "
+                        + "OR event LIKE '%" + search + "%' "
+                        + "OR message LIKE '%" + search + "%') ";
+                }         
+            }
+            
+            System.out.println("fish " + search);
+            System.out.println("taco " + prepString);
 
             String prepStringCount = prepString.replace("SELECT *", "SELECT COUNT(*)");
             prep = front_conn.prepareStatement(prepStringCount);
