@@ -1977,10 +1977,7 @@ public class WebResource {
                         + "OR message LIKE '%" + search + "%') ";
                 }         
             }
-            
-            System.out.println("fish " + search);
-            System.out.println("taco " + prepString);
-
+                     
             String prepStringCount = prepString.replace("SELECT *", "SELECT COUNT(*)");
             prep = front_conn.prepareStatement(prepStringCount);
             if (refUUID != null) {
