@@ -75,6 +75,8 @@ import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
+import org.apache.commons.httpclient.URIException;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -274,7 +276,8 @@ public class OESSDriver implements IHandleDriverSystemCall {
         for (Object obj : jsonResults) {
             JSONObject jsonCircuit = (JSONObject) obj;
             String circuitId = (String) jsonCircuit.get("circuit_id");
-            Resource resSubnet = RdfOwl.createResource(model, resSwSvc.getURI()+":circult+"+circuitId, Mrs.SwitchingSubnet);
+            String description = (String) jsonCircuit.get("description");
+            Resource resSubnet = RdfOwl.createResource(model, ResourceTool.getResourceUri(URIUtil.decode(description), "%s:circuit+", resSwSvc.getURI(), circuitId), Mrs.SwitchingSubnet);
             model.add(model.createStatement(resSwSvc, Mrs.providesSubnet, resSubnet));
             model.add(model.createStatement(resSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
             model.add(model.createStatement(resSubnet, Nml.labelSwapping, "true"));
@@ -453,8 +456,14 @@ public class OESSDriver implements IHandleDriverSystemCall {
                 }
             } else if (command.equals("addCircuit")) {
                 String bandwidth = jReq.containsKey("bandwidth") ? (String) jReq.get("bandwidth") : "0";
+                String description;
+                try {
+                    description = URIUtil.encodeQuery((String)jReq.get("subnet_uri"));
+                } catch (URIException ex) {
+                    throw logger.error_throwing(method, "malformed subnet URI: " + (String)jReq.get("subnet_uri"));
+                }
                 String provUrl = baseUrl + "/provisioning.cgi?action=provision_circuit&circuit_id=-1"
-                        + "&description=service-" + ModelUtil.stripUrnPrefix((String)jReq.get("subnet_uri")) 
+                        + "&description=" + description
                         + "&bandwidth=" + bandwidth + "&provision_time=-1&remove_time=-1&workgroup_id=" + workgroup;
                 String pathUrl = baseUrl + "/data.cgi?action=get_shortest_path&type=mpls";
                 JSONArray jsonEndpoints = (JSONArray) jReq.get("endpoints");
