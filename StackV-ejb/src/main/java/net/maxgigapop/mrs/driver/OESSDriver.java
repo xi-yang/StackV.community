@@ -168,7 +168,12 @@ public class OESSDriver implements IHandleDriverSystemCall {
                 throw logger.error_throwing(method, driverInstance +"has no property key=apiPassword");
             }
             String defaultGroup = driverInstance.getProperty("defaultGroup"); // it can be null
-            OntModel ontModel = this.createOntology(topologyUri, baseUrl, username, password, defaultGroup);
+            JSONObject jsonExt = null;
+            String modelExt = driverInstance.getProperty("modelExt");
+            if (modelExt != null) {
+                jsonExt = (JSONObject) JSONValue.parseWithException(modelExt);
+            }
+            OntModel ontModel = this.createOntology(topologyUri, baseUrl, username, password, defaultGroup, jsonExt);
 
             if (driverInstance.getHeadVersionItem() == null || !driverInstance.getHeadVersionItem().getModelRef().getOntModel().isIsomorphicWith(ontModel)) {
                 DriverModel dm = new DriverModel();
@@ -184,15 +189,15 @@ public class OESSDriver implements IHandleDriverSystemCall {
                 driverInstance.setHeadVersionItem(vi);
             }
         } catch (IOException e) {
-            throw logger.throwing(method, driverInstance + " failed to createOntology", e);
+            throw logger.throwing(method, driverInstance + " failed to createOntology - ", e);
         } catch (Exception ex) {
-            throw logger.throwing(method, driverInstance + " failed to pull model", ex);
+            throw logger.throwing(method, driverInstance + " failed to pull model - ", ex);
         }
         logger.trace_end(method);
         return new AsyncResult<>("SUCCESS");
     }
     
-    private OntModel createOntology(String topologyURI, String baseUrl, String username, String password, String workgroup) throws IOException {
+    private OntModel createOntology(String topologyURI, String baseUrl, String username, String password, String workgroup, JSONObject jsonExt) throws IOException {
         String method = "createOntology";
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Resource resTopology = RdfOwl.createResource(model, topologyURI, Nml.Topology);
@@ -238,6 +243,12 @@ public class OESSDriver implements IHandleDriverSystemCall {
                 model.add(model.createStatement(resPort, Mrs.hasNetworkAddress, resNaNodeName));
                 model.add(model.createStatement(resNaNodeName, Mrs.type, "node_name"));
                 model.add(model.createStatement(resNaNodeName, Mrs.value, nodeName));
+                // get peer URI for resPort
+                String peerUri = this.lookupAliasUri(jsonExt, nodeName, intfName);
+                if (peerUri != null) {
+                    Resource resPeer = model.createResource(peerUri);
+                    model.add(model.createStatement(resPort, Nml.isAlias, resPeer));
+                }
             }
         }
         url = baseUrl + "/data.cgi?action=get_existing_circuits&workgroup_id=" + workgroup;
@@ -304,6 +315,20 @@ public class OESSDriver implements IHandleDriverSystemCall {
             }
         }
         return null;        
+    }
+    
+    private String lookupAliasUri(JSONObject jsonExt, String nodeName, String intfName) {
+        if (!jsonExt.containsKey("edgeports")) {
+            return null;
+        }
+        JSONArray jEdgeports = (JSONArray) jsonExt.get("edgeports");
+        for (Object obj: jEdgeports) {
+            JSONObject jEdgeport = (JSONObject) obj;
+            if (jEdgeport.get("node").equals(nodeName) && jEdgeport.get("interface").equals(intfName) && jEdgeport.containsKey("peer")) {
+                return (String) jEdgeport.get("peer");
+            }
+        }
+        return null;
     }
     
     private String pushPropagate(String topologyURI, OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
