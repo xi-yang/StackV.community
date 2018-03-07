@@ -23,43 +23,22 @@
  */
 package net.maxgigapop.mrs.driver;
 
-import net.maxgigapop.mrs.driver.aws.*;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.directconnect.model.AllocatePrivateVirtualInterfaceRequest;
-import com.amazonaws.services.directconnect.model.AllocatePrivateVirtualInterfaceResult;
-import com.amazonaws.services.directconnect.model.Connection;
-import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceRequest;
-import com.amazonaws.services.directconnect.model.DeleteVirtualInterfaceResult;
-import com.amazonaws.services.directconnect.model.DescribeVirtualInterfacesRequest;
-import com.amazonaws.services.directconnect.model.DescribeVirtualInterfacesResult;
-import com.amazonaws.services.directconnect.model.NewPrivateVirtualInterfaceAllocation;
-import com.amazonaws.services.directconnect.model.VirtualInterface;
-import com.amazonaws.services.directconnect.model.VirtualInterfaceState;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.io.IOException;
-import static java.lang.Thread.sleep;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
-import javax.net.ssl.HttpsURLConnection;
 import net.maxgigapop.mrs.bean.DriverInstance;
 import net.maxgigapop.mrs.bean.DriverModel;
 import net.maxgigapop.mrs.bean.DriverSystemDelta;
@@ -74,9 +53,6 @@ import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
-import org.apache.commons.httpclient.URIException;
-import org.apache.commons.httpclient.util.URIUtil;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -277,7 +253,7 @@ public class OESSDriver implements IHandleDriverSystemCall {
             JSONObject jsonCircuit = (JSONObject) obj;
             String circuitId = (String) jsonCircuit.get("circuit_id");
             String description = (String) jsonCircuit.get("description");
-            Resource resSubnet = RdfOwl.createResource(model, ResourceTool.getResourceUri(URIUtil.decode(description), "%s:circuit+", resSwSvc.getURI(), circuitId), Mrs.SwitchingSubnet);
+            Resource resSubnet = RdfOwl.createResource(model, ResourceTool.getResourceUri(description, "%s:circuit+%s", resSwSvc.getURI(), circuitId), Mrs.SwitchingSubnet);
             model.add(model.createStatement(resSwSvc, Mrs.providesSubnet, resSubnet));
             model.add(model.createStatement(resSubnet, Nml.encoding, RdfOwl.labelTypeVLAN));
             model.add(model.createStatement(resSubnet, Nml.labelSwapping, "true"));
@@ -301,7 +277,7 @@ public class OESSDriver implements IHandleDriverSystemCall {
                 model.add(model.createStatement(resPort, Nml.hasBidirectionalPort, resVlanPort));
                 model.add(model.createStatement(resSubnet, Nml.hasBidirectionalPort, resVlanPort));
                 if (vlanTag != null && !vlanTag.isEmpty()) {
-                    Resource resLabel = RdfOwl.createResource(model, resPort.getURI()+":vlan+"+vlanTag, Nml.LabelGroup);
+                    Resource resLabel = RdfOwl.createResource(model, resVlanPort.getURI()+":label+"+vlanTag, Nml.LabelGroup);
                     model.add(model.createStatement(resVlanPort, Nml.hasLabel, resLabel));
                     model.add(model.createStatement(resLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
                     model.add(model.createStatement(resLabel, Nml.values, vlanTag));
@@ -435,7 +411,7 @@ public class OESSDriver implements IHandleDriverSystemCall {
             JSONObject jReq = (JSONObject) obj;
             String command = (String)jReq.get("command");
             if (command.equals("deleteCircuit")) {
-                String url = baseUrl + "/provisioning.cgi?action=remove_circuit&workgroup_id=" + "&circuit_id=" + jReq.get("circuit_id") + "&remove_time=-1&workgroup_id=" + workgroup;
+                String url = baseUrl + "/provisioning.cgi?action=remove_circuit&circuit_id=" + jReq.get("circuit_id") + "&remove_time=-1&workgroup_id=" + workgroup;
                 try {
                     String[] response = DriverUtil.executeHttpMethod(username, password, url, "GET", null);
                     JSONObject jsonResponse;
@@ -447,8 +423,8 @@ public class OESSDriver implements IHandleDriverSystemCall {
                     if (jsonResponse.containsKey("error") && ((Long)jsonResponse.get("error")) == 1) {
                         throw logger.error_throwing(method, jsonResponse.get("error_text") + " for subnet: " + jReq.get("subnet_uri"));
                     }
-                    JSONObject jsonResult = (JSONObject) jsonResponse.get("results");
-                    if (!jsonResult.containsKey("success") || ((Long)jsonResult.get("success")) != 1) {
+                    JSONArray jsonResults = (JSONArray) jsonResponse.get("results");
+                    if (jsonResults.isEmpty() || !((JSONObject)jsonResults.get(0)).containsKey("success") || ((Long)((JSONObject)jsonResults.get(0)).get("success")) != 1) {
                         throw logger.error_throwing(method, "remove_circuit call failed for circuit: "+jReq.get("circuit_id"));
                     }
                 } catch (IOException ex) {
@@ -458,9 +434,9 @@ public class OESSDriver implements IHandleDriverSystemCall {
                 String bandwidth = jReq.containsKey("bandwidth") ? (String) jReq.get("bandwidth") : "0";
                 String description;
                 try {
-                    description = URIUtil.encodeQuery((String)jReq.get("subnet_uri"));
-                } catch (URIException ex) {
-                    throw logger.error_throwing(method, "malformed subnet URI: " + (String)jReq.get("subnet_uri"));
+                    description = URLEncoder.encode((String)jReq.get("subnet_uri"), "UTF-8");
+                } catch (UnsupportedEncodingException ex) {
+                    throw logger.error_throwing(method, ex + " - malformed subnet URI: " + (String)jReq.get("subnet_uri"));
                 }
                 String provUrl = baseUrl + "/provisioning.cgi?action=provision_circuit&circuit_id=-1"
                         + "&description=" + description
