@@ -171,8 +171,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
                 String strMaximum = (String)jsonBw.get("maximum");
                 Long maximum = (strMaximum != null ? Long.parseLong(strMaximum) : null);
-                Long available = (jsonBw.containsKey("available") ? Long.parseLong((String)jsonBw.get("available")) : null);
-                Long reservable = (jsonBw.containsKey("reservable") ? Long.parseLong((String)jsonBw.get("reservable")) : null);
+                Long available = (jsonBw.containsKey("available") && jsonBw.get("available") != null ? Long.parseLong((String)jsonBw.get("available")) : null);
+                Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null ? Long.parseLong((String)jsonBw.get("reservable")) : null);
                 mpvbPath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
                 // candidatePath.bandwithProfile.type = "guaranteedCapped"; //default
             }
