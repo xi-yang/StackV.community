@@ -3034,6 +3034,8 @@ public class WebResource {
                         }
                     });
                 }
+            } else {
+                logger.status(method, "User " + username + " not authorized for service " + serviceType);
             }
 
             logger.end(method);
