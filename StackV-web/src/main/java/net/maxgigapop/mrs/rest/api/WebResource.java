@@ -86,6 +86,7 @@ import net.maxgigapop.mrs.common.AuditService;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import net.maxgigapop.mrs.common.IpaAlm;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -150,7 +151,9 @@ public class WebResource {
     String ipaPasswd = System.getProperty("ipa_passwd");
     static String ipaCookie;
   
-    private final JNDIFactory factory = new JNDIFactory();  
+    private final JNDIFactory factory = new JNDIFactory();
+    
+    IpaAlm ipaAlm;
   
     @Context
     private HttpRequest httpRequest;
@@ -399,8 +402,52 @@ public class WebResource {
         }
     }
     
-    // >FreeIPA-based ACL
+    // > IPA ALM
+    @POST
+    @Path("/ipa/alm/login")
+    @Consumes("application/json")
+    @Produces("application/json")
+    @RolesAllowed("ACL")
+    public String testIpaAlmLogin(String kcToken) throws ParseException {
+        JSONObject tokenJSON = (JSONObject) parser.parse(kcToken);
+        String keycloakToken = (String) tokenJSON.get("kcToken");
+        if (ipaAlm == null) {
+           ipaAlm = new IpaAlm(keycloakToken.trim());
+        }        
+        
+        JSONObject result = new JSONObject();
+        
+        result.put("LoggedIn", ipaAlm.ipaLogin());
+        
+        return result.toJSONString();   
+    }
     
+    @POST
+    @Path("/ipa/alm/lease")
+    @Consumes("application/json")
+    @Produces("application/json")
+    @RolesAllowed("ACL")
+    public String testIpaAlmLease(String createLease) throws ParseException {
+        JSONObject leaseJSON = (JSONObject) parser.parse(createLease);
+        String keycloakToken = (String) leaseJSON.get("kcToken");
+        String clientId = (String) leaseJSON.get("clientId");
+        String poolName = (String) leaseJSON.get("poolName");
+        String addrType = (String) leaseJSON.get("addressType");
+        if (ipaAlm == null) {
+           ipaAlm = new IpaAlm(keycloakToken.trim());
+        }        
+        
+        JSONObject result = new JSONObject();
+        
+        result.put("LeasedAddr", ipaAlm.leaseAddr(clientId, poolName, addrType));
+        
+        return result.toJSONString();   
+    }
+    
+    
+    
+    
+    // >FreeIPA-based ACL        
     @POST
     @Path("/acl/ipa/login")
     @Produces("application/json")

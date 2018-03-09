@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.HttpsURLConnection;
@@ -24,20 +25,29 @@ import org.json.simple.parser.ParseException;
  * @author saiarvind
  */
 public class IpaAlm {
+    // think about making this class a singleton - since instantiating multiple IpaAlms doesn't
+    // exactly make sense
     public static final StackLogger logger = new StackLogger(IpaAlm.class.getName(), "IpaAlm");
     
     JSONParser parser = new JSONParser();
     
-    String ipaRestBaseUrl = "https://localhost:8080/StackV-web/restapi/app/acl/ipa/request";
+    String ipaRestBaseUrl = "https://localhost:8443/StackV-web/restapi/app/acl/ipa/request";
     
     // NEED THE KEYCLOAK AUTHORIZATION TOKEN IN THE HEADERS
+    String kcToken; // currently getting from browser and setting in constructor
+    
+    public IpaAlm(String keycloakToken) {        
+        kcToken = keycloakToken;        
+    }
     
     public boolean ipaLogin() {
+        System.out.println("****IpaAlm ipaLogin - token: " + kcToken);
         boolean loggedIn = false;
-        String ipaLoginUrl = "https://localhost:808/StackV-web/restapi/app/acl/ipa/login";
+        String ipaLoginUrl = "https://localhost:8443/StackV-web/restapi/app/acl/ipa/login";
         try {
             URL ipaurl = new URL(ipaLoginUrl);
             HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+            conn.setRequestProperty("Authorization", "bearer " + kcToken);
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
@@ -46,7 +56,7 @@ public class IpaAlm {
             // if the request is successful
             if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {  
                 System.out.println(conn.getHeaderFields());
-                
+                loggedIn = true;
             } else { // if the request fails
                 String errorStream = "";
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
@@ -73,7 +83,8 @@ public class IpaAlm {
             URL ipaurl = new URL(ipaRestBaseUrl);
             HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
             conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "text/plain");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setRequestProperty("Authorization", "bearer " + kcToken);
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
@@ -200,23 +211,75 @@ public class IpaAlm {
         return runIpaRequest(leaseJSON);
     }
     
-    public String leaseMacAddr() {
-        String macAddr = "";
+    /**
+     * --NOTE MIGHT WANT TO SEE IF THE ALMSTATMENTS LIST CAN GIVEN BACK AS JSON OBJECT INSTEAD OF JSON ARRAY--
+     * @param clientId
+     * @param poolName
+     * @param poolType
+     * @return 
+     */
+    public String leaseAddr(String clientId, String poolName, String poolType) {
+        // return null if an address cannot be leased
+        String addr = null;
         
-        return macAddr;
+        // pass the parameters and run the request
+        JSONObject leaseResponseJSON = createLease(clientId, poolName, poolType);
+        
+        System.out.println("****leaseAddr: " + leaseResponseJSON.toJSONString());
+        
+        // parse the JSON response for the address
+        // if there is no error
+        if (leaseResponseJSON.get("error") == null && leaseResponseJSON.get("result") != null) {
+            JSONObject resultJSON = (JSONObject) leaseResponseJSON.get("result");
+            if (resultJSON.get("value").equals("successfully lease!")) {
+                // get the inner result object
+                JSONObject innerResultJSON = (JSONObject) resultJSON.get("result");
+                
+                // get the almstatments array
+                JSONArray almstmtsArr = (JSONArray) innerResultJSON.get("almstatements");
+                Iterator<String> iterator = almstmtsArr.iterator();
+                while (iterator.hasNext()) {
+                    String almElement = iterator.next();
+                    if (almElement.contains("leasedaddr")) {
+                        addr = almElement.substring(11);
+                        break; // as soon as the leased address is found - break out of the loop
+                    }
+                }
+            }
+        }
+        
+        
+        return addr;
     }
     
-    public String leaseIPAddr() {
-        String ipAddr = "";
+    public boolean revokeLeasedAddr(String clientId, String poolName, String poolType, String leasedAddr) {
+        boolean revoked = false;
         
-        return ipAddr;
+        // pass the parameters and run the request
+        JSONObject revokeResponseJSON = revokeLease(clientId, poolName, poolType, leasedAddr);
+        
+        // parse the JSON response to check if the revocation was successful
+        // if there is no error
+        if (revokeResponseJSON.get("error") == null && revokeResponseJSON.get("result") != null) {
+            JSONObject resultJSON = (JSONObject) revokeResponseJSON.get("result");
+            if (resultJSON.get("value").equals("successfully release!")) {
+                revoked = true;
+            }
+        } 
+        
+        
+        return revoked;
     }
     
-    public void createAlmPool() {
+    public boolean createAlmPool(String commonName, String poolType, String range) {
+        boolean poolCreated = false;
         
+        return poolCreated;
     }
     
-    public void delAlmPool() {
+    public boolean delAlmPool(String commonName) {
+        boolean poolDeleted = false;
         
+        return poolDeleted;
     }
 }
