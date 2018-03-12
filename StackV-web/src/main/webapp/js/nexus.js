@@ -206,21 +206,23 @@ function verifyPageRoles() {
             }
             break;
         case "/StackV-web/portal/details/":
-            var uuid = sessionStorage.getItem("instance-uuid");
-            var apiUrl = baseUrl + '/StackV-web/restapi/app/access/instances/' + uuid;
-            $.ajax({
-                url: apiUrl,
-                type: 'GET',
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                },
-                success: function (result) {
-                    if (result === "false") {
-                        sessionStorage.removeItem("instance-uuid");
-                        window.location.href = "/StackV-web/portal/";
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") === -1) {
+                var uuid = sessionStorage.getItem("instance-uuid");
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/access/instances/' + uuid;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'GET',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+                        if (result === "false") {
+                            sessionStorage.removeItem("instance-uuid");
+                            window.location.href = "/StackV-web/portal/";
+                        }
                     }
-                }
-            });
+                });
+            }
             break;
         case "/StackV-web/portal/driver/":
             if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("Drivers") === -1) {
@@ -725,6 +727,9 @@ function loadInstanceDataTable(apiUrl) {
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("instance-row");
+            $(row).attr("data-verification_state", data.verification);
+            $(row).attr("data-last_state", data.lastState);
+            $(row).attr("data-owner", data.owner);
         },
         "dom": 'Bfrtip',
         "initComplete": function (settings, json) {

@@ -28,6 +28,8 @@ var tweenInstancePanel = new TweenLite("#instance-panel", .75, {ease: Power2.eas
 var $catModal = $("#catalog-modal");
 var $profModal = $("#profiles-modal");
 
+var $alertModal = $("#alert-modal");
+
 Mousetrap.bind({
     'shift+left': function () {
         window.location.href = "/StackV-web/orch/graphTest.jsp";
@@ -136,6 +138,18 @@ var profConfig = {
     width: 750,
     group: "cat"
 };
+var alertConfig = {
+    title: "Error",
+    icon: 'icon-power_settings_new',
+    headerColor: '#BD5B5B',
+    width: 600,
+    timeout: 15000,
+    timeoutProgressbar: true,
+    transitionIn: 'fadeInDown',
+    transitionOut: 'fadeOutDown',
+    pauseOnHover: true
+};
+
 function loadModals() {
     // Initialize
     $("#catalog-modal").html('<div class="catalog-modal-body">' +
@@ -151,6 +165,7 @@ function loadModals() {
 
     $catModal.iziModal(catConfig);
     $profModal.iziModal(profConfig);
+    $alertModal.iziModal(alertConfig);
 
     // Load service metadata. 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/editor';
@@ -380,10 +395,16 @@ function loadModals() {
                                     xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                                 },
                                 success: function (result) {
+                                    $profModal.iziModal('close');
                                 },
-                                error: function (textStatus, errorThrown) {
-                                    console.log(textStatus);
-                                    console.log(errorThrown);
+                                error: function (jqXHR, textStatus, errorThrown) {
+                                    console.log(jqXHR.status + " | " + textStatus + " | " + errorThrown);
+                                    
+                                    if (jqXHR.status === 401) {
+                                        $alertModal.iziModal('setSubtitle', 'You are not authorized for the service associated with this profile.');
+                                        $alertModal.iziModal('setTop', 100);
+                                        $alertModal.iziModal('open');                                        
+                                    }
                                 }
                             });
                         }

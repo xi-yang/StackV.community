@@ -1961,23 +1961,23 @@ public class WebResource {
                         break;
                 }
             }
-            
-            if (!search.equals("")) {               
+
+            if (!search.equals("")) {
                 if (prepString.contains("WHERE")) {
                     prepString = prepString + " AND (logger LIKE '%" + search + "%' "
-                        + "OR module LIKE '%" + search + "%' "
-                        + "OR method LIKE '%" + search + "%' "
-                        + "OR event LIKE '%" + search + "%' "
-                        + "OR message LIKE '%" + search + "%') ";
-                } else {                    
+                            + "OR module LIKE '%" + search + "%' "
+                            + "OR method LIKE '%" + search + "%' "
+                            + "OR event LIKE '%" + search + "%' "
+                            + "OR message LIKE '%" + search + "%') ";
+                } else {
                     prepString = prepString + " WHERE logger LIKE '%" + search + "%' "
-                        + "OR module LIKE '%" + search + "%' "
-                        + "OR method LIKE '%" + search + "%' "
-                        + "OR event LIKE '%" + search + "%' "
-                        + "OR message LIKE '%" + search + "%') ";
-                }         
+                            + "OR module LIKE '%" + search + "%' "
+                            + "OR method LIKE '%" + search + "%' "
+                            + "OR event LIKE '%" + search + "%' "
+                            + "OR message LIKE '%" + search + "%') ";
+                }
             }
-                     
+
             String prepStringCount = prepString.replace("SELECT *", "SELECT COUNT(*)");
             prep = front_conn.prepareStatement(prepStringCount);
             if (refUUID != null) {
@@ -2051,12 +2051,15 @@ public class WebResource {
             front_conn = factory.getConnection("frontend");
 
             if (verifyUserRole("admin")) {
-                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time "
-                        + "FROM service_instance I, acl A ORDER BY I.creation_time");
+                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
+                        + "FROM service_instance I, service_verification V "
+                        + "WHERE V.service_instance_id = I.service_instance_id "
+                        + "ORDER BY I.creation_time");
             } else {
-                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time "
-                        + "FROM service_instance I, acl A "
-                        + "WHERE I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?) ORDER BY I.creation_time");
+                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
+                        + "FROM service_instance I, acl A, service_verification V "
+                        + "WHERE I.referenceUUID = A.object AND V.service_instance_id = I.service_instance_id AND (A.subject = ? OR I.username = ?) "
+                        + "ORDER BY I.creation_time");
                 prep.setString(1, username);
                 prep.setString(2, username);
             }
@@ -2082,6 +2085,9 @@ public class WebResource {
                 logJSON.put("type", Services.get(rs.getString("type")).get(0));
                 logJSON.put("referenceUUID", instanceUUID);
                 logJSON.put("state", instanceState);
+                logJSON.put("owner", rs.getString("username"));
+                logJSON.put("lastState", rs.getString("last_state"));
+                logJSON.put("verification", rs.getString("verification_state"));
                 logJSON.put("timestamp", rs.getString("creation_time"));
 
                 logArr.add(logJSON);
@@ -2205,79 +2211,6 @@ public class WebResource {
     }
 
     // >Panels
-    @GET
-    @Path("/panel/{userId}/instances")
-    @Produces("application/json")
-    @RolesAllowed("Panels")
-    public ArrayList<ArrayList<String>> loadInstances(@PathParam("userId") String userId) throws SQLException, IOException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        String method = "loadInstances";
-        try {
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            ArrayList<String> banList = new ArrayList<>();
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-
-            // Verify user
-            String username = authUsername(userId);
-            if (username == null) {
-                logger.error(method, "Logged-in user does not match requested user information");
-                return retList;
-            }
-
-            banList.add("Driver Management");
-
-            front_conn = factory.getConnection("frontend");
-
-            if (verifyUserRole("admin")) {
-                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state "
-                        + "FROM service_instance I, acl A");
-            } else {
-                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state "
-                        + "FROM service_instance I, acl A "
-                        + "WHERE I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?)");
-                prep.setString(1, username);
-                prep.setString(2, username);
-            }
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                ArrayList<String> instanceList = new ArrayList<>();
-
-                String instanceName = Services.get(rs.getString("type")).get(0);
-                String instanceUUID = rs.getString("referenceUUID");
-                String instanceSuperState = rs.getString("super_state");
-                String instanceAlias = rs.getString("alias_name");
-                if (!banList.contains(instanceName)) {
-                    try {
-                        URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
-                        HttpURLConnection status = (HttpURLConnection) url.openConnection();
-
-                        String instanceState = instanceSuperState + " - " + executeHttpMethod(url, status, "GET", null, auth);
-
-                        instanceList.add(instanceName);
-                        instanceList.add(instanceUUID);
-                        instanceList.add(instanceState);
-                        instanceList.add(instanceAlias);
-
-                        retList.add(instanceList);
-                    } catch (IOException ex) {
-                        AuditService.cleanInstances("frontend");
-                        logger.catching(method, ex);
-                    }
-                }
-            }
-
-            return retList;
-        } catch (SQLException ex) {
-            AuditService.cleanInstances("frontend");
-            logger.catching(method, ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
-    }
-
     @GET
     @Path("/panel/wizard")
     @Produces("application/json")
@@ -2422,8 +2355,8 @@ public class WebResource {
 
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, I.last_state "
-                    + "FROM service_instance I WHERE I.referenceUUID = ?");
+            prep = front_conn.prepareStatement("SELECT type, creation_time, alias_name, super_state, last_state, username "
+                    + "FROM service_instance WHERE referenceUUID = ?");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
@@ -2431,6 +2364,7 @@ public class WebResource {
                 retList.add(Services.get(rs.getString("type")).get(0));
                 retList.add(rs.getString("alias_name"));
                 retList.add(rs.getString("creation_time"));
+                retList.add(rs.getString("username"));
                 retList.add(rs.getString("super_state"));
                 retList.add(rs.getString("last_state"));
             }
@@ -2956,12 +2890,12 @@ public class WebResource {
     @Path(value = "/profile")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("Profiles-E")
-    public void executeProfile(final String inputString) throws SQLException, IOException, ParseException, InterruptedException {
+    public Response executeProfile(final String inputString) throws SQLException, IOException, ParseException, InterruptedException {
         final String method = "executeProfile";
         logger.start(method);
         Connection front_conn = null;
         PreparedStatement prep = null;
-        ResultSet rs = null;        
+        ResultSet rs = null;
         try {
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
@@ -2985,7 +2919,7 @@ public class WebResource {
             while (rs.next()) {
                 profileAuthorized = rs.getInt(1);
             }
-                        
+
             if (roleSet.contains(serviceType) || profileAuthorized == 1) {
                 // Instance Creation
                 final String refUUID;
@@ -3036,6 +2970,7 @@ public class WebResource {
                 }
             } else {
                 logger.status(method, "User " + username + " not authorized for service " + serviceType);
+                return Response.status(Response.Status.UNAUTHORIZED).build();
             }
 
             logger.end(method);
@@ -3044,6 +2979,7 @@ public class WebResource {
         } finally {
             commonsClose(front_conn, prep, rs);
         }
+        return Response.status(Response.Status.OK).build();
     }
 
     // >Services   
