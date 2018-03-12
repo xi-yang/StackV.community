@@ -1,19 +1,11 @@
--- MySQL dump 10.13  Distrib 5.5.27, for osx10.6 (i386)
+-- phpMyAdmin SQL Dump
+-- version 4.4.1.1
+-- http://www.phpmyadmin.net
 --
--- Host: localhost    Database: frontend
--- ------------------------------------------------------
--- Server version	5.5.27
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+-- Host: localhost:3306
+-- Generation Time: Mar 13, 2018 at 12:30 AM
+-- Server version: 5.5.42
+-- PHP Version: 5.6.7
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -21,42 +13,29 @@ SET time_zone = "+00:00";
 --
 -- Database: `frontend`
 --
-DROP DATABASE IF EXISTS `frontend`;
+DROP DATABASE `frontend`;
 CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `frontend`;
+
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `acl`
 --
 
 DROP TABLE IF EXISTS `acl`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `acl` (
-  `acl_id` int(11) NOT NULL AUTO_INCREMENT,
+  `acl_id` int(11) NOT NULL,
   `subject` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `is_group` tinyint(1) NOT NULL DEFAULT '0',
-  `object` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`acl_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=146 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `acl`
---
-
-LOCK TABLES `acl` WRITE;
-/*!40000 ALTER TABLE `acl` DISABLE KEYS */;
-/*!40000 ALTER TABLE `acl` ENABLE KEYS */;
-UNLOCK TABLES;
+  `object` varchar(45) COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=188 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `driver_wizard`
 --
 
 DROP TABLE IF EXISTS `driver_wizard`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `driver_wizard` (
   `username` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `drivername` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -65,52 +44,39 @@ CREATE TABLE `driver_wizard` (
   `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `data` longtext COLLATE utf8_unicode_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `driver_wizard`
 --
 
-LOCK TABLES `driver_wizard` WRITE;
-/*!40000 ALTER TABLE `driver_wizard` DISABLE KEYS */;
-INSERT INTO `driver_wizard` VALUES ('admin','Generic Rest','Generic REST Driver','urn:ogf:network:sdn.maxgigapop.net:network','','{\"jsonData\":[{\"TOPURI\":\"urn:ogf:network:sdn.maxgigapop.net:network\",\"subsystemBaseUrl\":\"http://206.196.179.139:8080/VersaNS-0.0.1-SNAPSHOT\"}]}'),('admin','TEST','','{\"jsonData\":[{\"TOPURI\":\"TEST\",\"stubModelTtl\":\"TEST\"}]}','TEST','Stub System Driver'),('admin','TEST','','{\"jsonData\":[{\"stubModelTtl\":\"sbadgadfas\"}]}','','Stub System Driver');
-/*!40000 ALTER TABLE `driver_wizard` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `driver_wizard` (`username`, `drivername`, `drivertype`, `TopUri`, `description`, `data`) VALUES
+('admin', 'Generic Rest', 'Generic REST Driver', 'urn:ogf:network:sdn.maxgigapop.net:network', '', '{"jsonData":[{"TOPURI":"urn:ogf:network:sdn.maxgigapop.net:network","subsystemBaseUrl":"http://206.196.179.139:8080/VersaNS-0.0.1-SNAPSHOT"}]}'),
+('admin', 'TEST', '', '{"jsonData":[{"TOPURI":"TEST","stubModelTtl":"TEST"}]}', 'TEST', 'Stub System Driver'),
+('admin', 'TEST', '', '{"jsonData":[{"stubModelTtl":"sbadgadfas"}]}', '', 'Stub System Driver');
+
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `label`
 --
 
 DROP TABLE IF EXISTS `label`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `label` (
   `identifier` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `username` varchar(40) COLLATE utf8_unicode_ci NOT NULL,
   `label` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `color` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`identifier`)
+  `color` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `label`
---
-
-LOCK TABLES `label` WRITE;
-/*!40000 ALTER TABLE `label` DISABLE KEYS */;
-/*!40000 ALTER TABLE `label` ENABLE KEYS */;
-UNLOCK TABLES;
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `log`
 --
 
 DROP TABLE IF EXISTS `log`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `log` (
-  `log_id` int(11) NOT NULL AUTO_INCREMENT,
+  `log_id` int(11) NOT NULL,
   `marker` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   `timestamp` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `level` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
@@ -122,104 +88,61 @@ CREATE TABLE `log` (
   `event` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `message` longtext COLLATE utf8_unicode_ci NOT NULL,
   `severity` varchar(10) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `exception` longtext COLLATE utf8_unicode_ci,
-  PRIMARY KEY (`log_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=159291 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  `exception` longtext COLLATE utf8_unicode_ci
+) ENGINE=InnoDB AUTO_INCREMENT=325233 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `service_delta`
 --
 
 DROP TABLE IF EXISTS `service_delta`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service_delta` (
-  `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,
+  `service_delta_id` int(11) NOT NULL,
   `service_instance_id` int(11) NOT NULL,
   `super_state` varchar(11) COLLATE utf8_unicode_ci NOT NULL,
   `type` varchar(60) COLLATE utf8_unicode_ci NOT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `delta` longtext COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`service_delta_id`,`service_instance_id`,`super_state`),
-  KEY `service_delta-service_instance_idx` (`service_instance_id`),
-  KEY `service_delta-service_history_idx` (`super_state`),
-  CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=144 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  `delta` longtext COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
---
--- Dumping data for table `service_delta`
---
-
-LOCK TABLES `service_delta` WRITE;
-/*!40000 ALTER TABLE `service_delta` DISABLE KEYS */;
-/*!40000 ALTER TABLE `service_delta` ENABLE KEYS */;
-UNLOCK TABLES;
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `service_instance`
 --
 
 DROP TABLE IF EXISTS `service_instance`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service_instance` (
-  `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,
+  `service_instance_id` int(11) NOT NULL,
   `type` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `username` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `creation_time` datetime DEFAULT NULL,
   `referenceUUID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `alias_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `super_state` varchar(11) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `last_state` varchar(11) COLLATE utf8_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`service_instance_id`),
-  KEY `service_instance-service_idx` (`type`),
-  KEY `service_instance-user_info_idx` (`username`),
-  KEY `service_instance-service_state_idx` (`super_state`)
-) ENGINE=InnoDB AUTO_INCREMENT=138 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `service_instance`
---
-
-LOCK TABLES `service_instance` WRITE;
-/*!40000 ALTER TABLE `service_instance` DISABLE KEYS */;
-/*!40000 ALTER TABLE `service_instance` ENABLE KEYS */;
-UNLOCK TABLES;
+  `last_state` varchar(11) COLLATE utf8_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `service_renders`
 --
 
 DROP TABLE IF EXISTS `service_renders`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service_renders` (
   `id` varchar(8) COLLATE utf8_unicode_ci NOT NULL,
   `manifest` mediumtext COLLATE utf8_unicode_ci,
-  `package` mediumtext COLLATE utf8_unicode_ci,
-  PRIMARY KEY (`id`)
+  `package` mediumtext COLLATE utf8_unicode_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `service_renders`
---
-
-LOCK TABLES `service_renders` WRITE;
-/*!40000 ALTER TABLE `service_renders` DISABLE KEYS */;
-/*!40000 ALTER TABLE `service_renders` ENABLE KEYS */;
-UNLOCK TABLES;
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `service_verification`
 --
 
 DROP TABLE IF EXISTS `service_verification`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service_verification` (
   `service_instance_id` int(11) NOT NULL,
   `instanceUUID` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -228,7 +151,7 @@ CREATE TABLE `service_verification` (
   `verification_state` int(11) DEFAULT NULL,
   `verification_run` int(11) NOT NULL DEFAULT '0',
   `delta_uuid` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `creation_time` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `creation_time` varchar(60) COLLATE utf8_unicode_ci DEFAULT NULL,
   `verified_reduction` longtext COLLATE utf8_unicode_ci,
   `verified_addition` longtext COLLATE utf8_unicode_ci,
   `unverified_reduction` longtext COLLATE utf8_unicode_ci,
@@ -237,56 +160,165 @@ CREATE TABLE `service_verification` (
   `addition` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL,
   `enabled` tinyint(1) NOT NULL DEFAULT '1',
   `timestamp` datetime DEFAULT NULL,
-  `elapsed_time` varchar(60) COLLATE utf8_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`service_instance_id`),
-  CONSTRAINT `service_verification-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE
+  `elapsed_time` varchar(60) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `service_verification`
---
-
-LOCK TABLES `service_verification` WRITE;
-/*!40000 ALTER TABLE `service_verification` DISABLE KEYS */;
-/*!40000 ALTER TABLE `service_verification` ENABLE KEYS */;
-UNLOCK TABLES;
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `service_wizard`
 --
 
 DROP TABLE IF EXISTS `service_wizard`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `service_wizard` (
-  `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT,
+  `service_wizard_id` int(11) NOT NULL,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `username` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `owner` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `wizard_json` longtext COLLATE utf8_unicode_ci NOT NULL,
   `editable` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`service_wizard_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  `authorized` tinyint(4) NOT NULL,
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_edited` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Dumping data for table `service_wizard`
 --
 
-LOCK TABLES `service_wizard` WRITE;
-/*!40000 ALTER TABLE `service_wizard` DISABLE KEYS */;
- INSERT INTO `service_wizard` VALUES (43,'AHC (Demo)','6xVM+SRIOV+Ceph+Globus+DC','xyang','{\"data\":{\"openstack\":{\"parent\":\"urn:ogf:network:openstack.com:openstack-cloud\",\"gateways\":[{\"name\":\"Gateway 1\",\"type\":\"Intercloud Network\"},{\"connects\":[{\"from\":\"External-Access\"}],\"name\":\"Gateway 1_2\",\"type\":\"UCS Port Profile\"},{\"connects\":[{\"from\":\"Ceph-Storage\"}],\"name\":\"Gateway 1_3\",\"type\":\"UCS Port Profile\"},{\"connects\":[{\"from\":\"LustreRtr\"}],\"name\":\"Gateway 1_4\",\"type\":\"UCS Port Profile\"}],\"cidr\":\"10.1.0.0\\/16\",\"subnets\":[{\"name\":\"OpenStack Subnet 1\",\"cidr\":\"10.1.0.0\\/24\",\"vms\":[{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:01\",\"name\":\"SRIOV 1\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.1\\/24\"},{\"mac_address\":\"aa:bd:d1:18:01:36\",\"name\":\"SRIOV 1_2\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.184\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:36\",\"name\":\"SRIOV 1_3\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.184\\/24\"},{\"mac_address\":\"aa:bd:d1:02:50:06\",\"name\":\"SRIOV 1_4\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.10\\/24\"}],\"name\":\"OpenStack VM 1\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.184\",\"short_name\":\"UMD-MAX-SDMZ-DTN-1\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"},{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"10.10.0.1\",\"to\":\"10.0.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:12\",\"name\":\"SRIOV 1_5\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.185\\/24\"},{\"mac_address\":\"aa:bd:d1:18:01:37\",\"name\":\"SRIOV 1_6\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.185\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:37\",\"name\":\"SRIOV 1_7\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.185\\/24\"},{\"mac_address\":\"aa:bd:d1:02:50:22\",\"name\":\"SRIOV 1_8\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.11\\/24\"}],\"name\":\"OpenStack VM 1_2\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.185\",\"short_name\":\"UMD-MAX-SDMZ-DTN-2\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"},{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"10.10.0.1\",\"to\":\"10.0.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:13\",\"name\":\"SRIOV 1_9\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.186\\/24\"},{\"mac_address\":\"aa:bd:d1:18:01:38\",\"name\":\"SRIOV 1_10\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.186\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:38\",\"name\":\"SRIOV 1_11\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.186\\/24\"},{\"mac_address\":\"aa:bd:d1:02:50:38\",\"name\":\"SRIOV 1_12\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.12\\/24\"}],\"name\":\"OpenStack VM 1_3\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.186\",\"short_name\":\"UMD-MAX-SDMZ-DTN-3\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"},{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"10.10.0.1\",\"to\":\"10.0.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:14\",\"name\":\"SRIOV 1_13\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.187\\/24\"},{\"mac_address\":\"aa:bd:d1:18:01:39\",\"name\":\"SRIOV 1_14\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.187\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:39\",\"name\":\"SRIOV 1_15\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.187\\/24\"},{\"mac_address\":\"aa:bd:d1:02:50:86\",\"name\":\"SRIOV 1_16\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.13\\/24\"}],\"name\":\"OpenStack VM 1_4\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.187\",\"short_name\":\"UMD-MAX-SDMZ-DTN-4\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"},{\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.1.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"10.10.0.1\",\"to\":\"10.0.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:d1:10:10:15\",\"name\":\"SRIOV 1_17\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"10.10.0.188\\/24\"},{\"mac_address\":\"aa:bd:d1:30:01:40\",\"name\":\"SRIOV 1_18\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"206.196.180.188\\/26\"},{\"mac_address\":\"aa:bd:d1:20:01:40\",\"name\":\"SRIOV 1_19\",\"hosting_gateway\":\"Gateway 1_3\",\"ip_address\":\"10.10.200.188\\/24\"},{\"mac_address\":\"aa:bd:d1:02:51:02\",\"name\":\"SRIOV 1_20\",\"hosting_gateway\":\"Gateway 1_4\",\"ip_address\":\"10.10.104.14\\/24\"}],\"name\":\"OpenStack VM 1_5\",\"host\":\"any\",\"keypair_name\":\"demo-key\",\"security_group\":\"rains\",\"globus_connect\":{\"password\":\"secret\",\"public\":true,\"data_interface_ip\":\"206.196.180.188\",\"short_name\":\"UMD-MAX-SDMZ-DTN-5\",\"default_directory\":\"\\/usrs\",\"username\":\"xiyang\"},\"instance_type\":\"ebeb9636-8675-42bb-b099-517505dd67a2\"}],\"internet_routable\":true}]},\"intercloud\":{\"bgp\":{\"authentication_key\":\"secret\",\"amazon_asn\":\"7224\",\"vm_host\":\"OpenStack VM 1\",\"networks\":\"10.10.0.0\\/16\"}},\"aws\":{\"parent\":\"urn:ogf:network:aws.amazon.com:aws-cloud\",\"cidr\":\"10.0.0.0\\/16\",\"direct_connect_vlan\":\"any\",\"subnets\":[{\"vpn_route_propagation\":true,\"name\":\"AWS Subnet 1\",\"cidr\":\"10.0.0.0\\/24\",\"vms\":[{\"image\":\"ami-6d64487a\",\"interfaces\":[{\"public\":true,\"type\":\"Ethernet\",\"elastic_ip\":\"52.206.248.139\"}],\"name\":\"AWS VM 1\",\"instance_type\":\"m4.10xlarge\"}],\"internet_routable\":true}]},\"uuid\":\"974dcc70-a321-45f3-b3ab-2d8aced4dfdd\"},\"service\":\"ahc\"}',0),(44,'VCN-AWS (Demo)','1 VPC 1 VM w/ ElasticIP','xyang','{\"data\":{\"parent\":\"urn:ogf:network:aws.amazon.com:aws-cloud\",\"options\":[\"aws-form\"],\"cidr\":\"10.0.0.0\\/16\",\"subnets\":[{\"vpn_route_propagation\":true,\"name\":\"Subnet 1\",\"cidr\":\"10.0.0.0\\/24\",\"vms\":[{\"interfaces\":[{\"public\":true,\"type\":\"Ethernet\",\"elastic_ip\":\"52.71.182.172\"}],\"name\":\"VM 1\"}],\"internet_routable\":true}],\"uuid\":\"92d4b9f2-a8a5-4586-b8c9-993f64b74d4a\"},\"service\":\"vcn\"}',0),(45,'VCN-OpenStack (Demo)','2xVM SRIOV+Ceph_RDB','xyang','{\"data\":{\"parent\":\"urn:ogf:network:openstack.com:openstack-cloud\",\"gateways\":[{\"connects\":[{\"from\":\"External-Access\"}],\"name\":\"Gateway 1\",\"type\":\"UCS Port Profile\"},{\"connects\":[{\"from\":\"Ceph-Storage\"}],\"name\":\"Gateway 1_2\",\"type\":\"UCS Port Profile\"}],\"options\":[\"openstack-form\"],\"cidr\":\"10.0.0.0\\/16\",\"subnets\":[{\"name\":\"Subnet 1\",\"cidr\":\"10.0.0.0\\/24\",\"vms\":[{\"flavor\":\"4\",\"routes\":[{\"next_hop\":\"10.0.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:cc:12:80:31\",\"name\":\"SRIOV 1\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"206.196.180.131\\/26\"}],\"name\":\"VM 1\",\"host\":\"any\",\"security_group\":\"rains\",\"keypair_name\":\"demo-key\"},{\"flavor\":\"ebeb9636-8675-42bb-b099-517505dd67a2\",\"image\":\"18306614-6f3b-438e-a5ad-f9f9a31d6254\",\"routes\":[{\"next_hop\":\"10.0.0.1\",\"to\":\"10.10.0.0\\/16\"},{\"next_hop\":\"206.196.180.129\",\"to\":\"0.0.0.0\\/0\"}],\"floating_ip\":\"any\",\"sriovs\":[{\"mac_address\":\"aa:bb:cc:12:80:32\",\"name\":\"SRIOV 1_2\",\"hosting_gateway\":\"Gateway 1\",\"ip_address\":\"206.196.180.132\\/26\"},{\"mac_address\":\"aa:bb:cc:12:20:32\",\"name\":\"SRIOV 1_3\",\"hosting_gateway\":\"Gateway 1_2\",\"ip_address\":\"10.10.200.132\\/24\"}],\"name\":\"VM 1_2\",\"host\":\"any\",\"security_group\":\"rains\",\"keypair_name\":\"demo-key\",\"ceph_rbds\":[{\"size\":\"600\",\"mount_point\":\"\\/mnt\\/ceph1\"}]}],\"internet_routable\":true}],\"uuid\":\"d6741f88-0e3a-41e5-8f3e-ca1a0be44600\"},\"service\":\"vcn\"}',0),(46,'DNC Single-Conn (Demo)','Best Effort - and VLAN','xyang','{\n    \"data\": {\n        \"type\": \"Multi-Path P2P VLAN\",\n        \"uuid\": \"d2f96199-5538-4e36-82e7-d9f479b55325\",\n        \"connections\": [\n            {\n                \"bandwidth\": {\n                    \"qos_class\": \"bestEffort\"\n                },\n                \"name\": \"connection 1\",\n                \"terminals\": [\n                    {\n                        \"vlan_tag\": \"any\",\n                        \"assign_ip\": false,\n                        \"uri\": \"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*\"\n                    },\n                    {\n                        \"vlan_tag\": \"any\",\n                        \"assign_ip\": false,\n                        \"uri\": \"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*\"\n                    }\n                ]\n            }\n        ]\n    },\n    \"service\": \"dnc\"\n}',0),(47,'DNC Multi-Conns (Demo)','1 BestEffort + 1G Guaranteed - any VLANs  ','xyang','{\"data\":{\"type\":\"Multi-Path P2P VLAN\",\"uuid\":\"d2422c98-7423-4bd8-bdac-5576b14dde16\",\"connections\":[{\"bandwidth\":{\"qos_class\":\"guaranteedCapped\",\"capacity\":\"1000\"},\"name\":\"connection 1\",\"terminals\":[{\"vlan_tag\":\"any\",\"assign_ip\":false,\"uri\":\"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*\"},{\"vlan_tag\":\"any\",\"assign_ip\":false,\"uri\":\"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*\"}]},{\"bandwidth\":{\"qos_class\":\"bestEffort\"},\"name\":\"connection 1_2\",\"terminals\":[{\"vlan_tag\":\"any\",\"assign_ip\":false,\"uri\":\"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*\"},{\"vlan_tag\":\"any\",\"assign_ip\":false,\"uri\":\"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*\"}]}]},\"service\":\"dnc\"}',0);
-/*!40000 ALTER TABLE `service_wizard` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+INSERT INTO `service_wizard` (`service_wizard_id`, `name`, `description`, `owner`, `wizard_json`, `editable`, `authorized`, `created`, `last_edited`) VALUES
+(32, 'TestVCN8-24', '', 'admin', '{\n    "data": {\n        "parent": "urn:ogf:network:sdn.maxgigapop.net:network",\n        "gateways": [\n            {\n                "connects": [\n                    {\n                        "to": "urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*"\n                    }\n                ],\n                "name": "l2path-aws-dc1",\n                "type": "AWS Direct Connect"\n            }\n        ],\n        "cidr": "10.0.0.0/16",\n        "subnets": [\n            {\n"test": "test",\n                "routes": [\n                    {\n                        "next_hop": "vpn",\n                        "from": "vpn",\n                        "to": "0.0.0.0/0"\n                    },\n                    {\n                        "next_hop": "internet",\n                        "to": "0.0.0.0/0"\n                    }\n                ],\n                "vpn_route_propagation": false,\n                "name": "Subnet_1",\n                "cidr": "10.0.0.0/24",\n                "vms": [\n                    {\n                        "image": "ami-0d1bf860",\n                        "interfaces": [\n                            {\n                                "public": false,\n                                "type": "Ethernet"\n                            }\n                        ],\n                        "name": "VM_1",\n                        "security_group": "geni",\n                        "keypair_name": "driver_key",\n                        "instance_type": "m4.large"\n                    }\n                ]\n            }\n        ]\n    },\n    "service": "vcn",\n    "options": [\n        "aws-form"\n    ]\n}', 1, 1, '2018-02-28 05:00:00', '2018-03-07 18:36:27'),
+(41, 'TestReorg', 'Test', 'admin', '{"data":{"routes":{"routes":[{"next_hop":"206.196.180.129","to":"0.0.0.0\\/0"}]},"parent":"urn:ogf:network:openstack.com:openstack-cloud","gateways":[{"connects":[{"from":"External-Access"}],"name":"Gateway 1","type":"UCS Port Profile"},{"connects":[{"from":"Ceph-Storage"}],"name":"Gateway 1_2","type":"UCS Port Profile"}],"options":["openstack-form"],"cidr":"10.0.0.0\\/16","subnets":[{"name":"Subnet 1","cidr":"10.0.0.0\\/24","vms":[{"flavor":"5","image":"03555952-e619-4b26-bffd-6b9a62ae15da","routes":[{"next_hop":"10.0.0.1","to":"10.10.0.0\\/16"}],"floating_ip":"any","sriovs":[{"mac_address":"aa:bb:cc:18:01:33","name":"SRIOV 1","hosting_gateway":"Gateway 1","ip_address":"206.196.180.133\\/26"},{"mac_address":"aa:bb:cc:20:01:33","name":"SRIOV 1_2","hosting_gateway":"Gateway 1_2","ip_address":"10.10.200.133\\/24"}],"name":"VM 1","host":"any","security_group":"rains","keypair_name":"demo-key","globus_connect":{"password":"max1$fun","data_interface_ip":"206.196.180.133","short_name":"SENSE-UMD-DTN1","default_directory":"\\/mnt\\/ceph1","username":"xiyang"},"ceph_rbds":[{"size":"4000","mount_point":"\\/mnt\\/ceph1"}]}],"internet_routable":true}],"uuid":"f7b66cb4-8f87-450a-96b4-2c84bb155e99"},"service":"vcn"}', 0, 1, '2018-02-27 05:00:00', NULL),
+(44, 'New Test', 'Test Description', 'admin', '{"data":{"routes":{"routes":[{"next_hop":"206.196.180.129","to":"0.0.0.0\\/0"}]},"parent":"urn:ogf:network:openstack.com:openstack-cloud","gateways":[{"connects":[{"from":"External-Access"}],"name":"Gateway 1","type":"UCS Port Profile"},{"connects":[{"from":"Ceph-Storage"}],"name":"Gateway 1_2","type":"UCS Port Profile"}],"options":["openstack-form"],"cidr":"10.0.0.0\\/16","subnets":[{"name":"Subnet 1","cidr":"10.0.0.0\\/24","vms":[{"flavor":"5","image":"03555952-e619-4b26-bffd-6b9a62ae15da","routes":[{"next_hop":"10.0.0.1","to":"10.10.0.0\\/16"}],"floating_ip":"any","sriovs":[{"mac_address":"aa:bb:cc:18:01:33","name":"SRIOV 1","hosting_gateway":"Gateway 1","ip_address":"206.196.180.133\\/26"},{"mac_address":"aa:bb:cc:20:01:33","name":"SRIOV 1_2","hosting_gateway":"Gateway 1_2","ip_address":"10.10.200.133\\/24"}],"name":"VM 1","host":"any","security_group":"rains","keypair_name":"demo-key","globus_connect":{"password":"max1$fun","data_interface_ip":"206.196.180.133","short_name":"SENSE-UMD-DTN1","default_directory":"\\/mnt\\/ceph1","username":"xiyang"},"ceph_rbds":[{"size":"4000","mount_point":"\\/mnt\\/ceph1"}]}],"internet_routable":true}],"uuid":"f7b66cb4-8f87-450a-96b4-2c84bb155e99"},"service":"vcn"}', 0, 1, '2018-02-28 18:32:44', NULL),
+(46, 'test4', '', 'xyang', '{\n    "data": {\n        "parent": "urn:ogf:network:openstack.com:openstack-cloud",\n        "gateways": [\n            {\n                "connects": [\n                    {\n                        "from": "External-Access"\n                    }\n                ],\n                "name": "Gateway 1",\n                "type": "UCS Port Profile"\n            }\n        ],\n        "options": [\n            "openstack-form"\n        ],\n        "cidr": "10.0.0.0/16",\n        "subnets": [\n            {\n                "name": "Subnet 1",\n                "cidr": "10.0.0.0/24",\n                "vms": [\n                    {\n                        "flavor": "4",\n                        "routes": [\n                            {\n                                "next_hop": "10.10.0.0/16",\n                                "to": "10.0.0.1"\n                            },\n                            {\n                                "next_hop": "206.196.179.145",\n                                "to": "0.0.0.0/0"\n                            }\n                        ],\n                        "floating_ip": "any",\n                        "sriovs": [\n                            {\n                                "mac_address": "aa:bb:cc:12:79:51",\n                                "name": "SRIOV 1",\n                                "hosting_gateway": "Gateway 1",\n                                "ip_address": "206.196.179.151/28"\n                            }\n                        ],\n                        "name": "VM 1",\n                        "host": "any",\n                        "security_group": "rains",\n                        "keypair_name": "demo-key"\n                    },\n                    {\n                        "flavor": "5",\n                        "image": "6111384c-7f8a-4113-a6e7-a456fdf1c3b0",\n                        "routes": [\n                            {\n                                "next_hop": "10.10.0.0/16",\n                                "to": "10.0.0.1"\n                            },\n                            {\n                                "next_hop": "206.196.180.129",\n                                "to": "0.0.0.0/0"\n                            }\n                        ],\n                        "floating_ip": "any",\n                        "sriovs": [\n                            {\n                                "mac_address": "aa:bb:cc:12:80:55",\n                                "name": "SRIOV 1_2",\n                                "hosting_gateway": "Gateway 1",\n                                "ip_address": "206.196.180.155/26"\n                            }\n                        ],\n                        "name": "VM 1_2",\n                        "host": "any",\n                        "security_group": "rains",\n                        "keypair_name": "demo-key"\n                    }\n                ],\n                "internet_routable": true\n            }\n        ],\n        "uuid": "d6741f88-0e3a-41e5-8f3e-ca1a0be44600"\n    },\n    "service": "vcn"\n}', 0, 1, '2018-02-28 18:34:26', '2018-03-05 19:17:03'),
+(48, 'Share Test', '', 'xyang', '{"data":{"parent":"urn:ogf:network:sdn.maxgigapop.net:network","gateways":[{"connects":[{"to":"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*"}],"name":"l2path-aws-dc1","type":"AWS Direct Connect"}],"cidr":"10.0.0.0\\/16","subnets":[{"routes":[{"next_hop":"vpn","from":"vpn","to":"0.0.0.0\\/0"},{"next_hop":"internet","to":"0.0.0.0\\/0"}],"vpn_route_propagation":false,"name":"Subnet_1","cidr":"10.0.0.0\\/24","vms":[{"image":"ami-0d1bf860","interfaces":[{"public":false,"type":"Ethernet"}],"name":"VM_1","security_group":"geni","keypair_name":"driver_key","instance_type":"m4.large"}]}]},"service":"vcn","options":["aws-form"]}', 0, 1, '2018-02-28 20:01:17', NULL),
+(49, 'Share Test 2', '', 'xyang', '{"data":{"parent":"urn:ogf:network:openstack.com:openstack-cloud","gateways":[{"connects":[{"from":"External-Access"}],"name":"Gateway 1","type":"UCS Port Profile"}],"options":["openstack-form"],"cidr":"10.0.0.0\\/16","subnets":[{"name":"Subnet 1","cidr":"10.0.0.0\\/24","vms":[{"flavor":"4","routes":[{"next_hop":"10.10.0.0\\/16","to":"10.0.0.1"},{"next_hop":"206.196.179.145","to":"0.0.0.0\\/0"}],"floating_ip":"any","sriovs":[{"mac_address":"aa:bb:cc:12:79:51","name":"SRIOV 1","hosting_gateway":"Gateway 1","ip_address":"206.196.179.151\\/28"}],"name":"VM 1","host":"any","security_group":"rains","keypair_name":"demo-key"},{"flavor":"5","image":"6111384c-7f8a-4113-a6e7-a456fdf1c3b0","routes":[{"next_hop":"10.10.0.0\\/16","to":"10.0.0.1"},{"next_hop":"206.196.180.129","to":"0.0.0.0\\/0"}],"floating_ip":"any","sriovs":[{"mac_address":"aa:bb:cc:12:80:55","name":"SRIOV 1_2","hosting_gateway":"Gateway 1","ip_address":"206.196.180.155\\/26"}],"name":"VM 1_2","host":"any","security_group":"rains","keypair_name":"demo-key"}],"internet_routable":true}],"uuid":"d6741f88-0e3a-41e5-8f3e-ca1a0be44600"},"service":"vcn"}', 0, 0, '2018-03-05 16:35:57', NULL),
+(50, 'TestDemo', 'Hello', 'xyang', '{"data":{"parent":"urn:ogf:network:sdn.maxgigapop.net:network","gateways":[{"connects":[{"to":"urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*"}],"name":"l2path-aws-dc1","type":"AWS Direct Connect"}],"cidr":"10.0.0.0\\/16","subnets":[{"routes":[{"next_hop":"vpn","from":"vpn","to":"0.0.0.0\\/0"},{"next_hop":"internet","to":"0.0.0.0\\/0"}],"vpn_route_propagation":false,"name":"Subnet_1","cidr":"10.0.0.0\\/24","vms":[{"image":"ami-0d1bf860","interfaces":[{"public":false,"type":"Ethernet"}],"name":"VM_1","security_group":"geni","keypair_name":"driver_key","instance_type":"m4.large"}]}]},"service":"vcn","options":["aws-form"]}', 1, 1, '2018-03-07 18:36:56', NULL)
 
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+-- --------------------------------------------------------
 
--- Dump completed on 2018-01-14 11:24:50
+--
+-- Table structure for table `service_wizard_licenses`
+--
+
+DROP TABLE IF EXISTS `service_wizard_licenses`;
+CREATE TABLE `service_wizard_licenses` (
+  `service_wizard_id` int(11) NOT NULL,
+  `username` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `remaining` int(5) NOT NULL DEFAULT '10'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `acl`
+--
+ALTER TABLE `acl`
+  ADD PRIMARY KEY (`acl_id`);
+
+--
+-- Indexes for table `label`
+--
+ALTER TABLE `label`
+  ADD PRIMARY KEY (`identifier`);
+
+--
+-- Indexes for table `log`
+--
+ALTER TABLE `log`
+  ADD PRIMARY KEY (`log_id`);
+
+--
+-- Indexes for table `service_delta`
+--
+ALTER TABLE `service_delta`
+  ADD PRIMARY KEY (`service_delta_id`,`service_instance_id`,`super_state`),
+  ADD KEY `service_delta-service_instance_idx` (`service_instance_id`),
+  ADD KEY `service_delta-service_history_idx` (`super_state`);
+
+--
+-- Indexes for table `service_instance`
+--
+ALTER TABLE `service_instance`
+  ADD PRIMARY KEY (`service_instance_id`),
+  ADD KEY `service_instance-service_idx` (`type`),
+  ADD KEY `service_instance-user_info_idx` (`username`),
+  ADD KEY `service_instance-service_state_idx` (`super_state`);
+
+--
+-- Indexes for table `service_renders`
+--
+ALTER TABLE `service_renders`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `service_verification`
+--
+ALTER TABLE `service_verification`
+  ADD PRIMARY KEY (`service_instance_id`);
+
+--
+-- Indexes for table `service_wizard`
+--
+ALTER TABLE `service_wizard`
+  ADD PRIMARY KEY (`service_wizard_id`);
+
+--
+-- Indexes for table `service_wizard_licenses`
+--
+ALTER TABLE `service_wizard_licenses`
+  ADD PRIMARY KEY (`service_wizard_id`,`username`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `acl`
+--
+ALTER TABLE `acl`
+  MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=188;
+--
+-- AUTO_INCREMENT for table `log`
+--
+ALTER TABLE `log`
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=325233;
+--
+-- AUTO_INCREMENT for table `service_delta`
+--
+ALTER TABLE `service_delta`
+  MODIFY `service_delta_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=38;
+--
+-- AUTO_INCREMENT for table `service_instance`
+--
+ALTER TABLE `service_instance`
+  MODIFY `service_instance_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=36;
+--
+-- AUTO_INCREMENT for table `service_wizard`
+--
+ALTER TABLE `service_wizard`
+  MODIFY `service_wizard_id` int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=52;
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `service_delta`
+--
+ALTER TABLE `service_delta`
+  ADD CONSTRAINT `service_delta-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE ON UPDATE NO ACTION;
+
+--
+-- Constraints for table `service_verification`
+--
+ALTER TABLE `service_verification`
+  ADD CONSTRAINT `service_verification-service_instance` FOREIGN KEY (`service_instance_id`) REFERENCES `service_instance` (`service_instance_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `service_wizard_licenses`
+--
+ALTER TABLE `service_wizard_licenses`
+  ADD CONSTRAINT `service_wizard_licenses-service_wizard` FOREIGN KEY (`service_wizard_id`) REFERENCES `service_wizard` (`service_wizard_id`) ON DELETE CASCADE;
