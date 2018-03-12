@@ -102,6 +102,29 @@ public class GcpQuery {
             logger.warning(method, "Vpc request error, key \"items\" not found. Displaying JSON: " + vpcResult.toString());
         }
         
+        JSONArray vgwResult = gcpGet.getAggregatedTargetVGWs();
+        for (Object o : vgwResult) {
+            JSONObject vgwInfo = (JSONObject) o;
+            String region = GcpGet.parseGoogleURI(vgwInfo.get("region").toString(), "regions");
+            String name = vgwInfo.get("name").toString();
+            String key = GcpModelBuilder.getResourceKey("vgw", region, name);
+            if (metadata.containsKey(key)) {
+                uriNames.put(metadata.get(key), name);
+            }
+        }
+        
+        JSONArray tunnelResult = gcpGet.getAggregatedTunnels();
+        for (Object o : tunnelResult) {
+            JSONObject tunnelInfo = (JSONObject) o;
+            String region = GcpGet.parseGoogleURI(tunnelInfo.get("region").toString(), "regions");
+            String name = tunnelInfo.get("name").toString();
+            String key = GcpModelBuilder.getResourceKey("vpn", region, name);
+            if (metadata.containsKey(key)) {
+                uriNames.put(metadata.get(key), name);
+            }
+        }
+        
+        
         defaultImage = properties.get("defaultImage");
         defaultInstanceType = properties.get("defaultInstanceType");
         defaultDiskType = properties.get("defaultDiskType");
@@ -515,13 +538,15 @@ public class GcpQuery {
             
             output.add(vpnRequest);
         }
+        
+        System.out.printf("vpn requests: %s\n", output);
         return output;
     }
     
     public ArrayList<JSONObject> deleteVpnConnectionRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
         String method = "createVpnConnectionRequests";
-        String query = "SELECT ?vgw ?tunnel WHERE {\n"
+        String query = "SELECT DISTINCT ?vgw ?tunnel WHERE {\n"
                 + "?vpc nml:hasBidirectionalPort ?vgw .\n"
                 + "?vgw a nml:BidirectionalPort ; \n"
                 + "nml:hasBidirectionalPort ?tunnel .\n"
@@ -548,7 +573,7 @@ public class GcpQuery {
             output.add(vpnRequest);
         }
         
-        
+        System.out.printf("vpn delete requests: %s\n", output);
         
         return output;
     }

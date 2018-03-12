@@ -75,7 +75,7 @@ public class GcpPush {
         String method = "propagate";
         //Buckets, Instances, VPCs, Subnets
         
-        //requests.addAll(gcq.deleteVpnConnectionRequests());
+        requests.addAll(gcq.deleteVpnConnectionRequests());
         requests.addAll(gcq.deleteBucketRequests());
         requests.addAll(gcq.deleteInstanceRequests());
         requests.addAll(gcq.deleteSubnetRequests());
@@ -159,10 +159,9 @@ public class GcpPush {
             if (tempAdd != null) add.putAll(tempAdd);
             if (tempRemove != null) remove.addAll(tempRemove);
             
-            
         }
         logger.trace(method, "updating metadata");
-        //System.out.printf("old: %s\nadd: %s\nremove: %s\n", metadata, add, remove);
+        //logger.trace(method, "updating metdata:\nadd: %s\nremove: %s\n", add, remove);
         gcpGet.modifyCommonMetadata(metadata, add, remove);
         logger.end(method);
     }
@@ -205,16 +204,15 @@ public class GcpPush {
         }
         
         String name = requestInfo.get("name").toString();
-        JSONObject result;
         
         try {
             HttpRequest request = gcpGet.getComputeClient().networks().delete(projectID, name).buildHttpRequest();
-            String error = waitRequest(request, 5000, 10, true);
-            if (error == null) {
+            JSONObject result = waitRequest(request, 5000, 10, true);
+            if (result.get("result").equals("success")) {
                 output.add(GcpModelBuilder.getResourceKey("vpc", name));
                 return output;
             } else {
-                logger.warning(method, "COMMIT ERROR: " + error);
+                logger.warning(method, "COMMIT ERROR: " + result);
             }
             
         } catch (IOException e) {
@@ -262,12 +260,12 @@ public class GcpPush {
         
         try {
             HttpRequest request = gcpGet.getComputeClient().firewalls().insert(projectID, fire).buildHttpRequest();
-            String error = waitRequest(request);
-            if (error == null) {
+            JSONObject result = waitRequest(request);
+            if (result.get("result").equals("success")) {
                 //possibility to add firewall uri to metadata here.
                 return null;
             } else {
-                logger.warning(method, "COMMIT ERROR: " + error);
+                logger.warning(method, "COMMIT ERROR: " + result);
             }
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
@@ -319,12 +317,12 @@ public class GcpPush {
         
         try {
             HttpRequest request = gcpGet.getComputeClient().subnetworks().insert(projectID, subnetRegion, subnet).buildHttpRequest();
-            String error = waitRequest(request);
-            if (error == null) {
+            JSONObject result = waitRequest(request);
+            if (result.get("result").equals("success")) {
                 output.put(GcpModelBuilder.getResourceKey("subnet", vpcName, subnetRegion, subnetName), subnetUri);
                 return output;
             } else {
-                logger.warning(method, "COMMIT ERROR: " + error);
+                logger.warning(method, "COMMIT ERROR: " + result);
             }
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
@@ -350,12 +348,12 @@ public class GcpPush {
         
         try {
             HttpRequest request = gcpGet.getComputeClient().subnetworks().delete(projectID, region, name).buildHttpRequest();
-            String error = waitRequest(request);
-            if (error == null) {
+            JSONObject result = waitRequest(request);
+            if (result.get("result").equals("success")) {
                 output.add(GcpModelBuilder.getResourceKey("subnet", vpcName, region, name));
                 return output;
             } else {
-                logger.warning(method, error);
+                logger.warning(method, "COMMIT ERROR: " + result);
             }
             
         } catch (IOException e) {
@@ -459,12 +457,12 @@ public class GcpPush {
         try {
             HttpRequest request = gcpGet.getComputeClient().instances().insert(projectID, zone, instance).buildHttpRequest();
             
-            String error = waitRequest(request);
-            if (error == null) {
+            JSONObject result = waitRequest(request);
+            if (result.get("result").equals("success")) {
                 output.put(GcpModelBuilder.getResourceKey("vm", zone, name), uri);
                 return output;
             } else {
-                logger.warning(method, "COMMIT ERROR: " + error);
+                logger.warning(method, "COMMIT ERROR: " + result);
             }
         } catch (IOException e) {
             logger.warning(method, "COMMIT ERROR: " + e.toString());
@@ -560,7 +558,7 @@ public class GcpPush {
         String vgwUri = requestInfo.get("vgwUri").toString();
         String tunnelUri = requestInfo.get("tunnelUri").toString();
         String vpnRegion = requestInfo.get("region").toString();
-        String vpnIP;
+        String vpnIP = null;
         String vpcName = requestInfo.get("vpc").toString();
         String vpcFormat = "projects/%s/global/networks/%s";
         String vpcUri = String.format(vpcFormat, projectID, vpcName); //Not a MAX but a google uri
@@ -573,7 +571,12 @@ public class GcpPush {
             googleIP.setName(vgwName+"-ip");
             HttpRequest request = gcpGet.getComputeClient().addresses().insert(projectID, vpnRegion, googleIP).buildHttpRequest();
             gcpGet.makeRequest(request);
-            vpnIP = gcpGet.getComputeClient().addresses().get(projectID, vpnRegion, vgwName+"-ip").execute().getAddress();
+            
+            while (vpnIP == null) {
+                googleIP = gcpGet.getComputeClient().addresses().get(projectID, vpnRegion, vgwName+"-ip").execute();
+                vpnIP = googleIP.getAddress();
+                System.out.println("google ip" + vpnIP);
+            }
             
             TargetVpnGateway tvgw = new TargetVpnGateway();
             tvgw.setName(vgwName).setNetwork(vpcUri);
@@ -596,11 +599,13 @@ public class GcpPush {
             	.setTarget("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vgwName);
             rules[2] = rule;
             
+            ArrayList<String> selector = new ArrayList<>();
+            selector.add("0.0.0.0/0");
+            
             //*
             VpnTunnel vpnTunnel = new VpnTunnel();
             vpnTunnel.setName(tunnelName)
-            .setPeerIp(peerIP)//.setLocalTrafficSelector()
-            .setSharedSecret("abc123")
+            .setPeerIp(peerIP).setLocalTrafficSelector(selector).setSharedSecret("abc123")
             .setTargetVpnGateway("projects/stackv-devel/regions/"+vpnRegion+"/targetVpnGateways/"+vgwName);
             //*/
             
@@ -647,7 +652,7 @@ public class GcpPush {
         String [] rules = new String[3];
         rules[0] = vgwName + "-rule-esp";
         rules[1] = vgwName + "-rule-udp500";
-        rules[2] = vgwName + "-rule-udpp4500";
+        rules[2] = vgwName + "-rule-udp4500";
         
         try {
             HttpRequest request = gcpGet.getComputeClient().vpnTunnels().delete(projectID, region, tunnelName).buildHttpRequest();
@@ -713,12 +718,12 @@ public class GcpPush {
         return null;
     }
     
-    String waitRequest(HttpRequest request) throws IOException {
+    JSONObject waitRequest(HttpRequest request) throws IOException {
         //wait 5 seconds between requests, and send up to 5 requests
         return waitRequest(request, 5000, 10, false);
     }
     
-    String waitRequest(HttpRequest request, long requestInterval, int maxRequests, boolean require404) throws IOException {
+    JSONObject waitRequest(HttpRequest request, long requestInterval, int maxRequests, boolean require404) throws IOException {
         /*
         this function retries a request multiple times if resourceNotReady is thrown as a response
         the funtion stops attempting after maxRequests has been reached
@@ -728,6 +733,7 @@ public class GcpPush {
         */
         long start = System.currentTimeMillis(), max = 60000;
         int numRequests = 0;
+        JSONObject output = new JSONObject();
         /*
         This set defines errors which may disappear if the request is retried
         resourceInUse may or may not disappear
@@ -743,39 +749,54 @@ public class GcpPush {
         do {
             if (System.currentTimeMillis() - start > max) {
                 //resource is taking too long
-                return "Resource timeout";
+                output.put("result", "failed");
+                output.put("reason", "request timeout");
+                return output;
             }
             
             if (numRequests >= maxRequests) {
                 //too many failures!
-                return "Too many attempts";
+                output.put("result", "failed");
+                output.put("reason", "max requests reached");
+                return output;
             }
             
             try {
                 numRequests++;
-                gcpGet.makeRequest(request);
+                output.put("info", gcpGet.makeRequest(request));
                 if (!require404) {
-                    return null;
+                    output.put("result", "success");
+                    return output;
                 }
             } catch (GoogleJsonResponseException e) {
                 JSONObject errorJson = parseJSONException(e);
                 if (errorJson == null || !errorJson.containsKey("reason")) {
-                    return "error while parsing google JSON: "+errorJson;
+                    output.put("result", "failed");
+                    output.put("reason", "google error");
+                    output.put("info", errorJson);
+                    return output;
                 }
                 
                 String reason = errorJson.get("reason").toString();
                 if (require404 && reason.equals("notFound")) {
                     //resource was successfully deleted
-                    return null;
+                    output.put("result", "success");
+                    output.put("info", "resource deleted successfully");
+                    return output;
                 } if (reasons.contains(reason)) {
                     //wait for resource to become ready
                     try {
                         Thread.sleep(requestInterval);
                     } catch (InterruptedException ie) {
-                        //TODO
+                        output.put("result", "failed");
+                        output.put("reason", "interrupted exception");
+                        return output;
                     }
                 } else {
-                    return errorJson.toString();
+                    output.put("result", "failed");
+                    output.put("reason", "google error");
+                    output.put("info", errorJson);
+                    return output;
                 }
             }
         } while (true);

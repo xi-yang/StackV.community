@@ -198,15 +198,14 @@ public class GcpModelBuilder {
         }
         
         //map all the vpn routes by vpn tunnel
-        if (routesInfo == null) {
+        if (routesInfo != null) {
+            for (Object o : routesInfo) {
+                JSONObject route = (JSONObject) o;
+                String key = "nextHopVpnTunnel";
             
-        }
-        for (Object o : routesInfo) {
-            JSONObject route = (JSONObject) o;
-            String key = "nextHopVpnTunnel";
-            
-            if (route.containsKey(key)) {
-                vpnRoutes.put(route.get(key).toString(), route);
+                if (route.containsKey(key)) {
+                    vpnRoutes.put(route.get(key).toString(), route);
+                }
             }
         }
         
@@ -215,7 +214,7 @@ public class GcpModelBuilder {
         if (vgwsInfo != null) {
             for (Object o : vgwsInfo) {
                 JSONObject vgwInfo = (JSONObject) o;
-                System.out.println("vgw: "+vgwInfo);
+                //System.out.println("vgw: "+vgwInfo);
                 String vgwName = vgwInfo.get("name").toString();
                 String region = GcpGet.parseGoogleURI(vgwInfo.get("region").toString(), "regions");
                 String vpcName = GcpGet.parseGoogleURI(vgwInfo.get("network").toString(), "networks");

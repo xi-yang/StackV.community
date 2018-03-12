@@ -153,12 +153,10 @@ public class GcpGet {
             result = (JSONObject) result.get("items");
             
             for (Object key : result.keySet()) {
-                //*
                 //if the jsonobject contains the key "targetVpnGateways", then there are vpns in that zone
                 temp = (JSONObject) result.get(key);
                 zoneResult = (JSONArray) temp.get("targetVpnGateways");
                 if (zoneResult != null) {
-                    //System.out.printf("vgw key: %s\nvalue: %s\n", key, zoneResult);
                     output.addAll(zoneResult);
                 }
             }
@@ -172,6 +170,28 @@ public class GcpGet {
     public JSONObject getVpnTunnel(String region, String name) {
         try {
             return makeRequest(computeClient.vpnTunnels().get(projectID, region, name).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+        public JSONArray getAggregatedTunnels() {
+        try {
+            JSONObject result, temp;
+            JSONArray zoneResult, output = new JSONArray();
+            result = makeRequest(computeClient.vpnTunnels().aggregatedList(projectID).buildHttpRequest());
+            result = (JSONObject) result.get("items");
+            
+            for (Object key : result.keySet()) {
+                //if the jsonobject contains the key "vpnTunnels", then there are vpns in that zone
+                temp = (JSONObject) result.get(key);
+                zoneResult = (JSONArray) temp.get("vpnTunnels");
+                if (zoneResult != null) {
+                    output.addAll(zoneResult);
+                }
+            }
+            
+            return output;
         } catch (IOException e) {
             return null;
         }
