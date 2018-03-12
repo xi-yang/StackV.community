@@ -40,8 +40,7 @@ public class IpaAlm {
         kcToken = keycloakToken;        
     }
     
-    public boolean ipaLogin() {
-        System.out.println("****IpaAlm ipaLogin - token: " + kcToken);
+    public boolean ipaLogin() {        
         boolean loggedIn = false;
         String ipaLoginUrl = "https://localhost:8443/StackV-web/restapi/app/acl/ipa/login";
         try {
@@ -55,7 +54,6 @@ public class IpaAlm {
             
             // if the request is successful
             if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {  
-                System.out.println(conn.getHeaderFields());
                 loggedIn = true;
             } else { // if the request fails
                 String errorStream = "";
@@ -76,6 +74,11 @@ public class IpaAlm {
         return loggedIn;
     }
     
+    /**
+     * Runs the given JSON object and returns the JSON response
+     * @param ipaJSON
+     * @return 
+     */
     public JSONObject runIpaRequest(JSONObject ipaJSON) {
         JSONObject resultJSON = new JSONObject();
         
@@ -97,8 +100,7 @@ public class IpaAlm {
             
             StringBuilder responseStr;
             // if the request is successful
-            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {  
-                System.out.println(conn.getHeaderFields());
+            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {               
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                     String inputLine;
                     responseStr = new StringBuilder();
@@ -130,13 +132,7 @@ public class IpaAlm {
         return resultJSON;
     }
     
-    /**
-     * 
-     * @param poolName - common name (cn parameter)
-     * @param poolType
-     * @param almRange
-     * @return 
-     */
+    /*
     public JSONObject addAlmPool(String poolName, String poolType, String almRange) {
         JSONObject almPoolJSON = new JSONObject();
         almPoolJSON.put("id", 0);
@@ -171,6 +167,7 @@ public class IpaAlm {
         
         return runIpaRequest(delPoolJSON);
     }
+    */
     
     public JSONObject createLease(String clientId, String poolName, String poolType) {
         JSONObject leaseJSON = new JSONObject();
@@ -213,6 +210,7 @@ public class IpaAlm {
     
     /**
      * --NOTE MIGHT WANT TO SEE IF THE ALMSTATMENTS LIST CAN GIVEN BACK AS JSON OBJECT INSTEAD OF JSON ARRAY--
+     * Returns the leased address if the operation was successful, null otherwise
      * @param clientId
      * @param poolName
      * @param poolType
@@ -225,7 +223,6 @@ public class IpaAlm {
         // pass the parameters and run the request
         JSONObject leaseResponseJSON = createLease(clientId, poolName, poolType);
         
-        System.out.println("****leaseAddr: " + leaseResponseJSON.toJSONString());
         
         // parse the JSON response for the address
         // if there is no error
@@ -252,6 +249,14 @@ public class IpaAlm {
         return addr;
     }
     
+    /**
+     * Returns true if the address was successfully revoked, false otherwise
+     * @param clientId
+     * @param poolName
+     * @param poolType
+     * @param leasedAddr
+     * @return 
+     */
     public boolean revokeLeasedAddr(String clientId, String poolName, String poolType, String leasedAddr) {
         boolean revoked = false;
         
@@ -271,6 +276,7 @@ public class IpaAlm {
         return revoked;
     }
     
+    /*
     public boolean createAlmPool(String commonName, String poolType, String range) {
         boolean poolCreated = false;
         
@@ -282,4 +288,5 @@ public class IpaAlm {
         
         return poolDeleted;
     }
+    */
 }

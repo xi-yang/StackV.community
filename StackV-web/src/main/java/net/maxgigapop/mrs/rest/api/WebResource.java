@@ -444,6 +444,29 @@ public class WebResource {
         return result.toJSONString();   
     }
     
+    @POST
+    @Path("/ipa/alm/revoke")
+    @Consumes("application/json")
+    @Produces("application/json")
+    @RolesAllowed("ACL")
+    public String testIpaAlmRevoke(String revokeLease) throws ParseException {
+        JSONObject revokeJSON = (JSONObject) parser.parse(revokeLease);
+        String keycloakToken = (String) revokeJSON.get("kcToken");
+        String clientId = (String) revokeJSON.get("clientId");
+        String poolName = (String) revokeJSON.get("poolName");
+        String addrType = (String) revokeJSON.get("addressType");
+        String leasedAddr = (String) revokeJSON.get("leasedaddress");
+        if (ipaAlm == null) {
+           ipaAlm = new IpaAlm(keycloakToken.trim());
+        }        
+        
+        JSONObject result = new JSONObject();
+        
+        result.put("RevokedAddress", ipaAlm.revokeLeasedAddr(clientId, poolName, addrType, leasedAddr));
+        
+        return result.toJSONString();   
+    }
+    
     
     
     
