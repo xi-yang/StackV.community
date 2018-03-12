@@ -127,6 +127,7 @@ function loadInstances() {
 }
 
 var profileUpdateTimeout = null;
+var licenses;
 
 var catCount = 0;
 var catConfig = {
@@ -290,7 +291,6 @@ function loadModals() {
                         }
 
                         $("#profile-modal").modal("show");
-                        $("#info-panel-title").html("Profile Details");
                         $("#info-panel-text-area").val(result["wizard_json"]);
                         originalProfile = result["wizard_json"];
                         $(".button-profile-save").attr('id', resultID);
@@ -299,8 +299,16 @@ function loadModals() {
 
                         if (result["owner"] === keycloak.tokenParsed.preferred_username) {
                             $("#info-panel-management").show();
-                            $("#edit-profile-licenses").val(result["licenses"]);
-                            
+
+                            for (var i in result["licenses"]) {
+                                var license = result["licenses"][i];
+                                licenses[license["username"]] = license["remaining"];
+
+                                var $opt = $("<option>");
+                                $opt.val(license["username"]).text(license["username"]);
+                                $("#info-panel-share-edit").append($opt);
+                            }
+
                             $(".button-profile-delete").show();
                         }
                         prettyPrintInfo();
@@ -315,19 +323,45 @@ function loadModals() {
             });
 
 
-            // Legacy modal listeners.            
-            $("#edit-profile-licenses").on("keyup", function () {
-                clearTimeout(profileUpdateTimeout);
-                profileUpdateTimeout = setTimeout(function () {
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/edit/licenses';
-                    $.ajax({
-                        url: apiUrl,
-                        type: 'PUT',
-                        data: $("#edit-profile-licenses").val(),
-                        contentType: "application/json; charset=utf-8",
-                        dataType: "json"
-                    });
-                }, 1000);
+            // Legacy modal listeners.    
+            $("#info-panel-share-edit").on("change", function () {
+                var username = $(this).val();
+                $("#info-panel-share-remaining").val(licenses[username]);
+            });
+
+            $("#info-panel-share-remaining").on("change", function () {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/licenses';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: JSON.stringify({
+                        "remaining": $("#info-panel-share-remaining").val(),
+                        "username": $("#info-panel-share-edit").val()
+                    }),
+                    contentType: "application/json; charset=utf-8"
+                });
+            });
+
+            $(".button-profile-share-add").on("click", function (evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/licenses';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'POST',
+                    data: JSON.stringify({
+                        "username": $("#info-panel-share-new-username").val(),
+                        "remaining": $("#info-panel-share-new-remaining").val()
+                    }),
+                    contentType: "application/json; charset=utf-8",
+                    success: function () {                        
+                        var $opt = $("<option>");
+                        $opt.val($("#info-panel-share-new-username").val()).text($("#info-panel-share-new-username").val());
+                        $("#info-panel-share-edit").append($opt);
+                        licenses[$("#info-panel-share-new-username").val()] = $("#info-panel-share-new-remaining").val();
+                        
+                        $("#info-panel-share-new-username").val(null);
+                        $("#info-panel-share-new-remaining").val(null);
+                    }
+                });
             });
 
             $(".button-profile-delete").on("click", function (evt) {
@@ -399,11 +433,11 @@ function loadModals() {
                                 },
                                 error: function (jqXHR, textStatus, errorThrown) {
                                     console.log(jqXHR.status + " | " + textStatus + " | " + errorThrown);
-                                    
+
                                     if (jqXHR.status === 401) {
                                         $alertModal.iziModal('setSubtitle', 'You are not authorized for the service associated with this profile.');
                                         $alertModal.iziModal('setTop', 100);
-                                        $alertModal.iziModal('open');                                        
+                                        $alertModal.iziModal('open');
                                     }
                                 }
                             });
@@ -517,12 +551,13 @@ function loadModals() {
 }
 function resetProfileModal() {
     clearTimeout(profileUpdateTimeout);
+    licenses = {};
 
     $("#info-panel-management").hide();
     $("#edit-profile-licenses").val("");
 
     $("#profile-alias").val("");
-    
+
     $(".button-profile-delete").hide();
 }
 

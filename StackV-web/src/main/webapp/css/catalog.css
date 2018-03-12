@@ -124,6 +124,21 @@ div#catalog-tab-content {
     border-left: 1px solid white;
 }
 
+.edit-profile-username {
+    padding: 0px 5px 0px 10px;    
+    border-radius: 20px 0 0 20px;
+}
+.edit-profile-username#edit-profile-new {
+    
+}
+#info-panel-share-remaining {
+    padding: 0 5px 0 5px;
+    width: 70px;
+    border-radius: 0 20px 20px 0;
+}
+
+
+
 /*Don't show these buttons on open - only trigger when click on save as*/
 div.info-panel-save-as-description {
     display: none;

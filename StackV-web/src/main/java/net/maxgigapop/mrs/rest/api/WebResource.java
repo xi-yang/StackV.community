@@ -2230,9 +2230,10 @@ public class WebResource {
             if (username.equals("admin")) {
                 prep = front_conn.prepareStatement("SELECT DISTINCT * FROM service_wizard");
             } else {
-                prep = front_conn.prepareStatement("SELECT DISTINCT * FROM service_wizard WHERE owner = ? OR licenses LIKE ?");
+                prep = front_conn.prepareStatement("SELECT DISTINCT W.* FROM service_wizard W, service_wizard_licenses L "
+                        + "WHERE W.owner = ? OR (L.service_wizard_id = W.service_wizard_id AND L.username = ?)");
                 prep.setString(1, username);
-                prep.setString(2, "%" + username + "%");
+                prep.setString(2, username);
             }
             rs = prep.executeQuery();
             while (rs.next()) {
@@ -2665,23 +2666,32 @@ public class WebResource {
                 String method = "getProfile";
                 logger.trace_start(method);
                 front_conn = factory.getConnection("frontend");
+                JSONObject profJSON = new JSONObject();
 
-                prep = front_conn.prepareStatement("SELECT wizard_json, owner, editable, licenses, authorized FROM service_wizard WHERE service_wizard_id = ?");
+                prep = front_conn.prepareStatement("SELECT wizard_json, owner, editable, authorized FROM service_wizard WHERE service_wizard_id = ?");
                 prep.setInt(1, wizardID);
                 rs = prep.executeQuery();
                 while (rs.next()) {
-                    JSONObject profJSON = new JSONObject();
-
                     profJSON.put("wizard_json", rs.getString("wizard_json"));
                     profJSON.put("owner", rs.getString("owner"));
                     profJSON.put("editable", rs.getString("editable"));
-                    profJSON.put("licenses", rs.getString("licenses"));
-                    profJSON.put("licenses", rs.getString("authorized"));
-
-                    return profJSON.toJSONString();
+                    profJSON.put("authorized", rs.getString("authorized"));
                 }
 
+                prep = front_conn.prepareStatement("SELECT DISTINCT username, remaining FROM service_wizard_licenses WHERE service_wizard_id = ?");
+                prep.setInt(1, wizardID);
+                rs = prep.executeQuery();
+                JSONArray licenseJSON = new JSONArray();
+                while (rs.next()) {
+                    JSONObject obj = new JSONObject();
+                    obj.put("remaining", rs.getInt("remaining"));
+                    obj.put("username", rs.getString("username"));
+                    licenseJSON.add(obj);
+                }
+                profJSON.put("licenses", licenseJSON);
+
                 logger.trace_end(method);
+                return profJSON.toJSONString();
             }
             return "";
         } catch (SQLException ex) {
@@ -2736,7 +2746,53 @@ public class WebResource {
     }
 
     /**
-     * @api {put} /app/profile/:wizardID/edit/licenses Modify Profile
+     * @api {post} /app/profile/:wizardID/licenses Add Profile license
+     * @apiVersion 1.0.0
+     * @apiDescription
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
+    @POST
+    @Path("/profile/{wizardID}/licenses")
+    @Consumes(value = {"application/json"})
+    @RolesAllowed("Profiles-W")
+    public void addProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "addProfileLicenses";
+        try {
+            if (verifyAccess("profiles", wizardID)) {
+                Object obj = parser.parse(inputString);
+                JSONObject inputJSON = (JSONObject) obj;
+
+                logger.trace_start(method);
+                // Connect to the DB
+                front_conn = factory.getConnection("frontend");
+                prep = front_conn.prepareStatement("INSERT INTO service_wizard_licenses (service_wizard_id, remaining, username) VALUES (?,?,?)");
+                prep.setInt(1, wizardID);
+                prep.setInt(2, Integer.parseInt((String) inputJSON.get("remaining")));
+                prep.setString(3, (String) inputJSON.get("username"));
+                prep.executeUpdate();
+            }
+            logger.trace_end(method);
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    /**
+     * @api {put} /app/profile/:wizardID/licenses Modify Profile
      * @apiVersion 1.0.0
      * @apiDescription Modify the specified profile.
      * @apiGroup Profile
@@ -2750,27 +2806,31 @@ public class WebResource {
      * -H "Authorization: bearer $KC_ACCESS_TOKEN"
      */
     @PUT
-    @Path("/profile/{wizardID}/edit/licenses")
+    @Path("/profile/{wizardID}/licenses")
+    @Consumes(value = {"application/json"})
     @RolesAllowed("Profiles-W")
-    public void editProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException {
+    public void editProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        String method = "editProfile";
+        String method = "editProfileLicenses";
         try {
             if (verifyAccess("profiles", wizardID)) {
+                Object obj = parser.parse(inputString);
+                JSONObject inputJSON = (JSONObject) obj;
+
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
-                // TODO: Sanitize the input!
-                prep = front_conn.prepareStatement("UPDATE service_wizard SET licenses = ? WHERE service_wizard_id = ? ");
-                prep.setString(1, inputString);
+                prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE service_wizard_id = ? AND username = ?");
+                prep.setInt(1, Integer.parseInt((String) inputJSON.get("remaining")));
                 prep.setInt(2, wizardID);
+                prep.setString(3, (String) inputJSON.get("username"));
                 prep.executeUpdate();
             }
             logger.trace_end(method);
         } catch (SQLException ex) {
-            logger.catching("editProfile", ex);
+            logger.catching(method, ex);
             throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
@@ -2808,7 +2868,7 @@ public class WebResource {
             String name = (String) inputJSON.get("name");
             String description = (String) inputJSON.get("description");
             String username = (String) inputJSON.get("username");
-            String licenses = (String) inputJSON.get("licenses");
+            JSONArray licenseArr = (JSONArray) inputJSON.get("licenses");
 
             JSONObject inputData = (JSONObject) inputJSON.get("data");
             inputData.remove("uuid");
@@ -2819,15 +2879,31 @@ public class WebResource {
 
             int authorized = (verifyUserRole("admin")) ? 1 : 0;
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
-                    + "(owner, name, wizard_json, description, editable, authorized, licenses) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    + "(owner, name, wizard_json, description, editable, authorized) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setString(1, username);
             prep.setString(2, name);
             prep.setString(3, inputDataString);
             prep.setString(4, description);
             prep.setInt(5, 0);
             prep.setInt(6, authorized);
-            prep.setString(7, licenses);
             prep.executeUpdate();
+
+            prep = front_conn.prepareStatement("SELECT service_wizard_id FROM service_wizard WHERE owner = ? AND name = ?");
+            prep.setString(1, username);
+            prep.setString(2, name);
+            rs = prep.executeQuery();
+            rs.next();
+            int wizardID = rs.getInt("service_wizard_id");
+
+            for (Object obj2 : licenseArr) {
+                JSONObject licenseObj = (JSONObject) obj2;
+                prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard_licenses` "
+                        + "(service_wizard_id, username, remaining) VALUES (?, ?, ?)");
+                prep.setInt(1, wizardID);
+                prep.setString(2, (String) licenseObj.get("username"));
+                prep.setInt(3, (Integer) licenseObj.get("remaining"));
+                prep.executeUpdate();
+            }
 
             logger.end(method);
             return null;
@@ -3408,18 +3484,22 @@ public class WebResource {
             boolean result = false;
             switch (category) {
                 case "profiles":
-                    prep = front_conn.prepareStatement("SELECT owner, licenses FROM service_wizard WHERE service_wizard_id = ?");
+                    HashSet<String> nameSet = new HashSet<>();
+                    prep = front_conn.prepareStatement("SELECT DISTINCT owner FROM service_wizard WHERE service_wizard_id = ?");
                     prep.setInt(1, id);
                     rs = prep.executeQuery();
-
                     while (rs.next()) {
-                        String owner = rs.getString("owner");
-                        String licenses = rs.getString("licenses");
-
-                        result = (owner.contains(username) || licenses.contains(username));
+                        nameSet.add(rs.getString("owner"));
                     }
-                    break;
+                    prep = front_conn.prepareStatement("SELECT DISTINCT username FROM service_wizard_licenses WHERE service_wizard_id = ?");
+                    prep.setInt(1, id);
+                    rs = prep.executeQuery();
+                    while (rs.next()) {
+                        nameSet.add(rs.getString("username"));
+                    }
 
+                    result = nameSet.contains(username);
+                    break;
             }
 
             if (result) {
