@@ -117,13 +117,17 @@ public class DriverModelPuller {
                         String status = previousResult.get();
                         logger.trace(method, "model pulling - previousResult ready for topologyURI="+topoUri+" with status="+status);
                     } catch (Exception ex) {
+                        pullNormal = false;
                         logger.catching(method, ex);
                         //@TODO: retry couple of times, then exception if still failed
                     }
                 } else {
+                    pullNormal = false;
                     logger.trace(method, "model pulling - previousResult not ready for topologyURI="+topoUri);
                     //@TODO: timeout handling: skip and check after one more cycle, then previousResult.cancel(true); 
                 }
+            } else {
+                pullNormal = false;
             }
             try {
                 if (ejbCxt == null) {
@@ -143,10 +147,10 @@ public class DriverModelPuller {
         if (!bootStrapped && pullNormal) {
             // cleanning up from recovery
             logger.message(method, "cleanning up from recovery");
+            GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "true");
             VersionGroupPersistenceManager.cleanupAndUpdateAll(null);
             Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
             VersionItemPersistenceManager.cleanupAllBefore(before24h);
-            GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "true");
             logger.message(method, "Done! - bootStrapped changed to true");
         }
         logger.trace_end(method);
