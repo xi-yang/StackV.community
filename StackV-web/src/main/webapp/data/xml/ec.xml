@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="intent.xsd">
+    <meta>
+        <name>EdgeCloud Service</name>
+        <validation>
+            <constraint>
+                <name>string</name>
+                <regex>\S+</regex>
+                <message>Please enter a valid string.</message>
+            </constraint>
+            <constraint>
+                <name>integer</name>
+                <regex>\d+</regex>
+                <message>Please enter a valid integer.</message>
+            </constraint>
+            <constraint>
+                <name>vlan</name>
+                <regex>^\d{1,4}$|^\d{1,4}-\d{1,4}$|^any$</regex>
+                <message>Please enter a valid VLAN.</message>
+            </constraint>
+            <constraint>
+                <name>macs</name>
+                <regex>^\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2}(,\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2})*$</regex>
+                <message>Please enter a valid comma-separated list of MAC addresses.</message>
+            </constraint>
+            <constraint>
+                <name>cidr</name>
+                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}$</regex>
+                <message>Please enter a valid CIDR.</message>
+            </constraint>
+        </validation>
+    </meta>
+    <stage name="Connection">
+        <group name="AWS Direct Connect">
+            <input required="true">
+                <name>Owner Account Number</name>
+                <type>text</type>
+                <valid>integer</valid>
+            </input>
+            <input>
+                <name>Customer IP</name>
+                <type>text</type>
+                <valid>ip</valid>
+            </input>
+            <input>
+                <name>Amazon IP</name>
+                <type>text</type>
+                <valid>ip</valid>
+            </input>
+            <input>
+                <name>Customer ASN</name>
+                <type>text</type>
+                <valid>integer</valid>
+            </input>
+            <input>
+                <name>Authentication Key</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>
+        </group>
+        <group name="Terminal">
+            <input>
+                <name>URI</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>
+            <input>
+                <name>VLAN Tag</name>
+                <type>text</type>
+                <valid>VLAN</valid>
+            </input>
+            <input>
+                <name>Bandwidth</name>
+                <type>text</type>
+                <valid>string</valid>
+            </input>
+        </group>
+    </stage>
+</intent>
