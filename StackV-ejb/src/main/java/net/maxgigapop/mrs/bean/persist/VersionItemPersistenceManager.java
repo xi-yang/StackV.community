@@ -113,12 +113,19 @@ public class VersionItemPersistenceManager extends PersistenceManager {
     }
 
     public static void cleanupAllBefore(Date before) {
-        logger.start("cleanupAllBefore");
+        String method = "cleanupAllBefore";
+        logger.start(method);
         Query q = createQuery(String.format("SELECT vi.id FROM %s vi WHERE vi.modelRef.creationTime < :before AND "
                 + "NOT EXISTS (FROM %s as delta WHERE delta.referenceVersionItem = vi)",
                 VersionItem.class.getSimpleName(), DriverSystemDelta.class.getSimpleName()));
         q.setParameter("before", before, TemporalType.TIMESTAMP);
-        List listVID = q.getResultList();
+        List listVID;
+        try {
+            listVID = q.getResultList();
+        } catch (Exception ex) {
+            logger.catching(method, ex);
+            return;
+        }
         if (listVID == null) {
             return;
         }
