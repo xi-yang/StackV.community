@@ -775,7 +775,7 @@ function submitIntent(mode) {
                             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                         }
                     });
-                    window.location.href = "/StackV-web/ops/catalog.jsp";
+                    window.location.href = "/StackV-web/portal/";
                 }
             } else {
                 /*setTimeout(function () {

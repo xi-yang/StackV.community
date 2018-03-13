@@ -238,9 +238,8 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
                     model.add(model.createStatement(resVirtualIfVlan, Nml.value, vlanNum));
                     model.add(model.createStatement(resDC, Nml.hasLabel, resVirtualIfVlan));
                     // VLAN also considered as "allocated" under the Virtual Interface if associcated with a VGW
-                    String[] acceptedStates = {VirtualInterfaceState.Available.toString(), VirtualInterfaceState.Deleting.toString(), 
-                        VirtualInterfaceState.Pending.toString(), VirtualInterfaceState.Confirming.toString(), VirtualInterfaceState.Verifying.toString(), "down"};
-                    if(vi.getVirtualGatewayId() != null && (Arrays.asList(acceptedStates).contains(virtualInterfaceState)))
+                    // String[] acceptedStates = {VirtualInterfaceState.Available.toString(), VirtualInterfaceState.Pending.toString(), "down"};
+                    if(vi.getVirtualGatewayId() != null && !vi.getVirtualGatewayId().isEmpty())
                     {
                         model.add(model.createStatement(resVirtualIf, Nml.hasLabel, resVirtualIfVlan));
                     }
@@ -314,6 +313,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         query = "SELECT DISTINCT ?dxconn ?dxvlan WHERE {"
                 + "?dxconn nml:hasLabel ?label ."
                 + "?label nml:value ?dxvlan. "
+                + "FILTER NOT EXISTS {?dxconn mrs:type \"direct-connect-vif\"}"
                 + "}";
         r = ModelUtil.executeQuery(query, null, modelReduct);
         while (r.hasNext()) {
