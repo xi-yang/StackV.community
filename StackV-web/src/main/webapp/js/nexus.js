@@ -35,7 +35,11 @@ $(function () {
         cache: false,
         timeout: 60000,
         beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            if (keycloak.token === undefined) {
+                xhr.setRequestHeader("Authorization", "bearer " + sessionStorage.getItem("token"));
+            } else {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            }            
         }
     });
 

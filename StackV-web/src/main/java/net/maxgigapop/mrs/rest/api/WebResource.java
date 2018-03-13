@@ -2123,7 +2123,7 @@ public class WebResource {
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/json")
-    @RolesAllowed("Manifests")
+    @RolesAllowed("Panels")
     public String getManifest(@PathParam("svcUUID") String svcUUID) throws SQLException {
         logger.refuuid(svcUUID);
         String method = "getManifest";
@@ -2201,7 +2201,7 @@ public class WebResource {
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/xml")
-    @RolesAllowed("Manifests")
+    @RolesAllowed("Panels")
     public String getManifestXml(@PathParam("svcUUID") String svcUUID) throws SQLException {
         logger.refuuid(svcUUID);
         String manifestJStr = getManifest(svcUUID);
