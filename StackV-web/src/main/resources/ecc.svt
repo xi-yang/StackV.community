@@ -32,7 +32,7 @@
     a            spa:PolicyData;
     spa:type     "JSON";
     spa:format    """{
-       "dxvif_l2path": %%$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{@index}}[0].hops.*%%
+       "dxvif_l2path": %$.urn:ogf:network:vo1_maxgigapop_net:link=conn{{@index}}[0].hops.*%
        "owner_account": "{{owner_account}}",
        "customer_ip": "{{l3_customer_ip}}",
        "amazon_ip": "{{l3_cloudedge_ip}}",
