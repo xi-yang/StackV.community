@@ -244,7 +244,7 @@ function attachListeners() {
                     } else {
                         swal({
                             buttons: false,
-                            icon: "success",
+                            title: "Loading!",
                             closeOnEsc: false,
                             timer: 3000
                         });

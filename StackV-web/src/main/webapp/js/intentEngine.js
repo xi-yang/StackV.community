@@ -38,6 +38,8 @@ var proceeding = false;
 var $activeStage;
 var simpleManifest = false;
 
+var typingTimer = null;
+
 Mousetrap.bind({
     'left': function () {
         if ($activeStage)
@@ -47,6 +49,19 @@ Mousetrap.bind({
         if ($activeStage)
             nextStage();
     }
+});
+
+var $errorModal = $("#error-modal").iziModal({
+    title: "Input Error",
+    subtitle: 'There are invalid inputs. Please review and correct!',
+    headerColor: '#BD5B5B',
+    width: 600,
+    top: 300,
+    timeout: 5000,
+    timeoutProgressbar: true,
+    transitionIn: 'fadeInDown',
+    transitionOut: 'fadeOutDown',
+    pauseOnHover: true
 });
 
 function loadIntent(type) {
@@ -155,6 +170,15 @@ function initializeIntent() {
     setTimeout(function () {
         gsap["intent"].play();
     }, 500);
+
+    // Establish listeners
+    $(document).on("keyup", "[data-valid]", function () {
+        clearTimeout(typingTimer);
+        var $input = $(this);
+        typingTimer = setTimeout(function() {
+            validateInput($input);
+        }, 1000);
+    });
 }
 
 
@@ -555,17 +579,6 @@ function renderInputs(arr, $parent) {
             if (ele.getElementsByTagName("valid").length > 0) {
                 var validRef = ele.getElementsByTagName("valid")[0].innerHTML;
                 $input.attr("data-valid", validRef);
-
-                $input.change(function () {
-                    $(this).removeClass("invalid-input");
-                    var $stage = $($(this).parents(".intent-stage-div")[0]);
-                    if ($stage.find(".invalid-input").length === 0) {
-                        $("#prog-" + $stage.attr("id")).removeClass("invalid-input");
-                    }
-                    if ($(".invalid-input").length === 0) {
-                        $(".intent-operations").removeClass("blocked");
-                    }
-                });
             }
 
             if (hidden) {
@@ -672,56 +685,14 @@ function submitIntent(mode) {
     //gsap["intent"].reverse();
     refreshLinks();
     if ($(".invalid-input").length === 0) {
-        // Validate
-        var validation = $("[data-valid]");
+        // Validate        
         var valid = true;
         if (!($("#meta-alias").val()) && mode === 0) {
             valid = false;
             $("#meta-alias").addClass("invalid-input");
         }
 
-        for (var i = 0; i < validation.length; i++) {
-            var $input = $(validation[i]);
-            if (isEnabledInput($input)) {
-                var validRef = $input.data("valid");
-                var validEle = intent.children[0].getElementsByTagName("validation")[0];
-                var constEle = null;
-                for (var j = 0; j < validEle.children.length; j++) {
-                    var constraint = validEle.children[j];
-                    if (constraint.children[0].innerHTML === validRef) {
-                        constEle = constraint;
-                        break;
-                    }
-                }
-                if (constEle) {
-                    var regex = constEle.children[1].innerHTML;
-                    regex = regex.replace(/\\/g, "\\");
-                    regex = new RegExp(regex, "gm");
-
-                    var $message = $("<div>", {class: "intent-input-message"});
-                    if (constEle.getElementsByTagName("message").length > 0) {
-                        $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
-                    }
-
-                    $input.parent().append($message);
-
-                    if (($input.val() === null || $input.val() === "")) {
-                        if ($input.data("required")) {
-                            valid = false;
-                            $input.addClass("invalid-input");
-                            var $stage = $($input.parents(".intent-stage-div")[0]);
-                            $("#prog-" + $stage.attr("id")).addClass("invalid-input");
-                        }
-                    } else if ($input.val().match(regex) === null) {
-                        valid = false;
-                        $input.addClass("invalid-input");
-                        var $stage = $($input.parents(".intent-stage-div")[0]);
-                        $("#prog-" + $stage.attr("id")).addClass("invalid-input");
-                    }
-                }
-            }
-        }
-
+        valid = validateAllInputs();
         if (valid || mode === 2) {
             // Parse manifest
             var json = {};
@@ -786,7 +757,7 @@ function submitIntent(mode) {
             }
         } else {
             $(".intent-operations").addClass("blocked");
-            swal("Input Error", "Invalid Inputs. Please review marked fields and correct them.", "error");
+            $errorModal.iziModal("open");
             /*setTimeout(function () {
              gsap["intent"].play();
              }, 500);*/
@@ -795,6 +766,62 @@ function submitIntent(mode) {
 }
 
 // UTILITY FUNCTIONS
+function validateInput($input) {
+    if (isEnabledInput($input)) {
+        var validRef = $input.data("valid");
+        var validEle = intent.children[0].getElementsByTagName("validation")[0];
+        var constEle = null;
+        for (var j = 0; j < validEle.children.length; j++) {
+            var constraint = validEle.children[j];
+            if (constraint.children[0].innerHTML === validRef) {
+                constEle = constraint;
+                break;
+            }
+        }
+        if (constEle) {
+            var regex = constEle.children[1].innerHTML;
+            regex = regex.replace(/\\/g, "\\");
+            regex = new RegExp(regex, "gm");
+
+            if (($input.val() === null || $input.val() === "")) {
+                if ($input.data("required")) {
+                    $input.addClass("invalid-input");
+                    var $stage = $($input.parents(".intent-stage-div")[0]);
+                    $("#prog-" + $stage.attr("id")).addClass("invalid-input");
+                    $(".intent-operations").addClass("blocked");
+                    return false;
+                }
+            } else if ($input.val().match(regex) === null) {
+                $input.addClass("invalid-input");
+                var $stage = $($input.parents(".intent-stage-div")[0]);
+                $("#prog-" + $stage.attr("id")).addClass("invalid-input");
+                $(".intent-operations").addClass("blocked");
+                return false;
+            }
+        }
+    }
+    $input.removeClass("invalid-input");
+    var $stage = $($input.parents(".intent-stage-div")[0]);
+    $("#prog-" + $stage.attr("id")).removeClass("invalid-input");
+
+    if ($(".invalid-input").length === 0) {
+        $(".intent-operations").removeClass("blocked");
+    }
+
+    return true;
+}
+function validateAllInputs() {
+    var validation = $("[data-valid]");
+    var ret = true;
+    for (var i = 0; i < validation.length; i++) {
+        var $input = $(validation[i]);
+        if (validateInput($input) === false) {
+            ret = false;
+        }
+    }
+    return ret;
+}
+
 function collapseGroups() {
     $(".collapsing").each(function () {
         var $div = $(this);
@@ -1665,6 +1692,29 @@ function initializeInputs() {
             }
         }
     }
+
+    var validation = $("[data-valid]");
+    for (var i = 0; i < validation.length; i++) {
+        var $input = $(validation[i]);
+        var validRef = $input.data("valid");
+        var validEle = intent.children[0].getElementsByTagName("validation")[0];
+        var constEle = null;
+        for (var j = 0; j < validEle.children.length; j++) {
+            var constraint = validEle.children[j];
+            if (constraint.children[0].innerHTML === validRef) {
+                constEle = constraint;
+                break;
+            }
+        }
+        if (constEle) {
+            var $message = $("<div>", {class: "intent-input-message"});
+            if (constEle.getElementsByTagName("message").length > 0) {
+                $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
+            }
+
+            $input.parent().append($message);
+        }
+    }
 }
 
 function expandStarters() {
@@ -1735,7 +1785,11 @@ function parseTestManifest() {
                 $(this).val(id);
                 break;
             case "SELECT":
-                $(this).val($(this).children('option[value!=""][value]').first().val());
+                if ($(this).children('option[value!=""][value]').size() > 0) {
+                    $(this).val($(this).children('option[value!=""][value]').first().val());
+                } else {
+                    $(this).append($("<option>").val(id));
+                }
                 break;
         }
     });
@@ -1749,7 +1803,13 @@ function parseTestManifest() {
         conArr.push($(this).data("condition"));
     });
     conArr = $.unique(conArr);
-    manifest["options"] = conArr;
+    if (conArr.length > 0) {
+        manifest["options"] = conArr;
+    }
+
+    manifest["alias"] = "Test Alias";
+    manifest["uuid"] = "TESTUUID";
+    manifest["username"] = "Test Username";
 
     $("body").css("background", "white");
     $("body").html(JSON.stringify(manifest));

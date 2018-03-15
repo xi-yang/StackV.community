@@ -96,6 +96,8 @@ $(function () {
                 loadDetailsNavbar();
                 loadDetails();
             }
+        } else if (window.location.pathname === "/StackV-web/visual/manifest/manifestPortal.jsp") {
+            loadManifest();
         }
 
         if ($("#tag-panel").length) {

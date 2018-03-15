@@ -1,48 +1,46 @@
-/* global baseUrl */
+/* global baseUrl, keycloak */
 
-load();
-function load() {
+function loadManifest() {
     var uuid = location.search.split("?uuid=")[1];
-    var token = sessionStorage.getItem("token");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
     $.ajax({
         url: apiUrl,
         type: 'GET',
         beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + token);
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (instance) {
             var serviceName = instance[0];
             switch (serviceName) {
                 case "Dynamic Network Connection":
-                    loadManifest("dnc-manifest-template.xml");
+                    subloadManifest("dnc-manifest-template.xml");
                     break;
                 case "Virtual Cloud Network":
                     $.get({
                         url: "/StackV-web/restapi/service/property/" + uuid + "/host/",
                         beforeSend: function (xhr) {
-                            xhr.setRequestHeader("Authorization", "bearer " + token);
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                         },
 
                         success: function (data) {
                             if (data === "ops") {
-                                loadManifest("vcn-ops-manifest-template.xml");
+                                subloadManifest("vcn-ops-manifest-template.xml");
                             } else if (data === "aws") {
-                                loadManifest("vcn-aws-manifest-template.xml");
+                                subloadManifest("vcn-aws-manifest-template.xml");
                             }
                         },
                         dataType: "text"
-                    });                    
+                    });
                     break;
                 case "Advanced Hybrid Cloud":
-                    loadManifest("ahc-manifest-template.xml");
+                    subloadManifest("ahc-manifest-template.xml");
                     break;
             }
         }
     });
 }
 
-function loadManifest(templateURL) {
+function subloadManifest(templateURL) {
     var uuid = location.search.split("?uuid=")[1];
     $.get({
         url: "/StackV-web/data/xml/manifest-templates/" + templateURL,
@@ -56,7 +54,7 @@ function loadManifest(templateURL) {
 
                 data: template,
                 beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + token);
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 },
 
                 headers: {

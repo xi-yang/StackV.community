@@ -117,11 +117,7 @@ public class WebResource {
 
     private static Map<String, List<String>> createServiceMap() {
         HashMap<String, List<String>> result = new HashMap<>();
-
-        result.put("driver", Arrays.asList(
-                "Driver Management",
-                "Installation and Uninstallation of Driver Instances."));
-
+        
         result.put("vcn", Arrays.asList(
                 "Virtual Cloud Network",
                 "Network Creation Pilot Testbed."));
@@ -133,6 +129,10 @@ public class WebResource {
         result.put("ahc", Arrays.asList(
                 "Advanced Hybrid Cloud",
                 "Advanced Hybrid Cloud Service."));
+        
+        result.put("ecc", Arrays.asList(
+                "EdgeCloud Connection",
+                "MAX EdgeCloud Pilot Service."));
 
         return Collections.unmodifiableMap(result);
     }
