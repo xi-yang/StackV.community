@@ -39,6 +39,7 @@ import net.maxgigapop.mrs.bean.persist.GlobalPropertyPersistenceManager;
 public class DataConcurrencyPoster {
     // per-node singleton to hold the cachedOntModel from SystemModelCoordinator for lock-free access
     OntModel SystemModelCoordinator_cachedOntModel = null;
+    boolean SystemModelCoordinator_localBootstrapped = false;
 
     public OntModel getSystemModelCoordinator_cachedOntModel() {
         return SystemModelCoordinator_cachedOntModel;
@@ -51,7 +52,7 @@ public class DataConcurrencyPoster {
     // persisted global boot_strapped flag
     public boolean isSystemModelCoordinator_bootStrapped() {
         String bootStrapped = GlobalPropertyPersistenceManager.getProperty("system.boot_strapped");
-        if (bootStrapped != null && bootStrapped.equalsIgnoreCase("true")) {
+        if (bootStrapped != null && bootStrapped.equalsIgnoreCase("true") && SystemModelCoordinator_localBootstrapped) {
             return true;
         } else {
             return false;
@@ -59,6 +60,15 @@ public class DataConcurrencyPoster {
     }
 
     public void setSystemModelCoordinator_bootStrapped(boolean bootStrapped) {
+        SystemModelCoordinator_localBootstrapped = bootStrapped;
         GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", bootStrapped ? "true" : "false");
+    }
+
+    public boolean isSystemModelCoordinator_localBootstrapped() {
+        return SystemModelCoordinator_localBootstrapped;
+    }
+
+    public void setSystemModelCoordinator_localBootstrapped(boolean SystemModelCoordinator_localBootstrapped) {
+        this.SystemModelCoordinator_localBootstrapped = SystemModelCoordinator_localBootstrapped;
     }
 }
