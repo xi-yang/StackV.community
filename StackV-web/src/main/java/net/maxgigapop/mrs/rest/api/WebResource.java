@@ -408,11 +408,9 @@ public class WebResource {
     @Consumes("application/json")
     @Produces("application/json")
     @RolesAllowed("ACL")
-    public String testIpaAlmLogin(String kcToken) throws ParseException {
-        JSONObject tokenJSON = (JSONObject) parser.parse(kcToken);
-        String keycloakToken = (String) tokenJSON.get("kcToken");
+    public String testIpaAlmLogin() throws ParseException {        
         if (ipaAlm == null) {
-           ipaAlm = new IpaAlm(keycloakToken.trim());
+           ipaAlm = new IpaAlm();
         }        
         
         JSONObject result = new JSONObject();
@@ -429,12 +427,11 @@ public class WebResource {
     @RolesAllowed("ACL")
     public String testIpaAlmLease(String createLease) throws ParseException {
         JSONObject leaseJSON = (JSONObject) parser.parse(createLease);
-        String keycloakToken = (String) leaseJSON.get("kcToken");
         String clientId = (String) leaseJSON.get("clientId");
         String poolName = (String) leaseJSON.get("poolName");
         String addrType = (String) leaseJSON.get("addressType");
         if (ipaAlm == null) {
-           ipaAlm = new IpaAlm(keycloakToken.trim());
+           ipaAlm = new IpaAlm();
         }        
         
         JSONObject result = new JSONObject();
@@ -450,14 +447,13 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("ACL")
     public String testIpaAlmRevoke(String revokeLease) throws ParseException {
-        JSONObject revokeJSON = (JSONObject) parser.parse(revokeLease);
-        String keycloakToken = (String) revokeJSON.get("kcToken");
+        JSONObject revokeJSON = (JSONObject) parser.parse(revokeLease);        
         String clientId = (String) revokeJSON.get("clientId");
         String poolName = (String) revokeJSON.get("poolName");
         String addrType = (String) revokeJSON.get("addressType");
         String leasedAddr = (String) revokeJSON.get("leasedaddress");
         if (ipaAlm == null) {
-           ipaAlm = new IpaAlm(keycloakToken.trim());
+           ipaAlm = new IpaAlm();
         }        
         
         JSONObject result = new JSONObject();

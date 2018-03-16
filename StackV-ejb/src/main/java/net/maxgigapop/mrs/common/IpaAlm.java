@@ -25,21 +25,23 @@ import org.json.simple.parser.ParseException;
  * @author saiarvind
  */
 public class IpaAlm {
-    // think about making this class a singleton - since instantiating multiple IpaAlms doesn't
-    // exactly make sense
     public static final StackLogger logger = new StackLogger(IpaAlm.class.getName(), "IpaAlm");
     
     JSONParser parser = new JSONParser();
     
+    KcTokenHandler kcTokenHandler = new KcTokenHandler();
+    
+    
     String ipaRestBaseUrl = "https://localhost:8443/StackV-web/restapi/app/acl/ipa/request";
     
     // NEED THE KEYCLOAK AUTHORIZATION TOKEN IN THE HEADERS
-    String kcToken; // currently getting from browser and setting in constructor
+    String kcToken;
     
-    public IpaAlm(String keycloakToken) {        
-        kcToken = keycloakToken;        
+    public IpaAlm() {
+        kcToken = kcTokenHandler.getToken("xyang", "MAX123!");        
     }
     
+   
     public boolean ipaLogin() {        
         boolean loggedIn = false;
         String ipaLoginUrl = "https://localhost:8443/StackV-web/restapi/app/acl/ipa/login";
