@@ -299,6 +299,8 @@ function loadModals() {
 
                         if (result["owner"] === keycloak.tokenParsed.preferred_username) {
                             $("#info-panel-management").show();
+                            $("#info-panel-share-edit :not(:disabled)").remove();
+                            $("#info-panel-share-remaining").val(null);
 
                             for (var i in result["licenses"]) {
                                 var license = result["licenses"][i];
@@ -310,6 +312,22 @@ function loadModals() {
                             }
 
                             $(".button-profile-delete").show();
+                        } else {
+                            var remaining = 1;
+                            for (var i in result["licenses"]) {
+                                var license = result["licenses"][i];
+                                if (license["username"] === keycloak.tokenParsed.preferred_username) {
+                                    remaining = license["remaining"];
+                                }
+                            }
+                            
+                            var metaText = "Profile owned by " + result["owner"] + ", ";
+                            if (remaining > 1 ) {
+                                metaText += remaining + " uses remaining.";
+                            } else {
+                                metaText += remaining + " use remaining.";
+                            }                            
+                            $("#profile-license-metadata").text(metaText);
                         }
                         prettyPrintInfo();
                     },
@@ -338,7 +356,15 @@ function loadModals() {
                         "remaining": $("#info-panel-share-remaining").val(),
                         "username": $("#info-panel-share-edit").val()
                     }),
-                    contentType: "application/json; charset=utf-8"
+                    contentType: "application/json; charset=utf-8",
+                    success: function () {
+                        if ($("#info-panel-share-remaining").val() <= 0) {
+                            var $opt = $("#info-panel-share-edit option[value='" + $("#info-panel-share-edit").val() + "']");
+                            $opt.remove();
+                            $("#info-panel-share-remaining").val(licenses[$("#info-panel-share-edit").val()]);
+                        }
+                        
+                    }
                 });
             });
 
@@ -552,6 +578,9 @@ function loadModals() {
 function resetProfileModal() {
     clearTimeout(profileUpdateTimeout);
     licenses = {};
+    $("#info-panel-share-edit :not(:disabled)").remove();
+    $("#info-panel-share-remaining").val(null);
+    $("#profile-license-metadata").text(null);
 
     $("#info-panel-management").hide();
     $("#edit-profile-licenses").val("");

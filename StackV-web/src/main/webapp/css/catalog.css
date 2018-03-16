@@ -84,6 +84,12 @@ tr.instance-row {
     overflow: scroll;
 }
 
+#profile-license-metadata {
+    display: block;    
+    text-align: left;   
+    color: #777;
+}
+
 
 
 /*Make content within tab scrollable*/
@@ -129,7 +135,7 @@ div#catalog-tab-content {
     border-radius: 20px 0 0 20px;
 }
 .edit-profile-username#edit-profile-new {
-    
+
 }
 #info-panel-share-remaining {
     padding: 0 5px 0 5px;

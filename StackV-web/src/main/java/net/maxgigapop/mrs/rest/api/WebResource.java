@@ -117,7 +117,7 @@ public class WebResource {
 
     private static Map<String, List<String>> createServiceMap() {
         HashMap<String, List<String>> result = new HashMap<>();
-        
+
         result.put("vcn", Arrays.asList(
                 "Virtual Cloud Network",
                 "Network Creation Pilot Testbed."));
@@ -129,7 +129,7 @@ public class WebResource {
         result.put("ahc", Arrays.asList(
                 "Advanced Hybrid Cloud",
                 "Advanced Hybrid Cloud Service."));
-        
+
         result.put("ecc", Arrays.asList(
                 "EdgeCloud Connection",
                 "MAX EdgeCloud Pilot Service."));
@@ -2822,11 +2822,18 @@ public class WebResource {
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
-                prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE service_wizard_id = ? AND username = ?");
-                prep.setInt(1, Integer.parseInt((String) inputJSON.get("remaining")));
-                prep.setInt(2, wizardID);
-                prep.setString(3, (String) inputJSON.get("username"));
-                prep.executeUpdate();
+                if (Integer.parseInt((String) inputJSON.get("remaining")) <= 0) {
+                    prep = front_conn.prepareStatement("DELETE FROM service_wizard_licenses WHERE service_wizard_id = ? AND username = ?");
+                    prep.setInt(1, wizardID);
+                    prep.setString(2, (String) inputJSON.get("username"));
+                    prep.executeUpdate();
+                } else {
+                    prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE service_wizard_id = ? AND username = ?");
+                    prep.setInt(1, Integer.parseInt((String) inputJSON.get("remaining")));
+                    prep.setInt(2, wizardID);
+                    prep.setString(3, (String) inputJSON.get("username"));
+                    prep.executeUpdate();
+                }
             }
             logger.trace_end(method);
         } catch (SQLException ex) {
@@ -2895,14 +2902,16 @@ public class WebResource {
             rs.next();
             int wizardID = rs.getInt("service_wizard_id");
 
-            for (Object obj2 : licenseArr) {
-                JSONObject licenseObj = (JSONObject) obj2;
-                prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard_licenses` "
-                        + "(service_wizard_id, username, remaining) VALUES (?, ?, ?)");
-                prep.setInt(1, wizardID);
-                prep.setString(2, (String) licenseObj.get("username"));
-                prep.setInt(3, (Integer) licenseObj.get("remaining"));
-                prep.executeUpdate();
+            if (licenseArr != null) {
+                for (Object obj2 : licenseArr) {
+                    JSONObject licenseObj = (JSONObject) obj2;
+                    prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard_licenses` "
+                            + "(service_wizard_id, username, remaining) VALUES (?, ?, ?)");
+                    prep.setInt(1, wizardID);
+                    prep.setString(2, (String) licenseObj.get("username"));
+                    prep.setInt(3, (Integer) licenseObj.get("remaining"));
+                    prep.executeUpdate();
+                }
             }
 
             logger.end(method);

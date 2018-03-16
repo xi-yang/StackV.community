@@ -49,7 +49,7 @@ import org.json.simple.JSONObject;
 public class ServiceEngine {
 
     private final static StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceEngine");
-    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";   
+    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
     private final static JNDIFactory factory = new JNDIFactory();
 
     // OPERATION FUNCTIONS    
@@ -58,6 +58,9 @@ public class ServiceEngine {
         String result;
         String lastState = "INIT";
         String svcDelta = (String) inputJSON.get("data");
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
         logger.start(method, svcDelta);
 
         int start = svcDelta.indexOf("<modelAddition>") + 15;
@@ -73,9 +76,42 @@ public class ServiceEngine {
             int results = cacheServiceDelta(refUUID, svcDelta, deltaUUID);
             int instanceID = results;
 
+            // Check for license deduction.
+            if (inputJSON.containsKey("profileID")) {
+                
+                System.out.println("Checking for deduction");
+                
+                front_conn = factory.getConnection("frontend");
+                prep = front_conn.prepareStatement("SELECT L.remaining FROM service_wizard W, service_wizard_licenses L WHERE W.service_wizard_id = ? AND W.service_wizard_id = L.service_wizard_id AND L.username = ?");
+                prep.setString(1, (String) inputJSON.get("profileID"));
+                prep.setString(2, (String) inputJSON.get("username"));
+                rs = prep.executeQuery();
+                while (rs.next()) {
+                    System.out.println("in result set");
+                    int remaining = rs.getInt("remaining");
+                    if (remaining > 0) {
+                        prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE username = ? AND service_wizard_id = ?");
+                        prep.setInt(1, --remaining);
+                        prep.setString(2, (String) inputJSON.get("username"));
+                        prep.setString(3, (String) inputJSON.get("profileID"));
+                        prep.executeUpdate();    
+                        logger.trace(method, "License deducted, now at " + remaining + " uses remaining.");
+                    }
+                    
+                    if (remaining <= 0) {
+                        prep = front_conn.prepareStatement("DELETE FROM service_wizard_licenses WHERE username = ? AND service_wizard_id = ?");
+                        prep.setString(1, (String) inputJSON.get("username"));
+                        prep.setString(2, (String) inputJSON.get("profileID"));
+                        prep.executeUpdate();    
+                        logger.trace(method, "License fully used.");
+                    }
+                }
+            }
+
             result = initInstance(refUUID, svcDelta, token.auth());
             lastState = "COMPILED";
             logger.trace(method, "Initialized");
+
             cacheSystemDelta(instanceID, result);
 
             if (inputJSON.containsKey("host")) {
@@ -117,10 +153,6 @@ public class ServiceEngine {
             throw ex;
         } finally {
             logger.trace_start("updateLastState", lastState);
-
-            Connection front_conn = null;
-            PreparedStatement prep = null;
-            ResultSet rs = null;
             try {
                 front_conn = factory.getConnection("frontend");
 
