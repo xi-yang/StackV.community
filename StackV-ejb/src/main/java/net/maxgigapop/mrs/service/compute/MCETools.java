@@ -1512,15 +1512,19 @@ public class MCETools {
         if (vlanRange == null || vlanRange.isEmpty()) {
             return null;
         }
-        sparql = String.format("SELECT ?vlan WHERE {"
+        sparql = String.format("SELECT ?vlan WHERE { {"
                 + "<%s> nml:hasBidirectionalPort ?vlan_port. "
                 + "?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                 + "?l nml:value ?vlan."
+                + "} UNION {"
+                + "<%s> nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+                + "?l nml:value ?vlan. "
+                + "}"
                 + "FILTER not exists {"
                 + "?subnet nml:hasBidirectionalPort ?vlan_port. "
                 + "?subnet a mrs:SwitchingSubnet. "
                 + "?subnet mrs:type \"shared\". "
-                + "} }", port);
+                + "} }", port, port);
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             String vlanStr = rs.next().getLiteral("?vlan").toString();
