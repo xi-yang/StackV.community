@@ -226,8 +226,57 @@ public class BandwidthCalendar {
     }
 
     //@TODO: reduceSchedule
+
+    public void combineSchedule(long start, long end, long bw) throws BandwidthException {
+        List<BandwidthSchedule> overlappedSchedules = lookupSchedulesBetween(start, end);
+        if (overlappedSchedules.isEmpty()) {
+            this._addSchedule(start, end, bw);
+            return;
+        }
+        int overlapIndex = 0;
+        BandwidthSchedule first = schedules.get(0);
+        if (first.getStartTime() < start) {
+            BandwidthSchedule dupFirst = first.clone();
+            first.setStartTime(start);
+            dupFirst.setEndTime(start);
+            schedules.add(0, dupFirst);
+            overlapIndex = 1;
+        }
+        int lastOverlap = schedules.size();
+        BandwidthSchedule last = schedules.get(schedules.size()-1);
+        if (last.getEndTime() > end) {
+            BandwidthSchedule dupLast = last.clone();
+            last.setEndTime(end);
+            dupLast.setStartTime(end);
+            schedules.add(dupLast);
+        }
+        
+        while (overlapIndex <= lastOverlap) {
+            BandwidthSchedule overlapSchedule = schedules.get(overlapIndex);
+            if (overlapSchedule.getStartTime() > start) {
+                this._addSchedule(start, overlapSchedule.getStartTime(), bw);
+            } 
+            if (overlapSchedule.getEndTime() < end) {
+                this._addSchedule(overlapSchedule.getEndTime(), end, bw);
+            }
+            overlapSchedule.setBandwidth(overlapSchedule.getBandwidth() > bw ? overlapSchedule.getBandwidth(): bw);
+        }
+    }
     
-    public BandwidthSchedule checkBandwidthSchedule(long bw, long duration, long deadline, boolean add) {
+    public void combineCalendar(BandwidthCalendar bwCalendar) throws BandwidthException {
+        // combine capacity to the min 
+        if (bwCalendar.getCapacity() < this.capacity) {
+            this.setCapacity(bwCalendar.getCapacity());
+        }
+        // combine schedules to the max
+        ListIterator<BandwidthSchedule> it = bwCalendar.schedules.listIterator();
+        while (it.hasNext()) {
+            BandwidthSchedule schedule = it.next();
+            this.combineSchedule(schedule.getStartTime(), schedule.getEndTime(), schedule.getBandwidth());
+        }
+    }
+    
+    public BandwidthSchedule makeSchedule(long bw, long duration, long deadline, boolean add) {
         if (deadline <= 0) {
             deadline = infinite;
         }
@@ -263,12 +312,11 @@ public class BandwidthCalendar {
             try {
                 this.addSchedule(retSchedule.getStartTime(), retSchedule.getEndTime(), retSchedule.getBandwidth());
             } catch (BandwidthException ex) {
-                ; // this cannot go wrong
+                return null; // this should never happen
             }
         }
         return retSchedule;
     }
-
 
     public BandwidthCalendar residual() {
         BandwidthCalendar residual = new BandwidthCalendar(this.capacity);
@@ -291,5 +339,15 @@ public class BandwidthCalendar {
         return clone;
     }
     
-    //@TODO: toString
+    public String toString() {
+        String ret = "BandwidthCalendar:{";
+        ListIterator<BandwidthSchedule> it = schedules.listIterator();
+        while (it.hasNext()) {
+            ret += it.next().toString();
+            if (it.hasNext()) {
+                ret += " - ";
+            }
+        }
+        return ret + "}";
+    }
 }
