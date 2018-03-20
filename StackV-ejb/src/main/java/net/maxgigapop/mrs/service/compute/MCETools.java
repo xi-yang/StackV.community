@@ -80,33 +80,27 @@ public class MCETools {
     private static final StackLogger logger = new StackLogger(MCETools.class.getName(), "MCETools");
 
     public static class BandwidthProfile {
-        public String type = null; // default  "guaranteedCapped"
-        public String unit = null; // default "bps"
-        public String priority = null; // default "0"
-        public Long granularity = null; // default 1L
-        public Long maximumCapacity = null; // required
-        public Long availableCapacity = null; // required
-        public Long reservableCapacity = null; // required
+        public String type = "bestEffort"; // default  "bestEffort"
+        public String unit = "bps"; // default "bps"
+        public Long granularity = 1L; // default 1L
+        public String priority = "0"; // default "0"
+        public Long maximumCapacity = 0L; // default = 0
+        public Long availableCapacity = null; // optional
+        public Long reservableCapacity = null; // optional
         public Long individualCapacity = null;  // optional
         public Long minimumCapacity = null; // optional
         public Long usedCapacity = null;  // optional
 
         public BandwidthProfile(Long capacity) {
             this.maximumCapacity = capacity;
-            this.availableCapacity = capacity;
             this.reservableCapacity = capacity;
-            this.type = "guaranteedCapped";
-            this.unit = "bps";
-            this.granularity = 1L;
+            this.individualCapacity = capacity;
         }
         
-        public BandwidthProfile(Long maximumCapacity, Long availableCapacity, Long reservableCapacity) {
+        public BandwidthProfile(Long maximumCapacity, Long reservableCapacity) {
             this.maximumCapacity = maximumCapacity;
-            this.availableCapacity = availableCapacity;
             this.reservableCapacity = reservableCapacity;
-            this.type = "guaranteedCapped";
-            this.unit = "bps";
-            this.granularity = 1L;
+            this.individualCapacity = reservableCapacity;
         }
     }
     
@@ -306,13 +300,13 @@ public class MCETools {
                 if (verified && jsonConnReq.containsKey("bandwidth")) {
                     JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
                     Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
-                    Long available = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null;
                     Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
-                    candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
+                    candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
                     candidatePath.bandwithProfile.minimumCapacity = (jsonBw.containsKey("minimum") && jsonBw.get("minimum") != null) ? Long.parseLong(jsonBw.get("minimum").toString()) : null; //default = null
+                    candidatePath.bandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null; //default = null
                     candidatePath.bandwithProfile.individualCapacity = (jsonBw.containsKey("individual") && jsonBw.get("individual") != null) ? Long.parseLong(jsonBw.get("individual").toString()) : null; //default = null
                     candidatePath.bandwithProfile.granularity = (jsonBw.containsKey("granularity")  && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
-                    candidatePath.bandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class")!= null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+                    candidatePath.bandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class")!= null) ? jsonBw.get("qos_class").toString() : "bestEffort"; //default = "bestEffort"
                     candidatePath.bandwithProfile.unit = (jsonBw.containsKey("unit") && jsonBw.get("unit") != null) ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
                     candidatePath.bandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
                     verified = MCETools.verifyPathBandwidthProfile(transformedModel, candidatePath);
@@ -663,7 +657,8 @@ public class MCETools {
         return true;
     }
 
-    //@TODO: unit conversion?
+    //@TODO:1. verify maximum bandwidth for bestEffort and softCapped
+        //  2. verify reservable for softCapped and guaranteedCapped if no scheduling && "availalbeCapacity" present at path hops
     public static boolean verifyPathBandwidthProfile(Model model, Path path) {
         if (path.getBandwithProfile() == null) {
             return true;
@@ -705,8 +700,8 @@ public class MCETools {
                 + String.format("<%s> a nml:BidirectionalPort. ", hop.getURI())
                 + String.format("<%s> nml:hasService $bw_svc. ", hop.getURI())
                 + "$bw_svc mrs:maximumCapacity $maximum. "
-                + "$bw_svc mrs:availableCapacity $available. "
                 + "$bw_svc mrs:reservableCapacity $reservable. "
+                + "OPTIONAL {$bw_svc mrs:availableCapacity $available } "
                 + "OPTIONAL {$bw_svc mrs:type $qos_class } "
                 + "OPTIONAL {$bw_svc mrs:unit $unit } "
                 + "OPTIONAL {$bw_svc mrs:granularity $granularity } "
@@ -719,9 +714,11 @@ public class MCETools {
         if (rs.hasNext()) {
             QuerySolution solution = rs.next();
             Long maximumBw = solution.get("maximum").asLiteral().getLong();
-            Long availableBw = solution.get("available").asLiteral().getLong();
             Long reservableBw = solution.get("reservable").asLiteral().getLong();
-            bwProfile = new BandwidthProfile(maximumBw, availableBw, reservableBw);
+            bwProfile = new BandwidthProfile(maximumBw, reservableBw);
+            if (solution.contains("available")) {
+                bwProfile.availableCapacity = solution.get("available").asLiteral().getLong();
+            }
             if (solution.contains("granularity")) {
                 bwProfile.granularity = solution.get("granularity").asLiteral().getLong();
             }
@@ -839,7 +836,12 @@ public class MCETools {
         }
 
     }
-    
+
+    //@TODO: Bandwidth Scheduling
+    //  0. build per-hop BandwidthCalendar and configure scheduling method and params
+    //  1. make schedule based on start - end - duration and bw params for requested reservable vs. min (reservable, available) calendar
+    //  2. update bandwidth profile for path and add schedule lifetime info
+
     public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) throws Exception {
         for (String sparql : constraints) {
             if (ModelUtil.evaluateStatement(model, stmt, sparql)) {
