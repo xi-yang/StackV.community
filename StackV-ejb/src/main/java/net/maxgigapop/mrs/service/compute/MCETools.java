@@ -657,8 +657,6 @@ public class MCETools {
         return true;
     }
 
-    //@TODO:1. verify maximum bandwidth for bestEffort and softCapped
-        //  2. verify reservable for softCapped and guaranteedCapped if no scheduling && "availalbeCapacity" present at path hops
     public static boolean verifyPathBandwidthProfile(Model model, Path path) {
         if (path.getBandwithProfile() == null) {
             return true;
@@ -778,6 +776,7 @@ public class MCETools {
         return bwProfile;
     }
 
+    // compare and intersect bandwidthProfiles along path
     private static BandwidthProfile handleBandwidthProfile(BandwidthProfile pathBwProfile, BandwidthProfile hopBwProfile) {
         if (pathBwProfile.maximumCapacity == null || pathBwProfile.maximumCapacity > hopBwProfile.maximumCapacity) {
             pathBwProfile.maximumCapacity = hopBwProfile.maximumCapacity;
@@ -799,42 +798,50 @@ public class MCETools {
         }
         return pathBwProfile;
     }
-
-    //@TODO: fine tuning the comparison criteria by types | granularity % constraint | unit
+    
+    // compare against static path bandwidthProfile
+    // 1. verify not exceeding maximumCapacity for bestEffort and softCapped
+    // 2. verify not exceeding reservableCapacity for softCapped and guaranteedCapped (and availableCapacity if present)
     private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
-        if (bwpfRequest.type != null
-                && (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped"))) {
-            if (bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity
-                    && (bwpfAvailable.individualCapacity == null || bwpfAvailable.individualCapacity >= bwpfRequest.availableCapacity)) {
-                return true;
+        if (bwpfRequest.type.equalsIgnoreCase("bestEffort")) { 
+            if (bwpfAvailable.maximumCapacity != null && bwpfRequest.maximumCapacity != null 
+                    && bwpfAvailable.maximumCapacity  < bwpfRequest.maximumCapacity) {
+                return false;
             } else {
-                return false;
-            }
-        } else if (bwpfRequest.type != null && bwpfRequest.type.equalsIgnoreCase("anyAvailable")) {
-            if (bwpfAvailable.availableCapacity < bwpfAvailable.reservableCapacity) {
-                return false;
-            } else if (bwpfRequest.minimumCapacity != null && bwpfRequest.minimumCapacity > bwpfAvailable.availableCapacity) {
-                return false;
-            } else if (bwpfRequest.granularity != null && bwpfRequest.granularity > bwpfAvailable.availableCapacity) {
-                return false;
-            } else if (bwpfAvailable.availableCapacity  > 0) {
                 return true;
-            } else {
-                return false;
             }
-        } else if (bwpfRequest.type != null && bwpfRequest.type.equalsIgnoreCase("bestEffort")) { 
-            if (bwpfAvailable.availableCapacity  > 0) {
-                return true;
-            } else {
-                return false;
-            }
-        } else if (bwpfRequest.maximumCapacity == null || bwpfAvailable.maximumCapacity >= bwpfRequest.maximumCapacity
-                && bwpfRequest.availableCapacity == null || bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity) {
-            return true;
-        } else {
-            return false;
         }
-
+        
+        if (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped")
+                || bwpfRequest.type.equalsIgnoreCase("anyAvailable")) {
+            if (bwpfAvailable.individualCapacity != null && bwpfRequest.individualCapacity != null
+                    && bwpfAvailable.individualCapacity < bwpfRequest.individualCapacity) {
+                return false;
+            } 
+            if (bwpfAvailable.minimumCapacity != null 
+                    && bwpfRequest.reservableCapacity < bwpfAvailable.minimumCapacity ) {
+                return false;
+            } 
+            if (bwpfAvailable.granularity != null && bwpfAvailable.granularity > 0 
+                    && bwpfRequest.reservableCapacity % bwpfAvailable.granularity != 0) {
+                return false;
+            } 
+            
+            if (bwpfRequest.type.equalsIgnoreCase("softCapped") && bwpfRequest.reservableCapacity == null) {
+                return true;
+            }
+            if (bwpfAvailable.reservableCapacity == null 
+                    || bwpfRequest.reservableCapacity <  bwpfAvailable.reservableCapacity) {
+                return false;
+            }             
+            if (bwpfAvailable.availableCapacity != null 
+                    && bwpfRequest.reservableCapacity < bwpfRequest.availableCapacity) {
+                return false;
+            }
+            return true;
+        }        
+        // unknown qos type
+        return false;
     }
 
     //@TODO: Bandwidth Scheduling
