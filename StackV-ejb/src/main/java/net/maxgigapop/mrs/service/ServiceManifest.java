@@ -65,7 +65,7 @@ public class ServiceManifest {
         DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
         } catch (NamingException e) {
             throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
         }
@@ -104,7 +104,7 @@ public class ServiceManifest {
         DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
         } catch (NamingException e) {
             throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
         }

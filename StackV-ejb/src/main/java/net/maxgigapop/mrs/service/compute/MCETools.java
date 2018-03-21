@@ -802,8 +802,9 @@ public class MCETools {
     // compare against static path bandwidthProfile
     // 1. verify not exceeding maximumCapacity for bestEffort and softCapped
     // 2. verify not exceeding reservableCapacity for softCapped and guaranteedCapped (and availableCapacity if present)
+    // 3. anyAvailable is treated the same as guaranteedCapped, except that it will override the bandwidth value later
     private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
-        if (bwpfRequest.type.equalsIgnoreCase("bestEffort")) { 
+        if (bwpfRequest.type.equalsIgnoreCase("bestEffort") || bwpfRequest.type.equalsIgnoreCase("softCapped")) { 
             if (bwpfAvailable.maximumCapacity != null && bwpfRequest.maximumCapacity != null 
                     && bwpfAvailable.maximumCapacity  < bwpfRequest.maximumCapacity) {
                 return false;
@@ -815,7 +816,7 @@ public class MCETools {
         if (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped")
                 || bwpfRequest.type.equalsIgnoreCase("anyAvailable")) {
             if (bwpfAvailable.individualCapacity != null && bwpfRequest.individualCapacity != null
-                    && bwpfAvailable.individualCapacity < bwpfRequest.individualCapacity) {
+                    && bwpfRequest.individualCapacity > bwpfAvailable.individualCapacity) {
                 return false;
             } 
             if (bwpfAvailable.minimumCapacity != null 
@@ -831,11 +832,11 @@ public class MCETools {
                 return true;
             }
             if (bwpfAvailable.reservableCapacity == null 
-                    || bwpfRequest.reservableCapacity <  bwpfAvailable.reservableCapacity) {
+                    || bwpfRequest.reservableCapacity >  bwpfAvailable.reservableCapacity) {
                 return false;
             }             
             if (bwpfAvailable.availableCapacity != null 
-                    && bwpfRequest.reservableCapacity < bwpfRequest.availableCapacity) {
+                    && bwpfRequest.reservableCapacity > bwpfAvailable.availableCapacity) {
                 return false;
             }
             return true;
@@ -1256,7 +1257,7 @@ public class MCETools {
                 vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.availableCapacity, lAvailBw));
             }
             if (bwProfile.reservableCapacity != null) {
-                Literal lResvBw = model.createTypedLiteral(bwProfile.availableCapacity);
+                Literal lResvBw = model.createTypedLiteral(bwProfile.reservableCapacity);
                 vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.reservableCapacity, lResvBw));
             }
             if (bwProfile.granularity != null) {
