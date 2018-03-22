@@ -66,6 +66,7 @@ import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
 import org.json.simple.JSONObject;
 import com.jayway.jsonpath.JsonPath;
+import net.maxgigapop.mrs.common.DateTimeUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_action;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_flow;
@@ -110,6 +111,7 @@ public class MCETools {
         OntModel ontModel = null;
         double failureProb = 0.0;
         BandwidthProfile bandwithProfile = null;
+        BandwidthCalendar.BandwidthSchedule bandwithScedule = null;
         String connectionId = null;
         
         public Path() {
@@ -151,6 +153,16 @@ public class MCETools {
         public void setBandwithProfile(BandwidthProfile bandwithProfile) {
             this.bandwithProfile = bandwithProfile;
         }
+
+        public BandwidthCalendar.BandwidthSchedule getBandwithScedule() {
+            return bandwithScedule;
+        }
+
+        public void setBandwithScedule(BandwidthCalendar.BandwidthSchedule bandwithScedule) {
+            this.bandwithScedule = bandwithScedule;
+        }
+
+        
 
         public String getConnectionId() {
             return connectionId;
@@ -295,7 +307,7 @@ public class MCETools {
                 try {
                     verified = MCETools.verifyL2Path(transformedModel, candidatePath);
                 } catch (Exception ex) {
-                    throw new Exception("MCETools.computeFeasibleL2KSP cannot verifyL2Path", ex);
+                    throw new Exception("MCETools.computeFeasibleL2KSP - cannot verifyL2Path", ex);
                 }
                 if (verified && jsonConnReq.containsKey("bandwidth")) {
                     JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
@@ -310,6 +322,43 @@ public class MCETools {
                     candidatePath.bandwithProfile.unit = (jsonBw.containsKey("unit") && jsonBw.get("unit") != null) ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
                     candidatePath.bandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
                     verified = MCETools.verifyPathBandwidthProfile(transformedModel, candidatePath);
+                }
+                if (verified && jsonConnReq.containsKey("schedule")) {
+                    JSONObject jsonSchedule = (JSONObject) jsonConnReq.get("schedule");
+                    candidatePath.bandwithScedule = new BandwidthCalendar.BandwidthSchedule();
+                    String startTime = jsonSchedule.containsKey("start") ? jsonSchedule.get("start").toString() : "now";
+                    String endTime = jsonSchedule.containsKey("end") ? jsonSchedule.get("end").toString() : null;
+                    String duration = jsonSchedule.containsKey("duration") ? jsonSchedule.get("duration").toString() : null;
+                    if (endTime == null && duration == null) {
+                        throw new Exception("MCETools.computeFeasibleL2KSP - malformed schedule: " + jsonSchedule.toJSONString());
+                    }
+                    candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
+                    if (endTime != null) {
+                        if (endTime.startsWith("+")) {
+                            candidatePath.bandwithScedule.setStartTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(endTime));
+                        } else {
+                            candidatePath.bandwithScedule.setEndTime(DateTimeUtil.getBandwidthScheduleSeconds(endTime));
+                        }
+                    } else {
+                        candidatePath.bandwithScedule.setEndTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(duration));
+                    }
+                    if (candidatePath.bandwithProfile == null || candidatePath.bandwithProfile.reservableCapacity == null) {
+                        throw new Exception("MCETools.computeFeasibleL2KSP - input schedule without bandwidth.");
+                    }
+                    candidatePath.bandwithScedule.setBandwidth(normalizeBandwidthPorfile(candidatePath.bandwithProfile).reservableCapacity);
+                    JSONObject jsonScheduleOptions =  jsonSchedule.containsKey("options") ? (JSONObject)jsonSchedule.get("options") : new JSONObject();
+                    if (endTime != null && duration != null ) { // sliding window
+                        jsonScheduleOptions.put("sliding-duration", DateTimeUtil.getBandwidthScheduleSeconds(duration));
+                    }
+                    try {
+                        BandwidthCalendar.BandwidthSchedule schedule = BandwidthCalendar.makePathBandwidthSchedule(transformedModel, candidatePath, jsonScheduleOptions);
+                        if (schedule == null) {
+                            verified = false;
+                        }
+                    } catch (BandwidthCalendar.BandwidthCalendarException ex) {
+                        logger.trace("computeFeasibleL2KSP", candidatePath.getConnectionId() + " -- " + ex.getMessage());
+                        verified = false;
+                    }
                 }
                 if (!verified) {
                     itP.remove();
@@ -693,7 +742,7 @@ public class MCETools {
         return true;
     }
     
-    private static BandwidthProfile getHopBandwidthPorfile(Model model, Resource hop) {
+    public static BandwidthProfile getHopBandwidthPorfile(Model model, Resource hop) {
         String sparql = "SELECT $maximum $available $reservable $granularity $qos_class $unit $minimum $individual $priority WHERE {"
                 + String.format("<%s> a nml:BidirectionalPort. ", hop.getURI())
                 + String.format("<%s> nml:hasService $bw_svc. ", hop.getURI())
