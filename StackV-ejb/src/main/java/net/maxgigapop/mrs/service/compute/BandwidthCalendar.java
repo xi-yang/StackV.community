@@ -207,22 +207,22 @@ public class BandwidthCalendar {
             this._addSchedule(start, end, bw);
             return;
         }
-        int overlapIndex = 0;
-        BandwidthSchedule first = schedules.get(0);
+        int overlapIndex = schedules.indexOf(overlappedSchedules.get(0));
+        BandwidthSchedule first = schedules.get(overlapIndex);
         if (first.getStartTime() < start) {
             BandwidthSchedule dupFirst = first.clone();
             first.setStartTime(start);
             dupFirst.setEndTime(start);
-            schedules.add(0, dupFirst);
+            schedules.add(overlapIndex, dupFirst);
             overlapIndex = 1;
         }
-        int lastOverlap = schedules.size();
-        BandwidthSchedule last = schedules.get(schedules.size()-1);
+        int lastOverlap = overlapIndex + overlappedSchedules.size()-1;
+        BandwidthSchedule last = schedules.get(lastOverlap);
         if (last.getEndTime() > end) {
             BandwidthSchedule dupLast = last.clone();
             last.setEndTime(end);
             dupLast.setStartTime(end);
-            schedules.add(dupLast);
+            schedules.add(lastOverlap+1, dupLast);
         }
         
         while (overlapIndex <= lastOverlap) {
@@ -246,26 +246,26 @@ public class BandwidthCalendar {
 
     public void combineSchedule(long start, long end, long bw) throws BandwidthCalendarException {
         List<BandwidthSchedule> overlappedSchedules = lookupSchedulesBetween(start, end);
-        if (overlappedSchedules.isEmpty()) {
+        if (overlappedSchedules == null || overlappedSchedules.isEmpty()) {
             this._addSchedule(start, end, bw);
             return;
         }
-        int overlapIndex = 0;
-        BandwidthSchedule first = schedules.get(0);
+        int overlapIndex = schedules.indexOf(overlappedSchedules.get(0));
+        BandwidthSchedule first = schedules.get(overlapIndex);
         if (first.getStartTime() < start) {
             BandwidthSchedule dupFirst = first.clone();
             first.setStartTime(start);
             dupFirst.setEndTime(start);
-            schedules.add(0, dupFirst);
+            schedules.add(overlapIndex, dupFirst);
             overlapIndex = 1;
         }
-        int lastOverlap = schedules.size();
-        BandwidthSchedule last = schedules.get(schedules.size()-1);
+        int lastOverlap = overlapIndex + overlappedSchedules.size()-1;
+        BandwidthSchedule last = schedules.get(lastOverlap);
         if (last.getEndTime() > end) {
             BandwidthSchedule dupLast = last.clone();
             last.setEndTime(end);
             dupLast.setStartTime(end);
-            schedules.add(dupLast);
+            schedules.add(lastOverlap+1, dupLast);
         }
         
         while (overlapIndex <= lastOverlap) {

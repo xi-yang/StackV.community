@@ -335,7 +335,7 @@ public class MCETools {
                     candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
                     if (endTime != null) {
                         if (endTime.startsWith("+")) {
-                            candidatePath.bandwithScedule.setStartTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(endTime));
+                            candidatePath.bandwithScedule.setEndTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(endTime));
                         } else {
                             candidatePath.bandwithScedule.setEndTime(DateTimeUtil.getBandwidthScheduleSeconds(endTime));
                         }
