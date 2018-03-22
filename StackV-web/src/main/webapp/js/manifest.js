@@ -46,7 +46,6 @@ function subloadManifest(templateURL) {
         url: "/StackV-web/data/xml/manifest-templates/" + templateURL,
         success: function (data) {
             var template = data;
-            var token = sessionStorage.getItem("token");
             $.ajax({
                 type: "POST",
                 crossDomain: true,
