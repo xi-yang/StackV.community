@@ -154,6 +154,7 @@ public class SystemModelCoordinator {
             }
         }
         dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(systemVersionGroup.getCachedModelBase().getOntModel());
+        dataConcurrencyPoster.setSystemModelCoordinator_localBootstrapped(true);
         logger.trace_end(method);
     }
 

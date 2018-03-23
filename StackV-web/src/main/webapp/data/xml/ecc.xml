@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="intent.xsd">
+    <meta>
+        <name>EdgeCloud Connection</name>
+        <validation>
+            <constraint>
+                <name>string</name>
+                <regex>\S+</regex>
+                <message>Please enter a valid string.</message>
+            </constraint>
+            <constraint>
+                <name>integer</name>
+                <regex>\d+</regex>
+                <message>Please enter a valid integer.</message>
+            </constraint>
+            <constraint>
+                <name>select</name>
+                <regex>.+</regex>
+                <message>Please select a valid option.</message>
+            </constraint>
+            <constraint>
+                <name>vlan</name>
+                <regex>^\d{1,4}$|^\d{1,4}-\d{1,4}$|^any$</regex>
+                <message>Please enter a valid VLAN.</message>
+            </constraint>
+            <constraint>
+                <name>macs</name>
+                <regex>^\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2}(,\w{2}:\w{2}:\w{2}:\w{2}:\w{2}:\w{2})*$</regex>
+                <message>Please enter a valid comma-separated list of MAC addresses.</message>
+            </constraint>
+            <constraint>
+                <name>ip</name>
+                <regex>^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{2}$</regex>
+                <message>Please enter a valid IP address.</message>
+            </constraint>
+        </validation>
+    </meta>
+    <stage name="Connections">
+        <group name="Cloud Details">
+            <input required="true">
+                <name>Provider</name>
+                <type>select</type>
+                <options>
+                    <option>Amazon</option>
+                </options>
+                <valid>select</valid>
+            </input>
+            <input>
+                <name>URI</name>
+                <type>select</type>
+                <source>
+                    <url>/driver</url>
+                    <interval>3</interval>
+                    <text>3</text>
+                    <value>3</value>
+                </source>
+                <valid>select</valid>
+            </input>
+        </group>
+        <group factory="true" name="Connection" collapsible="true" opened="true">            
+            <group name="Direct Connect" passthrough="true">
+                <input required="true">
+                    <name>Owner Account</name>
+                    <type>text</type>
+                    <valid>integer</valid>
+                </input>
+                <input>
+                    <name>L3 Customer IP</name>
+                    <type>text</type>
+                    <default>10.10.0.1/24</default>
+                    <valid>ip</valid>                   
+                </input>
+                <input>
+                    <name>L3 CloudEdge IP</name>
+                    <type>text</type>
+                    <default>10.10.0.2/24</default>
+                    <valid>ip</valid>
+                </input>
+                <input>
+                    <name>L3 Customer ASN</name>
+                    <type>text</type>
+                    <default>65001</default>
+                    <size>small</size>
+                    <valid>integer</valid>
+                </input>
+                <input>
+                    <name>L3 Authentication Key</name>
+                    <type>text</type>
+                    <default>stackv</default>
+                    <valid>string</valid>
+                </input>
+            </group>
+            <group name="Terminal" passthrough="true">
+                <input>
+                    <name>L2 Customer VLAN</name>
+                    <type>text</type>
+                    <default>any</default>
+                    <size>small</size>
+                    <valid>VLAN</valid>
+                </input>
+                <input>
+                    <name>Bandwidth Limit</name>
+                    <type>text</type>
+                    <hint>in Mbps</hint>
+                    <size>small</size>
+                </input>
+                <input required="true">
+                    <name>L2 Customer URI</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+            </group>
+        </group>
+    </stage>
+</intent>

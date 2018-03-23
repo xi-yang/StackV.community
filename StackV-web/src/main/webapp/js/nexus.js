@@ -430,8 +430,8 @@ function deleteInstance(uuid) {
         }
     });
 }
-/* UTILITY */
 
+/* UTILITY */
 function getURLParameter(name) {
     return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
 }
@@ -590,7 +590,8 @@ var openLogDetails = 0;
 var cachedStart = 0;
 var justRefreshed = 0;
 var now = new Date();
-function loadDataTable(apiUrl) {
+function loadLoggingDataTable(apiUrl) {
+    dataTableClass = "logging";
     dataTable = $('#loggingData').DataTable({
         "ajax": {
             url: apiUrl,
@@ -712,14 +713,56 @@ function formatChild(d) {
 
     return retString;
 }
+
+function loadInstanceDataTable(apiUrl) {
+    dataTableClass = "instance";
+    dataTable = $('#loggingData').DataTable({
+        "ajax": {
+            url: apiUrl,
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            }
+        },
+        "buttons": ['csv'],
+        "columns": [
+            {"data": "alias"},
+            {"data": "type", width: "110px"},
+            {"data": "referenceUUID", "width": "250px"},
+            {"data": "state", "width": "125px"}
+        ],
+        "createdRow": function (row, data, dataIndex) {
+            $(row).addClass("instance-row");
+            $(row).attr("data-verification_state", data.verification);
+            $(row).attr("data-last_state", data.lastState);
+            $(row).attr("data-owner", data.owner);
+        },
+        "dom": 'Bfrtip',
+        "initComplete": function (settings, json) {
+            console.log('DataTables has finished its initialization.');
+        },
+        "ordering": false,
+        "pageLength": 6,
+        "scrollX": true,
+        "scrollY": "375px"
+    });
+
+    $('#loggingData tbody').on('click', 'tr.instance-row', function () {
+        sessionStorage.setItem("instance-uuid", this.children[2].innerHTML);
+        window.document.location = "/StackV-web/portal/details/";
+    });
+}
+
 function reloadLogs() {
     justRefreshed = 2;
-    if (dataTable) {
+    if (dataTable && dataTableClass === "logging") {
         if (sessionStorage.getItem("logging-level") !== null) {
             dataTable.ajax.reload(filterLogs(), false);
         } else {
             dataTable.ajax.reload(null, false);
         }
+    } else {
+        dataTable.ajax.reload(null, false);
     }
 }
 function drawLoggingCurrentTime() {

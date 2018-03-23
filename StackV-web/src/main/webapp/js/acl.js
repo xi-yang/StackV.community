@@ -444,7 +444,7 @@ function subloadInstanceACLInstances() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("instance-body");
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
+    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/instances';
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
@@ -454,19 +454,19 @@ function subloadInstanceACLInstances() {
             },
             success: function (result) {
                 if (result) {
-                    for (i = 0; i < result.length; i++) {
-                        var instance = result[i];
+                    for (i = 0; i < result.data.length; i++) {
+                        var instance = result.data[i];
 
                         var row = document.createElement("tr");
                         row.className = "acl-instance-row";
-                        row.setAttribute("data-uuid", instance[1]);
+                        row.setAttribute("data-uuid", instance["referenceUUID"]);
 
                         var cell1_1 = document.createElement("td");
-                        cell1_1.innerHTML = instance[3];
+                        cell1_1.innerHTML = instance["alias"];
                         var cell1_2 = document.createElement("td");
-                        cell1_2.innerHTML = instance[0];
+                        cell1_2.innerHTML = instance["type"];
                         var cell1_3 = document.createElement("td");
-                        cell1_3.innerHTML = instance[1];
+                        cell1_3.innerHTML = instance["referenceUUID"];
                         row.appendChild(cell1_1);
                         row.appendChild(cell1_2);
                         row.appendChild(cell1_3);
