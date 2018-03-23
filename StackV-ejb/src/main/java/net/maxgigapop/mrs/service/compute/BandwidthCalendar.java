@@ -214,7 +214,7 @@ public class BandwidthCalendar {
             first.setStartTime(start);
             dupFirst.setEndTime(start);
             schedules.add(overlapIndex, dupFirst);
-            overlapIndex = 1;
+            overlapIndex++;
         }
         int lastOverlap = overlapIndex + overlappedSchedules.size()-1;
         BandwidthSchedule last = schedules.get(lastOverlap);
@@ -223,22 +223,23 @@ public class BandwidthCalendar {
             last.setEndTime(end);
             dupLast.setStartTime(end);
             schedules.add(lastOverlap+1, dupLast);
-        }
-        
+        }        
+        long gapStart = start;
         while (overlapIndex <= lastOverlap) {
             BandwidthSchedule overlapSchedule = schedules.get(overlapIndex);
-            if (overlapSchedule.getStartTime() > start) {
-                this._addSchedule(start, overlapSchedule.getStartTime(), bw);
+            if (overlapSchedule.getStartTime() > gapStart) {
+                this._addSchedule(gapStart, overlapSchedule.getStartTime(), bw);
             } 
-            if (overlapSchedule.getEndTime() < end) {
-                this._addSchedule(overlapSchedule.getEndTime(), end, bw);
-            }
+            gapStart = overlapSchedule.getEndTime();
             if (overlapSchedule.getBandwidth() + bw > this.capacity) {
                 throw new BandwidthCalendarException(String.format("add bandwidth:%d to %s -> over capacity:%d",
                         bw, overlapSchedule, this.capacity));
             }
             overlapSchedule.addBandwidth(bw);
             overlapIndex++;
+        }
+        if (gapStart < end) {
+            this._addSchedule(gapStart, end, bw);
         }
     }
 
@@ -257,7 +258,7 @@ public class BandwidthCalendar {
             first.setStartTime(start);
             dupFirst.setEndTime(start);
             schedules.add(overlapIndex, dupFirst);
-            overlapIndex = 1;
+            overlapIndex++;
         }
         int lastOverlap = overlapIndex + overlappedSchedules.size()-1;
         BandwidthSchedule last = schedules.get(lastOverlap);
@@ -267,17 +268,18 @@ public class BandwidthCalendar {
             dupLast.setStartTime(end);
             schedules.add(lastOverlap+1, dupLast);
         }
-        
+        long gapStart = start;
         while (overlapIndex <= lastOverlap) {
             BandwidthSchedule overlapSchedule = schedules.get(overlapIndex);
-            if (overlapSchedule.getStartTime() > start) {
-                this._addSchedule(start, overlapSchedule.getStartTime(), bw);
+            if (overlapSchedule.getStartTime() > gapStart) {
+                this._addSchedule(gapStart, overlapSchedule.getStartTime(), bw);
             } 
-            if (overlapSchedule.getEndTime() < end) {
-                this._addSchedule(overlapSchedule.getEndTime(), end, bw);
-            }
+            gapStart = overlapSchedule.getEndTime();
             overlapSchedule.setBandwidth(overlapSchedule.getBandwidth() > bw ? overlapSchedule.getBandwidth(): bw);
             overlapIndex++;
+        }
+        if (gapStart < end) {
+            this._addSchedule(gapStart, end, bw);
         }
     }
     
@@ -294,10 +296,8 @@ public class BandwidthCalendar {
         }
     }
     
+    // deadline is a offset value to be relative to startTime (consistent 'now')
     public BandwidthSchedule makeSchedule(long bw, long duration, long deadline, boolean add) {
-        if (deadline <= 0) {
-            deadline = infinite;
-        }
         BandwidthCalendar residual = this.residual();
         ListIterator<BandwidthSchedule> it = residual.getSchedules().listIterator();
         long now = new Date().getTime()/1000L;
@@ -313,6 +313,11 @@ public class BandwidthCalendar {
         BandwidthSchedule retSchedule = null;
         long continuousStart = now;
         long continuousEnd = now;
+        if (deadline > 0) {
+            deadline += now;
+        } else {
+            deadline = infinite;
+        }
         while (it.hasNext()) {
             BandwidthSchedule goodSchedule = it.next();
             if (continuousStart == now  || continuousEnd != goodSchedule.getStartTime()) {
@@ -408,22 +413,25 @@ public class BandwidthCalendar {
         long start = path.getBandwithScedule().getStartTime();
         long end = path.getBandwithScedule().getEndTime();
         long duration = end - start;
-        long deadline = end;
+        long deadline = duration; // offset
         if (options.containsKey("sliding-duration")) {
             duration = (long)options.get("sliding-duration");
         } 
-        BandwidthSchedule schedule = pathAvailBwCal.makeSchedule(start, duration, deadline, false);
+        BandwidthSchedule schedule = pathAvailBwCal.makeSchedule(path.getBandwithScedule().getBandwidth(), duration, deadline, false);
         // scenarios: extra options / queries
         return schedule;    
     }
     
     //$$ normalize bandwidth unit internally
     private static BandwidthCalendar getHopBandwidthCalendar(Model model, MCETools.Path path, Resource hop) throws BandwidthCalendarException {
-        String sparql = "SELECT ?subport ?start ?end WHERE {"
-                + String.format("<%s> a nml:BidirectionalPort. ", hop.getURI())
+        String sparql = "SELECT ?capacity ?unit ?subport ?start ?end WHERE {"
+                + String.format("<%s> a nml:BidirectionalPort; nml:hasService ?bwSvc .  ", hop.getURI())
                 + String.format("<%s> nml:hasBidirectionalPort ?subport. ", hop.getURI())
+                + "?bwSvc a mrs:BandwidthService. "
+                + "?bwSvc mrs:reservableCapacity ?capacity. "
                 + "?subport nml:hasService ?subBwSvc. "
                 + "?subBwSvc a mrs:BandwidthService. "
+                + "OPTIONAL { ?bwSvc mrs:unit ?unit }"
                 + "OPTIONAL { ?subBwSvc nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end. } "
                 + "}";
         ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
@@ -432,15 +440,14 @@ public class BandwidthCalendar {
             QuerySolution solution = rs.next();
             Resource resSubport = solution.getResource("subport");
             MCETools.BandwidthProfile subBwProfile = MCETools.getHopBandwidthPorfile(model, resSubport);
-            if (subBwProfile == null || subBwProfile.maximumCapacity == null || subBwProfile.reservableCapacity == null) {
+            if (subBwProfile == null || subBwProfile.reservableCapacity == null) {
                 continue;
             }
             if (bwCal == null) {
-                if (path.getBandwithProfile() != null && path.getBandwithProfile().reservableCapacity != null) {
-                    bwCal = new BandwidthCalendar(path.getBandwithProfile().reservableCapacity);
-                } else {
-                    bwCal = new BandwidthCalendar(subBwProfile.maximumCapacity);
-                }
+                long bw = Long.parseLong(solution.getLiteral("capacity").getString());
+                String unit = solution.contains("unit") ? solution.getLiteral("unit").getString() : "bps";
+                bw = MCETools.normalizeBandwidth(bw, unit);
+                bwCal = new BandwidthCalendar(bw);
             }
             long start = new Date().getTime()/1000L;
             long end = infinite;

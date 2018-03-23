@@ -788,38 +788,42 @@ public class MCETools {
         return bwProfile;
     }
     
-    private static BandwidthProfile normalizeBandwidthPorfile(BandwidthProfile bwProfile) {
+    public static long normalizeBandwidth(long bw, String unit) {
+        long factor = 1;
+        if (unit.equalsIgnoreCase("kbps")) {
+            factor = 1000;
+        } else if (unit.equalsIgnoreCase("mbps")) {
+            factor = 1000000;
+        } else if (unit.equalsIgnoreCase("gbps")) {
+            factor = 1000000000;
+        }
+        return bw*factor;
+    }
+    
+    public static BandwidthProfile normalizeBandwidthPorfile(BandwidthProfile bwProfile) {
         if (bwProfile.unit == null || bwProfile.unit.equalsIgnoreCase("bps")) {
             return bwProfile;
         } 
-        long factor = 1;
-        if (bwProfile.unit.equalsIgnoreCase("kbps")) {
-            factor = 1000;
-        } else if (bwProfile.unit.equalsIgnoreCase("mbps")) {
-            factor = 1000000;
-        } else if (bwProfile.unit.equalsIgnoreCase("gbps")) {
-            factor = 1000000000;
-        }
         if (bwProfile.maximumCapacity != null) {
-            bwProfile.maximumCapacity *= factor;
+            bwProfile.maximumCapacity = normalizeBandwidth(bwProfile.maximumCapacity, bwProfile.unit);
         }
         if (bwProfile.availableCapacity != null) {
-            bwProfile.availableCapacity *= factor;
+            bwProfile.availableCapacity = normalizeBandwidth(bwProfile.availableCapacity, bwProfile.unit);
         }
         if (bwProfile.reservableCapacity != null) {
-            bwProfile.reservableCapacity *= factor;
+            bwProfile.reservableCapacity = normalizeBandwidth(bwProfile.reservableCapacity, bwProfile.unit);
         }
         if (bwProfile.individualCapacity != null) {
-            bwProfile.individualCapacity *= factor;
+            bwProfile.individualCapacity = normalizeBandwidth(bwProfile.individualCapacity, bwProfile.unit);
         }
         if (bwProfile.usedCapacity != null) {
-            bwProfile.usedCapacity *= factor;
+            bwProfile.usedCapacity = normalizeBandwidth(bwProfile.usedCapacity, bwProfile.unit);
         } 
         if (bwProfile.minimumCapacity != null) {
-            bwProfile.minimumCapacity *= factor;
+            bwProfile.minimumCapacity = normalizeBandwidth(bwProfile.minimumCapacity, bwProfile.unit);
         }
         if (bwProfile.granularity != null) {
-            bwProfile.granularity *= factor;
+            bwProfile.granularity = normalizeBandwidth(bwProfile.granularity, bwProfile.unit);
         }
         bwProfile.unit = "bps";
         return bwProfile;
