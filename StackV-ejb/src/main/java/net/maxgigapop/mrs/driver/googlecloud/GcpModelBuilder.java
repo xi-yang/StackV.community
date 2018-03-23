@@ -152,7 +152,7 @@ public class GcpModelBuilder {
                 Routes contain routeTo and nextHop info
                 routeFrom info is not included.
                 */
-                
+                if (routesInfo != null) {
                 for (Object o2: routesInfo) {
                     JSONObject routeInfo = (JSONObject) o2;
                     String vpcName = GcpGet.parseGoogleURI(routeInfo.get("network").toString(), "networks");
@@ -191,6 +191,7 @@ public class GcpModelBuilder {
                     model.add(model.createStatement(routingTable, Mrs.hasRoute, route));
                     model.add(model.createStatement(route, Mrs.routeTo, routeTo));
                     model.add(model.createStatement(route, Mrs.nextHop, nextHop));
+                }
                 }
             }
         } else {
@@ -265,17 +266,16 @@ public class GcpModelBuilder {
                         model.add(model.createStatement(peerIp, Mrs.type, "ipv4-address:customer"));
                         model.add(model.createStatement(peerIp, Mrs.value, remoteIp));
                         model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, peerIp));
-                    
-                        //Resource route = model.getResource(ResourceTool.getResourceUri("", GcpPrefix.route, vpcName, routeName));
-                            //RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.route, "vpc", "route"), Mrs.Route);
-                        //model.add(model.createStatement(tunnel, Mrs.hasRoute, route));
-                    
-                        //*
+                        
                         Resource peerCidr = RdfOwl.createResource(model, tunnel.getURI()+":customer-cidr", Mrs.NetworkAddress);
                         model.add(model.createStatement(peerCidr, Mrs.type, "ipv4-prefix-list:customer"));
                         model.add(model.createStatement(peerCidr, Mrs.value, remoteCIDR));
                         model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, peerCidr));
-                        //*/
+                        
+                        Resource secret = RdfOwl.createResource(model, tunnel.getURI()+":secret", Mrs.NetworkAddress);
+                        model.add(model.createStatement(secret, Mrs.type, "secret"));
+                        model.add(model.createStatement(secret, Mrs.value, "####"));
+                        model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, secret));
                     }
                 }
                 
@@ -352,7 +352,7 @@ public class GcpModelBuilder {
                         }
                         String subnetName = GcpGet.parseGoogleURI(netiface.get("subnetwork").toString(), "subnetworks");
                         String subnetRegion = GcpGet.parseGoogleURI(netiface.get("subnetwork").toString(), "regions");
-                        String nicUri = lookupResourceUri(metadata, "nic", vpcName, instanceName, nicName);
+                        String nicUri = lookupResourceUri(metadata, "nic", instanceName, nicName);
                         String subnetUri = lookupResourceUri(metadata, "subnet", vpcName, subnetRegion, subnetName);
                         
                         //A instance is considered to be in the vpc used by nic0
@@ -479,8 +479,8 @@ public class GcpModelBuilder {
             requiredArgs = 1;
         break;
         case "nic":
-            //nics are identified by vpc - instance - name (nic0-7)
-            requiredArgs = 3;
+            //nics are identified by instance - name (nic0-7)
+            requiredArgs = 2;
         break;
         default:
             logger.warning(method, "failed resource URI retrieval due to unknown resource: "+type);
