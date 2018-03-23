@@ -25,7 +25,6 @@
     <head>   
         <meta charset="UTF-8">
         <title>Manifest Portal</title>
-        
         <link rel="stylesheet" href="/StackV-web/css/style.css">        
         <style>
             .manifest-list{
