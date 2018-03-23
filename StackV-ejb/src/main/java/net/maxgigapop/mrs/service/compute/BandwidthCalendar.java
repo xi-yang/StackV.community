@@ -147,7 +147,7 @@ public class BandwidthCalendar {
         ListIterator<BandwidthSchedule> it = schedules.listIterator();
         while (it.hasNext()) {
             BandwidthSchedule schedule = it.next();
-            if (schedule.getStartTime() >= end || schedule.getEndTime() < start) {
+            if (schedule.getStartTime() >= end || schedule.getEndTime() <= start) {
                 continue;
             }
             if (retSchedules == null) {
@@ -162,11 +162,10 @@ public class BandwidthCalendar {
         if (bw > this.capacity) {
             throw new BandwidthCalendarException(String.format("add bandwidth:%d -> over capacity:%d", bw, this.capacity));
         }
-        ListIterator<BandwidthSchedule> it = schedules.listIterator();
-        while (it.hasNext()) {
-            BandwidthSchedule schedule = it.next();
+        for (int index = 0; index < schedules.size(); index++) {
+            BandwidthSchedule schedule = schedules.get(index);
             if (schedule.getStartTime() >= end) {
-                it.add(new BandwidthSchedule(start, end, bw));
+                schedules.add(index, new BandwidthSchedule(start, end, bw));
                 return;
             }
         }
@@ -229,6 +228,7 @@ public class BandwidthCalendar {
             BandwidthSchedule overlapSchedule = schedules.get(overlapIndex);
             if (overlapSchedule.getStartTime() > gapStart) {
                 this._addSchedule(gapStart, overlapSchedule.getStartTime(), bw);
+                overlapIndex++;
             } 
             gapStart = overlapSchedule.getEndTime();
             if (overlapSchedule.getBandwidth() + bw > this.capacity) {
@@ -273,6 +273,7 @@ public class BandwidthCalendar {
             BandwidthSchedule overlapSchedule = schedules.get(overlapIndex);
             if (overlapSchedule.getStartTime() > gapStart) {
                 this._addSchedule(gapStart, overlapSchedule.getStartTime(), bw);
+                overlapIndex++;
             } 
             gapStart = overlapSchedule.getEndTime();
             overlapSchedule.setBandwidth(overlapSchedule.getBandwidth() > bw ? overlapSchedule.getBandwidth(): bw);
