@@ -35,9 +35,19 @@ $(function () {
         cache: false,
         timeout: 60000,
         beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            if (keycloak.token === undefined) {
+                xhr.setRequestHeader("Authorization", "bearer " + sessionStorage.getItem("token"));
+            } else {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            }            
         }
     });
+
+    $(".hide-on-load").addClass("hidden");
+    setTimeout(function () {
+        $(".hide-on-load").removeClass("hidden");
+        $(".hide-on-load").removeClass("hide-on-load");
+    }, 2000);
 
     keycloak.init().success(function (authenticated) {
         if (authenticated) {
@@ -86,6 +96,8 @@ $(function () {
                 loadDetailsNavbar();
                 loadDetails();
             }
+        } else if (window.location.pathname === "/StackV-web/visual/manifest/manifestPortal.jsp") {
+            loadManifest();
         }
 
         if ($("#tag-panel").length) {
@@ -127,12 +139,7 @@ $(function () {
 
 function loadNavbar() {
     $("#nav").load("/StackV-web/nav/navbar.html", function () {
-        if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
-            $(".nav-admin").hide();
-        }
-        if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
-            $("#driver-tab").hide();
-        }
+        verifyPageRoles();
 
         if (window.location.pathname === "/StackV-web/portal/") {
             $("li#catalog-tab").addClass("active");
@@ -143,11 +150,11 @@ function loadNavbar() {
         } else if (window.location.pathname === "/StackV-web/portal/driver/") {
             $("li#driver-tab").addClass("active");
         } else if (window.location.pathname === "/StackV-web/portal/details/") {
-            $("li#details-tab").addClass("active");            
+            $("li#details-tab").addClass("active");
         } else if (window.location.pathname === "/StackV-web/orch/graphTest.jsp") {
             $("li#visualization-tab").addClass("active");
         }
-        
+
         var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
         $.ajax({
             url: apiUrl,
@@ -179,6 +186,65 @@ function loadNavbar() {
     });
 }
 
+function verifyPageRoles() {
+    if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
+        $(".nav-admin").hide();
+    }
+    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
+        $("#driver-tab").hide();
+    }
+    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("ACL")) {
+        $("#acl-tab").hide();
+    }
+    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Visualization")) {
+        $("#visualization-tab").hide();
+    }
+
+    switch (window.location.pathname) {
+        case "/StackV-web/portal/acl/":
+            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("ACL") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "/StackV-web/portal/admin/":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "/StackV-web/portal/details/":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") === -1) {
+                var uuid = sessionStorage.getItem("instance-uuid");
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/access/instances/' + uuid;
+                $.ajax({
+                    url: apiUrl,
+                    type: 'GET',
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+                        if (result === "false") {
+                            sessionStorage.removeItem("instance-uuid");
+                            window.location.href = "/StackV-web/portal/";
+                        }
+                    }
+                });
+            }
+            break;
+        case "/StackV-web/portal/driver/":
+            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("Drivers") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "/StackV-web/portal/intent/":
+            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("vcn") === -1
+                    && keycloak.tokenParsed.resource_access.StackV.roles.indexOf("ahc") === -1
+                    && keycloak.tokenParsed.resource_access.StackV.roles.indexOf("dnc") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+    }
+}
+
 function prettyPrintInfo() {
     var ugly = document.getElementById('info-panel-text-area').value;
     var obj = JSON.parse(ugly);
@@ -187,11 +253,6 @@ function prettyPrintInfo() {
 }
 
 //Select Function
-function aclSelect(sel) {
-    $ref = "privileges.jsp?id=" + sel.value + " #acl-tables";
-    $("#acl-tables").load($ref);
-}
-
 function installSelect(sel) {
     if (sel.value !== null) {
         $ref = "/StackV-web/portal/driver/?form_install=" + sel.value + " #service-menu";
@@ -207,21 +268,6 @@ function installSelect(sel) {
     $("#service-bottom").load($ref2);
 }
 
-function viewmodeSelect(sel) {
-    if (sel.value !== null) {
-        $ref = "/StackV-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-menu";
-        $ref2 = "/StackV-web/ops/srvc/viewcreate.jsp?mode=" + sel.value + " #service-fields";
-    } else {
-        $ref = "/StackV-web/ops/srvc/viewcreate.jsp #service-menu";
-        $ref2 = "/StackV-web/ops/srvc/viewcreate.jsp #service-fields";
-
-    }
-    $("#service-top").load($ref);
-    $("#service-bottom").load($ref2);
-
-    clearCounters();
-}
-
 function driverSelect(sel) {
     if (sel.value !== null) {
         $ref = "/StackV-web/portal/driver/?form_install=install&driver_id=" + sel.value + " #service-fields";
@@ -232,430 +278,6 @@ function driverSelect(sel) {
 
     fieldCounter = 0;
 }
-
-function topoSelect(sel) {
-    if (sel.value !== null) {
-
-        if (sel.value.indexOf("aws") > -1) {
-            $ref = "/StackV-web/ops/srvc/vmadd.jsp?vm_type=aws&topo=" + sel.value + " #service-fields";
-        } else if (sel.value.indexOf("openstack") > -1) {
-            $ref = "/StackV-web/ops/srvc/vmadd.jsp?vm_type=os #service-fields";
-        } else if (sel.value.indexOf("versa") > -1) {
-            $ref = "/StackV-web/ops/srvc/vmadd.jsp?vm_type=vs #service-fields";
-        } else {
-            $ref = "/StackV-web/ops/srvc/vmadd.jsp #service-fields";
-        }
-    } else
-        $ref = "/StackV-web/ops/srvc/vmadd.jsp #service-fields";
-
-    $("#service-bottom").load($ref);
-
-    clearCounters();
-}
-
-
-
-function instanceSelect(sel) {
-    if (sel.value !== null) {
-        if (sel.value === "instance1") {
-            document.getElementsByName("root-path")[0].value = "/dev/xvda";
-            document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        } else if (sel.value === "instance2") {
-            document.getElementsByName("root-path")[0].value = "/dev/sdb";
-            document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        } else if (sel.value === "instance3") {
-            document.getElementsByName("root-path")[0].value = "/dev/sdc";
-            document.getElementsByName("root-snapshot")[0].value = "snapshot";
-        }
-    }
-}
-
-function networkSelect(sel) {
-    if (sel.value !== null) {
-        $ref2 = "/StackV-web/ops/srvc/netcreate.jsp?networkType=" + sel.value + " #service-fields";
-    } else {
-        $ref2 = "/StackV-web/ops/srvc/netcreate.jsp #service-fields";
-    }
-    $("#service-bottom").load($ref2);
-
-    clearCounters();
-}
-
-// Field Addition Functions
-var fieldCounter = 0;
-var fieldLimit = 5;
-function addPropField() {
-    if (fieldCounter === fieldLimit) {
-        alert("You have reached the limit of additional properties");
-    } else {
-        var table = document.getElementById("service-form");
-        var tableHeight = table.rows.length;
-
-        var row = table.insertRow(tableHeight - 1);
-        var cell1 = row.insertCell(0);
-        var cell2 = row.insertCell(1);
-        fieldCounter++;
-        cell1.innerHTML = '<input type="text" name="apropname'
-                + (fieldCounter) + '" placeholder="Additional Property Name" size="30" />';
-
-        cell2.innerHTML = '<input type="text" name="apropval'
-                + (fieldCounter) + '" placeholder="Additional Property Value" size="30" />';
-
-    }
-
-}
-
-var volumeCounter = 0;
-var volumeLimit = 10;
-function addVolume() {
-    if (volumeCounter === volumeLimit) {
-        alert("You have reached the limit of volumes.");
-    } else {
-        var table = document.getElementById("volume-table");
-        var tableHeight = table.rows.length;
-
-        var row = table.insertRow(tableHeight);
-        var cell1 = row.insertCell(0);
-        var cell2 = row.insertCell(1);
-        var cell3 = row.insertCell(2);
-        var cell4 = row.insertCell(3);
-        var cell5 = row.insertCell(4);
-        volumeCounter++;
-        cell1.innerHTML = 'Volume ' + volumeCounter;
-        cell2.innerHTML = '<select name="' + volumeCounter + '-path" required>'
-                + '<option></option>'
-                + '<option value="/dev/xvda">/dev/xvda</option>'
-                + '<option value="/dev/sdb">/dev/sdb</option>'
-                + '<option value="/dev/sdc">/dev/sdc</option>'
-                + '</select>';
-        cell3.innerHTML = '<select name="' + volumeCounter + '-snapshot" required>'
-                + '<option></option>'
-                + '<option value="snapshot1">snapshot</option>'
-                + '<option value="snapshot1">snapshot2</option>'
-                + '<option value="snapshot1">snapshot3</option>'
-                + '</select>';
-        cell4.innerHTML = '<input type="number" name="' + volumeCounter + '-size" style="width: 4em; text-align: center;"/>';
-        cell5.innerHTML = '<select name="' + volumeCounter + '-type" required>'
-                + '<option></option>'
-                + '<option value="standard">Standard</option>'
-                + '<option value="io1">io1</option>'
-                + '<option value="gp2">gp2</option>'
-                + '</select>'
-                + '<input type="button" class="button-register" value="Remove" onClick="removeVolume(' + tableHeight + ')" />';
-    }
-}
-
-function removeVolume(row) {
-    var table = document.getElementById("volume-table");
-    table.deleteRow(row);
-}
-
-function openWizard(button) {
-    var queryID = button.id.substr(7);
-
-    document.getElementById("wizard-table").toggleClass("hide");
-    document.getElementById("queryNumber").value = queryID;
-}
-
-function applyTextTemplate(name) {
-    var template = document.getElementById(name + "Template");
-    var input = document.getElementById(name + "Input");
-    var queryNumber = document.getElementById("queryNumber");
-
-    var output = document.getElementById("sparquery" + queryNumber.value);
-    output.value = template.value + input.value;
-}
-
-function applySelTemplate(name) {
-    var template = document.getElementById(name + "Template");
-    var input = document.getElementById(name + "Input");
-    var output = document.getElementById("sparquery");
-
-    output.value = template.value + input.options[input.selectedIndex].value;
-}
-
-var queryCounter = 1;
-var queryLimit = 10;
-function addQuery() {
-    if (queryCounter === queryLimit) {
-        alert("You have reached the limit of querys.");
-    } else {
-        var table = document.getElementById("net-custom-form");
-        var tableHeight = table.rows.length;
-
-        var row = table.insertRow(tableHeight - 2);
-        var cell1 = row.insertCell(0);
-        var cell2 = row.insertCell(1);
-        queryCounter++;
-        cell1.innerHTML = '<input type="text" id="sparquery' + queryCounter + '" name="sparquery' + queryCounter + '" size="70" />';
-        cell2.innerHTML = '<div class="view-flag">'
-                + '<input type="checkbox" id="inc' + queryCounter + '" name="viewInclusive' + queryCounter + '"/><label for="inc' + queryCounter + '">Inclusive</label>'
-                + '</div><div class="view-flag">'
-                + '<input type="checkbox" id="sub' + queryCounter + '" name="subRecursive' + queryCounter + '"/><label for="sub' + queryCounter + '">Subtree Rec.</label>'
-                + '</div><div class="view-flag">'
-                + '<input type="checkbox" id="sup' + queryCounter + '" name="supRecursive' + queryCounter + '"/><label for="sup' + queryCounter + '">Supertree Rec.</label></div>';
-    }
-}
-
-var routeCounter = 1;
-var routeLimit = 10;
-function addRoute() {
-    if (routeCounter === routeLimit) {
-        alert("You have reached the limit of routes.");
-    } else {
-        routeCounter++;
-        var block = document.getElementById('route-block');
-
-        block.innerHTML = block.innerHTML +
-                '<div>' +
-                '<input type="text" name="route' + routeCounter + '-from" placeholder="From"/>' +
-                '<input type="text" name="route' + routeCounter + '-to" placeholder="To"/>' +
-                '<input type="text" name="route' + routeCounter + '-next" placeholder="Next Hop"/>' +
-                '</div>';
-    }
-}
-
-var subRouteCounter = 1;
-var subRouteLimit = 10;
-function addSubnetRoute(subnetID) {
-    if (subRouteCounter === subRouteLimit) {
-        alert("You have reached the limit of routes.");
-        return;
-    }
-
-    subRouteCounter++;
-    var block = document.getElementById(subnetID + '-block');
-
-    block.innerHTML = block.innerHTML +
-            '<div>' +
-            '<input type="text" name="' + subnetID + subRouteCounter + '-from" placeholder="From"/>' +
-            '<input type="text" name="' + subnetID + subRouteCounter + '-to" placeholder="To"/>' +
-            '<input type="text" name="' + subnetID + subRouteCounter + '-next" placeholder="Next Hop"/>' +
-            '</div>';
-}
-
-//var VMRouteCounter = 1;
-//var VMRouteLimit = 10;
-//function addVMRoute(VMID) {
-//    if (VMRouteCounter === VMRouteLimit) {
-//        alert("You have reached the limit of routes.");
-//    }
-//
-//    VMRouteCounter++;
-//    var block = document.getElementById(VMID + '-block');
-//
-//    block.innerHTML = block.innerHTML +
-//            '<div>' +
-//            '<input type="text" name="' + VMID + VMRouteCounter + '-from" placeholder="From"/>' +
-//            '<input type="text" name="' + VMID + VMRouteCounter + '-to" placeholder="To"/>' +
-//            '<input type="text" name="' + VMID + VMRouteCounter + '-next" placeholder="Next Hop"/>' +
-//            '</div>';
-//}
-
-var SRIOVCounter = 1;
-var SRIOVLimit = 10;
-function addSRIOV(VMID) {
-    if (SRIOVCounter === SRIOVLimit) {
-        alert("You have reached the limit of SRIOV connections.");
-        return;
-    }
-
-    SRIOVCounter++;
-    var block = document.getElementById(VMID + '-block');
-
-    block.innerHTML = block.innerHTML +
-            '<div>' +
-            '<input type="text" name="' + VMID + SRIOVCounter + '-mac" placeholder="SRIOV MAC Address">' +
-            '<input type="text" name="' + VMID + SRIOVCounter + '-ip" placeholder="SRIOV IP Address">' +
-            '<input type="text" name="' + VMID + SRIOVCounter + '-gateway" placeholder="SRIOV Gateway">' +
-            '</div><div id="' + VMID + SRIOVCounter + '-route-block"></div><div>' +
-            '<input class="button-register" id="' + VMID + SRIOVCounter + '-route" type="button" value="Add Route" onClick="addSRIOVRoute(this.id)">';
-
-    addSRIOVRoute(VMID + SRIOVCounter + '-route');
-}
-
-var SRIOVRouteCounter = 1;
-var SRIOVRouteLimit = 20;
-function addSRIOVRoute(SRIOVRouteId) {
-    if (SRIOVRouteCounter === SRIOVRouteLimit) {
-        alert("You have reached the limit of SRIOV routes.");
-        return;
-    }
-
-    SRIOVRouteCounter++;
-    var block = document.getElementById(SRIOVRouteId + '-block');
-
-    block.innerHTML = block.innerHTML +
-            '<div>' +
-            '<input type="text" name="' + SRIOVRouteId + SRIOVRouteCounter + '-from" placeholder="From">' +
-            '<input type="text" name="' + SRIOVRouteId + SRIOVRouteCounter + '-to" placeholder="To">' +
-            '<input type="text" name="' + SRIOVRouteId + SRIOVRouteCounter + '-next" placeholder="Next Hop">' +
-            '</div>';
-}
-
-var VMCounter = 1;
-var VMLimit = 10;
-function addVM(type, subnetID) {
-    if (VMCounter === VMLimit) {
-        alert("You have reached the limit of VMs.");
-        return;
-    } else if (type === 'aws') {
-        VMCounter++;
-        var block = document.getElementById(subnetID + '-block');
-
-        block.innerHTML = block.innerHTML +
-                '<table id="' + subnetID + VMCounter + '-table">' +
-                '<tbody>' +
-                '<tr><td>VM Name</td><td><input type="text" name="' + subnetID + VMCounter + '"></td></tr>' +
-                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' +
-                '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Group"></td></tr>' +
-                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' +
-                '<td><input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type"></td></tr>' +
-                '</tbody></table>';
-    } else if (type === 'ops') {
-        VMCounter++;
-        var block = document.getElementById(subnetID + '-block');
-
-        block.innerHTML = block.innerHTML +
-                '<table id="' + subnetID + VMCounter + '-table">' +
-                '<tbody>' +
-                '<tr><td>VM Name</td><td><input type="text" name="' + subnetID + VMCounter + '"></td></tr>' +
-                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-keypair" placeholder="Keypair Name"></td>' +
-                '<td><input type="text" name="' + subnetID + VMCounter + '-security" placeholder="Security Group"></td></tr>' +
-                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-image" placeholder="Image Type"></td>' +
-                '<td><input type="text" name="' + subnetID + VMCounter + '-instance" placeholder="Instance Type"></td></tr>' +
-                '<tr><td><input type="text" name="' + subnetID + VMCounter + '-host" placeholder="VM Host"></td>' +
-                '<td><input type="text" name="' + subnetID + VMCounter + '-floating" placeholder="Floating IP"></td></tr>' +
-                '<tr><td>SRIOV</td><td>' +
-                '<div id="' + subnetID + VMCounter + '-sriov-block">' +
-                '</div><div><input class="button-register" id="' + subnetID + VMCounter + '-sriov" type="button" value="Add SRIOV" onClick="addSRIOV(this.id)"></div>' +
-                '</td></tr></tbody></table>';
-
-//        addVMRoute(subnetID + VMCounter + '-route');
-        addSRIOV(subnetID + VMCounter + '-sriov');
-    }
-}
-
-var gatewayCounter = 1;
-var gatewarLimit = 5;
-function addGateway(gatewayID) {
-    if (gatewayCounter === gatewarLimit) {
-        alert("You have reached the limit of Gateways.");
-        return;
-    }
-    gatewayCounter++;
-    var block = document.getElementById(gatewayID + '-block');
-
-    block.innerHTML = block.innerHTML +
-            '<table id="' + gatewayID + gatewayCounter + '-table">' +
-            '<tbody>' +
-            '<tr><td>Name</td>' +
-            '<td><input type="text" name="' + gatewayID + gatewayCounter + '"></td></tr>' +
-            '<tr><td>From</td>' +
-            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-from-value" placeholder="Value"></td>' +
-            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-from-type" placeholder="Type"></td></tr>' +
-            '<tr><td>To</td>' +
-            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-to-value" placeholder="Value"></td>' +
-            '<td><input type="text" name="' + gatewayID + gatewayCounter + '-to-type" placeholder="Type"></td></tr>' +
-            '</tbody></table>';
-}
-
-var subnetCounter = 1;
-var subnetLimit = 10;
-function addSubnet(type) {
-    if (subnetCounter === subnetLimit) {
-        alert("You have reached the limit of subnets.");
-        return;
-    } else if (type === 'aws') {
-        var table = document.getElementById("net-custom-form");
-        var tableHeight = table.rows.length;
-        subnetCounter++;
-
-        var row = table.insertRow(tableHeight - 2);
-        row.id = 'subnet' + subnetCounter;
-
-        var cell1 = row.insertCell(0);
-        cell1.innerHTML = 'Subnet ' + subnetCounter;
-        var cell2 = row.insertCell(1);
-        cell2.innerHTML = '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
-                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
-                '<div id="subnet' + subnetCounter + '-route-block"></div>' +
-                '<div>' +
-                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
-                '</div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
-                '</div><br>' +
-                '<div id="subnet' + subnetCounter + '-vm-block"></div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'aws\', this.id)">' +
-                '</div>' +
-                '</div>';
-
-        addSubnetRoute('subnet' + subnetCounter + '-route');
-        addVM('aws', 'subnet' + subnetCounter + '-vm');
-    } else if (type === 'ops') {
-        var table = document.getElementById("net-custom-form");
-        var tableHeight = table.rows.length;
-        subnetCounter++;
-
-        var row = table.insertRow(tableHeight - 1);
-        row.id = 'subnet' + subnetCounter;
-
-        var cell1 = row.insertCell(0);
-        cell1.innerHTML = 'Subnet ' + subnetCounter;
-        var cell2 = row.insertCell(1);
-        cell2.innerHTML = '<div>' +
-                '<input type="text" name="subnet' + subnetCounter + '-name" placeholder="Name"/>' +
-                '<input type="text" name="subnet' + subnetCounter + '-cidr" placeholder="CIDR Block"/>' +
-                '<div id="subnet' + subnetCounter + '-route-block"></div>' +
-                '<div>' +
-                '<input type="checkbox" name="subnet' + subnetCounter + '-route-prop" value="true"/>   Enable VPN Routes Propogation' +
-                '</div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-route" type="button" value="Add Route" onClick="addSubnetRoute(this.id)">' +
-                '</div><br>' +
-                '<div id="subnet' + subnetCounter + '-vm-block"></div>' +
-                '<div>' +
-                '<input class="button-register" id="subnet' + subnetCounter + '-vm" type="button" value="Add VM" onClick="addVM(\'ops\', this.id)"></div>' +
-                '</div>';
-
-        addSubnetRoute('subnet' + subnetCounter + '-route');
-        addVM('ops', 'subnet' + subnetCounter + '-vm');
-    }
-}
-
-var linkCounter = 1;
-var linkLimit = 10;
-function addLink() {
-    if (linkCounter === linkLimit) {
-        alert("You have reached the limit of connections");
-    } else {
-        var table = document.getElementById("net-custom-form");
-        var tableHeight = table.rows.length;
-        linkCounter++;
-
-        var row = table.insertRow(tableHeight - 1);
-        row.id = 'link' + linkCounter;
-
-        var cell1 = row.insertCell(0);
-        cell1.innerHTML = 'Link ' + linkCounter;
-        var cell2 = row.insertCell(1);
-        cell2.innerHTML = '<div>' +
-                '<input type="text" name="linkUri' + linkCounter + '"size="60" placeholder="Link-URI">' +
-                '</div>' +
-                '<div>' +
-                '<input type="text" name="link' + linkCounter + '-src" size="60" placeholder="Source">' +
-                '<input type="text" name="link' + linkCounter + '-src-vlan" placeholder="Vlan-tag">' +
-                '</div>' +
-                '</div>' +
-                '<input type="text" name="link' + linkCounter + '-des" size="60" placeholder="Destination">' +
-                '<input type="text" name="link' + linkCounter + '-des-vlan" placeholder="Vlan-tag">' +
-                '</div>';
-    }
-}
-
 
 /* API CALLS */
 
@@ -808,126 +430,6 @@ function deleteInstance(uuid) {
         }
     });
 }
-
-// TEMPLATING
-
-function resetForm() {
-    var form = document.getElementById('custom-form');
-    form.reset();
-}
-
-function applyDNCTemplate(code) {
-    var form = document.getElementById('custom-form');
-    form.reset();
-
-    switch (code) {
-        case 1:
-            //form.elements['topoUri'].value = 'urn:ogf:network:vo1.maxgigapop.net:link';
-            form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
-            form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
-            form.elements['link1-src-vlan'].value = '3021-3029';
-            form.elements['link1-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['link1-des-vlan'].value = '3021-3029';
-
-            break;
-        case 2:
-            if (linkCounter === 1) {
-                addLink();
-            }
-
-            form.elements['linkUri1'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn1';
-            form.elements['link1-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
-            form.elements['link1-src-vlan'].value = '3021-3029';
-            form.elements['link1-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['link1-des-vlan'].value = '3021-3029';
-            form.elements['linkUri2'].value = 'urn:ogf:network:vo1.maxgigapop.net:link=conn2';
-            form.elements['link2-src'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-2-3:link=*';
-            form.elements['link2-src-vlan'].value = '3021-3029';
-            form.elements['link2-des'].value = 'urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*';
-            form.elements['link2-des-vlan'].value = '3021-3029';
-
-            break;
-        default:
-
-    }
-}
-
-function dncModerate() {
-    var superstate = document.getElementById("instance-superstate").innerHTML;
-    var substate = document.getElementById("instance-substate").innerHTML;
-
-    if (superstate === 'Create') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-cancel").toggleClass("hide");
-                break;
-
-            case 'INIT':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Cancel') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-}
-
-
-function fl2pModerate(uuid) {
-    var superstate = document.getElementById("instance-superstate").innerHTML;
-    var substate = document.getElementById("instance-substate").innerHTML;
-
-    if (superstate === 'Create') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-cancel").toggleClass("hide");
-                break;
-
-            case 'INIT':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Cancel') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-        }
-    }
-    if (superstate === 'Reinstate') {
-        switch (substate) {
-            case 'READY':
-                $("#instance-reinstate").toggleClass("hide");
-                break;
-            case 'FAILED':
-                $("#instance-delete").toggleClass("hide");
-                break;
-
-        }
-    }
-}
-
 /* UTILITY */
 
 function getURLParameter(name) {
