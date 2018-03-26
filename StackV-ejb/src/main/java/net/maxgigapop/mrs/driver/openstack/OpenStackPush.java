@@ -2595,6 +2595,8 @@ public class OpenStackPush {
             } else {
                 throw logger.error_throwing(method, "sriovRequests related resoruces for vNic='" + vNic.getURI() + "' cannot be resolved");
             }
+            
+            // conventional ipv4 address - provided by the user
             query = "SELECT ?ip WHERE {"
                     + String.format("<%s> mrs:hasNetworkAddress ?ipAddr . ", vNic)
                     + "?ipAddr a mrs:NetworkAddress . "
@@ -2606,6 +2608,8 @@ public class OpenStackPush {
             if (r2.hasNext()) {
                 ip = r2.next().get("ip").toString();
             }
+            
+            // conventional mac address - provided by the user
             query = "SELECT ?mac WHERE {"
                     + String.format("<%s> mrs:hasNetworkAddress ?macAddr . ", vNic)
                     + "?macAddr a mrs:NetworkAddress . "
@@ -2617,6 +2621,78 @@ public class OpenStackPush {
             if (r3.hasNext()) {
                 mac = r3.next().get("mac").toString();
             }
+            
+            
+            // alm ip
+            query = "SELECT ?ip WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?ipAddr . ", vNic)
+                    + "?ipAddr a mrs:NetworkAddress . "
+                    + "?ipAddr mrs:type \"md2:alm:ipv4\" . "
+                    + "?ipAddr mrs:value ?ip . "
+                    + "}";
+            ResultSet almIpResultSet = executeQuery(query, emptyModel, modelDelta);
+            // String almIp = null;
+            if (almIpResultSet.hasNext()) {
+                String queryIp = almIpResultSet.next().get("ip").toString();
+                
+                if (queryIp.contains(":")) {
+                    // if the queried information has a colon indicating the a potential specified_address
+                    // then attempt to the extract the address while checking if there is an explicit
+                    // mention of "suggest+any"
+                    
+                    String[] splitQuery = queryIp.split(":");
+                    String[] poolInfo = splitQuery[0].split("+");
+                    String[] addrInfo = splitQuery[1].split("+");
+
+                    if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
+                        // explicit mention of "any"
+                        // query the IPA ALM manager for an address
+                    } else {
+                        // get the specifed address
+                        ip = addrInfo[1];
+                    }                    
+                } else {
+                    // the queried information should look like this format: pool+pool_name
+                    String[] poolInfo = queryIp.split("+");
+                    // query the IPA ALM manager for an address
+                }                            
+            }
+            
+            // alm mac
+            query = "SELECT ?mac WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?macAddr . ", vNic)
+                    + "?macAddr a mrs:NetworkAddress . "
+                    + "?macAddr mrs:type \"md2:alm:mac\" . "
+                    + "?macAddr mrs:value ?mac . "
+                    + "}";
+            ResultSet almMacResultSet = executeQuery(query, emptyModel, modelDelta);
+            //String almMac = null;
+            if (almMacResultSet.hasNext()) {
+                String queryIp = almIpResultSet.next().get("mac").toString();
+                
+                if (queryIp.contains(":")) {
+                    // if the queried information has a colon indicating the a potential specified_address
+                    // then attempt to the extract the address while checking if there is an explicit
+                    // mention of "suggest+any"
+                    
+                    String[] splitQuery = queryIp.split(":");
+                    String[] poolInfo = splitQuery[0].split("+");
+                    String[] addrInfo = splitQuery[1].split("+");
+
+                    if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
+                        // explicit mention of "any"
+                        // query the IPA ALM manager for an address
+                    } else {
+                        // get the specifed address
+                        mac = addrInfo[1];
+                    }                    
+                } else {
+                    // the queried information should look like this format: pool+pool_name
+                    String[] poolInfo = queryIp.split("+");
+                    // query the IPA ALM manager for an address
+                }
+            }
+            
             String serverName = ResourceTool.getResourceName(VM.toString(), OpenstackPrefix.vm);
             String vnicName = ResourceTool.getResourceName(vNic.toString(), OpenstackPrefix.PORT);
             o.put("server name", serverName);

@@ -38,7 +38,7 @@ public class IpaAlm {
     String kcToken;
     
     public IpaAlm() {
-        kcToken = kcTokenHandler.getToken("xyang", "MAX123!");        
+        kcToken = kcTokenHandler.setAndGetToken("xyang", "MAX123!");        
     }
     
    
@@ -77,7 +77,7 @@ public class IpaAlm {
     }
     
     /**
-     * Runs the given JSON object and returns the JSON response
+     * Posts the given JSON object to the IPA server and returns the JSON response
      * @param ipaJSON
      * @return 
      */
@@ -134,43 +134,13 @@ public class IpaAlm {
         return resultJSON;
     }
     
-    /*
-    public JSONObject addAlmPool(String poolName, String poolType, String almRange) {
-        JSONObject almPoolJSON = new JSONObject();
-        almPoolJSON.put("id", 0);
-        almPoolJSON.put("method", "almpool_add");
-        
-        JSONArray paramsArr = new JSONArray();
-        paramsArr.add(new JSONArray());
-        
-        JSONObject paramsArrArgs = new JSONObject();
-        paramsArrArgs.put("cn", poolName);
-        paramsArrArgs.put("almpooltype", poolType);
-        paramsArrArgs.put("almrange", almRange);
-        paramsArr.add(paramsArrArgs);
-        
-        almPoolJSON.put("params", paramsArr);
-        
-        return runIpaRequest(almPoolJSON);
-    }
-    
-    public JSONObject deletePool(String poolName) {
-        JSONObject delPoolJSON = new JSONObject();
-        delPoolJSON.put("id", 0);
-        delPoolJSON.put("method", "almpool_del");
-        
-        JSONArray paramsArr = new JSONArray();
-        paramsArr.add(new JSONArray());
-        JSONObject paramsArrArgs = new JSONObject();
-        paramsArrArgs.put("cn", poolName);
-        paramsArr.add(paramsArrArgs);
-        
-        delPoolJSON.put("params", paramsArr);
-        
-        return runIpaRequest(delPoolJSON);
-    }
-    */
-    
+    /**
+     * Creates the JSON object for leasing an address.
+     * @param clientId
+     * @param poolName
+     * @param poolType
+     * @return 
+     */
     public JSONObject createLease(String clientId, String poolName, String poolType) {
         JSONObject leaseJSON = new JSONObject();
         leaseJSON.put("id", 0);
@@ -190,6 +160,15 @@ public class IpaAlm {
         return runIpaRequest(leaseJSON);
     }
     
+    
+    /**
+     * Creates the JSON object for revoking a leased address.
+     * @param clientId
+     * @param poolName
+     * @param poolType
+     * @param leasedAddr
+     * @return 
+     */
     public JSONObject revokeLease(String clientId, String poolName, String poolType, String leasedAddr) {
         JSONObject leaseJSON = new JSONObject();
         leaseJSON.put("id", 0);
@@ -206,6 +185,7 @@ public class IpaAlm {
         paramsArr.add(paramsArrArgs);
         
         leaseJSON.put("params", paramsArr);
+        
         
         return runIpaRequest(leaseJSON);
     }
@@ -246,8 +226,7 @@ public class IpaAlm {
                 }
             }
         }
-        
-        
+                
         return addr;
     }
     
@@ -260,7 +239,7 @@ public class IpaAlm {
      * @return 
      */
     public boolean revokeLeasedAddr(String clientId, String poolName, String poolType, String leasedAddr) {
-        boolean revoked = false;
+        boolean revoked = false;        
         
         // pass the parameters and run the request
         JSONObject revokeResponseJSON = revokeLease(clientId, poolName, poolType, leasedAddr);

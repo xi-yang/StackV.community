@@ -32,23 +32,43 @@ public class KcTokenHandler {
     
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.common.KcTokenHandler", "KcTokenHandler");
     JSONParser parser = new JSONParser();
-    String accessToken = null;
+    private String accessToken = null;
     long accessCreationTime;
-    String refreshToken = null;
-    int recur = 0;
+    // private String refreshToken = null;
+    // int recur = 0;
     
     
-    
-    public String getToken(String user, String pwd) {
+    /**
+     * Returns the accessToken after trying to get the token via the credentials
+     * provided. If username or password are empty, returns null.
+     * @param user
+     * @param pwd
+     * @return String - keycloak token
+     */
+    public String setAndGetToken(String user, String pwd) {
         if (user.isEmpty() || pwd.isEmpty()) {
             return null;
         } else {
-            return setAndGetToken(user, pwd);            
+            setToken(user, pwd);
+            return getToken();
         }
     }
     
+    /**
+     * Returns the accessToken. If the user has not called the 
+     * @return String -  accessToken
+     */
+    public String getToken() {
+        return accessToken;
+    }
     
-    private String setAndGetToken(String user, String pwd) {
+    /**
+     * Set the accessToken. If the request was a failure, the accessToken is set
+     * to null. Otherwise the accessToken is set the value of the new token
+     * @param user
+     * @param pwd 
+     */
+    private void setToken(String user, String pwd) {
         String method = "login";
         try {
             URL url = new URL(kc_url + "/realms/StackV/protocol/openid-connect/token");            
@@ -76,93 +96,19 @@ public class KcTokenHandler {
             Object obj = parser.parse(responseStr.toString());
             JSONObject result = (JSONObject) obj;
 
-            if (recur != 0) {
-                logger.status(method, "Refresh achieved after " + recur + " retry");
-            }
+            String token = (String) result.get("access_token");
             
-            String tokString = (String) result.get("access_token");
-            if (tokString == null) {
-                return "Error: could not get token";
+            if (token == null) {
+                accessToken = null;
+            } else {
+                accessCreationTime = System.nanoTime();                                 
+                accessToken = token;                
             }
+             
             
-            accessCreationTime = System.nanoTime();                                 
-            accessToken = tokString;
         } catch (ParseException | IOException ex) {
             logger.catching(method, ex);
-        }
-        return accessToken;
+        }        
     }
-
-    public String refreshToken(String refreshToken) {
-        if (refreshToken != null) {
-            long elapsed = (System.nanoTime() - accessCreationTime) / 1000000;
-            if (elapsed > 45000) {
-                accessToken = refreshTokenSub(0);
-            }
-        }
-        return accessToken;
-    }
-
-
-    private String refreshTokenSub(int recur) {
-        String method = "refreshToken";
-        if (recur == 10) {
-            logger.error(method, "Keycloak refresh connection failure!");
-            return null;
-        }
-
-        try {
-            URL url = new URL(kc_url + "/realms/StackV/protocol/openid-connect/token");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-
-            // restapi
-            //String encode = "cmVzdGFwaTpjMTZkMjRjMS0yNjJmLTQ3ZTgtYmY1NC1hZGE5YmQ4ZjdhY2E=";
-            // StackV
-            String encode = "U3RhY2tWOmFlNTNmYmVhLTg4MTItNGMxMy05MThmLTAwNjVhMTU1MGI3Yw==";
-
-            conn.setRequestProperty("Authorization", "Basic " + encode);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("POST");
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-            String data = "grant_type=refresh_token&refresh_token=" + refreshToken;
-            try (OutputStream os = conn.getOutputStream(); BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(os, "UTF-8"))) {
-                writer.write(data);
-                writer.flush();
-            }
-
-            conn.connect();
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-            Object obj = parser.parse(responseStr.toString());
-            JSONObject result = (JSONObject) obj;
-
-            if (recur != 0) {
-                logger.status(method, "Refresh achieved after " + recur + " retry");
-            }
-            accessCreationTime = System.nanoTime();
-            return (String) result.get("access_token");
-        } catch (SocketTimeoutException | java.net.ConnectException ex) {
-            // Keycloak connection timeout
-            try {
-                recur++;
-                logger.warning(method, "Keycloak refresh timeout #" + recur);
-                Thread.sleep(3000);
-                return refreshTokenSub(recur);
-            } catch (InterruptedException ex1) {
-                logger.catching(method, ex);
-            }
-        } catch (ParseException | IOException ex) {
-            logger.catching(method, ex);
-        }
-        return null;
-    }
+    
 }
