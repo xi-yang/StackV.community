@@ -2233,7 +2233,7 @@ public class WebResource {
                 prep = front_conn.prepareStatement("SELECT DISTINCT W.* FROM service_wizard W "
                         + "LEFT JOIN service_wizard_licenses L "
                         + "ON (W.service_wizard_id = L.service_wizard_id) "
-                        + "WHERE W.owner = 'xyang' OR L.username = 'xyang'");
+                        + "WHERE W.owner = ? OR L.username = ?");
                 prep.setString(1, username);
                 prep.setString(2, username);
             }
