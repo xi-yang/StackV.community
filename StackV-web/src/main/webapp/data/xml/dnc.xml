@@ -47,7 +47,7 @@
                 <type>text</type>
                 <valid>string</valid>
             </input>
-            <group name="Bandwidth" collapsible="true" opened="true">
+            <group name="Bandwidth" collapsible="true" opened="false">
                 <input>
                     <name>Capacity</name>
                     <type>text</type>
@@ -63,6 +63,29 @@
                         <option>anyAvailable</option>
                         <option default="true">bestEffort</option>
                     </options>
+                </input>
+            </group>
+            <group name="Schedule" collapsible="true" opened="false">
+                <input>
+                    <name>Start</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <hint>(Blank: 'now')</hint>
+                    <valid>calendar</valid>
+                </input>
+                <input required="true">
+                    <name>End</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <hint>(Or Deadline)</hint>
+                    <valid>calendar</valid>
+                </input>
+                <input>
+                    <name>Duration</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <hint>(In Minutes)</hint>
+                    <valid>integer</valid>
                 </input>
             </group>
             <group factory="true" name="terminal">
