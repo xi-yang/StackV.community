@@ -900,11 +900,6 @@ public class MCETools {
         return false;
     }
 
-    //@TODO: Bandwidth Scheduling
-    //  0. build per-hop BandwidthCalendar and configure scheduling method and params
-    //  1. make schedule based on start - end - duration and bw params for requested reservable vs. min (reservable, available) calendar
-    //  2. update bandwidth profile for path and add schedule lifetime info
-
     public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) throws Exception {
         for (String sparql : constraints) {
             if (ModelUtil.evaluateStatement(model, stmt, sparql)) {
@@ -914,7 +909,6 @@ public class MCETools {
         return false;
     }
 
-    //@TODO: pass bandwidth schedule information
     public static OntModel createL2PathVlanSubnets(Model model, Path path, JSONObject portTeMap) {
         String method = "createL2PathVlanSubnets";
         HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
@@ -1249,6 +1243,17 @@ public class MCETools {
             vlanPortUrn = currentHop.toString();
             resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
         }
+        // create lifetime if scheduled reservation
+        Resource resVlanLifetime = null;
+        if (path.getBandwithScedule() != null) {
+            String vlanLifetimeUrn = vlanPortUrn + ":lifetime";
+            resVlanLifetime = RdfOwl.createResource(vlanSubnetModel, vlanLifetimeUrn, Nml.Lifetime);
+            Literal ltStart = model.createTypedLiteral(DateTimeUtil.longToDateString(path.getBandwithScedule().getStartTime() * 1000L));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanLifetime, Nml.start, ltStart));
+            Literal ltEnd = model.createTypedLiteral(DateTimeUtil.longToDateString(path.getBandwithScedule().getEndTime()* 1000L));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanLifetime, Nml.end, ltEnd));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.existsDuring, resVlanLifetime));
+        }
         // create vlan label for either new or existing VLAN port
         String vlanLabelUrn = vlanPortUrn + ":label+"+suggestedVlan;
         Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
@@ -1271,6 +1276,9 @@ public class MCETools {
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.belongsTo, ingressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, ingressSwitchingSubnet));
+            if (resVlanLifetime != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(ingressSwitchingSubnet, Nml.existsDuring, resVlanLifetime));
+            }
         }
 
         // get egressSubnet for egressSwitchingService and add port the this existing subnet
@@ -1284,8 +1292,11 @@ public class MCETools {
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.belongsTo, egressSwitchingService));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.belongsTo, egressSwitchingSubnet));
+            if (resVlanLifetime != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(egressSwitchingSubnet, Nml.existsDuring, resVlanLifetime));
+            }
         }
-        
+
         // add BandwidthService to vlan port if applicable
         if (bwProfile != null && bwProfile.type != null && !bwProfile.type.equalsIgnoreCase("bestEffort")) {
             String vlanBwServiceUrn = vlanPortUrn + ":service+bw";
@@ -1315,6 +1326,9 @@ public class MCETools {
             if (bwProfile.granularity != null) {
                 Literal lGranularity = model.createTypedLiteral(bwProfile.granularity);
                 vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.granularity, lGranularity));
+            }
+            if (resVlanLifetime != null) {
+                vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Nml.existsDuring, resVlanLifetime));
             }
         }
         return vlanSubnetModel;
@@ -1454,7 +1468,7 @@ public class MCETools {
         }
         if (nextHop != null && nextHop.equals(resFlowSvc) && lastPort != null) {
             // swap input and output flow IDs from lastPort
-            //@TODO: check input and output flows exist before swap
+            // check input and output flows exist before swap
             String inFlowId = lastPort.getURI() + ":flow=output_vlan" + flowNameVlan;
             Resource resInFlow = RdfOwl.createResource(vlanFlowsModel, URI_flow(resFlowTable.getURI(), inFlowId), Mrs.Flow);
             //$$ add match: currentHop as in_port & suggestedVlan
@@ -1537,7 +1551,6 @@ public class MCETools {
     }
     
     // get VLAN range for the port plus all the available ranges in sub-ports (LabelGroup) and remove allocated vlans (Label)
-    //@TODO: pass current bandwidth schedule and use it to constrain (loosen) VLAN selection
     private static TagSet getVlanRangeForPort(Model model, Resource port, BandwidthCalendar.BandwidthSchedule schedule) 
             throws TagSet.InvalidVlanRangeExeption {
         TagSet vlanRange = null;
