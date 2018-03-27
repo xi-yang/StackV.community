@@ -66,6 +66,8 @@ import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
 import org.json.simple.JSONObject;
 import com.jayway.jsonpath.JsonPath;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.DateTimeUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_action;
@@ -912,9 +914,7 @@ public class MCETools {
         return false;
     }
 
-    //@TODO: create bandwidth service for all sub-level (client) BidirectionalPort
-        //@@ inherit granularity if available
-        //@@ "any" (max available) bandwidth handling - similar to "any" VLAN
+    //@TODO: pass bandwidth schedule information
     public static OntModel createL2PathVlanSubnets(Model model, Path path, JSONObject portTeMap) {
         String method = "createL2PathVlanSubnets";
         HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
@@ -950,7 +950,7 @@ public class MCETools {
             }
             if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
                 try {
-                    handleL2PathHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
+                    handleL2PathHop(model, path, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
                     lastPort = currentHop;
                 } catch (TagSet.NoneVlanExeption ex) {
                     ;
@@ -970,7 +970,7 @@ public class MCETools {
                 }
                 if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
                     try {
-                        handleL2PathHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
+                        handleL2PathHop(model, path, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
                         lastPort = currentHop;
                     } catch (TagSet.NoneVlanExeption ex) {
                         ;
@@ -1022,8 +1022,7 @@ public class MCETools {
         return l2PathModel;
     }
 
-    //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as params for currentHop
-    private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, JSONObject portTeMap)
+    private static void handleL2PathHop(Model model, Path path, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, JSONObject portTeMap)
             throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption, TagSet.InvalidVlanRangeExeption {
         if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
             //@TODO: handling adaptation?
@@ -1058,7 +1057,7 @@ public class MCETools {
             lastParamMap = (HashMap<String, Object>) portParamMap.get(lastPort);
         }
         // Get VLAN range
-        TagSet vlanRange = getVlanRangeForPort(model, currentHop);
+        TagSet vlanRange = getVlanRangeForPort(model, currentHop, path.getBandwithScedule());
         // do nothing for port without a Vlan labelGroup
         if (vlanRange == null) {
             //special handling OpenFlow port (also port in hybrid mode ?)
@@ -1538,7 +1537,8 @@ public class MCETools {
     }
     
     // get VLAN range for the port plus all the available ranges in sub-ports (LabelGroup) and remove allocated vlans (Label)
-    private static TagSet getVlanRangeForPort(Model model, Resource port) 
+    //@TODO: pass current bandwidth schedule and use it to constrain (loosen) VLAN selection
+    private static TagSet getVlanRangeForPort(Model model, Resource port, BandwidthCalendar.BandwidthSchedule schedule) 
             throws TagSet.InvalidVlanRangeExeption {
         TagSet vlanRange = null;
         String sparql = String.format("SELECT ?range WHERE {"
@@ -1575,10 +1575,12 @@ public class MCETools {
         if (vlanRange == null || vlanRange.isEmpty()) {
             return null;
         }
-        sparql = String.format("SELECT ?vlan WHERE {"
+        
+        sparql = String.format("SELECT ?vlan ?start ?end WHERE {"
                 + "<%s> nml:hasBidirectionalPort ?vlan_port. "
                 + "?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
-                + "?l nml:value ?vlan."
+                + "?l nml:value ?vlan. "
+                + "OPTIONAL {?vlan_port nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end.} "
                 + "FILTER not exists {"
                 + "?subnet nml:hasBidirectionalPort ?vlan_port. "
                 + "?subnet a mrs:SwitchingSubnet. "
@@ -1586,8 +1588,20 @@ public class MCETools {
                 + "} }", port);
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
-            String vlanStr = rs.next().getLiteral("?vlan").toString();
+            QuerySolution qs = rs.next();
+            String vlanStr = qs.getLiteral("?vlan").toString();
             Integer vlan = Integer.valueOf(vlanStr);
+            if (qs.contains("start") && schedule != null) {
+                try {
+                    long start = DateTimeUtil.getBandwidthScheduleSeconds(qs.getLiteral("start").getString());
+                    long end = DateTimeUtil.getBandwidthScheduleSeconds(qs.getLiteral("end").getString());
+                    if (start >= schedule.getEndTime() || end <= schedule.getStartTime()) {
+                        continue;
+                    }
+                } catch (Exception ex) {
+                    continue; // something wrong with the schedule format, skip the VLAN 
+                }
+            }
             vlanRange.removeTag(vlan);
         }
         return vlanRange;
