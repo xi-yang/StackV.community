@@ -38,11 +38,11 @@ public class DNCPolicyData implements Helper {
             retConn.put("bandwidth", retBand);
              
             JSONObject schedule = (JSONObject) conn.get("schedule");
-            if (conn.contains("schedule") {
+            if (conn.containsKey("schedule")) {
                 JSONObject retSchedule = new JSONObject();
-                retSchedule.put("start", schedule.conatin("start") && !((String)schedule.get("start")).isEmpty() ? schedule.get("start")) : "now";
+                retSchedule.put("start", schedule.containsKey("start") && !((String)schedule.get("start")).isEmpty() ? schedule.get("start") : "now");
                 retSchedule.put("end", schedule.get("end"));
-                if (schedule.conatin("duration")) {
+                if (schedule.containsKey("duration")) {
                     retSchedule.put("duration", schedule.get("duration"));
                 }
                 retConn.put("schedule", retSchedule);
