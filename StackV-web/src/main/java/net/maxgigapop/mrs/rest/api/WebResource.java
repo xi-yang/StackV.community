@@ -118,10 +118,6 @@ public class WebResource {
     private static Map<String, List<String>> createServiceMap() {
         HashMap<String, List<String>> result = new HashMap<>();
 
-        result.put("driver", Arrays.asList(
-                "Driver Management",
-                "Installation and Uninstallation of Driver Instances."));
-
         result.put("vcn", Arrays.asList(
                 "Virtual Cloud Network",
                 "Network Creation Pilot Testbed."));
@@ -134,6 +130,10 @@ public class WebResource {
                 "Advanced Hybrid Cloud",
                 "Advanced Hybrid Cloud Service."));
 
+        result.put("ecc", Arrays.asList(
+                "EdgeCloud Connection",
+                "MAX EdgeCloud Pilot Service."));
+
         return Collections.unmodifiableMap(result);
     }
 
@@ -144,14 +144,14 @@ public class WebResource {
     private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
 
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
-  
+
     String ipaBaseServerUrl = System.getProperty("ipa_url");
     String ipaUsername = System.getProperty("ipa_username");
     String ipaPasswd = System.getProperty("ipa_passwd");
     static String ipaCookie;
-  
-    private final JNDIFactory factory = new JNDIFactory();  
-  
+
+    private final JNDIFactory factory = new JNDIFactory();
+
     @Context
     private HttpRequest httpRequest;
 
@@ -398,9 +398,8 @@ public class WebResource {
             throw ex;
         }
     }
-    
+
     // >FreeIPA-based ACL
-    
     @POST
     @Path("/acl/ipa/login")
     @Produces("application/json")
@@ -409,7 +408,7 @@ public class WebResource {
         JSONObject result = new JSONObject();
 
         String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
-        
+
         try {
             URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
             HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
@@ -418,24 +417,24 @@ public class WebResource {
             conn.setRequestProperty("Accept", "text/plain");
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
-            conn.setDoOutput(true);           
+            conn.setDoOutput(true);
             DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
             wr.writeBytes(formattedLoginData);
             wr.flush();
-            conn.connect();                       
-            
+            conn.connect();
+
             // if the request is successful
-            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {                             
+            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
                 result.put("Result", "Login Successful");
                 result.put("ResponseCode", conn.getResponseCode());
                 result.put("ResponseMessage", conn.getResponseMessage());
-                
+
                 // get the ipa_session cookie from the returned header fields and assign it to ipaCookie
                 ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
             } else { // if the request fails
                 String errorStream = "";
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                    String inputLine;                    
+                    String inputLine;
                     while ((inputLine = in.readLine()) != null) {
                         errorStream += inputLine;
                     }
@@ -445,44 +444,44 @@ public class WebResource {
                 result.put("ResponseMessage", conn.getResponseMessage());
                 result.put("Error", errorStream);
             }
-            
+
         } catch (MalformedURLException ex) {
             Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        
+
         // return the JSON object as a string
         return result.toJSONString();
     }
-    
+
     @POST
     @Path("/acl/ipa/request")
     @Consumes("application/json")
     @Produces("application/json")
     @RolesAllowed("ACL")
-    public String ipaRequest(String postData) {  
+    public String ipaRequest(String postData) {
         JSONObject result = new JSONObject();
-        try {            
+        try {
             URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
             HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
             conn.setRequestProperty("referer", ipaBaseServerUrl + "/ipa");
             conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/json");           
+            conn.setRequestProperty("Accept", "application/json");
             conn.setRequestProperty("Cookie", ipaCookie);
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
-            
+
             //JSONObject postDataJson = (JSONObject) parser.parse(postData);
-            DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));                    
+            DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
             wr.writeBytes(postData);
             wr.flush();
             conn.connect();
-            
+
             StringBuilder responseStr;
             // if the request is successful
-            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {                
+            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                     String inputLine;
                     responseStr = new StringBuilder();
@@ -498,7 +497,6 @@ public class WebResource {
                     responseStr = new StringBuilder();
                     while ((inputLine = in.readLine()) != null) {
                         responseStr.append(inputLine);
-                        System.out.println("inputLine: " + inputLine);
                     }
                 }
                 result.put("Error", responseStr.toString());
@@ -506,19 +504,19 @@ public class WebResource {
         } catch (IOException | ParseException ex) {
             Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        
+
         // return the JSONObject as a string
         return result.toJSONString();
     }
-    
+
     @DELETE
-    @Path("/acl/ipa/servicepolicies/{serviceUUID}")    
+    @Path("/acl/ipa/servicepolicies/{serviceUUID}")
     @Produces("application/json")
     @RolesAllowed("ACL")
     public String ipaDeleteAllPoliciesForService(@PathParam("serviceUUID") String uuid, String data) throws UnsupportedEncodingException {
         ipaLogin(); // ensure the ipa server cookie has been refreshed in case it was expired.
-        JSONObject result = new JSONObject();                                    
-        
+        JSONObject result = new JSONObject();
+
         // formatting all the groups and rules names
         String loginUg = "ug-login-" + uuid;
         String loginHg = "hg-login-" + uuid;
@@ -526,36 +524,34 @@ public class WebResource {
         String sudoUg = "ug-sudo-" + uuid;
         String sudoHg = "hg-sudo-" + uuid;
         String sudoHbac = "hbac-sudo-" + uuid;
-        
+
         result.put("ServiceUUID", uuid);
-        
+
         JSONObject delLoginUsergroup = formatIpaDeleteJSON("group_del", loginUg);
         JSONObject delLoginHostgroup = formatIpaDeleteJSON("hostgroup_del", loginHg);
         JSONObject delLoginHbacrule = formatIpaDeleteJSON("hbacrule_del", loginHbac);
-        
+
         JSONObject delSudoUsergroup = formatIpaDeleteJSON("group_del", sudoUg);
         JSONObject delSudoHostgroup = formatIpaDeleteJSON("hostgroup_del", sudoHg);
         JSONObject delSudoHbacrule = formatIpaDeleteJSON("hbacrule_del", sudoHbac);
-        
+
         /**
          * NOTE: if the groups or rules have not been created, there will an error
-         * in the resulting JSON but it is not fatal. The error will indicate 
-         * the group or rule does not exist which is okay since some accesses 
+         * in the resulting JSON but it is not fatal. The error will indicate
+         * the group or rule does not exist which is okay since some accesses
          * will not be given (mainly sudo accesses).
          */
-        
         result.put("loginUgDel", ipaRequest(delLoginUsergroup.toJSONString()));
         result.put("loginHgDel", ipaRequest(delLoginHostgroup.toJSONString()));
         result.put("loginHbacDel", ipaRequest(delLoginHbacrule.toJSONString()));
-        
+
         result.put("sudoUgDel", ipaRequest(delSudoUsergroup.toJSONString()));
         result.put("sudoHgDel", ipaRequest(delSudoHostgroup.toJSONString()));
         result.put("sudoHbacDel", ipaRequest(delSudoHbacrule.toJSONString()));
-                        
+
         // return the JSONObject as a string
         return result.toJSONString();
     }
-    
 
     // >Drivers    
     @PUT
@@ -773,7 +769,7 @@ public class WebResource {
 
         return JSONdata;
     }
-    
+
     @GET
     @Path("/driver/{user}/get")
     @Produces("application/json")
@@ -1919,6 +1915,7 @@ public class WebResource {
         MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
         String level = queryParams.getFirst("level");
         String refUUID = queryParams.getFirst("refUUID");
+        String search = queryParams.getFirst("search[value]");
         int draw = Integer.parseInt(queryParams.getFirst("draw"));
         int start = Integer.parseInt(queryParams.getFirst("start"));
         int length = Integer.parseInt(queryParams.getFirst("length"));
@@ -1962,6 +1959,22 @@ public class WebResource {
                     case "ERROR":
                         prepString = prepString + " WHERE referenceUUID = ? AND level = 'ERROR'";
                         break;
+                }
+            }
+
+            if (!search.equals("")) {
+                if (prepString.contains("WHERE")) {
+                    prepString = prepString + " AND (logger LIKE '%" + search + "%' "
+                            + "OR module LIKE '%" + search + "%' "
+                            + "OR method LIKE '%" + search + "%' "
+                            + "OR event LIKE '%" + search + "%' "
+                            + "OR message LIKE '%" + search + "%') ";
+                } else {
+                    prepString = prepString + " WHERE logger LIKE '%" + search + "%' "
+                            + "OR module LIKE '%" + search + "%' "
+                            + "OR method LIKE '%" + search + "%' "
+                            + "OR event LIKE '%" + search + "%' "
+                            + "OR message LIKE '%" + search + "%') ";
                 }
             }
 
@@ -2020,6 +2033,77 @@ public class WebResource {
         }
     }
 
+    @GET
+    @Path("/logging/instances")
+    @Produces("application/json")
+    @RolesAllowed("Logging")
+    public String loadInstanceData() throws SQLException, IOException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "loadInstanceData";
+        try {
+            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            AccessToken accessToken = securityContext.getToken();
+            String username = accessToken.getPreferredUsername();
+
+            front_conn = factory.getConnection("frontend");
+
+            if (verifyUserRole("admin")) {
+                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
+                        + "FROM service_instance I, service_verification V "
+                        + "WHERE V.service_instance_id = I.service_instance_id "
+                        + "ORDER BY I.creation_time");
+            } else {
+                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
+                        + "FROM service_instance I, acl A, service_verification V "
+                        + "WHERE I.referenceUUID = A.object AND V.service_instance_id = I.service_instance_id AND (A.subject = ? OR I.username = ?) "
+                        + "ORDER BY I.creation_time");
+                prep.setString(1, username);
+                prep.setString(2, username);
+            }
+            rs = prep.executeQuery();
+
+            JSONObject retJSON = new JSONObject();
+            JSONArray logArr = new JSONArray();
+            while (rs.next()) {
+                JSONObject logJSON = new JSONObject();
+                String instanceUUID = rs.getString("referenceUUID");
+                String instanceState = rs.getString("super_state");
+                try {
+                    URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
+                    HttpURLConnection status = (HttpURLConnection) url.openConnection();
+
+                    instanceState = instanceState + " - " + executeHttpMethod(url, status, "GET", null, auth);
+                } catch (IOException ex) {
+                    AuditService.cleanInstances("frontend");
+                    logger.catching(method, ex);
+                }
+
+                logJSON.put("alias", rs.getString("alias_name"));
+                logJSON.put("type", Services.get(rs.getString("type")).get(0));
+                logJSON.put("referenceUUID", instanceUUID);
+                logJSON.put("state", instanceState);
+                logJSON.put("owner", rs.getString("username"));
+                logJSON.put("lastState", rs.getString("last_state"));
+                logJSON.put("verification", rs.getString("verification_state"));
+                logJSON.put("timestamp", rs.getString("creation_time"));
+
+                logArr.add(logJSON);
+            }
+            retJSON.put("data", logArr);
+
+            return retJSON.toJSONString();
+        } catch (SQLException ex) {
+            AuditService.cleanInstances("frontend");
+            logger.catching(method, ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
     // >Manifests
     /**
      * @api {get} /app/manifest/:svcUUID Get Manifest
@@ -2039,7 +2123,7 @@ public class WebResource {
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/json")
-    @RolesAllowed("Manifests")
+    @RolesAllowed("Panels")
     public String getManifest(@PathParam("svcUUID") String svcUUID) throws SQLException {
         logger.refuuid(svcUUID);
         String method = "getManifest";
@@ -2117,7 +2201,7 @@ public class WebResource {
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/xml")
-    @RolesAllowed("Manifests")
+    @RolesAllowed("Panels")
     public String getManifestXml(@PathParam("svcUUID") String svcUUID) throws SQLException {
         logger.refuuid(svcUUID);
         String manifestJStr = getManifest(svcUUID);
@@ -2128,105 +2212,30 @@ public class WebResource {
 
     // >Panels
     @GET
-    @Path("/panel/{userId}/instances")
+    @Path("/panel/wizard")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public ArrayList<ArrayList<String>> loadInstances(@PathParam("userId") String userId) throws SQLException, IOException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        String method = "loadInstances";
-        try {
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            ArrayList<String> banList = new ArrayList<>();
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-
-            // Verify user
-            String username = authUsername(userId);
-            if (username == null) {
-                logger.error(method, "Logged-in user does not match requested user information");
-                return retList;
-            }
-
-            banList.add("Driver Management");
-
-            front_conn = factory.getConnection("frontend");
-
-            if (verifyUserRole("admin")) {
-                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state "
-                        + "FROM service_instance I, acl A");
-            } else {
-                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state "
-                        + "FROM service_instance I, acl A "
-                        + "WHERE I.referenceUUID = A.object AND (A.subject = ? OR I.username = ?)");
-                prep.setString(1, username);
-                prep.setString(2, username);
-            }
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                ArrayList<String> instanceList = new ArrayList<>();
-
-                String instanceName = Services.get(rs.getString("type")).get(0);
-                String instanceUUID = rs.getString("referenceUUID");
-                String instanceSuperState = rs.getString("super_state");
-                String instanceAlias = rs.getString("alias_name");
-                if (!banList.contains(instanceName)) {
-                    try {
-                        URL url = new URL(String.format("%s/service/%s/status", host, instanceUUID));
-                        HttpURLConnection status = (HttpURLConnection) url.openConnection();
-
-                        String instanceState = instanceSuperState + " - " + executeHttpMethod(url, status, "GET", null, auth);
-
-                        instanceList.add(instanceName);
-                        instanceList.add(instanceUUID);
-                        instanceList.add(instanceState);
-                        instanceList.add(instanceAlias);
-
-                        retList.add(instanceList);
-                    } catch (IOException ex) {
-                        AuditService.cleanInstances("frontend");
-                        logger.catching(method, ex);
-                    }
-                }
-            }
-
-            return retList;
-        } catch (SQLException ex) {
-            AuditService.cleanInstances("frontend");
-            logger.catching(method, ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs);
-        }
-    }
-
-    @GET
-    @Path("/panel/{userId}/wizard")
-    @Produces("application/json")
-    @RolesAllowed("Panels")
-    public ArrayList<ArrayList<String>> loadWizard(@PathParam("userId") String userId) throws SQLException {
+    public ArrayList<ArrayList<String>> loadWizard() throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
-            // Verify user
-            String username = authUsername(userId);
-            if (username == null) {
-                logger.error("loadInstances", "Logged-in user does not match requested user information");
-                return retList;
-            }
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            AccessToken accessToken = securityContext.getToken();
+            String username = accessToken.getPreferredUsername();
 
             front_conn = factory.getConnection("frontend");
 
             if (username.equals("admin")) {
-                prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
-                        + "FROM service_wizard W");
+                prep = front_conn.prepareStatement("SELECT DISTINCT * FROM service_wizard");
             } else {
-                prep = front_conn.prepareStatement("SELECT DISTINCT W.name, W.description, W.editable, W.service_wizard_id "
-                        + "FROM service_wizard W WHERE W.username = ? OR W.username IS NULL");
+                prep = front_conn.prepareStatement("SELECT DISTINCT W.* FROM service_wizard W "
+                        + "LEFT JOIN service_wizard_licenses L "
+                        + "ON (W.service_wizard_id = L.service_wizard_id) "
+                        + "WHERE W.owner = ? OR L.username = ?");
                 prep.setString(1, username);
+                prep.setString(2, username);
             }
             rs = prep.executeQuery();
             while (rs.next()) {
@@ -2235,6 +2244,10 @@ public class WebResource {
                 wizardList.add(rs.getString("name"));
                 wizardList.add(rs.getString("description"));
                 wizardList.add(rs.getString("service_wizard_id"));
+                wizardList.add(rs.getString("owner"));
+                wizardList.add(rs.getString("editable"));
+                wizardList.add(rs.getString("created"));
+                wizardList.add(rs.getString("last_edited"));
 
                 retList.add(wizardList);
             }
@@ -2249,16 +2262,11 @@ public class WebResource {
     }
 
     @GET
-    @Path("/panel/{userId}/editor")
+    @Path("/panel/editor")
     @Produces("application/json")
     @RolesAllowed("Panels")
-    public ArrayList<ArrayList<String>> loadEditor(@PathParam("userId") String userId) {
+    public ArrayList<ArrayList<String>> loadEditor() {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
-        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
-        AccessToken accessToken = securityContext.getToken();
-        Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
-
         for (Map.Entry<String, List<String>> entry : Services.entrySet()) {
             if (verifyUserRole(entry.getKey())) {
                 List<String> list = entry.getValue();
@@ -2350,8 +2358,8 @@ public class WebResource {
 
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("SELECT I.type, I.creation_time, I.alias_name, I.super_state, I.last_state "
-                    + "FROM service_instance I WHERE I.referenceUUID = ?");
+            prep = front_conn.prepareStatement("SELECT type, creation_time, alias_name, super_state, last_state, username "
+                    + "FROM service_instance WHERE referenceUUID = ?");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
@@ -2359,6 +2367,7 @@ public class WebResource {
                 retList.add(Services.get(rs.getString("type")).get(0));
                 retList.add(rs.getString("alias_name"));
                 retList.add(rs.getString("creation_time"));
+                retList.add(rs.getString("username"));
                 retList.add(rs.getString("super_state"));
                 retList.add(rs.getString("last_state"));
             }
@@ -2621,6 +2630,14 @@ public class WebResource {
         }
     }
 
+    @GET
+    @Path("/access/{category}/{uuid}")
+    @RolesAllowed("Panels")
+    public String verifyPanel(@PathParam("category") String category, @PathParam("uuid") String uuid) throws SQLException {
+        String method = "verifyPanel";
+        return Boolean.toString(verifyAccess(category, uuid));
+    }
+
     // >Profiles
     /**
      * @api {get} /app/profile/:wizardID Get Profile
@@ -2641,24 +2658,43 @@ public class WebResource {
     @GET
     @Path("/profile/{wizardID}")
     @Produces("application/json")
-    @RolesAllowed("Profiles")
+    @RolesAllowed("Profiles-R")
     public String getProfile(@PathParam("wizardID") int wizardID) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            String method = "getProfile";
-            logger.trace_start(method);
-            front_conn = factory.getConnection("frontend");
+            if (verifyAccess("profiles", wizardID)) {
+                String method = "getProfile";
+                logger.trace_start(method);
+                front_conn = factory.getConnection("frontend");
+                JSONObject profJSON = new JSONObject();
 
-            prep = front_conn.prepareStatement("SELECT wizard_json FROM service_wizard WHERE service_wizard_id = ?");
-            prep.setInt(1, wizardID);
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                return rs.getString(1);
+                prep = front_conn.prepareStatement("SELECT wizard_json, owner, editable, authorized FROM service_wizard WHERE service_wizard_id = ?");
+                prep.setInt(1, wizardID);
+                rs = prep.executeQuery();
+                while (rs.next()) {
+                    profJSON.put("wizard_json", rs.getString("wizard_json"));
+                    profJSON.put("owner", rs.getString("owner"));
+                    profJSON.put("editable", rs.getString("editable"));
+                    profJSON.put("authorized", rs.getString("authorized"));
+                }
+
+                prep = front_conn.prepareStatement("SELECT DISTINCT username, remaining FROM service_wizard_licenses WHERE service_wizard_id = ?");
+                prep.setInt(1, wizardID);
+                rs = prep.executeQuery();
+                JSONArray licenseJSON = new JSONArray();
+                while (rs.next()) {
+                    JSONObject obj = new JSONObject();
+                    obj.put("remaining", rs.getInt("remaining"));
+                    obj.put("username", rs.getString("username"));
+                    licenseJSON.add(obj);
+                }
+                profJSON.put("licenses", licenseJSON);
+
+                logger.trace_end(method);
+                return profJSON.toJSONString();
             }
-
-            logger.trace_end(method);
             return "";
         } catch (SQLException ex) {
             logger.catching("getProfile", ex);
@@ -2684,25 +2720,126 @@ public class WebResource {
      */
     @PUT
     @Path("/profile/{wizardID}/edit")
-    @RolesAllowed("Profiles")
-    public void editProfile(@PathParam("wizardID") int wizardId, final String inputString) throws SQLException {
+    @RolesAllowed("Profiles-W")
+    public void editProfile(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
+        String method = "editProfile";
         try {
-            String method = "editProfile";
-            logger.start(method);
-            // Connect to the DB
-            front_conn = factory.getConnection("frontend");
-            // TODO: Sanitize the input!
-            prep = front_conn.prepareStatement("UPDATE service_wizard SET wizard_json = ? WHERE service_wizard_id = ? ");
-            prep.setString(1, inputString);
-            prep.setInt(2, wizardId);
-            prep.executeUpdate();
-
-            logger.end(method);
+            if (verifyAccess("profiles", wizardID)) {
+                logger.trace_start(method);
+                // Connect to the DB
+                front_conn = factory.getConnection("frontend");
+                // TODO: Sanitize the input!
+                prep = front_conn.prepareStatement("UPDATE service_wizard SET wizard_json = ?, last_edited = ? WHERE service_wizard_id = ? ");
+                prep.setString(1, inputString);
+                prep.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+                prep.setInt(3, wizardID);
+                prep.executeUpdate();
+            }
+            logger.trace_end(method);
         } catch (SQLException ex) {
             logger.catching("editProfile", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    /**
+     * @api {post} /app/profile/:wizardID/licenses Add Profile license
+     * @apiVersion 1.0.0
+     * @apiDescription
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
+    @POST
+    @Path("/profile/{wizardID}/licenses")
+    @Consumes(value = {"application/json"})
+    @RolesAllowed("Profiles-W")
+    public void addProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "addProfileLicenses";
+        try {
+            if (verifyAccess("profiles", wizardID)) {
+                Object obj = parser.parse(inputString);
+                JSONObject inputJSON = (JSONObject) obj;
+
+                logger.trace_start(method);
+                // Connect to the DB
+                front_conn = factory.getConnection("frontend");
+                prep = front_conn.prepareStatement("INSERT INTO service_wizard_licenses (service_wizard_id, remaining, username) VALUES (?,?,?)");
+                prep.setInt(1, wizardID);
+                prep.setInt(2, Integer.parseInt((String) inputJSON.get("remaining")));
+                prep.setString(3, (String) inputJSON.get("username"));
+                prep.executeUpdate();
+            }
+            logger.trace_end(method);
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    /**
+     * @api {put} /app/profile/:wizardID/licenses Modify Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Modify the specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
+    @PUT
+    @Path("/profile/{wizardID}/licenses")
+    @Consumes(value = {"application/json"})
+    @RolesAllowed("Profiles-W")
+    public void editProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "editProfileLicenses";
+        try {
+            if (verifyAccess("profiles", wizardID)) {
+                Object obj = parser.parse(inputString);
+                JSONObject inputJSON = (JSONObject) obj;
+
+                logger.trace_start(method);
+                // Connect to the DB
+                front_conn = factory.getConnection("frontend");
+                if (Integer.parseInt((String) inputJSON.get("remaining")) <= 0) {
+                    prep = front_conn.prepareStatement("DELETE FROM service_wizard_licenses WHERE service_wizard_id = ? AND username = ?");
+                    prep.setInt(1, wizardID);
+                    prep.setString(2, (String) inputJSON.get("username"));
+                    prep.executeUpdate();
+                } else {
+                    prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE service_wizard_id = ? AND username = ?");
+                    prep.setInt(1, Integer.parseInt((String) inputJSON.get("remaining")));
+                    prep.setInt(2, wizardID);
+                    prep.setString(3, (String) inputJSON.get("username"));
+                    prep.executeUpdate();
+                }
+            }
+            logger.trace_end(method);
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
             throw ex;
         } finally {
             commonsClose(front_conn, prep, rs);
@@ -2724,7 +2861,7 @@ public class WebResource {
      */
     @PUT
     @Path("/profile/new")
-    @RolesAllowed("Profiles")
+    @RolesAllowed("Profiles-W")
     public String newProfile(final String inputString) throws SQLException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -2740,6 +2877,7 @@ public class WebResource {
             String name = (String) inputJSON.get("name");
             String description = (String) inputJSON.get("description");
             String username = (String) inputJSON.get("username");
+            JSONArray licenseArr = (JSONArray) inputJSON.get("licenses");
 
             JSONObject inputData = (JSONObject) inputJSON.get("data");
             inputData.remove("uuid");
@@ -2748,13 +2886,35 @@ public class WebResource {
             }
             String inputDataString = inputData.toJSONString();
 
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` (username, name, wizard_json, description, editable) VALUES (?, ?, ?, ?, ?)");
+            int authorized = (verifyUserRole("admin")) ? 1 : 0;
+            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
+                    + "(owner, name, wizard_json, description, editable, authorized) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setString(1, username);
             prep.setString(2, name);
             prep.setString(3, inputDataString);
             prep.setString(4, description);
             prep.setInt(5, 0);
+            prep.setInt(6, authorized);
             prep.executeUpdate();
+
+            prep = front_conn.prepareStatement("SELECT service_wizard_id FROM service_wizard WHERE owner = ? AND name = ?");
+            prep.setString(1, username);
+            prep.setString(2, name);
+            rs = prep.executeQuery();
+            rs.next();
+            int wizardID = rs.getInt("service_wizard_id");
+
+            if (licenseArr != null) {
+                for (Object obj2 : licenseArr) {
+                    JSONObject licenseObj = (JSONObject) obj2;
+                    prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard_licenses` "
+                            + "(service_wizard_id, username, remaining) VALUES (?, ?, ?)");
+                    prep.setInt(1, wizardID);
+                    prep.setString(2, (String) licenseObj.get("username"));
+                    prep.setInt(3, (Integer) licenseObj.get("remaining"));
+                    prep.executeUpdate();
+                }
+            }
 
             logger.end(method);
             return null;
@@ -2780,20 +2940,22 @@ public class WebResource {
      */
     @DELETE
     @Path("/profile/{wizardId}")
-    @RolesAllowed("Profiles")
-    public void deleteProfile(@PathParam("wizardId") int wizardId) throws SQLException {
+    @RolesAllowed("Profiles-W")
+    public void deleteProfile(@PathParam("wizardId") int wizardID) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
             String method = "deleteProfile";
             logger.start(method);
-            front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("DELETE FROM service_wizard WHERE service_wizard_id = ?");
-            prep.setInt(1, wizardId);
-            prep.executeUpdate();
+            if (verifyAccess("profiles", wizardID)) {
+                front_conn = factory.getConnection("frontend");
 
+                prep = front_conn.prepareStatement("DELETE FROM service_wizard WHERE service_wizard_id = ?");
+                prep.setInt(1, wizardID);
+                prep.executeUpdate();
+            }
             logger.end(method);
         } catch (SQLException ex) {
             logger.catching("deleteProfile", ex);
@@ -2801,6 +2963,110 @@ public class WebResource {
         } finally {
             commonsClose(front_conn, prep, rs);
         }
+    }
+
+    /**
+     * @api {post} /app/profile/ Execute profile
+     * @apiVersion 1.0.0
+     * @apiDescription
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     *
+     */
+    @POST
+    @Path(value = "/profile")
+    @Consumes(value = {"application/json", "application/xml"})
+    @RolesAllowed("Profiles-E")
+    public Response executeProfile(final String inputString) throws SQLException, IOException, ParseException, InterruptedException {
+        final String method = "executeProfile";
+        logger.start(method);
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            logger.start(method, "Thread:" + Thread.currentThread());
+            final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+            final TokenHandler token = new TokenHandler(null, refresh);
+            Object obj = parser.parse(inputString);
+            final JSONObject inputJSON = (JSONObject) obj;
+            String serviceType = (String) inputJSON.get("service");
+
+            // Authorize service.
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
+                    .getName());
+            final AccessToken accessToken = securityContext.getToken();
+            Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
+            String username = accessToken.getPreferredUsername();
+
+            front_conn = factory.getConnection("frontend");
+            int profileAuthorized = 0;
+            prep = front_conn.prepareStatement("SELECT authorized FROM service_wizard WHERE service_wizard_id = ?");
+            prep.setString(1, (String) inputJSON.get("profileID"));
+            rs = prep.executeQuery();
+            while (rs.next()) {
+                profileAuthorized = rs.getInt(1);
+            }
+
+            if (roleSet.contains(serviceType) || profileAuthorized == 1) {
+                // Instance Creation
+                final String refUUID;
+                try {
+                    URL url = new URL(String.format("%s/service/instance", host));
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
+                } catch (IOException ex) {
+                    logger.catching("doCreateService", ex);
+                    throw ex;
+                }
+
+                inputJSON.remove("username");
+                inputJSON.put("username", username);
+                inputJSON.put("uuid", refUUID);
+                ((JSONObject) inputJSON.get("data")).put("uuid", refUUID);
+
+                String sync = (String) inputJSON.get("synchronous");
+                String proceed = (String) inputJSON.get("proceed");
+                if (sync != null && sync.equals("true")) {
+                    if (proceed != null && proceed.equals("true")) {
+                        doCreateService(inputJSON, token, refUUID, true);
+                    } else {
+                        doCreateService(inputJSON, token, refUUID, false);
+                    }
+                } else if (proceed != null && proceed.equals("true")) {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                doCreateService(inputJSON, token, refUUID, true);
+                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
+                                logger.catching(method, ex);
+                            }
+                        }
+                    });
+                } else {
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                doCreateService(inputJSON, token, refUUID, false);
+                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
+                                logger.catching(method, ex);
+                            }
+                        }
+                    });
+                }
+            } else {
+                logger.status(method, "User " + username + " not authorized for service " + serviceType);
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+            }
+
+            logger.end(method);
+        } catch (ParseException ex) {
+            logger.catching(method, ex);
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+        return Response.status(Response.Status.OK).build();
     }
 
     // >Services   
@@ -2833,11 +3099,10 @@ public class WebResource {
     @POST
     @Path(value = "/service")
     @Consumes(value = {"application/json", "application/xml"})
-    @RolesAllowed("Services")
+    @RolesAllowed({"Services"})
     public String createService(final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
         final String method = "createService";
         try {
-            System.out.println("Creation Input: " + inputString);
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(null, refresh);
@@ -2850,6 +3115,7 @@ public class WebResource {
                     .getName());
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
+            String username = accessToken.getPreferredUsername();
 
             // Instance Creation
             final String refUUID;
@@ -2863,7 +3129,6 @@ public class WebResource {
             }
 
             if (roleSet.contains(serviceType)) {
-                String username = accessToken.getPreferredUsername();
                 inputJSON.remove("username");
                 inputJSON.put("username", username);
                 inputJSON.put("uuid", refUUID);
@@ -3040,10 +3305,8 @@ public class WebResource {
     private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         TemplateEngine template = new TemplateEngine();
 
-        System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
         String retString = template.apply(inputJSON);
         retString = retString.replace("&lt;", "<").replace("&gt;", ">");
-        System.out.println("\n\n\nResult:\n" + retString);
 
         if (((JSONObject) inputJSON.get("data")).containsKey("parent")) {
             String parent = (String) ((JSONObject) inputJSON.get("data")).get("parent");
@@ -3181,36 +3444,132 @@ public class WebResource {
 
         }
     }
-    
+
     /**
      * Create the delete JSON for deleting a user group, host group, or HBAC rule.
      * All three have the same format.
-     * 
-    var ipaRequestData = {
-        "method": method,
-        "params":[
-            rule/group name,
-            {}
-        ],
-        "id":0
-    };
+     *
+     * var ipaRequestData = {
+     * "method": method,
+     * "params":[
+     * rule/group name,
+     * {}
+     * ],
+     * "id":0
+     * };
      * @param method
      * @param name
-     * @return 
+     * @return
      */
     private JSONObject formatIpaDeleteJSON(String method, String name) {
         JSONObject deleteJSON = new JSONObject();
-        
+
         deleteJSON.put("method", method);
-        
+
         JSONArray paramsArray = new JSONArray();
         JSONArray nameParam = new JSONArray();
         nameParam.add(name);
         paramsArray.add(nameParam);
         paramsArray.add(new JSONObject());
-        
+
         deleteJSON.put("params", paramsArray);
         deleteJSON.put("id", 0);
         return deleteJSON;
+    }
+
+    private boolean verifyAccess(String category, int id) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "verifyOwnership";
+        try {
+            logger.trace_start(method);
+            front_conn = factory.getConnection("frontend");
+
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
+                    .getName());
+            final AccessToken accessToken = securityContext.getToken();
+            Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
+            String username = accessToken.getPreferredUsername();
+
+            boolean result = false;
+            switch (category) {
+                case "profiles":
+                    HashSet<String> nameSet = new HashSet<>();
+                    prep = front_conn.prepareStatement("SELECT DISTINCT owner FROM service_wizard WHERE service_wizard_id = ?");
+                    prep.setInt(1, id);
+                    rs = prep.executeQuery();
+                    while (rs.next()) {
+                        nameSet.add(rs.getString("owner"));
+                    }
+                    prep = front_conn.prepareStatement("SELECT DISTINCT username FROM service_wizard_licenses WHERE service_wizard_id = ?");
+                    prep.setInt(1, id);
+                    rs = prep.executeQuery();
+                    while (rs.next()) {
+                        nameSet.add(rs.getString("username"));
+                    }
+
+                    result = nameSet.contains(username);
+                    break;
+            }
+
+            if (result) {
+                return true;
+            } else {
+                logger.warning(method, "User " + username + " refused access to resource [" + category + "], ID: " + id);
+                return false;
+            }
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    private boolean verifyAccess(String category, String uuid) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "verifyOwnership";
+        try {
+            logger.trace_start(method);
+            front_conn = factory.getConnection("frontend");
+
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
+                    .getName());
+            final AccessToken accessToken = securityContext.getToken();
+            Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
+            String username = accessToken.getPreferredUsername();
+
+            boolean result = false;
+            switch (category) {
+                case "instances":
+                    prep = front_conn.prepareStatement("SELECT subject FROM acl WHERE object = ?");
+                    prep.setString(1, uuid);
+                    rs = prep.executeQuery();
+
+                    while (rs.next()) {
+                        if (rs.getString("subject").equals(username)) {
+                            result = true;
+                            break;
+                        }
+                    }
+                    break;
+
+            }
+
+            if (result) {
+                return true;
+            } else {
+                logger.warning(method, "User " + username + " refused access to resource [" + category + "], UUID: " + uuid);
+                return false;
+            }
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
     }
 }

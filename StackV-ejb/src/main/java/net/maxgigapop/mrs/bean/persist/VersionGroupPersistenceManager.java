@@ -126,6 +126,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
 
     public static void cleanupAll(VersionGroup butVG) {
         logger.start("cleanupAll");
+        Date currentTime = new java.util.Date();
         Integer count = 0;
         try {
             // remove all VGs that has no dependency (by systemDelta)
@@ -138,9 +139,12 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
                         continue;
                     }
-                    VersionGroupPersistenceManager.delete(vg);
-                    count++;
-                    logger.trace("cleanupAll", vg + " deleted.");
+                    // delete VG if it is over 1 minute old
+                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 60000L) {
+                        VersionGroupPersistenceManager.delete(vg);
+                        count++;
+                        logger.trace("cleanupAll", vg + " deleted.");
+                    }
                 }
             }
             // remove all empty VGs ? (redundant, still need to exclude ones with dependencies)
@@ -168,6 +172,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
 
     public static void cleanupAndUpdateAll(VersionGroup butVG) {
         logger.start("cleanupAndUpdateAll");
+        Date currentTime = new java.util.Date();
         Integer count = 0;
         try {
             // remove all VGs that has no dependency (by systemDelta)
@@ -181,9 +186,12 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
                         continue;
                     }
-                    VersionGroupPersistenceManager.delete(vg);
-                    count++;
-                    logger.trace("cleanupAndUpdateAll", vg + " deleted (no longer used).");
+                    // delete VG if it is over 1 minute old
+                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 60000L) {
+                        VersionGroupPersistenceManager.delete(vg);
+                        logger.trace("cleanupAndUpdateAll", vg + " deleted (no longer used).");
+                        count++;
+                    }
                 }
             }
             // remove all empty VGs and update the non-empty
@@ -197,10 +205,12 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                 Long vgid = (Long) it.next();
                 VersionGroup vg = VersionGroupPersistenceManager.findById(vgid);
                 if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
-                    //@TODO: probe -> exception here (deletion may not be needed any way)
-                    VersionGroupPersistenceManager.delete(vg);
-                    count++;
-                    logger.trace("cleanupAndUpdateAll", vg + " deleted (empty VI list).");
+                    // delete VG if it is over 1 minute old
+                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 60000L) {
+                        VersionGroupPersistenceManager.delete(vg);
+                        logger.trace("cleanupAndUpdateAll", vg + " deleted (empty VI list).");
+                        count++;
+                    }
                 } else {
                     //@TODO: probe further: the update may create empty VGs
                     VersionGroupPersistenceManager.refreshToHead(vg, true);
