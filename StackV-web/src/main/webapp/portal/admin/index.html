@@ -4,8 +4,7 @@
         <meta charset="UTF-8">
         <title>Administrator's Panel</title>
 
-        <link rel="stylesheet" href="/StackV-web/css/style.css">
-        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.css"/>
+        <link rel="stylesheet" href="/StackV-web/css/style.css">        
     </head>
 
     <body>
@@ -30,6 +29,7 @@
                             <option value="POST">POST</option>
                             <option value="DELETE">DELETE</option>
                         </select>
+                        <input type="text" placeholder="URL" id="URL">
                         <button id = "SEND" type="button" class="action-button" onclick="executeRequest();">Send</button>
                     </div>
                     <div id="logging-body-div">
@@ -60,7 +60,7 @@
                                 <th>Reference UUID</th>
                                 <th>Level</th>                                
                             </tr>
-                        </thead>
+                        </thead>                        
                         <tfoot>
                             <tr>
                                 <th></th>
@@ -75,7 +75,7 @@
             </div>
         </div>
         <div id="details-viz" ></div>
-        
+
         <!-- CORE JS PACKAGE-->
         <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
 

@@ -108,11 +108,13 @@ function updateData() {
         success: function (instance) {
             var alias = instance[1];
             var creation = instance[2];
-            superState = instance[3];
-            lastState = instance[4];
+            var owner = instance[3];
+            superState = instance[4];
+            lastState = instance[5];
 
             $("#instance-alias").html(alias);
             $("#instance-uuid").html(refUUID);
+            $("#instance-owner").html(owner);
             $("#instance-creation-time").html(creation);
         }
     });
@@ -242,7 +244,7 @@ function attachListeners() {
                     } else {
                         swal({
                             buttons: false,
-                            icon: "success",
+                            title: "Loading!",
                             closeOnEsc: false,
                             timer: 3000
                         });
@@ -264,7 +266,7 @@ function executeCommand(command) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function () {
-            if (command === "delete" || command === "force_delete") {               
+            if (command === "delete" || command === "force_delete") {
                 setTimeout(function () {
                     sessionStorage.removeItem("instance-uuid");
                     window.document.location = "/StackV-web/portal/";

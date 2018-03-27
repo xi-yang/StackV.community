@@ -146,7 +146,7 @@ function loadDetails() {
     startDetailsEngine(uuid);
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs/serverside?refUUID=' + uuid;
-    loadDataTable(apiUrl);
+    loadLoggingDataTable(apiUrl);
     reloadLogs();
 
     tweenDetailsPanel.play();

@@ -1588,17 +1588,20 @@ public class MCETools {
         if (vlanRange == null || vlanRange.isEmpty()) {
             return null;
         }
-        
-        sparql = String.format("SELECT ?vlan ?start ?end WHERE {"
+        sparql = String.format("SELECT DISTINCT ?vlan ?start ?end WHERE { {"
                 + "<%s> nml:hasBidirectionalPort ?vlan_port. "
                 + "?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
-                + "?l nml:value ?vlan. "
+                + "?l nml:value ?vlan."
                 + "OPTIONAL {?vlan_port nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end.} "
+                + "} UNION {"
+                + "<%s> nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+                + "?l nml:value ?vlan. "
+                + "}"
                 + "FILTER not exists {"
                 + "?subnet nml:hasBidirectionalPort ?vlan_port. "
                 + "?subnet a mrs:SwitchingSubnet. "
                 + "?subnet mrs:type \"shared\". "
-                + "} }", port);
+                + "} }", port, port);
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             QuerySolution qs = rs.next();

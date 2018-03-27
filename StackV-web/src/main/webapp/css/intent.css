@@ -126,6 +126,12 @@ button:focus {
 }
 .intent-input.invalid-input + .intent-input-message {
     display: block;
+    position: absolute;
+    background: rgba(255, 255, 255, .5);
+    z-index: 10;
+    bottom: -14px;
+    border-radius: 0px 0px 5px 5px;
+    padding: 2px;
 }
 
 .intent-group-div {
@@ -134,7 +140,8 @@ button:focus {
 .intent-group-div .group-header {
     text-align: left;
     border-bottom: 2px dotted #aaa;
-    margin-bottom: 10px;
+    margin-top: 15px;
+    margin-bottom: 7px;
 }
 .intent-stage-div select {
     display: block;

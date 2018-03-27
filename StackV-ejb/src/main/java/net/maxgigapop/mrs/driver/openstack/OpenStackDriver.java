@@ -97,7 +97,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
     // Use ID to avoid passing entity bean between threads, which breaks persistence session
     @Asynchronous
     //@Override
-    public Future<String> commitDelta(DriverSystemDelta aDelta) {
+    public Future<String> commitDelta(DriverSystemDelta aDelta) { 
         logger.cleanup();
         String method = "commitDelta";
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
