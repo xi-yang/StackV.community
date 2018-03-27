@@ -2230,8 +2230,10 @@ public class WebResource {
             if (username.equals("admin")) {
                 prep = front_conn.prepareStatement("SELECT DISTINCT * FROM service_wizard");
             } else {
-                prep = front_conn.prepareStatement("SELECT DISTINCT W.* FROM service_wizard W, service_wizard_licenses L "
-                        + "WHERE W.owner = ? OR (L.service_wizard_id = W.service_wizard_id AND L.username = ?)");
+                prep = front_conn.prepareStatement("SELECT DISTINCT W.* FROM service_wizard W "
+                        + "LEFT JOIN service_wizard_licenses L "
+                        + "ON (W.service_wizard_id = L.service_wizard_id) "
+                        + "WHERE W.owner = 'xyang' OR L.username = 'xyang'");
                 prep.setString(1, username);
                 prep.setString(2, username);
             }

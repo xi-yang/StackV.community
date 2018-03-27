@@ -384,6 +384,9 @@ function loadModals() {
                         $("#info-panel-share-edit").append($opt);
                         licenses[$("#info-panel-share-new-username").val()] = $("#info-panel-share-new-remaining").val();
                         
+                        $("#info-panel-share-remaining").val($("#info-panel-share-new-remaining").val());
+                        $("#info-panel-share-edit").val($("#info-panel-share-new-username").val());
+                        
                         $("#info-panel-share-new-username").val(null);
                         $("#info-panel-share-new-remaining").val(null);
                     }
