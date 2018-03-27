@@ -43,6 +43,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import net.maxgigapop.mrs.common.IpaAlm;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
@@ -2630,9 +2631,12 @@ public class OpenStackPush {
                     + "?ipAddr mrs:type \"md2:alm:ipv4\" . "
                     + "?ipAddr mrs:value ?ip . "
                     + "}";
-            ResultSet almIpResultSet = executeQuery(query, emptyModel, modelDelta);
+            ResultSet almIpResultSet = executeQuery(query, emptyModel, modelDelta);            
             // String almIp = null;
             if (almIpResultSet.hasNext()) {
+                String poolType = "ipv4";
+                String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;
+                IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!");
                 String queryIp = almIpResultSet.next().get("ip").toString();
                 
                 if (queryIp.contains(":")) {
@@ -2643,18 +2647,23 @@ public class OpenStackPush {
                     String[] splitQuery = queryIp.split(":");
                     String[] poolInfo = splitQuery[0].split("+");
                     String[] addrInfo = splitQuery[1].split("+");
+                    
+                    String poolName = poolInfo[1];                    
+                    
 
                     if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
                         // explicit mention of "any"
-                        // query the IPA ALM manager for an address
+                        // query the IPA ALM manager for an address                        
+                        ip = ipaAlm.leaseAddr(clientName, poolName, poolType);
                     } else {
                         // get the specifed address
                         ip = addrInfo[1];
                     }                    
                 } else {
                     // the queried information should look like this format: pool+pool_name
-                    String[] poolInfo = queryIp.split("+");
-                    // query the IPA ALM manager for an address
+                    String[] poolInfo = queryIp.split("+");                    
+                    // query the IPA ALM manager for an address                    
+                    ip = ipaAlm.leaseAddr(clientName, poolType, poolType);
                 }                            
             }
             
@@ -2668,6 +2677,9 @@ public class OpenStackPush {
             ResultSet almMacResultSet = executeQuery(query, emptyModel, modelDelta);
             //String almMac = null;
             if (almMacResultSet.hasNext()) {
+                String poolType = "mac";
+                String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;
+                IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!");
                 String queryIp = almIpResultSet.next().get("mac").toString();
                 
                 if (queryIp.contains(":")) {
@@ -2678,10 +2690,13 @@ public class OpenStackPush {
                     String[] splitQuery = queryIp.split(":");
                     String[] poolInfo = splitQuery[0].split("+");
                     String[] addrInfo = splitQuery[1].split("+");
+                    
+                    String poolName = poolInfo[1];   
 
                     if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
                         // explicit mention of "any"
-                        // query the IPA ALM manager for an address
+                        // query the IPA ALM manager for a mac address
+                        mac = ipaAlm.leaseAddr(clientName, poolName, poolType);
                     } else {
                         // get the specifed address
                         mac = addrInfo[1];
@@ -2690,6 +2705,7 @@ public class OpenStackPush {
                     // the queried information should look like this format: pool+pool_name
                     String[] poolInfo = queryIp.split("+");
                     // query the IPA ALM manager for an address
+                    mac = ipaAlm.leaseAddr(clientName, poolType, poolType);
                 }
             }
             

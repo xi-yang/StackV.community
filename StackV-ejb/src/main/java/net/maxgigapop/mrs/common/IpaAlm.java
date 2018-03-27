@@ -38,7 +38,12 @@ public class IpaAlm {
     String kcToken;
     
     public IpaAlm() {
+        // ****CREDENTIALS ARE HARDCODED -> BE SURE TO CHANGE BEFORE MERGING
         kcToken = kcTokenHandler.setAndGetToken("xyang", "MAX123!");        
+    }
+    
+    public IpaAlm(String username, String passwd) {
+        kcToken = kcTokenHandler.setAndGetToken(username, passwd);
     }
     
    
