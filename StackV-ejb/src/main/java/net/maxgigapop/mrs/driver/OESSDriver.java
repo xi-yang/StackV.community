@@ -288,10 +288,10 @@ public class OESSDriver implements IHandleDriverSystemCall {
                 model.add(model.createStatement(resPort, Nml.hasBidirectionalPort, resVlanPort));
                 model.add(model.createStatement(resSubnet, Nml.hasBidirectionalPort, resVlanPort));
                 if (vlanTag != null && !vlanTag.isEmpty()) {
-                    Resource resLabel = RdfOwl.createResource(model, resVlanPort.getURI()+":label+"+vlanTag, Nml.LabelGroup);
+                    Resource resLabel = RdfOwl.createResource(model, resVlanPort.getURI()+":label+"+vlanTag, Nml.Label);
                     model.add(model.createStatement(resVlanPort, Nml.hasLabel, resLabel));
                     model.add(model.createStatement(resLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
-                    model.add(model.createStatement(resLabel, Nml.values, vlanTag));
+                    model.add(model.createStatement(resLabel, Nml.value, vlanTag));
                 }
             }
             //@TODO: add bandwidth service

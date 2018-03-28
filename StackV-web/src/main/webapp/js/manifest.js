@@ -15,6 +15,9 @@ function loadManifest() {
                 case "Dynamic Network Connection":
                     subloadManifest("dnc-manifest-template.xml");
                     break;
+                case "EdgeCloud Connection":
+                    subloadManifest("ecc-manifest-template.xml");
+                    break;
                 case "Virtual Cloud Network":
                     $.get({
                         url: "/StackV-web/restapi/service/property/" + uuid + "/host/",

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<serviceManifest>
+<serviceUUID></serviceUUID>
+<jsonTemplate>
+{
+	"EdgeCloud Connection Service": {
+		"Direct Connect ID": "?dxvif?",
+		"Direct Connect VLAN": "?dxvlan?",
+		"Onwer Account #": "?owner_acct?",
+		"Customer BGP - ASN #": "?asn?",
+		"Customer BGP - Local IP": "?customer_ip?",
+		"Customer BGP - Remote IP": "?amazon_ip?",
+		"Instructions": "n/a",
+		"Layer-2 Connection": [
+			{
+				"Subnet URI": "?subnet?",
+				"Switching Ports": [
+					{
+						"Port URI": "?terminal?",
+						"VLAN Tag": "?terminal_vlan?",
+						"sparql": "SELECT ?terminal ?terminal_vlan WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. }",
+						"required": "true"
+					}
+				],
+				"sparql": "SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. }",
+				"required": "true"
+			}
+		],
+		"sparql": "SELECT ?dxvif ?dxvlan ?owner_acct ?asn ?customer_ip ?amazon_ip WHERE {?dxvp a nml:BidirectionalPort. ?dxvp nml:name ?dxvif. ?dxvp mrs:type \"direct-connect-vif\". ?dxvp nml:hasLabelGroup ?dxvif_lg. ?dxvif_lg nml:values ?dxvlan. ?dxvp mrs:hasNetworkAddress ?na_owner_acct. ?na_owner_acct mrs:type \"owner-account\". ?na_owner_acct mrs:value ?owner_acct.  ?dxvp mrs:hasNetworkAddress ?na_asn. ?na_asn mrs:type \"bgp-asn\". ?na_asn mrs:value ?asn.  ?dxvp mrs:hasNetworkAddress ?na_cip. ?na_cip mrs:type \"ipv4-address:customer\". ?na_cip mrs:value ?customer_ip. ?dxvp mrs:hasNetworkAddress ?na_aip. ?na_aip mrs:type \"ipv4-address:amazon\". ?na_aip mrs:value ?amazon_ip. }",
+		"required": "true"
+	}
+}
+</jsonTemplate>
+</serviceManifest>
