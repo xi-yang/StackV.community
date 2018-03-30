@@ -49,6 +49,7 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.commons.net.util.SubnetUtils;
+import org.apache.logging.log4j.core.net.Severity;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -138,6 +139,7 @@ public class OpenStackPush {
      */
     public List<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
         String method = "pushPropagate";
+        System.out.println("**** OPENSTACK PUSH: " + method);
         List<JSONObject> requests = new ArrayList();
         //get all the requests
         
@@ -147,6 +149,7 @@ public class OpenStackPush {
         requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
         requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
+        System.out.println("**** OPENSTACK PUSH PROPAGATE FIRST SRIOV CALL");
         requests.addAll(sriovRequests(modelRef, modelReduct, false));
         requests.addAll(portAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
@@ -168,6 +171,7 @@ public class OpenStackPush {
         requests.addAll(layer3Requests(modelRef, modelAdd, true));
         requests.addAll(floatingIpRequests(modelRef, modelAdd, true));
         requests.addAll(isAliasRequest(modelRef, modelAdd, true));
+        System.out.println("**** OPENSTACK PUSH PROPAGATE SECOND SRIOV CALL");
         requests.addAll(sriovRequests(modelRef, modelAdd, true));
         requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
@@ -2555,7 +2559,18 @@ public class OpenStackPush {
     }
 
     private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+        System.out.println("****OPENSTACK PUSH - SRIOV REQUESTS**** - CREATION: " + creation);
         String method = "sriovRequests";
+               
+        IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!");
+        String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;
+        String ipPoolType = "ipv4";
+        String macPoolType = "mac";
+        String poolName = ""; // re-assigned based on each instance
+        
+        String ip = null;
+        String mac = null;
+        
         List<JSONObject> requests = new ArrayList();
         JSONObject JO = new JSONObject();
         String query = "SELECT ?vmfex ?vnic WHERE {"
@@ -2605,7 +2620,7 @@ public class OpenStackPush {
                     + "?ipAddr mrs:value ?ip . "
                     + "}";
             ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
-            String ip = null;
+            // String ip = null;
             if (r2.hasNext()) {
                 ip = r2.next().get("ip").toString();
             }
@@ -2618,7 +2633,7 @@ public class OpenStackPush {
                     + "?macAddr mrs:value ?mac . "
                     + "}";
             ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
-            String mac = null;
+            // String mac = null;
             if (r3.hasNext()) {
                 mac = r3.next().get("mac").toString();
             }
@@ -2633,11 +2648,9 @@ public class OpenStackPush {
                     + "}";
             ResultSet almIpResultSet = executeQuery(query, emptyModel, modelDelta);            
             // String almIp = null;
-            if (almIpResultSet.hasNext()) {
-                String poolType = "ipv4";
-                String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;
-                IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!");
+            if (almIpResultSet.hasNext()) {                                
                 String queryIp = almIpResultSet.next().get("ip").toString();
+                System.out.println("OPENSTACK PUSH - IP QUERY VAR: " + queryIp);
                 
                 if (queryIp.contains(":")) {
                     // if the queried information has a colon indicating the a potential specified_address
@@ -2648,13 +2661,14 @@ public class OpenStackPush {
                     String[] poolInfo = splitQuery[0].split("+");
                     String[] addrInfo = splitQuery[1].split("+");
                     
-                    String poolName = poolInfo[1];                    
+                    poolName = poolInfo[1];                    
                     
 
                     if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
                         // explicit mention of "any"
-                        // query the IPA ALM manager for an address                        
-                        ip = ipaAlm.leaseAddr(clientName, poolName, poolType);
+                        // query the IPA ALM manager for an address  
+                        System.out.println("OPENSTACK PUSH - POOLNAME: " + poolName);
+                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType);
                     } else {
                         // get the specifed address
                         ip = addrInfo[1];
@@ -2662,8 +2676,9 @@ public class OpenStackPush {
                 } else {
                     // the queried information should look like this format: pool+pool_name
                     String[] poolInfo = queryIp.split("+");                    
-                    // query the IPA ALM manager for an address                    
-                    ip = ipaAlm.leaseAddr(clientName, poolType, poolType);
+                    // query the IPA ALM manager for an address  
+                    System.out.println("OPENSTACK PUSH - POOLNAME: " + poolInfo[1]);
+                    ip = ipaAlm.leaseAddr(clientName, poolInfo[1], ipPoolType);
                 }                            
             }
             
@@ -2676,10 +2691,7 @@ public class OpenStackPush {
                     + "}";
             ResultSet almMacResultSet = executeQuery(query, emptyModel, modelDelta);
             //String almMac = null;
-            if (almMacResultSet.hasNext()) {
-                String poolType = "mac";
-                String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;
-                IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!");
+            if (almMacResultSet.hasNext()) {                                
                 String queryIp = almIpResultSet.next().get("mac").toString();
                 
                 if (queryIp.contains(":")) {
@@ -2691,12 +2703,12 @@ public class OpenStackPush {
                     String[] poolInfo = splitQuery[0].split("+");
                     String[] addrInfo = splitQuery[1].split("+");
                     
-                    String poolName = poolInfo[1];   
+                    poolName = poolInfo[1];   
 
                     if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
                         // explicit mention of "any"
                         // query the IPA ALM manager for a mac address
-                        mac = ipaAlm.leaseAddr(clientName, poolName, poolType);
+                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType);
                     } else {
                         // get the specifed address
                         mac = addrInfo[1];
@@ -2705,7 +2717,7 @@ public class OpenStackPush {
                     // the queried information should look like this format: pool+pool_name
                     String[] poolInfo = queryIp.split("+");
                     // query the IPA ALM manager for an address
-                    mac = ipaAlm.leaseAddr(clientName, poolType, poolType);
+                    mac = ipaAlm.leaseAddr(clientName, poolInfo[1], macPoolType);
                 }
             }
             
@@ -2744,9 +2756,24 @@ public class OpenStackPush {
             JO.put(String.format("sriov_vnic:%d", sriovNum), o);
             sriovNum++;
         }
+        
         if (creation == true) {
             JO.put("request", "AttachSriovRequest");
         } else {
+            // revoke the leaseaddr if the address has been leased
+            if (ip != null || mac != null) {
+                String addrType = ip == null ? (mac == null ? null : mac) : ip;
+                if (ipaAlm.checkIfAddrLeased(poolName, addrType)) {
+                    // release the address
+                    String poolType = ip == null ? macPoolType : ipPoolType;
+                    boolean addrReleased = ipaAlm.revokeLeasedAddr(clientName, poolName, poolType, addrType);
+                    if (addrReleased) {
+                        logger.trace(method, "IPA leased address revoked succesfully");
+                    } else {
+                        logger.error(method, "Leased IPA address not revoked", Severity.ERROR);
+                    }
+                }
+            }
             JO.put("request", "DetachSriovRequest");
         }
         requests.add(JO);

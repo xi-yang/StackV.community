@@ -38,16 +38,19 @@ public class IpaAlm {
     String kcToken;
     
     public IpaAlm() {
-        // ****CREDENTIALS ARE HARDCODED -> BE SURE TO CHANGE BEFORE MERGING
-        kcToken = kcTokenHandler.setAndGetToken("xyang", "MAX123!");        
+        // ****CREDENTIALS ARE HARDCODED -> BE SURE TO REMOVE BEFORE MERGING
+        // ALSO CHECK IN OPENSTACKPUSH AND WHEREVER ELSE IPAALM IS USED
+        kcToken = kcTokenHandler.setAndGetToken("xyang", "MAX123!");
+        ipaLogin();
     }
     
     public IpaAlm(String username, String passwd) {
         kcToken = kcTokenHandler.setAndGetToken(username, passwd);
+        ipaLogin();
     }
     
    
-    public boolean ipaLogin() {        
+    private boolean ipaLogin() {        
         boolean loggedIn = false;
         String ipaLoginUrl = "https://localhost:8443/StackV-web/restapi/app/acl/ipa/login";
         try {
@@ -86,7 +89,7 @@ public class IpaAlm {
      * @param ipaJSON
      * @return 
      */
-    public JSONObject runIpaRequest(JSONObject ipaJSON) {
+    private JSONObject runIpaRequest(JSONObject ipaJSON) {
         JSONObject resultJSON = new JSONObject();
         
         try {
@@ -146,7 +149,7 @@ public class IpaAlm {
      * @param poolType
      * @return 
      */
-    public JSONObject createLease(String clientId, String poolName, String poolType) {
+    private JSONObject createLease(String clientId, String poolName, String poolType) {
         JSONObject leaseJSON = new JSONObject();
         leaseJSON.put("id", 0);
         leaseJSON.put("method", "alm_lease");
@@ -174,7 +177,7 @@ public class IpaAlm {
      * @param leasedAddr
      * @return 
      */
-    public JSONObject revokeLease(String clientId, String poolName, String poolType, String leasedAddr) {
+    private JSONObject revokeLease(String clientId, String poolName, String poolType, String leasedAddr) {
         JSONObject leaseJSON = new JSONObject();
         leaseJSON.put("id", 0);
         leaseJSON.put("method", "alm_release");
@@ -187,6 +190,24 @@ public class IpaAlm {
         paramsArrArgs.put("poolname", poolName);
         paramsArrArgs.put("almpooltype", poolType);
         paramsArrArgs.put("leasedaddress", leasedAddr);
+        paramsArr.add(paramsArrArgs);
+        
+        leaseJSON.put("params", paramsArr);
+        
+        
+        return runIpaRequest(leaseJSON);
+    }
+    
+    private JSONObject showAlmLease(String poolName, String leasedAddr) {
+        JSONObject leaseJSON = new JSONObject();
+        leaseJSON.put("id", 0);
+        leaseJSON.put("method", "almleases_show");
+        
+        JSONArray paramsArr = new JSONArray();
+        paramsArr.add(new JSONArray());
+        
+        JSONObject paramsArrArgs = new JSONObject();
+        paramsArrArgs.put("cn", poolName + "-" + leasedAddr);
         paramsArr.add(paramsArrArgs);
         
         leaseJSON.put("params", paramsArr);
@@ -262,17 +283,25 @@ public class IpaAlm {
         return revoked;
     }
     
-    /*
-    public boolean createAlmPool(String commonName, String poolType, String range) {
-        boolean poolCreated = false;
+    public boolean checkIfAddrLeased(String poolName, String leasedAddr) {
+        boolean leased = false;
         
-        return poolCreated;
-    }
-    
-    public boolean delAlmPool(String commonName) {
-        boolean poolDeleted = false;
+        // pass the parameters and run the request
+        JSONObject checkAddrJSON = showAlmLease(poolName, leasedAddr);
         
-        return poolDeleted;
+        // parse the JSON response to check if the address has been leased
+        // if there is no error 
+        if (checkAddrJSON.get("error") == null && checkAddrJSON.get("result") != null) {
+            JSONObject resultJSON = (JSONObject) checkAddrJSON.get("result");
+            
+            // sort of a redundant check (since if the result is not null then
+            // the address is leased
+            String commonName = poolName + "-" + leasedAddr;
+            if (resultJSON.get("value").equals(commonName)) {
+                leased = true;
+            }
+        }
+        
+        return leased;
     }
-    */
 }

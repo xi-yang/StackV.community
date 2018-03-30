@@ -153,7 +153,6 @@ public class WebResource {
   
     private final JNDIFactory factory = new JNDIFactory();
     
-    IpaAlm ipaAlm;
   
     @Context
     private HttpRequest httpRequest;
@@ -402,70 +401,6 @@ public class WebResource {
         }
     }
     
-    // > IPA ALM
-    @POST
-    @Path("/ipa/alm/login")
-    @Consumes("application/json")
-    @Produces("application/json")
-    @RolesAllowed("ACL")
-    public String testIpaAlmLogin() throws ParseException {        
-        if (ipaAlm == null) {
-           ipaAlm = new IpaAlm();
-        }        
-        
-        JSONObject result = new JSONObject();
-        
-        result.put("LoggedIn", ipaAlm.ipaLogin());
-        
-        return result.toJSONString();   
-    }
-    
-    @POST
-    @Path("/ipa/alm/lease")
-    @Consumes("application/json")
-    @Produces("application/json")
-    @RolesAllowed("ACL")
-    public String testIpaAlmLease(String createLease) throws ParseException {
-        JSONObject leaseJSON = (JSONObject) parser.parse(createLease);
-        String clientId = (String) leaseJSON.get("clientId");
-        String poolName = (String) leaseJSON.get("poolName");
-        String addrType = (String) leaseJSON.get("addressType");
-        if (ipaAlm == null) {
-           ipaAlm = new IpaAlm();
-        }        
-        
-        JSONObject result = new JSONObject();
-        
-        result.put("LeasedAddr", ipaAlm.leaseAddr(clientId, poolName, addrType));
-        
-        return result.toJSONString();   
-    }
-    
-    @POST
-    @Path("/ipa/alm/revoke")
-    @Consumes("application/json")
-    @Produces("application/json")
-    @RolesAllowed("ACL")
-    public String testIpaAlmRevoke(String revokeLease) throws ParseException {
-        JSONObject revokeJSON = (JSONObject) parser.parse(revokeLease);        
-        String clientId = (String) revokeJSON.get("clientId");
-        String poolName = (String) revokeJSON.get("poolName");
-        String addrType = (String) revokeJSON.get("addressType");
-        String leasedAddr = (String) revokeJSON.get("leasedaddress");
-        if (ipaAlm == null) {
-           ipaAlm = new IpaAlm();
-        }        
-        
-        JSONObject result = new JSONObject();
-        
-        result.put("RevokedAddress", ipaAlm.revokeLeasedAddr(clientId, poolName, addrType, leasedAddr));
-        
-        return result.toJSONString();   
-    }
-    
-    
-    
-    
     // >FreeIPA-based ACL        
     @POST
     @Path("/acl/ipa/login")
@@ -695,7 +630,13 @@ public class WebResource {
 
         return "PLUGIN SUCCEEDED";
     }
-
+    
+    /**
+     * Adds a new driver profile
+     * @param username
+     * @param dataInput
+     * @throws SQLException 
+     */
     @PUT
     @Path("/driver/{user}/add")
     @Consumes(value = {"application/json"})
