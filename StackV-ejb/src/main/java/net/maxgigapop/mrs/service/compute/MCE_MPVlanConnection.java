@@ -147,6 +147,9 @@ public class MCE_MPVlanConnection extends MCEBase {
             MCETools.Path connPath = MCETools.getLeastCostPath(KSP);
             MCETools.tagPathHops(connPath, "l2path+"+resConn.getURI()+":"+connId+"");
             transformedModel.add(connPath.getOntModel());
+            //@TODO: make this configurable in connDataMap JSON (default = false)
+            //after path model being combined into transformedModel
+            MCETools.pairupPathHops(connPath, transformedModel);
             mapConnPaths.put(connId, connPath);
         }
         return mapConnPaths;

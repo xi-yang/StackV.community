@@ -1352,6 +1352,38 @@ public class MCETools {
         model.add(addStmts);
     }
     
+    public static void pairupPathHops(MCETools.Path l2path, OntModel unionModel) {
+        Iterator<Statement> it = l2path.iterator();
+        while (it.hasNext()) {
+            Statement hopStmt = it.next();
+            Resource hopX = hopStmt.getSubject();
+            Resource hopY = hopStmt.getObject().asResource();
+            String sparql = "SELECT ?px ?py WHERE {"
+                + " ?px a nml:BidirectionalPort. "
+                + String.format(" <%s> nml:hasBidirectionalPort ?px. ", hopX.getURI())
+                + String.format(" <%s> a nml:BidirectionalPort. ", hopX.getURI())
+                + " ?py a nml:BidirectionalPort. "
+                + String.format(" <%s> nml:hasBidirectionalPort ?py. ", hopY.getURI())
+                + String.format(" <%s> a nml:BidirectionalPort. ", hopY.getURI())
+                + String.format(" FILTER ( EXISTS {<%s> nml:isAlias <%s>} || EXISTS {<%s> nml:isAlias <%s>} ) }", hopX.getURI(), hopY.getURI(), hopY.getURI(), hopX.getURI());
+            ResultSet r = ModelUtil.sparqlQuery(unionModel, sparql);
+            if (r.hasNext()) {
+                QuerySolution solution = r.next();
+                Resource resPX = solution.getResource("px");
+                Resource resPY = solution.getResource("py");
+                l2path.getOntModel().add(l2path.getOntModel().createStatement(resPX, Nml.isAlias, resPY));
+                l2path.getOntModel().add(l2path.getOntModel().createStatement(resPY, Nml.isAlias, resPX));
+                // Also add statments to unionModel 
+                unionModel.add(unionModel.createStatement(resPX, Nml.isAlias, resPY));
+                unionModel.add(unionModel.createStatement(resPY, Nml.isAlias, resPX));
+                if (it.hasNext()) {
+                    //?? There should not be two consecutive statements both having peering hops
+                    it.next();
+                }
+            }
+        }
+    }
+    
     public static List<QuerySolution> getTerminalVlanLabels(MCETools.Path l2path) {
         OntModel model = l2path.getOntModel();
         String sparql = String.format("SELECT ?bp ?vlan ?tag WHERE {"
