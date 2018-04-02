@@ -356,6 +356,8 @@ public class MCETools {
                         BandwidthCalendar.BandwidthSchedule schedule = BandwidthCalendar.makePathBandwidthSchedule(transformedModel, candidatePath, jsonScheduleOptions);
                         if (schedule == null) {
                             verified = false;
+                        } else {
+                            candidatePath.setBandwithScedule(schedule);
                         }
                     } catch (BandwidthCalendar.BandwidthCalendarException ex) {
                         logger.trace("computeFeasibleL2KSP", candidatePath.getConnectionId() + " -- " + ex.getMessage());
