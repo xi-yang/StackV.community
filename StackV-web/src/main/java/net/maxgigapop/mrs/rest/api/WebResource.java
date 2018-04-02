@@ -90,6 +90,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
+import net.maxgigapop.mrs.service.ServiceEngine;
 import net.maxgigapop.mrs.service.VerificationHandler;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.logging.log4j.Level;
@@ -2126,7 +2127,7 @@ public class WebResource {
     @RolesAllowed("Panels")
     public String getManifest(@PathParam("svcUUID") String svcUUID) throws SQLException {
         logger.refuuid(svcUUID);
-        String method = "getManifest";
+        String method = "getManifest(svcUUID)";
         logger.trace_start(method);
 
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -3101,7 +3102,15 @@ public class WebResource {
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed({"Services"})
     public String createService(final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
-        final String method = "createService";
+       return createService(null, inputString);
+    }
+
+    @POST
+    @Path(value = "/service/{siUUID}")
+    @Consumes(value = {"application/json", "application/xml"})
+    @RolesAllowed("Services")
+    public String createService(@PathParam(value = "siUUID") final String siUUID, final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
+    final String method = "createService";
         try {
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
@@ -3119,15 +3128,18 @@ public class WebResource {
 
             // Instance Creation
             final String refUUID;
-            try {
-                URL url = new URL(String.format("%s/service/instance", host));
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
-            } catch (IOException ex) {
-                logger.catching("doCreateService", ex);
-                throw ex;
+            if (siUUID == null) {
+                try {
+                    URL url = new URL(String.format("%s/service/instance", host));
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
+                } catch (IOException ex) {
+                    throw logger.throwing("doCreateService", ex);
+                }
+            } else {
+                refUUID = siUUID;
             }
-
+            
             if (roleSet.contains(serviceType)) {
                 inputJSON.remove("username");
                 inputJSON.put("username", username);
@@ -3136,7 +3148,9 @@ public class WebResource {
 
                 String sync = (String) inputJSON.get("synchronous");
                 String proceed = (String) inputJSON.get("proceed");
-                if (sync != null && sync.equals("true")) {
+                if (siUUID != null) { // negotiate instead of creating new
+                    negotiateService(inputJSON, token, refUUID);
+                } else if (sync != null && sync.equals("true")) {
                     if (proceed != null && proceed.equals("true")) {
                         doCreateService(inputJSON, token, refUUID, true);
                     } else {
@@ -3176,7 +3190,7 @@ public class WebResource {
             return null;
         }
     }
-
+    
     @GET
     @Path(value = "/service")
     @RolesAllowed("Services")
@@ -3307,7 +3321,7 @@ public class WebResource {
 
         String retString = template.apply(inputJSON);
         retString = retString.replace("&lt;", "<").replace("&gt;", ">");
-
+        // hack - not a reliable way to tell public cloud from private (openstack)
         if (((JSONObject) inputJSON.get("data")).containsKey("parent")) {
             String parent = (String) ((JSONObject) inputJSON.get("data")).get("parent");
             if (parent.contains("amazon")) {
@@ -3322,6 +3336,17 @@ public class WebResource {
         ServiceHandler instance = new ServiceHandler(inputJSON, token, refUUID, autoProceed);
     }
 
+    private void negotiateService(JSONObject inputJSON, TokenHandler token, String refUUID) throws EJBException, SQLException, IOException, InterruptedException {
+        TemplateEngine template = new TemplateEngine();
+
+        System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
+        String retString = template.apply(inputJSON);
+        retString = retString.replace("&lt;", "<").replace("&gt;", ">");
+        System.out.println("\n\n\nResult:\n" + retString);
+        inputJSON.put("data", retString);
+        ServiceEngine.orchestrateInstance(refUUID, inputJSON, (String) inputJSON.get("uuid"), token, false);
+    }
+    
     private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, TokenHandler token) throws SQLException, IOException, InterruptedException {
         ServiceHandler instance = new ServiceHandler(refUUID, token);
         instance.operate(action);

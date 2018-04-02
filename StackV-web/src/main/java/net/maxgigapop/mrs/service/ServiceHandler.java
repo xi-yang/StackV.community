@@ -211,6 +211,15 @@ public class ServiceHandler {
                     forceCancelInstance(refUUID, token);
                     break;
 
+                case "release":
+                    setSuperState(refUUID, SuperState.CANCEL);
+                    releaseInstance(refUUID, token);
+                    break;
+                case "force_release":
+                    setSuperState(refUUID, SuperState.CANCEL);
+                    forceReleaseInstance(refUUID, token);
+                    break;
+
                 case "reinstate":
                     setSuperState(refUUID, SuperState.REINSTATE);
                     cancelInstance(refUUID, token);
@@ -243,6 +252,9 @@ public class ServiceHandler {
                 case "commit":
                     ServiceEngine.commitInstance(refUUID, token.auth());
                     break;               
+                case "revert":
+                    ServiceEngine.revertInstance(refUUID, token.auth());
+                    break;
                 default:
                     logger.warning(method, "Invalid action");
             }
@@ -377,6 +389,49 @@ public class ServiceHandler {
         }
     }
 
+
+    /**
+     * Cancels a service instance without commit. Requires instance to be in 'ready' substate.
+     *
+     * @param refUuid instance UUID
+     * @return error code | -1: Exception thrown. 0: success. 1: stage 1 error
+     * (Failed pre-condition). 2: stage 2 error (Failed revert). 3: stage 3
+     * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
+     * error (Failed result check).
+     */
+    private int releaseInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+        boolean result;
+        String instanceState = status();
+        if (!instanceState.equalsIgnoreCase("READY")) {
+            return 1;
+        }
+
+        result = revert(refUuid, token.auth());
+        lastState = "INIT";
+        if (!result) {
+            return 2;
+        }
+
+        result = propagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
+        if (!result) {
+            return 3;
+        }
+
+        return 0;
+    }
+    
+
+    private int forceReleaseInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+        lastState = "INIT";
+        forceRevert(refUuid, token.auth());
+        forcePropagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
+        return 0;
+    }
+
+
+    
     private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
