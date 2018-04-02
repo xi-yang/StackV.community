@@ -66,6 +66,7 @@ import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
 import org.json.simple.JSONObject;
 import com.jayway.jsonpath.JsonPath;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.DateTimeUtil;
@@ -1352,34 +1353,32 @@ public class MCETools {
         model.add(addStmts);
     }
     
-    public static void pairupPathHops(MCETools.Path l2path, OntModel unionModel) {
+    public static void pairupPathHops(MCETools.Path l2path,  OntModel refModel) {
+        OntModel pathModel = l2path.getOntModel();
+        String sparql = "SELECT DISTINCT ?port ?vlan_port WHERE {"
+                + " ?vlan_port a nml:BidirectionalPort. "
+                + " ?port nml:hasBidirectionalPort ?vlan_port. "
+                + " FILTER NOT EXISTS { ?port a mrs:SwitchingSubnet. } "
+                + "}";
+        Map<String, Resource> parentChildPortMap = new HashMap();
+        ResultSet r = ModelUtil.sparqlQuery(pathModel, sparql);
+        while (r.hasNext()) {
+            QuerySolution solution = r.next();
+            Resource resPort = solution.getResource("port");
+            Resource resVlanPort = solution.getResource("vlan_port");
+            parentChildPortMap.put(resPort.getURI(), resVlanPort);
+        }
         Iterator<Statement> it = l2path.iterator();
         while (it.hasNext()) {
             Statement hopStmt = it.next();
             Resource hopX = hopStmt.getSubject();
             Resource hopY = hopStmt.getObject().asResource();
-            String sparql = "SELECT ?px ?py WHERE {"
-                + " ?px a nml:BidirectionalPort. "
-                + String.format(" <%s> nml:hasBidirectionalPort ?px. ", hopX.getURI())
-                + String.format(" <%s> a nml:BidirectionalPort. ", hopX.getURI())
-                + " ?py a nml:BidirectionalPort. "
-                + String.format(" <%s> nml:hasBidirectionalPort ?py. ", hopY.getURI())
-                + String.format(" <%s> a nml:BidirectionalPort. ", hopY.getURI())
-                + String.format(" FILTER ( EXISTS {<%s> nml:isAlias <%s>} || EXISTS {<%s> nml:isAlias <%s>} ) }", hopX.getURI(), hopY.getURI(), hopY.getURI(), hopX.getURI());
-            ResultSet r = ModelUtil.sparqlQuery(unionModel, sparql);
-            if (r.hasNext()) {
-                QuerySolution solution = r.next();
-                Resource resPX = solution.getResource("px");
-                Resource resPY = solution.getResource("py");
-                l2path.getOntModel().add(l2path.getOntModel().createStatement(resPX, Nml.isAlias, resPY));
-                l2path.getOntModel().add(l2path.getOntModel().createStatement(resPY, Nml.isAlias, resPX));
-                // Also add statments to unionModel 
-                unionModel.add(unionModel.createStatement(resPX, Nml.isAlias, resPY));
-                unionModel.add(unionModel.createStatement(resPY, Nml.isAlias, resPX));
-                if (it.hasNext()) {
-                    //?? There should not be two consecutive statements both having peering hops
-                    it.next();
-                }
+            if (!parentChildPortMap.containsKey(hopX.getURI()) || !parentChildPortMap.containsKey(hopY.getURI())) {
+                continue;
+            }
+            if (refModel.contains(hopX, Nml.isAlias, hopY) || refModel.contains(hopY, Nml.isAlias, hopX)) {
+                pathModel.add(pathModel.createStatement(parentChildPortMap.get(hopX.getURI()), Nml.isAlias, parentChildPortMap.get(hopY.getURI())));
+                pathModel.add(pathModel.createStatement(parentChildPortMap.get(hopY.getURI()), Nml.isAlias, parentChildPortMap.get(hopX.getURI())));
             }
         }
     }
