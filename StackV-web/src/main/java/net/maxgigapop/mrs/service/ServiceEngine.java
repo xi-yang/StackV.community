@@ -32,6 +32,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -369,7 +370,6 @@ public class ServiceEngine {
         String result = executeHttpMethod(url, conn, "POST", value, auth);
     }
     
-    //@TODO: change front_conn into using DataSource mechanism 
     public static String getCachedSystemDelta(String refUuid)  {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -380,8 +380,7 @@ public class ServiceEngine {
             front_connectionProps.put("password", "root");
 
 
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT service_instance_id"
                     + " FROM service_instance WHERE referenceUUID = ?");
