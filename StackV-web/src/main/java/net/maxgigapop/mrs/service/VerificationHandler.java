@@ -23,14 +23,13 @@
 package net.maxgigapop.mrs.service;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Properties;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
+import net.maxgigapop.mrs.rest.api.JNDIFactory;
+import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 
 /**
  *
@@ -40,6 +39,7 @@ public class VerificationHandler {
 
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "VerificationHandler");
     private final TokenHandler token;
+    private final JNDIFactory factory = new JNDIFactory();
     Connection conn;
     PreparedStatement prep;
     ResultSet rs;
@@ -58,17 +58,9 @@ public class VerificationHandler {
         sync = _sync;
         instanceUUID = _instanceUUID;
         logger.refuuid(instanceUUID);
-        try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "front_view");
-            front_connectionProps.put("password", "frontuser");
-            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+        conn = factory.getConnection("frontend");
 
-            logger.trace_end(method);
-        } catch (SQLException ex) {
-            logger.catching(method, ex);
-        }
+        logger.trace_end(method);
     }
 
     public String startVerification() {
@@ -79,10 +71,11 @@ public class VerificationHandler {
             return null;
         }
     }
-    
+
     private void asyncVerification() {
         new Thread(new VerificationDrone(instanceUUID, token, conn)).start();
     }
+
     private String syncVerification() {
         VerificationDrone drone = new VerificationDrone(instanceUUID, token, conn);
         drone.run();
@@ -95,7 +88,7 @@ public class VerificationHandler {
 
     public void stopVerification() {
         sendAction("STOP");
-    }   
+    }
 
     public void clearVerification() {
         try {

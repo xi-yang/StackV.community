@@ -171,9 +171,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
                 String strMaximum = (String)jsonBw.get("maximum");
                 Long maximum = (strMaximum != null ? Long.parseLong(strMaximum) : null);
-                Long available = (jsonBw.containsKey("available") ? Long.parseLong((String)jsonBw.get("available")) : null);
-                Long reservable = (jsonBw.containsKey("reservable") ? Long.parseLong((String)jsonBw.get("reservable")) : null);
-                mpvbPath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
+                Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null ? Long.parseLong((String)jsonBw.get("reservable")) : null);
+                mpvbPath.bandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
                 // candidatePath.bandwithProfile.type = "guaranteedCapped"; //default
             }
             // For 3rd through Tth terminals, connect them to one of openflow nodes in the path
@@ -258,9 +257,9 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     if (verified && jsonConnReq.containsKey("bandwidth")) {
                         JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
                         Long maximum = jsonBw.containsKey("maximum") ? Long.getLong(jsonBw.get("maximum").toString()) : null;
-                        Long available = jsonBw.containsKey("available") ? Long.getLong(jsonBw.get("available").toString()) : null;
                         Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
-                        bridgePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
+                        bridgePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
+                        bridgePath.bandwithProfile.availableCapacity = jsonBw.containsKey("available") ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
                         bridgePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
                         bridgePath.bandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
                         bridgePath.bandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"

@@ -36,7 +36,7 @@ Mousetrap.bind({
         window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
     },
     'shift+right': function () {
-        window.location.href = "/StackV-web/ops/acl.jsp";
+        window.location.href = "/StackV-web/portal/acl/";
     },
     'left': function () {
         viewShift("left");
@@ -1164,10 +1164,7 @@ function getAllDetails() {
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        error: function () {
-            window.location.href = "/StackV-web/";
-        },
+        },        
         success: function (result) {
             //fill installed table
             $('#installed-body').empty();

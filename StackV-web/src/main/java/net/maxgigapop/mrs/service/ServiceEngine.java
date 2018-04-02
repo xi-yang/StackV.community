@@ -28,16 +28,15 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
+import net.maxgigapop.mrs.rest.api.JNDIFactory;
 import net.maxgigapop.mrs.rest.api.WebResource;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
@@ -51,8 +50,7 @@ public class ServiceEngine {
 
     private final static StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceEngine");
     private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
-    private final static String FRONT_DB_USER = "front_view";
-    private final static String FRONT_DB_PASS = "frontuser";   
+    private final static JNDIFactory factory = new JNDIFactory();
 
     // OPERATION FUNCTIONS    
     public static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
@@ -60,6 +58,9 @@ public class ServiceEngine {
         String result;
         String lastState = "INIT";
         String svcDelta = (String) inputJSON.get("data");
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
         logger.start(method, svcDelta);
 
         int start = svcDelta.indexOf("<modelAddition>") + 15;
@@ -75,9 +76,42 @@ public class ServiceEngine {
             int results = cacheServiceDelta(refUUID, svcDelta, deltaUUID);
             int instanceID = results;
 
+            // Check for license deduction.
+            if (inputJSON.containsKey("profileID")) {
+                
+                System.out.println("Checking for deduction");
+                
+                front_conn = factory.getConnection("frontend");
+                prep = front_conn.prepareStatement("SELECT L.remaining FROM service_wizard W, service_wizard_licenses L WHERE W.service_wizard_id = ? AND W.service_wizard_id = L.service_wizard_id AND L.username = ?");
+                prep.setString(1, (String) inputJSON.get("profileID"));
+                prep.setString(2, (String) inputJSON.get("username"));
+                rs = prep.executeQuery();
+                while (rs.next()) {
+                    System.out.println("in result set");
+                    int remaining = rs.getInt("remaining");
+                    if (remaining > 0) {
+                        prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE username = ? AND service_wizard_id = ?");
+                        prep.setInt(1, --remaining);
+                        prep.setString(2, (String) inputJSON.get("username"));
+                        prep.setString(3, (String) inputJSON.get("profileID"));
+                        prep.executeUpdate();    
+                        logger.trace(method, "License deducted, now at " + remaining + " uses remaining.");
+                    }
+                    
+                    if (remaining <= 0) {
+                        prep = front_conn.prepareStatement("DELETE FROM service_wizard_licenses WHERE username = ? AND service_wizard_id = ?");
+                        prep.setString(1, (String) inputJSON.get("username"));
+                        prep.setString(2, (String) inputJSON.get("profileID"));
+                        prep.executeUpdate();    
+                        logger.trace(method, "License fully used.");
+                    }
+                }
+            }
+
             result = initInstance(refUUID, svcDelta, token.auth());
             lastState = "COMPILED";
             logger.trace(method, "Initialized");
+
             cacheSystemDelta(instanceID, result);
 
             if (inputJSON.containsKey("host")) {
@@ -119,17 +153,8 @@ public class ServiceEngine {
             throw ex;
         } finally {
             logger.trace_start("updateLastState", lastState);
-
-            Connection front_conn = null;
-            PreparedStatement prep = null;
-            ResultSet rs = null;
             try {
-                Properties front_connectionProps = new Properties();
-                front_connectionProps.put("user", FRONT_DB_USER);
-                front_connectionProps.put("password", FRONT_DB_PASS);
-
-                front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                        front_connectionProps);
+                front_conn = factory.getConnection("frontend");
 
                 prep = front_conn.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
                 prep.setString(1, lastState);
@@ -156,12 +181,7 @@ public class ServiceEngine {
         // Cache serviceDelta.
         int instanceID = -1;
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
-
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT service_instance_id"
                     + " FROM service_instance WHERE referenceUUID = ?");
@@ -196,16 +216,7 @@ public class ServiceEngine {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
-
-            // Retrieve UUID from delta
-            /*
-            
-             */
-            front_conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/frontend",
-                    front_connectionProps);
+            front_conn = factory.getConnection("frontend");
 
             String formatDelta = result.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");

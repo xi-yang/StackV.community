@@ -5,7 +5,9 @@
             30
         </session-timeout>
     </session-config>
-
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
     <security-constraint>
         <web-resource-collection>
             <web-resource-name>TRANSPORT</web-resource-name>
@@ -15,7 +17,6 @@
             <transport-guarantee>CONFIDENTIAL</transport-guarantee>
         </user-data-constraint>
     </security-constraint>
-
     <security-constraint>
         <display-name>DATA</display-name>
         <web-resource-collection>
@@ -25,10 +26,9 @@
         </web-resource-collection>
         <auth-constraint>
             <role-name>admin</role-name>
-            <role-name>user</role-name>           
+            <role-name>user</role-name>
         </auth-constraint>
     </security-constraint>
-
     <security-constraint>
         <display-name>TOKEN</display-name>
         <web-resource-collection>
@@ -46,14 +46,6 @@
         <!-- OMIT auth-constraint -->
     </security-constraint>
     <security-constraint>
-        <display-name>MODEL</display-name>
-        <web-resource-collection>
-            <web-resource-name>MODEL</web-resource-name>
-            <url-pattern>/restapi/model</url-pattern>
-        </web-resource-collection>
-        <!-- OMIT auth-constraint -->
-    </security-constraint>
-    <security-constraint>
         <display-name>DRIVER</display-name>
         <web-resource-collection>
             <web-resource-name>DRIVER</web-resource-name>
@@ -61,8 +53,6 @@
         </web-resource-collection>
         <!-- OMIT auth-constraint -->
     </security-constraint>
-    
-                
     <security-constraint>
         <display-name>API</display-name>
         <web-resource-collection>
@@ -73,13 +63,11 @@
         <auth-constraint>
             <role-name>user</role-name>
         </auth-constraint>
-    </security-constraint>        
-        
+    </security-constraint>
     <login-config>
         <auth-method>KEYCLOAK</auth-method>
         <realm-name>StackV</realm-name>
     </login-config>
-    
     <security-role>
         <role-name>admin</role-name>
     </security-role>

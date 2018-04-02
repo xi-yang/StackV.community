@@ -70,9 +70,9 @@ function renderDetails() {
             instruction = instruction.replace("{{" + str + "}}", result);
         }
     }
-    if (verificationHasDrone) {
+    if (verificationHasDrone && verificationElapsed) {
         instruction += " (Verification elapsed time: " + verificationElapsed + ")";
-    } 
+    }
     $instruction.html(instruction);
 
     // Buttons
@@ -80,7 +80,7 @@ function renderDetails() {
     for (var i in buttons) {
         var button = buttons[i];
         if (button === "verify" && verificationHasDrone) {
-            ;
+            $("#unverify").removeClass("hide");
         } else if (button === "cancel" && superState === "CANCEL") {
             $("#reinstate").removeClass("hide");
         } else if (button === "force_cancel" && superState === "CANCEL") {
@@ -108,11 +108,13 @@ function updateData() {
         success: function (instance) {
             var alias = instance[1];
             var creation = instance[2];
-            superState = instance[3];
-            lastState = instance[4];
+            var owner = instance[3];
+            superState = instance[4];
+            lastState = instance[5];
 
             $("#instance-alias").html(alias);
             $("#instance-uuid").html(refUUID);
+            $("#instance-owner").html(owner);
             $("#instance-creation-time").html(creation);
         }
     });
@@ -240,9 +242,15 @@ function attachListeners() {
                             }
                         });
                     } else {
+                        swal({
+                            buttons: false,
+                            title: "Loading!",
+                            closeOnEsc: false,
+                            timer: 3000
+                        });
+
                         executeCommand(command);
                     }
-
                 }
             }
         });
@@ -261,7 +269,7 @@ function executeCommand(command) {
             if (command === "delete" || command === "force_delete") {
                 setTimeout(function () {
                     sessionStorage.removeItem("instance-uuid");
-                    window.document.location = "/StackV-web/ops/catalog.jsp";
+                    window.document.location = "/StackV-web/portal/";
                 }, 250);
             }
         }

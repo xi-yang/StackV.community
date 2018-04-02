@@ -33,10 +33,10 @@ var view = "center";
 
 Mousetrap.bind({
     'shift+left': function () {
-        window.location.href = "/StackV-web/ops/catalog.jsp";
+        window.location.href = "/StackV-web/portal/";
     },
     'shift+right': function () {
-        window.location.href = "/StackV-web/ops/srvc/driver.jsp";
+        window.location.href = "/StackV-web/portal/driver/";
     },
     'left': function () {
         viewShift("left");
@@ -146,7 +146,7 @@ function loadDetails() {
     startDetailsEngine(uuid);
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs/serverside?refUUID=' + uuid;
-    loadDataTable(apiUrl);
+    loadLoggingDataTable(apiUrl);
     reloadLogs();
 
     tweenDetailsPanel.play();

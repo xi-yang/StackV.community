@@ -25,7 +25,10 @@ public class TemplateEngine {
                 break;
             case "ahc":
                 template = new AHCTemplate();
-                break;                
+                break;    
+            case "ecc":
+                template = new ECTemplate();
+                break;
         }
         render = template.getTemplate();
 
@@ -34,7 +37,7 @@ public class TemplateEngine {
         int start = recurBody.indexOf("{{");
         while (start > -1) {
             // Continue operating on stashes until no more exist
-            int end = recurBody.indexOf("}}", start + 2);
+            int end = recurBody.indexOf("}}");
             String blockStr = recurBody.substring(start, end + 2);
             String cleanTag = blockStr.replaceAll("~", "");
             if (cleanTag.charAt(2) == '#') {
@@ -72,18 +75,21 @@ public class TemplateEngine {
         }
 
         // Postprocessing
-        escapeModel();
-
+        prepareModel();
+        
+        recurBody = recurBody.replace("&#123;", "{");
+        recurBody = recurBody.replace("&#125;", "}");
+        
         return recurBody;
     }
 
-    private void escapeModel() {
+    private void prepareModel() {
         int start = render.indexOf("<modelAddition>") + 15;
         int end = render.indexOf("</modelAddition>");
 
         String body = render.substring(start, end);
-        body = body.replaceAll("<", "&lt;");
-        body = body.replaceAll(">", "&gt;");
+        body = body.replace("<", "&lt;");
+        body = body.replace(">", "&gt;");        
 
         render = render.substring(0, start) + body + render.substring(end);
     }

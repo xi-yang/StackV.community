@@ -20,7 +20,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-
 package net.maxgigapop.mrs.bean.persist;
 
 import java.util.ArrayList;
@@ -43,6 +42,7 @@ import net.maxgigapop.mrs.service.HandleServiceCall;
  */
 @SuppressWarnings("unchecked")
 public class VersionGroupPersistenceManager extends PersistenceManager {
+
     private static final StackLogger logger = new StackLogger(VersionGroupPersistenceManager.class.getName(), "VersionGroupPersistenceManager");
 
     public static VersionGroup findById(Long id) {
@@ -96,17 +96,17 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         }
         for (DriverInstance di : ditMap.values()) {
             if (!listDI.contains(di)) {
-                    VersionItem newVi = di.getHeadVersionItem();
-                    if (newVi == null) {
-                        logger.targetid(di.getId().toString());
-                        throw logger.error_throwing("refreshToHead", "target:VersionGroup encounters null head versionItem in "+di);
-                    }
-                    if (!newVi.getVersionGroups().contains(vg)) {
-                        newVi.addVersionGroup(vg);
-                    }
-                    if (!vg.getVersionItems().contains(newVi)) {
-                        vg.addVersionItem(newVi);
-                    }
+                VersionItem newVi = di.getHeadVersionItem();
+                if (newVi == null) {
+                    logger.targetid(di.getId().toString());
+                    throw logger.error_throwing("refreshToHead", "target:VersionGroup encounters null head versionItem in " + di);
+                }
+                if (!newVi.getVersionGroups().contains(vg)) {
+                    newVi.addVersionGroup(vg);
+                }
+                if (!vg.getVersionItems().contains(newVi)) {
+                    vg.addVersionItem(newVi);
+                }
                 needToUpdate = true;
             }
         }
@@ -126,6 +126,7 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
 
     public static void cleanupAll(VersionGroup butVG) {
         logger.start("cleanupAll");
+        Date currentTime = new java.util.Date();
         Integer count = 0;
         try {
             // remove all VGs that has no dependency (by systemDelta)
@@ -138,9 +139,12 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
                         continue;
                     }
-                    VersionGroupPersistenceManager.delete(vg);
-                    count++;
-                    logger.trace("cleanupAll", vg + " deleted.");
+                    // delete VG if it is over 1 minute old
+                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 60000L) {
+                        VersionGroupPersistenceManager.delete(vg);
+                        count++;
+                        logger.trace("cleanupAll", vg + " deleted.");
+                    }
                 }
             }
             // remove all empty VGs ? (redundant, still need to exclude ones with dependencies)
@@ -160,14 +164,15 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             }
             */
         } catch (Exception e) {
-            logger.warning("cleanupAll",  "exception raised and ignored: " + e);
+            logger.warning("cleanupAll", "exception raised and ignored: " + e);
         }
         logger.message("cleanupAll", count + " version groups have been deleted");
         logger.end("cleanupAll");
     }
-    
+
     public static void cleanupAndUpdateAll(VersionGroup butVG) {
         logger.start("cleanupAndUpdateAll");
+        Date currentTime = new java.util.Date();
         Integer count = 0;
         try {
             // remove all VGs that has no dependency (by systemDelta)
@@ -181,9 +186,12 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
                         continue;
                     }
-                    VersionGroupPersistenceManager.delete(vg);
-                    count++;
-                    logger.trace("cleanupAndUpdateAll", vg + " deleted (no longer used).");
+                    // delete VG if it is over 1 minute old
+                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 60000L) {
+                        VersionGroupPersistenceManager.delete(vg);
+                        logger.trace("cleanupAndUpdateAll", vg + " deleted (no longer used).");
+                        count++;
+                    }
                 }
             }
             // remove all empty VGs and update the non-empty
@@ -197,16 +205,18 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                 Long vgid = (Long) it.next();
                 VersionGroup vg = VersionGroupPersistenceManager.findById(vgid);
                 if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
-                    //@TODO: probe -> exception here (deletion may not be needed any way)
-                    VersionGroupPersistenceManager.delete(vg);
-                    count++;
-                    logger.trace("cleanupAndUpdateAll", vg + " deleted (empty VI list).");
+                    // delete VG if it is over 1 minute old
+                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 60000L) {
+                        VersionGroupPersistenceManager.delete(vg);
+                        logger.trace("cleanupAndUpdateAll", vg + " deleted (empty VI list).");
+                        count++;
+                    }
                 } else {
                     //@TODO: probe further: the update may create empty VGs
                     VersionGroupPersistenceManager.refreshToHead(vg, true);
                     logger.trace("cleanupAndUpdateAll", vg + " refreshed.");
                 }
-                
+
             }
         } catch (Exception e) {
             logger.warning("cleanupAndUpdateAll", "exception raised and ignored: " + e);

@@ -40,11 +40,23 @@ black-screen: 3
 @import "animate.min.css";
 @import "font-awesome.min.css";
 @import "https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700";
+
+/* Bootstrap */
 @import "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
 @import "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css";
-@import "sweetalert.css";
 
-/*Custom styles*/
+/* Jquery */
+@import "https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css";
+
+/* DataTables */
+@import "https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.css";
+
+/* Misc Frameworks */
+@import "sweetalert.css";
+@import "iziModal.min.css";
+@import "noty.css";
+
+/*Internal styles*/
 @import "global.css";
 @import "navigation.css";
 @import "visualization.css";

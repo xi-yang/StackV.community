@@ -5,9 +5,6 @@
 */
 
 /*Miscellaenous global styles*/
-::-webkit-scrollbar {
-    /*display:none;*/
-}
 .hide {
     opacity: 0;
     display: none;

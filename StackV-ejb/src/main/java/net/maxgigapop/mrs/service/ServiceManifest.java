@@ -58,8 +58,8 @@ public class ServiceManifest {
         try {
             Context ejbCxt = new InitialContext();
             dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
-        } catch (Exception ex) {
-            throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + ex);
+        } catch (NamingException e) {
+            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
         }
         OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         OntModel omAdd = null;

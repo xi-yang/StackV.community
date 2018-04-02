@@ -16,19 +16,18 @@ ul.catalog-tabs li.active a:hover {
     cursor: pointer;
 }
 
-button#button-service-cancel {
-    color: #B60000;
-    margin-left: 75%;
-    position: relative;
-}
-
 button.button-header {
     background-color: #50657c;
     float: right;
     border: 0
 }
 
-/*Not quite sure if this belongs in this page... but we'll stick it here for now*/
+button.button-service-create {
+    float: right;
+    position: relative;
+    top: -6px;
+}
+
 div.service-instance-panel {
     float: right;
 }
@@ -42,14 +41,55 @@ div#refresh-panel {
 }
 
 div#instance-panel {
-    left: 40px;
-    padding: 5px 5px;
-    height: calc(90% - 42px);
-    width: calc(100% - 80px);
-    position: absolute;
-    overflow-y: auto;
-    top: calc(-90% + 42px);
+    margin: auto;
+    padding: 30px 30px 0px 30px;
+    max-height: calc(90% - 42px);
+    width: calc(100% - 75);
+    max-width: 1000px;
+    text-align: left;
+    visibility:hidden;
 }
+div#instance-header {
+    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
+    box-shadow: inset 0 1px 0 #a2b1c3;
+    color: #fff;
+    padding: 10px 15px;
+    position: relative;
+    text-shadow: 0 1px 0 #000;
+    outline: 1px solid black;
+    height: 40px;
+}
+div#instance-body {
+    padding: 20px;
+    outline: 1px solid #ccc;
+    background: white;
+}
+tr.instance-row {
+    cursor: pointer;
+}
+
+.catalog-modal-body, .profiles-modal-body {
+    padding: 20px 30px 10px 30px;
+    text-align: left;
+}
+.catalog-modal-body-header, .profiles-modal-body-header {
+    font-size: 1.25em;
+    vertical-align: top;
+    padding-right: 40px;
+    padding-bottom: 10px;
+}
+.catalog-modal-body .list-group, .profiles-modal-body .list-group {
+    cursor: pointer;
+    max-height: 65vh;
+    overflow: scroll;
+}
+
+#profile-license-metadata {
+    display: block;    
+    text-align: left;   
+    color: #777;
+}
+
 
 
 /*Make content within tab scrollable*/
@@ -90,6 +130,21 @@ div#catalog-tab-content {
     border-left: 1px solid white;
 }
 
+.edit-profile-username {
+    padding: 0px 5px 0px 10px;    
+    border-radius: 20px 0 0 20px;
+}
+.edit-profile-username#edit-profile-new {
+
+}
+#info-panel-share-remaining {
+    padding: 0 5px 0 5px;
+    width: 70px;
+    border-radius: 0 20px 20px 0;
+}
+
+
+
 /*Don't show these buttons on open - only trigger when click on save as*/
 div.info-panel-save-as-description {
     display: none;
@@ -99,7 +154,11 @@ div#profile-modal div.info-panel-save-as-description input {
 }
 div#profile-modal textarea#info-panel-text-area {
     width: 100%;
-    min-height: 600px;
+    min-height: 50vh;
+}
+
+#info-panel-text-area[readonly] {
+    background: #eee;
 }
 
 #profile-alias {
