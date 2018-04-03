@@ -53,6 +53,7 @@ black-screen: 3
 
 /* Misc Frameworks */
 @import "sweetalert.css";
+@import "iziToast.min.css";
 @import "iziModal.min.css";
 @import "noty.css";
 

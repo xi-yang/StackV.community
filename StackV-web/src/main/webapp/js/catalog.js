@@ -21,7 +21,7 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap, swal */
+/* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap, swal, iziToast */
 // Tweens
 var tweenInstancePanel = new TweenLite("#instance-panel", .75, {ease: Power2.easeInOut, paused: true, autoAlpha: 1});
 
@@ -153,7 +153,7 @@ var alertConfig = {
 var detailsConfig = {
     width: 800,
     headerColor: '#85ac97',
-    onClosed: function(){
+    onClosed: function () {
         $profModal.iziModal('open');
     }
 };
@@ -172,7 +172,7 @@ function loadModals() {
     $profModal.html('<div class="profiles-modal-body">' +
             '<p class="profiles-modal-body-header">Select a saved service profile:</p>' +
             '<div id="profiles-modal-service-meta" class="list-group" style="cursor: pointer;"></div>' +
-            '<hr><button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button>' +
+            '<hr><button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button><button id="button-profile-blank-add" class="btn btn-default hidden" style="margin-left: 10px;">Add Blank Profile</button><input class="form-control" type="text" id="profileBlankName">' +
             '</div>');
     $detailsModal.html('<div style="height: 80vh;" class="profile-details-modal-body">' +
             '<div id="profile-details-modal-meta"><div><p class="profile-details-modal-meta-name"></p><p class="profile-details-modal-meta-description"></p><p class="profile-details-modal-meta-author"></p></div><hr>' +
@@ -239,6 +239,10 @@ function loadModals() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
+            if (keycloak.tokenParsed.resource_access.StackV.roles.includes("Profiles-W")) {
+                $("#button-profile-blank-add").removeClass("hidden");
+            }
+
             for (i = 0; i < result.length; i++) {
                 var profile = result[i];
 
@@ -289,6 +293,35 @@ function loadModals() {
                 profCount++;
             }
 
+            $("#button-profile-blank-add").click(function () {
+                if ($(this).data("mode") === "submit") {
+                    // Save to DB
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'PUT',
+                        data: JSON.stringify({
+                            "name": $("#profileBlankName").val(),
+                            "username": keycloak.tokenParsed.preferred_username,
+                            "data": {}
+                        }),
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        },
+                        success: function () {
+                            reloadModals();
+                            $("#profileBlankName").removeClass("opened");
+                            $(this).removeData("mode");
+                            $(this).text("Add Blank Profile");
+                        }
+                    });
+                } else {
+                    $("#profileBlankName").addClass("opened");
+                    $(this).attr("data-mode", "submit");
+                    $(this).text("Submit");
+                }
+            });
+
             $("#profiles-modal-service-meta").on("click", "a", function (evt) {
                 var profileID = $(this).data("id");
                 $profModal.attr("data-profile-id", profileID);
@@ -338,11 +371,11 @@ function loadModals() {
                             }
 
                             $(".button-profile-delete").show();
-                            
+
                             $(".profile-details-modal-meta-editable").show();
                             if (result["editable"] === "1") {
                                 $("#profileEditable").prop("checked", true);
-                            }                            
+                            }
                         } else {
                             $(".profile-details-modal-meta-sharing").addClass("hidden");
                             var remaining = 1;
@@ -432,7 +465,7 @@ function loadModals() {
                     type: 'POST',
                     data: JSON.stringify({
                         "username": $("#licenseUsername").val(),
-                        "remaining": $("#licenseRemaining").val(),
+                        "remaining": $("#licenseRemaining").val()
                     }),
                     contentType: "application/json; charset=utf-8",
                     success: function () {
@@ -451,7 +484,7 @@ function loadModals() {
                     type: 'PUT',
                     data: JSON.stringify({
                         "username": $(".profile-license-modal-username-div p")[0].innerHTML,
-                        "remaining": $("#licenseRemaining").val(),
+                        "remaining": $("#licenseRemaining").val()
                     }),
                     contentType: "application/json; charset=utf-8",
                     success: function () {
@@ -621,7 +654,7 @@ function loadModals() {
                         url: apiUrl,
                         type: 'PUT',
                         data: JSON.stringify({
-                            "data" : profileString,
+                            "data": profileString,
                             "editable": $("#profileEditable").prop("checked")
                         }),
                         contentType: "application/json; charset=utf-8",
@@ -630,9 +663,14 @@ function loadModals() {
                             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                         },
-                        success: function (result) {
-                            // reload the bottom panel
-                            $("#profile-modal").modal("hide");
+                        success: function () {
+                            iziToast.success({
+                                timeout: 3000,
+                                title: 'OK',
+                                message: 'Profile saved!',
+                                position: 'topRight',
+                                pauseOnHover: false
+                            });
                         },
                         error: function (textStatus, errorThrown) {
                             console.log(textStatus);
@@ -651,12 +689,14 @@ function loadModals() {
 }
 function resetProfileModal() {
     clearTimeout(profileUpdateTimeout);
+    $("#profile-details-modal-text-area").val(null);
     $(".profile-details-modal-meta-saving").addClass("hidden");
+    $(".profile-details-modal-meta-sharing").addClass("hidden");
     $(".profile-details-modal-meta-sharing-list").empty();
     $("#info-panel-share-edit :not(:disabled)").remove();
     $("#info-panel-share-remaining").val(null);
-    $profModal.removeData("profile-id");   
-    
+    $profModal.removeData("profile-id");
+
     $(".profile-details-modal-meta-editable").hide();
     $("#profileEditable").prop("checked", false);
 
@@ -681,6 +721,8 @@ function resetLicenseModal() {
 }
 
 function reloadModals() {
+    $("#button-blank-profile").addClass("hidden");
+
     // Load service metadata. 
     catCount = 0, profCount = 0;
 

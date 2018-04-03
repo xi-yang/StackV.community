@@ -84,13 +84,27 @@ tr.instance-row {
     overflow: scroll;
 }
 
+#profileBlankName {
+    display: inline;
+    width: 40%;
+    transform: scaleX(0);
+    opacity: 0;
+    transition: opacity 1s, transform 1s;
+    transform-origin: 0 0;
+    margin-left: 5px;
+}
+#profileBlankName.opened {
+    transform: scaleX(1) !important;
+    opacity: 1 !important;
+}
+
 #profile-license-metadata {
     display: block;    
     text-align: left;   
     color: #777;
 }
 
-#saving-collapse input {
+#saving-collapse input, #saving-collapse textarea {
     width: 90%;
     margin: auto;
     margin-top: 5px;

@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-/* global baseUrl, keycloak, swal */
+/* global baseUrl, keycloak, $loadingModal */
 
 var refUUID;
 var superState;
@@ -223,6 +223,8 @@ function attachListeners() {
         pauseRefresh();
 
         var command = this.id;
+        var $button = $(this);
+        var mode = $(this).data("mode");
         var apiUrl = baseUrl + '/StackV-web/restapi/service/' + refUUID + '/status';
         $.ajax({
             url: apiUrl,
@@ -239,30 +241,25 @@ function attachListeners() {
                     reloadData();
                 } else {
                     if ((command === "delete") || (command === "force_delete")) {
-                        swal("Confirm deletion?", {
-                            buttons: {
-                                cancel: "Cancel",
-                                delete: {text: "Delete", value: true}
-                            }
-                        }).then((value) => {
-                            if (value) {
-                                executeCommand(command);
-                            } else {
-                                setTimeout(function () {
-                                    $(".instance-command").attr('disabled', false);
-                                    resumeRefresh();
-                                    reloadData();
-                                }, 250);
-                            }
-                        });
-                    } else {
-                        swal({
-                            buttons: false,
-                            title: "Loading!",
-                            closeOnEsc: false,
-                            timer: 3000
-                        });
+                        if (mode === "confirm") {
+                            executeCommand(command);
+                        } else {
+                            $button.attr("data-mode", "confirm");
+                            $button.text("Confirm Deletion");
+                            $button.addClass("btn-danger").removeClass("btn-default");
+                            $(".instance-command").attr('disabled', false);
+                            
+                            setTimeout(function () {
+                                $button.removeAttr("data-mode");
+                                $button.text("Delete");
+                                $button.removeClass("btn-danger").addClass("btn-default");
 
+                                resumeRefresh();
+                                reloadData();
+                            }, 3000);
+                        }
+                    } else {
+                        $loadingModal.iziModal('open');
                         executeCommand(command);
                     }
                 }
