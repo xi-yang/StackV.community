@@ -30,6 +30,10 @@ var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut
     paused: true, right: "0px", opacity: "1", display: "block"});
 
 var view = "center";
+var $intentModal = $("#details-intent-modal");
+var intentConfig = {
+    width: 750
+};
 
 Mousetrap.bind({
     'shift+left': function () {
@@ -142,6 +146,12 @@ function loadDetailsNavbar() {
 /* DETAILS */
 
 function loadDetails() {
+    $intentModal.html('<textarea readonly id="details-intent-modal-text"></textarea>');
+    $intentModal.iziModal(intentConfig);
+    $("#button-view-intent").click(function () {
+        $intentModal.iziModal('open');
+    });
+    
     var uuid = sessionStorage.getItem("instance-uuid");
     startDetailsEngine(uuid);
 

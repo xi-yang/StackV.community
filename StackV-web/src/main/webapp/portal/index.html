@@ -51,66 +51,17 @@
         <!-- Catalog Modal -->
         <div id="catalog-modal" data-iziModal-title="Service Catalog" data-iziModal-icon="icon-home"></div>
 
-        <!-- Profile Modal -->
+        <!-- Profiles Modal -->
         <div id="profiles-modal" data-iziModal-title="Service Profiles" data-iziModal-icon="icon-home"></div> 
+
+        <!-- Profile Details Modal -->
+        <div id="profile-details-modal" data-iziModal-title="Profile Details" data-iziModal-icon="icon-home"></div> 
+        
+        <!-- Profile Details Modal -->
+        <div id="profile-license-modal" data-iziModal-title="License Management" data-iziModal-icon="icon-home"></div> 
 
         <!-- Alert Modal -->
         <div id="alert-modal"></div> 
-
-        <div id="profile-modal" class="modal fade" tabindex="-1" role="dialog">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <div id="info-panel-text">                            
-                            <textarea readonly id="info-panel-text-area"></textarea>
-                        </div>
-                        <div style="text-align: left;display: none;" id="info-panel-management">
-                            <hr>
-                            <label style="display: block;">Sharing</label>
-                            <div class="info-panel-share">                                
-                                <select id="info-panel-share-edit"><option disabled selected>Current Shared Users</option></select>
-                                <input type="number" id="info-panel-share-remaining"/>
-                                <br><br>
-                                <input  type="text" id="info-panel-share-new-username" placeholder="New Username"/>
-                                <input type="number" id="info-panel-share-new-remaining" style="width: 50%;" placeholder="Number of uses (Choose -1 for infinite)"/>
-                                <button class="button-profile-share-add btn btn-default">Add</button>
-                            </div>
-                            
-                        </div>
-                    </div>
-                    <div id="info-panel-button" class="modal-footer">
-                        <div class="info-panel-save-as-description">
-                            <form class="form-inline">
-                                <div class="form-group">
-                                    <label for="new-profile-name"><input type="text" class="form-control" id="new-profile-name" placeholder="Name" /></label>
-                                </div>
-                                <div class="form-group">
-                                    <label for="new-profile-description"><input type="text" class="form-control" id="new-profile-description" placeholder="Description" /></label>
-                                </div>
-                                <div class="form-group">
-                                    <label for="new-profile-licenses"><input type="text" class="form-control" id="new-profile-licenses" style="width: 347px;" placeholder="Shared users (Comma-separated)" /></label>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="info-panel-footer" style="display:inline-block;">
-                            <div class="info-panel-regular-buttons">
-                                <p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;float: left;padding-right: 50px;">Read Only</p>
-                                <button style="display: none;" class="button-profile-delete btn btn-danger">Delete</button>
-                                <button class="button-profile-save btn btn-default">Save</button>
-                                <button class="button-profile-save-as btn btn-default">Save As</button>
-                                <button class="button-profile-submit btn btn-default">Submit</button>
-                            </div>
-                            <div class="info-panel-save-as-description">
-                                <button class="button-profile-save-as-confirm btn btn-default">Confirm</button>
-                                <button class="button-profile-save-as-cancel btn btn-default">Cancel</button>
-                            </div>
-                        </div>
-                        <input id="profile-alias" placeholder="Instance Alias"/>
-                        <small id="profile-license-metadata"></small>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- CORE JS PACKAGE-->
         <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>

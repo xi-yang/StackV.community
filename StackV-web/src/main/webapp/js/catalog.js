@@ -27,6 +27,8 @@ var tweenInstancePanel = new TweenLite("#instance-panel", .75, {ease: Power2.eas
 
 var $catModal = $("#catalog-modal");
 var $profModal = $("#profiles-modal");
+var $detailsModal = $("#profile-details-modal");
+var $licenseModal = $("#profile-license-modal");
 
 var $alertModal = $("#alert-modal");
 
@@ -127,8 +129,6 @@ function loadInstances() {
 }
 
 var profileUpdateTimeout = null;
-var licenses;
-
 var catCount = 0;
 var catConfig = {
     width: 750,
@@ -150,23 +150,43 @@ var alertConfig = {
     transitionOut: 'fadeOutDown',
     pauseOnHover: true
 };
+var detailsConfig = {
+    width: 800,
+    headerColor: '#85ac97'
+};
+var licenseConfig = {
+    width: 400,
+    headerColor: '#e7c642'
+};
 
 function loadModals() {
     // Initialize
-    $("#catalog-modal").html('<div class="catalog-modal-body">' +
+    $catModal.html('<div class="catalog-modal-body">' +
             '<p class="catalog-modal-body-header">Select a service type:</p>' +
             '<div id="catalog-modal-service-meta" class="list-group" style="cursor: pointer;"></div>' +
             '<hr><button class="button-catalog-modal-switch btn btn-primary" data-izimodal-open="#profiles-modal">Load Saved Profile</button>' +
             '</div>');
-    $("#profiles-modal").html('<div class="profiles-modal-body">' +
+    $profModal.html('<div class="profiles-modal-body">' +
             '<p class="profiles-modal-body-header">Select a saved service profile:</p>' +
             '<div id="profiles-modal-service-meta" class="list-group" style="cursor: pointer;"></div>' +
             '<hr><button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button>' +
             '</div>');
+    $detailsModal.html('<div style="height: 80vh;" class="profile-details-modal-body">' +
+            '<div id="profile-details-modal-meta"><div><p class="profile-details-modal-meta-name"></p><p class="profile-details-modal-meta-description"></p><p class="profile-details-modal-meta-author"></p></div><hr>' +
+            '<div style="padding-right:10px;" class="panel-group profile-details-modal-meta-sharing hidden"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#sharing-collapse" class="" aria-expanded="true">Profile Sharing</a></h4></div><div id="sharing-collapse" class="panel-collapse collapse in" aria-expanded="true" style=""><ul class="list-group profile-details-modal-meta-sharing-list"></ul><div class="panel-footer" style="height:85px;"><button class="button-profile-license-new btn-sm btn btn-default">Add New User</button><div><label class="profile-details-modal-meta-editable control-label">Allow Editing<input type="checkbox" style="margin-left: 10px;" id="profileEditable" checked="checked" value="on"></label></div></div></div></div></div>' +
+            '<div class="profile-details-modal-meta-buttons"><p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;padding-right: 50px;">Read Only</p><button style="display: none;" class="button-profile-delete btn btn-danger">Delete</button><button class="button-profile-save btn btn-default">Save</button><button class="button-profile-save-as btn btn-default">Save As</button><input id="profile-alias" placeholder="Instance Alias"><button class="button-profile-submit btn btn-default">Submit</button></div></div>' +
+            '<div id="profile-details-modal-text"><textarea readonly id="profile-details-modal-text-area"></textarea></div>' +
+            '</div>');
+    $licenseModal.html('<div id="profile-license-modal-body" style="margin-bottom: 20px;padding: 15px;"><form class="form-horizontal"><div class="form-group profile-license-modal-username"><label class="col-sm-2 control-label">Username</label>' +
+            '<div class="col-sm-10 profile-license-modal-username-div"></div></div><div class="form-group"><label for="licenseRemaining" class="col-sm-2 control-label">Licenses</label><div class="col-sm-4"><input type="number" class="form-control" id="licenseRemaining"  style="width: 80%;margin-left: 25px;"></div></div>' +
+            '<div class="form-group"><label for="inputPassword" class="col-sm-2 control-label">Type</label><div class="col-sm-10"><label class="radio-inline" style="float: left;margin-left: 25px;"><input type="radio" name="licenseProfileType" value="ticket" checked="">Tickets</label><label class="radio-inline" style="float: left;"><input type="radio" name="licenseProfileType" value="allocation" disabled="">Allocations</label></div></div>' +
+            '<div class="form-group"><button class="button-license-delete hidden btn btn-warning" style="padding-right: 25;">Remove</button><button class="button-license-update hidden btn btn-warning" style="padding-right: 25;">Update</button><button class="button-license-add hidden btn btn-warning" style="padding-right: 25;">Submit</button></div></form></div>');
 
     $catModal.iziModal(catConfig);
     $profModal.iziModal(profConfig);
     $alertModal.iziModal(alertConfig);
+    $detailsModal.iziModal(detailsConfig);
+    $licenseModal.iziModal(licenseConfig);
 
     // Load service metadata. 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/editor';
@@ -266,8 +286,9 @@ function loadModals() {
             }
 
             $("#profiles-modal-service-meta").on("click", "a", function (evt) {
-                var resultID = $(this).data("id");
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + resultID;
+                var profileID = $(this).data("id");
+                $profModal.attr("data-profile-id", profileID);
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID;
                 $.ajax({
                     url: apiUrl,
                     type: 'GET',
@@ -277,42 +298,48 @@ function loadModals() {
                     success: function (result) {
                         resetProfileModal();
 
+                        var $textArea = $("#profile-details-modal-text-area");
+                        $(".profile-details-modal-meta-name").text(result["name"]);
+                        $(".profile-details-modal-meta-description").text(result["description"]);
+
                         if (result["owner"] === keycloak.tokenParsed.preferred_username
                                 || result["editable"] === "1") {
-                            $("#info-panel-text-area").removeAttr("readonly");
+                            $textArea.removeAttr("readonly");
                             $(".button-profile-save").removeAttr("disabled");
                             $(".button-profile-save-as").removeAttr("disabled");
                             $(".read-only-flag").addClass("hidden");
                         } else {
-                            $("#info-panel-text-area").attr("readonly", true);
+                            $textArea.attr("readonly", true);
                             $(".button-profile-save").attr('disabled', true);
                             $(".button-profile-save-as").attr('disabled', true);
                             $(".read-only-flag").removeClass("hidden");
                         }
 
-                        $("#profile-modal").modal("show");
-                        $("#info-panel-text-area").val(result["wizard_json"]);
+                        $textArea.val(result["wizard_json"]);
                         originalProfile = result["wizard_json"];
-                        $(".button-profile-save").attr('id', resultID);
-                        $(".button-profile-save-as").attr('id', resultID);
-                        $(".button-profile-submit").attr('id', resultID);
+                        $(".button-profile-save").attr('id', profileID);
+                        $(".button-profile-save-as").attr('id', profileID);
+                        $(".button-profile-submit").attr('id', profileID);
 
                         if (result["owner"] === keycloak.tokenParsed.preferred_username) {
-                            $("#info-panel-management").show();
-                            $("#info-panel-share-edit :not(:disabled)").remove();
-                            $("#info-panel-share-remaining").val(null);
-
+                            $(".profile-details-modal-meta-sharing").removeClass("hidden");
                             for (var i in result["licenses"]) {
                                 var license = result["licenses"][i];
-                                licenses[license["username"]] = license["remaining"];
 
-                                var $opt = $("<option>");
-                                $opt.val(license["username"]).text(license["username"]);
-                                $("#info-panel-share-edit").append($opt);
+                                var $opt = $('<li class="list-group-item">'
+                                        + '<p style="display: inline;">' + license["username"]
+                                        + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' use(s)</p></li>');
+                                $(".profile-details-modal-meta-sharing-list").append($opt);
                             }
 
                             $(".button-profile-delete").show();
+                            
+                            $(".profile-details-modal-meta-editable").show();
+                            if (result["editable"] === "1") {
+                                $("#profileEditable").prop("checked", true);
+                            }                            
                         } else {
+                            $(".profile-details-modal-meta-sharing").addClass("hidden");
                             var remaining = 1;
                             for (var i in result["licenses"]) {
                                 var license = result["licenses"][i];
@@ -320,16 +347,20 @@ function loadModals() {
                                     remaining = license["remaining"];
                                 }
                             }
-                            
-                            var metaText = "Profile owned by " + result["owner"] + ", ";
-                            if (remaining > 1 ) {
+
+                            var metaText = "Created by " + result["owner"] + ".<br>";
+                            if (remaining > 1) {
                                 metaText += remaining + " uses remaining.";
                             } else {
                                 metaText += remaining + " use remaining.";
-                            }                            
-                            $("#profile-license-metadata").text(metaText);
+                            }
+                            $(".profile-details-modal-meta-author").html(metaText);
                         }
+
                         prettyPrintInfo();
+
+                        $profModal.iziModal('close');
+                        $detailsModal.iziModal('open');
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
@@ -340,59 +371,113 @@ function loadModals() {
                 evt.preventDefault();
             });
 
+            $(".button-profile-license-new").click(function (evt) {
+                resetLicenseModal();
 
-            // Legacy modal listeners.    
-            $("#info-panel-share-edit").on("change", function () {
-                var username = $(this).val();
-                $("#info-panel-share-remaining").val(licenses[username]);
-            });
+                var $select = $('<select class="form-control" id="licenseUsername" style="width: 70%;margin-left: 25px;"></select>');
 
-            $("#info-panel-share-remaining").on("change", function () {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/licenses';
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users';
                 $.ajax({
                     url: apiUrl,
-                    type: 'PUT',
-                    data: JSON.stringify({
-                        "remaining": $("#info-panel-share-remaining").val(),
-                        "username": $("#info-panel-share-edit").val()
-                    }),
+                    type: 'GET',
                     contentType: "application/json; charset=utf-8",
-                    success: function () {
-                        if ($("#info-panel-share-remaining").val() <= 0) {
-                            var $opt = $("#info-panel-share-edit option[value='" + $("#info-panel-share-edit").val() + "']");
-                            $opt.remove();
-                            $("#info-panel-share-remaining").val(licenses[$("#info-panel-share-edit").val()]);
+                    success: function (result) {
+                        var $existingArr = $(".profile-details-modal-meta-sharing-list li p:first-child");
+                        for (var i in result) {
+                            var existing = false;
+                            var user = result[i][0];
+                            $existingArr.each(function (i, val) {
+                                if (val.innerText === user) {
+                                    existing = true;
+                                }
+                            });
+                            if (!existing) {
+                                var $opt = $("<option>");
+                                $opt.val(user).text(user);
+                                $select.append($opt);
+                            }
                         }
-                        
+                        $(".profile-license-modal-username-div").append($select);
+                        $(".button-license-add").removeClass("hidden");
+                        $licenseModal.iziModal('open');
                     }
                 });
+
+                evt.preventDefault();
             });
 
-            $(".button-profile-share-add").on("click", function (evt) {
+            $(".profile-details-modal-meta-sharing-list").on("click", "li", function (evt) {
+                resetLicenseModal();
+
+                $(".profile-license-modal-username-div").append('<p class="form-control-static">' + $(this).children()[0].innerHTML + '</p>');
+                $("#licenseRemaining").val($($(this).children()[1]).data("remaining"));
+
+                $(".button-license-update").removeClass("hidden");
+                $(".button-license-delete").removeClass("hidden");
+
+                $licenseModal.iziModal('open');
+
+                evt.preventDefault();
+            });
+
+            $(".button-license-add").on("click", function (evt) {
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/licenses';
                 $.ajax({
                     url: apiUrl,
                     type: 'POST',
                     data: JSON.stringify({
-                        "username": $("#info-panel-share-new-username").val(),
-                        "remaining": $("#info-panel-share-new-remaining").val()
+                        "username": $("#licenseUsername").val(),
+                        "remaining": $("#licenseRemaining").val(),
                     }),
                     contentType: "application/json; charset=utf-8",
-                    success: function () {                        
-                        var $opt = $("<option>");
-                        $opt.val($("#info-panel-share-new-username").val()).text($("#info-panel-share-new-username").val());
-                        $("#info-panel-share-edit").append($opt);
-                        licenses[$("#info-panel-share-new-username").val()] = $("#info-panel-share-new-remaining").val();
-                        
-                        $("#info-panel-share-remaining").val($("#info-panel-share-new-remaining").val());
-                        $("#info-panel-share-edit").val($("#info-panel-share-new-username").val());
-                        
-                        $("#info-panel-share-new-username").val(null);
-                        $("#info-panel-share-new-remaining").val(null);
+                    success: function () {
+                        reloadModals();
+                        $licenseModal.iziModal('close');
                     }
                 });
+
+                evt.preventDefault();
             });
 
+            $(".button-license-update").on("click", function (evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/licenses';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: JSON.stringify({
+                        "username": $(".profile-license-modal-username-div p")[0].innerHTML,
+                        "remaining": $("#licenseRemaining").val(),
+                    }),
+                    contentType: "application/json; charset=utf-8",
+                    success: function () {
+                        reloadModals();
+                        $licenseModal.iziModal('close');
+                    }
+                });
+
+                evt.preventDefault();
+            });
+
+            $(".button-license-delete").on("click", function (evt) {
+                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/licenses';
+                $.ajax({
+                    url: apiUrl,
+                    type: 'PUT',
+                    data: JSON.stringify({
+                        "username": $(".profile-license-modal-username-div p")[0].innerHTML,
+                        "remaining": "0"
+                    }),
+                    contentType: "application/json; charset=utf-8",
+                    success: function () {
+                        reloadModals();
+                        $licenseModal.iziModal('close');
+                    }
+                });
+
+                evt.preventDefault();
+            });
+
+            // Legacy modal listeners.  
             $(".button-profile-delete").on("click", function (evt) {
                 swal("Confirm deletion?", {
                     buttons: {
@@ -408,9 +493,9 @@ function loadModals() {
                             beforeSend: function (xhr) {
                                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             },
-                            success: function (result) {
-                                $("#profile-modal").modal("hide");
+                            success: function () {
                                 reloadModals();
+                                $detailsModal.iziModal('close');
                             },
                             error: function (textStatus, errorThrown) {
                                 console.log(textStatus);
@@ -545,14 +630,17 @@ function loadModals() {
             });
 
             $(".button-profile-save").on("click", function (evt) {
-                var profileString = $("#info-panel-text-area").val();
+                var profileString = $("#profile-details-modal-text-area").val();
                 if (isJSONString(profileString)) {
                     var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
 
                     $.ajax({
                         url: apiUrl,
                         type: 'PUT',
-                        data: profileString,
+                        data: JSON.stringify({
+                            "data" : profileString,
+                            "editable": $("#profileEditable").prop("checked")
+                        }),
                         contentType: "application/json; charset=utf-8",
                         dataType: "json",
                         beforeSend: function (xhr) {
@@ -580,17 +668,32 @@ function loadModals() {
 }
 function resetProfileModal() {
     clearTimeout(profileUpdateTimeout);
-    licenses = {};
+    $(".profile-details-modal-meta-sharing-list").empty();
     $("#info-panel-share-edit :not(:disabled)").remove();
     $("#info-panel-share-remaining").val(null);
-    $("#profile-license-metadata").text(null);
+    $profModal.removeData("profile-id");   
+    
+    $(".profile-details-modal-meta-editable").hide();
+    $("#profileEditable").prop("checked", false);
+
+    $("#profile-details-modal-meta-text").html(null);
+
+    $(".profile-details-modal-meta-name").text(null);
+    $(".profile-details-modal-meta-description").text(null);
+    $(".profile-details-modal-meta-author").text(null);
 
     $("#info-panel-management").hide();
-    $("#edit-profile-licenses").val("");
 
-    $("#profile-alias").val("");
+    $("#profile-alias").val(null);
 
     $(".button-profile-delete").hide();
+}
+
+function resetLicenseModal() {
+    $(".profile-license-modal-username-div").empty();
+    $("#licenseRemaining").val(null);
+
+    $licenseModal.find("button").addClass("hidden");
 }
 
 function reloadModals() {
@@ -689,6 +792,33 @@ function reloadModals() {
             }
         }
     });
+
+    if ($profModal.data("profile-id") && !$(".profile-details-modal-meta-sharing").hasClass("hidden")) {
+        var profileID = $profModal.data("profile-id");
+        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID;
+        $.ajax({
+            url: apiUrl,
+            type: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            success: function (result) {
+                $(".profile-details-modal-meta-sharing-list").empty();
+                for (var i in result["licenses"]) {
+                    var license = result["licenses"][i];
+
+                    var $opt = $('<li class="list-group-item">'
+                            + '<p style="display: inline;">' + license["username"]
+                            + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' use(s)</p></li>');
+                    $(".profile-details-modal-meta-sharing-list").append($opt);
+                }
+            },
+            error: function (textStatus, errorThrown) {
+                console.log(textStatus);
+                console.log(errorThrown);
+            }
+        });
+    }
 }
 
 function moderateModals() {

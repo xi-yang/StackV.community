@@ -26,6 +26,7 @@ var refUUID;
 var superState;
 var subState;
 var lastState;
+var intent;
 
 var $superState = $("#instance-superstate");
 var $subState = $("#instance-substate");
@@ -111,11 +112,24 @@ function updateData() {
             var owner = instance[3];
             superState = instance[4];
             lastState = instance[5];
+            intent = instance[6];
 
             $("#instance-alias").html(alias);
             $("#instance-uuid").html(refUUID);
             $("#instance-owner").html(owner);
             $("#instance-creation-time").html(creation);
+
+            if (intent.length === 0) {
+                $("#button-view-intent").hide();
+            } else {
+                $("#button-view-intent").show();
+
+                $("#details-intent-modal-text").text(intent);
+                var ugly = document.getElementById('details-intent-modal-text').value;
+                var obj = JSON.parse(ugly);
+                var pretty = JSON.stringify(obj, undefined, 4);
+                document.getElementById('details-intent-modal-text').value = pretty;
+            }
         }
     });
 

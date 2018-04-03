@@ -6,7 +6,7 @@
 	"EdgeCloud Connection Service": {
 		"Direct Connect ID": "?dxvif?",
 		"Direct Connect VLAN": "?dxvlan?",
-		"Onwer Account #": "?owner_acct?",
+		"Owner Account #": "?owner_acct?",
 		"Customer BGP - ASN #": "?asn?",
 		"Customer BGP - Local IP": "?customer_ip?",
 		"Customer BGP - Remote IP": "?amazon_ip?",

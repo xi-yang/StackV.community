@@ -2358,8 +2358,7 @@ public class WebResource {
 
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("SELECT type, creation_time, alias_name, super_state, last_state, username "
-                    + "FROM service_instance WHERE referenceUUID = ?");
+            prep = front_conn.prepareStatement("SELECT * FROM service_instance WHERE referenceUUID = ?");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
@@ -2370,6 +2369,7 @@ public class WebResource {
                 retList.add(rs.getString("username"));
                 retList.add(rs.getString("super_state"));
                 retList.add(rs.getString("last_state"));
+                retList.add(rs.getString("intent"));
             }
 
             return retList;
@@ -2670,14 +2670,16 @@ public class WebResource {
                 front_conn = factory.getConnection("frontend");
                 JSONObject profJSON = new JSONObject();
 
-                prep = front_conn.prepareStatement("SELECT wizard_json, owner, editable, authorized FROM service_wizard WHERE service_wizard_id = ?");
+                prep = front_conn.prepareStatement("SELECT * FROM service_wizard WHERE service_wizard_id = ?");
                 prep.setInt(1, wizardID);
                 rs = prep.executeQuery();
                 while (rs.next()) {
+                    profJSON.put("name", rs.getString("name"));
                     profJSON.put("wizard_json", rs.getString("wizard_json"));
                     profJSON.put("owner", rs.getString("owner"));
                     profJSON.put("editable", rs.getString("editable"));
                     profJSON.put("authorized", rs.getString("authorized"));
+                    profJSON.put("description", rs.getString("description"));
                 }
 
                 prep = front_conn.prepareStatement("SELECT DISTINCT username, remaining FROM service_wizard_licenses WHERE service_wizard_id = ?");
@@ -2721,21 +2723,30 @@ public class WebResource {
     @PUT
     @Path("/profile/{wizardID}/edit")
     @RolesAllowed("Profiles-W")
-    public void editProfile(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException {
+    public void editProfile(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         String method = "editProfile";
         try {
             if (verifyAccess("profiles", wizardID)) {
+                Object obj = parser.parse(inputString);
+                JSONObject inputJSON = (JSONObject) obj;
+                
+                String editable = "0";
+                if ((Boolean) inputJSON.get("editable")) {
+                    editable = "1";
+                }
+                
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
                 // TODO: Sanitize the input!
-                prep = front_conn.prepareStatement("UPDATE service_wizard SET wizard_json = ?, last_edited = ? WHERE service_wizard_id = ? ");
-                prep.setString(1, inputString);
-                prep.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
-                prep.setInt(3, wizardID);
+                prep = front_conn.prepareStatement("UPDATE service_wizard SET wizard_json = ?, editable = ?, last_edited = ? WHERE service_wizard_id = ? ");
+                prep.setString(1, (String) inputJSON.get("data"));
+                prep.setString(2, editable);
+                prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                prep.setInt(4, wizardID);
                 prep.executeUpdate();
             }
             logger.trace_end(method);
@@ -3317,6 +3328,7 @@ public class WebResource {
             }
         }
 
+        inputJSON.put("intent", inputJSON.toJSONString());
         inputJSON.put("data", retString);
 
         ServiceHandler instance = new ServiceHandler(inputJSON, token, refUUID, autoProceed);
