@@ -152,7 +152,10 @@ var alertConfig = {
 };
 var detailsConfig = {
     width: 800,
-    headerColor: '#85ac97'
+    headerColor: '#85ac97',
+    onClosed: function(){
+        $profModal.iziModal('open');
+    }
 };
 var licenseConfig = {
     width: 400,
@@ -174,7 +177,8 @@ function loadModals() {
     $detailsModal.html('<div style="height: 80vh;" class="profile-details-modal-body">' +
             '<div id="profile-details-modal-meta"><div><p class="profile-details-modal-meta-name"></p><p class="profile-details-modal-meta-description"></p><p class="profile-details-modal-meta-author"></p></div><hr>' +
             '<div style="padding-right:10px;" class="panel-group profile-details-modal-meta-sharing hidden"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#sharing-collapse" class="" aria-expanded="true">Profile Sharing</a></h4></div><div id="sharing-collapse" class="panel-collapse collapse in" aria-expanded="true" style=""><ul class="list-group profile-details-modal-meta-sharing-list"></ul><div class="panel-footer" style="height:85px;"><button class="button-profile-license-new btn-sm btn btn-default">Add New User</button><div><label class="profile-details-modal-meta-editable control-label">Allow Editing<input type="checkbox" style="margin-left: 10px;" id="profileEditable" checked="checked" value="on"></label></div></div></div></div></div>' +
-            '<div class="profile-details-modal-meta-buttons"><p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;padding-right: 50px;">Read Only</p><button style="display: none;" class="button-profile-delete btn btn-danger">Delete</button><button class="button-profile-save btn btn-default">Save</button><button class="button-profile-save-as btn btn-default">Save As</button><input id="profile-alias" placeholder="Instance Alias"><button class="button-profile-submit btn btn-default">Submit</button></div></div>' +
+            '<div style="padding-right:10px;" class="panel-group profile-details-modal-meta-saving"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#saving-collapse" class="" aria-expanded="true">Save As</a></h4></div><div id="saving-collapse" class="panel-collapse collapse" aria-expanded="false" style=""><form class="form-horizontal"><input type="text" class="form-control" id="savingProfileName" placeholder="Profile Name" style="/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */"><input type="text" class="form-control" id="savingProfileDescription" placeholder="Profile Description" style="/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */"></form><div class="panel-footer"><button class="button-profile-save-new btn-sm btn btn-default">Save New Profile</button></div></div></div></div>' +
+            '<div class="profile-details-modal-meta-buttons"><p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;padding-right: 50px;">Read Only</p><button style="display: none;" class="button-profile-delete btn btn-danger">Delete</button><button class="button-profile-save btn btn-default">Save</button><input id="profile-alias" placeholder="Instance Alias"><button class="button-profile-submit btn btn-default">Submit</button></div></div>' +
             '<div id="profile-details-modal-text"><textarea readonly id="profile-details-modal-text-area"></textarea></div>' +
             '</div>');
     $licenseModal.html('<div id="profile-license-modal-body" style="margin-bottom: 20px;padding: 15px;"><form class="form-horizontal"><div class="form-group profile-license-modal-username"><label class="col-sm-2 control-label">Username</label>' +
@@ -304,6 +308,7 @@ function loadModals() {
 
                         if (result["owner"] === keycloak.tokenParsed.preferred_username
                                 || result["editable"] === "1") {
+                            $(".profile-details-modal-meta-saving").removeClass("hidden");
                             $textArea.removeAttr("readonly");
                             $(".button-profile-save").removeAttr("disabled");
                             $(".button-profile-save-as").removeAttr("disabled");
@@ -510,7 +515,7 @@ function loadModals() {
 
             $(".button-profile-submit").on("click", function (evt) {
                 if ($("#profile-alias").val()) {
-                    var profile = JSON.parse($("#info-panel-text-area").val());
+                    var profile = JSON.parse($("#profile-details-modal-text-area").val());
                     profile["alias"] = $("#profile-alias").val();
 
                     var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
@@ -559,8 +564,7 @@ function loadModals() {
                     });
                     // reload top table and hide modal
                     reloadData();
-                    $("div#profile-modal").modal("hide");
-                    $("#info-panel").removeClass("active");
+                    $detailsModal.iziModal('close');
                     evt.preventDefault();
                 } else {
                     $("#profile-alias").addClass("invalid");
@@ -570,30 +574,16 @@ function loadModals() {
                 }
             });
 
-            // Hide the regular buttons and reveal the save as box
-            $("button.button-profile-save-as").on("click", function (evt) {
-                $("div.info-panel-regular-buttons").css("display", "none");
-                $("div.info-panel-save-as-description").css("display", "inline-block");
-            });
-
-            // Reveal the regular buttons and hide the save as boxes
-            $("button.button-profile-save-as-cancel").on("click", function (evt) {
-                $("div.info-panel-save-as-description").css("display", "none");
-                $("div.info-panel-regular-buttons").css("display", "inline-block");
-            });
-
-
             // After the user has put a new name and description for the new profile
-            $(".button-profile-save-as-confirm").on("click", function (evt) {
-                var profileString = $("#info-panel-text-area").val();
+            $(".button-profile-save-new").on("click", function (evt) {
+                var profileString = $("#profile-details-modal-text-area").val();
                 if (isJSONString(profileString)) {
                     var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
                     var data = {
-                        name: $("#new-profile-name").val(),
+                        name: $("#savingProfileName").val(),
                         username: keycloak.tokenParsed.preferred_username,
-                        description: $("#new-profile-description").val(),
-                        licenses: $("#new-profile-licenses").val(),
-                        data: JSON.parse($("#info-panel-text-area").val())
+                        description: $("#savingProfileDescription").val(),
+                        data: JSON.parse($("#profile-details-modal-text-area").val())
                     };
 
                     $.ajax({
@@ -606,14 +596,9 @@ function loadModals() {
                             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                         },
-                        success: function (result) {
-                            // revert to regular buttons and close modal
-                            $("input#new-profile-name").val("");
-                            $("input#new-profile-description").val("");
-                            $("div.info-panel-save-as-description").css("display", "none");
-                            $("div.info-panel-regular-buttons").css("display", "block");
-                            $("div#profile-modal").modal("hide");
-                            // reload table
+                        success: function () {
+                            reloadData();
+                            $detailsModal.iziModal('close');
                         },
                         error: function (textStatus, errorThrown) {
                             console.log(textStatus);
@@ -621,8 +606,6 @@ function loadModals() {
                         }
                     });
 
-                    // reload the bottom panel
-                    $("#info-panel").removeClass("active");
                     evt.preventDefault();
                 } else {
                     swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');
@@ -668,6 +651,7 @@ function loadModals() {
 }
 function resetProfileModal() {
     clearTimeout(profileUpdateTimeout);
+    $(".profile-details-modal-meta-saving").addClass("hidden");
     $(".profile-details-modal-meta-sharing-list").empty();
     $("#info-panel-share-edit :not(:disabled)").remove();
     $("#info-panel-share-remaining").val(null);

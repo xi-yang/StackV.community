@@ -90,6 +90,13 @@ tr.instance-row {
     color: #777;
 }
 
+#saving-collapse input {
+    width: 90%;
+    margin: auto;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
 #profile-details-modal-text {
     float: right;
     width: 70%;
