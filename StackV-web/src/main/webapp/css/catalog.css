@@ -28,6 +28,18 @@ button.button-service-create {
     top: -6px;
 }
 
+.button-profile-meta-edit {
+    position: absolute;
+    top: 19px;
+    left: calc(30% - 25px);
+    font-size: .9em;
+    margin: 0;
+    padding: 2px 3px;
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
 div.service-instance-panel {
     float: right;
 }
@@ -142,7 +154,7 @@ tr.instance-row {
     float: left;
     height: 100%;
     width: 30%;
-    padding: 15px 0px 10px 10px;
+    padding: 15px 3px 10px 10px;
     background: #f5f3f3;
     text-align: left;
 }
@@ -162,7 +174,8 @@ tr.instance-row {
 
 
 .profile-details-modal-meta-name {
-    font-size: 1.25em;  
+    font-size: 1.25em; 
+    margin-right: 22px;
 }
 .profile-details-modal-meta-author {
     font-size: 0.9em;  

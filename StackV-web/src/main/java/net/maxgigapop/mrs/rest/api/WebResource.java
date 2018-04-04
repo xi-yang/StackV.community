@@ -2757,6 +2757,51 @@ public class WebResource {
             commonsClose(front_conn, prep, rs);
         }
     }
+    
+    /**
+     * @api {put} /app/profile/:wizardID/meta Modify Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Modify the specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
+    @PUT
+    @Path("/profile/{wizardID}/meta")
+    @RolesAllowed("Profiles-W")
+    public void editProfileMetadata(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "editProfileMetadata";
+        try {
+            if (verifyAccess("profiles", wizardID)) {
+                Object obj = parser.parse(inputString);
+                JSONObject inputJSON = (JSONObject) obj;
+                logger.trace_start(method);
+                // Connect to the DB
+                front_conn = factory.getConnection("frontend");
+                // TODO: Sanitize the input!
+                prep = front_conn.prepareStatement("UPDATE service_wizard SET name = ?, description = ? WHERE service_wizard_id = ? ");
+                prep.setString(1, (String) inputJSON.get("name"));
+                prep.setString(2, (String) inputJSON.get("description"));
+                prep.setInt(3, wizardID);
+                prep.executeUpdate();
+            }
+            logger.trace_end(method);
+        } catch (SQLException ex) {
+            logger.catching("editProfile", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
 
     /**
      * @api {post} /app/profile/:wizardID/licenses Add Profile license

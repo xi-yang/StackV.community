@@ -162,6 +162,7 @@ var licenseConfig = {
     headerColor: '#e7c642'
 };
 
+var oldProfileName, oldProfileDescription;
 function loadModals() {
     // Initialize
     $catModal.html('<div class="catalog-modal-body">' +
@@ -175,7 +176,7 @@ function loadModals() {
             '<hr><button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button><button id="button-profile-blank-add" class="btn btn-default hidden" style="margin-left: 10px;">Add Blank Profile</button><input class="form-control" type="text" id="profileBlankName">' +
             '</div>');
     $detailsModal.html('<div style="height: 80vh;" class="profile-details-modal-body">' +
-            '<div id="profile-details-modal-meta"><div><p class="profile-details-modal-meta-name"></p><p class="profile-details-modal-meta-description"></p><p class="profile-details-modal-meta-author"></p></div><hr>' +
+            '<div id="profile-details-modal-meta"><div><div class="profile-details-modal-meta-name"><input class="form-control hidden" id="profileEditName" placeholder="New Name"><p class="profile-details-modal-meta-name-text"></p><button class="btn btn-default btn-xs button-profile-meta-edit"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></div><div class="profile-details-modal-meta-description"><textarea class="form-control hidden" id="profileEditDescription" placeholder="New Description"></textarea><p class="profile-details-modal-meta-description-text"></p></div><p class="profile-details-modal-meta-author"></p></div><hr>' +
             '<div style="padding-right:10px;" class="panel-group profile-details-modal-meta-sharing hidden"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#sharing-collapse" class="" aria-expanded="true">Profile Sharing</a></h4></div><div id="sharing-collapse" class="panel-collapse collapse in" aria-expanded="true" style=""><ul class="list-group profile-details-modal-meta-sharing-list"></ul><div class="panel-footer" style="height:85px;"><button class="button-profile-license-new btn-sm btn btn-default">Add New User</button><div><label class="profile-details-modal-meta-editable control-label">Allow Editing<input type="checkbox" style="margin-left: 10px;" id="profileEditable" checked="checked" value="on"></label></div></div></div></div></div>' +
             '<div style="padding-right:10px;" class="panel-group profile-details-modal-meta-saving"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#saving-collapse" class="" aria-expanded="true">Save As</a></h4></div><div id="saving-collapse" class="panel-collapse collapse" aria-expanded="false" style=""><form class="form-horizontal"><input type="text" class="form-control" id="savingProfileName" placeholder="Profile Name" style="/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */"><input type="text" class="form-control" id="savingProfileDescription" placeholder="Profile Description" style="/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */"></form><div class="panel-footer"><button class="button-profile-save-new btn-sm btn btn-default">Save New Profile</button></div></div></div></div>' +
             '<div class="profile-details-modal-meta-buttons"><p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;padding-right: 50px;">Read Only</p><button style="display: none;" class="button-profile-delete btn btn-danger">Delete</button><button class="button-profile-save btn btn-default">Save</button><input id="profile-alias" placeholder="Instance Alias"><button class="button-profile-submit btn btn-default">Submit</button></div></div>' +
@@ -294,7 +295,7 @@ function loadModals() {
             }
 
             $("#button-profile-blank-add").click(function () {
-                if ($(this).data("mode") === "submit") {
+                if ($("#profileBlankName").hasClass("opened")) {
                     // Save to DB
                     var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
                     $.ajax({
@@ -309,15 +310,13 @@ function loadModals() {
                             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                         },
                         success: function () {
-                            reloadModals();
                             $("#profileBlankName").removeClass("opened");
-                            $(this).removeData("mode");
-                            $(this).text("Add Blank Profile");
+                            $("#button-profile-blank-add").text("Add Blank Profile");
+                            reloadModals();
                         }
                     });
                 } else {
                     $("#profileBlankName").addClass("opened");
-                    $(this).attr("data-mode", "submit");
                     $(this).text("Submit");
                 }
             });
@@ -336,8 +335,8 @@ function loadModals() {
                         resetProfileModal();
 
                         var $textArea = $("#profile-details-modal-text-area");
-                        $(".profile-details-modal-meta-name").text(result["name"]);
-                        $(".profile-details-modal-meta-description").text(result["description"]);
+                        $(".profile-details-modal-meta-name-text").text(result["name"]);
+                        $(".profile-details-modal-meta-description-text").text(result["description"]);
 
                         if (result["owner"] === keycloak.tokenParsed.preferred_username
                                 || result["editable"] === "1") {
@@ -456,6 +455,56 @@ function loadModals() {
                 $licenseModal.iziModal('open');
 
                 evt.preventDefault();
+            });
+
+            $("#profile-details-modal-meta").on("click", ".button-profile-meta-edit", function () {
+                var $span = $(this.children[0]);
+                if ($span.hasClass("glyphicon-pencil")) {
+                    oldProfileName = $(".profile-details-modal-meta-name-text").text();
+                    oldProfileDescription = $(".profile-details-modal-meta-description-text").text();
+                    
+                    $("#profileEditName").val(oldProfileName);
+                    $("#profileEditDescription").val(oldProfileDescription);
+
+                    $(".profile-details-modal-meta-name-text").text(null);
+                    $(".profile-details-modal-meta-description-text").text(null);
+
+                    $("#profileEditName").removeClass("hidden");
+                    $("#profileEditDescription").removeClass("hidden");
+                    $span.removeClass("glyphicon-pencil").addClass("glyphicon-ok");
+                } else {
+                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/meta';
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'PUT',
+                        data: JSON.stringify({
+                            "name": $("#profileEditName").val(),
+                            "description": $("#profileEditDescription").val()
+                        }),
+                        contentType: "application/json; charset=utf-8",
+                        success: function () {
+                            $(".profile-details-modal-meta-name-text").text($("#profileEditName").val());
+                            $(".profile-details-modal-meta-description-text").text($("#profileEditDescription").val());
+
+                            $("#profileEditName").val(null);
+                            $("#profileEditDescription").val(null);
+
+                            $("#profileEditName").addClass("hidden");
+                            $("#profileEditDescription").addClass("hidden");
+                            $span.addClass("glyphicon-pencil").removeClass("glyphicon-ok");
+                        }, error: function () {
+                            $(".profile-details-modal-meta-name-text").text(oldProfileName);
+                            $(".profile-details-modal-meta-description-text").text(oldProfileDescription);
+
+                            $("#profileEditName").val(null);
+                            $("#profileEditDescription").val(null);
+
+                            $("#profileEditName").addClass("hidden");
+                            $("#profileEditDescription").addClass("hidden");
+                            $span.addClass("glyphicon-pencil").removeClass("glyphicon-ok");
+                        }
+                    });
+                }
             });
 
             $(".button-license-add").on("click", function (evt) {
@@ -702,8 +751,8 @@ function resetProfileModal() {
 
     $("#profile-details-modal-meta-text").html(null);
 
-    $(".profile-details-modal-meta-name").text(null);
-    $(".profile-details-modal-meta-description").text(null);
+    $(".profile-details-modal-meta-name-text").text(null);
+    $(".profile-details-modal-meta-description-text").text(null);
     $(".profile-details-modal-meta-author").text(null);
 
     $("#info-panel-management").hide();
@@ -721,7 +770,9 @@ function resetLicenseModal() {
 }
 
 function reloadModals() {
-    $("#button-blank-profile").addClass("hidden");
+    if (!keycloak.tokenParsed.resource_access.StackV.roles.includes("Profiles-W")) {
+        $("#button-profile-blank-add").addClass("hidden");
+    }
 
     // Load service metadata. 
     catCount = 0, profCount = 0;
@@ -819,6 +870,7 @@ function reloadModals() {
         }
     });
 
+    // Load open sharing details.
     if ($profModal.data("profile-id") && !$(".profile-details-modal-meta-sharing").hasClass("hidden")) {
         var profileID = $profModal.data("profile-id");
         var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID;
