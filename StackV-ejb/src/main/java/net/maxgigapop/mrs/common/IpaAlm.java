@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Iterator;
@@ -31,8 +32,8 @@ public class IpaAlm {
     
     KcTokenHandler kcTokenHandler = new KcTokenHandler();
     
-    
-    String ipaRestBaseUrl = "https://localhost:8443/StackV-web/restapi/app/acl/ipa/request";
+    // using HTTP not HTTPS due to SSL cert checking
+    String ipaRestBaseUrl = "http://localhost:8080/StackV-web/restapi/app/acl/ipa/request";
     
     // NEED THE KEYCLOAK AUTHORIZATION TOKEN IN THE HEADERS
     String kcToken;
@@ -44,6 +45,11 @@ public class IpaAlm {
         ipaLogin();
     }
     
+    /**
+     * 
+     * @param username - KeyCloak username
+     * @param passwd - KeyCloak password
+     */
     public IpaAlm(String username, String passwd) {
         kcToken = kcTokenHandler.setAndGetToken(username, passwd);
         ipaLogin();
@@ -52,10 +58,12 @@ public class IpaAlm {
    
     private boolean ipaLogin() {        
         boolean loggedIn = false;
-        String ipaLoginUrl = "https://localhost:8443/StackV-web/restapi/app/acl/ipa/login";
+        // using HTTP not HTTPS due to SSL cert checking
+        String ipaLoginUrl = "http://localhost:8080/StackV-web/restapi/app/acl/ipa/login";
         try {
             URL ipaurl = new URL(ipaLoginUrl);
-            HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+            //HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+            HttpURLConnection conn = (HttpURLConnection) ipaurl.openConnection();
             conn.setRequestProperty("Authorization", "bearer " + kcToken);
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
@@ -94,7 +102,8 @@ public class IpaAlm {
         
         try {
             URL ipaurl = new URL(ipaRestBaseUrl);
-            HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+            // HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+            HttpURLConnection conn = (HttpURLConnection) ipaurl.openConnection();
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestProperty("Authorization", "bearer " + kcToken);
@@ -251,8 +260,7 @@ public class IpaAlm {
                     }
                 }
             }
-        }
-                
+        }    
         return addr;
     }
     

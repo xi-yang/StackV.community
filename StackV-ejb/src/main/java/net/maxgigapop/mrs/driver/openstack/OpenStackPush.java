@@ -2564,6 +2564,7 @@ public class OpenStackPush {
                
         IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!");
         String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;
+        System.out.println("****OPENSTACK PUSH - CLIENTNAME: " + clientName);
         String ipPoolType = "ipv4";
         String macPoolType = "mac";
         String poolName = ""; // re-assigned based on each instance
@@ -2650,16 +2651,17 @@ public class OpenStackPush {
             // String almIp = null;
             if (almIpResultSet.hasNext()) {                                
                 String queryIp = almIpResultSet.next().get("ip").toString();
-                System.out.println("OPENSTACK PUSH - IP QUERY VAR: " + queryIp);
+                System.out.println("***OPENSTACK PUSH - IP QUERY VAR: " + queryIp);
                 
                 if (queryIp.contains(":")) {
                     // if the queried information has a colon indicating the a potential specified_address
                     // then attempt to the extract the address while checking if there is an explicit
                     // mention of "suggest+any"
+                    System.out.println("***OPENSTACK PUSH - IP QUERY VAR HAS COLON ");
                     
                     String[] splitQuery = queryIp.split(":");
-                    String[] poolInfo = splitQuery[0].split("+");
-                    String[] addrInfo = splitQuery[1].split("+");
+                    String[] poolInfo = splitQuery[0].split("\\+");
+                    String[] addrInfo = splitQuery[1].split("\\+");
                     
                     poolName = poolInfo[1];                    
                     
@@ -2667,7 +2669,7 @@ public class OpenStackPush {
                     if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
                         // explicit mention of "any"
                         // query the IPA ALM manager for an address  
-                        System.out.println("OPENSTACK PUSH - POOLNAME: " + poolName);
+                        System.out.println("****OPENSTACK PUSH - POOLNAME: " + poolName);
                         ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType);
                     } else {
                         // get the specifed address
@@ -2675,9 +2677,10 @@ public class OpenStackPush {
                     }                    
                 } else {
                     // the queried information should look like this format: pool+pool_name
-                    String[] poolInfo = queryIp.split("+");                    
+                    String[] poolInfo = queryIp.split("\\+");                  
                     // query the IPA ALM manager for an address  
                     System.out.println("OPENSTACK PUSH - POOLNAME: " + poolInfo[1]);
+                    System.out.println("***OPENSTACK PUSH - IP QUERY VAR DOES NOT HAVE COLON ");
                     ip = ipaAlm.leaseAddr(clientName, poolInfo[1], ipPoolType);
                 }                            
             }
@@ -2700,8 +2703,8 @@ public class OpenStackPush {
                     // mention of "suggest+any"
                     
                     String[] splitQuery = queryIp.split(":");
-                    String[] poolInfo = splitQuery[0].split("+");
-                    String[] addrInfo = splitQuery[1].split("+");
+                    String[] poolInfo = splitQuery[0].split("\\+");
+                    String[] addrInfo = splitQuery[1].split("\\+");
                     
                     poolName = poolInfo[1];   
 
@@ -2715,7 +2718,7 @@ public class OpenStackPush {
                     }                    
                 } else {
                     // the queried information should look like this format: pool+pool_name
-                    String[] poolInfo = queryIp.split("+");
+                    String[] poolInfo = queryIp.split("\\+");
                     // query the IPA ALM manager for an address
                     mac = ipaAlm.leaseAddr(clientName, poolInfo[1], macPoolType);
                 }
