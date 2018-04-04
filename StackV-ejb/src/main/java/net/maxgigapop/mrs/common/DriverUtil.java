@@ -31,7 +31,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
 import org.apache.commons.codec.binary.Base64;
 
 /**
@@ -39,12 +41,19 @@ import org.apache.commons.codec.binary.Base64;
  * @author xyang
  */
 public class DriverUtil {
-    private static final Logger logger = Logger.getLogger(DriverUtil.class.getName());
-    
-    public static String[] executeHttpMethod(String username, String password, HttpURLConnection conn, String method, String body) throws IOException {
-        if (System.getProperty("jsse.enableSNIExtension") == null || !System.getProperty("jsse.enableSNIExtension").equals("false")) {
-            System.setProperty("jsse.enableSNIExtension", "false");
+    static private final Logger logger = Logger.getLogger(DriverUtil.class.getName());
+
+    static public class SSLSkipSNIHostnameVerifier implements HostnameVerifier {
+        public SSLSkipSNIHostnameVerifier() {
         }
+        @Override
+        public boolean verify(String hostname, SSLSession session) {
+            // Return true so that we implicitly trust hostname mismatch
+            return true;
+        }
+    }
+
+    public static String[] executeHttpMethod(String username, String password, HttpURLConnection conn, String method, String body) throws IOException {
         conn.setRequestMethod(method);
         if (username != null && !username.isEmpty()) {
             String userPassword=username+":"+password;
@@ -85,6 +94,7 @@ public class DriverUtil {
         HttpURLConnection conn;
         if (url.toString().startsWith("https:")) {
             conn = (HttpsURLConnection) url.openConnection();
+            ((HttpsURLConnection)conn).setHostnameVerifier(new SSLSkipSNIHostnameVerifier());
         } else {
             conn = (HttpURLConnection) url.openConnection();
         }

@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, swal */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, lastState, verificationState */
 // Tweens
 var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
     paused: true, top: "0px", opacity: "1", display: "block"});
@@ -30,6 +30,23 @@ var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut
     paused: true, right: "0px", opacity: "1", display: "block"});
 
 var view = "center";
+var $intentModal = $("#details-intent-modal");
+var $loadingModal = $("#loading-modal");
+
+var intentConfig = {
+    width: 750
+};
+var loadingConfig = {
+    title: "Loading",
+    icon: 'icon-power_settings_new',
+    headerColor: '#229d43',
+    width: 300,
+    timeout: 3000,
+    timeoutProgressbar: true,
+    transitionIn: 'fadeInDown',
+    transitionOut: 'fadeOutDown',
+    pauseOnHover: false
+};
 
 Mousetrap.bind({
     'shift+left': function () {
@@ -142,6 +159,14 @@ function loadDetailsNavbar() {
 /* DETAILS */
 
 function loadDetails() {
+    $intentModal.html('<textarea readonly id="details-intent-modal-text"></textarea>');
+    $intentModal.iziModal(intentConfig);
+    $("#button-view-intent").click(function () {
+        $intentModal.iziModal('open');
+    });
+    
+    $loadingModal.iziModal(loadingConfig);    
+    
     var uuid = sessionStorage.getItem("instance-uuid");
     startDetailsEngine(uuid);
 

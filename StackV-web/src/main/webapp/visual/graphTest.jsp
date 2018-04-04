@@ -820,8 +820,9 @@
                                     xhr.setRequestHeader("Authorization", "bearer " + token);
                                 },
                                 success: function (result) {
-                                    for (i = 0; i < result.length; i++) {
-                                        var instance = result.data[i];
+                                    result = result.data;
+                                    for (var i = 0; i < result.length; i++) {
+                                        var instance = result[i];
 
                                         var row = document.createElement("tr");
                                         row.setAttribute("id", instance["referenceUUID"]);

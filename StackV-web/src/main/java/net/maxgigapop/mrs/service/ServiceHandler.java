@@ -34,7 +34,6 @@ import java.sql.Timestamp;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
-import net.maxgigapop.mrs.rest.api.WebResource;
 import net.maxgigapop.mrs.rest.api.JNDIFactory;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import static net.maxgigapop.mrs.rest.api.WebResource.SuperState;
@@ -54,6 +53,7 @@ public class ServiceHandler {
     String owner;
     String alias;
     String lastState = "INIT";
+    String intent;
 
     public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
         token = initToken;
@@ -82,6 +82,7 @@ public class ServiceHandler {
             type = (String) inputJSON.get("service");
             alias = (String) inputJSON.get("alias");
             owner = (String) inputJSON.get("username");
+            intent = (String) inputJSON.get("intent");
 
             String delta = (String) inputJSON.get("data");
             String deltaUUID = (String) inputJSON.get("uuid");
@@ -105,7 +106,7 @@ public class ServiceHandler {
 
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`, `last_state`) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    + "(`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`, `last_state`, `intent`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             prep.setString(1, type);
             prep.setString(2, owner);
             prep.setTimestamp(3, timeStamp);
@@ -113,6 +114,7 @@ public class ServiceHandler {
             prep.setString(5, alias);
             prep.setString(6, "CREATE");
             prep.setString(7, lastState);
+            prep.setString(8, intent);
             prep.executeUpdate();
 
             superState = SuperState.CREATE;
@@ -180,6 +182,7 @@ public class ServiceHandler {
                 superState = SuperState.valueOf(rs1.getString("super_state"));
                 type = rs1.getString("type");
                 lastState = rs1.getString("last_state");
+                intent = rs1.getString("intent");
             }
         } catch (SQLException ex) {
             logger.catching(method, ex);

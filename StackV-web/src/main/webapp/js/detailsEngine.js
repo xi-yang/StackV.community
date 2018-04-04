@@ -20,12 +20,13 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-/* global baseUrl, keycloak, swal */
+/* global baseUrl, keycloak, $loadingModal */
 
 var refUUID;
 var superState;
 var subState;
 var lastState;
+var intent;
 
 var $superState = $("#instance-superstate");
 var $subState = $("#instance-substate");
@@ -111,11 +112,24 @@ function updateData() {
             var owner = instance[3];
             superState = instance[4];
             lastState = instance[5];
+            intent = instance[6];
 
             $("#instance-alias").html(alias);
             $("#instance-uuid").html(refUUID);
             $("#instance-owner").html(owner);
             $("#instance-creation-time").html(creation);
+
+            if (intent.length === 0) {
+                $("#button-view-intent").hide();
+            } else {
+                $("#button-view-intent").show();
+
+                $("#details-intent-modal-text").text(intent);
+                var ugly = document.getElementById('details-intent-modal-text').value;
+                var obj = JSON.parse(ugly);
+                var pretty = JSON.stringify(obj, undefined, 4);
+                document.getElementById('details-intent-modal-text').value = pretty;
+            }
         }
     });
 
@@ -209,6 +223,8 @@ function attachListeners() {
         pauseRefresh();
 
         var command = this.id;
+        var $button = $(this);
+        var mode = $(this).data("mode");
         var apiUrl = baseUrl + '/StackV-web/restapi/service/' + refUUID + '/status';
         $.ajax({
             url: apiUrl,
@@ -225,30 +241,25 @@ function attachListeners() {
                     reloadData();
                 } else {
                     if ((command === "delete") || (command === "force_delete")) {
-                        swal("Confirm deletion?", {
-                            buttons: {
-                                cancel: "Cancel",
-                                delete: {text: "Delete", value: true}
-                            }
-                        }).then((value) => {
-                            if (value) {
-                                executeCommand(command);
-                            } else {
-                                setTimeout(function () {
-                                    $(".instance-command").attr('disabled', false);
-                                    resumeRefresh();
-                                    reloadData();
-                                }, 250);
-                            }
-                        });
-                    } else {
-                        swal({
-                            buttons: false,
-                            title: "Loading!",
-                            closeOnEsc: false,
-                            timer: 3000
-                        });
+                        if (mode === "confirm") {
+                            executeCommand(command);
+                        } else {
+                            $button.attr("data-mode", "confirm");
+                            $button.text("Confirm Deletion");
+                            $button.addClass("btn-danger").removeClass("btn-default");
+                            $(".instance-command").attr('disabled', false);
+                            
+                            setTimeout(function () {
+                                $button.removeAttr("data-mode");
+                                $button.text("Delete");
+                                $button.removeClass("btn-danger").addClass("btn-default");
 
+                                resumeRefresh();
+                                reloadData();
+                            }, 3000);
+                        }
+                    } else {
+                        $loadingModal.iziModal('open');
                         executeCommand(command);
                     }
                 }

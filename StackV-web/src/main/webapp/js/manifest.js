@@ -15,6 +15,9 @@ function loadManifest() {
                 case "Dynamic Network Connection":
                     subloadManifest("dnc-manifest-template.xml");
                     break;
+                case "EdgeCloud Connection":
+                    subloadManifest("ecc-manifest-template.xml");
+                    break;
                 case "Virtual Cloud Network":
                     $.get({
                         url: "/StackV-web/restapi/service/property/" + uuid + "/host/",
@@ -100,11 +103,11 @@ function parseMap(map, container, container_type, base) {
                 var n3 = $("<ul class=\"manifest-list\" style=\"padding-left:.5em;\"></ul>");
                 n1.append(n3);
                 for (var i in map[key]) {
-                    if ((typeof map[key[i]]) === "string") {
-                        string += "<li><b> " + i + "</b>: " + map[key][i] + "</li>";
+                    if ((typeof map[key]) === "string") {
+                        string += "<li><b> " + map[key][i] + "</b>: " + map[key][i] + "</li>";
                         container.append(string);
                         string = "";
-                    } else if (map[key][i].constructor === Array) {
+                    } else if (map[key].constructor === Array) {
                         parseMap(map[key][i], n3, "list", base);
                     }
                 }

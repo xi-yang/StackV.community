@@ -28,6 +28,18 @@ button.button-service-create {
     top: -6px;
 }
 
+.button-profile-meta-edit {
+    position: absolute;
+    top: 19px;
+    left: calc(30% - 25px);
+    font-size: .9em;
+    margin: 0;
+    padding: 2px 3px;
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
 div.service-instance-panel {
     float: right;
 }
@@ -84,18 +96,94 @@ tr.instance-row {
     overflow: scroll;
 }
 
+#profileBlankName {
+    display: inline;
+    width: 40%;
+    transform: scaleX(0);
+    opacity: 0;
+    transition: opacity 1s, transform 1s;
+    transform-origin: 0 0;
+    margin-left: 5px;
+}
+#profileBlankName.opened {
+    transform: scaleX(1) !important;
+    opacity: 1 !important;
+}
+
 #profile-license-metadata {
     display: block;    
     text-align: left;   
     color: #777;
 }
 
+#saving-collapse input, #saving-collapse textarea {
+    width: 90%;
+    margin: auto;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#profile-details-modal-text {
+    float: right;
+    width: 70%;
+    height: 100%;
+    padding: 15px 10px;
+}
+#profile-details-modal-text-area {
+    width: 100%;
+    height: 100%;
+    padding: 7px;
+}
+
+#profile-details-modal-text-area[readonly] {
+    background: #efefef;
+}
+
+.profile-details-modal-meta-sharing-list li {
+    cursor: pointer;
+}
+.profile-details-modal-meta-editable {
+    float: left;
+    margin: 10px 0 0 5px;
+}
+
+#profile-details-modal-meta {
+    box-shadow: 5px 0px 20px rgba(0, 0, 0, 0.15), 
+        3px 0px 19px 0px rgba(0, 0, 0, 0.2), 
+        inset -3px 0px 20px rgba(0, 0, 0, 0.12);
+    float: left;
+    height: 100%;
+    width: 30%;
+    padding: 15px 3px 10px 10px;
+    background: #f5f3f3;
+    text-align: left;
+}
+
+#profile-details-modal-meta-div {
+    float: left;
+    padding: 3px;
+}
+
+.profile-details-modal-meta-buttons {
+    position: absolute;
+    bottom: 10px;
+    width: 30%;
+    left: 0;
+    padding: 10px;
+}
+
+
+.profile-details-modal-meta-name {
+    font-size: 1.25em; 
+    margin-right: 22px;
+}
+.profile-details-modal-meta-author {
+    font-size: 0.9em;  
+    color: #777777;
+}
 
 
 /*Make content within tab scrollable*/
-div.tab-content {
-    overflow-y: auto;
-}
 
 div#catalog-panel {
     padding: 10px 10px 0 10px;
@@ -130,44 +218,31 @@ div#catalog-tab-content {
     border-left: 1px solid white;
 }
 
-.edit-profile-username {
-    padding: 0px 5px 0px 10px;    
-    border-radius: 20px 0 0 20px;
+#profile-details-modal-meta-sharing-list {
+    max-height: 30vh;
+    overflow: auto;
 }
-.edit-profile-username#edit-profile-new {
-
-}
-#info-panel-share-remaining {
-    padding: 0 5px 0 5px;
-    width: 70px;
-    border-radius: 0 20px 20px 0;
+.profile-details-modal-meta-buttons button {
+    margin-right: 5px;
 }
 
-
-
-/*Don't show these buttons on open - only trigger when click on save as*/
-div.info-panel-save-as-description {
-    display: none;
+.profile-license-modal-username-div p {
+    float: left;
+    margin-left: 25px;
 }
-div#profile-modal div.info-panel-save-as-description input {
-    font-weight: 400;
-}
-div#profile-modal textarea#info-panel-text-area {
-    width: 100%;
-    min-height: 50vh;
-}
-
-#info-panel-text-area[readonly] {
-    background: #eee;
+#profile-license-modal button {
+    margin: 0px 5px;
 }
 
 #profile-alias {
-    margin-bottom: 10px;
+    margin-top: 10px;
     float: left;
     border-radius: 2px;
     padding: 0px 5px;
-
+    width: 100%;
 }
+
+
 #profile-alias.invalid {
     border: 1px solid red;
     color: red;

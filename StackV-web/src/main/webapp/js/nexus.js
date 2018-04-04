@@ -246,10 +246,10 @@ function verifyPageRoles() {
 }
 
 function prettyPrintInfo() {
-    var ugly = document.getElementById('info-panel-text-area').value;
+    var ugly = document.getElementById('profile-details-modal-text-area').value;
     var obj = JSON.parse(ugly);
     var pretty = JSON.stringify(obj, undefined, 4);
-    document.getElementById('info-panel-text-area').value = pretty;
+    document.getElementById('profile-details-modal-text-area').value = pretty;
 }
 
 //Select Function

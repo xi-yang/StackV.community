@@ -43,6 +43,12 @@ tr.button-row {
     height: 51px;
 }
 
+#details-intent-modal-text {
+    width: 95%;
+    margin: 10px;
+    height: 80vh;
+}
+
 /* 
     Visualization tab styling 
 */
@@ -67,7 +73,7 @@ a.viz-hdr{
 
 .viz-tab-content {
     height: 90%;
-    margin-bottom: 50px;    
+    margin-bottom: 10px;    
 }
 
 .expanded-viz-div {
