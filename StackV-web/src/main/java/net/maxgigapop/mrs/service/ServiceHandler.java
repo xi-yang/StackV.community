@@ -83,7 +83,8 @@ public class ServiceHandler {
             alias = (String) inputJSON.get("alias");
             owner = (String) inputJSON.get("username");
             intent = (String) inputJSON.get("intent");
-
+            
+            String profileID = (String) inputJSON.get("profileID");
             String delta = (String) inputJSON.get("data");
             String deltaUUID = (String) inputJSON.get("uuid");
 
@@ -106,7 +107,7 @@ public class ServiceHandler {
 
             // Install Instance into DB.
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`, `last_state`, `intent`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                    + "(`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`, `last_state`, `intent`, `service_wizard_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
             prep.setString(1, type);
             prep.setString(2, owner);
             prep.setTimestamp(3, timeStamp);
@@ -115,6 +116,7 @@ public class ServiceHandler {
             prep.setString(6, "CREATE");
             prep.setString(7, lastState);
             prep.setString(8, intent);
+            prep.setString(9, profileID);
             prep.executeUpdate();
 
             superState = SuperState.CREATE;

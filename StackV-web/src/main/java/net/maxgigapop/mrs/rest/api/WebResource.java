@@ -2666,7 +2666,6 @@ public class WebResource {
         try {
             if (verifyAccess("profiles", wizardID)) {
                 String method = "getProfile";
-                logger.trace_start(method);
                 front_conn = factory.getConnection("frontend");
                 JSONObject profJSON = new JSONObject();
 
@@ -2682,19 +2681,19 @@ public class WebResource {
                     profJSON.put("description", rs.getString("description"));
                 }
 
-                prep = front_conn.prepareStatement("SELECT DISTINCT username, remaining FROM service_wizard_licenses WHERE service_wizard_id = ?");
+                prep = front_conn.prepareStatement("SELECT DISTINCT * FROM service_wizard_licenses WHERE service_wizard_id = ?");
                 prep.setInt(1, wizardID);
                 rs = prep.executeQuery();
                 JSONArray licenseJSON = new JSONArray();
                 while (rs.next()) {
                     JSONObject obj = new JSONObject();
                     obj.put("remaining", rs.getInt("remaining"));
+                    obj.put("type", rs.getString("type"));
                     obj.put("username", rs.getString("username"));
                     licenseJSON.add(obj);
                 }
                 profJSON.put("licenses", licenseJSON);
 
-                logger.trace_end(method);
                 return profJSON.toJSONString();
             }
             return "";
@@ -2732,12 +2731,12 @@ public class WebResource {
             if (verifyAccess("profiles", wizardID)) {
                 Object obj = parser.parse(inputString);
                 JSONObject inputJSON = (JSONObject) obj;
-                
+
                 String editable = "0";
                 if ((Boolean) inputJSON.get("editable")) {
                     editable = "1";
                 }
-                
+
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
@@ -2757,7 +2756,7 @@ public class WebResource {
             commonsClose(front_conn, prep, rs);
         }
     }
-    
+
     /**
      * @api {put} /app/profile/:wizardID/meta Modify Profile
      * @apiVersion 1.0.0
@@ -2834,10 +2833,11 @@ public class WebResource {
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
-                prep = front_conn.prepareStatement("INSERT INTO service_wizard_licenses (service_wizard_id, remaining, username) VALUES (?,?,?)");
+                prep = front_conn.prepareStatement("INSERT INTO service_wizard_licenses (service_wizard_id, type, remaining, username) VALUES (?,?,?,?)");
                 prep.setInt(1, wizardID);
-                prep.setInt(2, Integer.parseInt((String) inputJSON.get("remaining")));
-                prep.setString(3, (String) inputJSON.get("username"));
+                prep.setString(2, (String) inputJSON.get("type"));
+                prep.setInt(3, Integer.parseInt((String) inputJSON.get("remaining")));
+                prep.setString(4, (String) inputJSON.get("username"));
                 prep.executeUpdate();
             }
             logger.trace_end(method);
@@ -2886,10 +2886,11 @@ public class WebResource {
                     prep.setString(2, (String) inputJSON.get("username"));
                     prep.executeUpdate();
                 } else {
-                    prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE service_wizard_id = ? AND username = ?");
+                    prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ?, type = ? WHERE service_wizard_id = ? AND username = ?");
                     prep.setInt(1, Integer.parseInt((String) inputJSON.get("remaining")));
-                    prep.setInt(2, wizardID);
-                    prep.setString(3, (String) inputJSON.get("username"));
+                    prep.setString(2, (String) inputJSON.get("type"));
+                    prep.setInt(3, wizardID);
+                    prep.setString(4, (String) inputJSON.get("username"));
                     prep.executeUpdate();
                 }
             }
@@ -2900,6 +2901,46 @@ public class WebResource {
         } finally {
             commonsClose(front_conn, prep, rs);
         }
+    }
+
+    /**
+     * @api {get} /app/profile/:wizardID/uses Get license uses
+     * @apiVersion 1.0.0
+     * @apiDescription
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     *
+     */
+    @GET
+    @Path("/profile/{wizardID}/uses")
+    @Consumes(value = {"application/json"})
+    @RolesAllowed("Profiles-R")
+    public String getProfileLicenseUsage(@PathParam("wizardID") int wizardID) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        String method = "getProfileLicenseUsage";
+        try {
+            if (verifyAccess("profiles", wizardID)) {
+                // Connect to the DB
+                front_conn = factory.getConnection("frontend");
+
+                prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_instance WHERE service_wizard_id = ?");
+                prep.setInt(1, wizardID);
+                prep.executeQuery();
+
+                rs = prep.executeQuery();
+                rs.next();
+                return rs.getString(1);
+            }
+        } catch (SQLException ex) {
+            logger.catching(method, ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+        return null;
     }
 
     /**
@@ -3054,10 +3095,11 @@ public class WebResource {
             Set<String> roleSet = accessToken.getResourceAccess("StackV").getRoles();
             String username = accessToken.getPreferredUsername();
 
+            String profileID = (String) inputJSON.get("profileID");
             front_conn = factory.getConnection("frontend");
             int profileAuthorized = 0;
             prep = front_conn.prepareStatement("SELECT authorized FROM service_wizard WHERE service_wizard_id = ?");
-            prep.setString(1, (String) inputJSON.get("profileID"));
+            prep.setString(1, profileID);
             rs = prep.executeQuery();
             while (rs.next()) {
                 profileAuthorized = rs.getInt(1);
@@ -3538,9 +3580,8 @@ public class WebResource {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        String method = "verifyOwnership";
+        String method = "verifyAccess";
         try {
-            logger.trace_start(method);
             front_conn = factory.getConnection("frontend");
 
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
@@ -3588,9 +3629,8 @@ public class WebResource {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        String method = "verifyOwnership";
+        String method = "verifyAccess";
         try {
-            logger.trace_start(method);
             front_conn = factory.getConnection("frontend");
 
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class

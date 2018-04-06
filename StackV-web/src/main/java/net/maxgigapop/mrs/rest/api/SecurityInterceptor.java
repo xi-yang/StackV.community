@@ -52,8 +52,6 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     private final Logger logger = LogManager.getLogger(SecurityInterceptor.class.getName());
     private static final ServerResponse ACCESS_DENIED = new ServerResponse("Access denied for this resource.\n", 401, new Headers<Object>());
     private static final ServerResponse SERVER_ERROR = new ServerResponse("INTERNAL SERVER ERROR\n", 500, new Headers<Object>());
-    private final String front_db_user = "front_view";
-    private final String front_db_pass = "frontuser";
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
@@ -70,7 +68,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
 
             // Ban lists
             List<String> freeRoles = Arrays.asList("Free", "Logging", "Panels", "Labels");
-            List<String> quietRoles = Arrays.asList("");
+            List<String> quietRoles = Arrays.asList("Profiles-R");
 
             if (rolesAnnotation == null) {
                 role = "Free";
@@ -81,6 +79,11 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             ThreadContext.put("username", accessToken.getPreferredUsername());
             ThreadContext.put("method", method);
             ThreadContext.put("role", role);
+            roleSet = accessToken.getResourceAccess("StackV").getRoles();
+
+            if (roleSet.contains(role) && (quietRoles.contains(role) || method.equals("subStatus"))) {
+                return;
+            }
 
             logger.trace("API Request Received: {}.", uri.getPath());
 
@@ -89,7 +92,6 @@ public class SecurityInterceptor implements ContainerRequestFilter {
                 return;
             }
 
-            roleSet = accessToken.getResourceAccess("StackV").getRoles();
             if (!accessToken.isActive()) {
                 logger.warn("Token is not active.");
             }
@@ -102,10 +104,6 @@ public class SecurityInterceptor implements ContainerRequestFilter {
                 logger.warn("Denied.");
             }
 
-            if (quietRoles.contains(role) || method.equals("subStatus")) {
-                logger.trace("Authenticated Quietly.");
-                return;
-            }
             logger.info("Authenticated.");
         }
     }
