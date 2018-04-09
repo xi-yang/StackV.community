@@ -64,6 +64,7 @@ public class SenseServiceQuery {
                             }
                             JSONObject jsonBwProfile = new JSONObject();
                             jsonBwProfile.put("qos_class", "anyAvailable");
+                            jsonBwProfile.put("capacity", "1");
                             jsonConn.put("bandwidth", jsonBwProfile);
                         }
                     }
