@@ -39,12 +39,15 @@ import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import static net.maxgigapop.mrs.rest.api.WebResource.SuperState;
 import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 public class ServiceHandler {
 
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceHandler");
-    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";    
+    private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
     private final JNDIFactory factory = new JNDIFactory();
+    JSONParser parser = new JSONParser();
 
     TokenHandler token;
     public String refUUID;
@@ -55,7 +58,7 @@ public class ServiceHandler {
     String lastState = "INIT";
     String intent;
 
-    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
+    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException, ParseException {
         token = initToken;
 
         createInstance(input, refUUID, autoProceed);
@@ -70,7 +73,7 @@ public class ServiceHandler {
     }
 
     // INIT METHODS
-    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
+    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException, ParseException {
         String method = "createInstance";
         logger.refuuid(refUUID);
         Connection front_conn = null;
@@ -83,7 +86,17 @@ public class ServiceHandler {
             alias = (String) inputJSON.get("alias");
             owner = (String) inputJSON.get("username");
             intent = (String) inputJSON.get("intent");
-            
+
+            Object obj = parser.parse(intent);
+            JSONObject intentJSON = (JSONObject) obj;            
+            intentJSON.remove("proceed");
+            intentJSON.remove("profileID");
+            intentJSON.remove("host");
+            intentJSON.remove("alias");
+            intentJSON.remove("uuid");
+            intentJSON.remove("username");
+            String cleanIntent = intentJSON.toJSONString();
+
             String profileID = (String) inputJSON.get("profileID");
             String delta = (String) inputJSON.get("data");
             String deltaUUID = (String) inputJSON.get("uuid");
@@ -115,7 +128,7 @@ public class ServiceHandler {
             prep.setString(5, alias);
             prep.setString(6, "CREATE");
             prep.setString(7, lastState);
-            prep.setString(8, intent);
+            prep.setString(8, cleanIntent);
             prep.setString(9, profileID);
             prep.executeUpdate();
 
@@ -247,7 +260,7 @@ public class ServiceHandler {
                     break;
                 case "commit":
                     ServiceEngine.commitInstance(refUUID, token.auth());
-                    break;               
+                    break;
                 default:
                     logger.warning(method, "Invalid action");
             }
@@ -301,7 +314,7 @@ public class ServiceHandler {
         URL url = new URL(String.format("%s/app/acl/ipa/servicepolicies/%s", HOST, refUuid));
         HttpURLConnection delete = (HttpURLConnection) url.openConnection();
         executeHttpMethod(url, delete, "DELETE", null, token.auth());
-        
+
         String result = delete(refUuid, token.auth());
         if (result.equalsIgnoreCase("Successfully terminated")) {
             return 0;

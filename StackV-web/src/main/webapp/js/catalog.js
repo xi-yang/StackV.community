@@ -176,7 +176,7 @@ function loadModals() {
             '<hr><button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button><button id="button-profile-blank-add" class="btn btn-default hidden" style="margin-left: 10px;">Add Blank Profile</button><input class="form-control" type="text" id="profileBlankName">' +
             '</div>');
     $detailsModal.html('<div style="height: 80vh;" class="profile-details-modal-body">' +
-            '<div id="profile-details-modal-meta"><div><div class="profile-details-modal-meta-name"><input class="form-control hidden" id="profileEditName" placeholder="New Name"><p class="profile-details-modal-meta-name-text"></p><button class="btn btn-default btn-xs button-profile-meta-edit"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></div><div class="profile-details-modal-meta-description"><textarea class="form-control hidden" id="profileEditDescription" placeholder="New Description"></textarea><p class="profile-details-modal-meta-description-text"></p></div><p class="profile-details-modal-meta-author"></p></div><hr>' +
+            '<div id="profile-details-modal-meta"><div><div class="profile-details-modal-meta-name"><input class="form-control hidden" id="profileEditName" placeholder="New Name"><p class="profile-details-modal-meta-name-text"></p><button class="btn btn-default btn-xs hidden button-profile-meta-edit"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></div><div class="profile-details-modal-meta-description"><textarea class="form-control hidden" id="profileEditDescription" placeholder="New Description"></textarea><p class="profile-details-modal-meta-description-text"></p></div><p class="profile-details-modal-meta-author"></p></div><hr>' +
             '<div style="padding-right:10px;" class="panel-group profile-details-modal-meta-sharing hidden"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#sharing-collapse" class="" aria-expanded="true">Profile Sharing</a></h4></div><div id="sharing-collapse" class="panel-collapse collapse in" aria-expanded="true" style=""><ul class="list-group profile-details-modal-meta-sharing-list"></ul><div class="panel-footer" style="height:85px;"><button class="button-profile-license-new btn-sm btn btn-default">Add New User</button><div><label class="profile-details-modal-meta-editable control-label">Allow Editing<input type="checkbox" style="margin-left: 10px;" id="profileEditable" checked="checked" value="on"></label></div></div></div></div></div>' +
             '<div style="padding-right:10px;" class="panel-group profile-details-modal-meta-saving"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#saving-collapse" class="" aria-expanded="true">Save As</a></h4></div><div id="saving-collapse" class="panel-collapse collapse" aria-expanded="false" style=""><form class="form-horizontal"><input type="text" class="form-control" id="savingProfileName" placeholder="Profile Name" style="/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */"><input type="text" class="form-control" id="savingProfileDescription" placeholder="Profile Description" style="/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */"></form><div class="panel-footer"><button class="button-profile-save-new btn-sm btn btn-default">Save New Profile</button></div></div></div></div>' +
             '<div class="profile-details-modal-meta-buttons"><p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;padding-right: 50px;">Read Only</p><button style="display: none;" class="button-profile-delete btn btn-danger">Delete</button><button class="button-profile-save btn btn-default">Save</button><input id="profile-alias" placeholder="Instance Alias"><button class="button-profile-submit btn btn-default">Submit</button></div></div>' +
@@ -359,6 +359,7 @@ function loadModals() {
                         $(".button-profile-submit").attr('id', profileID);
 
                         if (result["owner"] === keycloak.tokenParsed.preferred_username) {
+                            $(".button-profile-meta-edit").removeClass("hidden");
                             $(".profile-details-modal-meta-sharing").removeClass("hidden");
                             for (var i in result["licenses"]) {
                                 var license = result["licenses"][i];
@@ -774,29 +775,32 @@ function loadModals() {
 }
 function resetProfileModal() {
     clearTimeout(profileUpdateTimeout);
-    $("#profile-details-modal-text-area").val(null);
+    $(".button-profile-meta-edit").addClass("hidden");    
     $(".profile-details-modal-meta-saving").addClass("hidden");
     $(".profile-details-modal-meta-sharing").addClass("hidden");
+    
     $(".profile-details-modal-meta-sharing-list").empty();
     $("#info-panel-share-edit :not(:disabled)").remove();
     $(".profile-details-modal-meta-author").removeClass("invalid");
     $(".button-profile-submit").removeAttr('disabled');
+    
+    $("#profile-alias").val(null);
+    $("#profile-details-modal-text-area").val(null);
     $("#info-panel-share-remaining").val(null);
+    $("#savingProfileName").val(null);
+    $("#savingProfileDescription").val(null);
+    
     $profModal.removeData("profile-id");
-
-    $(".profile-details-modal-meta-editable").hide();
+    
     $("#profileEditable").prop("checked", false);
-
     $("#profile-details-modal-meta-text").html(null);
 
     $(".profile-details-modal-meta-name-text").text(null);
     $(".profile-details-modal-meta-description-text").text(null);
     $(".profile-details-modal-meta-author").text(null);
 
-    $("#info-panel-management").hide();
-
-    $("#profile-alias").val(null);
-
+    $(".profile-details-modal-meta-editable").hide();
+    $("#info-panel-management").hide();    
     $(".button-profile-delete").hide();
 }
 

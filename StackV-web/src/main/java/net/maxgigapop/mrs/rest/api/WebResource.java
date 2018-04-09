@@ -3136,7 +3136,7 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, true);
-                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException | ParseException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -3147,7 +3147,7 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, false);
-                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException | ParseException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -3246,7 +3246,7 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, true);
-                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException | ParseException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -3257,7 +3257,7 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, false);
-                            } catch (SQLException | EJBException | IOException | InterruptedException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException | ParseException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -3400,7 +3400,7 @@ public class WebResource {
     }
 
     // Async Methods -----------------------------------------------------------
-    private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException {
+    private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException, ParseException {
         TemplateEngine template = new TemplateEngine();
 
         String retString = template.apply(inputJSON);
