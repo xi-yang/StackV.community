@@ -184,7 +184,7 @@ function loadModals() {
             '</div>');
     $licenseModal.html('<div id="profile-license-modal-body" style="margin-bottom: 20px;padding: 15px;"><form class="form-horizontal"><div class="form-group profile-license-modal-username"><label class="col-sm-2 control-label">Username</label>' +
             '<div class="col-sm-10 profile-license-modal-username-div"></div></div><div class="form-group"><label for="licenseRemaining" class="col-sm-2 control-label">Licenses</label><div class="col-sm-4"><input type="number" class="form-control" id="licenseRemaining"  style="width: 80%;margin-left: 25px;"></div></div>' +
-            '<div class="form-group"><label for="inputPassword" class="col-sm-2 control-label">Type</label><div class="col-sm-10"><label class="radio-inline" style="float: left;margin-left: 25px;"><input type="radio" name="licenseProfileType" value="ticket" checked="">Tickets</label><label class="radio-inline" style="float: left;"><input type="radio" name="licenseProfileType" value="allocation" disabled="">Allocations</label></div></div>' +
+            '<div class="form-group"><label for="inputPassword" class="col-sm-2 control-label">Type</label><div class="col-sm-10"><label class="radio-inline" style="float: left;margin-left: 25px;"><input type="radio" name="licenseProfileType" id="ticketRadio" value="ticket" checked="">Tickets</label><label class="radio-inline" style="float: left;"><input type="radio" name="licenseProfileType" id="allocationRadio" value="allocation">Allocations</label></div></div>' +
             '<div class="form-group"><button class="button-license-delete hidden btn btn-warning" style="padding-right: 25;">Remove</button><button class="button-license-update hidden btn btn-warning" style="padding-right: 25;">Update</button><button class="button-license-add hidden btn btn-warning" style="padding-right: 25;">Submit</button></div></form></div>');
 
     $catModal.iziModal(catConfig);
@@ -363,10 +363,17 @@ function loadModals() {
                             for (var i in result["licenses"]) {
                                 var license = result["licenses"][i];
 
-                                var $opt = $('<li class="list-group-item">'
-                                        + '<p style="display: inline;">' + license["username"]
-                                        + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' use(s)</p></li>');
-                                $(".profile-details-modal-meta-sharing-list").append($opt);
+                                if (license["type"] === "ticket") {
+                                    var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
+                                            + '<p style="display: inline;">' + license["username"]
+                                            + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' use(s)</p></li>');
+                                    $(".profile-details-modal-meta-sharing-list").append($opt);
+                                } else {
+                                    var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
+                                            + '<p style="display: inline;">' + license["username"]
+                                            + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' slot(s)</p></li>');
+                                    $(".profile-details-modal-meta-sharing-list").append($opt);
+                                }
                             }
 
                             $(".button-profile-delete").show();
@@ -378,20 +385,41 @@ function loadModals() {
                         } else {
                             $(".profile-details-modal-meta-sharing").addClass("hidden");
                             var remaining = 1;
+                            var type = "ticket";
                             for (var i in result["licenses"]) {
                                 var license = result["licenses"][i];
                                 if (license["username"] === keycloak.tokenParsed.preferred_username) {
                                     remaining = license["remaining"];
+                                    type = license["type"];
                                 }
                             }
 
                             var metaText = "Created by " + result["owner"] + ".<br>";
-                            if (remaining > 1) {
-                                metaText += remaining + " uses remaining.";
+                            if (type === "ticket") {
+                                if (remaining > 1) {
+                                    metaText += remaining + " uses remaining.";
+                                } else {
+                                    metaText += remaining + " use remaining.";
+                                }
+                                $(".profile-details-modal-meta-author").html(metaText);
                             } else {
-                                metaText += remaining + " use remaining.";
+                                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID + '/uses';
+                                $.ajax({
+                                    url: apiUrl,
+                                    type: 'GET',
+                                    contentType: "application/json; charset=utf-8",
+                                    success: function (result) {
+                                        var used = result;
+                                        metaText += "Using " + used + " out of " + remaining + " slots.";
+
+                                        if (used >= remaining) {
+                                            $(".button-profile-submit").attr('disabled', true);
+                                            $(".profile-details-modal-meta-author").addClass("invalid");
+                                        }
+                                        $(".profile-details-modal-meta-author").html(metaText);
+                                    }
+                                });
                             }
-                            $(".profile-details-modal-meta-author").html(metaText);
                         }
 
                         prettyPrintInfo();
@@ -452,6 +480,12 @@ function loadModals() {
                 $(".button-license-update").removeClass("hidden");
                 $(".button-license-delete").removeClass("hidden");
 
+                if ($(this).hasClass("license-allocation")) {
+                    $('#allocationRadio').prop("checked", true);
+                } else {
+                    $('#ticketRadio').prop("checked", true);
+                }
+
                 $licenseModal.iziModal('open');
 
                 evt.preventDefault();
@@ -462,7 +496,7 @@ function loadModals() {
                 if ($span.hasClass("glyphicon-pencil")) {
                     oldProfileName = $(".profile-details-modal-meta-name-text").text();
                     oldProfileDescription = $(".profile-details-modal-meta-description-text").text();
-                    
+
                     $("#profileEditName").val(oldProfileName);
                     $("#profileEditDescription").val(oldProfileDescription);
 
@@ -514,6 +548,7 @@ function loadModals() {
                     type: 'POST',
                     data: JSON.stringify({
                         "username": $("#licenseUsername").val(),
+                        "type": $('input[name=licenseProfileType]:checked').val(),
                         "remaining": $("#licenseRemaining").val()
                     }),
                     contentType: "application/json; charset=utf-8",
@@ -533,6 +568,7 @@ function loadModals() {
                     type: 'PUT',
                     data: JSON.stringify({
                         "username": $(".profile-license-modal-username-div p")[0].innerHTML,
+                        "type": $('input[name=licenseProfileType]:checked').val(),
                         "remaining": $("#licenseRemaining").val()
                     }),
                     contentType: "application/json; charset=utf-8",
@@ -743,6 +779,8 @@ function resetProfileModal() {
     $(".profile-details-modal-meta-sharing").addClass("hidden");
     $(".profile-details-modal-meta-sharing-list").empty();
     $("#info-panel-share-edit :not(:disabled)").remove();
+    $(".profile-details-modal-meta-author").removeClass("invalid");
+    $(".button-profile-submit").removeAttr('disabled');
     $("#info-panel-share-remaining").val(null);
     $profModal.removeData("profile-id");
 
@@ -870,8 +908,8 @@ function reloadModals() {
         }
     });
 
-    // Load open sharing details.
-    if ($profModal.data("profile-id") && !$(".profile-details-modal-meta-sharing").hasClass("hidden")) {
+    // Reload open profile
+    if ($profModal.data("profile-id")) {
         var profileID = $profModal.data("profile-id");
         var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID;
         $.ajax({
@@ -881,14 +919,23 @@ function reloadModals() {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
             success: function (result) {
-                $(".profile-details-modal-meta-sharing-list").empty();
-                for (var i in result["licenses"]) {
-                    var license = result["licenses"][i];
+                if (!$(".profile-details-modal-meta-sharing").hasClass("hidden")) {
+                    $(".profile-details-modal-meta-sharing-list").empty();
+                    for (var i in result["licenses"]) {
+                        var license = result["licenses"][i];
 
-                    var $opt = $('<li class="list-group-item">'
-                            + '<p style="display: inline;">' + license["username"]
-                            + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' use(s)</p></li>');
-                    $(".profile-details-modal-meta-sharing-list").append($opt);
+                        if (license["type"] === "ticket") {
+                            var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
+                                    + '<p style="display: inline;">' + license["username"]
+                                    + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' use(s)</p></li>');
+                            $(".profile-details-modal-meta-sharing-list").append($opt);
+                        } else {
+                            var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
+                                    + '<p style="display: inline;">' + license["username"]
+                                    + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' slot(s)</p></li>');
+                            $(".profile-details-modal-meta-sharing-list").append($opt);
+                        }
+                    }
                 }
             },
             error: function (textStatus, errorThrown) {
@@ -896,6 +943,8 @@ function reloadModals() {
                 console.log(errorThrown);
             }
         });
+
+
     }
 }
 

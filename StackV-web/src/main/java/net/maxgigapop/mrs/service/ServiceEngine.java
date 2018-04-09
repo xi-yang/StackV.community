@@ -79,32 +79,30 @@ public class ServiceEngine {
 
             // Check for license deduction.
             if (inputJSON.containsKey("profileID")) {
-                
-                System.out.println("Checking for deduction");
-                
                 front_conn = factory.getConnection("frontend");
-                prep = front_conn.prepareStatement("SELECT L.remaining FROM service_wizard W, service_wizard_licenses L WHERE W.service_wizard_id = ? AND W.service_wizard_id = L.service_wizard_id AND L.username = ?");
+                prep = front_conn.prepareStatement("SELECT L.remaining, L.type FROM service_wizard W, service_wizard_licenses L WHERE W.service_wizard_id = ? AND W.service_wizard_id = L.service_wizard_id AND L.username = ?");
                 prep.setString(1, (String) inputJSON.get("profileID"));
                 prep.setString(2, (String) inputJSON.get("username"));
                 rs = prep.executeQuery();
                 while (rs.next()) {
-                    System.out.println("in result set");
-                    int remaining = rs.getInt("remaining");
-                    if (remaining > 0) {
-                        prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE username = ? AND service_wizard_id = ?");
-                        prep.setInt(1, --remaining);
-                        prep.setString(2, (String) inputJSON.get("username"));
-                        prep.setString(3, (String) inputJSON.get("profileID"));
-                        prep.executeUpdate();    
-                        logger.trace(method, "License deducted, now at " + remaining + " uses remaining.");
-                    }
-                    
-                    if (remaining <= 0) {
-                        prep = front_conn.prepareStatement("DELETE FROM service_wizard_licenses WHERE username = ? AND service_wizard_id = ?");
-                        prep.setString(1, (String) inputJSON.get("username"));
-                        prep.setString(2, (String) inputJSON.get("profileID"));
-                        prep.executeUpdate();    
-                        logger.trace(method, "License fully used.");
+                    if (rs.getString("type").equals("ticket")) {
+                        int remaining = rs.getInt("remaining");
+                        if (remaining > 0) {
+                            prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE username = ? AND service_wizard_id = ?");
+                            prep.setInt(1, --remaining);
+                            prep.setString(2, (String) inputJSON.get("username"));
+                            prep.setString(3, (String) inputJSON.get("profileID"));
+                            prep.executeUpdate();
+                            logger.trace(method, "License deducted, now at " + remaining + " uses remaining.");
+                        }
+
+                        if (remaining <= 0) {
+                            prep = front_conn.prepareStatement("DELETE FROM service_wizard_licenses WHERE username = ? AND service_wizard_id = ?");
+                            prep.setString(1, (String) inputJSON.get("username"));
+                            prep.setString(2, (String) inputJSON.get("profileID"));
+                            prep.executeUpdate();
+                            logger.trace(method, "License fully used.");
+                        }
                     }
                 }
             }

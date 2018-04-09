@@ -181,6 +181,10 @@ tr.instance-row {
     font-size: 0.9em;  
     color: #777777;
 }
+.profile-details-modal-meta-author.invalid {   
+    color: #c91818;
+}
+
 
 
 /*Make content within tab scrollable*/
