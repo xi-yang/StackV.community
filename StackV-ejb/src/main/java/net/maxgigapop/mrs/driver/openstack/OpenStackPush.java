@@ -138,8 +138,7 @@ public class OpenStackPush {
      * reduction ************************************************
      */
     public List<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
-        String method = "pushPropagate";
-        System.out.println("**** OPENSTACK PUSH: " + method);
+        String method = "pushPropagate";        
         List<JSONObject> requests = new ArrayList();
         //get all the requests
         
@@ -148,8 +147,7 @@ public class OpenStackPush {
         requests.addAll(vpnEndpointRequests(modelRef, modelReduct, false));
         requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
-        requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
-        System.out.println("**** OPENSTACK PUSH PROPAGATE FIRST SRIOV CALL");
+        requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));        
         requests.addAll(sriovRequests(modelRef, modelReduct, false));
         requests.addAll(portAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
@@ -170,8 +168,7 @@ public class OpenStackPush {
         requests.addAll(portAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(layer3Requests(modelRef, modelAdd, true));
         requests.addAll(floatingIpRequests(modelRef, modelAdd, true));
-        requests.addAll(isAliasRequest(modelRef, modelAdd, true));
-        System.out.println("**** OPENSTACK PUSH PROPAGATE SECOND SRIOV CALL");
+        requests.addAll(isAliasRequest(modelRef, modelAdd, true));        
         requests.addAll(sriovRequests(modelRef, modelAdd, true));
         requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
@@ -2557,18 +2554,36 @@ public class OpenStackPush {
 
         return requests;
     }
-
+    
+    /**
+     * Note for leasing an address from FreeIPA ALM plugin: when revoking (or any ALM function needed)
+     * during cleanup, the pool name is required. However, the pool name cannot be queried from the 
+     * model as the model does not store where the address came from. In other words, the model does not
+     * store the fact the address came from the ALM plugin - it only cares about the address. One solution 
+     * is to store leasing information in a cleanup function that is called when the model reduction happens.
+     * Most of the commented out parts in the method are related to the FreeIPA ALM plugin to be revisited
+     * later.
+     * 
+     * 
+     * @param modelRef
+     * @param modelDelta
+     * @param creation
+     * @return 
+     */
     private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {        
         String method = "sriovRequests";
-               
-        IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!");
+        
+        /*
+        IpaAlm ipaAlm = new IpaAlm("", ""); // replace with keycloak creds that are gotten dynamically
         String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;        
         String ipPoolType = "ipv4";
-        String macPoolType = "macaddress"; //CHANGE BACK TO MAC WHEN JOHN HAS CHANGED IT ON IPA PLUGIN
+        String macPoolType = "mac";
         String poolName = ""; // re-assigned based on each instance
+        
         
         String ip = null;
         String mac = null;
+        */
         
         List<JSONObject> requests = new ArrayList();
         JSONObject JO = new JSONObject();
@@ -2619,7 +2634,8 @@ public class OpenStackPush {
                     + "?ipAddr mrs:value ?ip . "
                     + "}";
             ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
-            // String ip = null;
+            
+            String ip = null;
             if (r2.hasNext()) {
                 ip = r2.next().get("ip").toString();
             }
@@ -2632,12 +2648,14 @@ public class OpenStackPush {
                     + "?macAddr mrs:value ?mac . "
                     + "}";
             ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
-            // String mac = null;
+            
+            String mac = null;
             if (r3.hasNext()) {
                 mac = r3.next().get("mac").toString();
             }
             
             
+            /*
             // alm ip
             query = "SELECT ?ip WHERE {"
                     + String.format("<%s> mrs:hasNetworkAddress ?ipAddr . ", vNic)
@@ -2716,6 +2734,7 @@ public class OpenStackPush {
                     mac = ipaAlm.leaseAddr(clientName, poolInfo[1], macPoolType, null);
                 }
             }
+            */
             
             String serverName = ResourceTool.getResourceName(VM.toString(), OpenstackPrefix.vm);
             String vnicName = ResourceTool.getResourceName(vNic.toString(), OpenstackPrefix.PORT);
@@ -2756,9 +2775,11 @@ public class OpenStackPush {
         if (creation == true) {
             JO.put("request", "AttachSriovRequest");
         } else {
+            
+            /*
+            // cleanup the address
             // revoke the leaseaddr if the address has been leased
-            if (ip != null || mac != null) {
-                System.out.println("**** OPENSTACK PUSH -> LINE 2773");                
+            if (ip != null || mac != null) {              
                 boolean isIpLeased = ipaAlm.checkIfAddrLeased(poolName, ip);
                 boolean isMacLeased = ipaAlm.checkIfAddrLeased(poolName, mac);
                 
@@ -2781,6 +2802,7 @@ public class OpenStackPush {
                 }
                 
             }
+            */
             JO.put("request", "DetachSriovRequest");
         }
         requests.add(JO);

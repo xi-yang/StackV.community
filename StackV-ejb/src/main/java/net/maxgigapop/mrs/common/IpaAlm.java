@@ -15,7 +15,6 @@ import java.net.URL;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.net.ssl.HttpsURLConnection;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -37,13 +36,6 @@ public class IpaAlm {
     
     // NEED THE KEYCLOAK AUTHORIZATION TOKEN IN THE HEADERS
     String kcToken;
-    
-    public IpaAlm() {
-        // ****CREDENTIALS ARE HARDCODED -> BE SURE TO REMOVE BEFORE MERGING
-        // ALSO CHECK IN OPENSTACKPUSH AND WHEREVER ELSE IPAALM IS USED
-        kcToken = kcTokenHandler.setAndGetToken("xyang", "MAX123!");
-        ipaLogin();
-    }
     
     /**
      * 
@@ -213,7 +205,7 @@ public class IpaAlm {
         return runIpaRequest(leaseJSON);
     }
     
-    private JSONObject showAlmLease(String poolName, String leasedAddr) {
+    private JSONObject showAlmLease(String poolName, String commonName) {
         JSONObject leaseJSON = new JSONObject();
         leaseJSON.put("id", 0);
         leaseJSON.put("method", "almleases_show");
@@ -222,7 +214,7 @@ public class IpaAlm {
         paramsArr.add(new JSONArray());
         
         JSONObject paramsArrArgs = new JSONObject();
-        paramsArrArgs.put("cn", poolName + "-" + leasedAddr);
+        paramsArrArgs.put("cn", commonName);
         paramsArr.add(paramsArrArgs);
         
         leaseJSON.put("params", paramsArr);
@@ -232,7 +224,6 @@ public class IpaAlm {
     }
     
     /**
-     * --NOTE MIGHT WANT TO SEE IF THE ALMSTATMENTS LIST CAN GIVEN BACK AS JSON OBJECT INSTEAD OF JSON ARRAY--
      * Returns the leased address if the operation was successful, null otherwise
      * @param clientId
      * @param poolName
@@ -304,19 +295,13 @@ public class IpaAlm {
         boolean leased = false;
         
         // pass the parameters and run the request
-        JSONObject checkAddrJSON = showAlmLease(poolName, leasedAddr);
+        String commonName = poolName + "-" + leasedAddr;
+        JSONObject checkAddrJSON = showAlmLease(poolName, commonName);
         
         // parse the JSON response to check if the address has been leased
-        // if there is no error 
+        // if there is no error - then the address was found indicating it has been leased
         if (checkAddrJSON.get("error") == null && checkAddrJSON.get("result") != null) {
-            JSONObject resultJSON = (JSONObject) checkAddrJSON.get("result");
-            
-            // sort of a redundant check (since if the result is not null then
-            // the address is leased
-            String commonName = poolName + "-" + leasedAddr;
-            if (resultJSON.get("value").equals(commonName)) {
-                leased = true;
-            }
+            leased = true;
         }
         
         return leased;
