@@ -383,6 +383,13 @@ public class SenseServiceApi {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(auth, refresh);
         try {
+            // stop verification upon failure
+            if (operation.equals("force_release")) {
+                URL url = new URL(String.format("%s/app/service/%s/unverify", restapi, siUUID));
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestProperty("Refresh", refresh);
+                executeHttpMethod(url, conn, "PUT", null, token.auth());
+            }
             URL url = new URL(String.format("%s/app/service/%s/"+operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
