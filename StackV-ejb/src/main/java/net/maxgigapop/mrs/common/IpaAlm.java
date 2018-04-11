@@ -158,7 +158,7 @@ public class IpaAlm {
      * @param poolType
      * @return 
      */
-    private JSONObject createLease(String clientId, String poolName, String poolType) {
+    private JSONObject createLease(String clientId, String poolName, String poolType, String specificAddr) {
         JSONObject leaseJSON = new JSONObject();
         leaseJSON.put("id", 0);
         leaseJSON.put("method", "alm_lease");
@@ -170,6 +170,12 @@ public class IpaAlm {
         paramsArrArgs.put("clientid", clientId);
         paramsArrArgs.put("poolname", poolName);
         paramsArrArgs.put("almpooltype", poolType);
+        
+        // if the specific address is provided then pass that in as a parameter
+        if (specificAddr != null && !specificAddr.isEmpty()) {
+            paramsArrArgs.put("requiredaddress", specificAddr);
+        }
+        
         paramsArr.add(paramsArrArgs);
         
         leaseJSON.put("params", paramsArr);
@@ -231,14 +237,15 @@ public class IpaAlm {
      * @param clientId
      * @param poolName
      * @param poolType
+     * @param specificAddr
      * @return 
      */
-    public String leaseAddr(String clientId, String poolName, String poolType) {
+    public String leaseAddr(String clientId, String poolName, String poolType, String specificAddr) {
         // return null if an address cannot be leased
         String addr = null;
         
         // pass the parameters and run the request
-        JSONObject leaseResponseJSON = createLease(clientId, poolName, poolType);
+        JSONObject leaseResponseJSON = createLease(clientId, poolName, poolType, specificAddr);
         
         
         // parse the JSON response for the address
@@ -255,12 +262,14 @@ public class IpaAlm {
                 while (iterator.hasNext()) {
                     String almElement = iterator.next();
                     if (almElement.contains("leasedaddr")) {
+                        // get the string directly after the space after "leasedaddr"
                         addr = almElement.substring(11);
                         break; // as soon as the leased address is found - break out of the loop
                     }
                 }
             }
-        }    
+        }
+        
         return addr;
     }
     
@@ -274,7 +283,7 @@ public class IpaAlm {
      */
     public boolean revokeLeasedAddr(String clientId, String poolName, String poolType, String leasedAddr) {
         boolean revoked = false;        
-        
+                     
         // pass the parameters and run the request
         JSONObject revokeResponseJSON = revokeLease(clientId, poolName, poolType, leasedAddr);
         
@@ -286,7 +295,7 @@ public class IpaAlm {
                 revoked = true;
             }
         } 
-        
+                
         
         return revoked;
     }
