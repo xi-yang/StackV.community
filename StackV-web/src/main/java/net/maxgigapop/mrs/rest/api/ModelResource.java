@@ -25,6 +25,7 @@ package net.maxgigapop.mrs.rest.api;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.StringWriter;
+import java.util.Map;
 import java.util.UUID;
 import javax.ejb.EJB;
 import javax.ws.rs.core.Context;
@@ -39,6 +40,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
+import javax.ws.rs.core.Response;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
@@ -46,6 +48,7 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.rest.api.model.ApiModelViewRequest;
+import org.json.simple.JSONObject;
 
 /**
  * REST Web Service
@@ -213,4 +216,29 @@ public class ModelResource {
         logger.trace_end(method);
         return apiModelBase;
     }
+    
+    @POST
+    @Consumes({"application/json"})
+    @Produces({"application/json"})
+    @Path("/refresh")
+    public Response refreshVersionModels(Map<String,String> requestMap) throws Exception {
+        JSONObject jsonRet = new JSONObject();
+        for (String topoUri: requestMap.keySet()) {
+            String modelUuid = requestMap.get(topoUri); // alternative: time stamp 
+            ModelBase modelBase = systemCallHandler.retrieveLatestModelByDriver(topoUri);
+            if (modelBase == null || modelUuid != null && modelBase.getId().equalsIgnoreCase(modelUuid)) {
+                jsonRet.put(topoUri, null);
+                continue;
+            }
+            JSONObject jsonTopo = new JSONObject();
+            jsonTopo.put("uuid", modelBase.getId());
+            jsonTopo.put("time", modelBase.getCreationTime());
+            jsonTopo.put("ttl", modelBase.getTtlModel());
+            jsonTopo.put("json", ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
+            jsonRet.put(topoUri, jsonTopo);
+        }
+        return Response.status(200).entity(jsonRet).build();
+    }
+    
+    
 }

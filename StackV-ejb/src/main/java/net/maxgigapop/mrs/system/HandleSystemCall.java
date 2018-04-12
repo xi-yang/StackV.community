@@ -193,6 +193,19 @@ public class HandleSystemCall {
         }
     }
 
+    public ModelBase retrieveLatestModelByDriver(String topologyUri) {
+        logger.cleanup();
+        String method = "retrieveLatestModelBase";
+        logger.trace_start(method);
+        DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(topologyUri);
+        VersionItem headVI = VersionItemPersistenceManager.getHeadByDriverInstance(driverInstance);
+        if (headVI == null) {
+            return null;
+        }
+        logger.trace_end(method);
+        return headVI.getModelRef();
+    }
+    
     public OntModel queryModelView(String refUuid, List<ModelUtil.ModelViewFilter> mvfs) {
         logger.cleanup();
         String method = "queryModelView";
