@@ -405,54 +405,59 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("ACL")
     public String ipaLogin() throws UnsupportedEncodingException {
-        JSONObject result = new JSONObject();
+        if (ipaUsername != null && ipaPasswd != null) {
 
-        String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
+            JSONObject result = new JSONObject();
 
-        try {
-            URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
-            HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
-            conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            conn.setRequestProperty("Accept", "text/plain");
-            conn.setRequestMethod("POST");
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-            DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
-            wr.writeBytes(formattedLoginData);
-            wr.flush();
-            conn.connect();
+            String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
 
-            // if the request is successful
-            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
-                result.put("Result", "Login Successful");
-                result.put("ResponseCode", conn.getResponseCode());
-                result.put("ResponseMessage", conn.getResponseMessage());
+            try {
+                URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
+                HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+                conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                conn.setRequestProperty("Accept", "text/plain");
+                conn.setRequestMethod("POST");
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
+                DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
+                wr.writeBytes(formattedLoginData);
+                wr.flush();
+                conn.connect();
 
-                // get the ipa_session cookie from the returned header fields and assign it to ipaCookie
-                ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
-            } else { // if the request fails
-                String errorStream = "";
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                    String inputLine;
-                    while ((inputLine = in.readLine()) != null) {
-                        errorStream += inputLine;
+                // if the request is successful
+                if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
+                    result.put("Result", "Login Successful");
+                    result.put("ResponseCode", conn.getResponseCode());
+                    result.put("ResponseMessage", conn.getResponseMessage());
+
+                    // get the ipa_session cookie from the returned header fields and assign it to ipaCookie
+                    ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
+                } else { // if the request fails
+                    String errorStream = "";
+                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
+                        String inputLine;
+                        while ((inputLine = in.readLine()) != null) {
+                            errorStream += inputLine;
+                        }
                     }
+                    result.put("Result", "Login Unsuccessful");
+                    result.put("ResponseCode", conn.getResponseCode());
+                    result.put("ResponseMessage", conn.getResponseMessage());
+                    result.put("Error", errorStream);
                 }
-                result.put("Result", "Login Unsuccessful");
-                result.put("ResponseCode", conn.getResponseCode());
-                result.put("ResponseMessage", conn.getResponseMessage());
-                result.put("Error", errorStream);
+
+            } catch (MalformedURLException ex) {
+                Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
             }
 
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            // return the JSON object as a string
+            return result.toJSONString(); 
+        } else {
+            throw logger.error_throwing("ipaLogin()", "IPA username or password not set");
         }
-
-        // return the JSON object as a string
-        return result.toJSONString();
     }
 
     @POST
@@ -461,52 +466,57 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("ACL")
     public String ipaRequest(String postData) {
-        JSONObject result = new JSONObject();
-        try {
-            URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
-            HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
-            conn.setRequestProperty("referer", ipaBaseServerUrl + "/ipa");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("Cookie", ipaCookie);
-            conn.setRequestMethod("POST");
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
+        if (ipaBaseServerUrl != null) {            
+        
+            JSONObject result = new JSONObject();
+            try {
+                URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
+                HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
+                conn.setRequestProperty("referer", ipaBaseServerUrl + "/ipa");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setRequestProperty("Cookie", ipaCookie);
+                conn.setRequestMethod("POST");
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
 
-            //JSONObject postDataJson = (JSONObject) parser.parse(postData);
-            DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
-            wr.writeBytes(postData);
-            wr.flush();
-            conn.connect();
+                //JSONObject postDataJson = (JSONObject) parser.parse(postData);
+                DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
+                wr.writeBytes(postData);
+                wr.flush();
+                conn.connect();
 
-            StringBuilder responseStr;
-            // if the request is successful
-            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                    String inputLine;
-                    responseStr = new StringBuilder();
-                    while ((inputLine = in.readLine()) != null) {
-                        responseStr.append(inputLine);
+                StringBuilder responseStr;
+                // if the request is successful
+                if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
+                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                        String inputLine;
+                        responseStr = new StringBuilder();
+                        while ((inputLine = in.readLine()) != null) {
+                            responseStr.append(inputLine);
+                        }
                     }
-                }
-                ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
-                result = (JSONObject) parser.parse(responseStr.toString());
-            } else { // if the request fails                
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                    String inputLine;
-                    responseStr = new StringBuilder();
-                    while ((inputLine = in.readLine()) != null) {
-                        responseStr.append(inputLine);
+                    ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
+                    result = (JSONObject) parser.parse(responseStr.toString());
+                } else { // if the request fails                
+                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
+                        String inputLine;
+                        responseStr = new StringBuilder();
+                        while ((inputLine = in.readLine()) != null) {
+                            responseStr.append(inputLine);
+                        }
                     }
+                    result.put("Error", responseStr.toString());
                 }
-                result.put("Error", responseStr.toString());
+            } catch (IOException | ParseException ex) {
+                Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
             }
-        } catch (IOException | ParseException ex) {
-            Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
 
-        // return the JSONObject as a string
-        return result.toJSONString();
+            // return the JSONObject as a string
+            return result.toJSONString();
+        } else{
+        throw logger.error_throwing("ipaRequest()", "IPA server url not set");
+    }
     }
 
     @DELETE
@@ -514,6 +524,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("ACL")
     public String ipaDeleteAllPoliciesForService(@PathParam("serviceUUID") String uuid, String data) throws UnsupportedEncodingException {
+        
         ipaLogin(); // ensure the ipa server cookie has been refreshed in case it was expired.
         JSONObject result = new JSONObject();
 
