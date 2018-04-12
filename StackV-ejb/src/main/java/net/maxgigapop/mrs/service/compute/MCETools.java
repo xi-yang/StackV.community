@@ -66,6 +66,10 @@ import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.TagSet;
 import org.json.simple.JSONObject;
 import com.jayway.jsonpath.JsonPath;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import net.maxgigapop.mrs.common.DateTimeUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_action;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_flow;
@@ -80,33 +84,27 @@ public class MCETools {
     private static final StackLogger logger = new StackLogger(MCETools.class.getName(), "MCETools");
 
     public static class BandwidthProfile {
-        public String type = null; // default  "guaranteedCapped"
-        public String unit = null; // default "bps"
-        public String priority = null; // default "0"
-        public Long granularity = null; // default 1L
-        public Long maximumCapacity = null; // required
-        public Long availableCapacity = null; // required
-        public Long reservableCapacity = null; // required
+        public String type = "bestEffort"; // default  "bestEffort"
+        public String unit = "bps"; // default "bps"
+        public Long granularity = 1L; // default 1L
+        public String priority = "0"; // default "0"
+        public Long maximumCapacity = 0L; // default = 0
+        public Long availableCapacity = null; // optional
+        public Long reservableCapacity = null; // optional
         public Long individualCapacity = null;  // optional
         public Long minimumCapacity = null; // optional
         public Long usedCapacity = null;  // optional
 
         public BandwidthProfile(Long capacity) {
             this.maximumCapacity = capacity;
-            this.availableCapacity = capacity;
             this.reservableCapacity = capacity;
-            this.type = "guaranteedCapped";
-            this.unit = "bps";
-            this.granularity = 1L;
+            this.individualCapacity = capacity;
         }
         
-        public BandwidthProfile(Long maximumCapacity, Long availableCapacity, Long reservableCapacity) {
+        public BandwidthProfile(Long maximumCapacity, Long reservableCapacity) {
             this.maximumCapacity = maximumCapacity;
-            this.availableCapacity = availableCapacity;
             this.reservableCapacity = reservableCapacity;
-            this.type = "guaranteedCapped";
-            this.unit = "bps";
-            this.granularity = 1L;
+            this.individualCapacity = reservableCapacity;
         }
     }
     
@@ -116,6 +114,7 @@ public class MCETools {
         OntModel ontModel = null;
         double failureProb = 0.0;
         BandwidthProfile bandwithProfile = null;
+        BandwidthCalendar.BandwidthSchedule bandwithScedule = null;
         String connectionId = null;
         
         public Path() {
@@ -157,6 +156,16 @@ public class MCETools {
         public void setBandwithProfile(BandwidthProfile bandwithProfile) {
             this.bandwithProfile = bandwithProfile;
         }
+
+        public BandwidthCalendar.BandwidthSchedule getBandwithScedule() {
+            return bandwithScedule;
+        }
+
+        public void setBandwithScedule(BandwidthCalendar.BandwidthSchedule bandwithScedule) {
+            this.bandwithScedule = bandwithScedule;
+        }
+
+        
 
         public String getConnectionId() {
             return connectionId;
@@ -301,21 +310,58 @@ public class MCETools {
                 try {
                     verified = MCETools.verifyL2Path(transformedModel, candidatePath);
                 } catch (Exception ex) {
-                    throw new Exception("MCETools.computeFeasibleL2KSP cannot verifyL2Path", ex);
+                    throw new Exception("MCETools.computeFeasibleL2KSP - cannot verifyL2Path", ex);
                 }
                 if (verified && jsonConnReq.containsKey("bandwidth")) {
                     JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
                     Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
-                    Long available = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null;
                     Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
-                    candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, available, reservable);
+                    candidatePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
                     candidatePath.bandwithProfile.minimumCapacity = (jsonBw.containsKey("minimum") && jsonBw.get("minimum") != null) ? Long.parseLong(jsonBw.get("minimum").toString()) : null; //default = null
+                    candidatePath.bandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null; //default = null
                     candidatePath.bandwithProfile.individualCapacity = (jsonBw.containsKey("individual") && jsonBw.get("individual") != null) ? Long.parseLong(jsonBw.get("individual").toString()) : null; //default = null
                     candidatePath.bandwithProfile.granularity = (jsonBw.containsKey("granularity")  && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
-                    candidatePath.bandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class")!= null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+                    candidatePath.bandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class")!= null) ? jsonBw.get("qos_class").toString() : "bestEffort"; //default = "bestEffort"
                     candidatePath.bandwithProfile.unit = (jsonBw.containsKey("unit") && jsonBw.get("unit") != null) ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
                     candidatePath.bandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
                     verified = MCETools.verifyPathBandwidthProfile(transformedModel, candidatePath);
+                }
+                if (verified && jsonConnReq.containsKey("schedule")) {
+                    JSONObject jsonSchedule = (JSONObject) jsonConnReq.get("schedule");
+                    candidatePath.bandwithScedule = new BandwidthCalendar.BandwidthSchedule();
+                    String startTime = jsonSchedule.containsKey("start") ? jsonSchedule.get("start").toString() : "now";
+                    String endTime = jsonSchedule.containsKey("end") ? jsonSchedule.get("end").toString() : null;
+                    String duration = jsonSchedule.containsKey("duration") ? jsonSchedule.get("duration").toString() : null;
+                    if (endTime == null && duration == null) {
+                        throw new Exception("MCETools.computeFeasibleL2KSP - malformed schedule: " + jsonSchedule.toJSONString());
+                    }
+                    candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
+                    if (endTime != null) {
+                        if (endTime.startsWith("+")) {
+                            candidatePath.bandwithScedule.setEndTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(endTime));
+                        } else {
+                            candidatePath.bandwithScedule.setEndTime(DateTimeUtil.getBandwidthScheduleSeconds(endTime));
+                        }
+                    } else {
+                        candidatePath.bandwithScedule.setEndTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(duration));
+                    }
+                    if (candidatePath.bandwithProfile == null || candidatePath.bandwithProfile.reservableCapacity == null) {
+                        throw new Exception("MCETools.computeFeasibleL2KSP - input schedule without bandwidth.");
+                    }
+                    candidatePath.bandwithScedule.setBandwidth(normalizeBandwidthPorfile(candidatePath.bandwithProfile).reservableCapacity);
+                    JSONObject jsonScheduleOptions =  jsonSchedule.containsKey("options") ? (JSONObject)jsonSchedule.get("options") : new JSONObject();
+                    if (endTime != null && duration != null ) { // sliding window
+                        jsonScheduleOptions.put("sliding-duration", DateTimeUtil.getBandwidthScheduleSeconds(duration));
+                    }
+                    try {
+                        BandwidthCalendar.BandwidthSchedule schedule = BandwidthCalendar.makePathBandwidthSchedule(transformedModel, candidatePath, jsonScheduleOptions);
+                        if (schedule == null) {
+                            verified = false;
+                        }
+                    } catch (BandwidthCalendar.BandwidthCalendarException ex) {
+                        logger.trace("computeFeasibleL2KSP", candidatePath.getConnectionId() + " -- " + ex.getMessage());
+                        verified = false;
+                    }
                 }
                 if (!verified) {
                     itP.remove();
@@ -663,7 +709,6 @@ public class MCETools {
         return true;
     }
 
-    //@TODO: unit conversion?
     public static boolean verifyPathBandwidthProfile(Model model, Path path) {
         if (path.getBandwithProfile() == null) {
             return true;
@@ -700,13 +745,13 @@ public class MCETools {
         return true;
     }
     
-    private static BandwidthProfile getHopBandwidthPorfile(Model model, Resource hop) {
+    public static BandwidthProfile getHopBandwidthPorfile(Model model, Resource hop) {
         String sparql = "SELECT $maximum $available $reservable $granularity $qos_class $unit $minimum $individual $priority WHERE {"
                 + String.format("<%s> a nml:BidirectionalPort. ", hop.getURI())
                 + String.format("<%s> nml:hasService $bw_svc. ", hop.getURI())
                 + "$bw_svc mrs:maximumCapacity $maximum. "
-                + "$bw_svc mrs:availableCapacity $available. "
                 + "$bw_svc mrs:reservableCapacity $reservable. "
+                + "OPTIONAL {$bw_svc mrs:availableCapacity $available } "
                 + "OPTIONAL {$bw_svc mrs:type $qos_class } "
                 + "OPTIONAL {$bw_svc mrs:unit $unit } "
                 + "OPTIONAL {$bw_svc mrs:granularity $granularity } "
@@ -719,9 +764,11 @@ public class MCETools {
         if (rs.hasNext()) {
             QuerySolution solution = rs.next();
             Long maximumBw = solution.get("maximum").asLiteral().getLong();
-            Long availableBw = solution.get("available").asLiteral().getLong();
             Long reservableBw = solution.get("reservable").asLiteral().getLong();
-            bwProfile = new BandwidthProfile(maximumBw, availableBw, reservableBw);
+            bwProfile = new BandwidthProfile(maximumBw, reservableBw);
+            if (solution.contains("available")) {
+                bwProfile.availableCapacity = solution.get("available").asLiteral().getLong();
+            }
             if (solution.contains("granularity")) {
                 bwProfile.granularity = solution.get("granularity").asLiteral().getLong();
             }
@@ -744,43 +791,48 @@ public class MCETools {
         return bwProfile;
     }
     
-    private static BandwidthProfile normalizeBandwidthPorfile(BandwidthProfile bwProfile) {
+    public static long normalizeBandwidth(long bw, String unit) {
+        long factor = 1;
+        if (unit.equalsIgnoreCase("kbps")) {
+            factor = 1000;
+        } else if (unit.equalsIgnoreCase("mbps")) {
+            factor = 1000000;
+        } else if (unit.equalsIgnoreCase("gbps")) {
+            factor = 1000000000;
+        }
+        return bw*factor;
+    }
+    
+    public static BandwidthProfile normalizeBandwidthPorfile(BandwidthProfile bwProfile) {
         if (bwProfile.unit == null || bwProfile.unit.equalsIgnoreCase("bps")) {
             return bwProfile;
         } 
-        long factor = 1;
-        if (bwProfile.unit.equalsIgnoreCase("kbps")) {
-            factor = 1000;
-        } else if (bwProfile.unit.equalsIgnoreCase("mbps")) {
-            factor = 1000000;
-        } else if (bwProfile.unit.equalsIgnoreCase("gbps")) {
-            factor = 1000000000;
-        }
         if (bwProfile.maximumCapacity != null) {
-            bwProfile.maximumCapacity *= factor;
+            bwProfile.maximumCapacity = normalizeBandwidth(bwProfile.maximumCapacity, bwProfile.unit);
         }
         if (bwProfile.availableCapacity != null) {
-            bwProfile.availableCapacity *= factor;
+            bwProfile.availableCapacity = normalizeBandwidth(bwProfile.availableCapacity, bwProfile.unit);
         }
         if (bwProfile.reservableCapacity != null) {
-            bwProfile.reservableCapacity *= factor;
+            bwProfile.reservableCapacity = normalizeBandwidth(bwProfile.reservableCapacity, bwProfile.unit);
         }
         if (bwProfile.individualCapacity != null) {
-            bwProfile.individualCapacity *= factor;
+            bwProfile.individualCapacity = normalizeBandwidth(bwProfile.individualCapacity, bwProfile.unit);
         }
         if (bwProfile.usedCapacity != null) {
-            bwProfile.usedCapacity *= factor;
+            bwProfile.usedCapacity = normalizeBandwidth(bwProfile.usedCapacity, bwProfile.unit);
         } 
         if (bwProfile.minimumCapacity != null) {
-            bwProfile.minimumCapacity *= factor;
+            bwProfile.minimumCapacity = normalizeBandwidth(bwProfile.minimumCapacity, bwProfile.unit);
         }
         if (bwProfile.granularity != null) {
-            bwProfile.granularity *= factor;
+            bwProfile.granularity = normalizeBandwidth(bwProfile.granularity, bwProfile.unit);
         }
         bwProfile.unit = "bps";
         return bwProfile;
     }
 
+    // compare and intersect bandwidthProfiles along path
     private static BandwidthProfile handleBandwidthProfile(BandwidthProfile pathBwProfile, BandwidthProfile hopBwProfile) {
         if (pathBwProfile.maximumCapacity == null || pathBwProfile.maximumCapacity > hopBwProfile.maximumCapacity) {
             pathBwProfile.maximumCapacity = hopBwProfile.maximumCapacity;
@@ -802,44 +854,58 @@ public class MCETools {
         }
         return pathBwProfile;
     }
-
-    //@TODO: fine tuning the comparison criteria by types | granularity % constraint | unit
-    private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
-        if (bwpfRequest.type != null
-                && (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped"))) {
-            if (bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity
-                    && (bwpfAvailable.individualCapacity == null || bwpfAvailable.individualCapacity >= bwpfRequest.availableCapacity)) {
-                return true;
-            } else {
-                return false;
-            }
-        } else if (bwpfRequest.type != null && bwpfRequest.type.equalsIgnoreCase("anyAvailable")) {
-            if (bwpfAvailable.availableCapacity < bwpfAvailable.reservableCapacity) {
-                return false;
-            } else if (bwpfRequest.minimumCapacity != null && bwpfRequest.minimumCapacity > bwpfAvailable.availableCapacity) {
-                return false;
-            } else if (bwpfRequest.granularity != null && bwpfRequest.granularity > bwpfAvailable.availableCapacity) {
-                return false;
-            } else if (bwpfAvailable.availableCapacity  > 0) {
-                return true;
-            } else {
-                return false;
-            }
-        } else if (bwpfRequest.type != null && bwpfRequest.type.equalsIgnoreCase("bestEffort")) { 
-            if (bwpfAvailable.availableCapacity  > 0) {
-                return true;
-            } else {
-                return false;
-            }
-        } else if (bwpfRequest.maximumCapacity == null || bwpfAvailable.maximumCapacity >= bwpfRequest.maximumCapacity
-                && bwpfRequest.availableCapacity == null || bwpfAvailable.availableCapacity >= bwpfRequest.availableCapacity) {
-            return true;
-        } else {
-            return false;
-        }
-
-    }
     
+    // compare against static path bandwidthProfile
+    // 1. verify not exceeding maximumCapacity for bestEffort and softCapped
+    // 2. verify not exceeding reservableCapacity for softCapped and guaranteedCapped (and availableCapacity if present)
+    // 3. anyAvailable is treated the same as guaranteedCapped, except that it will override the bandwidth value later
+    private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
+        if (bwpfRequest.type.equalsIgnoreCase("bestEffort") || bwpfRequest.type.equalsIgnoreCase("softCapped")) { 
+            if (bwpfAvailable.maximumCapacity != null && bwpfRequest.maximumCapacity != null 
+                    && bwpfAvailable.maximumCapacity  < bwpfRequest.maximumCapacity) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        
+        if (bwpfRequest.type.equalsIgnoreCase("guaranteedCapped") || bwpfRequest.type.equalsIgnoreCase("softCapped")
+                || bwpfRequest.type.equalsIgnoreCase("anyAvailable")) {
+            if (bwpfAvailable.individualCapacity != null && bwpfRequest.individualCapacity != null
+                    && bwpfRequest.individualCapacity > bwpfAvailable.individualCapacity) {
+                return false;
+            } 
+            if (bwpfAvailable.minimumCapacity != null 
+                    && bwpfRequest.reservableCapacity < bwpfAvailable.minimumCapacity ) {
+                return false;
+            } 
+            if (bwpfAvailable.granularity != null && bwpfAvailable.granularity > 0 
+                    && bwpfRequest.reservableCapacity % bwpfAvailable.granularity != 0) {
+                return false;
+            } 
+            
+            if (bwpfRequest.type.equalsIgnoreCase("softCapped") && bwpfRequest.reservableCapacity == null) {
+                return true;
+            }
+            if (bwpfAvailable.reservableCapacity == null 
+                    || bwpfRequest.reservableCapacity >  bwpfAvailable.reservableCapacity) {
+                return false;
+            }             
+            if (bwpfAvailable.availableCapacity != null 
+                    && bwpfRequest.reservableCapacity > bwpfAvailable.availableCapacity) {
+                return false;
+            }
+            return true;
+        }        
+        // unknown qos type
+        return false;
+    }
+
+    //@TODO: Bandwidth Scheduling
+    //  0. build per-hop BandwidthCalendar and configure scheduling method and params
+    //  1. make schedule based on start - end - duration and bw params for requested reservable vs. min (reservable, available) calendar
+    //  2. update bandwidth profile for path and add schedule lifetime info
+
     public static boolean evaluateStatement_AnyTrue(Model model, Statement stmt, String[] constraints) throws Exception {
         for (String sparql : constraints) {
             if (ModelUtil.evaluateStatement(model, stmt, sparql)) {
@@ -849,9 +915,7 @@ public class MCETools {
         return false;
     }
 
-    //@TODO: create bandwidth service for all sub-level (client) BidirectionalPort
-        //@@ inherit granularity if available
-        //@@ "any" (max available) bandwidth handling - similar to "any" VLAN
+    //@TODO: pass bandwidth schedule information
     public static OntModel createL2PathVlanSubnets(Model model, Path path, JSONObject portTeMap) {
         String method = "createL2PathVlanSubnets";
         HashMap<Resource, HashMap<String, Object>> portParamMap = new HashMap<>();
@@ -887,7 +951,7 @@ public class MCETools {
             }
             if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
                 try {
-                    handleL2PathHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
+                    handleL2PathHop(model, path, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
                     lastPort = currentHop;
                 } catch (TagSet.NoneVlanExeption ex) {
                     ;
@@ -907,7 +971,7 @@ public class MCETools {
                 }
                 if (ModelUtil.isResourceOfType(model, currentHop, Nml.BidirectionalPort)) {
                     try {
-                        handleL2PathHop(model, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
+                        handleL2PathHop(model, path, prevHop, currentHop, nextHop, lastPort, portParamMap, portTeMap);
                         lastPort = currentHop;
                     } catch (TagSet.NoneVlanExeption ex) {
                         ;
@@ -959,8 +1023,7 @@ public class MCETools {
         return l2PathModel;
     }
 
-    //add hashMap (port, availableVlanRange + translation + ingressForSwService, egressForSwService) as params for currentHop
-    private static void handleL2PathHop(Model model, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, JSONObject portTeMap)
+    private static void handleL2PathHop(Model model, Path path, Resource prevHop, Resource currentHop, Resource nextHop, Resource lastPort, HashMap portParamMap, JSONObject portTeMap)
             throws TagSet.NoneVlanExeption, TagSet.EmptyTagSetExeption, TagSet.InvalidVlanRangeExeption {
         if (prevHop != null && ModelUtil.isResourceOfType(model, prevHop, Nml.BidirectionalPort)) {
             //@TODO: handling adaptation?
@@ -995,7 +1058,7 @@ public class MCETools {
             lastParamMap = (HashMap<String, Object>) portParamMap.get(lastPort);
         }
         // Get VLAN range
-        TagSet vlanRange = getVlanRangeForPort(model, currentHop);
+        TagSet vlanRange = getVlanRangeForPort(model, currentHop, path.getBandwithScedule());
         // do nothing for port without a Vlan labelGroup
         if (vlanRange == null) {
             //special handling OpenFlow port (also port in hybrid mode ?)
@@ -1247,7 +1310,7 @@ public class MCETools {
                 vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.availableCapacity, lAvailBw));
             }
             if (bwProfile.reservableCapacity != null) {
-                Literal lResvBw = model.createTypedLiteral(bwProfile.availableCapacity);
+                Literal lResvBw = model.createTypedLiteral(bwProfile.reservableCapacity);
                 vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Mrs.reservableCapacity, lResvBw));
             }
             if (bwProfile.granularity != null) {
@@ -1288,6 +1351,36 @@ public class MCETools {
             addStmts.add(model.createStatement(resFlow, Mrs.tag, tag));
         }
         model.add(addStmts);
+    }
+    
+    public static void pairupPathHops(MCETools.Path l2path,  OntModel refModel) {
+        OntModel pathModel = l2path.getOntModel();
+        String sparql = "SELECT DISTINCT ?port ?vlan_port WHERE {"
+                + " ?vlan_port a nml:BidirectionalPort. "
+                + " ?port nml:hasBidirectionalPort ?vlan_port. "
+                + " FILTER NOT EXISTS { ?port a mrs:SwitchingSubnet. } "
+                + "}";
+        Map<String, Resource> parentChildPortMap = new HashMap();
+        ResultSet r = ModelUtil.sparqlQuery(pathModel, sparql);
+        while (r.hasNext()) {
+            QuerySolution solution = r.next();
+            Resource resPort = solution.getResource("port");
+            Resource resVlanPort = solution.getResource("vlan_port");
+            parentChildPortMap.put(resPort.getURI(), resVlanPort);
+        }
+        Iterator<Statement> it = l2path.iterator();
+        while (it.hasNext()) {
+            Statement hopStmt = it.next();
+            Resource hopX = hopStmt.getSubject();
+            Resource hopY = hopStmt.getObject().asResource();
+            if (!parentChildPortMap.containsKey(hopX.getURI()) || !parentChildPortMap.containsKey(hopY.getURI())) {
+                continue;
+            }
+            if (refModel.contains(hopX, Nml.isAlias, hopY) || refModel.contains(hopY, Nml.isAlias, hopX)) {
+                pathModel.add(pathModel.createStatement(parentChildPortMap.get(hopX.getURI()), Nml.isAlias, parentChildPortMap.get(hopY.getURI())));
+                pathModel.add(pathModel.createStatement(parentChildPortMap.get(hopY.getURI()), Nml.isAlias, parentChildPortMap.get(hopX.getURI())));
+            }
+        }
     }
     
     public static List<QuerySolution> getTerminalVlanLabels(MCETools.Path l2path) {
@@ -1475,7 +1568,8 @@ public class MCETools {
     }
     
     // get VLAN range for the port plus all the available ranges in sub-ports (LabelGroup) and remove allocated vlans (Label)
-    private static TagSet getVlanRangeForPort(Model model, Resource port) 
+    //@TODO: pass current bandwidth schedule and use it to constrain (loosen) VLAN selection
+    private static TagSet getVlanRangeForPort(Model model, Resource port, BandwidthCalendar.BandwidthSchedule schedule) 
             throws TagSet.InvalidVlanRangeExeption {
         TagSet vlanRange = null;
         String sparql = String.format("SELECT ?range WHERE {"
@@ -1512,10 +1606,11 @@ public class MCETools {
         if (vlanRange == null || vlanRange.isEmpty()) {
             return null;
         }
-        sparql = String.format("SELECT ?vlan WHERE { {"
+        sparql = String.format("SELECT DISTINCT ?vlan ?start ?end WHERE { {"
                 + "<%s> nml:hasBidirectionalPort ?vlan_port. "
                 + "?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                 + "?l nml:value ?vlan."
+                + "OPTIONAL {?vlan_port nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end.} "
                 + "} UNION {"
                 + "<%s> nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                 + "?l nml:value ?vlan. "
@@ -1527,8 +1622,20 @@ public class MCETools {
                 + "} }", port, port);
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
-            String vlanStr = rs.next().getLiteral("?vlan").toString();
+            QuerySolution qs = rs.next();
+            String vlanStr = qs.getLiteral("?vlan").toString();
             Integer vlan = Integer.valueOf(vlanStr);
+            if (qs.contains("start") && schedule != null) {
+                try {
+                    long start = DateTimeUtil.getBandwidthScheduleSeconds(qs.getLiteral("start").getString());
+                    long end = DateTimeUtil.getBandwidthScheduleSeconds(qs.getLiteral("end").getString());
+                    if (start >= schedule.getEndTime() || end <= schedule.getStartTime()) {
+                        continue;
+                    }
+                } catch (Exception ex) {
+                    continue; // something wrong with the schedule format, skip the VLAN 
+                }
+            }
             vlanRange.removeTag(vlan);
         }
         return vlanRange;

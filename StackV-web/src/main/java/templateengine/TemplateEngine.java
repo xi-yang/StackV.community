@@ -75,18 +75,21 @@ public class TemplateEngine {
         }
 
         // Postprocessing
-        escapeModel();
-
+        prepareModel();
+        
+        recurBody = recurBody.replace("&#123;", "{");
+        recurBody = recurBody.replace("&#125;", "}");
+        
         return recurBody;
     }
 
-    private void escapeModel() {
+    private void prepareModel() {
         int start = render.indexOf("<modelAddition>") + 15;
         int end = render.indexOf("</modelAddition>");
 
         String body = render.substring(start, end);
-        body = body.replaceAll("<", "&lt;");
-        body = body.replaceAll(">", "&gt;");
+        body = body.replace("<", "&lt;");
+        body = body.replace(">", "&gt;");        
 
         render = render.substring(0, start) + body + render.substring(end);
     }

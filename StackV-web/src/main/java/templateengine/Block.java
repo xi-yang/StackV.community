@@ -323,6 +323,8 @@ public class Block {
 
     private String finalize(String str) {
         String mode = context.get("whitespace");
+        str = str.replace("{", "&#123;");
+        str = str.replace("}", "&#125;");
         if (mode == null) {
             return str;
         } else {

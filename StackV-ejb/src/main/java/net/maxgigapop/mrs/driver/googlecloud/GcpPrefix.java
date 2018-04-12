@@ -13,20 +13,23 @@ package net.maxgigapop.mrs.driver.googlecloud;
 public class GcpPrefix {
     public static final String prefix = "google.com:google-cloud";
 
-    public static final String vpcService =           prefix+":vpcService+%s";
-    public static final String computeService =       prefix+":computeService+%s";
-    public static final String blockStorageService =  prefix+":blockStorageService+%s";
-    public static final String objectStorageService = prefix+":objectStorageService+%s";
-    public static final String routingService =       prefix+":vpc+%s:routingService+%s";
+    public static final String vpcService =             prefix+":vpcService+%s";
+    public static final String computeService =         prefix+":computeService+%s";
+    public static final String blockStorageService =    prefix+":blockStorageService+%s";
+    public static final String objectStorageService =   prefix+":objectStorageService+%s";
+    public static final String routingService =         prefix+":vpc+%s:routingService+%s";
     
-    public static final String vpc =                  prefix+":vpc+%s";
-    public static final String subnet =               prefix+":vpc%s:region+%s:subnet+%s";
-    public static final String internetGateway =      prefix+":vpc+%s:internetGateway"; //for now, each vpc can only have one internet gateway
-    public static final String instance =             prefix+":zone+%s:instance+%s";
-    public static final String nic =                  prefix+":vpc+%s:instance+%s:nic+%s";
-    public static final String nicNetworkAddress =    prefix+":vpc+%s:region+%s:subnet+%s:nic+%s:ip+%s";
-    public static final String volume =               prefix+":zone+%s:volume+%s";
-    public static final String routingTable =         prefix+":vpc+%s:routingTable";
-    public static final String route =                prefix+":vpc+%s:route+%s";
-    public static final String bucket =               prefix+":bucket+%s";
+    public static final String vpc =                    prefix+":vpc+%s";
+    public static final String subnet =                 prefix+":vpc%s:region+%s:subnet+%s";
+    public static final String internetGateway =        prefix+":vpc+%s:internetGateway"; //for now, each vpc can only have one internet gateway
+    public static final String vpnGateway =             prefix+":vpc+%s:region+%s:vpnGateway+%s";
+    public static final String vpnTunnel =              prefix+":vpc+%s:region+%s:tunnel+%s";
+    public static final String instance =               prefix+":zone+%s:instance+%s";
+    public static final String nic =                    prefix+":vpc+%s:instance+%s:nic+%s";
+    public static final String nicNetworkAddress =      prefix+":vpc+%s:region+%s:subnet+%s:nic+%s:ip+%s";
+    public static final String volume =                 prefix+":zone+%s:volume+%s";
+    public static final String routingTable =           prefix+":vpc+%s:routingTable";
+    public static final String route =                  prefix+":vpc+%s:route+%s";
+    public static final String bucket =                 prefix+":bucket+%s";
+    public static final String rule =                   prefix+":region+%s:forwardingRule+%s";
 }

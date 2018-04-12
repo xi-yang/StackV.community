@@ -145,6 +145,9 @@ public class MCE_MPVlanConnection extends MCEBase {
             }
             // pick the shortest path from remaining/feasible paths in KSP
             MCETools.Path connPath = MCETools.getLeastCostPath(KSP);
+            //@TODO: make this configurable in connDataMap JSON (default = false)
+            MCETools.pairupPathHops(connPath, transformedModel);
+            // create a tag to track the path resources
             MCETools.tagPathHops(connPath, "l2path+"+resConn.getURI()+":"+connId+"");
             transformedModel.add(connPath.getOntModel());
             mapConnPaths.put(connId, connPath);

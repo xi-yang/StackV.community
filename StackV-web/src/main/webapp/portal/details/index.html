@@ -26,7 +26,9 @@
                     <thead>
                         <tr>
                             <th>Instance Details</th>
-                            <th></th>
+                            <th>
+                                <button class="btn btn-default" id="button-view-intent" style="float: right;">View Service Definition</button>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -119,6 +121,12 @@
             <div id="loading-panel"></div>
         </div>
         <div id="details-viz" ></div>
+        
+        <!-- Profile Details Modal -->
+        <div id="details-intent-modal" data-iziModal-title="Intent"></div> 
+        
+        <!-- Loading Modal -->
+        <div id="loading-modal"></div> 
 
         <!-- CORE JS PACKAGE-->
         <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
@@ -152,6 +160,8 @@
         <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.js"></script>
         <!---->        
 
+        <script src="/StackV-web/js/iziModal.min.js"></script>
+        
         <script src="/StackV-web/js/details.js"></script>
         <script src="/StackV-web/js/detailsEngine.js"></script>
 

@@ -47,25 +47,7 @@
                 <type>text</type>
                 <valid>string</valid>
             </input>
-            <group name="Bandwidth" collapsible="true" opened="true">
-                <input>
-                    <name>Capacity</name>
-                    <type>text</type>
-                    <hint>(in Mbps)</hint>
-                    <valid>integer</valid>
-                </input>
-                <input required="true">
-                    <name>QoS Class</name>
-                    <type>select</type>
-                    <options>
-                        <option>guaranteedCapped</option>
-                        <option>softCapped</option>
-                        <option>anyAvailable</option>
-                        <option default="true">bestEffort</option>
-                    </options>
-                </input>
-            </group>
-            <group factory="true" name="terminal">
+           <group factory="true" name="terminal">
                 <bound>
                     <name>connections-type</name>
                     <value>Multi-Path P2P VLAN</value>
@@ -101,6 +83,47 @@
                     <name>Assign IP</name>
                     <type>checkbox</type>
                     <size>small</size>
+                </input>
+            </group>
+            <group name="Bandwidth" collapsible="true" opened="false">
+                <input>
+                    <name>Capacity</name>
+                    <type>text</type>
+                    <hint>(in Mbps)</hint>
+                    <valid>integer</valid>
+                </input>
+                <input required="true">
+                    <name>QoS Class</name>
+                    <type>select</type>
+                    <options>
+                        <option>guaranteedCapped</option>
+                        <option>softCapped</option>
+                        <option>anyAvailable</option>
+                        <option default="true">bestEffort</option>
+                    </options>
+                </input>
+            </group>
+            <group name="Schedule" collapsible="true" opened="false">
+                <input>
+                    <name>Start</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <hint>(Calendar or blank)</hint>
+                    <valid>calendar</valid>
+                </input>
+                <input required="true">
+                    <name>End</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <hint>(Calendar or '+?d:?h:?m:?s')</hint>
+                    <valid>calendar</valid>
+                </input>
+                <input>
+                    <name>Duration</name>
+                    <type>text</type>
+                    <size>small</size>
+                    <hint>(in '?d:?h:?m:?s')</hint>
+                    <valid>integer</valid>
                 </input>
             </group>
         </group>
