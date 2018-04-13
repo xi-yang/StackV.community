@@ -2573,8 +2573,8 @@ public class OpenStackPush {
     private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {        
         String method = "sriovRequests";
         
-        /*
-        IpaAlm ipaAlm = new IpaAlm("", ""); // replace with keycloak creds that are gotten dynamically
+        
+        IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!"); // replace with keycloak creds that are gotten dynamically
         String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;        
         String ipPoolType = "ipv4";
         String macPoolType = "mac";
@@ -2583,7 +2583,7 @@ public class OpenStackPush {
         
         String ip = null;
         String mac = null;
-        */
+        
         
         List<JSONObject> requests = new ArrayList();
         JSONObject JO = new JSONObject();
@@ -2635,7 +2635,7 @@ public class OpenStackPush {
                     + "}";
             ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
             
-            String ip = null;
+            //String ip = null;
             if (r2.hasNext()) {
                 ip = r2.next().get("ip").toString();
             }
@@ -2649,13 +2649,13 @@ public class OpenStackPush {
                     + "}";
             ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
             
-            String mac = null;
+            //String mac = null;
             if (r3.hasNext()) {
                 mac = r3.next().get("mac").toString();
             }
             
             
-            /*
+            
             // alm ip
             query = "SELECT ?ip WHERE {"
                     + String.format("<%s> mrs:hasNetworkAddress ?ipAddr . ", vNic)
@@ -2734,7 +2734,7 @@ public class OpenStackPush {
                     mac = ipaAlm.leaseAddr(clientName, poolInfo[1], macPoolType, null);
                 }
             }
-            */
+            
             
             String serverName = ResourceTool.getResourceName(VM.toString(), OpenstackPrefix.vm);
             String vnicName = ResourceTool.getResourceName(vNic.toString(), OpenstackPrefix.PORT);
