@@ -216,7 +216,7 @@ public class ServiceHandler {
 
         logger.refuuid(refUUID);
         logger.start(method);
-        updateLastState(null, refUUID);
+        updateLastState("INIT", refUUID);
         VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
         try {
             switch (action) {

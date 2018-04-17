@@ -56,7 +56,12 @@ function startDetailsEngine(uuid) {
 
 function renderDetails() {
     if (subState === "FAILED") {
-        $subState.html(subState + " (after " + lastState + ")");
+        if (lastState !== null) {
+            $subState.html(subState + " (after " + lastState + ")");
+        }
+        else {
+            $subState.html(subState + " (Fatal error)");
+        }
     } else {
         $subState.html(subState);
     }
@@ -248,7 +253,7 @@ function attachListeners() {
                             $button.text("Confirm Deletion");
                             $button.addClass("btn-danger").removeClass("btn-default");
                             $(".instance-command").attr('disabled', false);
-                            
+
                             setTimeout(function () {
                                 $button.removeAttr("data-mode");
                                 $button.text("Delete");
