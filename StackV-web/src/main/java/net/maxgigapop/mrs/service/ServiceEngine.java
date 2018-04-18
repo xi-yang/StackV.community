@@ -32,6 +32,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -53,7 +54,7 @@ public class ServiceEngine {
     private final static JNDIFactory factory = new JNDIFactory();
 
     // OPERATION FUNCTIONS    
-    static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
+    public static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
         String method = "orchestrateInstance";
         String result;
         String lastState = "INIT";
@@ -264,6 +265,16 @@ public class ServiceEngine {
         return result;
     }
 
+    static String revertInstance(String refUuid, String auth) throws MalformedURLException, IOException {
+        URL url = new URL(String.format("%s/service/%s/revert", HOST, refUuid));
+        HttpURLConnection revert = (HttpURLConnection) url.openConnection();
+        String result = WebResource.executeHttpMethod(url, revert, "PUT", null, auth);
+        if (!result.contains("-PARTIAL")) {
+            throw new EJBException("Revert Failed!");
+        }
+        return result;
+    }
+    
     public static String verifyInstance(String refUUID, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/verify/%s", HOST, refUUID));
         HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
@@ -355,5 +366,39 @@ public class ServiceEngine {
         URL url = new URL(String.format("%s/service/property/%s/%s", HOST, refUUID, key));
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, conn, "POST", value, auth);
+    }
+    
+    public static String getCachedSystemDelta(String refUuid)  {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            Properties front_connectionProps = new Properties();
+            front_connectionProps.put("user", "root");
+            front_connectionProps.put("password", "root");
+
+
+            front_conn = factory.getConnection("frontend");
+
+            prep = front_conn.prepareStatement("SELECT service_instance_id"
+                    + " FROM service_instance WHERE referenceUUID = ?");
+            prep.setString(1, refUuid);
+            ResultSet rs1 = prep.executeQuery();
+            rs1.next();
+            int instanceID = rs1.getInt(1);
+
+            
+            prep = front_conn.prepareStatement("SELECT delta FROM frontend.service_delta "
+                    + "WHERE service_instance_id = ? AND type='System'");
+            prep.setInt(1, instanceID);
+            ResultSet rs2 = prep.executeQuery();
+            rs2.next();
+            return rs2.getString(1);
+        } catch (SQLException ex) {
+            logger.catching("getCachedSystemDelta", ex);
+        } finally {
+            WebResource.commonsClose(front_conn, prep, rs);
+        }
+        return null;
     }
 }

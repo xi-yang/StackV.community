@@ -62,4 +62,5 @@ public class ServiceDeltaPersistenceManager {
             throw logger.error_throwing("findByReferenceUUID", e.getMessage());
         }
     }
+
 }
