@@ -2473,7 +2473,7 @@ public class WebResource {
 
                 System.out.println(diff);
 
-                if (diff < -30) {
+                if (diff < -2) {
                     return "0";
                 } else {
                     return "1";

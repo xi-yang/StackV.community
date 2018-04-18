@@ -9,6 +9,9 @@
     opacity: 0;
     display: none;
 }
+.blurred {
+    filter: blur(7px) !important;
+}
 
 html {
     height: 100%;
@@ -89,6 +92,7 @@ div#main-pane {
 
     -webkit-transition: all 400ms ease-in-out;
     transition: all 400ms ease-in-out;
+    transition: .5s filter linear;
 }
 div.sub-main#main-pane {
     height: calc(100% - 104px);

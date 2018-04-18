@@ -291,16 +291,6 @@ function executeCommand(command) {
         }
     });
     switch (command) {
-        case "cancel":
-        case "force_cancel":
-        case "reinstate":
-        case "force_reinstate":
-            setTimeout(function () {
-                $(".instance-command").attr('disabled', false);
-                resumeRefresh();
-                reloadData();
-            }, 2000);
-            break;
         case "delete":
         case "force_delete":
             break;
@@ -309,6 +299,7 @@ function executeCommand(command) {
                 $(".instance-command").attr('disabled', false);
                 resumeRefresh();
                 reloadData();
-            }, 500);
+            }, 3000);
+            break;
     }
 }
