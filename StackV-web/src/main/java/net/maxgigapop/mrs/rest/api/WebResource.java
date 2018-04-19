@@ -2474,7 +2474,7 @@ public class WebResource {
 
                 System.out.println(diff);
 
-                if (diff < -2) {
+                if (diff < -1) {
                     return "0";
                 } else {
                     return "1";
