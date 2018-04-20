@@ -50,7 +50,7 @@ public class DriverInstancePersistenceManager extends PersistenceManager {
         DriverInstancePersistenceManager.driverInstanceByTopologyMap = driverInstanceByTopologyMap;
     }
 
-    public static void refreshAll() {
+    synchronized public static void refreshAll() {
         driverInstanceByTopologyMap = new HashMap<String, DriverInstance>();
         List<DriverInstance> listDriverInstances = createQuery("FROM " + DriverInstance.class.getSimpleName()).getResultList();
         for (DriverInstance di : listDriverInstances) {
