@@ -45,7 +45,16 @@ var loadingConfig = {
     timeoutProgressbar: true,
     transitionIn: 'fadeInDown',
     transitionOut: 'fadeOutDown',
-    pauseOnHover: false
+    pauseOnHover: false,
+    overlayClose: false,
+    closeButton: false,
+    closeOnEscape: false,
+    onOpening: function () {
+        $("#main-pane").addClass("blurred");
+    },
+    onClosing: function () {
+        $("#main-pane").removeClass("blurred");
+    }
 };
 
 Mousetrap.bind({
