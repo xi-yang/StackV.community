@@ -50,57 +50,10 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class ServiceManifest {
-    
     private static final StackLogger logger = new StackLogger(HandleServiceCall.class.getName(), "ServiceManifest");
-    
-    static public JSONObject generateManifest (String jsonModel, String serviceType) {
-        String method = "generateManifest";
-        JSONObject joMan = new JSONObject();
-        OntModel omAdd = null;
-        try {
-            omAdd = ModelUtil.unmarshalOntModelJson(jsonModel);
-        } catch (Exception ex) {
-            throw logger.throwing(method, ex);
-        }
-        DataConcurrencyPoster dataConcurrencyPoster;
-        try {
-            Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:global/StackV-ear-1.0-SNAPSHOT/StackV-ejb-1.0-SNAPSHOT/DataConcurrencyPoster");
-        } catch (NamingException e) {
-            throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
-        }
-        OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
-        
-        if (serviceType.equals("Dynamic Network Connection")) {
-            joMan.put("connections", generateManifestDncLinks(omAdd));
-        } else if (serviceType.equals("Virtual Cloud Network")) {
-            if (isModelVcnAws(omAdd, omRef)) {
-                joMan.put("public_cloud", generateManifestVcnAws(omAdd));
-            } else {
-                joMan.put("private_cloud", generateManifestVcnOps(omAdd));
-            }
-            JSONArray joLinks = generateManifestDncLinks(omAdd);
-            if (!joLinks.isEmpty()) {
-                joMan.put("links", joLinks);
-            }
-        } else if (serviceType.equals("Hybrid Cloud")) {
-            joMan.put("public_cloud", generateManifestVcnAws(omAdd));
-            joMan.put("private_cloud", generateManifestVcnAws(omAdd));
-            joMan.put("connections", generateManifestDncLinks(omAdd));
-        } else {
-            throw logger.error_throwing(method, "Cannot generate maniest for service type " + serviceType);
-        }
-        return joMan;
-    }
 
-    static public JSONObject resolveManifestJsonTemplate (String serviceTemplate, String jsonModel) {
+    static public JSONObject resolveManifestJsonTemplate (String serviceTemplate, String providedModel) {
         String method = "resolveManifestJsonTemplate";
-        OntModel omAdd = null;
-        try {
-            omAdd = ModelUtil.unmarshalOntModelJson(jsonModel);
-        } catch (Exception ex) {
-            throw logger.throwing(method, ex);
-        }
         DataConcurrencyPoster dataConcurrencyPoster;
         try {
             Context ejbCxt = new InitialContext();
@@ -109,64 +62,22 @@ public class ServiceManifest {
             throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
         }
         OntModel omRef = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
-        return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd, omRef);
-    }
-    
-    static public JSONArray generateManifestDncLinks (OntModel model) {
-        JSONArray joArr = new JSONArray();
-        
-        return joArr;
-    }
-    
-    static public JSONObject generateManifestVcnAws (OntModel model) {
-        String awsManifestTemplate = "{\n" +
-"    \"name\": \"?vpc?\",\n" +
-"    \"cidr\": \"?vpc_cidr?\",\n" +
-"    \"subnets\": [\n" +
-"        {\n" +
-"            \"name\": \"?subnet?\",\n" +
-"            \"cidr\": \"?subnet_cidr?\",\n" +
-"            \"vms\": [\n" +
-"                {\n" +
-"                    \"name\": \"?vm?\",\n" +
-"                    \"instruction\": \"To access the VM: ssh -i ?vm_keyname? ec2_user@?vm_public_ip? \",\n" +
-"                    \"sparql\": \"SELECT ?vm ?vm_keyname ?vm_keyname ?vm_public_ip WHERE { ?subnet nml:hasBidirectionalPort ?vm_eth0. ?vm  nml:hasBidirectionalPort ?vm_eth0. ?ec2 mrs:providesVM ?vm. OPTIONAL { ?vm mrs:type ?vm_keyname. FILTER (regex(?vm_keyname,'^keypair.+$')) } OPTIONAL { ?vm mrs:hasNetworkAddress ?vm_public_na.?vm_public_na mrs:type \\\"ipv4:public\\\".  ?vm_public_na mrs:value ?vm_public_ip. } }\",\n" +
-"                    \"required\": \"false\"\n" +
-"                }\n" +
-"            ],\n" +
-"            \"sparql\": \"SELECT ?subnet ?subnet_cidr WHERE { ?vpc nml:hasService ?vpc_sw_svc. ?vpc_sw_svc mrs:providesSubnet ?subnet. ?subnet mrs:hasNetworkAddress ?subnet_cidr_na. ?subnet_cidr_na mrs:type \\\"ipv4-prefix\\\". ?subnet_cidr_na  mrs:value ?subnet_cidr. }\",\n" +
-"            \"required\": \"true\"\n" +
-"        }\n" +
-"    ],\n" +
-"    \"sparql\": \"SELECT ?vpc ?vpc_cidr WHERE { ?aws nml:hasTopology ?vpc. ?vpc_svc mrs:providesVPC ?vpc. ?vpc nml:hasService ?vpc_rt_svc. ?vpc_rt_svc mrs:providesRoute ?vpc_local_rt. ?vpc_local_rt mrs:nextHop \\\"local\\\". ?vpc_local_rt mrs:routeTo ?vpc_cidr_na. ?vpc_cidr_na mrs:type \\\"ipv4-prefix\\\". ?vpc_cidr_na  mrs:value ?vpc_cidr. }\",\n" +
-"    \"required\": \"true\"\n" +
-"}";
-        return (JSONObject)querySparsqlTemplateJson(awsManifestTemplate, model, null);
-    }
-    
-    static public JSONObject generateManifestVcnOps (OntModel model) {
-        JSONObject jo = new JSONObject();
-        
-        return jo;
-    }
-    
-    //@TODO this has to use union model!
-    static public boolean isModelVcnAws(OntModel model, OntModel refModel) {
-        String sparql = "SELECT ?aws WHERE {"
-                + "?aws nml:hasTopology ?vpc. "
-                + "?vpc_svc mrs:providesVPC ?vpc. "
-                + "}";
-        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
-        if (!rs.hasNext()) {
-            return false;
+        OntModel omAdd = null;
+        if (providedModel != null) {
+            try {
+                if (!providedModel.startsWith("{") && providedModel.contains("@prefix")) {
+                    omAdd = ModelUtil.unmarshalOntModel(providedModel);
+                } else {
+                    omAdd = ModelUtil.unmarshalOntModelJson(providedModel);
+                }
+            } catch (Exception ex) {
+                throw logger.throwing(method, ex);
+            }
+        } else {
+            omAdd = omRef;
+            omRef = null;
         }
-        Resource resAws = rs.next().getResource("aws");
-        sparql = "SELECT ?ec2_svc WHERE {"
-                + "?aws nml:hasService ?ec2_svc. "
-                + "?ec2_svc a mrs:HypervisorService. "
-                + "}";
-        rs = ModelUtil.sparqlQuery(refModel, sparql);
-        return rs.hasNext();
+        return (JSONObject)querySparsqlTemplateJson(serviceTemplate, omAdd, omRef);
     }
     
     // top method to parse / query JSON template

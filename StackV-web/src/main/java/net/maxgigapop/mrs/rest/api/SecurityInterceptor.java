@@ -67,11 +67,11 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             String role;
 
             // Ban lists
-            List<String> freeRoles = Arrays.asList("Free", "Logging", "Panels", "Labels");
-            List<String> quietRoles = Arrays.asList("Profiles-R");
+            List<String> quietRoles = Arrays.asList("");
 
             if (rolesAnnotation == null) {
-                role = "Free";
+                logger.trace("Authenticated Freely.");
+                return;
             } else {
                 role = Arrays.asList(rolesAnnotation.value()).get(0);
             }
@@ -86,12 +86,6 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             }
 
             logger.trace("API Request Received: {}.", uri.getPath());
-
-            if (freeRoles.contains(role)) {
-                logger.trace("Authenticated Freely.");
-                return;
-            }
-
             if (!accessToken.isActive()) {
                 logger.warn("Token is not active.");
             }

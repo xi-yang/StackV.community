@@ -39,7 +39,7 @@ $(function () {
                 xhr.setRequestHeader("Authorization", "bearer " + sessionStorage.getItem("token"));
             } else {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            }            
+            }
         }
     });
 
@@ -187,32 +187,32 @@ function loadNavbar() {
 }
 
 function verifyPageRoles() {
-    if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
+    if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") <= -1) {
         $(".nav-admin").hide();
     }
-    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
+    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.realm_access.roles.includes("F_Drivers-R")) {
         $("#driver-tab").hide();
     }
-    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("ACL")) {
+    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.realm_access.roles.includes("F_ACL-R")) {
         $("#acl-tab").hide();
     }
-    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Visualization")) {
+    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.realm_access.roles.includes("F_Visualization-R")) {
         $("#visualization-tab").hide();
     }
 
     switch (window.location.pathname) {
         case "/StackV-web/portal/acl/":
-            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("ACL") === -1) {
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_ACL-R") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
         case "/StackV-web/portal/admin/":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") === -1) {
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
         case "/StackV-web/portal/details/":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") === -1) {
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
                 var uuid = sessionStorage.getItem("instance-uuid");
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/access/instances/' + uuid;
                 $.ajax({
@@ -231,14 +231,15 @@ function verifyPageRoles() {
             }
             break;
         case "/StackV-web/portal/driver/":
-            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("Drivers") === -1) {
+            if (keycloak.tokenParsed.resource_access.realm_access.indexOf("F_Drivers-R") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
         case "/StackV-web/portal/intent/":
-            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("vcn") === -1
-                    && keycloak.tokenParsed.resource_access.StackV.roles.indexOf("ahc") === -1
-                    && keycloak.tokenParsed.resource_access.StackV.roles.indexOf("dnc") === -1) {
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-VCN") === -1
+                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-AHC") === -1
+                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-DNC") === -1
+                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-ECC") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;

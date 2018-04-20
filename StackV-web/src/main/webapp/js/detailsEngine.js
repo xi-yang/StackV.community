@@ -56,7 +56,12 @@ function startDetailsEngine(uuid) {
 
 function renderDetails() {
     if (subState === "FAILED") {
-        $subState.html(subState + " (after " + lastState + ")");
+        if (lastState !== null) {
+            $subState.html(subState + " (after " + lastState + ")");
+        }
+        else {
+            $subState.html(subState + " (Fatal error)");
+        }
     } else {
         $subState.html(subState);
     }
@@ -248,7 +253,7 @@ function attachListeners() {
                             $button.text("Confirm Deletion");
                             $button.addClass("btn-danger").removeClass("btn-default");
                             $(".instance-command").attr('disabled', false);
-                            
+
                             setTimeout(function () {
                                 $button.removeAttr("data-mode");
                                 $button.text("Delete");
@@ -286,16 +291,6 @@ function executeCommand(command) {
         }
     });
     switch (command) {
-        case "cancel":
-        case "force_cancel":
-        case "reinstate":
-        case "force_reinstate":
-            setTimeout(function () {
-                $(".instance-command").attr('disabled', false);
-                resumeRefresh();
-                reloadData();
-            }, 2000);
-            break;
         case "delete":
         case "force_delete":
             break;
@@ -304,6 +299,7 @@ function executeCommand(command) {
                 $(".instance-command").attr('disabled', false);
                 resumeRefresh();
                 reloadData();
-            }, 500);
+            }, 3000);
+            break;
     }
 }
