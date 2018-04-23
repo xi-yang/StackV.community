@@ -67,7 +67,11 @@ public class JNDIFactory {
                     }
 
                 } catch (SQLException ex2) {
-                    logger.error(method, "Datasource connection failed. Attempt #" + attempt + ".");
+                    if (attempt == 10) {
+                        throw logger.throwing(method, ex2);
+                    } else {
+                        logger.error(method, "Datasource connection failed. Attempt #" + attempt + ".");
+                    }
                 } catch (InterruptedException | NamingException ex3) {
                     throw logger.throwing(method, ex);
                 }
