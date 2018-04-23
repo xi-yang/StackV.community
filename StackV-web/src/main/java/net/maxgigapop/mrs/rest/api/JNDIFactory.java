@@ -42,7 +42,7 @@ public class JNDIFactory {
                 jndi = "java:jboss/datasources/MysqlDS";
             } else if (tag.equals("frontend")) {
                 jndi = "java:jboss/datasources/FrontendDS";
-            } 
+            }
         }
         Connection result = null;
         try {
@@ -51,9 +51,28 @@ public class JNDIFactory {
             if (datasource != null) {
                 result = datasource.getConnection();
             } else {
-                logger.error(method, "Datasource not found");
+                logger.error(method, "Datasource not found.");
             }
-        } catch (NamingException | SQLException ex) {
+        } catch (SQLException ex) {
+            int attempt = 0;
+            while (++attempt <= 10) {
+                try {
+                    Thread.sleep(1000);
+                    Context initialContext = new InitialContext();
+                    DataSource datasource = (DataSource) initialContext.lookup(jndi);
+                    if (datasource != null) {
+                        result = datasource.getConnection();
+                    } else {
+                        logger.error(method, "Datasource not found.");
+                    }
+
+                } catch (SQLException ex2) {
+                    logger.error(method, "Datasource connection failed. Attempt #" + attempt + ".");
+                } catch (InterruptedException | NamingException ex3) {
+                    throw logger.throwing(method, ex);
+                }
+            }
+        } catch (NamingException ex) {
             throw logger.throwing(method, ex);
         }
         return result;
