@@ -630,6 +630,7 @@ function loadLoggingDataTable(apiUrl) {
         },
         "order": [[1, 'asc']],
         "ordering": false,
+        "processing": true,
         "scroller": {
             displayBuffer: 15
         },

@@ -1853,6 +1853,9 @@ public class WebResource {
             } // Filtering by level alone 
             else if (refUUID == null && level != null) {
                 switch (level) {
+                    case "TRACE":
+                        prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
+                        break;
                     case "INFO":
                         prep = front_conn.prepareStatement("SELECT * FROM log WHERE level != 'TRACE' ORDER BY timestamp DESC");
                         break;
@@ -1982,7 +1985,7 @@ public class WebResource {
                             + "OR event LIKE '%" + search + "%' "
                             + "OR message LIKE '%" + search + "%') ";
                 } else {
-                    prepString = prepString + " WHERE logger LIKE '%" + search + "%' "
+                    prepString = prepString + " WHERE (logger LIKE '%" + search + "%' "
                             + "OR module LIKE '%" + search + "%' "
                             + "OR method LIKE '%" + search + "%' "
                             + "OR event LIKE '%" + search + "%' "
@@ -3413,7 +3416,7 @@ public class WebResource {
     }
 
     @DELETE
-    @Path(value = "/service/{siUUID}/{action}")
+    @Path(value = "/service/{siUUID}")
     @RolesAllowed("Services")
     public void delete(@PathParam(value = "siUUID") final String refUuid) throws SQLException, IOException, InterruptedException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");

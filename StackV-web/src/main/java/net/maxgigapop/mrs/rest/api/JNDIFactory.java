@@ -65,7 +65,6 @@ public class JNDIFactory {
                     } else {
                         logger.error(method, "Datasource not found.");
                     }
-
                 } catch (SQLException ex2) {
                     if (attempt == 10) {
                         throw logger.throwing(method, ex2);

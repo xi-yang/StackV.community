@@ -155,23 +155,7 @@ public class ServiceHandler {
 
             // Execute service creation.
             ServiceEngine.orchestrateInstance(refUUID, inputJSON, deltaUUID, token, autoProceed);
-            /*switch (type) {
-                case "netcreate":
-                    ServiceEngine.createNetwork(paraMap, token);
-                    break;
-                case "hybridcloud":
-                    ServiceEngine.createHybridCloud(paraMap, token);
-                    break;
-                case "omm":
-                    ServiceEngine.createOperationModelModification(paraMap, token);
-                    break;
-                case "dnc":
-                    ServiceEngine.createDNC(dataJSON, token, refUUID);
-                    break;
-                default:
-            }*/
 
-            // Return instance UUID
             logger.end(method);
         } catch (EJBException | SQLException ex) {
             logger.catching(method, ex);

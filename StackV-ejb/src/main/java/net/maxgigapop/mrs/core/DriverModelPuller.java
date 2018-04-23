@@ -87,10 +87,10 @@ public class DriverModelPuller {
     @Timeout
     public void run() {
         String method = "run";
-        logger.start(method);
+        logger.trace_start(method);
         try {
             String hostname = InetAddress.getLocalHost().getHostName();
-            logger.message(method, "running on host="+hostname);
+            logger.trace(method, "running on host="+hostname);
         } catch (UnknownHostException ex) {
             ;
         }
