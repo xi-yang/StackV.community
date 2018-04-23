@@ -39,7 +39,7 @@ $(function () {
                 xhr.setRequestHeader("Authorization", "bearer " + sessionStorage.getItem("token"));
             } else {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            }            
+            }
         }
     });
 
@@ -616,9 +616,9 @@ function loadLoggingDataTable(apiUrl) {
                 "width": "20px"
             },
             {"data": "timestamp", "width": "150px"},
+            {"data": "level", "width": "60px"},
             {"data": "event"},
-            {"data": "referenceUUID", "width": "250px"},
-            {"data": "level", "width": "70px"},
+            {"data": "referenceUUID", "width": "275px"},
             {"data": "message", "visible": false, "searchable": false}
         ],
         "createdRow": function (row, data, dataIndex) {
@@ -637,6 +637,13 @@ function loadLoggingDataTable(apiUrl) {
         "scrollX": true,
         "scrollY": "calc(60vh - 130px)",
         "serverSide": true
+    });
+
+    $("#loggingData").on('preXhr.dt', function () {
+        // Event for opening loading animation        
+    });
+    $("#loggingData").on('draw.dt', function () {
+        // Event for closing loading animation
     });
 
     // Add event listener for opening and closing details
