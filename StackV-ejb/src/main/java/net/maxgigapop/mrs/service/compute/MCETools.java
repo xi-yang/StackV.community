@@ -646,6 +646,21 @@ public class MCETools {
                 stmtList.add(infModel.createLiteralStatement(resNode, Nml.connectsTo, resSubPort));
             }
         }
+        // remove port to sub-port link if sub-port hasLabel 
+        sparql = "SELECT ?port ?subport WHERE {"
+                + "?port a nml:BidirectionalPort."
+                + "?port nml:hasBidirectionalPort ?subport."
+                + "?subport nml:hasLabel ?label. "
+                + "FILTER (NOT EXISTS{?subport nml:hasLabelGroup ?labelgroup})"
+                + "}";
+        rs = ModelUtil.sparqlQuery(infModel, sparql);
+        while (rs.hasNext()) {
+            QuerySolution qs = rs.next();
+            Resource resPort = qs.getResource("port");
+            Resource resSubPort = qs.getResource("subport");
+            stmtList.add(infModel.createLiteralStatement(resSubPort, Nml.connectsTo, resPort));
+            stmtList.add(infModel.createLiteralStatement(resPort, Nml.connectsTo, resSubPort));
+        }
         OntModel outputModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         outputModel.add(infModel);
         outputModel.remove(stmtList);
