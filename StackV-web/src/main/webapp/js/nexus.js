@@ -548,20 +548,26 @@ function timerChange(sel) {
         setRefresh(sel.value);
     } else {
         document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+        $(".loading-prog").css("width", "0%");
     }
 }
 function setRefresh(time) {
     countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadData();
-    }, (time * 1000));
     countdownTimer = setInterval(function () {
         refreshCountdown(time);
     }, 1000);
+    refreshTimer = setInterval(function () {
+        reloadData();
+    }, (time * 1000));
 }
 function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + (countdown - 1) + ' seconds';
-    countdown--;
+    $('#refresh-button').html('Refresh in ' + (countdown - 1) + ' seconds');
+    countdown--;   
+
+    var setting = $("#refresh-timer").val();  
+    
+    var prog = (setting - countdown + .5) / setting;
+    $(".loading-prog").css("width", (prog * 100) + "%");
 }
 function reloadDataManual() {
     var timer = $("#refresh-timer");

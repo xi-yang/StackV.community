@@ -102,6 +102,7 @@ div.sub-main#main-pane {
 #sub-nav {
     z-index: 98;
     height: 52px;
+    overflow: hidden;
 }
 #sub-nav nav {
     border-radius: 0;
@@ -117,4 +118,14 @@ div.sub-main#main-pane {
 input[type=number]::-webkit-inner-spin-button, 
 input[type=number]::-webkit-outer-spin-button { 
     opacity: 1;
+}
+
+.loading-prog {
+    height: 2px;
+    left: 0;
+    bottom: 0;
+    background: #5bab5b;
+    position: absolute;
+    transition: width 1s linear;
+    box-shadow: 0 1px 15px 0 #4ed44e;
 }
