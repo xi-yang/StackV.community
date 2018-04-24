@@ -390,7 +390,7 @@ public class HandleServiceCall {
                 if (!canMultiPropagate) {
                     break;
                 }
-            } else if (!canMultiPropagate && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED")) {
+            } else if (!canMultiPropagate && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("FAILED")) {
                 throw logger.error_throwing(method, "ref:ServiceInstance with 'multiPropagate=false' encounters target:ServiceDelta with status="+serviceDelta.getStatus());
             }
         }
@@ -489,7 +489,7 @@ public class HandleServiceCall {
                 if (!canMultiCommit) {
                     break;
                 }
-            } else if (!forced && !canMultiCommit && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED")) {
+            } else if (!forced && !canMultiCommit && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("FAILED")) {
                 throw logger.error_throwing(method, "ref:ServiceInstance with forced==false and canMultiCommit==false encounters target:ServiceDelta in unexpected status=" + serviceDelta.getStatus());
             }
         }
