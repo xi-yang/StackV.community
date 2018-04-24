@@ -839,19 +839,19 @@ public class MCETools {
         if (pathBwProfile.maximumCapacity == null || pathBwProfile.maximumCapacity > hopBwProfile.maximumCapacity) {
             pathBwProfile.maximumCapacity = hopBwProfile.maximumCapacity;
         }
-        if (pathBwProfile.availableCapacity == null || pathBwProfile.availableCapacity > hopBwProfile.availableCapacity) {
+        if (pathBwProfile.availableCapacity == null || (hopBwProfile.availableCapacity != null && pathBwProfile.availableCapacity > hopBwProfile.availableCapacity)) {
             pathBwProfile.availableCapacity = hopBwProfile.availableCapacity;
         }
-        if (pathBwProfile.reservableCapacity == null || pathBwProfile.reservableCapacity > hopBwProfile.reservableCapacity) {
+        if (pathBwProfile.reservableCapacity == null || (hopBwProfile.reservableCapacity != null && pathBwProfile.reservableCapacity > hopBwProfile.reservableCapacity)) {
             pathBwProfile.reservableCapacity = hopBwProfile.reservableCapacity;
         }
-        if (pathBwProfile.individualCapacity == null || pathBwProfile.individualCapacity > hopBwProfile.individualCapacity) {
+        if (pathBwProfile.individualCapacity == null || (hopBwProfile.individualCapacity != null && pathBwProfile.individualCapacity > hopBwProfile.individualCapacity)) {
             pathBwProfile.individualCapacity = hopBwProfile.individualCapacity;
         }
-        if (pathBwProfile.minimumCapacity == null || pathBwProfile.minimumCapacity < hopBwProfile.minimumCapacity) {
+        if (pathBwProfile.minimumCapacity == null || (hopBwProfile.minimumCapacity != null && pathBwProfile.minimumCapacity < hopBwProfile.minimumCapacity)) {
             pathBwProfile.minimumCapacity = hopBwProfile.minimumCapacity;
         }
-        if (pathBwProfile.granularity == null || pathBwProfile.granularity < hopBwProfile.granularity) {
+        if (pathBwProfile.granularity == null || (hopBwProfile.granularity != null && pathBwProfile.granularity < hopBwProfile.granularity)) {
             pathBwProfile.granularity = hopBwProfile.granularity;
         }
         return pathBwProfile;
