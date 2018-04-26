@@ -57,7 +57,7 @@ public class TokenHandler {
         if (refresh != null) {
             refreshToken = refresh;
             accessToken = refreshTokenSub(0);
-        }                
+        }                                
     }
 
     public void refreshToken() {
