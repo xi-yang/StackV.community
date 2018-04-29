@@ -57,11 +57,11 @@ public class TokenHandler {
         if (refresh != null) {
             refreshToken = refresh;
             accessToken = refreshTokenSub(0);
-        }                
+        }                                
     }
 
     public void refreshToken() {
-        if (refreshToken != null) {
+        if (refreshToken != null && !refreshToken.isEmpty()) {
             long elapsed = (System.nanoTime() - accessCreationTime) / 1000000;
             if (elapsed > 45000) {
                 accessToken = refreshTokenSub(0);

@@ -86,7 +86,7 @@
                     <div style="float:right;">
                         <label for="logging-filter-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
                         <select id="logging-filter-level" onchange="filterLogs()">
-                            <!-- <option value="TRACE">TRACE</option> -->
+                            <option value="TRACE">TRACE</option>
                             <option value="INFO" selected>INFO</option>
                             <option value="WARN">WARN</option>
                             <option value="ERROR">ERROR</option>
@@ -99,18 +99,18 @@
                             <tr>
                                 <th></th>
                                 <th>Timestamp</th>
+                                <th>Level</th>                                
                                 <th>Event</th>
                                 <th>Reference UUID</th>
-                                <th>Level</th>                                
                             </tr>
                         </thead>
                         <tfoot>
                             <tr>
                                 <th></th>
                                 <th>Timestamp</th>
+                                <th>Level</th>                                
                                 <th>Event</th>
                                 <th>Reference UUID</th>
-                                <th>Level</th>                                
                             </tr>
                         </tfoot>
                     </table>
@@ -121,10 +121,10 @@
             <div id="loading-panel"></div>
         </div>
         <div id="details-viz" ></div>
-        
+
         <!-- Profile Details Modal -->
         <div id="details-intent-modal" data-iziModal-title="Intent"></div> 
-        
+
         <!-- Loading Modal -->
         <div id="loading-modal"></div> 
 
@@ -161,7 +161,7 @@
         <!---->        
 
         <script src="/StackV-web/js/iziModal.min.js"></script>
-        
+
         <script src="/StackV-web/js/details.js"></script>
         <script src="/StackV-web/js/detailsEngine.js"></script>
 

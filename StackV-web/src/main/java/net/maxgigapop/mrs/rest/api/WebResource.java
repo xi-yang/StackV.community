@@ -2925,13 +2925,14 @@ public class WebResource {
      * @apiGroup Profile
      * @apiUse AuthHeader
      * @apiParam {String} wizardID wizard ID
+     * @apiParam {String} username username
      *
      */
     @GET
-    @Path("/profile/{wizardID}/uses")
+    @Path("/profile/{wizardID}/uses/{username}")
     @Consumes(value = {"application/json"})
     @RolesAllowed("Profiles-R")
-    public String getProfileLicenseUsage(@PathParam("wizardID") int wizardID) throws SQLException {
+    public String getProfileLicenseUsage(@PathParam("wizardID") int wizardID, @PathParam("wizardID") String username) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2941,8 +2942,10 @@ public class WebResource {
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
 
-                prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_instance WHERE service_wizard_id = ?");
+                prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_instance WHERE"
+                        + " service_wizard_id = ? AND username = ?");
                 prep.setInt(1, wizardID);
+                prep.setString(2, username);
                 prep.executeQuery();
 
                 rs = prep.executeQuery();
