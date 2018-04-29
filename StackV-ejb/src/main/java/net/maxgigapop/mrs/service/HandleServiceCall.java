@@ -1136,28 +1136,14 @@ public class HandleServiceCall {
     
     private OntModel fetchReferenceModel() {
         String method = "fetchReferenceModel";
-        SystemModelCoordinator systemModelCoordinator = null;
+        DataConcurrencyPoster dataConcurrencyPoster = null;
         try {
             Context ejbCxt = new InitialContext();
-            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
         } catch (NamingException ex) {
-            throw logger.error_throwing(method, " failed to inject systemModelCoordinator -exception- " + ex);
+            throw logger.error_throwing(method, " failed to lookup DataConcurrencyPoster -exception- " + ex);
         }
-        OntModel refModel = null;
-        try {
-            refModel = systemModelCoordinator.getLatestOntModel();
-        } catch (EJBException ex) {
-            if (ex.getMessage() != null && ex.getMessage().contains("concurrent access timeout ")) {
-                DataConcurrencyPoster dataConcurrencyPoster;
-                try {
-                    Context ejbCxt = new InitialContext();
-                    dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
-                } catch (NamingException e) {
-                    throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + e);
-                }
-                refModel = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
-            }
-        }
+        OntModel refModel = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
         return refModel;
     }
 }

@@ -69,7 +69,8 @@ public class DriverModelPuller {
         GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "false");
         // schedule model pull timer
         ScheduleExpression sexpr = new ScheduleExpression();
-        sexpr.hour("*").minute("*").second("0"); // every minute
+        //sexpr.hour("*").minute("*").second("15/30"); // every 30 seconds, starting at 15th
+        sexpr.hour("*").minute("*").second("30/30"); // every minute, starting at 30th sec
         // persistent must be false because the timer is started by the HASingleton service
         timerService.createCalendarTimer(sexpr, new TimerConfig("", false));
     }
@@ -100,13 +101,16 @@ public class DriverModelPuller {
         }
 
         boolean pullNormal = true;
-        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
-                || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
+        
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null) {
             DriverInstancePersistenceManager.refreshAll();
         }
+        // more DriverInstancePersistenceManager.refreshAll calls are executed by SystemModelCoordinator (per node singleton)
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
-            pullNormal = false;
+            logger.trace_end(method);
+            return;
         }
+        
         Context ejbCxt = null;
         for (String topoUri : DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().keySet()) {
             DriverInstance driverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(topoUri);

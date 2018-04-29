@@ -63,6 +63,7 @@ import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.EJBExceptionNegotiable;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.core.DataConcurrencyPoster;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 import net.maxgigapop.mrs.service.HandleServiceCall;
@@ -174,9 +175,8 @@ public class HandleSystemCall {
         if (refUuid.equals("default")) {
             try {//@TODO: use cache model from DataConcurrencyPoster
                 Context ejbCxt = new InitialContext();
-                SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
-                VersionGroup vg = systemModelCoordinator.getSystemVersionGroup();
-                ModelBase model = vg.getCachedModelBase();
+                DataConcurrencyPoster dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+                ModelBase model = dataConcurrencyPoster.getSystemModelCoordinator_cachedModelBase();
                 logger.trace_end(method);
                 return model;
             } catch (Exception ex) {
