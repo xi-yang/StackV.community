@@ -48,10 +48,16 @@ public class DataConcurrencyPoster {
     }
 
     public ModelBase getSystemModelCoordinator_cachedModelBase() {
+        if (SystemModelCoordinator_cachedVersionGroup == null) {
+            return null;
+        }
         return SystemModelCoordinator_cachedVersionGroup.getCachedModelBase();
     }
 
     public OntModel getSystemModelCoordinator_cachedOntModel() {
+        if (SystemModelCoordinator_cachedVersionGroup == null) {
+            return null;
+        }
         return SystemModelCoordinator_cachedVersionGroup.getCachedModelBase().getOntModel();
     }
 
