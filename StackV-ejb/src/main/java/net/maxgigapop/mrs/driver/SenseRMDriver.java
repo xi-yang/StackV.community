@@ -302,7 +302,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
                 }
                 conn.setConnectTimeout(5*1000);
-                //conn.setReadTimeout(5*1000);
+                conn.setReadTimeout(15*1000);
                 conn.addRequestProperty("Content-Encoding", "gzip");
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("304")) {
