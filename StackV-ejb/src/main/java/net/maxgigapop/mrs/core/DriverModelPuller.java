@@ -128,6 +128,8 @@ public class DriverModelPuller {
                 } else {
                     pullNormal = false;
                     logger.trace(method, "model pulling - previousResult not ready for topologyURI="+topoUri);
+                    // Assume the previous drvier instance will always finish or time out by itself
+                    continue;
                     //@TODO: timeout handling: skip and check after one more cycle, then previousResult.cancel(true); 
                 }
             } else {
