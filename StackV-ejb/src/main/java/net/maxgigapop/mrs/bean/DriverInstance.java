@@ -226,6 +226,6 @@ public class DriverInstance extends PersistentEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "net.maxgigapop.mrs.model.DriverInstance[ id=" + id + " ]";
+        return "net.maxgigapop.mrs.model.DriverInstance[ " + topologyUri + " ]";
     }
 }
