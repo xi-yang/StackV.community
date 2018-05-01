@@ -358,6 +358,7 @@ function loadModals() {
                         $(".button-profile-save-as").attr('id', profileID);
                         $(".button-profile-submit").attr('id', profileID);
 
+                        // Owner of profile
                         if (result["owner"] === keycloak.tokenParsed.preferred_username) {
                             $(".button-profile-meta-edit").removeClass("hidden");
                             $(".profile-details-modal-meta-sharing").removeClass("hidden");
@@ -370,10 +371,18 @@ function loadModals() {
                                             + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' use(s)</p></li>');
                                     $(".profile-details-modal-meta-sharing-list").append($opt);
                                 } else {
-                                    var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
-                                            + '<p style="display: inline;">' + license["username"]
-                                            + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' slot(s)</p></li>');
-                                    $(".profile-details-modal-meta-sharing-list").append($opt);
+                                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID + '/uses/' + license["username"];
+                                    $.ajax({
+                                        url: apiUrl,
+                                        type: 'GET',
+                                        contentType: "application/json; charset=utf-8",
+                                        success: function (result) {
+                                            var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
+                                                    + '<p style="display: inline;">' + license["username"]
+                                                    + '</p><p id="' + license["username"] + '-slots-used" style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + result + '/' + license["remaining"] + ' slot(s)</p></li>');
+                                            $(".profile-details-modal-meta-sharing-list").append($opt);
+                                        }
+                                    });
                                 }
                             }
 
@@ -383,7 +392,9 @@ function loadModals() {
                             if (result["editable"] === "1") {
                                 $("#profileEditable").prop("checked", true);
                             }
-                        } else {
+                        }
+                        // Licensee of profile
+                        else {
                             $(".profile-details-modal-meta-sharing").addClass("hidden");
                             var remaining = 1;
                             var type = "ticket";
@@ -775,23 +786,23 @@ function loadModals() {
 }
 function resetProfileModal() {
     clearTimeout(profileUpdateTimeout);
-    $(".button-profile-meta-edit").addClass("hidden");    
+    $(".button-profile-meta-edit").addClass("hidden");
     $(".profile-details-modal-meta-saving").addClass("hidden");
     $(".profile-details-modal-meta-sharing").addClass("hidden");
-    
+
     $(".profile-details-modal-meta-sharing-list").empty();
     $("#info-panel-share-edit :not(:disabled)").remove();
     $(".profile-details-modal-meta-author").removeClass("invalid");
     $(".button-profile-submit").removeAttr('disabled');
-    
+
     $("#profile-alias").val(null);
     $("#profile-details-modal-text-area").val(null);
     $("#info-panel-share-remaining").val(null);
     $("#savingProfileName").val(null);
     $("#savingProfileDescription").val(null);
-    
+
     $profModal.removeData("profile-id");
-    
+
     $("#profileEditable").prop("checked", false);
     $("#profile-details-modal-meta-text").html(null);
 
@@ -800,7 +811,7 @@ function resetProfileModal() {
     $(".profile-details-modal-meta-author").text(null);
 
     $(".profile-details-modal-meta-editable").hide();
-    $("#info-panel-management").hide();    
+    $("#info-panel-management").hide();
     $(".button-profile-delete").hide();
 }
 
@@ -936,8 +947,19 @@ function reloadModals() {
                         } else {
                             var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
                                     + '<p style="display: inline;">' + license["username"]
-                                    + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' slot(s)</p></li>');
+                                    + '</p><p id="' + license["username"] + '-slots-used" style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + '/' + license["remaining"] + ' slot(s)</p></li>');
                             $(".profile-details-modal-meta-sharing-list").append($opt);
+
+                            var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID + '/uses/' + license["username"];
+                            $.ajax({
+                                url: apiUrl,
+                                type: 'GET',
+                                contentType: "application/json; charset=utf-8",
+                                success: function (result) {
+                                    var $slot = $("#" + license["username"] + '-slots-used');
+                                    $slot.text(result + $slot.text());
+                                }
+                            });
                         }
                     }
                 }
