@@ -2932,7 +2932,7 @@ public class WebResource {
     @Path("/profile/{wizardID}/uses/{username}")
     @Consumes(value = {"application/json"})
     @RolesAllowed("Profiles-R")
-    public String getProfileLicenseUsage(@PathParam("wizardID") int wizardID, @PathParam("wizardID") String username) throws SQLException {
+    public String getProfileLicenseUsage(@PathParam("wizardID") int wizardID, @PathParam("username") String username) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;

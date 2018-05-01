@@ -557,6 +557,7 @@ function setRefresh(time) {
         refreshCountdown(time);
     }, 1000);
     refreshTimer = setInterval(function () {
+        $(".loading-prog").css("width", "0%");
         reloadData();
     }, (time * 1000));
 }
@@ -581,11 +582,11 @@ function reloadDataManual() {
 
         resumeRefresh();
     } else {
-
         var sel = document.getElementById("refresh-timer");
         if (sel.value !== 'off') {
             timerChange(sel);
         }
+        $(".loading-prog").css("width", "0%");
         reloadData();
     }
 }

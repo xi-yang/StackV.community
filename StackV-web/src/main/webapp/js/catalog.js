@@ -404,7 +404,7 @@ function loadModals() {
                                 }
                                 $(".profile-details-modal-meta-author").html(metaText);
                             } else {
-                                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID + '/uses';
+                                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID + '/uses/' + keycloak.tokenParsed.preferred_username;
                                 $.ajax({
                                     url: apiUrl,
                                     type: 'GET',
