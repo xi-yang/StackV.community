@@ -58,8 +58,7 @@ function renderDetails() {
     if (subState === "FAILED") {
         if (lastState !== null) {
             $subState.html(subState + " (after " + lastState + ")");
-        }
-        else {
+        } else {
             $subState.html(subState + " (Fatal error)");
         }
     } else {
@@ -299,7 +298,7 @@ function executeCommand(command) {
                 $(".instance-command").attr('disabled', false);
                 resumeRefresh();
                 reloadData();
-            }, 3000);
+            }, 3000);            
             break;
     }
 }

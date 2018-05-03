@@ -455,7 +455,7 @@ public class WebResource {
             }
 
             // return the JSON object as a string
-            return result.toJSONString(); 
+            return result.toJSONString();
         } else {
             throw logger.error_throwing("ipaLogin()", "IPA username or password not set");
         }
@@ -467,8 +467,8 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("ACL")
     public String ipaRequest(String postData) {
-        if (ipaBaseServerUrl != null) {            
-        
+        if (ipaBaseServerUrl != null) {
+
             JSONObject result = new JSONObject();
             try {
                 URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
@@ -515,9 +515,9 @@ public class WebResource {
 
             // return the JSONObject as a string
             return result.toJSONString();
-        } else{
-        throw logger.error_throwing("ipaRequest()", "IPA server url not set");
-    }
+        } else {
+            throw logger.error_throwing("ipaRequest()", "IPA server url not set");
+        }
     }
 
     @DELETE
@@ -525,7 +525,7 @@ public class WebResource {
     @Produces("application/json")
     @RolesAllowed("ACL")
     public String ipaDeleteAllPoliciesForService(@PathParam("serviceUUID") String uuid, String data) throws UnsupportedEncodingException {
-        
+
         ipaLogin(); // ensure the ipa server cookie has been refreshed in case it was expired.
         JSONObject result = new JSONObject();
 
@@ -919,13 +919,8 @@ public class WebResource {
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
                 Object obj = parser.parse(inputString);
                 final JSONArray roleArr = (JSONArray) obj;
-//                JSONArray roleArr = new JSONArray();
-//                roleArr.add(inputJSON);
 
                 out.write(roleArr.toString());
-//                System.out.println("Check Here");
-//                System.out.println(roleArr.toString());
-
             }
             logger.trace("addGroupRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
         } catch (IOException | ParseException ex) {
@@ -2475,8 +2470,6 @@ public class WebResource {
                 final BigInteger secondTime = BigInteger.valueOf(now.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(now.getNanos()));
                 int diff = (firstTime.subtract(secondTime)).divide(new BigInteger("1000000000000")).intValue();
 
-                System.out.println(diff);
-
                 if (diff < -1) {
                     return "0";
                 } else {
@@ -3217,7 +3210,7 @@ public class WebResource {
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed({"Services"})
     public String createService(final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
-       return createService(null, inputString);
+        return createService(null, inputString);
     }
 
     @POST
@@ -3225,7 +3218,7 @@ public class WebResource {
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("Services")
     public String createService(@PathParam(value = "siUUID") final String siUUID, final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
-    final String method = "createService";
+        final String method = "createService";
         try {
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
@@ -3254,7 +3247,7 @@ public class WebResource {
             } else {
                 refUUID = siUUID;
             }
-            
+
             if (roleSet.contains(serviceType)) {
                 inputJSON.remove("username");
                 inputJSON.put("username", username);
@@ -3305,7 +3298,7 @@ public class WebResource {
             return null;
         }
     }
-    
+
     @GET
     @Path(value = "/service")
     @RolesAllowed("Services")
@@ -3462,7 +3455,7 @@ public class WebResource {
         inputJSON.put("data", retString);
         ServiceEngine.orchestrateInstance(refUUID, inputJSON, (String) inputJSON.get("uuid"), token, false);
     }
-    
+
     private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, TokenHandler token) throws SQLException, IOException, InterruptedException {
         ServiceHandler instance = new ServiceHandler(refUUID, token);
         instance.operate(action);
