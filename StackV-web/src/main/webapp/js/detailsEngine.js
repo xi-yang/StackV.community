@@ -191,9 +191,9 @@ function updateData() {
         dataType: "json",
         success: function (data) {
             var dataObj;
-            var override = data[superState] && data[superState][subState];            
+            var override = (superState in data && subState in data[superState]);            
             if (override && subState === "FAILED") {
-                override = (data[superState][subState]["lastState"] && data[superState][subState]["lastState"][lastState]);
+                override = ("lastState" in data[superState][subState] && lastState in data[superState][subState]["lastState"]);
             }
             
             if (override) {
