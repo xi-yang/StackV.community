@@ -22,15 +22,13 @@
  */
 package net.maxgigapop.mrs.common;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.ResponseBody;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.SocketTimeoutException;
-import java.net.URL;
-import javax.net.ssl.HttpsURLConnection;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -41,31 +39,38 @@ import org.json.simple.parser.ParseException;
  */
 public class TokenHandler {
 
-    private final String kc_url = System.getProperty("kc_url");
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TokenHandler");
+    private final String kc_url = System.getProperty("kc_url");
+    private final String kc_realm = "StackV";
+    private final String kc_encode = "U3RhY2tWOmFlNTNmYmVhLTg4MTItNGMxMy05MThmLTAwNjVhMTU1MGI3Yw==";
+
+    private final String auth = "Basic " + kc_encode;
+    private final String durl = kc_url + "/realms/" + kc_realm + "/protocol/openid-connect/token";
+
+    private final OkHttpClient client = new OkHttpClient();
+    private static final MediaType URL = MediaType.parse("application/x-www-form-urlencoded; charset=utf-8");
+    private String requestData;
+
     JSONParser parser = new JSONParser();
-    String accessToken = null;
+    String accessToken;
     long accessCreationTime;
-    String refreshToken = null;
+    String refreshToken;
     int recur = 0;
 
-    public TokenHandler(String access, String refresh) {                
-        if (access != null) {           
-            accessToken = access.substring(7);            
-            accessCreationTime = System.nanoTime();
+    public TokenHandler(String refresh) {
+        if (refresh == null || refresh.isEmpty()) {
+            logger.error("init", "No refresh token present!");
         }
-        if (refresh != null) {
-            refreshToken = refresh;
-            accessToken = refreshTokenSub(0);
-        }                                
+        refreshToken = refresh;
+        
+        requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
+        refreshTokenSub(0);
     }
 
     public void refreshToken() {
-        if (refreshToken != null && !refreshToken.isEmpty()) {
-            long elapsed = (System.nanoTime() - accessCreationTime) / 1000000;
-            if (elapsed > 45000) {
-                accessToken = refreshTokenSub(0);
-            }
+        long elapsed = (System.nanoTime() - accessCreationTime) / 1000000;
+        if (elapsed > 50000) {
+            refreshTokenSub(0);
         }
     }
 
@@ -74,65 +79,42 @@ public class TokenHandler {
         return "bearer " + accessToken;
     }
 
-    private String refreshTokenSub(int recur) {
+    private void refreshTokenSub(int recur) {
         String method = "refreshToken";
-        if (recur == 10) {
+        if (recur == 20) {
             logger.error(method, "Keycloak refresh connection failure!");
-            return null;
+            return;
         }
 
-        try {
-            URL url = new URL(kc_url + "/realms/StackV/protocol/openid-connect/token");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+        try {            
+            RequestBody body = RequestBody.create(URL, requestData);
+            Request request = new Request.Builder().url(durl).header("Authorization", auth).post(body).build();
 
-            // restapi
-            //String encode = "cmVzdGFwaTpjMTZkMjRjMS0yNjJmLTQ3ZTgtYmY1NC1hZGE5YmQ4ZjdhY2E=";
-            // StackV
-            String encode = "U3RhY2tWOmFlNTNmYmVhLTg4MTItNGMxMy05MThmLTAwNjVhMTU1MGI3Yw==";
+            try (ResponseBody response = client.newCall(request).execute().body()) {
+                JSONObject ret = (JSONObject) parser.parse(response.string());
 
-            conn.setRequestProperty("Authorization", "Basic " + encode);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("POST");
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-            String data = "grant_type=refresh_token&refresh_token=" + refreshToken;
-            try (OutputStream os = conn.getOutputStream(); BufferedWriter writer = new BufferedWriter(
-                    new OutputStreamWriter(os, "UTF-8"))) {
-                writer.write(data);
-                writer.flush();
+                accessToken = (String) ret.get("access_token");
+                accessCreationTime = System.nanoTime();
+                
+                refreshToken = (String) ret.get("refresh_token");
+                requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
             }
-
-            conn.connect();
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-            Object obj = parser.parse(responseStr.toString());
-            JSONObject result = (JSONObject) obj;
 
             if (recur != 0) {
                 logger.status(method, "Refresh achieved after " + recur + " retry");
             }
-            accessCreationTime = System.nanoTime();
-            return (String) result.get("access_token");
         } catch (SocketTimeoutException | java.net.ConnectException ex) {
             // Keycloak connection timeout
             try {
                 recur++;
                 logger.warning(method, "Keycloak refresh timeout #" + recur);
                 Thread.sleep(3000);
-                return refreshTokenSub(recur);
+                refreshTokenSub(recur);
             } catch (InterruptedException ex1) {
-                logger.catching(method, ex);
+                logger.catching(method, ex1);
             }
         } catch (ParseException | IOException ex) {
             logger.catching(method, ex);
         }
-        return null;
     }
 }

@@ -58,9 +58,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.net.HttpCookie;
 import java.net.MalformedURLException;
-import java.net.URLDecoder;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -68,7 +66,6 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -574,7 +571,7 @@ public class WebResource {
     public String installDriver(final String dataInput) throws SQLException, IOException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(auth, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
 
         Object obj = parser.parse(dataInput);
         JSONObject JSONtemp = (JSONObject) obj;
@@ -604,7 +601,7 @@ public class WebResource {
     public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, IOException, ParseException {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(auth, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
 
         Connection front_conn = factory.getConnection("frontend");
         PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
@@ -3094,7 +3091,7 @@ public class WebResource {
         try {
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(null, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
             String serviceType = (String) inputJSON.get("service");
@@ -3185,7 +3182,7 @@ public class WebResource {
     public String checkStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(auth, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
 
         ServiceHandler instance = new ServiceHandler(refUUID, token);
 
@@ -3198,7 +3195,7 @@ public class WebResource {
     public String subStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
         final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(auth, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
 
         ServiceHandler instance = new ServiceHandler(refUUID, token);
 
@@ -3222,7 +3219,7 @@ public class WebResource {
         try {
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(null, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
             String serviceType = (String) inputJSON.get("service");
@@ -3307,7 +3304,7 @@ public class WebResource {
         logger.trace_start(method);
         try {
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(null, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
 
             URL url = new URL(String.format("%s/service/instance", host));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -3365,7 +3362,7 @@ public class WebResource {
             final String refUuid, @PathParam(value = "action")
             final String action) throws IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(null, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
         final String method = "operate";
         logger.trace_start(method, "Thread:" + Thread.currentThread());
 
@@ -3390,7 +3387,7 @@ public class WebResource {
             final String refUuid, @PathParam(value = "action")
             final String action) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(null, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
         String method = "operateSync";
         logger.trace_start(method);
         doOperate(refUuid, action, token);
@@ -3403,7 +3400,7 @@ public class WebResource {
     public String callVerify(@PathParam(value = "siUUID")
             final String refUUID) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(null, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
         String method = "callVerify";
         logger.trace_start(method);
 
@@ -3416,7 +3413,7 @@ public class WebResource {
     @RolesAllowed("Services")
     public void delete(@PathParam(value = "siUUID") final String refUuid) throws SQLException, IOException, InterruptedException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(null, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
         String method = "operate";
         logger.trace_start(method, "Thread:" + Thread.currentThread());
         doOperate(refUuid, "delete", token);

@@ -113,7 +113,7 @@ public class SenseServiceApi {
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(auth, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/app/service" + (siUUID == null ? "" : "/"+siUUID), restapi));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
@@ -158,7 +158,7 @@ public class SenseServiceApi {
     public Response serviceSiUUIDDelete(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID) {
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(auth, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
         try {
             URL url = new URL(String.format("%s/app/service/%s/delete", restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -223,7 +223,7 @@ public class SenseServiceApi {
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(auth, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/service/%s/" + operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
@@ -262,7 +262,7 @@ public class SenseServiceApi {
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(auth, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/app/service/%s/" + operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
@@ -294,7 +294,7 @@ public class SenseServiceApi {
                     try {
                         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
                         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-                        final TokenHandler token = new TokenHandler(auth, refresh);
+                        final TokenHandler token = new TokenHandler(refresh);
                         URL url = new URL(String.format("%s/app/service/%s/verify", restapi, siUUID));
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                         conn.setRequestProperty("Refresh", refresh);
@@ -339,7 +339,7 @@ public class SenseServiceApi {
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(auth, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/app/service/%s/status", restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
@@ -381,7 +381,7 @@ public class SenseServiceApi {
         }        
         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(auth, refresh);
+        final TokenHandler token = new TokenHandler(refresh);
         try {
             // stop verification upon failure
             if (operation.equals("force_release")) {
@@ -428,7 +428,7 @@ public class SenseServiceApi {
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(auth, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/app/service/%s/"+operation, restapi, siUUID));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Refresh", refresh);
@@ -459,7 +459,7 @@ public class SenseServiceApi {
                     try {
                         String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
                         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-                        final TokenHandler token = new TokenHandler(auth, refresh);
+                        final TokenHandler token = new TokenHandler(refresh);
                         URL url = new URL(String.format("%s/app/service/%s/verify", restapi, siUUID));
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                         conn.setRequestProperty("Refresh", refresh);

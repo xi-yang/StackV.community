@@ -95,7 +95,7 @@ public class SenseServiceQuery {
                     String responseStr;
                     String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
                     final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-                    final TokenHandler token = new TokenHandler(auth, refresh);
+                    final TokenHandler token = new TokenHandler(refresh);
                     URL url = new URL("http://127.0.0.1:8080/StackV-web/restapi/service/manifest");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"

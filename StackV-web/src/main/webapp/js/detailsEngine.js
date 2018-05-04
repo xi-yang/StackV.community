@@ -190,7 +190,17 @@ function updateData() {
         url: "/StackV-web/data/json/detailsStates.json",
         dataType: "json",
         success: function (data) {
-            var dataObj = data[subState];
+            var dataObj;
+            var override = data[superState] && data[superState][subState];            
+            if (override && subState === "FAILED") {
+                override = (data[superState][subState]["lastState"] && data[superState][subState]["lastState"][lastState]);
+            }
+            
+            if (override) {
+                var dataObj = data[superState][subState];
+            } else {
+                var dataObj = data["default"][subState];
+            }
             instruction = dataObj["instruction"];
             buttons = dataObj["buttons"];
 
@@ -205,7 +215,6 @@ function updateData() {
                     buttons = verRes["buttons"];
                 }
             }
-
             var lastObj = dataObj["lastState"];
             if (lastObj) {
                 var lastRes = lastObj[lastState];
@@ -298,7 +307,7 @@ function executeCommand(command) {
                 $(".instance-command").attr('disabled', false);
                 resumeRefresh();
                 reloadData();
-            }, 3000);            
+            }, 3000);
             break;
     }
 }

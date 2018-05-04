@@ -63,7 +63,7 @@ String.format("	\"sparql\": \"SELECT DISTINCT ?domain ?domain_name WHERE {?domai
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(auth, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/service/manifest", restapi));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
@@ -128,7 +128,7 @@ String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(auth, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/service/manifest", restapi));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
@@ -206,7 +206,7 @@ String.format("           \"sparql\": \"SELECT DISTINCT ?peer_stp ?peer_domain ?
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-            final TokenHandler token = new TokenHandler(auth, refresh);
+            final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/service/manifest", restapi));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
