@@ -111,19 +111,23 @@
                     <div id="acl-instance-acl-existing">
                         <table class="management-table">
                             <colgroup>
-                                <col span="1" style="width: 35%;"/>
-                                <col span="1" style="width: 35%;"/>
-                                <col span="1" style="width: 20%;"/>
-                                <col span="1" style="width: 10%;"/>
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th>Username</th>
-                                    <th>Full Name</th>
-                                    <th>Email</th>
-                                    <th colspan="3"><button type="button" class="acl-instance-close close" aria-hidden="true">&times;</button></th>
-                                </tr>
-                            </thead>
+-                                <col span="1" style="width: 35%;"/>
++                                <col span="1" style="width: 25%;"/>
+                                 <col span="1" style="width: 20%;"/>
+                                 <col span="1" style="width: 10%;"/>
++                                <col span="1" style="width: 10%;"/>                                
++                                <col span="1" style="width: 10%;"/>
+                             </colgroup>
+                             <thead>
+                                 <tr>
+                                     <th>Username</th>
+                                     <th>Full Name</th>
+                                     <th>Email</th>
++                                    <th>Login Access</th>
++                                    <th>Sudo Access</th>                                    
+                                     <th><button type="button" class="acl-instance-close close" aria-hidden="true">&times;</button></th>
+                                 </tr>
+                             </thead>
                             <tbody id="acl-body">                           
                             </tbody>
                         </table>
@@ -177,8 +181,7 @@
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
-        <!---->
-
+        <script src="/StackV-web/js/ipa.js"></script> 
         <script src="/StackV-web/js/acl.js"></script>
     </body>
 </html>
