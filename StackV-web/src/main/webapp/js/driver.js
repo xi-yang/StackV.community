@@ -1311,9 +1311,9 @@ function removeDriver(clickID) {
              * {"readyState":4,
              * "responseText":"[507afdf3-11a7-4d9e-b97b-4aa604e2c722, 776f8022-2a84-403f-9255-4d9dbd30753b]",
              * "status":409,"statusText":"Conflict"}
-             * The above is JS object. What we need are the UUIDs in the "responseText". However, the array is not formatted
-             * properly for JavaScript - it should be quoted as it mixes numbers and characters. So a string replace is needed
-             * in order to replace '[' with '["', ']' with '"]', and commas with '","'
+             * The above is JS object. What we need are the UUIDs in the "responseText". However, the responsetext array is not formatted
+             * properly for JavaScript - its elements should be quoted as it mixes numbers and characters. So a string replace is needed
+             * in order to replace [ with [", ] with "], and commas with ","
              */
             clearPanel();
             activateSide();
@@ -1329,7 +1329,7 @@ function removeDriver(clickID) {
             var replaceSpaces = replaceRightBrackets.replace(/\s/g, ''); // replace spaces with nothing
             var wellFormattedResult; // parse the formatted string to JS array intoi this variable
             
-            //in case the error cannot be parsed since it is in Java 
+            //in case the error cannot be parsed since array is in Java syntax
             try {
                 wellFormattedResult = JSON.parse(replaceSpaces);
             } catch (err) {
@@ -1410,7 +1410,7 @@ function removeDriver(clickID) {
 }
 
 /*
- * Gets the details of one single isntalled driver
+ * Gets the details of one single installed driver
  */
 function getDetails(clickID) {
     var driverId = clickID;
