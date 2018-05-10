@@ -184,6 +184,8 @@ function loadACLPortal() {
     $(".acl-instance-close").click(function (evt) {
         $(".acl-instance-selected-row").removeClass("acl-instance-selected-row");
         $(".acl-instance-row").show();
+        
+        $(".acl-instance-selected").removeClass("acl-instance-selected");
 
         tweenInstanceACLPanel.reverse();
         evt.preventDefault();
@@ -477,6 +479,8 @@ function subloadInstanceACLInstances() {
                         $(".acl-instance-selected-row").removeClass("acl-instance-selected-row");
 
                         subloadInstanceACLTable($(this).data("uuid"));
+                        
+                        $(tbody).addClass("acl-instance-selected");
 
                         $(this).addClass("acl-instance-selected-row");
                         $(".acl-instance-row").not(".acl-instance-selected-row").hide();

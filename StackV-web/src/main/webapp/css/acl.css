@@ -1,7 +1,7 @@
 div.acl-panel {
     position: absolute;
     top: 52px;
-    height: calc(100% - 52px);
+    height: calc(90% - 52px);
     width: 90%;
     padding: 5px 5px;
 }
@@ -77,10 +77,6 @@ div#acl-instance-panel {
     overflow: hidden;
 }
 
-#acl-instance-table {
-    max-height: 45%;
-}
-
 #acl-instance-acl {
     position: relative;
     overflow-y: scroll;
@@ -99,4 +95,43 @@ div#acl-instance-panel {
 
 #acl-select {
     width: 100%;    
+}
+
+
+#acl-instance-table {
+    display: block;
+    width: 90%;
+    margin: auto;
+}
+
+#acl-instance-table thead {
+    display: -webkit-flex;
+    -webkit-flex-flow: row;
+}
+
+#acl-instance-table thead tr {
+    padding-right: 15px;
+    display: -webkit-flex;
+    width: 100%;
+    -webkit-align-items: stretch;
+}
+
+#acl-instance-table tbody {
+    display: -webkit-flex;
+    height: 50vh;
+    overflow-y: scroll;
+    transition: height 1s;
+    -webkit-flex-flow: row wrap;
+}
+#acl-instance-table tbody.acl-instance-selected {
+    height: 46px;
+}
+
+#acl-instance-table tbody tr{
+    display: -webkit-flex;
+    width: 100%;
+}
+
+#acl-instance-table tr td, #acl-instance-table tr th {
+    width: 100%;
 }
