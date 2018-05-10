@@ -613,7 +613,10 @@ public class HandleSystemCall {
                     || delta.getSystemDelta().getServiceDelta().getServiceInstance() == null) {
                 continue;
             }
-            listUUIDs.add(delta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+            String svcUUID = delta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID();
+            if (!listUUIDs.contains(svcUUID)) {
+                listUUIDs.add(delta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+            }
         }
         logger.end(method);
         if (listUUIDs.isEmpty()) {
