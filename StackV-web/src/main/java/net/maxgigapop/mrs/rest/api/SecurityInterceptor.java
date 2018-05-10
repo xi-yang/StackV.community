@@ -79,15 +79,16 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             ThreadContext.put("username", accessToken.getPreferredUsername());
             ThreadContext.put("method", method);
             ThreadContext.put("role", role);
-            roleSet = accessToken.getResourceAccess("StackV").getRoles();
+            roleSet = accessToken.getRealmAccess().getRoles();
 
             if (roleSet.contains(role) && (quietRoles.contains(role) || method.equals("subStatus"))) {
                 return;
-            }
+            }            
 
             logger.trace("API Request Received: {}.", uri.getPath());
             if (!accessToken.isActive()) {
                 logger.warn("Token is not active.");
+                return;
             }
 
             if (!roleSet.contains(role)) {
@@ -96,6 +97,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
                         .entity("User is not allowed to access the resource:" + method)
                         .build());
                 logger.warn("Denied.");
+                return;
             }
 
             logger.info("Authenticated.");

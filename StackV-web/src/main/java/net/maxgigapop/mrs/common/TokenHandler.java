@@ -41,16 +41,16 @@ public class TokenHandler {
 
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TokenHandler");
     private final String kc_url = System.getProperty("kc_url");
-    private final String kc_realm = "StackV";
-    private final String kc_encode = "U3RhY2tWOmFlNTNmYmVhLTg4MTItNGMxMy05MThmLTAwNjVhMTU1MGI3Yw==";
-
-    private final String auth = "Basic " + kc_encode;
-    private final String durl = kc_url + "/realms/" + kc_realm + "/protocol/openid-connect/token";
+    
+    private String kc_realm = "StackV";
+    private String kc_encode = "U3RhY2tWOmFlNTNmYmVhLTg4MTItNGMxMy05MThmLTAwNjVhMTU1MGI3Yw==";
+    private String auth = "Basic " + kc_encode;    
+    private String durl = kc_url + "/realms/" + kc_realm + "/protocol/openid-connect/token";
 
     private final OkHttpClient client = new OkHttpClient();
     private static final MediaType URL = MediaType.parse("application/x-www-form-urlencoded; charset=utf-8");
     private String requestData;
-
+    
     JSONParser parser = new JSONParser();
     String accessToken;
     long accessCreationTime;
@@ -62,6 +62,19 @@ public class TokenHandler {
             logger.error("init", "No refresh token present!");
         }
         refreshToken = refresh;
+        
+        requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
+        refreshTokenSub(0);
+    }    
+    public TokenHandler(String refresh, String realm, String encode) {
+        if (refresh == null || refresh.isEmpty()) {
+            logger.error("init", "No refresh token present!");
+        }
+        refreshToken = refresh;
+        kc_realm = realm;
+        kc_encode = encode;        
+        auth = "Basic " + kc_encode;
+        durl = kc_url + "/realms/" + kc_realm + "/protocol/openid-connect/token";
         
         requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
         refreshTokenSub(0);
