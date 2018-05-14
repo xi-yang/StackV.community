@@ -972,6 +972,8 @@ public class HandleServiceCall {
         }
         if (ready) {
             serviceInstance.setStatus("READY");
+            ServiceDelta lastSvcDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
+            lastSvcDelta.setStatus("COMMITTED");
             ServiceInstancePersistenceManager.merge(serviceInstance);
         }
         logger.trace_end(method);
