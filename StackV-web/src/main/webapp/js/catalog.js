@@ -375,6 +375,7 @@ function loadModals() {
                                     $.ajax({
                                         url: apiUrl,
                                         type: 'GET',
+                                        async: false,
                                         contentType: "application/json; charset=utf-8",
                                         success: function (result) {
                                             var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
@@ -930,6 +931,7 @@ function reloadModals() {
         $.ajax({
             url: apiUrl,
             type: 'GET',
+            async: false,
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
@@ -954,6 +956,7 @@ function reloadModals() {
                             $.ajax({
                                 url: apiUrl,
                                 type: 'GET',
+                                async: false,
                                 contentType: "application/json; charset=utf-8",
                                 success: function (result) {
                                     var $slot = $("#" + license["username"] + '-slots-used');
