@@ -421,6 +421,18 @@ public class ServiceResource {
             serviceCallHandler.refreshVersionGroup(svcInstanceUUID);
             logger.trace_end(method, "REFRESHED");
             return "REFRESHED";
+        } else if (action.equalsIgnoreCase("reset_init")) {
+            serviceCallHandler.resetDeltas(svcInstanceUUID, "INIT");
+            logger.trace_end(method);
+            return "INIT";
+        } else if (action.equalsIgnoreCase("reset_compiled")) {
+            serviceCallHandler.resetDeltas(svcInstanceUUID, "COMPILED");
+            logger.trace_end(method);
+            return "COMPILED";
+        } else if (action.equalsIgnoreCase("reset_committed")) {
+            serviceCallHandler.resetDeltas(svcInstanceUUID, "COMMITTED");
+            logger.trace_end(method);
+            return "COMMITTED";
         } else {
             throw logger.error_throwing(method, "Unrecognized action=" + action);
         }
