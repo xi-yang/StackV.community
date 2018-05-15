@@ -1255,13 +1255,23 @@ function getAllDetails() {
 function deleteServiceInstance(serviceUUID, $button) {
     var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + serviceUUID + "/status/";
 
-    var status;
+    var status = "";
     $.ajax({
         url: apiUrl,
         async: false,
         type: 'GET',
         success: function (result) {
             status = result;
+        },
+        error: function () {
+            $.ajax({
+                url: baseUrl + "/StackV-web/restapi/service/" + serviceUUID + "/status/",
+                async: false,
+                type: 'GET',
+                success: function (result) {
+                    status = result;
+                }
+            });
         }
     });
 
