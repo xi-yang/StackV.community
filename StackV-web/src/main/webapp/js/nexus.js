@@ -37,8 +37,10 @@ $(function () {
         beforeSend: function (xhr) {
             if (keycloak.token === undefined) {
                 xhr.setRequestHeader("Authorization", "bearer " + sessionStorage.getItem("token"));
+                xhr.setRequestHeader("Refresh", sessionStorage.getItem("refresh"));
             } else {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             }
         }
     });
@@ -58,6 +60,7 @@ $(function () {
                 sessionStorage.setItem("username", keycloak.tokenParsed.preferred_username);
                 sessionStorage.setItem("subject", keycloak.tokenParsed.sub);
                 sessionStorage.setItem("token", keycloak.token);
+                sessionStorage.setItem("refresh", keycloak.refreshToken);
             }
         } else {
             keycloak.login();

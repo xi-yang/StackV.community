@@ -1262,20 +1262,10 @@ function deleteServiceInstance(serviceUUID, $button) {
         type: 'GET',
         success: function (result) {
             status = result;
-        },
-        error: function () {
-            $.ajax({
-                url: baseUrl + "/StackV-web/restapi/service/" + serviceUUID + "/status/",
-                async: false,
-                type: 'GET',
-                success: function (result) {
-                    status = result;
-                }
-            });
         }
     });
 
-    if ($button.hasClass("confirmation") || status === "CANCEL - READY" || status.includes("FAILED")) {
+    if (status === "") {
         var apiUrl = baseUrl + "/StackV-web/restapi/service/" + serviceUUID;
         $.ajax({
             url: apiUrl,
@@ -1307,8 +1297,59 @@ function deleteServiceInstance(serviceUUID, $button) {
             }
         });
     } else {
-        $button.text("Confirm Deletion");
-        $button.addClass("confirmation");
+        $("#dialog-confirm-text").text("Service Instance is currently in " + status + " status. The service context will be permanently lost after deletion. Please confirm this operation.");
+        $("#dialog-confirm").dialog({
+            show: "slide",
+            resizeable: false,
+            draggable: false,
+            title: "Service Instance Deletion Result",
+            height: "auto",
+            width: 400,
+            modal: true,
+            buttons: [
+                {
+                    text: "Confirm",
+                    click: function () {
+                        var apiUrl = baseUrl + "/StackV-web/restapi/service/" + serviceUUID;
+                        $.ajax({
+                            url: apiUrl,
+                            type: 'DELETE',
+                            success: function (result) {
+                                //setting text of jquery dialog
+                                $("#dialog-confirm-text").text(result);
+                                $("#dialog-confirm").dialog({
+                                    show: "slide",
+                                    resizeable: false,
+                                    draggable: false,
+                                    title: "Service Instance Deletion Result",
+                                    height: "auto",
+                                    width: 400,
+                                    modal: true,
+                                    buttons: [
+                                        {
+                                            text: "Close",
+                                            click: function () {
+                                                $(this).dialog("close");
+                                            }
+                                        }
+                                    ]
+                                });
+                                $button.parent().remove();
+                            },
+                            error: function (err) {
+                                console.log("deleteServiceInstance error: " + err);
+                            }
+                        });
+                    }
+                },
+                {
+                    text: "Cancel",
+                    click: function () {
+                        $(this).dialog("close");
+                    }
+                }
+            ]
+        });
     }
 }
 

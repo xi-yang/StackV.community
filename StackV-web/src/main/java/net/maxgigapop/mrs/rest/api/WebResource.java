@@ -3162,7 +3162,6 @@ public class WebResource {
     @GET
     @Path("/service/{siUUID}/status")
     public String checkStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
-        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
 
