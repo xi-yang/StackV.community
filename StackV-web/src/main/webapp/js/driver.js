@@ -26,7 +26,7 @@ var tweenInstalledPanel = new TweenLite("#installed-panel", 1, {ease: Power2.eas
 var tweenAddPanel = new TweenLite("#driver-add-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 var tweenTemplatePanel = new TweenLite("#driver-template-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
 var tweenContentPanel = new TweenLite("#driver-content-panel", 1, {ease: Power2.easeInOut, paused: true, bottom: "10%"});
-var tweenDriverOverflowDetailsPanel = new TweenLite("#driver-overflow-details-panel", 1, {ease: Power2.easeInOut, paused: true, bottom:"10%"});
+var tweenDriverOverflowDetailsPanel = new TweenLite("#driver-overflow-details-panel", 1, {ease: Power2.easeInOut, paused: true, bottom: "10%"});
 var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
 var view = "center";
 
@@ -185,7 +185,7 @@ function loadDriverNavbar() {
 function loadDriverPortal() {
     getAllDetails();
     updateDrivers(); //explicitly calling the function to load the driver templates
-    
+
     // call the system health check
     loadSystemHealthCheck();
 
@@ -251,7 +251,7 @@ function installRaw() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Raw Driver");
-    
+
     //the correct driverEjbPath
     //$("#info-panel-title").prop("title","RawDriver"); 
     document.getElementById("info-panel-title").title = "RawDriver";
@@ -273,7 +273,7 @@ function installStub() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Stub System Driver");
-    
+
     //the correct driverEjbPath
     //$("#info-panel-title").prop("title","StubSystemDriver"); 
     document.getElementById("info-panel-title").title = "StubSystemDriver";
@@ -335,7 +335,7 @@ function installAWS() {
 
 
     $("#info-panel-title").text("AWS Driver");
-    
+
     //the correct driverEjbPath
     //$("#info-panel-title").prop("title","AwsDriver");
     document.getElementById("info-panel-title").title = "AwsDriver";
@@ -435,11 +435,11 @@ function installOpenstack() {
     var content = [];
 
     $("#info-panel-title").text("Open Stack Driver");
-    
+
     //the correct driverEjbPath
     //$("#info-panel-title").prop("title","OpenStackDriver");
     document.getElementById("info-panel-title").title = "OpenStackDriver";
-    
+
 
     for (var i = 0; i < 26; i += 2) {
         var textbox = document.createElement("p");
@@ -504,7 +504,7 @@ function installStack() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Stack System Driver");
-    
+
     //the correct driverEjbPath
     //$("#info-panel-title").prop("title","StackSystemDriver"); 
     document.getElementById("info-panel-title").title = "StackSystemDriver";
@@ -551,7 +551,7 @@ function installGeneric() {
     var divContent = document.getElementById("install-type");
 
     $("#info-panel-title").text("Generic REST Driver");
-    
+
     //the correct driverEjbPath
     //$("#info-panel-title").prop("title","GenericRESTDriver"); 
     document.getElementById("info-panel-title").title = "GenericRESTDriver";
@@ -578,12 +578,12 @@ function clearPanel() {
     $('#install-type').empty();
     $('#install-options').empty();
     $('#install-type-right').empty();
-    
+
     document.getElementById("info-panel-title").title = "";
     document.getElementById("install-type-right").style = "";
     document.getElementById("install-type").style = "";
     document.getElementById("install-options").style = "";
-    
+
     var closeButton = document.createElement("button");
     closeButton.innerHTML = "Close";
     closeButton.className = "button-profile-select btn btn-default";
@@ -599,14 +599,14 @@ function clearText() {
     }
 }
 function changeNameInst() {
-    var saveButton = document.createElement("button");    
+    var saveButton = document.createElement("button");
     saveButton.className = "button-profile-select btn btn-default";
     saveButton.innerHTML = "Save Driver";
     saveButton.onclick = function () {
         openWindow();
     };
     document.getElementById('install-options').appendChild(saveButton);
-    
+
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
     instButton.className = "button-profile-select btn btn-default";
@@ -643,7 +643,7 @@ function openWindow() {
     var desc = document.createElement("input");
     var saveButton = document.createElement("button");
     var closeButton = document.createElement("button");
-    
+
     saveButton.className = "button-profile-select btn btn-warning";
     closeButton.className = "button-profile-select btn btn-default";
 
@@ -652,7 +652,7 @@ function openWindow() {
     drivername.innerHTML = "Driver Name:";
     driver.type = "text";
     driver.id = "drivername";
-    
+
     divContent.appendChild(drivername);
     divContent.appendChild(driver);
 
@@ -676,15 +676,15 @@ function openWindow() {
             driverProfileName.change(function () {
                 $(this).removeClass("invalid");
             });
-        }        
+        }
     };
-    
+
     closeButton.innerHTML = "Close";
     closeButton.style = "margin: 5px";
-    closeButton.onclick = function() {
+    closeButton.onclick = function () {
         $('#info-panel').removeClass("active");
     };
-    
+
     document.getElementById("info-option").appendChild(closeButton);
     document.getElementById("info-option").appendChild(saveButton);
 }
@@ -731,7 +731,7 @@ function addDriver() {
         topuri: URI,
         drivertype: type
     });
-    
+
 
     $.ajax({
         url: apiUrl,
@@ -744,12 +744,12 @@ function addDriver() {
         data: sentData,
         success: function () {
             // since the driver is being added during the installation process, do not jump out of the installation process
-           reloadData(); // just reload the data so if users decide to cancel installation, the template still shows up
+            reloadData(); // just reload the data so if users decide to cancel installation, the template still shows up
         },
         error: function (err) {
             //setting text of jquery dialog
             $("#dialog-confirm-text").text(err);
-            $("#dialog-confirm").dialog({                
+            $("#dialog-confirm").dialog({
                 show: "slide",
                 resizeable: false,
                 draggable: false,
@@ -757,9 +757,9 @@ function addDriver() {
                 height: "auto",
                 width: 400,
                 modal: true,
-                buttons: [                   
+                buttons: [
                     {
-                        text:"Close",
+                        text: "Close",
                         click: function () {
                             $(this).dialog("close");
                         }
@@ -796,7 +796,7 @@ function removeDriverProfile(clickID) {
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text("EXCEPTION:" + responseText);
             //jquery dialog
-            $("#dialog-confirm").dialog({                
+            $("#dialog-confirm").dialog({
                 show: "slide",
                 resizable: true,
                 draggable: true,
@@ -814,7 +814,7 @@ function removeDriverProfile(clickID) {
                 ]
 
             });
-            
+
         }
     });
 }
@@ -830,10 +830,10 @@ function updateDrivers() {
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },  
+        },
         success: function (result) {
             $('#saved-table').empty();
-            
+
             /*
              * The return format for the rest query is the columns of each record
              * in the SQL table separated by commas. Each record is also separated
@@ -848,22 +848,22 @@ function updateDrivers() {
             for (var i = 0; i < result.length; i += 5) {
                 var row = document.createElement("tr");
                 var drivername = document.createElement("td");
-                var description  = document.createElement("td");
+                var description = document.createElement("td");
                 var buttonsCell = document.createElement("td");
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
                 var edButton = document.createElement("button");
                 var installButton = document.createElement("button");
-                
+
                 // currently using the topuri as the unique identifier
                 var uri = result[i + 2];
-                
+
 
                 detButton.className = "button-profile-select btn btn-default";
                 detButton.style.width = "64px";
                 detButton.innerHTML = "Details";
                 detButton.id = uri; //set the topuri as the button id
-                
+
                 detButton.onclick = function () {
                     $("#driver-content-panel").removeClass("hidden");
                     $("#driver-content-panel").addClass("active");
@@ -873,23 +873,23 @@ function updateDrivers() {
                     getDetailsProfile(this.id);
                     openContentPanel();
                 };
-                
-                
+
+
                 delButton.className = "button-profile-select btn btn-danger";
                 delButton.style.width = "64px";
                 delButton.innerHTML = "Delete";
                 delButton.id = uri; //set the topuri as the button id
-                
+
                 //storing driver profile name for deletion confirmation dialog
                 delButton.setAttribute("del-button-for", result[i]);
                 delButton.onclick = function () {
                     var driverId = this.id;
                     var driverNameFromAttribute = this.getAttribute("del-button-for");
-                    
+
                     //setting text of jquery dialog
                     $("#dialog-confirm-text").text(driverNameFromAttribute);
                     //jquery dialog
-                    $("#dialog-confirm").dialog({                        
+                    $("#dialog-confirm").dialog({
                         show: "slide",
                         resizeable: false,
                         draggable: false,
@@ -906,7 +906,7 @@ function updateDrivers() {
                                 }
                             },
                             {
-                                text:"Close",
+                                text: "Close",
                                 click: function () {
                                     $(this).dialog("close");
                                 }
@@ -924,26 +924,26 @@ function updateDrivers() {
                     $("#driver-content-panel").addClass("active");
                     $("#info-panel-title").text("Details");
                     clearPanel();
-                    activateSide();                   
+                    activateSide();
                     editDriverProfile(this.id);
 
                     openContentPanel();
                 };
-                
-                
+
+
                 installButton.innerHTML = "Install";
                 installButton.style.width = "64px";
                 installButton.className = "button-profile-select btn btn-primary";
                 installButton.id = uri; //set the topuri as the button id
-                installButton.onclick = function () {                    
+                installButton.onclick = function () {
                     plugDriver(this.id); // Install the profile as a driver
                 }
-                
+
 
 
                 drivername.innerHTML = result[i];
                 description.innerHTML = result[i + 3];
-                
+
                 buttonsCell.appendChild(detButton);
                 buttonsCell.appendChild(installButton);
                 buttonsCell.appendChild(edButton);
@@ -993,7 +993,7 @@ function editDriverProfile(clickID) {
                     var tempval = document.createElement("td");
                     var editableVal = document.createElement("textarea");
                     editableVal.rows = "1";
-                    
+
                     tempkey.innerHTML = key;
                     editableVal.id = key;
                     editableVal.value = result[key];
@@ -1001,26 +1001,26 @@ function editDriverProfile(clickID) {
                     row.appendChild(tempkey);
                     row.appendChild(tempval);
                     table.appendChild(row);
-                    
+
                 }
             }
 
             var saveEditedProfileButton = document.createElement("button");
             saveEditedProfileButton.className = "button-profile-select btn btn-success";
-            
+
             //since topuri is the primary key, will pass the unedited topuri into saveEditedDriverProfile as to change that one profile
             saveEditedProfileButton.id = topuri;
             saveEditedProfileButton.innerHTML = "Save Changes";
             saveEditedProfileButton.onclick = function () {
                 saveEditedDriverProfile(this.id); // function get values in the install-options div and updates driver
-                
+
             };
-            
+
             botpanel.appendChild(saveEditedProfileButton);
             $("#info-panel-title").text("Edit Details");
         },
         error: function (xhr, status, error) {
-            console.log("Failure. Status: "  + status +  ", errorThrown: " + error);
+            console.log("Failure. Status: " + status + ", errorThrown: " + error);
         }
     });
     panel.appendChild(table);
@@ -1029,30 +1029,30 @@ function editDriverProfile(clickID) {
 /*
  * Get value in the install-options divs and updates the driver profile
  */
-function saveEditedDriverProfile(oldtopuri){
+function saveEditedDriverProfile(oldtopuri) {
     var userId = keycloak.tokenParsed.preferred_username;
     var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/edit/' + oldtopuri;
     var jsonData = [];
     var tempData = {};
     var newtopuri = document.getElementById("TOPURI").value; // get the new topuri since it also has be to changed in the table
-    
-    
-    
+
+
+
     // read all the inputs present (should only be the inputs present on the edit details screen)
     for (var temp of document.getElementsByTagName("textarea")) {
-        if (temp !== '') {            
+        if (temp !== '') {
             tempData[temp.id] = temp.value;
-        }    
+        }
     }
     jsonData.push(tempData);
-    
+
     var dataColumn = JSON.stringify({jsonData});
     var sendData = JSON.stringify({
         username: userId,
         topuri: newtopuri,
         data: dataColumn
     });
-    
+
     $.ajax({
         url: apiUrl,
         type: 'PUT',
@@ -1062,15 +1062,15 @@ function saveEditedDriverProfile(oldtopuri){
         },
         contentType: 'application/json',
         data: sendData,
-        success: function(result) {
+        success: function (result) {
             // update all previous id attributes of the old topuri with the new top uri
             $('button[id=' + oldtopuri + ']').attr("id", newtopuri);
-            
+
             closeContentPanel(); //hide the edit driver panel
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
-            $("#dialog-confirm").dialog({                
+            $("#dialog-confirm").dialog({
                 show: "slide",
                 resizable: false,
                 draggable: false,
@@ -1089,7 +1089,7 @@ function saveEditedDriverProfile(oldtopuri){
 
             });
         },
-        error: function(err) {
+        error: function (err) {
             console.log("Error in saveEditedDriverProfile: " + err);
         }
     });
@@ -1149,7 +1149,7 @@ function getDetailsProfile(clickID) {
             botpanel.appendChild(instDetailsButton);
         },
         error: function (xhr, status, error) {
-            console.log("Failure. Status: "  + status +  ", errorThrown: " + error);
+            console.log("Failure. Status: " + status + ", errorThrown: " + error);
         }
     });
     panel.appendChild(table);
@@ -1164,7 +1164,7 @@ function getAllDetails() {
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },        
+        },
         success: function (result) {
             //fill installed table
             $('#installed-body').empty();
@@ -1175,7 +1175,7 @@ function getAllDetails() {
                 var cell3 = document.createElement("td");
                 var detButton = document.createElement("button");
                 var delButton = document.createElement("button");
-                
+
                 drivername.innerHTML = result[i + 2];
                 description.innerHTML = result[i + 1];
 
@@ -1193,44 +1193,44 @@ function getAllDetails() {
                 delButton.innerHTML = "Delete";
                 delButton.style.width = "64px";
                 delButton.className = "button-profile-select btn btn-danger";
-                delButton.setAttribute("del-button-for", result[i + 2]);       
+                delButton.setAttribute("del-button-for", result[i + 2]);
                 delButton.onclick = function () {
-                   var driverNameFromAttr = this.getAttribute("del-button-for");
-                   var driverId = this.id;
-                   
-          
-                   //setting text of the jquery dialog
-                   $("#dialog-confirm-text").text(driverNameFromAttr);
-                   //jquery dialog
-                   $("#dialog-confirm").dialog({                       
-                       show: "slide",
-                       resizable: false,
-                       draggable: false,
-                       title: "Are you sure you want to delete this driver?",
-                       height: "auto",
-                       width: 400,
-                       modal: true,
-                       buttons: [
-                           {
-                               text: "Delete",
-                               click: function () {
-                                   removeDriver(driverId);
-                                   $(this).dialog("close");
-                               }
-                           },
-                           {
-                               text: "Cancel",
-                               click: function () {
-                                   $(this).dialog("close");
-                               }
-                           }
-                       ]
-                       
-                   });
-                  };
+                    var driverNameFromAttr = this.getAttribute("del-button-for");
+                    var driverId = this.id;
+
+
+                    //setting text of the jquery dialog
+                    $("#dialog-confirm-text").text(driverNameFromAttr);
+                    //jquery dialog
+                    $("#dialog-confirm").dialog({
+                        show: "slide",
+                        resizable: false,
+                        draggable: false,
+                        title: "Are you sure you want to delete this driver?",
+                        height: "auto",
+                        width: 400,
+                        modal: true,
+                        buttons: [
+                            {
+                                text: "Delete",
+                                click: function () {
+                                    removeDriver(driverId);
+                                    $(this).dialog("close");
+                                }
+                            },
+                            {
+                                text: "Cancel",
+                                click: function () {
+                                    $(this).dialog("close");
+                                }
+                            }
+                        ]
+
+                    });
+                };
 
                 delButton.id = result[i + 2];
-                
+
                 cell3.appendChild(detButton);
                 cell3.appendChild(delButton);
                 cell3.style.width = "170px";
@@ -1252,42 +1252,54 @@ function getAllDetails() {
  * Delete the specified Service Instance
  * @param {string} serviceUUID
  */
-function deleteServiceInstance(serviceUUID){
-    var apiUrl = baseUrl + "/StackV-web/restapi/service/" + serviceUUID;
-    
+function deleteServiceInstance(serviceUUID, $button) {
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + serviceUUID + "/status/";
+
+    var status;
     $.ajax({
         url: apiUrl,
-        type: 'DELETE',
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        success: function(result) {
-            //setting text of jquery dialog
-            $("#dialog-confirm-text").text(result);
-            $("#dialog-confirm").dialog({                
-                show: "slide",
-                resizeable: false,
-                draggable: false,
-                title: "Service Instance Deletion Result",
-                height: "auto",
-                width: 400,
-                modal: true,
-                buttons: [                   
-                    {
-                        text:"Close",
-                        click: function () {
-                            $(this).dialog("close");
-                        }
-                    }
-                ]
-            });
-        }, 
-        error: function(err) {
-            console.log("deleteServiceInstance error: " + err);
+        async: false,
+        type: 'GET',
+        success: function (result) {
+            status = result;
         }
     });
-    $("#service-instances").dialog("close");
+
+    if ($button.hasClass("confirmation") || status === "CANCEL - READY" || status.includes("FAILED")) {
+        var apiUrl = baseUrl + "/StackV-web/restapi/service/" + serviceUUID;
+        $.ajax({
+            url: apiUrl,
+            type: 'DELETE',
+            success: function (result) {
+                //setting text of jquery dialog
+                $("#dialog-confirm-text").text(result);
+                $("#dialog-confirm").dialog({
+                    show: "slide",
+                    resizeable: false,
+                    draggable: false,
+                    title: "Service Instance Deletion Result",
+                    height: "auto",
+                    width: 400,
+                    modal: true,
+                    buttons: [
+                        {
+                            text: "Close",
+                            click: function () {
+                                $(this).dialog("close");
+                            }
+                        }
+                    ]
+                });
+                $button.parent().remove();
+            },
+            error: function (err) {
+                console.log("deleteServiceInstance error: " + err);
+            }
+        });
+    } else {
+        $button.text("Confirm Deletion");
+        $button.addClass("confirmation");
+    }
 }
 
 function removeDriver(clickID) {
@@ -1320,7 +1332,7 @@ function removeDriver(clickID) {
             console.log("removeDriver error: " + JSON.stringify(result));
             console.log("removeDriver error status: " + JSON.stringify(result["status"]));
             console.log("removeDriver error statusText: " + JSON.stringify(result["statusText"]));
-            
+
             // begin formatting of the responseText
             var badFormatResponseText = result["responseText"];
             var replaceLeftBrackets = badFormatResponseText.replace(/\[/g, '[\"'); // replace a [ with ["
@@ -1328,16 +1340,16 @@ function removeDriver(clickID) {
             var replaceRightBrackets = replaceCommas.replace(/\]/g, '"]'); //replace a ] with "]
             var replaceSpaces = replaceRightBrackets.replace(/\s/g, ''); // replace spaces with nothing
             var wellFormattedResult; // parse the formatted string to JS array intoi this variable
-            
+
             //in case the error cannot be parsed since array is in Java syntax
             try {
                 wellFormattedResult = JSON.parse(replaceSpaces);
             } catch (err) {
                 console.log("removeDriver syntax error: " + err);
-                
+
                 //setting text of jquery dialog
                 $("#dialog-confirm-text").text(JSON.stringify(result));
-                $("#dialog-confirm").dialog({                
+                $("#dialog-confirm").dialog({
                     show: "slide",
                     resizeable: false,
                     draggable: false,
@@ -1345,9 +1357,9 @@ function removeDriver(clickID) {
                     height: "auto",
                     width: 400,
                     modal: true,
-                    buttons: [                   
+                    buttons: [
                         {
-                            text:"Close",
+                            text: "Close",
                             click: function () {
                                 $(this).dialog("close");
                             }
@@ -1356,13 +1368,13 @@ function removeDriver(clickID) {
                 });
                 return;
             }
-            
+
             console.log("parsed Well formatted Response Text: " + wellFormattedResult);
 
-            var serviceInstancDialog = $("#service-instances");            
+            var serviceInstancDialog = $("#service-instances");
             var serviceInstancDialogBody = $("#service-instances-body");
             serviceInstancDialogBody.append("<hr>");
-            for (var i = 0; i < wellFormattedResult.length; i++) {                
+            for (var i = 0; i < wellFormattedResult.length; i++) {
                 var serviceUUID = wellFormattedResult[i];
                 var divUUID = document.createElement("div");
                 var pUUID = document.createElement("p");
@@ -1371,22 +1383,22 @@ function removeDriver(clickID) {
                 pUUID.style.display = "inline-block";
                 btnDeleteUUID.id = serviceUUID;
                 btnDeleteUUID.title = topUri;
-                btnDeleteUUID.className = "button-profile-select btn btn-danger";                
+                btnDeleteUUID.className = "button-profile-select btn btn-danger";
                 btnDeleteUUID.style.display = "inline-block";
                 btnDeleteUUID.style.margin = "10px";
                 btnDeleteUUID.innerHTML = "Delete Service";
-                btnDeleteUUID.onclick = function() {
-                    deleteServiceInstance(this.id);
+                btnDeleteUUID.onclick = function () {
+                    deleteServiceInstance(this.id, $(this));
                 };
                 divUUID.appendChild(pUUID);
                 divUUID.appendChild(btnDeleteUUID);
                 serviceInstancDialogBody.append(divUUID);
-                serviceInstancDialogBody.append("<hr>");                
+                serviceInstancDialogBody.append("<hr>");
             }
-            
-            serviceInstancDialog.dialog({                
-                close: function() {
-                    $("#service-instances-body").empty();  
+
+            serviceInstancDialog.dialog({
+                close: function () {
+                    $("#service-instances-body").empty();
                 },
                 show: "slide",
                 resizeable: true,
@@ -1432,42 +1444,42 @@ function getDetails(clickID) {
     $.ajax({
         url: apiUrl,
         type: 'GET',
-        beforeSend: function(xhr) {
+        beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        success: function(result) {
+        success: function (result) {
             for (var i = 0; i < result.length; i += 2) {
                 var row = document.createElement("tr");
                 var tempkey = document.createElement("td");
                 var tempval = document.createElement("td");
                 tempkey.innerHTML = result[i];
                 var tempvalString = result[i + 1];
-                
+
                 // handles if the details overflow the size of the table cell
                 if (tempvalString.length > 80) {
                     //if the value is greater than 80 - make a button which will show the info in a pane
                     var valDetailsBtn = document.createElement("button");
-                    
+
                     //assigning the text of the key (detail name) to the btn id
                     valDetailsBtn.id = tempkey.innerHTML;
-                    
+
                     // storing the value in the title
                     valDetailsBtn.title = tempvalString;
-                    
+
                     valDetailsBtn.innerHTML = "View Value";
-                    
-                                                            
+
+
                     valDetailsBtn.className = "button-profile-select btn btn-default";
                     valDetailsBtn.onclick = function () {
                         var detailName = this.id;
                         var detailValue = this.title;
-                        
+
                         // setting the value of the detail to body of the dialog 
                         $("#dialog-overflow-details-text").text(detailValue);
-                        
-                        $("#dialog-overflow-details").dialog({                            
-                            height: 450,                           
+
+                        $("#dialog-overflow-details").dialog({
+                            height: 450,
                             show: "slide",
                             width: 400,
                             resizable: true,
@@ -1484,8 +1496,8 @@ function getDetails(clickID) {
                             ]
 
                         });
-                        
-                        
+
+
                     };
                     tempval.appendChild(valDetailsBtn);
                 } else {
@@ -1518,13 +1530,13 @@ function plugDriver(topuri) {
         },
         success: function (result) {
             getAllDetails();
-            
+
             clearPanel();
             closeContentPanel();
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
-            $("#dialog-confirm").dialog({                 
+            $("#dialog-confirm").dialog({
                 show: "slide",
                 resizable: false,
                 draggable: false,
@@ -1543,7 +1555,7 @@ function plugDriver(topuri) {
 
             });
         },
-        error: function(result) {
+        error: function (result) {
             console.log("Error in plugDriver: " + result);
         }
     });
@@ -1558,7 +1570,7 @@ function installDriver() {
     var jsonData = [];
     var tempData = {};
     var type = document.getElementById("info-panel-title").title;
-    
+
     console.log("installDriver type: " + type);
 
     for (var temp of document.getElementsByTagName("input")) {
@@ -1598,7 +1610,7 @@ function installDriver() {
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text(result);
             //jquery dialog
-            $("#dialog-confirm").dialog({                
+            $("#dialog-confirm").dialog({
                 show: "slide",
                 resizable: false,
                 draggable: false,
@@ -1616,7 +1628,7 @@ function installDriver() {
                 ]
 
             });
-            
+
             //delay the getAllDetails call by 3 seconds
             setTimeout(getAllDetails(), 3000);
         },
@@ -1628,7 +1640,7 @@ function installDriver() {
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text("EXCEPTION:" + responseText);
             //jquery dialog
-            $("#dialog-confirm").dialog({                
+            $("#dialog-confirm").dialog({
                 show: "slide",
                 resizable: true,
                 draggable: true,
