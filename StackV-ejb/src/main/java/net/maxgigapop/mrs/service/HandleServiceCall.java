@@ -208,6 +208,7 @@ public class HandleServiceCall {
         }
         serviceInstance.addServiceDeltaWithoutSave(spaDelta);
         spaDelta.setServiceInstance(serviceInstance);
+        spaDelta.setStatus("COMPILED");
         DeltaPersistenceManager.save(spaDelta);
         //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         serviceInstance.setStatus("COMPILED");
@@ -263,8 +264,8 @@ public class HandleServiceCall {
             throw logger.error_throwing(method, "cannot find the ref:ServiceInstance");
         }
         logger.status(method, serviceInstance.getStatus());
-        if (!serviceInstance.getStatus().equals("INIT") && !serviceInstance.getStatus().equals("NEGOTIATING")) {
-            throw logger.error_throwing(method, "ref:ServiceInstance must have status=INIT or NEGOTIATING while the actual status=" + serviceInstance.getStatus());
+        if (!serviceInstance.getStatus().equals("INIT") && !serviceInstance.getStatus().equals("COMPILED") && !serviceInstance.getStatus().equals("NEGOTIATING")) {
+            throw logger.error_throwing(method, "ref:ServiceInstance must have status=INIT, COMPILED or NEGOTIATING while the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         if (!itSD.hasNext()) {
@@ -273,7 +274,7 @@ public class HandleServiceCall {
         ServiceDelta spaDelta = null;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getStatus().equals("INIT")) {
+            if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                 spaDelta = serviceDelta;
             } else if (serviceDelta.getSystemDelta() == null) {
                 logger.targetid(serviceDelta.getId());
@@ -347,7 +348,7 @@ public class HandleServiceCall {
             ServiceDelta serviceDeltaInit = null;
             while (it.hasNext()) {
                 ServiceDelta serviceDelta = it.next();
-                if (serviceDelta.getStatus().equals("INIT")) {
+                if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                     serviceDeltaInit = serviceDelta;
                     it.remove();
                 }
@@ -366,7 +367,7 @@ public class HandleServiceCall {
                 logger.targetid(serviceDelta.getId());
                 logger.error(method, "target:ServiceDelta getSystemDelta() == null -but- continue");
                 continue;
-            } else if (serviceDelta.getStatus().equals("INIT")) {
+            } else if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                 SystemInstance systemInstance = systemCallHandler.createInstance();
                 try {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
@@ -403,7 +404,7 @@ public class HandleServiceCall {
         boolean isNegotiating = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
+            if (serviceDelta.getStatus().equalsIgnoreCase("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                 hasInitiated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
@@ -501,7 +502,7 @@ public class HandleServiceCall {
         boolean isCommitting = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
+            if (serviceDelta.getStatus().equalsIgnoreCase("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                 hasInitiated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
@@ -509,7 +510,6 @@ public class HandleServiceCall {
                 isCommitting = true;
             }
         }
-        //serviceInstance.setStatus("INIT");
         if (hasPropagated && isCommitting) {
             serviceInstance.setStatus("COMMITTING-PARTIAL");
         } else if (hasInitiated && hasPropagated) {
@@ -828,7 +828,7 @@ public class HandleServiceCall {
             ServiceDelta serviceDeltaInit = null;
             while (it.hasNext()) {
                 ServiceDelta serviceDelta = it.next();
-                if (serviceDelta.getStatus().equals("INIT")) {
+                if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                     serviceDeltaInit = serviceDelta;
                     it.remove();
                 }
@@ -883,7 +883,7 @@ public class HandleServiceCall {
         boolean isCommitting = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
+            if (serviceDelta.getStatus().equalsIgnoreCase("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                 hasInitiated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
