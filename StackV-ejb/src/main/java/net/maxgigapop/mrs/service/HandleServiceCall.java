@@ -639,9 +639,13 @@ public class HandleServiceCall {
             // swap and add addition and reduction to reverse models
             if (serviceDelta.getModelReduction() != null && serviceDelta.getModelReduction().getOntModel() != null) {
                 reverseSvcDelta.getModelAddition().getOntModel().add(serviceDelta.getModelReduction().getOntModel().getBaseModel());
+            } else {
+                reverseSvcDelta.setModelAddition(null);
             }
             if (serviceDelta.getModelAddition() != null && serviceDelta.getModelAddition().getOntModel() != null) {
                 reverseSvcDelta.getModelReduction().getOntModel().add(serviceDelta.getModelAddition().getOntModel().getBaseModel());
+            } else {
+                reverseSvcDelta.setModelReduction(null);
             }
             List<String> includeMatches = new ArrayList<String>();
             List<String> excludeMatches = new ArrayList<String>();
@@ -672,8 +676,12 @@ public class HandleServiceCall {
                 if (!resList.isEmpty()) {
                     Model sysModelReductionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
                     reverseSysDelta.getModelAddition().getOntModel().add(sysModelReductionExt);
-                    reverseSysDelta.getModelReduction().getOntModel().remove(sysModelReductionExt);
+                    if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
+                        reverseSysDelta.getModelReduction().getOntModel().remove(sysModelReductionExt);
+                    }
                 }
+            } else {
+                reverseSysDelta.setModelAddition(null);
             }
             if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
                 reverseSysDelta.getModelReduction().getOntModel().add(systemDelta.getModelAddition().getOntModel().getBaseModel());
@@ -687,8 +695,12 @@ public class HandleServiceCall {
                 if (!resList.isEmpty()) {
                     Model sysModelAdditionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
                     reverseSysDelta.getModelReduction().getOntModel().add(sysModelAdditionExt);
-                    reverseSysDelta.getModelAddition().getOntModel().remove(sysModelAdditionExt);
+                    if (systemDelta.getModelReduction() != null && systemDelta.getModelReduction().getOntModel() != null) {
+                        reverseSysDelta.getModelAddition().getOntModel().remove(sysModelAdditionExt);
+                    }
                 }
+            } else {
+                reverseSysDelta.setModelReduction(null);
             }
         }
         serviceInstance.addServiceDeltaWithoutSave(reverseSvcDelta);
@@ -865,17 +877,13 @@ public class HandleServiceCall {
                         DriverSystemDelta dsd = dsdIt.next();
                         DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
                         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-                        //driverInstance.getDriverSystemDeltas().remove(dsd);
-                        if (serviceDelta.getSystemDelta() != null && serviceDelta.getSystemDelta().getDriverSystemDeltas() != null
-                                && serviceDelta.getSystemDelta().getDriverSystemDeltas().contains(dsd)) {
-                            driverInstance.getDriverSystemDeltas().remove(dsd);
-                        }
-                        // a hack. we really want to delete this DSD completely but have not found a way to make it go away.
-                        dsd.setStatus("DELETED");
-                        DeltaPersistenceManager.save(dsd);
+                        driverInstance.getDriverSystemDeltas().remove(dsd);
+                        DriverInstancePersistenceManager.merge(driverInstance);
+                        dsdIt.remove();
+                        DeltaPersistenceManager.delete(dsd);
                     }
                     systemInstance.getSystemDelta().getDriverSystemDeltas().clear();
-                    DeltaPersistenceManager.save(systemInstance.getSystemDelta());
+                    DeltaPersistenceManager.merge(systemInstance.getSystemDelta());
                 }
                 systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
                 serviceDelta.setStatus("PROPAGATED");
