@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-/* global baseUrl, keycloak, $loadingModal */
+/* global baseUrl, keycloak, $loadingModal, $confirmModal */
 
 var refUUID;
 var superState;
@@ -254,23 +254,8 @@ function attachListeners() {
                     reloadData();
                 } else {
                     if ((command === "delete") || (command === "force_delete")) {
-                        if (mode === "confirm") {
-                            executeCommand(command);
-                        } else {
-                            $button.attr("data-mode", "confirm");
-                            $button.text("Confirm Deletion");
-                            $button.addClass("btn-danger").removeClass("btn-default");
-                            $(".instance-command").attr('disabled', false);
-
-                            setTimeout(function () {
-                                $button.removeAttr("data-mode");
-                                $button.text("Delete");
-                                $button.removeClass("btn-danger").addClass("btn-default");
-
-                                resumeRefresh();
-                                reloadData();
-                            }, 3000);
-                        }
+                        $(".button-confirm-delete").attr("data-mode", command);
+                        $confirmModal.iziModal('open');
                     } else {
                         $loadingModal.iziModal('open');
                         executeCommand(command);
