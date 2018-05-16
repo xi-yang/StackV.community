@@ -114,21 +114,29 @@ public class HandleServiceCall {
             // clean up serviceDeltas
             for (Iterator<ServiceDelta> svcDeltaIt = serviceInstance.getServiceDeltas().iterator(); svcDeltaIt.hasNext();) {
                 ServiceDelta svcDelta = svcDeltaIt.next();
-                if (svcDelta.getSystemDelta() != null) {
-                    if (svcDelta.getSystemDelta().getDriverSystemDeltas() != null) {
-                        for (Iterator<DriverSystemDelta> dsdIt = svcDelta.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
+                SystemDelta systemDelta = svcDelta.getSystemDelta();
+                if (systemDelta != null) {
+                    if (systemDelta.getDriverSystemDeltas() != null) {
+                        for (Iterator<DriverSystemDelta> dsdIt = systemDelta.getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                             DriverSystemDelta dsd = dsdIt.next();
-                            //DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
                             DriverInstance driverInstance = dsd.getDriverInstance();
                             driverInstance.getDriverSystemDeltas().remove(dsd);
                             DeltaPersistenceManager.delete(dsd);
+                            DriverInstancePersistenceManager.merge(driverInstance);
                         }
                     }
-                    SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(svcDelta.getSystemDelta());
+                    SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(systemDelta);
                     if (systemInstance != null) {
                         SystemInstancePersistenceManager.delete(systemInstance);
                     }
-                    DeltaPersistenceManager.delete(svcDelta.getSystemDelta());
+                    systemDelta.setServiceDelta(null);
+                    DeltaPersistenceManager.merge(systemDelta);
+                }
+                svcDelta.setSystemDelta(null);
+                svcDelta.setServiceInstance(null);
+                DeltaPersistenceManager.merge(svcDelta);
+                if (systemDelta != null) {
+                    DeltaPersistenceManager.delete(systemDelta);
                 }
                 svcDeltaIt.remove();
                 DeltaPersistenceManager.delete(svcDelta);
@@ -857,7 +865,7 @@ public class HandleServiceCall {
                         DriverSystemDelta dsd = dsdIt.next();
                         DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
                         driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-                        driverInstance.getDriverSystemDeltas().remove(dsd);
+                        //driverInstance.getDriverSystemDeltas().remove(dsd);
                         if (serviceDelta.getSystemDelta() != null && serviceDelta.getSystemDelta().getDriverSystemDeltas() != null
                                 && serviceDelta.getSystemDelta().getDriverSystemDeltas().contains(dsd)) {
                             driverInstance.getDriverSystemDeltas().remove(dsd);
