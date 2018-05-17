@@ -119,10 +119,7 @@ public class HandleServiceCall {
                     if (systemDelta.getDriverSystemDeltas() != null) {
                         for (Iterator<DriverSystemDelta> dsdIt = systemDelta.getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                             DriverSystemDelta dsd = dsdIt.next();
-                            DriverInstance driverInstance = dsd.getDriverInstance();
-                            driverInstance.getDriverSystemDeltas().remove(dsd);
                             DeltaPersistenceManager.delete(dsd);
-                            DriverInstancePersistenceManager.merge(driverInstance);
                         }
                     }
                     SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(systemDelta);
@@ -875,10 +872,6 @@ public class HandleServiceCall {
                     //systemInstance.setSystemDelta((SystemDelta)DeltaPersistenceManager.merge(systemInstance.getSystemDelta()));
                     for (Iterator<DriverSystemDelta> dsdIt = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                         DriverSystemDelta dsd = dsdIt.next();
-                        DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
-                        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-                        driverInstance.getDriverSystemDeltas().remove(dsd);
-                        DriverInstancePersistenceManager.merge(driverInstance);
                         dsdIt.remove();
                         DeltaPersistenceManager.delete(dsd);
                     }
@@ -1201,8 +1194,6 @@ public class HandleServiceCall {
                 if (serviceDelta.getSystemDelta().getDriverSystemDeltas() != null) {
                     for (Iterator<DriverSystemDelta> dsdIt = serviceDelta.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                         DriverSystemDelta dsd = dsdIt.next();
-                        DriverInstance driverInstance = dsd.getDriverInstance();
-                        driverInstance.getDriverSystemDeltas().remove(dsd);
                         DeltaPersistenceManager.delete(dsd);
                     }
                 }

@@ -270,9 +270,7 @@ public class HandleSystemCall {
             if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
                 for (Iterator<DriverSystemDelta> it = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); it.hasNext();) {
                     DriverSystemDelta dsd = it.next();
-                    //DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
-                    DriverInstance driverInstance = dsd.getDriverInstance();
-                    driverInstance.getDriverSystemDeltas().remove(dsd);
+                    it.remove();
                     DeltaPersistenceManager.delete(dsd);
                     logger.trace(method, "deleted "+dsd);
                 }
@@ -453,17 +451,6 @@ public class HandleSystemCall {
             // push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
             logger.trace(method, "targetDSD has driverInstance="+driverInstance);
-            // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta
-            if (driverInstance.getDriverSystemDeltas() != null) {
-                Iterator<DriverSystemDelta> itOtherDSD = driverInstance.getDriverSystemDeltas().iterator();
-                while (itOtherDSD.hasNext()) {
-                    DriverSystemDelta otherDSD = itOtherDSD.next();
-                    if (otherDSD.getSystemDelta() == null || !otherDSD.getSystemDelta().equals(sysDelta)) {
-                        itOtherDSD.remove();
-                    }
-                }
-            }
-            driverInstance.addDriverSystemDelta(targetDSD);
             DriverInstancePersistenceManager.save(driverInstance);
         }
         //sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
