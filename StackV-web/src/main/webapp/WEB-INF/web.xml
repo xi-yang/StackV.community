@@ -25,7 +25,6 @@
             <url-pattern>/data/*</url-pattern>
         </web-resource-collection>
         <auth-constraint>
-            <role-name>A_Admin</role-name>
             <role-name>A_User</role-name>
         </auth-constraint>
     </security-constraint>
@@ -68,9 +67,6 @@
         <auth-method>KEYCLOAK</auth-method>
         <realm-name>StackV</realm-name>
     </login-config>
-    <security-role>
-        <role-name>A_Admin</role-name>
-    </security-role>
     <security-role>
         <role-name>A_User</role-name>
     </security-role>

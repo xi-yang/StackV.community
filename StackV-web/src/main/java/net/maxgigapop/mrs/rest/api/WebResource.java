@@ -2054,7 +2054,7 @@ public class WebResource {
 
             front_conn = factory.getConnection("frontend");
 
-            if (verifyUserRole("admin")) {
+            if (verifyUserRole("A_Admin")) {
                 prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
                         + "FROM service_instance I, service_verification V "
                         + "WHERE V.service_instance_id = I.service_instance_id "
@@ -2268,7 +2268,8 @@ public class WebResource {
     public ArrayList<ArrayList<String>> loadEditor() {
         ArrayList<ArrayList<String>> retList = new ArrayList<>();
         for (Map.Entry<String, List<String>> entry : Services.entrySet()) {
-            if (verifyUserRole(entry.getKey())) {
+            String entryRole = "F_Services-" + entry.getKey().toUpperCase();
+            if (verifyUserRole(entryRole)) {
                 List<String> list = entry.getValue();
                 ArrayList<String> wizardList = new ArrayList<>();
                 wizardList.add(list.get(0));
