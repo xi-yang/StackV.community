@@ -23,11 +23,18 @@
 
 package net.maxgigapop.mrs.bean;
 
+import java.util.HashMap;
+import java.util.Map;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
+import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToOne;
 
 /**
@@ -49,6 +56,13 @@ public class DriverSystemDelta extends DeltaBase {
     @OneToOne
     @JoinColumn(name = "referenceVersionItemId")
     protected VersionItem referenceVersionItem = null;
+
+    @ElementCollection
+    @JoinTable(name = "delta_driver_command", joinColumns = @JoinColumn(name = "systemDeltaId"))
+    @MapKeyColumn(name = "command")
+    @Lob
+    @Column(name = "value")
+    private Map<String, String> commands = new HashMap<String, String>();
 
     private String referenceUUID = null;
 
@@ -76,6 +90,25 @@ public class DriverSystemDelta extends DeltaBase {
 
     public void setReferenceVersionItem(VersionItem referenceVersionItem) {
         this.referenceVersionItem = referenceVersionItem;
+    }
+
+    public Map<String, String> getCommands() {
+        return commands;
+    }
+
+    public void setCommands(Map<String, String> commands) {
+        this.commands = commands;
+    }
+
+    public String getCommand(String cmd) {
+        if (!this.commands.containsKey(cmd)) {
+            return null;
+        }
+        return this.commands.get(cmd);
+    }
+
+    public void putCommand(String cmd, String value) {
+        this.commands.put(cmd, value);
     }
 
     public String getReferenceUUID() {
