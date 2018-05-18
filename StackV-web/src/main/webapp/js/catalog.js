@@ -240,7 +240,7 @@ function loadModals() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
-            if (keycloak.tokenParsed.resource_access.StackV.roles.includes("F_Profiles-W")) {
+            if (keycloak.tokenParsed.realm_access.roles.includes("F_Profiles-W")) {
                 $("#button-profile-blank-add").removeClass("hidden");
             }
 
@@ -824,7 +824,7 @@ function resetLicenseModal() {
 }
 
 function reloadModals() {
-    if (!keycloak.tokenParsed.resource_access.StackV.roles.includes("F_Profiles-W")) {
+    if (!keycloak.tokenParsed.realm_access.StackV.roles.includes("F_Profiles-W")) {
         $("#button-profile-blank-add").addClass("hidden");
     }
 
