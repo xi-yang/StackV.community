@@ -70,8 +70,7 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         OpenflowPush push = new OpenflowPush();
         String requests = null;
         requests = push.propagate(modelRef, modelAdd, modelReduc);
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        driverInstance.putProperty(requestId, requests);
+        aDelta.putCommand("requests", requests); // DO NOT merge/save as the parent transaction may double up
         logger.end(method);
     }
 
@@ -98,17 +97,20 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null || loginUser == null || loginPass ==null || topologyURI == null) {
             throw logger.error_throwing(method, String.format("%s misses one of the property keys {subsystemBaseUrlm, loginUser, loginPass, topologyUri}", driverInstance));
         }
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        String requests = driverInstance.getProperty(requestId);
-
+        String requests = aDelta.getCommand("requests");
+        if (requests == null) {
+            throw logger.error_throwing(method, "requests == null - something wrong with requests from propagate.");
+        }
+        if (requests.isEmpty()) {
+            logger.warning(method, "requests is empty --  nothing has been propagated (no change needed).");
+            return new AsyncResult<String>("SUCCESS");
+        }        
         OpenflowPush push = new OpenflowPush();
         try {
             push.commit(loginUser, loginPass, requests, subsystemBaseUrl);
         } catch (Exception ex) {
             throw logger.throwing(method, ex);
         }
-        driverInstance.getProperties().remove(requestId);
-        DriverInstancePersistenceManager.merge(driverInstance);
         logger.end(method);
         return new AsyncResult<String>("SUCCESS");
     }

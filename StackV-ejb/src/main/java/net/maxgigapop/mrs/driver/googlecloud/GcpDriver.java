@@ -82,8 +82,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
         DriverInstancePersistenceManager.merge(driverInstance);
         //System.out.println("DRIVER PROPAGATE QUERY");
         JSONArray requests = push.propagate(model, modelAdd, modelReduc);
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID();
-        driverInstance.putProperty(requestId, requests.toString());
+        aDelta.putCommand("requests", requests.toString()); // DO NOT merge/save as the parent transaction may double up
         logger.end(method);
         //System.out.println("DRIVER REQUESTS PROPAGATED: "+requests);
     }
@@ -104,20 +103,16 @@ public class GcpDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
-        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID();
-        String requests = driverInstance.getProperty(requestId);
+        //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        String requests = aDelta.getCommand("requests");
         if (requests == null) {
-            throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
+            throw logger.error_throwing(method, "requests == null - something wrong with requests from propagate.");
         }
         if (requests.isEmpty()) {
-            driverInstance.getProperties().remove(requestId);
-            DriverInstancePersistenceManager.merge(driverInstance);
-            throw logger.error_throwing(method, "requests.isEmpty - no change to commit, requestId="+requestId);
+            logger.warning(method, "requests is empty --  nothing has been propagated (no change needed).");
+            return new AsyncResult<String>("SUCCESS");
         }
         
-        driverInstance.getProperties().remove(requestId);
-        DriverInstancePersistenceManager.merge(driverInstance);
         GcpPush push = new GcpPush(driverInstance.getProperties());
         
         JSONParser parser = new JSONParser();
