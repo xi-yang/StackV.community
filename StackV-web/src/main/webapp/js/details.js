@@ -193,7 +193,7 @@ function loadDetails() {
 
     $loadingModal.iziModal(loadingConfig);
 
-    $confirmModal.html('<button class="button-confirm-close btn btn-primary" data-izimodal-close="">Close</button></button><button class="button-confirm-delete btn btn-danger">Delete</button>');
+    $confirmModal.html('</button><button class="button-confirm-delete btn btn-danger">Delete</button><button class="button-confirm-close btn btn-primary" data-izimodal-close="">Close</button>');
     $confirmModal.iziModal(confirmConfig);
     $(".button-confirm-delete").click(function () {
         executeCommand($(this).data("mode"));
