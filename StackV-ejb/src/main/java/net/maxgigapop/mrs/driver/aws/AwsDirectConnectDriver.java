@@ -105,8 +105,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
         String requests = this.pushPropagate(topologyURI, model, modelAdd, modelReduc);
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        driverInstance.putProperty(requestId, requests);
+        aDelta.putCommand("requests", requests); // DO NOT merge/save as the parent transaction may double up
         logger.end(method);
     }
 
@@ -125,16 +124,14 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
-        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        String requests = driverInstance.getProperty(requestId);
+        //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        String requests = aDelta.getCommand("requests");
         if (requests == null) {
-            throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
+            throw logger.error_throwing(method, "requests == null - something wrong with requests from propagate.");
         }
         if (requests.isEmpty()) {
-            driverInstance.getProperties().remove(requestId);
-            DriverInstancePersistenceManager.merge(driverInstance);
-            logger.warning(method, "requests.isEmpty - no change to commit, requestId="+requestId);
+            logger.warning(method, "requests is empty --  nothing has been propagated (no change needed).");
+            return new AsyncResult<String>("SUCCESS");
         }        
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
@@ -142,8 +139,6 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         Regions region = Regions.fromName(r);
         String topologyURI = driverInstance.getProperty("topologyUri");
         String defaultVlanRange = driverInstance.getProperty("defaultVlanRange");
-        driverInstance.getProperties().remove(requestId);
-        DriverInstancePersistenceManager.merge(driverInstance);
         try {
             AwsDCGet dcClient = new AwsDCGet(access_key_id, secret_access_key, region);
             this.pushCommit(dcClient, requests);

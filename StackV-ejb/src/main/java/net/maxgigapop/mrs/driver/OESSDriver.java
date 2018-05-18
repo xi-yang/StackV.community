@@ -85,8 +85,7 @@ public class OESSDriver implements IHandleDriverSystemCall {
         OntModel modelAdd = aDelta.getModelAddition().getOntModel();
         OntModel modelReduc = aDelta.getModelReduction().getOntModel();
         String requests = this.pushPropagate(topologyUri, model, modelAdd, modelReduc);
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        driverInstance.putProperty(requestId, requests);
+        aDelta.putCommand("requests", requests); // DO NOT merge/save as the parent transaction may double up
         logger.end(method);
     }
 
@@ -104,16 +103,14 @@ public class OESSDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
-        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        String requests = driverInstance.getProperty(requestId);
+        //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        String requests = aDelta.getCommand("requests");
         if (requests == null) {
-            throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
+            throw logger.error_throwing(method, "requests == null - something wrong with requests from propagate.");
         }
         if (requests.isEmpty()) {
-            driverInstance.getProperties().remove(requestId);
-            DriverInstancePersistenceManager.merge(driverInstance);
-            logger.warning(method, "requests.isEmpty - no change to commit, requestId="+requestId);
+            logger.warning(method, "requests is empty --  nothing has been propagated (no change needed).");
+            return new AsyncResult<String>("SUCCESS");
         }        
         try {
             String baseUrl = driverInstance.getProperty("subsystemBaseUrl");
@@ -129,8 +126,6 @@ public class OESSDriver implements IHandleDriverSystemCall {
                 throw logger.error_throwing(method, driverInstance +"has no property key=apiPassword");
             }
             String defaultGroup = driverInstance.getProperty("defaultGroup"); // it can be null
-            driverInstance.getProperties().remove(requestId);
-            DriverInstancePersistenceManager.merge(driverInstance);
             this.pushCommit(baseUrl, username, password, defaultGroup, requests);
         } catch (com.amazonaws.AmazonServiceException ex) {
             throw logger.throwing(method, ex);
