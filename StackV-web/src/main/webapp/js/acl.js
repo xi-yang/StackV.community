@@ -935,8 +935,20 @@ function subloadInstanceACLTable(refUUID) {
                                                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                                             },
                                             success: function (result) {
-                                                $(this).closest('tr').remove();
-                                                subloadInstanceACLTable(refUUID);
+                                                $('.button-acl-remove[data-username="' + username + '"]').closest('tr').hide();                                                
+                                                
+                                                // compares which rows are the same in the acl and users tables and unhides the user row in the users table
+                                                var userRows = $("#users-body tr");
+                                                userRows.removeClass("hide");
+                                                for (userindex = 0; userindex < userRows.length; ++userindex) {
+                                                    var aclRows = $("#acl-body tr");
+                                                    for (aclindex = 0; aclindex < aclRows.length; ++aclindex) {
+                                                        if (userRows[userindex].firstChild.innerHTML === aclRows[aclindex].firstChild.innerHTML) {
+                                                            userRows[userindex].className = "";
+                                                        }
+                                                    }
+                                                }                                                                        
+                                                tweenInstanceACLPanel.play();
                                             }
                                         });
                                     }).error(function () {
@@ -947,7 +959,8 @@ function subloadInstanceACLTable(refUUID) {
                                 }                                
                             });
                         }
-
+                        
+                        // compares which rows are the same in the acl and users tables and hides the user row in the users table
                         var userRows = $("#users-body tr");
                         userRows.removeClass("hide");
                         for (userindex = 0; userindex < userRows.length; ++userindex) {
