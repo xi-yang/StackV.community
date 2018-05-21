@@ -913,55 +913,38 @@ function subloadInstanceACLTable(refUUID) {
                                 var loginCheckbox = document.getElementById("loginaccess-" + username);                               
                                 if (loginCheckbox.checked === true) {                                                
                                     // remove the user from any ACL policy associated with the service instance
-                                    removeUserFromACLPolicy(username, refUUID, "login").done(function(result) {
-                                        // if no error                                        
-                                        if (result["error"] === null && result["result"]["completed"] === 1) {
-                                            swal("Removed " + username + " from Login ACL Policy","Service instance: " + refUUID, "success");
-                                        } else {
-                                            console.log("remove user from service instance error in login removeUserFromACLPolicy - error: " + JSON.stringify(result));
-                                            swal("Not able to remove " + username + " from Login ACL Policy", "Please uncheck the Login Access checkbox", "error");
-                                            
-                                        }
-                                    });                                    
-                                }                                
-                                
+                                    swal("Not able to remove " + username + " from Login ACL Policy", "Please uncheck the Login Access checkbox", "error");                         
+                                }
                                                                                                 
                                 // getting and checking the Login checkbox
                                 var sudoCheckbox = document.getElementById("sudoaccess-" + username);                                
                                 if (sudoCheckbox.checked === true) {                                                
-                                    // remove the user from any ACL policy associated with the service instance
-                                    removeUserFromACLPolicy(username, refUUID, "sudo").done(function(result) {
-                                        // if no error                                        
-                                        if (result["error"] === null && result["result"]["completed"] === 1) {
-                                            swal("Removed " + username + " from Sudo ACL Policy","Service instance: " + refUUID, "success");
-                                        } else {
-                                            console.log("remove user from service instance error in sudo removeUserFromACLPolicy - error: " + JSON.stringify(result));
-                                            swal("Not able to remove " + username + " from Sudo ACL Policy", "Please uncheck the Sudo Access checkbox", "error");
-                                        }
-                                    });                                    
+                                   swal("Not able to remove " + username + " from Sudo ACL Policy", "Please uncheck the Sudo Access checkbox", "error");                                    
                                 } 
-
-                                var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/' + refUUID;
-                                keycloak.updateToken(30).success(function () {
-                                    $.ajax({
-                                        url: apiUrl,
-                                        type: 'DELETE',
-                                        data: username,
-                                        contentType: "application/json; charset=utf-8",
-                                        dataType: "json",
-                                        beforeSend: function (xhr) {
-                                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                                        },
-                                        success: function (result) {
-                                            $(this).closest('tr').remove();
-                                            subloadInstanceACLTable(refUUID);
-                                        }
+                                
+                                if (loginCheckbox.checked === false && sudoCheckbox.checked === false) {
+                                    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/' + refUUID;
+                                    keycloak.updateToken(30).success(function () {
+                                        $.ajax({
+                                            url: apiUrl,
+                                            type: 'DELETE',
+                                            data: username,
+                                            contentType: "application/json; charset=utf-8",
+                                            dataType: "json",
+                                            beforeSend: function (xhr) {
+                                                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                                            },
+                                            success: function (result) {
+                                                $(this).closest('tr').remove();
+                                                subloadInstanceACLTable(refUUID);
+                                            }
+                                        });
+                                    }).error(function () {
+                                        console.log("Fatal Error: Token update failed!");
                                     });
-                                }).error(function () {
-                                    console.log("Fatal Error: Token update failed!");
-                                });
 
                                 evt.preventDefault();
+                                }                                
                             });
                         }
 
