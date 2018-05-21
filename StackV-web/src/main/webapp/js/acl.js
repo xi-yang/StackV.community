@@ -910,34 +910,33 @@ function subloadInstanceACLTable(refUUID) {
                                  */
                                 
                                 // getting and checking the Login checkbox
-                                var loginCheckbox = document.getElementById("loginaccess-" + username);
-                                console.log("login check box checked?: " + loginCheckbox.checked);
+                                var loginCheckbox = document.getElementById("loginaccess-" + username);                               
                                 if (loginCheckbox.checked === true) {                                                
                                     // remove the user from any ACL policy associated with the service instance
                                     removeUserFromACLPolicy(username, refUUID, "login").done(function(result) {
-                                        // if no error
-                                        console.log("*** removing user from service instance - login");
+                                        // if no error                                        
                                         if (result["error"] === null && result["result"]["completed"] === 1) {
                                             swal("Removed " + username + " from Login ACL Policy","Service instance: " + refUUID, "success");
                                         } else {
-                                            swal("Not able to remove " + username + " from Login ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                            console.log("remove user from service instance error in login removeUserFromACLPolicy - error: " + JSON.stringify(result));
+                                            swal("Not able to remove " + username + " from Login ACL Policy", "Please uncheck the Login Access checkbox", "error");
+                                            
                                         }
                                     });                                    
                                 }                                
                                 
                                                                                                 
                                 // getting and checking the Login checkbox
-                                var sudoCheckbox = document.getElementById("sudoaccess-" + username);
-                                console.log("sudo check box checked?: " + sudoCheckbox.checked);
+                                var sudoCheckbox = document.getElementById("sudoaccess-" + username);                                
                                 if (sudoCheckbox.checked === true) {                                                
                                     // remove the user from any ACL policy associated with the service instance
                                     removeUserFromACLPolicy(username, refUUID, "sudo").done(function(result) {
-                                        // if no error
-                                        console.log("*** removing user from service instance - sudo");
+                                        // if no error                                        
                                         if (result["error"] === null && result["result"]["completed"] === 1) {
                                             swal("Removed " + username + " from Sudo ACL Policy","Service instance: " + refUUID, "success");
                                         } else {
-                                            swal("Not able to remove " + username + " from Sudo ACL Policy", "Error: " + JSON.stringify(result), "error");
+                                            console.log("remove user from service instance error in sudo removeUserFromACLPolicy - error: " + JSON.stringify(result));
+                                            swal("Not able to remove " + username + " from Sudo ACL Policy", "Please uncheck the Sudo Access checkbox", "error");
                                         }
                                     });                                    
                                 } 
@@ -953,7 +952,8 @@ function subloadInstanceACLTable(refUUID) {
                                         beforeSend: function (xhr) {
                                             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                                         },
-                                        success: function (result) {                                            
+                                        success: function (result) {
+                                            $(this).closest('tr').remove();
                                             subloadInstanceACLTable(refUUID);
                                         }
                                     });
