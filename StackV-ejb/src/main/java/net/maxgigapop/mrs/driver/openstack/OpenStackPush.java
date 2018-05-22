@@ -43,11 +43,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import net.maxgigapop.mrs.common.IpaAlm;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.apache.commons.net.util.SubnetUtils;
+import org.apache.logging.log4j.core.net.Severity;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -136,7 +138,7 @@ public class OpenStackPush {
      * reduction ************************************************
      */
     public List<JSONObject> propagate(OntModel modelRef, OntModel modelAdd, OntModel modelReduct) {
-        String method = "pushPropagate";
+        String method = "pushPropagate";        
         List<JSONObject> requests = new ArrayList();
         //get all the requests
         
@@ -145,7 +147,7 @@ public class OpenStackPush {
         requests.addAll(vpnEndpointRequests(modelRef, modelReduct, false));
         requests.addAll(globusConnectRequests(modelRef, modelReduct, false));
         requests.addAll(cephStorageRequests(modelRef, modelReduct, false));
-        requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));
+        requests.addAll(virtualRouterRequests(modelRef, modelReduct, false));        
         requests.addAll(sriovRequests(modelRef, modelReduct, false));
         requests.addAll(portAttachmentRequests(modelRef, modelReduct, false));
         requests.addAll(volumesAttachmentRequests(modelRef, modelReduct, false));
@@ -166,7 +168,7 @@ public class OpenStackPush {
         requests.addAll(portAttachmentRequests(modelRef, modelAdd, true));
         requests.addAll(layer3Requests(modelRef, modelAdd, true));
         requests.addAll(floatingIpRequests(modelRef, modelAdd, true));
-        requests.addAll(isAliasRequest(modelRef, modelAdd, true));
+        requests.addAll(isAliasRequest(modelRef, modelAdd, true));        
         requests.addAll(sriovRequests(modelRef, modelAdd, true));
         requests.addAll(virtualRouterRequests(modelRef, modelAdd, true));
         requests.addAll(cephStorageRequests(modelRef, modelAdd, true));
@@ -2552,15 +2554,43 @@ public class OpenStackPush {
 
         return requests;
     }
-
-    private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {
+    
+    /**
+     * Note for leasing an address from FreeIPA ALM plugin: when revoking (or any ALM function needed)
+     * during cleanup, the pool name is required. However, the pool name cannot be queried from the 
+     * model as the model does not store where the address came from. In other words, the model does not
+     * store the fact the address came from the ALM plugin - it only cares about the address. One solution 
+     * is to store leasing information in a cleanup function that is called when the model reduction happens.
+     * Most of the commented out parts in the method are related to the FreeIPA ALM plugin to be revisited
+     * later.
+     * 
+     * 
+     * @param modelRef
+     * @param modelDelta
+     * @param creation
+     * @return 
+     */
+    private List<JSONObject> sriovRequests(OntModel modelRef, OntModel modelDelta, boolean creation) {        
         String method = "sriovRequests";
+        
+        
+        IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!"); // replace with keycloak creds that are gotten dynamically
+        String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;        
+        String ipPoolType = "ipv4";
+        String macPoolType = "mac";
+        String poolName = ""; // re-assigned based on each instance
+        
+        
+        String ip = null;
+        String mac = null;
+        
+        
         List<JSONObject> requests = new ArrayList();
         JSONObject JO = new JSONObject();
         String query = "SELECT ?vmfex ?vnic WHERE {"
                 + "?vmfex mrs:providesVNic ?vnic ."
                 + "}";
-        ResultSet r = executeQuery(query, emptyModel, modelDelta);
+        ResultSet r = executeQuery(query, emptyModel, modelDelta);        
         int sriovNum = 1;
         while (r.hasNext()) {
             QuerySolution q = r.next();
@@ -2595,6 +2625,8 @@ public class OpenStackPush {
             } else {
                 throw logger.error_throwing(method, "sriovRequests related resoruces for vNic='" + vNic.getURI() + "' cannot be resolved");
             }
+            
+            // conventional ipv4 address - provided by the user
             query = "SELECT ?ip WHERE {"
                     + String.format("<%s> mrs:hasNetworkAddress ?ipAddr . ", vNic)
                     + "?ipAddr a mrs:NetworkAddress . "
@@ -2602,10 +2634,13 @@ public class OpenStackPush {
                     + "?ipAddr mrs:value ?ip . "
                     + "}";
             ResultSet r2 = executeQuery(query, emptyModel, modelDelta);
-            String ip = null;
+            
+            //String ip = null;
             if (r2.hasNext()) {
                 ip = r2.next().get("ip").toString();
             }
+            
+            // conventional mac address - provided by the user
             query = "SELECT ?mac WHERE {"
                     + String.format("<%s> mrs:hasNetworkAddress ?macAddr . ", vNic)
                     + "?macAddr a mrs:NetworkAddress . "
@@ -2613,10 +2648,94 @@ public class OpenStackPush {
                     + "?macAddr mrs:value ?mac . "
                     + "}";
             ResultSet r3 = executeQuery(query, emptyModel, modelDelta);
-            String mac = null;
+            
+            //String mac = null;
             if (r3.hasNext()) {
                 mac = r3.next().get("mac").toString();
             }
+            
+            
+            
+            // alm ip
+            query = "SELECT ?ip WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?ipAddr . ", vNic)
+                    + "?ipAddr a mrs:NetworkAddress . "
+                    + "?ipAddr mrs:type \"md2:alm:ipv4\" . "
+                    + "?ipAddr mrs:value ?ip . "
+                    + "}";
+            ResultSet almIpResultSet = executeQuery(query, emptyModel, modelDelta);            
+            // String almIp = null;
+            if (almIpResultSet.hasNext()) {                                
+                String queryIp = almIpResultSet.next().get("ip").toString();                
+                
+                if (queryIp.contains(":")) {
+                    // if the queried information has a colon indicating the a potential specified_address
+                    // then attempt to the extract the address while checking if there is an explicit
+                    // mention of "suggest+any"
+                    
+                    String[] splitQuery = queryIp.split(":");
+                    String[] poolInfo = splitQuery[0].split("\\+");
+                    String[] addrInfo = splitQuery[1].split("\\+");
+                    
+                    poolName = poolInfo[1];                    
+                    
+
+                    if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
+                        // explicit mention of "any"
+                        // query the IPA ALM manager for an address                          
+                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, null);
+                    } else {
+                        // get the specifed address                        
+                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, addrInfo[1]);                        
+                    }                    
+                } else {
+                    // the queried information should look like this format: pool+pool_name
+                    String[] poolInfo = queryIp.split("\\+");                  
+                    // query the IPA ALM manager for an address  
+                    ip = ipaAlm.leaseAddr(clientName, poolInfo[1], ipPoolType, null);
+                }                            
+            }
+            
+            // alm mac
+            query = "SELECT ?mac WHERE {"
+                    + String.format("<%s> mrs:hasNetworkAddress ?macAddr . ", vNic)
+                    + "?macAddr a mrs:NetworkAddress . "
+                    + "?macAddr mrs:type \"md2:alm:mac\" . "
+                    + "?macAddr mrs:value ?mac . "
+                    + "}";
+            ResultSet almMacResultSet = executeQuery(query, emptyModel, modelDelta);
+            //String almMac = null;
+            if (almMacResultSet.hasNext()) {                                
+                String queryIp = almIpResultSet.next().get("mac").toString();
+                
+                if (queryIp.contains(":")) {
+                    // if the queried information has a colon indicating the a potential specified_address
+                    // then attempt to the extract the address while checking if there is an explicit
+                    // mention of "suggest+any"                                        
+                    
+                    String[] splitQuery = queryIp.split(":");
+                    String[] poolInfo = splitQuery[0].split("\\+");
+                    String[] addrInfo = splitQuery[1].split("\\+");
+                    
+                    poolName = poolInfo[1];   
+
+                    if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
+                        // explicit mention of "any"
+                        // query the IPA ALM manager for a mac address
+                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, null);
+                    } else {
+                        // get the specifed address                        
+                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, addrInfo[1]);                        
+                    }                    
+                } else {
+                    // the queried information should look like this format: pool+pool_name
+                    String[] poolInfo = queryIp.split("\\+");
+                    // query the IPA ALM manager for an address
+                    mac = ipaAlm.leaseAddr(clientName, poolInfo[1], macPoolType, null);
+                }
+            }
+            
+            
             String serverName = ResourceTool.getResourceName(VM.toString(), OpenstackPrefix.vm);
             String vnicName = ResourceTool.getResourceName(vNic.toString(), OpenstackPrefix.PORT);
             o.put("server name", serverName);
@@ -2652,9 +2771,38 @@ public class OpenStackPush {
             JO.put(String.format("sriov_vnic:%d", sriovNum), o);
             sriovNum++;
         }
+        
         if (creation == true) {
             JO.put("request", "AttachSriovRequest");
         } else {
+            
+            /*
+            // cleanup the address
+            // revoke the leaseaddr if the address has been leased
+            if (ip != null || mac != null) {              
+                boolean isIpLeased = ipaAlm.checkIfAddrLeased(poolName, ip);
+                boolean isMacLeased = ipaAlm.checkIfAddrLeased(poolName, mac);
+                
+                if (isIpLeased) {
+                    boolean addrReleased = ipaAlm.revokeLeasedAddr(clientName, poolName, ipPoolType, ip);
+                    if (addrReleased) {                        
+                        logger.trace(method, "IPA leased address revoked succesfully");
+                    } else {                        
+                        logger.error(method, "IPA leased address not revoked", Severity.ERROR);
+                    }
+                }
+                
+                if (isMacLeased) {
+                    boolean addrReleased = ipaAlm.revokeLeasedAddr(clientName, poolName, macPoolType, mac);
+                    if (addrReleased) {                        
+                        logger.trace(method, "IPA leased address revoked succesfully");
+                    } else {                        
+                        logger.error(method, "IPA leased address not revoked", Severity.ERROR);
+                    }
+                }
+                
+            }
+            */
             JO.put("request", "DetachSriovRequest");
         }
         requests.add(JO);

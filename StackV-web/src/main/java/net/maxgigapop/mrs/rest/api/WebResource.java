@@ -86,6 +86,7 @@ import javax.ws.rs.QueryParam;
 import net.maxgigapop.mrs.common.AuditService;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
+import net.maxgigapop.mrs.common.IpaAlm;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -639,7 +640,13 @@ public class WebResource {
 
         return "PLUGIN SUCCEEDED";
     }
-
+    
+    /**
+     * Adds a new driver profile
+     * @param username
+     * @param dataInput
+     * @throws SQLException 
+     */
     @PUT
     @Path("/driver/{user}/add")
     @Consumes(value = {"application/json"})
