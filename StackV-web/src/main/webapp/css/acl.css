@@ -50,19 +50,40 @@ div#acl-role-panel {
 }
 
 #acl-role-user-div, #acl-group-role-div {
-    overflow: scroll;
-    height: 95%;
+    height: 100%;
     padding-right: 5px;
-    width: 45%;
+    width: 40%;
     position: absolute;
     left:5px;
 }
+#user-body {
+    display: -webkit-flex;
+    overflow-y: scroll;
+    -webkit-flex-flow: row wrap;
+    max-height: 60vh;
+    margin-top: 1px;
+}
+#role-body {
+    display: -webkit-flex;
+    overflow-y: scroll;
+    -webkit-flex-flow: row wrap;
+    max-height: 65vh;
+    margin-top: 1px;
+}
+
+tr.acl-role-row {
+    display: -webkit-flex;
+    width: 100%;
+}
+tr.acl-role-row td {
+    width: 100%;
+}
+
 div#acl-group-role-div {
     left: -100%;
 }
 
 #acl-role-group-div, #acl-role-role-div {
-    overflow: scroll;
     height: 45%;
     padding-right: 5px;
     width: 45%;

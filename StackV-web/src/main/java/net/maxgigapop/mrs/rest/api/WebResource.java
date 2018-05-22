@@ -51,6 +51,10 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import com.hp.hpl.jena.ontology.OntModel;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+import com.squareup.okhttp.RequestBody;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
@@ -81,7 +85,6 @@ import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.QueryParam;
 import net.maxgigapop.mrs.common.AuditService;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.ServiceHandler;
@@ -139,7 +142,9 @@ public class WebResource {
     String host = "http://127.0.0.1:8080/StackV-web/restapi";
     String kc_url = System.getProperty("kc_url");
     JSONParser parser = new JSONParser();
+
     private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
+    private final OkHttpClient client = new OkHttpClient();
 
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
 
@@ -853,7 +858,6 @@ public class WebResource {
             conn.setRequestMethod("GET");
             conn.setDoInput(true);
             conn.connect();
-            logger.trace("getUsers", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
             StringBuilder responseStr;
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
@@ -1018,78 +1022,13 @@ public class WebResource {
 
     }
 
-    /*Andrew's draft for a new method to get roles for a single group*/
     @GET
-    @Path("/keycloak/groups/{group}")
+    @Path("/keycloak/roles")
     @Produces("application/json")
     @RolesAllowed("F_Keycloak-R")
-    public ArrayList<ArrayList<String>> getGroupRoles(@PathParam("group") String subject) throws IOException, ParseException {
+    public ArrayList<ArrayList<String>> getRoles() throws IOException, ParseException {
         try {
-            String method = "getGroupRoles";
-            logger.trace_start(method);
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/roles/" + subject + "/composites");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            logger.trace("getGroupRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray groupArr = (JSONArray) obj;
-            for (Object group : groupArr) {
-                ArrayList<String> groupList = new ArrayList<>();
-                JSONObject groupJSON = (JSONObject) group;
-                groupList.add((String) groupJSON.get("id"));
-                groupList.add((String) groupJSON.get("name"));
-
-                retList.add(groupList);
-            }
-            logger.trace_end(method);
-            return retList;
-        } catch (IOException | ParseException ex) {
-            logger.catching("getGroupRoles", ex);
-            throw ex;
-        }
-    }
-
-    /**
-     * @api {get} /app/keycloak/groups Get Groups
-     * @apiVersion 1.0.0
-     * @apiDescription Get a list of existing groups.
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/groups
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} groups groups JSON
-     * @apiSuccess {JSONArray} groups.group group JSON
-     * @apiSuccess {String} groups.group.id group ID
-     * @apiSuccess {String} groups.group.name group name
-     * @apiSuccessExample {json} Example Response:
-     * [["c8b87f1a-6f2f-4ae0-824d-1dda0ca7aaab","TeamA"],["968ee80f-92a0-42c4-8f19-fe502d41480a","offline_access"]]
-     */
-    @GET
-    @Path("/keycloak/groups")
-    @Produces("application/json")
-    @RolesAllowed("F_Keycloak-R")
-    public ArrayList<ArrayList<String>> getGroups() throws IOException, ParseException {
-        try {
-            String method = "getGroups";
+            String method = "getRoles";
             logger.trace_start(method);
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -1129,159 +1068,13 @@ public class WebResource {
         }
     }
 
-    /**
-     * @api {get} /app/keycloak/roles Get Roles
-     * @apiVersion 1.0.0
-     * @apiDescription Get a list of existing roles.
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/roles
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} roles roles JSON
-     * @apiSuccess {JSONArray} roles.role role JSON
-     * @apiSuccess {String} roles.role.id role ID
-     * @apiSuccess {String} roles.role.name role name
-     * @apiSuccessExample {json} Example Response:
-     * [["e619f97d-9811-4612-82f7-fa01fbbf0515","Drivers"],["a08da95a-9c90-4dca-96db-0903cc8f82fa","Labels"],["f12ad2d8-2f7b-4e12-9cfe-d264d13e96fc","Keycloak"]]
-     */
-    @GET
-    @Path("/keycloak/roles")
-    @Produces("application/json")
-    @RolesAllowed("F_Keycloak-R")
-    public ArrayList<ArrayList<String>> getRoles() throws IOException, ParseException {
-        try {
-            String method = "getRoles";
-            logger.trace_start(method);
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/clients/" + keycloakStackVClientID + "/roles");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            logger.trace("getRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray roleArr = (JSONArray) obj;
-            for (Object role : roleArr) {
-                ArrayList<String> roleList = new ArrayList<>();
-                JSONObject roleJSON = (JSONObject) role;
-                roleList.add((String) roleJSON.get("id"));
-                roleList.add((String) roleJSON.get("name"));
-
-                retList.add(roleList);
-            }
-
-            logger.trace_end(method);
-            return retList;
-        } catch (IOException | ParseException ex) {
-            logger.catching("getRoles", ex);
-            throw ex;
-        }
-    }
-
-    /**
-     * @api {get} /app/keycloak/users/:user/groups Get User Groups
-     * @apiVersion 1.0.0
-     * @apiDescription Get a list of groups specified user belongs to.
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/groups
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} groups groups JSON
-     * @apiSuccess {JSONArray} groups.group group JSON
-     * @apiSuccess {String} groups.group.id group ID
-     * @apiSuccess {String} groups.group.name group name
-     * @apiSuccessExample {json} Example Response:
-     * [["c8b87f1a-6f2f-4ae0-824d-1dda0ca7aaab","TeamA"],["6f299a2f-185b-4784-a135-b861179af17d","admin"]]
-     */
-    @GET
-    @Path("/keycloak/users/{user}/groups")
-    @Produces("application/json")
-    @RolesAllowed("F_Keycloak-R")
-    public ArrayList<ArrayList<String>> getUserGroups(@PathParam("user") String subject) throws IOException, ParseException {
-        try {
-            String method = "getUserGroups";
-            logger.trace_start(method);
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray roleArr = (JSONArray) obj;
-            for (Object obj2 : roleArr) {
-                ArrayList<String> roleList = new ArrayList<>();
-                JSONObject role = (JSONObject) obj2;
-                roleList.add((String) role.get("id"));
-                roleList.add((String) role.get("name"));
-
-                retList.add(roleList);
-            }
-
-            logger.trace_end(method);
-            return retList;
-        } catch (IOException | ParseException ex) {
-            logger.catching("getUserGroups", ex);
-            throw ex;
-        }
-    }
-
-    /**
-     * @api {post} /app/keycloak/users/:user/groups Add User to Group
-     * @apiVersion 1.0.0
-     * @apiDescription Assign group membership to a user
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     * @apiParam {JSONObject} inputString input JSON
-     * @apiParam {String} inputString.id group ID
-     * @apiParam {String} inputString.name group name
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X POST -d '{"id":"c8b87f1a-6f2f-4ae0-824d-1dda0ca7aaab","name":"TeamA"}'
-     * http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/groups
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
     @POST
-    @Path("/keycloak/users/{user}/groups")
+    @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
     @RolesAllowed("F_Keycloak-W")
-    public void addUserGroup(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
+    public void addUserRole(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
         try {
-            String method = "addUserGroup";
+            String method = "addUserRole";
             logger.start(method);
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
@@ -1311,29 +1104,13 @@ public class WebResource {
         }
     }
 
-    /**
-     * @api {delete} /app/keycloak/users/:user/groups Remove User from Group
-     * @apiVersion 1.0.0
-     * @apiDescription Retract group membership from a user
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     * @apiParam {JSONObject} inputString input JSON
-     * @apiParam {String} inputString.id group ID
-     * @apiParam {String} inputString.name group name
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X DELETE -d '{"id":"c8b87f1a-6f2f-4ae0-824d-1dda0ca7aaab","name":"TeamA"}'
-     * http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/groups
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
     @DELETE
-    @Path("/keycloak/users/{user}/groups")
+    @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
     @RolesAllowed("F_Keycloak-W")
-    public void removeUserGroup(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
+    public void removeUserRole(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
         try {
-            String method = "removeUserGroup";
+            String method = "removeUserRole";
             logger.start(method);
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
@@ -1362,233 +1139,62 @@ public class WebResource {
             throw ex;
         }
     }
-
-    /**
-     * @api {get} /app/keycloak/users/:user/roles Get User Roles
-     * @apiVersion 1.0.0
-     * @apiDescription Get a list of roles the user has assigned.
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/roles
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} roles roles JSON
-     * @apiSuccess {JSONArray} roles.role role JSON
-     * @apiSuccess {String} roles.role.id role ID
-     * @apiSuccess {String} roles.role.name role name
-     * @apiSuccess {String} roles.role.source role source, either "assigned" or the name of group who delegates the role.
-     * @apiSuccessExample {json} Example Response:
-     * [["056af27f-b754-4287-aebe-129f5de8ab47","Services","assigned"],["a08da95a-9c90-4dca-96db-0903cc8f82fa","Labels","admin"],["7d307d71-1b89-45f7-a0be-3b0f0d1b2045","Manifests","admin"]]
-     */
+    
     @GET
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
     @RolesAllowed("F_Keycloak-R")
-    public ArrayList<ArrayList<String>> getUserRoles(@PathParam("user") String subject) throws IOException, ParseException {
+    public String getUserRoles(@PathParam("user") String subject) throws IOException, ParseException {
         try {
             String method = "getUserRoles";
             logger.trace_start(method);
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
+            JSONArray retJSON = new JSONArray();
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
 
             // Get assigned roles.
-            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID);
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            logger.trace("getUserRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "roles");
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
+            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
+            Request request = new Request.Builder().url(url).header("Authorization", auth).build();
+            Response response = client.newCall(request).execute();
+            String responseStr = response.body().string();
 
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray roleArr = (JSONArray) obj;
-            for (Object obj2 : roleArr) {
-                ArrayList<String> roleList = new ArrayList<>();
-                JSONObject role = (JSONObject) obj2;
-                roleList.add((String) role.get("id"));
-                roleList.add((String) role.get("name"));
-                roleList.add("assigned");
-
-                retList.add(roleList);
-            }
-
-            // Get groups.
-            url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/realm");
-            conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            logger.trace("getUserRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "groups");
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            obj = parser.parse(responseStr.toString());
+            Object obj = parser.parse(responseStr);
             JSONArray groupArr = (JSONArray) obj;
-            ArrayList<String> groupList = new ArrayList<>();
+            ArrayList<String> roleList = new ArrayList<>();
             for (Object obj2 : groupArr) {
                 JSONObject role = (JSONObject) obj2;
-                groupList.add((String) role.get("name"));
+                roleList.add((String) role.get("name"));
+
+                JSONObject roleJSON = new JSONObject();
+                roleJSON.put("id", (String) role.get("id"));
+                roleJSON.put("name", (String) role.get("name"));
+                retJSON.add(roleJSON);
             }
 
             // Get delegated roles.
-            for (String group : groupList) {
-                url = new URL(kc_url + "/admin/realms/StackV/roles/" + group + "/composites");
-                conn = (HttpsURLConnection) url.openConnection();
-                conn.setRequestProperty("Authorization", auth);
-                conn.setReadTimeout(10000);
-                conn.setConnectTimeout(15000);
-                conn.setRequestMethod("GET");
-                conn.setDoInput(true);
-                logger.trace("getUserRoles", conn.getResponseCode() + " - " + conn.getResponseMessage(), "composites");
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                    String inputLine;
-                    responseStr = new StringBuilder();
-                    while ((inputLine = in.readLine()) != null) {
-                        responseStr.append(inputLine);
-                    }
-                }
+            for (String comp : roleList) {
+                url = new URL(kc_url + "/admin/realms/StackV/roles/" + comp + "/composites");
+                request = new Request.Builder().url(url).header("Authorization", auth).build();
+                response = client.newCall(request).execute();
+                responseStr = response.body().string();
 
-                obj = parser.parse(responseStr.toString());
-                roleArr = (JSONArray) obj;
+                obj = parser.parse(responseStr);
+                JSONArray roleArr = (JSONArray) obj;
                 for (Object obj2 : roleArr) {
-                    ArrayList<String> roleList = new ArrayList<>();
+                    JSONObject roleJSON = new JSONObject();
                     JSONObject role = (JSONObject) obj2;
-                    roleList.add((String) role.get("id"));
-                    roleList.add((String) role.get("name"));
-                    roleList.add(group);
+                    roleJSON.put("id", (String) role.get("id"));
+                    roleJSON.put("name", (String) role.get("name"));
+                    roleJSON.put("from", comp);
 
-                    retList.add(roleList);
+                    retJSON.add(roleJSON);
                 }
             }
 
             logger.trace_end(method);
-            return retList;
+            return retJSON.toJSONString();
 
         } catch (IOException | ParseException ex) {
             logger.catching("getUserRoles", ex);
-            throw ex;
-        }
-    }
-
-    /**
-     * @api {post} /app/keycloak/users/:user/roles Add User Role
-     * @apiVersion 1.0.0
-     * @apiDescription Directly assign a role to specified user.
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     * @apiParam {JSONObject} inputString input JSON
-     * @apiParam {String} inputString.id role ID
-     * @apiParam {String} inputString.name role name
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X POST -d '{"id":"056af27f-b754-4287-aebe-129f5de8ab47","name":"Services"}'
-     * http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/roles
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
-    @POST
-    @Path("/keycloak/users/{user}/roles")
-    @Produces("application/json")
-    @RolesAllowed("F_Keycloak-W")    
-    public void addUserRole(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
-        try {
-            String method = "addUserRole";
-            logger.start(method);
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID + "");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setDoOutput(true);
-
-            // Construct array
-            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
-                Object obj = parser.parse(inputString);
-                final JSONObject inputJSON = (JSONObject) obj;
-                JSONArray roleArr = new JSONArray();
-                roleArr.add(inputJSON);
-
-                out.write(roleArr.toString());
-            }
-
-            logger.trace("addUserRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
-        } catch (IOException | ParseException ex) {
-            logger.catching("addUserRole", ex);
-            throw ex;
-        }
-    }
-
-    /**
-     * @api {delete} /app/keycloak/users/:user/roles Delete User Role
-     * @apiVersion 1.0.0
-     * @apiDescription Remove a directly assigned role from the specified user.
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     * @apiParam {JSONObject} inputString input JSON
-     * @apiParam {String} inputString.id role ID
-     * @apiParam {String} inputString.name role name
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X DELETE -d '{"id":"056af27f-b754-4287-aebe-129f5de8ab47","name":"Services"}'
-     * http://localhost:8080/StackV-web/restapi/app/keycloak/users/1d183570-2798-4d69-80c3-490f926596ff/roles
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
-    @DELETE
-    @Path("/keycloak/users/{user}/roles")
-    @Produces("application/json")
-    @RolesAllowed("F_Keycloak-W")
-    public void removeUserRole(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
-        try {
-            String method = "removeUserRole";
-            logger.start(method);
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/users/" + subject + "/role-mappings/clients/" + keycloakStackVClientID);
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("DELETE");
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setDoOutput(true);
-
-            // Construct array
-            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()))) {
-                Object obj = parser.parse(inputString);
-                final JSONObject inputJSON = (JSONObject) obj;
-                JSONArray roleArr = new JSONArray();
-                roleArr.add(inputJSON);
-
-                out.write(roleArr.toString());
-            }
-
-            logger.trace("removeUserRole", conn.getResponseCode() + " - " + conn.getResponseMessage(), "result");
-        } catch (IOException | ParseException ex) {
-            logger.catching("removeUserRole", ex);
             throw ex;
         }
     }
@@ -2285,7 +1891,7 @@ public class WebResource {
 
     @GET
     @Path("/panel/{refUuid}/acl")
-    @Produces("application/json")   
+    @Produces("application/json")
     public ArrayList<String> loadObjectACL(@PathParam("refUuid") String refUuid) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -3066,7 +2672,7 @@ public class WebResource {
     @Path(value = "/profile")
     @Consumes(value = {"application/json", "application/xml"})
     @RolesAllowed("F_Profiles-X")
-    public Response executeProfile(final String inputString) throws SQLException, IOException, ParseException, InterruptedException {
+    public javax.ws.rs.core.Response executeProfile(final String inputString) throws SQLException, IOException, ParseException, InterruptedException {
         final String method = "executeProfile";
         logger.start(method);
         Connection front_conn = null;
@@ -3147,7 +2753,7 @@ public class WebResource {
                 }
             } else {
                 logger.status(method, "User " + username + " not authorized for service " + serviceType);
-                return Response.status(Response.Status.UNAUTHORIZED).build();
+                return javax.ws.rs.core.Response.status(javax.ws.rs.core.Response.Status.UNAUTHORIZED).build();
             }
 
             logger.end(method);
@@ -3156,7 +2762,7 @@ public class WebResource {
         } finally {
             commonsClose(front_conn, prep, rs);
         }
-        return Response.status(Response.Status.OK).build();
+        return javax.ws.rs.core.Response.status(javax.ws.rs.core.Response.Status.OK).build();
     }
 
     // >Services   
