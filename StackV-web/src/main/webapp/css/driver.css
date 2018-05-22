@@ -17,9 +17,6 @@ div#installed-panel {
 - The scrollbar issue only affects browsers (Chrome, Safari) based on WebKit. 
 Ex. FireFox does not run into the scrollbar issue since it's based on Gecko
 */
-div#installed-content {
-    overflow: auto;
-}
 
 div#driver-add-panel {
     left: -100%;

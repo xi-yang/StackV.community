@@ -41,6 +41,7 @@ import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.core.DataConcurrencyPoster;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 
 public class WorkerBase {
@@ -197,9 +198,8 @@ public class WorkerBase {
         String method = "retrieveSystemModel";
         try {//@TODO: use cache model from DataConcurrencyPoster
             Context ejbCxt = new InitialContext();
-            SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
-            //referenceSystemModelVG = systemModelCoordinator.getLatestVersionGroupWithUnionModel();
-            referenceSystemModelVG = systemModelCoordinator.getSystemVersionGroup();
+            DataConcurrencyPoster dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+            referenceSystemModelVG = dataConcurrencyPoster.getSystemModelCoordinator_cachedVersinGroup();
             if (referenceSystemModelVG == null) {
                 throw logger.error_throwing(method, "null referenceVersionGroup - systemModelCoordinator is not ready");
             }

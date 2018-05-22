@@ -20,12 +20,13 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-/* global baseUrl, keycloak, swal */
+/* global baseUrl, keycloak, $loadingModal, $confirmModal */
 
 var refUUID;
 var superState;
 var subState;
 var lastState;
+var intent;
 
 var $superState = $("#instance-superstate");
 var $subState = $("#instance-substate");
@@ -55,7 +56,11 @@ function startDetailsEngine(uuid) {
 
 function renderDetails() {
     if (subState === "FAILED") {
-        $subState.html(subState + " (after " + lastState + ")");
+        if (lastState !== null) {
+            $subState.html(subState + " (after " + lastState + ")");
+        } else {
+            $subState.html(subState + " (Fatal error)");
+        }
     } else {
         $subState.html(subState);
     }
@@ -108,12 +113,27 @@ function updateData() {
         success: function (instance) {
             var alias = instance[1];
             var creation = instance[2];
-            superState = instance[3];
-            lastState = instance[4];
+            var owner = instance[3];
+            superState = instance[4];
+            lastState = instance[5];
+            intent = instance[6];
 
             $("#instance-alias").html(alias);
             $("#instance-uuid").html(refUUID);
+            $("#instance-owner").html(owner);
             $("#instance-creation-time").html(creation);
+
+            if (intent.length === 0) {
+                $("#button-view-intent").hide();
+            } else {
+                $("#button-view-intent").show();
+
+                $("#details-intent-modal-text").text(intent);
+                var ugly = document.getElementById('details-intent-modal-text').value;
+                var obj = JSON.parse(ugly);
+                var pretty = JSON.stringify(obj, undefined, 4);
+                document.getElementById('details-intent-modal-text').value = pretty;
+            }
         }
     });
 
@@ -170,7 +190,17 @@ function updateData() {
         url: "/StackV-web/data/json/detailsStates.json",
         dataType: "json",
         success: function (data) {
-            var dataObj = data[subState];
+            var dataObj;
+            var override = (superState in data && subState in data[superState]);            
+            if (override && subState === "FAILED") {
+                override = ("lastState" in data[superState][subState] && lastState in data[superState][subState]["lastState"]);
+            }
+            
+            if (override) {
+                var dataObj = data[superState][subState];
+            } else {
+                var dataObj = data["default"][subState];
+            }
             instruction = dataObj["instruction"];
             buttons = dataObj["buttons"];
 
@@ -185,7 +215,6 @@ function updateData() {
                     buttons = verRes["buttons"];
                 }
             }
-
             var lastObj = dataObj["lastState"];
             if (lastObj) {
                 var lastRes = lastObj[lastState];
@@ -207,6 +236,8 @@ function attachListeners() {
         pauseRefresh();
 
         var command = this.id;
+        var $button = $(this);
+        var mode = $(this).data("mode");
         var apiUrl = baseUrl + '/StackV-web/restapi/service/' + refUUID + '/status';
         $.ajax({
             url: apiUrl,
@@ -223,30 +254,10 @@ function attachListeners() {
                     reloadData();
                 } else {
                     if ((command === "delete") || (command === "force_delete")) {
-                        swal("Confirm deletion?", {
-                            buttons: {
-                                cancel: "Cancel",
-                                delete: {text: "Delete", value: true}
-                            }
-                        }).then((value) => {
-                            if (value) {
-                                executeCommand(command);
-                            } else {
-                                setTimeout(function () {
-                                    $(".instance-command").attr('disabled', false);
-                                    resumeRefresh();
-                                    reloadData();
-                                }, 250);
-                            }
-                        });
+                        $(".button-confirm-delete").attr("data-mode", command);
+                        $confirmModal.iziModal('open');
                     } else {
-                        swal({
-                            buttons: false,
-                            icon: "success",
-                            closeOnEsc: false,
-                            timer: 3000
-                        });
-
+                        $loadingModal.iziModal('open');
                         executeCommand(command);
                     }
                 }
@@ -264,7 +275,7 @@ function executeCommand(command) {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function () {
-            if (command === "delete" || command === "force_delete") {               
+            if (command === "delete" || command === "force_delete") {
                 setTimeout(function () {
                     sessionStorage.removeItem("instance-uuid");
                     window.document.location = "/StackV-web/portal/";
@@ -273,16 +284,6 @@ function executeCommand(command) {
         }
     });
     switch (command) {
-        case "cancel":
-        case "force_cancel":
-        case "reinstate":
-        case "force_reinstate":
-            setTimeout(function () {
-                $(".instance-command").attr('disabled', false);
-                resumeRefresh();
-                reloadData();
-            }, 2000);
-            break;
         case "delete":
         case "force_delete":
             break;
@@ -291,6 +292,7 @@ function executeCommand(command) {
                 $(".instance-command").attr('disabled', false);
                 resumeRefresh();
                 reloadData();
-            }, 500);
+            }, 3000);
+            break;
     }
 }

@@ -17,6 +17,7 @@ import com.hp.hpl.jena.rdf.model.RDFNode;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import javax.ejb.EJBException;
 import net.maxgigapop.mrs.common.StackLogger;
 
 /**
@@ -30,8 +31,6 @@ public class GcpQuery {
     */
     private final OntModel modelRef, modelAdd, modelReduct;
     private static final OntModel emptyModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-    //private static final String defaultRegion = "us-central1";
-    //private static final String defaultZone = "us-central1-c";
     private final String jsonAuth, projectID, defaultImage, defaultInstanceType, defaultDiskType, defaultDiskSize, defaultRegion, defaultZone;
     private final GcpGet gcpGet;
     private final HashMap<String, String> uriNames, subnetRegions, instanceZones;
@@ -104,6 +103,29 @@ public class GcpQuery {
             logger.warning(method, "Vpc request error, key \"items\" not found. Displaying JSON: " + vpcResult.toString());
         }
         
+        JSONArray vgwResult = gcpGet.getAggregatedTargetVGWs();
+        for (Object o : vgwResult) {
+            JSONObject vgwInfo = (JSONObject) o;
+            String region = GcpGet.parseGoogleURI(vgwInfo.get("region").toString(), "regions");
+            String name = vgwInfo.get("name").toString();
+            String key = GcpModelBuilder.getResourceKey("vgw", region, name);
+            if (metadata.containsKey(key)) {
+                uriNames.put(metadata.get(key), name);
+            }
+        }
+        
+        JSONArray tunnelResult = gcpGet.getAggregatedTunnels();
+        for (Object o : tunnelResult) {
+            JSONObject tunnelInfo = (JSONObject) o;
+            String region = GcpGet.parseGoogleURI(tunnelInfo.get("region").toString(), "regions");
+            String name = tunnelInfo.get("name").toString();
+            String key = GcpModelBuilder.getResourceKey("vpn", region, name);
+            if (metadata.containsKey(key)) {
+                uriNames.put(metadata.get(key), name);
+            }
+        }
+        
+        
         defaultImage = properties.get("defaultImage");
         defaultInstanceType = properties.get("defaultInstanceType");
         defaultDiskType = properties.get("defaultDiskType");
@@ -120,14 +142,28 @@ public class GcpQuery {
         //name, zone, sourceImage, diskType are optional
         //zone, sourceImage, and diskType are derived from type
         String query = "SELECT ?uri ?name ?type \n"
-                + "WHERE { ?vpc a nml:Topology ; nml:hasNode ?uri . ?uri a nml:Node \n"
+                + "WHERE { ?vpc nml:hasNode ?uri . ?uri a nml:Node \n"
                 + "OPTIONAL { ?uri mrs:type ?type } \n"
                 + "OPTIONAL { ?uri nml:name ?name } }";
+        
+        String nicQueryFormat = "SELECT ?nic ?ip ?subnetUri ?vpcUri \n"
+                    + "WHERE { BIND(<%s> AS ?uri) \n"
+                    + "?uri nml:hasBidirectionalPort ?nic . ?nic a nml:BidirectionalPort . \n"
+                    + "?subnetUri a mrs:SwitchingSubnet ; nml:hasBidirectionalPort ?nic . \n"
+                    + "?vpcUri a nml:Topology ; nml:hasService ?switchingService . \n"
+                    + "?switchingService a mrs:SwitchingService ; mrs:providesSubnet ?subnetUri .\n"
+                    + "OPTIONAL { ?nic mrs:hasNetworkAddress ?nicAddr . \n"
+                    + "?nicAddr a mrs:NetworkAddress ; mrs:value ?ip } } \n";
+        
+        
         
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
             JSONObject instanceRequest = new JSONObject();
             QuerySolution solution = r.next();
+            
+            //System.out.println("instance: "+solution);
+            
             HashMap<String, String> typeInfo = parseTypeStr(getOrDefault(solution, "type", null));
             String instanceUri = solution.get("uri").toString();
             String instanceName = getOrDefault(solution, "name", makeNameFromUri("vm", instanceUri));
@@ -143,20 +179,13 @@ public class GcpQuery {
             String diskSize = getOrDefault(typeInfo, "diskSizeGb", defaultDiskSize);
             String firewallTags = getOrDefault(typeInfo, "securityGroup", "allow-all-ingress");
             
-            String nicQuery = "SELECT ?nic ?ip ?subnetUri ?vpcUri \n"
-                    + "WHERE { BIND(<" + instanceUri + "> AS ?uri) \n"
-                    + "?uri nml:hasBidirectionalPort ?nic . ?nic a nml:BidirectionalPort . \n"
-                    + "?subnetUri a mrs:SwitchingSubnet ; nml:hasBidirectionalPort ?nic . \n"
-                    + "?vpcUri a nml:Topology ; nml:hasService ?switchingService . \n"
-                    + "?switchingService a mrs:SwitchingService ; mrs:providesSubnet ?subnetUri ."
-                    + "OPTIONAL { ?nic mrs:hasNetworkAddress ?nicAddr . \n"
-                    + "?nicAddr a mrs:NetworkAddress ; mrs:value ?ip } } \n";
+            String nicQuery = String.format(nicQueryFormat, instanceUri);
             
             int i = 0;
             
             JSONArray nics = new JSONArray();
             JSONObject nicInfo;
-            ResultSet nicResult = executeQuery(nicQuery, modelRef, modelAdd);
+            ResultSet nicResult = executeQueryUnion(nicQuery, modelRef, modelAdd);
             while (nicResult.hasNext()) {
                 QuerySolution nicSolution = nicResult.next();
                 nicInfo = new JSONObject();
@@ -171,10 +200,10 @@ public class GcpQuery {
                     String subnetUri = nicSolution.get("subnetUri").toString();
                     String vpcUri = nicSolution.get("vpcUri").toString();
                     
-                    //if the name for either subnet is vpc, make one from uri
                     nicInfo.put("subnet", getOrDefault(uriNames, subnetUri, makeNameFromUri("subnet", subnetUri)));
                     nicInfo.put("vpc", getOrDefault(uriNames, vpcUri, makeNameFromUri("vpc", vpcUri)));
                 } else {
+                    logger.warning(method, "could not find nicc for instance "+instanceName+"; configuring default NIC");
                     nicInfo.put("subnet", "default");
                     nicInfo.put("vpc", "default");
                 }
@@ -186,7 +215,6 @@ public class GcpQuery {
                 }
                 
                 nics.add(nicInfo);
-                //System.out.printf("found nic: %s\n", nicInfo);
             }
             
             if (nics.isEmpty()) {
@@ -199,6 +227,8 @@ public class GcpQuery {
                 nicInfo.put("region", defaultRegion);
                 nics.add(nicInfo);
             }
+            
+            //System.out.println("nics: "+nics);
             
             instanceRequest.put("type", "create_instance");
             instanceRequest.put("uri", instanceUri);
@@ -214,7 +244,6 @@ public class GcpQuery {
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(instanceUri, instanceName);
             
-            //System.out.printf("CREATE INSTANCE REQUEST: %s\n", instanceRequest);
             output.add(instanceRequest);
         }
         
@@ -241,7 +270,6 @@ public class GcpQuery {
             instanceRequest.put("name", name);
             instanceRequest.put("zone", zone);
             
-            //System.out.printf("DELETE INSTANCE REQUEST: %s\n", instanceRequest);
             output.add(instanceRequest);
         }
         
@@ -254,12 +282,8 @@ public class GcpQuery {
         
         //the newlines make debugging these queries much easier.
         //subnet region and name are optional. vpcname is used to build
-        String query = "SELECT ?vpcUri ?subnetUri ?subnetName ?subnetCIDR ?subnetRegion\n"
-                + "WHERE { ?service mrs:providesVPC ?vpcUri . \n"
-                + "?vpcUri a nml:Topology ; nml:hasService ?switchingService . \n"
-                + "?switchingService a mrs:SwitchingService ; \n"
-                + "mrs:providesSubnet ?subnetUri . \n"
-                + "?subnetUri a mrs:SwitchingSubnet ; mrs:hasNetworkAddress ?addressUri . \n"
+        String query = "SELECT ?subnetUri ?subnetName ?subnetCIDR ?subnetRegion\n"
+                + "WHERE { ?subnetUri a mrs:SwitchingSubnet ; mrs:hasNetworkAddress ?addressUri . \n"
                 + "?addressUri a mrs:NetworkAddress ; mrs:value ?subnetCIDR \n"
                 + "OPTIONAL { ?subnetUri mrs:type ?subnetRegion } \n"
                 + "OPTIONAL { ?subnetUri nml:name ?subnetname } } ";
@@ -268,12 +292,30 @@ public class GcpQuery {
         while (r.hasNext()) {
             JSONObject subnetRequest = new JSONObject();
             QuerySolution solution = r.next();
-            String vpcUri = solution.get("vpcUri").toString();
-            String vpcName = getOrDefault(uriNames, vpcUri, makeNameFromUri("vpc", vpcUri));
+            
+            String vpcUri = null;
+            String vpcName = null;
             String subnetUri = solution.get("subnetUri").toString();
             String subnetCIDR = solution.get("subnetCIDR").toString();
             String subnetName = getOrDefault(solution, "subnetName", makeNameFromUri("subnet", subnetUri));
             String subnetRegion = getOrDefault(solution, "subnetRegion", defaultRegion);
+            
+            //query union model for vpc
+            String vpcQuery = "SELECT ?vpc WHERE {\n"
+                    + "BIND (<" + subnetUri + "> AS ?subnet)\n"
+                    + "?vpc a nml:Topology ; nml:hasService ?switchingService .\n"
+                    + "?switchingService a mrs:SwitchingService ;\n"
+                    + "mrs:providesSubnet ?subnet }";
+            
+            ResultSet r2 = executeQueryUnion(vpcQuery, modelRef, modelAdd);
+            if (r2.hasNext()) {
+                QuerySolution q2 = r2.next();
+                vpcUri = q2.get("vpc").toString();
+                vpcName = getOrDefault(uriNames, vpcUri, makeNameFromUri("vpc", vpcUri));
+            } else {
+                logger.warning(method, "no VPC found for subnet: " + subnetUri);
+                continue;
+            }
             
             String error = validateCidr(subnetCIDR);
             if (error != null) {
@@ -295,7 +337,6 @@ public class GcpQuery {
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(subnetUri, subnetName);
             subnetRegions.put(subnetUri, subnetRegion);
-            //System.out.printf("CREATE SUBNET REQUEST: %s\n", subnetRequest);
             output.add(subnetRequest);
         }
         
@@ -329,7 +370,6 @@ public class GcpQuery {
             subnetRequest.put("region", region);
             subnetRequest.put("name", name);
             
-            //System.out.printf("DELETE SUBNET REQUEST: %s\n", subnetRequest);
             output.add(subnetRequest);
         }
         
@@ -360,7 +400,6 @@ public class GcpQuery {
             //Add the name and uri pair to the lookup table for future dependencies.
             uriNames.put(vpcUri, vpcName);
             
-            //System.out.printf("CREATE VPC REQUEST: %s\n", vpcRequest);
             output.add(vpcRequest);
             
             //Every vpc has this firewall rule. Only instances with the allow-all tag will follow this rule
@@ -393,7 +432,6 @@ public class GcpQuery {
                 logger.warning(method, "Error: solution without vpc");
                 continue;
             }
-            //System.out.printf("solution: %s\n", solution);
             String uri = solution.get("vpc").toString();
             String name = uriNames.get(uri);
             vpcRequest.put("type", "delete_vpc");
@@ -422,17 +460,16 @@ public class GcpQuery {
                 }
             }
             
-            //System.out.printf("DELETE VPC REQUEST: %s\n", vpcRequest);
             output.add(vpcRequest);
         }
         
         return output;
     }
     
-    public ArrayList<JSONObject> createBucketsRequest() {
+    public ArrayList<JSONObject> createBucketRequests() {
         ArrayList<JSONObject> output = new ArrayList<>();
-        String method = "createBucketsRequest";
-        String query = "SELECT ?name WHERE { ?bucket a mrs:Bucket ; nml:Name ?name }";
+        String method = "createBucketRequests";
+        String query = "SELECT ?bucket ?name WHERE { ?bucket a mrs:Bucket ; nml:name ?name }";
         
         ResultSet r = executeQuery(query, emptyModel, modelAdd);
         while (r.hasNext()) {
@@ -446,25 +483,15 @@ public class GcpQuery {
             bucketRequest.put("name", name);
             bucketRequest.put("uri", uri);
             
-            //System.out.printf("CREATE BUCKET REQUEST: %s\n", bucketRequest);
             output.add(bucketRequest);
         }
-        
-        /*
-        //special request for testing only
-        JSONObject debugRequest = new JSONObject();
-        debugRequest.put("type", "create_bucket");
-        debugRequest.put("name", "bucket1owierbg");
-        debugRequest.put("uri", "urn:ogf:network:google.com:google-cloud:bucket1");
-        output.add(debugRequest);
-        //*/
         
         return output;
     }
     
-    public ArrayList<JSONObject> deleteBucketsRequest() {
+    public ArrayList<JSONObject> deleteBucketRequests() {
         ArrayList <JSONObject> output = new ArrayList<>();
-        String method = "deleteBucketsRequest";
+        String method = "deleteBucketRequests";
         String query = "SELECT ?name WHERE { ?bucket a mrs:Bucket ;"
                 + "nml:name ?name }";
         
@@ -477,24 +504,137 @@ public class GcpQuery {
             bucketRequest.put("type", "delete_bucket");
             bucketRequest.put("name", name);
             
-            //System.out.printf("DELETE BUCKET REQUEST: %s\n", bucketRequest);
             output.add(bucketRequest);
         }
-        /*
-        //special request for testing only
-        JSONObject debugRequest = new JSONObject();
-        debugRequest.put("type", "delete_bucket");
-        debugRequest.put("name", "delete-this");
-        output.add(debugRequest);
-        //*/
+        return output;
+    }
+    
+    public ArrayList<JSONObject> createVpnConnectionRequests() {
+        ArrayList<JSONObject> output = new ArrayList<>();
+        String method = "createVpnConnectionRequests";
+        String query = "SELECT ?vpc ?vgw ?tunnel ?peerIP ?peerCIDR ?psk WHERE {\n"
+                + "?vgw a nml:BidirectionalPort ; \n"
+                + "nml:hasBidirectionalPort ?tunnel .\n"
+                + "?tunnel a nml:BidirectionalPort ; \n"
+                + "mrs:hasNetworkAddress ?peerIPUri , ?peerCIDRUri , ?pskUri; \n"
+                + "mrs:type \"vpn-tunnel\" . \n"
+                + "?peerCIDRUri a mrs:NetworkAddress ; \n"
+                + "mrs:type \"ipv4-prefix-list:customer\" ; \n"
+                + "mrs:value ?peerCIDR . \n"
+                + "?peerIPUri a mrs:NetworkAddress ; \n"
+                + "mrs:type \"ipv4-address:customer\" ; \n"
+                + "mrs:value ?peerIP . \n"
+                + "?pskUri a mrs:NetworkAddress ; \n"
+                + "mrs:type \"secret\" ; \n"
+                + "mrs:value ?psk }";
+        
+        ResultSet r = executeQuery(query, emptyModel, modelAdd);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject vpnRequest = new JSONObject();
+            
+            /*
+            step 1: create vgw.
+            step 2: create forwarding rules using google IP
+            step 3: create tunnel using peerIP and shared secret
+            step 4: create routes using peerCIDR and vgw's vpc
+            */
+            
+            String vgwUri = q.get("vgw").toString();
+            String tunnelUri = q.get("tunnel").toString();
+            String vpnName = makeNameFromUri("vpn", vgwUri);
+            String psk = q.get("psk").toString();
+            String vpcUri = null;
+            
+            //query union model for vpc
+            String vpcQuery = "SELECT ?vpc WHERE {\n"
+                    + "BIND(<" + vgwUri + "> AS ?vgw)\n"
+                    + "?vpc nml:hasBidirectionalPort ?vgw }";
+            
+            ResultSet r2 = executeQueryUnion(vpcQuery, modelRef, modelAdd);
+            if (r2 != null && r2.hasNext()) {
+                QuerySolution q2 = r2.next();
+                vpcUri = q2.get("vpc").toString();
+            } else {
+                logger.warning(method, "no VPC found for VGW: " + vgwUri);
+                continue;
+            }
+            
+            String vpcName = uriNames.get(vpcUri);
+            if (vpcName == null) {
+                logger.warning(method, "Trying to attach a VGW (" + vgwUri + ") to a VPC ("+vpcUri+") that does not exist");
+                //skip this request
+                continue;
+            }
+            String peerIP = q.get("peerIP").toString();
+            String peerCIDR = q.get("peerCIDR").toString();
+            
+            String error = validateCidr(peerCIDR);
+            if (error != null) {
+                logger.error_throwing(method, error);
+            }
+            
+            vpnRequest.put("type", "create_vpn");
+            vpnRequest.put("vgwUri", vgwUri);
+            vpnRequest.put("tunnelUri", tunnelUri);
+            vpnRequest.put("region", defaultRegion);
+            vpnRequest.put("name", vpnName);
+            vpnRequest.put("vpc", vpcName);
+            vpnRequest.put("psk", psk);
+            vpnRequest.put("peerIP", peerIP);
+            vpnRequest.put("peerCIDR", peerCIDR);
+            
+            output.add(vpnRequest);
+        }
+        
+        return output;
+    }
+    
+    public ArrayList<JSONObject> deleteVpnConnectionRequests() {
+        ArrayList<JSONObject> output = new ArrayList<>();
+        String method = "deleteVpnConnectionRequests";
+        String query = "SELECT ?vgw ?tunnel WHERE {\n"
+                + "?vgw a nml:BidirectionalPort ; \n"
+                + "nml:hasBidirectionalPort ?tunnel . \n"
+                + "?tunnel a nml:BidirectionalPort ; \n"
+                + "mrs:type \"vpn-tunnel\" ; \n "
+                + "mrs:hasNetworkAddress ?peerIP , ?peerCIDR , ?psk . \n"
+                + "?peerIP a mrs:NetworkAddress ; mrs:type \"ipv4-address:customer\". \n"
+                + "?peerCIDR a mrs:NetworkAddress ; mrs:type \"ipv4-prefix-list:customer\". \n"
+                + "?psk a mrs:NetworkAddress ; mrs:type \"secret\". }";
+        
+        ResultSet r = executeQuery(query, emptyModel, modelReduct);
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            JSONObject vpnRequest = new JSONObject();
+            
+            String vgwUri = q.get("vgw").toString();
+            String tunnelUri = q.get("tunnel").toString();
+            String vgwName = uriNames.get(vgwUri);
+            String tunnelName = uriNames.get(tunnelUri);
+            
+            vpnRequest.put("type", "delete_vpn");
+            vpnRequest.put("vgwName", vgwName);
+            vpnRequest.put("tunnelName", tunnelName);
+            vpnRequest.put("region", defaultRegion);
+            
+            output.add(vpnRequest);
+        }
+        
         return output;
     }
     
     public static String makeNameFromUri(String type, String uri) {
         //given a uri, returns a string that can be used to name a resource.
         //useful when a name for a resource is not available in model
+        String output;
         
-        String output = String.format("%s-%s", type, uri.substring(23, 60));
+        if (uri.length() < 60) {
+            output = uri.replace("urn:ogf:network:google.com:google-cloud:", "");
+        } else {
+            output = String.format("%s-%s", type, uri.substring(23, 60));
+        }
+            
         return removeChars(output);
     }
     
@@ -503,7 +643,7 @@ public class GcpQuery {
         return input.replaceAll("[^a-zA-Z0-9\\-]", "");
     }
     
-    private static String getOrDefault(QuerySolution q, String key, String def) {
+    public static String getOrDefault(QuerySolution q, String key, String def) {
         //This checks q for the key value, and returns the default if it is not found
         if (q.contains(key)) {
             return q.get(key).toString();
@@ -512,7 +652,7 @@ public class GcpQuery {
         }
     }
     
-    private static String getOrDefault(HashMap<String, String> h, String key, String def) {
+    public static String getOrDefault(HashMap<String, String> h, String key, String def) {
         //This checks q for the key value, and returns the default if it is not found
         if (h.containsKey(key)) {
             return h.get(key);

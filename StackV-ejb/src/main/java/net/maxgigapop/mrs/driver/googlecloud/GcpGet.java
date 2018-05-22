@@ -145,15 +145,37 @@ public class GcpGet {
         }
     }
     
-    public JSONObject getVpnConnections(String region) {
+    public JSONArray getAggregatedTargetVGWs() {
         try {
-            return makeRequest(computeClient.vpnTunnels().list(projectID, region).buildHttpRequest());
+            JSONObject result, temp;
+            JSONArray zoneResult, output = new JSONArray();
+            result = makeRequest(computeClient.targetVpnGateways().aggregatedList(projectID).buildHttpRequest());
+            result = (JSONObject) result.get("items");
+            
+            for (Object key : result.keySet()) {
+                //if the jsonobject contains the key "targetVpnGateways", then there are vpns in that zone
+                temp = (JSONObject) result.get(key);
+                zoneResult = (JSONArray) temp.get("targetVpnGateways");
+                if (zoneResult != null) {
+                    output.addAll(zoneResult);
+                }
+            }
+            
+            return output;
         } catch (IOException e) {
             return null;
         }
     }
     
-    public JSONArray getAggregatedVpnConnections() {
+    public JSONObject getVpnTunnel(String region, String name) {
+        try {
+            return makeRequest(computeClient.vpnTunnels().get(projectID, region, name).buildHttpRequest());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+        public JSONArray getAggregatedTunnels() {
         try {
             JSONObject result, temp;
             JSONArray zoneResult, output = new JSONArray();
@@ -161,19 +183,23 @@ public class GcpGet {
             result = (JSONObject) result.get("items");
             
             for (Object key : result.keySet()) {
-                
-                
-                //*
                 //if the jsonobject contains the key "vpnTunnels", then there are vpns in that zone
                 temp = (JSONObject) result.get(key);
-                if (temp.containsKey("vpnTunnels")) {
-                    //System.out.printf("key: %s\nvalue: %s\n", key, result.get(key));
-                    zoneResult = (JSONArray) temp.get("vpnTunnels");
+                zoneResult = (JSONArray) temp.get("vpnTunnels");
+                if (zoneResult != null) {
                     output.addAll(zoneResult);
                 }
             }
             
             return output;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+    public JSONObject getForwardingRules(String region, String name) {
+        try {
+            return makeRequest(computeClient.forwardingRules().get(projectID, region, name).buildHttpRequest());
         } catch (IOException e) {
             return null;
         }

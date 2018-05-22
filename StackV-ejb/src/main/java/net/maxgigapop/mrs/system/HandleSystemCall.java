@@ -63,6 +63,7 @@ import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.EJBExceptionNegotiable;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.core.DataConcurrencyPoster;
 import net.maxgigapop.mrs.core.SystemModelCoordinator;
 import net.maxgigapop.mrs.driver.IHandleDriverSystemCall;
 import net.maxgigapop.mrs.service.HandleServiceCall;
@@ -174,9 +175,8 @@ public class HandleSystemCall {
         if (refUuid.equals("default")) {
             try {//@TODO: use cache model from DataConcurrencyPoster
                 Context ejbCxt = new InitialContext();
-                SystemModelCoordinator systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
-                VersionGroup vg = systemModelCoordinator.getSystemVersionGroup();
-                ModelBase model = vg.getCachedModelBase();
+                DataConcurrencyPoster dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+                ModelBase model = dataConcurrencyPoster.getSystemModelCoordinator_cachedModelBase();
                 logger.trace_end(method);
                 return model;
             } catch (Exception ex) {
@@ -270,9 +270,7 @@ public class HandleSystemCall {
             if (systemInstance.getSystemDelta().getDriverSystemDeltas() != null) {
                 for (Iterator<DriverSystemDelta> it = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); it.hasNext();) {
                     DriverSystemDelta dsd = it.next();
-                    //DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
-                    DriverInstance driverInstance = dsd.getDriverInstance();
-                    driverInstance.getDriverSystemDeltas().remove(dsd);
+                    it.remove();
                     DeltaPersistenceManager.delete(dsd);
                     logger.trace(method, "deleted "+dsd);
                 }
@@ -453,17 +451,6 @@ public class HandleSystemCall {
             // push driverSystemDeltas to driverInstances
             DriverInstance driverInstance = targetDSD.getDriverInstance();
             logger.trace(method, "targetDSD has driverInstance="+driverInstance);
-            // remove other driverInstance.driverSystemDeltas that are not by the current systemDelta
-            if (driverInstance.getDriverSystemDeltas() != null) {
-                Iterator<DriverSystemDelta> itOtherDSD = driverInstance.getDriverSystemDeltas().iterator();
-                while (itOtherDSD.hasNext()) {
-                    DriverSystemDelta otherDSD = itOtherDSD.next();
-                    if (otherDSD.getSystemDelta() == null || !otherDSD.getSystemDelta().equals(sysDelta)) {
-                        itOtherDSD.remove();
-                    }
-                }
-            }
-            driverInstance.addDriverSystemDelta(targetDSD);
             DriverInstancePersistenceManager.save(driverInstance);
         }
         //sysDelta.setDriverSystemDeltas(targetDriverSystemDeltas);
@@ -613,7 +600,10 @@ public class HandleSystemCall {
                     || delta.getSystemDelta().getServiceDelta().getServiceInstance() == null) {
                 continue;
             }
-            listUUIDs.add(delta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+            String svcUUID = delta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID();
+            if (!listUUIDs.contains(svcUUID)) {
+                listUUIDs.add(delta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
+            }
         }
         logger.end(method);
         if (listUUIDs.isEmpty()) {

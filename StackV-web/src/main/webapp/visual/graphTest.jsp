@@ -812,7 +812,7 @@
                             var tbody = document.getElementById("servicePanel-body");
                             var baseUrl = window.location.origin;
 
-                            var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/' + userId + '/instances';
+                            var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/instances';
                             $.ajax({
                                 url: apiUrl,
                                 type: 'GET',
@@ -820,19 +820,20 @@
                                     xhr.setRequestHeader("Authorization", "bearer " + token);
                                 },
                                 success: function (result) {
-                                    for (i = 0; i < result.length; i++) {
+                                    result = result.data;
+                                    for (var i = 0; i < result.length; i++) {
                                         var instance = result[i];
 
                                         var row = document.createElement("tr");
-                                        row.setAttribute("id", instance[1]);
+                                        row.setAttribute("id", instance["referenceUUID"]);
                                         row.setAttribute("class", "service-instance-item");
 
                                         var cell1_1 = document.createElement("td");
-                                        cell1_1.innerHTML = instance[3];
+                                        cell1_1.innerHTML = instance["alias"];
                                         var cell1_2 = document.createElement("td");
-                                        cell1_2.innerHTML = instance[0];
+                                        cell1_2.innerHTML = instance["type"];
                                         var cell1_4 = document.createElement("td");
-                                        cell1_4.innerHTML = instance[2];
+                                        cell1_4.innerHTML = instance["state"];
                                         row.appendChild(cell1_1);
                                         row.appendChild(cell1_2);
                                         row.appendChild(cell1_4);

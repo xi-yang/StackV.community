@@ -74,8 +74,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
             throw logger.throwing(method, ex);
         }
 
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        driverInstance.putProperty(requestId, requests);
+        aDelta.putCommand("requests", requests); // DO NOT merge/save as the parent transaction may double up
         logger.end(method);
     }
 
@@ -106,9 +105,14 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
         if (subsystemBaseUrl == null || access_key_id == null || secret_access_key ==null || topologyURI == null) {
             throw new EJBException(String.format("%s has no property key=subsystemBaseUrl", driverInstance));
         }
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        String requests = driverInstance.getProperty(requestId);
-        
+        String requests = aDelta.getCommand("requests");
+        if (requests == null) {
+            throw logger.error_throwing(method, "requests == null - something wrong with requests from propagate.");
+        }
+        if (requests.isEmpty()) {
+            logger.warning(method, "requests is empty --  nothing has been propagated (no change needed).");
+            return new AsyncResult<String>("SUCCESS");
+        }        
         OnosPush push = new OnosPush();
         
         try {
@@ -117,8 +121,6 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
             throw logger.throwing(method, ex);
         }
 
-        driverInstance.getProperties().remove(requestId);
-        //DriverInstancePersistenceManager.merge(driverInstance);
         Logger.getLogger(OnosRESTDriver.class.getName()).log(Level.INFO, "ONOS driver delta models succesfully commited");
         fakeMap=push.getFakeFlowId();
         driverInstance.putProperty("mappingId", fakeMap);

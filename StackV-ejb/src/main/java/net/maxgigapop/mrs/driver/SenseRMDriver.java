@@ -156,6 +156,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
             throw logger.error_throwing(method, driverInstance +"has no property key=subsystemBaseUrl");
@@ -301,7 +302,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
                 }
                 conn.setConnectTimeout(5*1000);
-                //conn.setReadTimeout(5*1000);
+                conn.setReadTimeout(15*1000);
                 conn.addRequestProperty("Content-Encoding", "gzip");
                 String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
                 if (response[1].equals("304")) {

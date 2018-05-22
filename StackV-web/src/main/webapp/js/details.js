@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, swal */
+/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, lastState, verificationState */
 // Tweens
 var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
     paused: true, top: "0px", opacity: "1", display: "block"});
@@ -30,6 +30,49 @@ var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut
     paused: true, right: "0px", opacity: "1", display: "block"});
 
 var view = "center";
+var $intentModal = $("#details-intent-modal");
+var $loadingModal = $("#loading-modal");
+var $confirmModal = $("#confirm-modal");
+
+var intentConfig = {
+    width: 750
+};
+var loadingConfig = {
+    title: "Loading",
+    icon: 'icon-power_settings_new',
+    headerColor: '#229d43',
+    width: 300,
+    timeout: 3000,
+    timeoutProgressbar: true,
+    transitionIn: 'fadeInDown',
+    transitionOut: 'fadeOutDown',
+    pauseOnHover: false,
+    overlayClose: false,
+    closeButton: false,
+    closeOnEscape: false,
+    onOpening: function () {
+        $("#main-pane").addClass("blurred");
+    },
+    onClosing: function () {
+        $("#main-pane").removeClass("blurred");
+    }
+};
+var confirmConfig = {
+    title: "Confirm Deletion",
+    subtitle: 'Please confirm deletion of service instance. For termination of service, use Cancel instead of Delete.',
+    headerColor: '#BD5B5B',
+    top: 300,
+    timeout: 5000,
+    timeoutProgressbar: true,
+    transitionIn: 'fadeInDown',
+    transitionOut: 'fadeOutDown',
+    pauseOnHover: true,
+    onClosing: function () {
+        $(".instance-command").attr('disabled', false);
+        resumeRefresh();
+        reloadData();
+    }
+};
 
 Mousetrap.bind({
     'shift+left': function () {
@@ -142,11 +185,25 @@ function loadDetailsNavbar() {
 /* DETAILS */
 
 function loadDetails() {
+    $intentModal.html('<textarea readonly id="details-intent-modal-text"></textarea>');
+    $intentModal.iziModal(intentConfig);
+    $("#button-view-intent").click(function () {
+        $intentModal.iziModal('open');
+    });
+
+    $loadingModal.iziModal(loadingConfig);
+
+    $confirmModal.html('</button><button class="button-confirm-delete btn btn-danger">Delete</button><button class="button-confirm-close btn btn-primary" data-izimodal-close="">Close</button>');
+    $confirmModal.iziModal(confirmConfig);
+    $(".button-confirm-delete").click(function () {
+        executeCommand($(this).data("mode"));
+    });
+
     var uuid = sessionStorage.getItem("instance-uuid");
     startDetailsEngine(uuid);
 
     var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/logs/serverside?refUUID=' + uuid;
-    loadDataTable(apiUrl);
+    loadLoggingDataTable(apiUrl);
     reloadLogs();
 
     tweenDetailsPanel.play();

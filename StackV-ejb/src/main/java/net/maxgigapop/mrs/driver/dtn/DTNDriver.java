@@ -69,8 +69,7 @@ public class DTNDriver implements IHandleDriverSystemCall {
             throw logger.error_throwing(method, ex.getMessage());
         }
 
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        driverInstance.putProperty(requestId, requests);
+        aDelta.putCommand("requests", requests); // DO NOT merge/save as the parent transaction may double up
         logger.end(method);
     }
 
@@ -93,16 +92,19 @@ public class DTNDriver implements IHandleDriverSystemCall {
         String access_key = driverInstance.getProperty("access_key");
         String address = driverInstance.getProperty("address");
         String topologyURI = driverInstance.getProperty("topologyUri");
-        String map = driverInstance.getProperty("mappingId");
+        String map = driverInstance.getProperty("mappingId"); // ??
 
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        String requests = driverInstance.getProperty(requestId);
+        String requests = aDelta.getCommand("requests");
+        if (requests == null) {
+            throw logger.error_throwing(method, "requests == null - something wrong with requests from propagate.");
+        }
+        if (requests.isEmpty()) {
+            logger.warning(method, "requests is empty --  nothing has been propagated (no change needed).");
+            return new AsyncResult<String>("SUCCESS");
+        }        
 
         DTNPush push = new DTNPush(user_account, access_key, address, topologyURI);
         push.pushCommit(requests);
-
-        driverInstance.getProperties().remove(requestId);
-        DriverInstancePersistenceManager.merge(driverInstance);
 
         logger.message(method, "DTN driver delta models succesfully commited");
         logger.end(method);

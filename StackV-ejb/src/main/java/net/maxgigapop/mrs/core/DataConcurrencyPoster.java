@@ -27,6 +27,8 @@ import com.hp.hpl.jena.ontology.OntModel;
 import javax.ejb.LocalBean;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
+import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.GlobalPropertyPersistenceManager;
 
 /**
@@ -38,20 +40,35 @@ import net.maxgigapop.mrs.bean.persist.GlobalPropertyPersistenceManager;
 @Startup
 public class DataConcurrencyPoster {
     // per-node singleton to hold the cachedOntModel from SystemModelCoordinator for lock-free access
-    OntModel SystemModelCoordinator_cachedOntModel = null;
+    VersionGroup SystemModelCoordinator_cachedVersionGroup = null;
+    boolean SystemModelCoordinator_localBootstrapped = false;
 
-    public OntModel getSystemModelCoordinator_cachedOntModel() {
-        return SystemModelCoordinator_cachedOntModel;
+    public VersionGroup getSystemModelCoordinator_cachedVersinGroup() {
+        return SystemModelCoordinator_cachedVersionGroup;
     }
 
-    public void setSystemModelCoordinator_cachedOntModel(OntModel SystemModelCoordinator_cachedOntModel) {
-        this.SystemModelCoordinator_cachedOntModel = SystemModelCoordinator_cachedOntModel;
+    public ModelBase getSystemModelCoordinator_cachedModelBase() {
+        if (SystemModelCoordinator_cachedVersionGroup == null) {
+            return null;
+        }
+        return SystemModelCoordinator_cachedVersionGroup.getCachedModelBase();
+    }
+
+    public OntModel getSystemModelCoordinator_cachedOntModel() {
+        if (SystemModelCoordinator_cachedVersionGroup == null) {
+            return null;
+        }
+        return SystemModelCoordinator_cachedVersionGroup.getCachedModelBase().getOntModel();
+    }
+
+    public void setSystemModelCoordinator_cachedVersionGroup(VersionGroup vg) {
+        this.SystemModelCoordinator_cachedVersionGroup = vg;
     }
     
     // persisted global boot_strapped flag
     public boolean isSystemModelCoordinator_bootStrapped() {
         String bootStrapped = GlobalPropertyPersistenceManager.getProperty("system.boot_strapped");
-        if (bootStrapped != null && bootStrapped.equalsIgnoreCase("true")) {
+        if (bootStrapped != null && bootStrapped.equalsIgnoreCase("true") && SystemModelCoordinator_localBootstrapped) {
             return true;
         } else {
             return false;
@@ -59,6 +76,15 @@ public class DataConcurrencyPoster {
     }
 
     public void setSystemModelCoordinator_bootStrapped(boolean bootStrapped) {
+        SystemModelCoordinator_localBootstrapped = bootStrapped;
         GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", bootStrapped ? "true" : "false");
+    }
+
+    public boolean isSystemModelCoordinator_localBootstrapped() {
+        return SystemModelCoordinator_localBootstrapped;
+    }
+
+    public void setSystemModelCoordinator_localBootstrapped(boolean SystemModelCoordinator_localBootstrapped) {
+        this.SystemModelCoordinator_localBootstrapped = SystemModelCoordinator_localBootstrapped;
     }
 }

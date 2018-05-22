@@ -79,7 +79,7 @@ public class HASingletonService implements Service<String> {
             throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
         }
         dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(false);
-        dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(null);
+        dataConcurrencyPoster.setSystemModelCoordinator_cachedVersionGroup(null);
         logger.end(method);
     }
 

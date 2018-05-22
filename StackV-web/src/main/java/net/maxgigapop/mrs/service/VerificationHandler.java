@@ -120,7 +120,7 @@ public class VerificationHandler {
         String method = "sendAction";
         updateState();
         try {
-            if (state.equals("RUNNING")) {
+            if (state != null && state.equals("RUNNING")) {
                 prep = conn.prepareStatement("UPDATE service_verification SET pending_action = ? "
                         + "WHERE instanceUUID = ?");
                 prep.setString(1, action);

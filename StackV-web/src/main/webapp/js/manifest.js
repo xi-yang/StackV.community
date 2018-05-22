@@ -1,54 +1,54 @@
-/* global baseUrl */
+/* global baseUrl, keycloak */
 
-load();
-function load() {
+function loadManifest() {
     var uuid = location.search.split("?uuid=")[1];
-    var token = sessionStorage.getItem("token");
     var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
     $.ajax({
         url: apiUrl,
         type: 'GET',
         beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + token);
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (instance) {
             var serviceName = instance[0];
             switch (serviceName) {
                 case "Dynamic Network Connection":
-                    loadManifest("dnc-manifest-template.xml");
+                    subloadManifest("dnc-manifest-template.xml");
+                    break;
+                case "EdgeCloud Connection":
+                    subloadManifest("ecc-manifest-template.xml");
                     break;
                 case "Virtual Cloud Network":
                     $.get({
                         url: "/StackV-web/restapi/service/property/" + uuid + "/host/",
                         beforeSend: function (xhr) {
-                            xhr.setRequestHeader("Authorization", "bearer " + token);
+                            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                         },
 
                         success: function (data) {
                             if (data === "ops") {
-                                loadManifest("vcn-ops-manifest-template.xml");
+                                subloadManifest("vcn-ops-manifest-template.xml");
                             } else if (data === "aws") {
-                                loadManifest("vcn-aws-manifest-template.xml");
+                                subloadManifest("vcn-aws-manifest-template.xml");
                             }
                         },
                         dataType: "text"
-                    });                    
+                    });
                     break;
                 case "Advanced Hybrid Cloud":
-                    loadManifest("ahc-manifest-template.xml");
+                    subloadManifest("ahc-manifest-template.xml");
                     break;
             }
         }
     });
 }
 
-function loadManifest(templateURL) {
+function subloadManifest(templateURL) {
     var uuid = location.search.split("?uuid=")[1];
     $.get({
         url: "/StackV-web/data/xml/manifest-templates/" + templateURL,
         success: function (data) {
             var template = data;
-            var token = sessionStorage.getItem("token");
             $.ajax({
                 type: "POST",
                 crossDomain: true,
@@ -56,7 +56,7 @@ function loadManifest(templateURL) {
 
                 data: template,
                 beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + token);
+                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 },
 
                 headers: {
@@ -103,11 +103,11 @@ function parseMap(map, container, container_type, base) {
                 var n3 = $("<ul class=\"manifest-list\" style=\"padding-left:.5em;\"></ul>");
                 n1.append(n3);
                 for (var i in map[key]) {
-                    if ((typeof map[key[i]]) === "string") {
-                        string += "<li><b> " + i + "</b>: " + map[key][i] + "</li>";
+                    if ((typeof map[key]) === "string") {
+                        string += "<li><b> " + map[key][i] + "</b>: " + map[key][i] + "</li>";
                         container.append(string);
                         string = "";
-                    } else if (map[key][i].constructor === Array) {
+                    } else if (map[key].constructor === Array) {
                         parseMap(map[key][i], n3, "list", base);
                     }
                 }

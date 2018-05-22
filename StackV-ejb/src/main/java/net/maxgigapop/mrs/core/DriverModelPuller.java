@@ -69,7 +69,8 @@ public class DriverModelPuller {
         GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "false");
         // schedule model pull timer
         ScheduleExpression sexpr = new ScheduleExpression();
-        sexpr.hour("*").minute("*").second("0"); // every minute
+        //sexpr.hour("*").minute("*").second("15/30"); // every 30 seconds, starting at 15th
+        sexpr.hour("*").minute("*").second("30/30"); // every minute, starting at 30th sec
         // persistent must be false because the timer is started by the HASingleton service
         timerService.createCalendarTimer(sexpr, new TimerConfig("", false));
     }
@@ -87,10 +88,10 @@ public class DriverModelPuller {
     @Timeout
     public void run() {
         String method = "run";
-        logger.start(method);
+        logger.trace_start(method);
         try {
             String hostname = InetAddress.getLocalHost().getHostName();
-            logger.message(method, "running on host="+hostname);
+            logger.trace(method, "running on host="+hostname);
         } catch (UnknownHostException ex) {
             ;
         }
@@ -100,13 +101,16 @@ public class DriverModelPuller {
         }
 
         boolean pullNormal = true;
-        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null
-                || DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
+        
+        if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap() == null) {
             DriverInstancePersistenceManager.refreshAll();
         }
+        // more DriverInstancePersistenceManager.refreshAll calls are executed by SystemModelCoordinator (per node singleton)
         if (DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().isEmpty()) {
-            pullNormal = false;
+            logger.trace_end(method);
+            return;
         }
+        
         Context ejbCxt = null;
         for (String topoUri : DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().keySet()) {
             DriverInstance driverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(topoUri);
@@ -117,13 +121,19 @@ public class DriverModelPuller {
                         String status = previousResult.get();
                         logger.trace(method, "model pulling - previousResult ready for topologyURI="+topoUri+" with status="+status);
                     } catch (Exception ex) {
+                        pullNormal = false;
                         logger.catching(method, ex);
                         //@TODO: retry couple of times, then exception if still failed
                     }
                 } else {
+                    pullNormal = false;
                     logger.trace(method, "model pulling - previousResult not ready for topologyURI="+topoUri);
+                    // Assume the previous drvier instance will always finish or time out by itself
+                    continue;
                     //@TODO: timeout handling: skip and check after one more cycle, then previousResult.cancel(true); 
                 }
+            } else {
+                pullNormal = false;
             }
             try {
                 if (ejbCxt == null) {
@@ -143,10 +153,10 @@ public class DriverModelPuller {
         if (!bootStrapped && pullNormal) {
             // cleanning up from recovery
             logger.message(method, "cleanning up from recovery");
+            GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "true");
             VersionGroupPersistenceManager.cleanupAndUpdateAll(null);
             Date before24h = new Date(System.currentTimeMillis()-24*60*60*1000);
             VersionItemPersistenceManager.cleanupAllBefore(before24h);
-            GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "true");
             logger.message(method, "Done! - bootStrapped changed to true");
         }
         logger.trace_end(method);

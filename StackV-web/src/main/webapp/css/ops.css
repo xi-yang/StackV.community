@@ -489,3 +489,7 @@ ul.vcn-progress li, ul.hc-progress li {
 #system-health-panel .fail {
     color: #f9dfd2 !important
 }
+
+.dataTables_filter input {
+    width: 40vh;
+}
