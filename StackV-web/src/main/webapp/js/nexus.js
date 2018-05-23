@@ -239,10 +239,8 @@ function verifyPageRoles() {
             }
             break;
         case "/StackV-web/portal/intent/":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-VCN") === -1
-                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-AHC") === -1
-                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-DNC") === -1
-                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-ECC") === -1) {
+            let intent = getURLParameter("intent").toUpperCase();
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-" + intent) === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
