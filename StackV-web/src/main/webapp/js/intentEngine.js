@@ -1,5 +1,6 @@
+'use strict';
 /* 
- * Copyright (c) 2013-2017 University of Maryland
+ * Copyright (c) 2013-2018 University of Maryland
  * Created by: Alberto Jimenez
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
@@ -32,7 +33,7 @@ var gsap = {};
 var intent;
 var intentType;
 var manifest;
-var package = {};
+var pack = {};
 var transit = false;
 var proceeding = false;
 var $activeStage;
@@ -735,12 +736,12 @@ function submitIntent(mode) {
                     console.log(JSON.stringify(manifest));
                 } else {
                     // Submit to backend
-                    package['proceed'] = "true";
+                    pack['proceed'] = "true";
                     var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
                     $.ajax({
                         url: apiUrl,
                         type: 'POST',
-                        data: JSON.stringify(package),
+                        data: JSON.stringify(pack),
                         contentType: "application/json; charset=utf-8",
                         dataType: "json",
                         beforeSend: function (xhr) {
@@ -1335,10 +1336,10 @@ function parseManifestIntoJSON() {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            package["uuid"] = result;
+            pack["uuid"] = result;
             manifest["data"]["uuid"] = result;
             if (options.length > 0) {
-                package["options"] = options;
+                pack["options"] = options;
                 manifest["data"]["options"] = options;
             }
 
@@ -1350,9 +1351,9 @@ function parseManifestIntoJSON() {
 //                return;
 //            }
 
-            package["service"] = intentType;
-            package["alias"] = $("#meta-alias").val();
-            package["data"] = manifest["data"];
+            pack["service"] = intentType;
+            pack["alias"] = $("#meta-alias").val();
+            pack["data"] = manifest["data"];
         }
     });
 }

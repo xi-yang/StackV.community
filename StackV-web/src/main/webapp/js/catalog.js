@@ -1,5 +1,6 @@
+'use strict';
 /*
- * Copyright (c) 2013-2016 University of Maryland
+ * Copyright (c) 2013-2018 University of Maryland
  * Created by: Alberto Jimenez
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -202,7 +203,7 @@ function loadModals() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
-            for (i = 0; i < result.length; i++) {
+            for (let i = 0; i < result.length; i++) {
                 var meta = result[i];
 
                 var name = meta[0];
@@ -244,7 +245,7 @@ function loadModals() {
                 $("#button-profile-blank-add").removeClass("hidden");
             }
 
-            for (i = 0; i < result.length; i++) {
+            for (let i = 0; i < result.length; i++) {
                 var profile = result[i];
 
                 var name = profile[0];
@@ -840,7 +841,7 @@ function reloadModals() {
         },
         success: function (result) {
             $("#catalog-modal-service-meta").empty();
-            for (i = 0; i < result.length; i++) {
+            for (let i = 0; i < result.length; i++) {
                 var meta = result[i];
 
                 var name = meta[0];
@@ -872,7 +873,7 @@ function reloadModals() {
         },
         success: function (result) {
             $("#profiles-modal-service-meta").empty();
-            for (i = 0; i < result.length; i++) {
+            for (let i = 0; i < result.length; i++) {
                 var profile = result[i];
 
                 var name = profile[0];

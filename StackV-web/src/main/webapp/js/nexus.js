@@ -1,5 +1,6 @@
+'use strict';
 /*
- * Copyright (c) 2013-2016 University of Maryland
+ * Copyright (c) 2013-2018 University of Maryland
  * Created by: Alberto Jimenez
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,8 +26,14 @@
 var baseUrl = window.location.origin;
 var keycloak = Keycloak('/StackV-web/resources/keycloak.json');
 var refreshTimer;
+var countdown;
+var dataTableClass;
 var countdownTimer;
 var dataTable;
+var loggedIn;
+
+var fieldCounter = 0;
+var queryCounter = 1;
 
 // Page Load Function
 
@@ -101,6 +108,8 @@ $(function () {
             }
         } else if (window.location.pathname === "/StackV-web/visual/manifest/manifestPortal.jsp") {
             loadManifest();
+        } else if (window.location.pathname === "/StackV-web/visual/test/") {
+            loadVisualization();
         }
 
         if ($("#tag-panel").length) {
@@ -154,7 +163,8 @@ function loadNavbar() {
             $("li#driver-tab").addClass("active");
         } else if (window.location.pathname === "/StackV-web/portal/details/") {
             $("li#details-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/orch/graphTest.jsp") {
+        } else if (window.location.pathname === "/StackV-web/visual/graphTest.jsp"
+                || window.location.pathname === "/StackV-web/visual/test/") {
             $("li#visualization-tab").addClass("active");
         }
 
@@ -239,10 +249,13 @@ function verifyPageRoles() {
             }
             break;
         case "/StackV-web/portal/intent/":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-VCN") === -1
-                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-AHC") === -1
-                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-DNC") === -1
-                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-ECC") === -1) {
+            let intent = getURLParameter("intent").toUpperCase();
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-" + intent) === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "/StackV-web/visual/test/":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Visualization-R") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
@@ -446,17 +459,8 @@ function getTitle(text) {
 }
 
 function clearCounters() {
-    volumeCounter = 0;
     fieldCounter = 0;
     queryCounter = 1;
-    routeCounter = 1;
-    subnetCounter = 1;
-    SRIOVCounter = 1;
-    SRIOVRouteCounter = 1;
-    VMCounter = 1;
-    gatewayCounter = 1;
-    subRouteCounter = 1;
-    linkCounter = 1;
 }
 
 function reloadPage() {
@@ -567,10 +571,10 @@ function setRefresh(time) {
 }
 function refreshCountdown() {
     $('#refresh-button').html('Refresh in ' + (countdown - 1) + ' seconds');
-    countdown--;   
+    countdown--;
 
-    var setting = $("#refresh-timer").val();  
-    
+    var setting = $("#refresh-timer").val();
+
     var prog = (setting - countdown + .5) / setting;
     $(".loading-prog").css("width", (prog * 100) + "%");
 }
@@ -659,7 +663,7 @@ function loadLoggingDataTable(apiUrl) {
 
     // Add event listener for opening and closing details
     $('#loggingData tbody').on('click', 'td.details-control', function () {
-        var tr = $(this).closest('tr');
+        let tr = $(this).closest('tr');
         var row = dataTable.row(tr);
         if (row.child.isShown()) {
             openLogDetails--;

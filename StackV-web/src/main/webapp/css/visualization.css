@@ -1,0 +1,65 @@
+#vis-panel {
+    padding: 20px;
+    margin: auto;
+    height: 100%;
+    visibility: hidden;
+}
+
+
+/* SVG */
+body > svg {
+    border: 1px solid hotpink;
+}
+svg {
+    border: 1px solid #ccc;
+    pointer-events: auto;
+    background: #f9f9f9;
+    box-shadow: 0px 3px 10px 2px #333;
+}
+circle.node {
+    fill: lightsteelblue;
+    stroke: #555;
+    stroke-width: 3px;
+}
+circle.leaf {
+    stroke: #fff;
+    stroke-width: 1.5px;
+}
+path.hull {
+    fill: lightsteelblue;
+    fill-opacity: 0.3;
+}
+line.link {
+    stroke: #333;
+    stroke-opacity: 0.5;
+    pointer-events: none;
+}
+.node-wrapper {
+    cursor: pointer;
+}
+.convex-hull {
+    cursor: pointer;
+}
+.node-link {
+    stroke: #000;
+    stroke-width: 2px;
+}
+#render-indicator {
+    position: fixed;
+    left: 15px;
+    top: 15px;
+    font-family: 'Helvetica Neue', serif;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+}
+#render-indicator .circle {
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+    border-radius: 10px;
+    margin-right: 5px;
+}
+#render-indicator .text {
+    font-size: 15px;
+}
