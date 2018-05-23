@@ -122,6 +122,7 @@ public class GenericRESTDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String subsystemBaseUrl = driverInstance.getProperty("subsystemBaseUrl");
         if (subsystemBaseUrl == null) {
             throw logger.error_throwing(method, driverInstance +"has no property key=subsystemBaseUrl");

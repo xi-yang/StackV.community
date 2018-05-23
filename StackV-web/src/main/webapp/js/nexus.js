@@ -37,9 +37,11 @@ $(function () {
         beforeSend: function (xhr) {
             if (keycloak.token === undefined) {
                 xhr.setRequestHeader("Authorization", "bearer " + sessionStorage.getItem("token"));
+                xhr.setRequestHeader("Refresh", sessionStorage.getItem("refresh"));
             } else {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            }            
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            }
         }
     });
 
@@ -58,6 +60,7 @@ $(function () {
                 sessionStorage.setItem("username", keycloak.tokenParsed.preferred_username);
                 sessionStorage.setItem("subject", keycloak.tokenParsed.sub);
                 sessionStorage.setItem("token", keycloak.token);
+                sessionStorage.setItem("refresh", keycloak.refreshToken);
             }
         } else {
             keycloak.login();
@@ -187,32 +190,32 @@ function loadNavbar() {
 }
 
 function verifyPageRoles() {
-    if (keycloak.tokenParsed.realm_access && keycloak.tokenParsed.realm_access.roles.indexOf("admin") <= -1) {
+    if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") <= -1) {
         $(".nav-admin").hide();
     }
-    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Drivers")) {
+    if (!keycloak.tokenParsed.realm_access.roles.includes("F_Drivers-R")) {
         $("#driver-tab").hide();
     }
-    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("ACL")) {
+    if (!keycloak.tokenParsed.realm_access.roles.includes("F_ACL-R")) {
         $("#acl-tab").hide();
     }
-    if (keycloak.tokenParsed.resource_access.StackV && !keycloak.tokenParsed.resource_access.StackV.roles.includes("Visualization")) {
+    if (!keycloak.tokenParsed.realm_access.roles.includes("F_Visualization-R")) {
         $("#visualization-tab").hide();
     }
 
     switch (window.location.pathname) {
         case "/StackV-web/portal/acl/":
-            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("ACL") === -1) {
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_ACL-R") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
         case "/StackV-web/portal/admin/":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") === -1) {
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
         case "/StackV-web/portal/details/":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("admin") === -1) {
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
                 var uuid = sessionStorage.getItem("instance-uuid");
                 var apiUrl = baseUrl + '/StackV-web/restapi/app/access/instances/' + uuid;
                 $.ajax({
@@ -231,14 +234,15 @@ function verifyPageRoles() {
             }
             break;
         case "/StackV-web/portal/driver/":
-            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("Drivers") === -1) {
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Drivers-R") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
         case "/StackV-web/portal/intent/":
-            if (keycloak.tokenParsed.resource_access.StackV.roles.indexOf("vcn") === -1
-                    && keycloak.tokenParsed.resource_access.StackV.roles.indexOf("ahc") === -1
-                    && keycloak.tokenParsed.resource_access.StackV.roles.indexOf("dnc") === -1) {
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-VCN") === -1
+                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-AHC") === -1
+                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-DNC") === -1
+                    && keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-ECC") === -1) {
                 window.location.href = "/StackV-web/portal/";
             }
             break;
@@ -548,20 +552,27 @@ function timerChange(sel) {
         setRefresh(sel.value);
     } else {
         document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+        $(".loading-prog").css("width", "0%");
     }
 }
 function setRefresh(time) {
     countdown = time;
-    refreshTimer = setInterval(function () {
-        reloadData();
-    }, (time * 1000));
     countdownTimer = setInterval(function () {
         refreshCountdown(time);
     }, 1000);
+    refreshTimer = setInterval(function () {
+        $(".loading-prog").css("width", "0%");
+        reloadData();
+    }, (time * 1000));
 }
 function refreshCountdown() {
-    document.getElementById('refresh-button').innerHTML = 'Refresh in ' + (countdown - 1) + ' seconds';
-    countdown--;
+    $('#refresh-button').html('Refresh in ' + (countdown - 1) + ' seconds');
+    countdown--;   
+
+    var setting = $("#refresh-timer").val();  
+    
+    var prog = (setting - countdown + .5) / setting;
+    $(".loading-prog").css("width", (prog * 100) + "%");
 }
 function reloadDataManual() {
     var timer = $("#refresh-timer");
@@ -575,11 +586,11 @@ function reloadDataManual() {
 
         resumeRefresh();
     } else {
-
         var sel = document.getElementById("refresh-timer");
         if (sel.value !== 'off') {
             timerChange(sel);
         }
+        $(".loading-prog").css("width", "0%");
         reloadData();
     }
 }
@@ -616,9 +627,9 @@ function loadLoggingDataTable(apiUrl) {
                 "width": "20px"
             },
             {"data": "timestamp", "width": "150px"},
+            {"data": "level", "width": "60px"},
             {"data": "event"},
-            {"data": "referenceUUID", "width": "250px"},
-            {"data": "level", "width": "70px"},
+            {"data": "referenceUUID", "width": "275px"},
             {"data": "message", "visible": false, "searchable": false}
         ],
         "createdRow": function (row, data, dataIndex) {
@@ -630,12 +641,20 @@ function loadLoggingDataTable(apiUrl) {
         },
         "order": [[1, 'asc']],
         "ordering": false,
+        "processing": true,
         "scroller": {
             displayBuffer: 15
         },
         "scrollX": true,
         "scrollY": "calc(60vh - 130px)",
         "serverSide": true
+    });
+
+    $("#loggingData").on('preXhr.dt', function () {
+        // Event for opening loading animation        
+    });
+    $("#loggingData").on('draw.dt', function () {
+        // Event for closing loading animation
     });
 
     // Add event listener for opening and closing details

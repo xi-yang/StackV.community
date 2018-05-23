@@ -49,17 +49,18 @@ public class DriverInstancePersistenceManager extends PersistenceManager {
     public static void setDriverInstanceByTopologyMap(Map<String, DriverInstance> driverInstanceByTopologyMap) {
         DriverInstancePersistenceManager.driverInstanceByTopologyMap = driverInstanceByTopologyMap;
     }
-
+    
     public static void refreshAll() {
-        driverInstanceByTopologyMap = new HashMap<String, DriverInstance>();
+        Map<String, DriverInstance> newDriverInstanceByTopologyMap = new HashMap<String, DriverInstance>();
         List<DriverInstance> listDriverInstances = createQuery("FROM " + DriverInstance.class.getSimpleName()).getResultList();
         for (DriverInstance di : listDriverInstances) {
             if (di.getTopologyUri() == null || di.getTopologyUri().isEmpty()) {
                 logger.targetid(di.getId().toString());
                 throw logger.error_throwing("DriverInstancePersistenceManager", "target:DriverInstance has null/empty topologyUri");
             }
-            driverInstanceByTopologyMap.put(di.getTopologyUri(), di);
+            newDriverInstanceByTopologyMap.put(di.getTopologyUri(), di);
         }
+        driverInstanceByTopologyMap = newDriverInstanceByTopologyMap;
     }
 
     public static DriverInstance findById(Long id) {

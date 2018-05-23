@@ -298,35 +298,37 @@ public class BandwidthCalendar {
     }
     
     // deadline is a offset value to be relative to startTime (consistent 'now')
-    public BandwidthSchedule makeSchedule(long bw, long duration, long deadline, boolean add) {
+    public BandwidthSchedule makeSchedule(long bw, long start, long duration, long deadline, boolean add) {
         BandwidthCalendar residual = this.residual();
         ListIterator<BandwidthSchedule> it = residual.getSchedules().listIterator();
-        long now = new Date().getTime()/1000L;
         // remove all segments without required bandwidth
         while (it.hasNext()) {
             BandwidthSchedule residualSchedule = it.next();
-            if (residualSchedule.getEndTime() <= now || !residualSchedule.reduceBandwidth(bw)) {
+            if (residualSchedule.getEndTime() <= start || !residualSchedule.reduceBandwidth(bw)) {
                 it.remove();
             }
         }
         // now look for the continuous chunk before deadline
         it = residual.getSchedules().listIterator();
         BandwidthSchedule retSchedule = null;
-        long continuousStart = now;
-        long continuousEnd = now;
+        long continuousStart = start;
+        long continuousEnd = start;
         if (deadline > 0) {
-            deadline += now;
+            deadline += start;
         } else {
             deadline = infinite;
         }
         while (it.hasNext()) {
             BandwidthSchedule goodSchedule = it.next();
-            if (continuousStart == now  || continuousEnd != goodSchedule.getStartTime()) {
-                continuousStart = (goodSchedule.getStartTime() > now ? goodSchedule.getStartTime() : now);
-                continuousEnd = goodSchedule.getEndTime();
-            } else {
-                continuousEnd = goodSchedule.getEndTime();
+            if (continuousStart == start  && continuousEnd == start && goodSchedule.getStartTime() > start) {
+                // align continuousStart to first time slot
+                continuousStart = goodSchedule.getStartTime();
             }
+            if (continuousEnd != start && continuousEnd != goodSchedule.getStartTime()) {
+                // reset continuousStart if gap
+                continuousStart = goodSchedule.getStartTime();
+            }
+            continuousEnd = goodSchedule.getEndTime();
             if ((continuousEnd <= deadline && continuousEnd - continuousStart >= duration)
                     || (continuousEnd > deadline && deadline - continuousStart >= duration)){
                 retSchedule = new BandwidthSchedule(continuousStart, continuousStart + duration, bw);
@@ -418,7 +420,7 @@ public class BandwidthCalendar {
         if (options.containsKey("sliding-duration")) {
             duration = (long)options.get("sliding-duration");
         } 
-        BandwidthSchedule schedule = pathAvailBwCal.makeSchedule(path.getBandwithScedule().getBandwidth(), duration, deadline, false);
+        BandwidthSchedule schedule = pathAvailBwCal.makeSchedule(path.getBandwithScedule().getBandwidth(), start, duration, deadline, false);
         // scenarios: extra options / queries
         return schedule;    
     }

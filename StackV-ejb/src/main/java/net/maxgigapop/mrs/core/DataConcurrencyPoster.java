@@ -27,6 +27,8 @@ import com.hp.hpl.jena.ontology.OntModel;
 import javax.ejb.LocalBean;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
+import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.GlobalPropertyPersistenceManager;
 
 /**
@@ -38,15 +40,29 @@ import net.maxgigapop.mrs.bean.persist.GlobalPropertyPersistenceManager;
 @Startup
 public class DataConcurrencyPoster {
     // per-node singleton to hold the cachedOntModel from SystemModelCoordinator for lock-free access
-    OntModel SystemModelCoordinator_cachedOntModel = null;
+    VersionGroup SystemModelCoordinator_cachedVersionGroup = null;
     boolean SystemModelCoordinator_localBootstrapped = false;
 
-    public OntModel getSystemModelCoordinator_cachedOntModel() {
-        return SystemModelCoordinator_cachedOntModel;
+    public VersionGroup getSystemModelCoordinator_cachedVersinGroup() {
+        return SystemModelCoordinator_cachedVersionGroup;
     }
 
-    public void setSystemModelCoordinator_cachedOntModel(OntModel SystemModelCoordinator_cachedOntModel) {
-        this.SystemModelCoordinator_cachedOntModel = SystemModelCoordinator_cachedOntModel;
+    public ModelBase getSystemModelCoordinator_cachedModelBase() {
+        if (SystemModelCoordinator_cachedVersionGroup == null) {
+            return null;
+        }
+        return SystemModelCoordinator_cachedVersionGroup.getCachedModelBase();
+    }
+
+    public OntModel getSystemModelCoordinator_cachedOntModel() {
+        if (SystemModelCoordinator_cachedVersionGroup == null) {
+            return null;
+        }
+        return SystemModelCoordinator_cachedVersionGroup.getCachedModelBase().getOntModel();
+    }
+
+    public void setSystemModelCoordinator_cachedVersionGroup(VersionGroup vg) {
+        this.SystemModelCoordinator_cachedVersionGroup = vg;
     }
     
     // persisted global boot_strapped flag

@@ -421,6 +421,18 @@ public class ServiceResource {
             serviceCallHandler.refreshVersionGroup(svcInstanceUUID);
             logger.trace_end(method, "REFRESHED");
             return "REFRESHED";
+        } else if (action.equalsIgnoreCase("reset_init")) {
+            serviceCallHandler.resetDeltas(svcInstanceUUID, "INIT");
+            logger.trace_end(method);
+            return "INIT";
+        } else if (action.equalsIgnoreCase("reset_compiled")) {
+            serviceCallHandler.resetDeltas(svcInstanceUUID, "COMPILED");
+            logger.trace_end(method);
+            return "COMPILED";
+        } else if (action.equalsIgnoreCase("reset_committed")) {
+            serviceCallHandler.resetDeltas(svcInstanceUUID, "COMMITTED");
+            logger.trace_end(method);
+            return "COMMITTED";
         } else {
             throw logger.error_throwing(method, "Unrecognized action=" + action);
         }
@@ -531,22 +543,15 @@ public class ServiceResource {
         return apiDeltaRetrieval;
     }
     
+    // Resolve from a provided model or sytem model (if manifest.getJsonModel() == null) 
     @POST
     @Path("/manifest")
     @Consumes({"application/json","application/xml"})
     @Produces("application/json")
     public ServiceApiManifest resolveManifest(ServiceApiManifest manifest) {
         String method = "resolveManifest";
-        logger.refuuid(manifest.getServiceUUID());
         logger.trace_start(method);        
-        // if manifest.getJsonModel() == null, get serviceDelta.modelAddition into manifest.jsonTemplate
-        String jsonModel = manifest.getJsonModel();
-        if (jsonModel == null) {
-            manifest = resolveServiceManifest(manifest.getServiceUUID(), manifest);
-            logger.trace_end(method);        
-            return manifest;
-        }
-        JSONObject joManifest = ServiceManifest.resolveManifestJsonTemplate(manifest.getJsonTemplate(), jsonModel);
+        JSONObject joManifest = ServiceManifest.resolveManifestJsonTemplate(manifest.getJsonTemplate(), manifest.getJsonModel());
         manifest.setJsonTemplate(joManifest.toJSONString());
         manifest.setJsonModel(null);
         logger.trace_end(method);        

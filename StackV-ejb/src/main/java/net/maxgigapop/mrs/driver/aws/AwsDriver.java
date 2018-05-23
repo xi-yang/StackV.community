@@ -42,6 +42,7 @@ import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.DriverSystemDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -85,8 +86,8 @@ public class AwsDriver implements IHandleDriverSystemCall {
 
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
         String requests = push.pushPropagate(model, modelAdd, modelReduc);
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        driverInstance.putProperty(requestId, requests);
+        aDelta.putCommand("requests", requests);
+        //DriverSystemDeltaPersistenceManager.merge(aDelta); //--> DO NOT merge/save as the parent transaction may double up
         logger.end(method);
     }
 
@@ -105,17 +106,15 @@ public class AwsDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
-        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-        String requestId = driverInstance.getId().toString() + aDelta.getReferenceUUID().toString();
-        String requests = driverInstance.getProperty(requestId);
+        //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        String requests = aDelta.getCommand("requests");
         if (requests == null) {
-            throw logger.error_throwing(method, "requests == null - trying to commit after propagate failed, requestId="+requestId);
+            throw logger.error_throwing(method, "requests == null - something wrong with requests from propagate.");
         }
         if (requests.isEmpty()) {
-            driverInstance.getProperties().remove(requestId);
-            DriverInstancePersistenceManager.merge(driverInstance);
-            logger.warning(method, "requests.isEmpty - no change to commit, requestId="+requestId);
-        }        
+            logger.warning(method, "requests is empty --  nothing has been propagated (no change needed).");
+            return new AsyncResult<String>("SUCCESS");
+        }
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
         String r = driverInstance.getProperty("region");
@@ -125,7 +124,6 @@ public class AwsDriver implements IHandleDriverSystemCall {
         String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
         String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
         String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
-        driverInstance.getProperties().remove(requestId);
         DriverInstancePersistenceManager.merge(driverInstance);
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
         try {

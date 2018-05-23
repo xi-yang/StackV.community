@@ -155,23 +155,7 @@ public class ServiceHandler {
 
             // Execute service creation.
             ServiceEngine.orchestrateInstance(refUUID, inputJSON, deltaUUID, token, autoProceed);
-            /*switch (type) {
-                case "netcreate":
-                    ServiceEngine.createNetwork(paraMap, token);
-                    break;
-                case "hybridcloud":
-                    ServiceEngine.createHybridCloud(paraMap, token);
-                    break;
-                case "omm":
-                    ServiceEngine.createOperationModelModification(paraMap, token);
-                    break;
-                case "dnc":
-                    ServiceEngine.createDNC(dataJSON, token, refUUID);
-                    break;
-                default:
-            }*/
 
-            // Return instance UUID
             logger.end(method);
         } catch (EJBException | SQLException ex) {
             logger.catching(method, ex);
@@ -216,7 +200,7 @@ public class ServiceHandler {
 
         logger.refuuid(refUUID);
         logger.start(method);
-        updateLastState(null, refUUID);
+        updateLastState("INIT", refUUID);
         VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
         try {
             switch (action) {
@@ -227,6 +211,15 @@ public class ServiceHandler {
                 case "force_cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
                     forceCancelInstance(refUUID, token);
+                    break;
+
+                case "release":
+                    setSuperState(refUUID, SuperState.CANCEL);
+                    releaseInstance(refUUID, token);
+                    break;
+                case "force_release":
+                    setSuperState(refUUID, SuperState.CANCEL);
+                    forceReleaseInstance(refUUID, token);
                     break;
 
                 case "reinstate":
@@ -260,6 +253,9 @@ public class ServiceHandler {
                     break;
                 case "commit":
                     ServiceEngine.commitInstance(refUUID, token.auth());
+                    break;               
+                case "revert":
+                    ServiceEngine.revertInstance(refUUID, token.auth());
                     break;
                 default:
                     logger.warning(method, "Invalid action");
@@ -395,6 +391,49 @@ public class ServiceHandler {
         }
     }
 
+
+    /**
+     * Cancels a service instance without commit. Requires instance to be in 'ready' substate.
+     *
+     * @param refUuid instance UUID
+     * @return error code | -1: Exception thrown. 0: success. 1: stage 1 error
+     * (Failed pre-condition). 2: stage 2 error (Failed revert). 3: stage 3
+     * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
+     * error (Failed result check).
+     */
+    private int releaseInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+        boolean result;
+        String instanceState = status();
+        if (!instanceState.equalsIgnoreCase("READY")) {
+            return 1;
+        }
+
+        result = revert(refUuid, token.auth());
+        lastState = "INIT";
+        if (!result) {
+            return 2;
+        }
+
+        result = propagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
+        if (!result) {
+            return 3;
+        }
+
+        return 0;
+    }
+    
+
+    private int forceReleaseInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+        lastState = "INIT";
+        forceRevert(refUuid, token.auth());
+        forcePropagate(refUuid, token.auth());
+        lastState = "PROPAGATED";
+        return 0;
+    }
+
+
+    
     private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";

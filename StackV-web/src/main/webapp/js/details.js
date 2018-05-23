@@ -32,6 +32,7 @@ var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut
 var view = "center";
 var $intentModal = $("#details-intent-modal");
 var $loadingModal = $("#loading-modal");
+var $confirmModal = $("#confirm-modal");
 
 var intentConfig = {
     width: 750
@@ -45,7 +46,32 @@ var loadingConfig = {
     timeoutProgressbar: true,
     transitionIn: 'fadeInDown',
     transitionOut: 'fadeOutDown',
-    pauseOnHover: false
+    pauseOnHover: false,
+    overlayClose: false,
+    closeButton: false,
+    closeOnEscape: false,
+    onOpening: function () {
+        $("#main-pane").addClass("blurred");
+    },
+    onClosing: function () {
+        $("#main-pane").removeClass("blurred");
+    }
+};
+var confirmConfig = {
+    title: "Confirm Deletion",
+    subtitle: 'Please confirm deletion of service instance. For termination of service, use Cancel instead of Delete.',
+    headerColor: '#BD5B5B',
+    top: 300,
+    timeout: 5000,
+    timeoutProgressbar: true,
+    transitionIn: 'fadeInDown',
+    transitionOut: 'fadeOutDown',
+    pauseOnHover: true,
+    onClosing: function () {
+        $(".instance-command").attr('disabled', false);
+        resumeRefresh();
+        reloadData();
+    }
 };
 
 Mousetrap.bind({
@@ -164,9 +190,15 @@ function loadDetails() {
     $("#button-view-intent").click(function () {
         $intentModal.iziModal('open');
     });
-    
-    $loadingModal.iziModal(loadingConfig);    
-    
+
+    $loadingModal.iziModal(loadingConfig);
+
+    $confirmModal.html('</button><button class="button-confirm-delete btn btn-danger">Delete</button><button class="button-confirm-close btn btn-primary" data-izimodal-close="">Close</button>');
+    $confirmModal.iziModal(confirmConfig);
+    $(".button-confirm-delete").click(function () {
+        executeCommand($(this).data("mode"));
+    });
+
     var uuid = sessionStorage.getItem("instance-uuid");
     startDetailsEngine(uuid);
 

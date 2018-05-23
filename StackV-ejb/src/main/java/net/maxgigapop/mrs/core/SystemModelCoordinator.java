@@ -81,7 +81,7 @@ public class SystemModelCoordinator {
             throw logger.error_throwing("hasSystemBootStrapped", "failed to lookup DataConcurrencyPoster --" + e);
         }
         dataConcurrencyPoster.setSystemModelCoordinator_bootStrapped(false);
-        dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(null);
+        dataConcurrencyPoster.setSystemModelCoordinator_cachedVersionGroup(null);
     }
     
     @Lock(LockType.WRITE)
@@ -103,7 +103,8 @@ public class SystemModelCoordinator {
     }
 
     @Lock(LockType.WRITE)
-    @Schedule(minute = "*", hour = "*", persistent = false)
+    //@Schedule(second = "*/30", minute = "*", hour = "*", persistent = false) // // every 30 seconds
+    @Schedule(second = "0", minute = "*", hour = "*", persistent = false) // every minute, starting at 0th sec
     public void autoUpdate() {
         String method = "autoUpdate";
         logger.trace_start(method);
@@ -120,9 +121,9 @@ public class SystemModelCoordinator {
         //@TODO: add a persistent timestamp for DriverInstanceByTopologyMap. Then refreshAll only if recently updated
         DriverInstancePersistenceManager.refreshAll();
         Map<String, DriverInstance> ditMap = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
-        if (ditMap == null || ditMap.isEmpty()) {
+        if (ditMap.isEmpty()) {
             systemVersionGroup = null;
-            logger.warning(method, "ditMap == null or ditMap.isEmpty");
+            logger.warning(method, "driverInstanceMap is emmpty - waiting for system update");
             logger.trace_end(method);
             return;
         }
@@ -153,64 +154,8 @@ public class SystemModelCoordinator {
                 this.systemVersionGroup.createUnionModel();
             }
         }
-        dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(systemVersionGroup.getCachedModelBase().getOntModel());
+        dataConcurrencyPoster.setSystemModelCoordinator_cachedVersionGroup(systemVersionGroup);
         dataConcurrencyPoster.setSystemModelCoordinator_localBootstrapped(true);
         logger.trace_end(method);
-    }
-
-    @Lock(LockType.WRITE)
-    public VersionGroup getLatest() {
-        String method = "getLatest";
-        logger.trace_start(method);
-        DataConcurrencyPoster dataConcurrencyPoster = null;
-        try {
-            Context ejbCxt = new InitialContext();
-            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
-        } catch (Exception ex) {
-            logger.warning(method, "failed to lookup DataConcurrencyPoster --" + ex);
-        }
-        if (this.systemVersionGroup == null) {
-            logger.trace(method, "this.systemVersionGroup == null");
-            this.systemVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
-            if (this.systemVersionGroup != null) {
-                logger.trace(method, "created new ref:VersionGroup");
-                this.systemVersionGroup.createUnionModel();
-            }
-        } else {
-            VersionGroup newVersionGroup = null;
-            try {
-                logger.trace(method, "update head VersionGroup");
-                newVersionGroup = systemCallHandler.updateHeadVersionGroup(systemVersionGroup.getRefUuid());
-            } catch (Exception ex) {
-                logger.catching(method, ex);
-                newVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
-                logger.trace(method, "re-created new ref:VersionGroup");
-            }
-            if (newVersionGroup == null) {
-                logger.error(method, "failed to create new ref:VersionGroup");
-                return null;
-            }
-            if (!newVersionGroup.equals(systemVersionGroup)) {
-                logger.trace(method, "replace " + systemVersionGroup + " with " + newVersionGroup);
-                this.systemVersionGroup = newVersionGroup;
-                this.systemVersionGroup.createUnionModel();
-            }
-        }
-        if (dataConcurrencyPoster != null) {
-            dataConcurrencyPoster.setSystemModelCoordinator_cachedOntModel(systemVersionGroup.getCachedModelBase().getOntModel());
-        }
-        logger.trace_end(method);
-        return this.systemVersionGroup;
-    }
-
-    @Lock(LockType.READ)
-    public OntModel getLatestOntModel() {
-        VersionGroup vg = getLatest();
-        return vg.getCachedModelBase().getOntModel();
-    }
-    
-    @Lock(LockType.READ)
-    public VersionGroup getSystemVersionGroup() {
-        return systemVersionGroup;
     }
 }

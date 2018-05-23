@@ -97,3 +97,8 @@ pre.expanded{
     white-space: nowrap;
     overflow-x: auto;
 }
+
+.button-confirm-delete, .button-confirm-close {
+    width: 50%;
+    border-radius: 0;
+}

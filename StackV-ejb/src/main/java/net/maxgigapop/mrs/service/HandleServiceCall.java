@@ -114,21 +114,26 @@ public class HandleServiceCall {
             // clean up serviceDeltas
             for (Iterator<ServiceDelta> svcDeltaIt = serviceInstance.getServiceDeltas().iterator(); svcDeltaIt.hasNext();) {
                 ServiceDelta svcDelta = svcDeltaIt.next();
-                if (svcDelta.getSystemDelta() != null) {
-                    if (svcDelta.getSystemDelta().getDriverSystemDeltas() != null) {
-                        for (Iterator<DriverSystemDelta> dsdIt = svcDelta.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
+                SystemDelta systemDelta = svcDelta.getSystemDelta();
+                if (systemDelta != null) {
+                    if (systemDelta.getDriverSystemDeltas() != null) {
+                        for (Iterator<DriverSystemDelta> dsdIt = systemDelta.getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                             DriverSystemDelta dsd = dsdIt.next();
-                            //DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
-                            DriverInstance driverInstance = dsd.getDriverInstance();
-                            driverInstance.getDriverSystemDeltas().remove(dsd);
                             DeltaPersistenceManager.delete(dsd);
                         }
                     }
-                    SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(svcDelta.getSystemDelta());
+                    SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(systemDelta);
                     if (systemInstance != null) {
                         SystemInstancePersistenceManager.delete(systemInstance);
                     }
-                    DeltaPersistenceManager.delete(svcDelta.getSystemDelta());
+                    systemDelta.setServiceDelta(null);
+                    DeltaPersistenceManager.merge(systemDelta);
+                }
+                svcDelta.setSystemDelta(null);
+                svcDelta.setServiceInstance(null);
+                DeltaPersistenceManager.merge(svcDelta);
+                if (systemDelta != null) {
+                    DeltaPersistenceManager.delete(systemDelta);
                 }
                 svcDeltaIt.remove();
                 DeltaPersistenceManager.delete(svcDelta);
@@ -177,8 +182,9 @@ public class HandleServiceCall {
         if (serviceInstance == null) {
             throw logger.error_throwing("compileAddDelta", "cannot find the ref:ServiceInstance");
         }
-        if (ServiceDeltaPersistenceManager.findByReferenceUUID(spaDelta.getReferenceUUID()) != null) {
-            throw logger.error_throwing("compileAddDelta", "has already received the same traget:ServiceDelta");
+        ServiceDelta oldDelta = ServiceDeltaPersistenceManager.findByReferenceUUID(spaDelta.getReferenceUUID());
+        if (oldDelta != null && oldDelta.getStatus().equals("INIT")) {
+            ; // keep it for now
         }
         // run with chosen worker
         WorkerBase worker = null;
@@ -207,6 +213,7 @@ public class HandleServiceCall {
         }
         serviceInstance.addServiceDeltaWithoutSave(spaDelta);
         spaDelta.setServiceInstance(serviceInstance);
+        spaDelta.setStatus("COMPILED");
         DeltaPersistenceManager.save(spaDelta);
         //serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         serviceInstance.setStatus("COMPILED");
@@ -262,8 +269,8 @@ public class HandleServiceCall {
             throw logger.error_throwing(method, "cannot find the ref:ServiceInstance");
         }
         logger.status(method, serviceInstance.getStatus());
-        if (!serviceInstance.getStatus().equals("NEGOTIATING")) {
-            throw logger.error_throwing(method, "ref:ServiceInstance must have status=NEGOTIATING while the actual status=" + serviceInstance.getStatus());
+        if (!serviceInstance.getStatus().equals("INIT") && !serviceInstance.getStatus().equals("COMPILED") && !serviceInstance.getStatus().equals("NEGOTIATING")) {
+            throw logger.error_throwing(method, "ref:ServiceInstance must have status=INIT, COMPILED or NEGOTIATING while the actual status=" + serviceInstance.getStatus());
         }
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         if (!itSD.hasNext()) {
@@ -272,7 +279,9 @@ public class HandleServiceCall {
         ServiceDelta spaDelta = null;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getSystemDelta() == null) {
+            if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
+                spaDelta = serviceDelta;
+            } else if (serviceDelta.getSystemDelta() == null) {
                 logger.targetid(serviceDelta.getId());
                 logger.error(method, "target:ServiceDelta getSystemDelta() == null -but- continue");
                 continue;
@@ -280,13 +289,13 @@ public class HandleServiceCall {
                 spaDelta = serviceDelta;
             } else if (serviceDelta.getStatus().equals("FAILED")) {
                 if (spaDelta != null) {
-                    logger.warning(method, "A FAILED delta (" + serviceDelta + ") comes after NEGOTIATING delta (" + spaDelta +") - ignore the previous NEGOTIATING delta.");
+                    logger.warning(method, "A FAILED delta (" + serviceDelta + ") comes after INIT / NEGOTIATING delta (" + spaDelta +") - ignore the previous INIT / NEGOTIATING delta.");
                     spaDelta = null; 
                 }
             }
         }
         if (spaDelta == null) {
-            throw logger.error_throwing(method, "ref:ServiceInstance has none active delta with status=NEGOTIATING");
+            throw logger.error_throwing(method, "ref:ServiceInstance has none active delta with status=INIT or NEGOTIATING");
         }
         logger.targetid(spaDelta.getReferenceUUID());
         WorkerBase worker = null;
@@ -332,16 +341,30 @@ public class HandleServiceCall {
         if (!serviceInstance.getStatus().equals("COMPILED") && !serviceInstance.getStatus().equals("PROPAGATED-PARTIAL") && !serviceInstance.getStatus().equals("COMMITTING-PARTIAL")) {
             throw logger.error_throwing(method, "ref:ServiceInstance must have status=INIT or PROPAGATED-PARTIAL or COMMITTED-PARTIAL while the actual status=" + serviceInstance.getStatus());
         }
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
-        if (!itSD.hasNext()) {
-            throw logger.error_throwing(method, "ref:ServiceInstance has none delta to propagate.");
-        }
         // By default propagate a delta if it is the first with init status in queue or there is only committing ones before.
         // Commit only one delta at a time.
         boolean canMultiPropagate = false;
         String multiPropagate = serviceInstance.getProperty("multiPropagate");
         if (multiPropagate != null && multiPropagate.equalsIgnoreCase("true")) {
             canMultiPropagate = true;
+        } else {
+            // change status from INIT to SKIP for all but last - in non-multiPropagate mode, we only propagate the latest with INIT status
+            Iterator<ServiceDelta> it = serviceInstance.getServiceDeltas().iterator();
+            ServiceDelta serviceDeltaInit = null;
+            while (it.hasNext()) {
+                ServiceDelta serviceDelta = it.next();
+                if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
+                    serviceDeltaInit = serviceDelta;
+                    it.remove();
+                }
+            }
+            if (serviceDeltaInit != null) {
+                serviceInstance.getServiceDeltas().add(serviceDeltaInit);
+            }
+        }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        if (!itSD.hasNext()) {
+            throw logger.error_throwing(method, "ref:ServiceInstance has none delta to propagate.");
         }
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
@@ -349,7 +372,7 @@ public class HandleServiceCall {
                 logger.targetid(serviceDelta.getId());
                 logger.error(method, "target:ServiceDelta getSystemDelta() == null -but- continue");
                 continue;
-            } else if (serviceDelta.getStatus().equals("INIT")) {
+            } else if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                 SystemInstance systemInstance = systemCallHandler.createInstance();
                 try {
                     systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
@@ -375,7 +398,7 @@ public class HandleServiceCall {
                 if (!canMultiPropagate) {
                     break;
                 }
-            } else if (!canMultiPropagate && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED")) {
+            } else if (!canMultiPropagate && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("FAILED")) {
                 throw logger.error_throwing(method, "ref:ServiceInstance with 'multiPropagate=false' encounters target:ServiceDelta with status="+serviceDelta.getStatus());
             }
         }
@@ -386,7 +409,7 @@ public class HandleServiceCall {
         boolean isNegotiating = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
+            if (serviceDelta.getStatus().equalsIgnoreCase("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                 hasInitiated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
@@ -430,13 +453,29 @@ public class HandleServiceCall {
         if (serviceInstance.getServiceDeltas() == null || serviceInstance.getServiceDeltas().isEmpty()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to commit.");
         }
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         // By default commit a delta if it is the first with propagated status in queue or there is only committing ones before.
         // Also commit only one delta at a time.
         boolean canMultiCommit = false;
         String multiCommit = serviceInstance.getProperty("multiCommit");
         if (multiCommit != null && multiCommit.equalsIgnoreCase("true")) {
             canMultiCommit = true;
+        } else {
+            // change status from INIT to SKIP for all but last - in non-multiPropagate mode, we only propagate the latest with INIT status
+            Iterator<ServiceDelta> it = serviceInstance.getServiceDeltas().iterator();
+            ServiceDelta serviceDeltaInit = null;
+            while (it.hasNext()) {
+                ServiceDelta serviceDelta = it.next();
+                if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
+                    it.remove();
+                }
+            }
+            if (serviceDeltaInit != null) {
+                serviceInstance.getServiceDeltas().add(serviceDeltaInit);
+            }
+        }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        if (!itSD.hasNext()) {
+            throw logger.error_throwing(method, "ref:ServiceInstance has none delta to propagate.");
         }
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
@@ -458,7 +497,7 @@ public class HandleServiceCall {
                 if (!canMultiCommit) {
                     break;
                 }
-            } else if (!forced && !canMultiCommit && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED")) {
+            } else if (!forced && !canMultiCommit && !serviceDelta.getStatus().equals("COMMITTING") && !serviceDelta.getStatus().equals("COMMITTED") && !serviceDelta.getStatus().equals("FAILED")) {
                 throw logger.error_throwing(method, "ref:ServiceInstance with forced==false and canMultiCommit==false encounters target:ServiceDelta in unexpected status=" + serviceDelta.getStatus());
             }
         }
@@ -468,7 +507,7 @@ public class HandleServiceCall {
         boolean isCommitting = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
+            if (serviceDelta.getStatus().equalsIgnoreCase("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                 hasInitiated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
@@ -476,13 +515,12 @@ public class HandleServiceCall {
                 isCommitting = true;
             }
         }
-        //serviceInstance.setStatus("INIT");
-        if (hasInitiated && hasPropagated) {
+        if (hasPropagated && isCommitting) {
+            serviceInstance.setStatus("COMMITTING-PARTIAL");
+        } else if (hasInitiated && hasPropagated) {
             serviceInstance.setStatus("PROPAGATED-PARTIAL");
         } else if (hasPropagated && !isCommitting) {
             serviceInstance.setStatus("PROPAGATED");
-        } else if (hasPropagated && isCommitting) {
-            serviceInstance.setStatus("COMMITTING-PARTIAL");
         } else if (!hasPropagated && isCommitting) {
             serviceInstance.setStatus("COMMITTING");
         }
@@ -598,9 +636,13 @@ public class HandleServiceCall {
             // swap and add addition and reduction to reverse models
             if (serviceDelta.getModelReduction() != null && serviceDelta.getModelReduction().getOntModel() != null) {
                 reverseSvcDelta.getModelAddition().getOntModel().add(serviceDelta.getModelReduction().getOntModel().getBaseModel());
+            } else {
+                reverseSvcDelta.setModelAddition(null);
             }
             if (serviceDelta.getModelAddition() != null && serviceDelta.getModelAddition().getOntModel() != null) {
                 reverseSvcDelta.getModelReduction().getOntModel().add(serviceDelta.getModelAddition().getOntModel().getBaseModel());
+            } else {
+                reverseSvcDelta.setModelReduction(null);
             }
             List<String> includeMatches = new ArrayList<String>();
             List<String> excludeMatches = new ArrayList<String>();
@@ -631,8 +673,12 @@ public class HandleServiceCall {
                 if (!resList.isEmpty()) {
                     Model sysModelReductionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
                     reverseSysDelta.getModelAddition().getOntModel().add(sysModelReductionExt);
-                    reverseSysDelta.getModelReduction().getOntModel().remove(sysModelReductionExt);
+                    if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
+                        reverseSysDelta.getModelReduction().getOntModel().remove(sysModelReductionExt);
+                    }
                 }
+            } else {
+                reverseSysDelta.setModelAddition(null);
             }
             if (systemDelta.getModelAddition() != null && systemDelta.getModelAddition().getOntModel() != null) {
                 reverseSysDelta.getModelReduction().getOntModel().add(systemDelta.getModelAddition().getOntModel().getBaseModel());
@@ -646,8 +692,12 @@ public class HandleServiceCall {
                 if (!resList.isEmpty()) {
                     Model sysModelAdditionExt = ModelUtil.getModelSubTree(refModel, resList, includeMatches, excludeMatches, excludeExtentials);
                     reverseSysDelta.getModelReduction().getOntModel().add(sysModelAdditionExt);
-                    reverseSysDelta.getModelAddition().getOntModel().remove(sysModelAdditionExt);
+                    if (systemDelta.getModelReduction() != null && systemDelta.getModelReduction().getOntModel() != null) {
+                        reverseSysDelta.getModelAddition().getOntModel().remove(sysModelAdditionExt);
+                    }
                 }
+            } else {
+                reverseSysDelta.setModelReduction(null);
             }
         }
         serviceInstance.addServiceDeltaWithoutSave(reverseSvcDelta);
@@ -785,12 +835,26 @@ public class HandleServiceCall {
         if (serviceInstance.getServiceDeltas() == null || serviceInstance.getServiceDeltas().isEmpty()) {
             throw logger.error_throwing(method, "ref:ServiceInstance has none delta to retry.");
         }
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         boolean canMultiPropagate = false;
         String multiPropagate = serviceInstance.getProperty("multiPropagate");
         if (multiPropagate != null && multiPropagate.equalsIgnoreCase("true")) {
             canMultiPropagate = true;
+        } else {
+            // change status from INIT to SKIP for all but last - in non-multiPropagate mode, we only propagate the latest with INIT status
+            Iterator<ServiceDelta> it = serviceInstance.getServiceDeltas().iterator();
+            ServiceDelta serviceDeltaInit = null;
+            while (it.hasNext()) {
+                ServiceDelta serviceDelta = it.next();
+                if (serviceDelta.getStatus().equals("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
+                    serviceDeltaInit = serviceDelta;
+                    it.remove();
+                }
+            }
+            if (serviceDeltaInit != null) {
+                serviceInstance.getServiceDeltas().add(serviceDeltaInit);
+            }
         }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getSystemDelta() == null) {
@@ -808,19 +872,11 @@ public class HandleServiceCall {
                     //systemInstance.setSystemDelta((SystemDelta)DeltaPersistenceManager.merge(systemInstance.getSystemDelta()));
                     for (Iterator<DriverSystemDelta> dsdIt = systemInstance.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
                         DriverSystemDelta dsd = dsdIt.next();
-                        DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(dsd.getDriverInstance().getTopologyUri());
-                        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
-                        driverInstance.getDriverSystemDeltas().remove(dsd);
-                        if (serviceDelta.getSystemDelta() != null && serviceDelta.getSystemDelta().getDriverSystemDeltas() != null
-                                && serviceDelta.getSystemDelta().getDriverSystemDeltas().contains(dsd)) {
-                            driverInstance.getDriverSystemDeltas().remove(dsd);
-                        }
-                        // a hack. we really want to delete this DSD completely but have not found a way to make it go away.
-                        dsd.setStatus("DELETED");
-                        DeltaPersistenceManager.save(dsd);
+                        dsdIt.remove();
+                        DeltaPersistenceManager.delete(dsd);
                     }
                     systemInstance.getSystemDelta().getDriverSystemDeltas().clear();
-                    DeltaPersistenceManager.save(systemInstance.getSystemDelta());
+                    DeltaPersistenceManager.merge(systemInstance.getSystemDelta());
                 }
                 systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
                 serviceDelta.setStatus("PROPAGATED");
@@ -836,7 +892,7 @@ public class HandleServiceCall {
         boolean isCommitting = false;
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
-            if (serviceDelta.getStatus().equalsIgnoreCase("INIT")) {
+            if (serviceDelta.getStatus().equalsIgnoreCase("INIT") || serviceDelta.getStatus().equals("COMPILED")) {
                 hasInitiated = true;
             } else if (serviceDelta.getStatus().equalsIgnoreCase("PROPAGATED")) {
                 hasPropagated = true;
@@ -925,6 +981,8 @@ public class HandleServiceCall {
         }
         if (ready) {
             serviceInstance.setStatus("READY");
+            ServiceDelta lastSvcDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size()-1);
+            lastSvcDelta.setStatus("COMMITTED");
             ServiceInstancePersistenceManager.merge(serviceInstance);
         }
         logger.trace_end(method);
@@ -1091,28 +1149,68 @@ public class HandleServiceCall {
     
     private OntModel fetchReferenceModel() {
         String method = "fetchReferenceModel";
-        SystemModelCoordinator systemModelCoordinator = null;
+        DataConcurrencyPoster dataConcurrencyPoster = null;
         try {
             Context ejbCxt = new InitialContext();
-            systemModelCoordinator = (SystemModelCoordinator) ejbCxt.lookup("java:module/SystemModelCoordinator");
+            dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
         } catch (NamingException ex) {
-            throw logger.error_throwing(method, " failed to inject systemModelCoordinator -exception- " + ex);
+            throw logger.error_throwing(method, " failed to lookup DataConcurrencyPoster -exception- " + ex);
         }
-        OntModel refModel = null;
-        try {
-            refModel = systemModelCoordinator.getLatestOntModel();
-        } catch (EJBException ex) {
-            if (ex.getMessage() != null && ex.getMessage().contains("concurrent access timeout ")) {
-                DataConcurrencyPoster dataConcurrencyPoster;
-                try {
-                    Context ejbCxt = new InitialContext();
-                    dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
-                } catch (NamingException e) {
-                    throw logger.error_throwing(method, "failed to lookup DataConcurrencyPoster --" + e);
-                }
-                refModel = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
+        OntModel refModel = dataConcurrencyPoster.getSystemModelCoordinator_cachedOntModel();
+        return refModel;
+    }
+
+    public void resetDeltas(String serviceInstanceUuid, String status) {
+        logger.cleanup();
+        String method = "resetDeltas";
+        logger.refuuid(serviceInstanceUuid);
+        logger.trace_start(method);
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
+        if (serviceInstance == null) {
+            throw logger.error_throwing(method, "cannot find ref:ServiceInstance");
+        }
+        serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        ServiceDelta theDelta = null;
+        while (itSD.hasNext()) {
+            ServiceDelta serviceDelta = itSD.next();
+            if (serviceDelta.getSystemDelta() != null && serviceDelta.getSystemDelta().getModelAddition() != null && serviceDelta.getSystemDelta().getModelReduction() == null) {
+                theDelta = serviceDelta;
+            } else if (status.equalsIgnoreCase("INIT") && serviceDelta.getModelAddition() != null && serviceDelta.getModelReduction() == null) {
+                theDelta = serviceDelta;                
             }
         }
-        return refModel;
+        if (theDelta == null) {
+            throw logger.error_throwing(method, "cannot find compiled serviceDelta for service instantiation.");
+        }
+        theDelta.setStatus(status);        
+        itSD = serviceInstance.getServiceDeltas().iterator();
+        while (itSD.hasNext()) {
+            ServiceDelta serviceDelta = itSD.next();
+            if (!status.equalsIgnoreCase("INIT") && serviceDelta.equals(theDelta)) {
+                continue;
+            }
+            if (serviceDelta.getSystemDelta() != null) {
+                if (serviceDelta.getSystemDelta().getDriverSystemDeltas() != null) {
+                    for (Iterator<DriverSystemDelta> dsdIt = serviceDelta.getSystemDelta().getDriverSystemDeltas().iterator(); dsdIt.hasNext();) {
+                        DriverSystemDelta dsd = dsdIt.next();
+                        DeltaPersistenceManager.delete(dsd);
+                    }
+                }
+                SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
+                if (systemInstance != null) {
+                    SystemInstancePersistenceManager.delete(systemInstance);
+                }
+                DeltaPersistenceManager.delete(serviceDelta.getSystemDelta());
+            }
+            if (status.equalsIgnoreCase("INIT") && serviceDelta.equals(theDelta)) {
+                serviceDelta.setSystemDelta(null);
+            } else {
+                itSD.remove();
+                DeltaPersistenceManager.delete(serviceDelta);
+            }
+        }
+        serviceInstance.setStatus(status);
+        ServiceInstancePersistenceManager.merge(serviceInstance);
     }
 }

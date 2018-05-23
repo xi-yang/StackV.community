@@ -41,7 +41,9 @@ public class DNCPolicyData implements Helper {
             if (conn.containsKey("schedule")) {
                 JSONObject retSchedule = new JSONObject();
                 retSchedule.put("start", schedule.containsKey("start") && !((String)schedule.get("start")).isEmpty() ? schedule.get("start") : "now");
-                retSchedule.put("end", schedule.get("end"));
+                if (schedule.containsKey("end")) {
+                    retSchedule.put("end", schedule.get("end"));
+                }
                 if (schedule.containsKey("duration")) {
                     retSchedule.put("duration", schedule.get("duration"));
                 }

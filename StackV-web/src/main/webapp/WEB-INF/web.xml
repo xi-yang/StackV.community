@@ -25,8 +25,7 @@
             <url-pattern>/data/*</url-pattern>
         </web-resource-collection>
         <auth-constraint>
-            <role-name>admin</role-name>
-            <role-name>user</role-name>
+            <role-name>A_User</role-name>
         </auth-constraint>
     </security-constraint>
     <security-constraint>
@@ -61,7 +60,7 @@
             <url-pattern>/restapi/*</url-pattern>
         </web-resource-collection>
         <auth-constraint>
-            <role-name>user</role-name>
+            <role-name>A_User</role-name>
         </auth-constraint>
     </security-constraint>
     <login-config>
@@ -69,9 +68,6 @@
         <realm-name>StackV</realm-name>
     </login-config>
     <security-role>
-        <role-name>admin</role-name>
-    </security-role>
-    <security-role>
-        <role-name>user</role-name>
+        <role-name>A_User</role-name>
     </security-role>
 </web-app>

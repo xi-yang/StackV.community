@@ -72,14 +72,6 @@ public class DriverInstance extends PersistentEntity implements Serializable {
     @Transient
     private VersionItem headVersionItem = null;
 
-    // incoming from subsystems
-    @OneToMany(mappedBy = "driverInstance", cascade = {CascadeType.ALL})
-    private List<DriverModel> driverModels;
-
-    // outgoing to subsystems
-    @OneToMany(mappedBy = "driverInstance", cascade = {CascadeType.ALL})
-    private List<DriverSystemDelta> driverSystemDeltas;
-
     @ElementCollection
     @JoinTable(name = "driver_instance_property", joinColumns = @JoinColumn(name = "driverInstanceId"))
     @MapKeyColumn(name = "property")
@@ -101,68 +93,6 @@ public class DriverInstance extends PersistentEntity implements Serializable {
 
     public void setTopologyUri(String topologyUri) {
         this.topologyUri = topologyUri;
-    }
-
-    public List<DriverModel> getDriverModels() {
-        return driverModels;
-    }
-
-    public void setDriverModels(List<DriverModel> driverModels) {
-        this.driverModels = driverModels;
-    }
-
-    public List<DriverSystemDelta> getDriverSystemDeltas() {
-        return driverSystemDeltas;
-    }
-
-    public void setDriverSystemDeltas(List<DriverSystemDelta> driverSystemDeltas) {
-        this.driverSystemDeltas = driverSystemDeltas;
-    }
-
-    public boolean hasDriverSystemDelta(DriverSystemDelta aDelta) {
-        if (driverSystemDeltas == null || driverSystemDeltas.isEmpty()) {
-            return false;
-        }
-        for (DriverSystemDelta delta : driverSystemDeltas) {
-            if (delta.equals(aDelta)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void addDriverSystemDelta(DriverSystemDelta aDelta) {
-        if (driverSystemDeltas == null) {
-            driverSystemDeltas = new ArrayList<>();
-        }
-        if (!hasDriverSystemDelta(aDelta)) {
-            if (!this.driverSystemDeltas.isEmpty()) {
-                aDelta.setOrderInt(this.driverSystemDeltas.get(this.driverSystemDeltas.size() - 1).getOrderInt() + 1);
-            }
-            try {
-                ModelPersistenceManager.save(aDelta);
-            } catch (Exception e) {
-                throw new EJBException(String.format("%s faled to save %s, due to %s", this.toString(), aDelta.toString(), e.getMessage()));
-            }
-            driverSystemDeltas.add(aDelta);
-        }
-    }
-
-
-    @SuppressWarnings("unused")
-    @PostLoad
-    public void postLoad() {
-        if (driverSystemDeltas == null || driverSystemDeltas.size() < 2) {
-            return;
-        }
-        // sort driverSystemDeltas by ascending order
-        Collections.sort(driverSystemDeltas, new Comparator<DeltaBase>() {
-            @Override
-            public int compare(DeltaBase delta1, DeltaBase delta2) {
-                // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
-                return delta1.getOrderInt() < delta2.getOrderInt() ? -1 : (delta1.getOrderInt() > delta2.getOrderInt()) ? 1 : 0;
-            }
-        });
     }
 
     public String getDriverEjbPath() {
@@ -226,6 +156,6 @@ public class DriverInstance extends PersistentEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "net.maxgigapop.mrs.model.DriverInstance[ id=" + id + " ]";
+        return "net.maxgigapop.mrs.model.DriverInstance[ " + topologyUri + " ]";
     }
 }

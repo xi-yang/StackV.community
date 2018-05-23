@@ -30,26 +30,7 @@
                         <tbody id="user-body">
                         </tbody>
                     </table>
-                </div>                
-                <div id="acl-role-group-div" class="closed">
-                    <table class="management-table" id="acl-group-table">
-                        <thead>
-                            <tr>
-                                <th>Groups<button type="button" class="acl-user-close close" aria-hidden="true">&times;</button></th>
-                            </tr>
-                        </thead>
-                        <tbody id="group-body">
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <th>
-                                    <select id="acl-group-select"><option selected disabled>Choose a group</option></select>
-                                    <button class="btn-default" id="acl-group-add">Add</button>
-                                </th>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
+                </div>                               
                 <div id="acl-role-role-div" class="closed">
                     <table class="management-table" id="acl-role-table">
                         <thead>
@@ -70,33 +51,10 @@
                     </table>
                 </div>
 
-                <div id="acl-group-role-div" class="closed">
-                    <table class="management-table" id="acl-group-role-table">
-                        <thead>
-                            <tr>
-                                <th>Group Roles<button type="button" class="acl-group-roles close" aria-hidden="true">&times;</button></th>
-                            </tr>
-                        </thead>
-                        <tbody id="group-role-body">
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <th>
-                                    <select id="acl-role-select1"><option selected disabled>Choose a role</option></select>
-                                    <button class="btn-default" id="acl-group-role-add">Add</button>
-                                </th>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-
-
-
-
             </div>
             <div class="acl-panel" id="acl-instance-panel">
                 <input type="hidden" id="acl-instance">
-                <table class="management-table" id="acl-instance-table">
+                <table class="management-table flexy" id="acl-instance-table">
                     <thead>
                         <tr>
                             <th>Instance Alias</th>
@@ -111,19 +69,23 @@
                     <div id="acl-instance-acl-existing">
                         <table class="management-table">
                             <colgroup>
-                                <col span="1" style="width: 35%;"/>
-                                <col span="1" style="width: 35%;"/>
-                                <col span="1" style="width: 20%;"/>
-                                <col span="1" style="width: 10%;"/>
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th>Username</th>
-                                    <th>Full Name</th>
-                                    <th>Email</th>
-                                    <th colspan="3"><button type="button" class="acl-instance-close close" aria-hidden="true">&times;</button></th>
-                                </tr>
-                            </thead>
+-                                <col span="1" style="width: 35%;"/>
++                                <col span="1" style="width: 25%;"/>
+                                 <col span="1" style="width: 20%;"/>
+                                 <col span="1" style="width: 10%;"/>
++                                <col span="1" style="width: 10%;"/>                                
++                                <col span="1" style="width: 10%;"/>
+                             </colgroup>
+                             <thead>
+                                 <tr>
+                                     <th>Username</th>
+                                     <th>Full Name</th>
+                                     <th>Email</th>
++                                    <th>Login Access</th>
++                                    <th>Sudo Access</th>                                    
+                                     <th><button type="button" class="acl-instance-close close" aria-hidden="true">&times;</button></th>
+                                 </tr>
+                             </thead>
                             <tbody id="acl-body">                           
                             </tbody>
                         </table>
@@ -177,8 +139,7 @@
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
         <script src="/StackV-web/js/nexus.js"></script>
-        <!---->
-
+        <script src="/StackV-web/js/ipa.js"></script> 
         <script src="/StackV-web/js/acl.js"></script>
     </body>
 </html>
