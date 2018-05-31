@@ -44,13 +44,16 @@ class DataModel {
       console.log('deepCopy');
       localData = _.cloneDeep(localData);
     }
-    this.data = ServerData.parse(localData);
+    const parseResult = ServerData.parse(localData);
+
+    this.data = parseResult.serverData;
 
     // Ensure context
     this.nodeFetcher = this.nodeFetcher.bind(this);
 
     // Calculate and assign Top-Level nodes
-    this.nodes = Utils.calculateTopLevelNodes(this.data, this.nodeFetcher);
+    this.nodes = Utils.prepareData(this.data, parseResult.topLevel, this.nodeFetcher);
+
     // Calculate relations for first time
     this.calculateGraphicData();
   }
@@ -149,7 +152,7 @@ class DataModel {
   /**
    * Prepare space for node to expand
    *
-   * @param {string} nodeWrapper - node wrapper reference
+   * @param {object} nodeWrapper - node wrapper reference
    */
   prepareSpace(nodeWrapper) {
     if (nodeWrapper) {

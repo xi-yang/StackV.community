@@ -5,61 +5,87 @@
     visibility: hidden;
 }
 
+#details-modal .container {
+  padding: 10px 20px;
+  width: 100%;
+  word-wrap: break-word;
+  max-height: 50vh;
+  overflow: scroll;
+}
+#details-modal .row {
+  margin: auto;
+  padding-bottom: 5px;
+  width: 100%;
+}
+#details-modal-id {
+  font-size: 1.25em;
+  vertical-align: top;
+  padding-right: 40px;
+  padding-bottom: 10px;
+}
+#details-modal .list-group {
+  max-height: 200px;
+  overflow: scroll;
+}
+#details-modal .iziModal-header-title {
+  white-space: normal;
+  font-size: 1.15em;
+}
 
 /* SVG */
 body > svg {
-    border: 1px solid hotpink;
+  border: 1px solid hotpink;
 }
 svg {
-    border: 1px solid #ccc;
-    pointer-events: auto;
-    background: #f9f9f9;
-    box-shadow: 0px 3px 10px 2px #333;
+  border: 1px solid #ccc;
+  pointer-events: auto;
+  background: #f9f9f9;
+  box-shadow: 0px 3px 10px 2px #333;
 }
 circle.node {
-    fill: lightsteelblue;
-    stroke: #555;
-    stroke-width: 3px;
+  fill: lightsteelblue;
+  stroke: #555;
+  stroke-width: 3px;
 }
 circle.leaf {
-    stroke: #fff;
-    stroke-width: 1.5px;
+  stroke: #fff;
+  stroke-width: 1.5px;
 }
 path.hull {
-    fill: lightsteelblue;
-    fill-opacity: 0.3;
+  fill: lightsteelblue;
+  fill-opacity: 0.3;
 }
 line.link {
-    stroke: #333;
-    stroke-opacity: 0.5;
-    pointer-events: none;
+  stroke: #333;
+  stroke-opacity: 0.5;
+  pointer-events: none;
 }
 .node-wrapper {
-    cursor: pointer;
+  cursor: pointer;
 }
 .convex-hull {
-    cursor: pointer;
+  cursor: pointer;
 }
 .node-link {
-    stroke: #000;
-    stroke-width: 2px;
+  stroke: #000;
+  stroke-width: 2px;
 }
 #render-indicator {
-    position: fixed;
-    left: 15px;
-    top: 15px;
-    font-family: 'Helvetica Neue', serif;
-    font-size: 15px;
-    display: flex;
-    align-items: center;
+  position: fixed;
+  left: 15px;
+  top: 15px;
+  font-family: 'Helvetica Neue', serif;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
 }
 #render-indicator .circle {
-    height: 20px;
-    width: 20px;
-    display: inline-block;
-    border-radius: 10px;
-    margin-right: 5px;
+  height: 20px;
+  width: 20px;
+  display: inline-block;
+  border-radius: 10px;
+  margin-right: 5px;
 }
 #render-indicator .text {
-    font-size: 15px;
+  font-size: 15px;
 }

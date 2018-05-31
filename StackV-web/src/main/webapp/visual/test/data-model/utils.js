@@ -16,20 +16,14 @@ function setNodeAttribute(node, key, value) {
 }
 
 /**
- * Calculate TOP-LEVEL nodes
+ * Prepare nodes data for further calculation
  *
  * @param {object|Array} nodeList - Clean-up-ed node data, [ NODE ] or { NODE_ID: NODE }
+ * @param {Array<string>} topLevelNodeIdList - A list of pre-calculated top-level nodeId (REAL ID) list
  * @param {Function} nodeFetcher - Function(nodeId: string): Object
  * @returns {Array<object>} The top-level node list
  */
-export function calculateTopLevelNodes(nodeList, nodeFetcher) {
-  /**
-   * Each time children request a node, will record it
-   * If any node is not requested, it is top-level node
-   * @type {object}
-   */
-  let referenceRecorder = {};
-
+export function prepareData(nodeList, topLevelNodeIdList, nodeFetcher) {
   /**
    * How this wrapper works:
    *
@@ -41,12 +35,10 @@ export function calculateTopLevelNodes(nodeList, nodeFetcher) {
    * @returns {object} node reference
    */
   let wrappedNodeFetcher = (nodeId) => {
-    referenceRecorder[nodeId] = true;
     return nodeFetcher(nodeId);
   };
-  calculateTopLevelNodes_helper(nodeList, wrappedNodeFetcher);
+  prepareData_helper(nodeList, wrappedNodeFetcher);
 
-  let viewHierarchyNodeList = [];
   for (let keyName in nodeList) {
     if (nodeList.hasOwnProperty(keyName)) {
       const node = nodeList[keyName].metadata;
@@ -100,14 +92,11 @@ export function calculateTopLevelNodes(nodeList, nodeFetcher) {
        */
       setNodeAttribute(node, 'collisionRadius', Constants.DEFAULT_COLLISION_RADIUS);
 
-      if (!referenceRecorder.hasOwnProperty(node.id)) {
-        const topLevelNode = node;
+      if (topLevelNodeIdList.indexOf(node.id) !== -1) {
         /**
          * MARK TOP-LEVEL-NODE
          */
-        setNodeAttribute(topLevelNode, 'top', true);
-
-        viewHierarchyNodeList.push(topLevelNode);
+        setNodeAttribute(node, 'top', true);
       }
       else {
         /**
@@ -128,11 +117,11 @@ export function calculateTopLevelNodes(nodeList, nodeFetcher) {
     }
   }
 
-  return viewHierarchyNodeList;
+  return topLevelNodeIdList.map(nodeId => nodeFetcher(nodeId));
 }
 
 /**
- * Calculate TOP-LEVEL nodes recursion helper
+ * Prepare nodes data for further calculation, recursion helper
  *
  * Basically, when we access the Top-Level node, we cannot see the children (children's children) node
  * However, we need to build Top-Level node, AND show the relationship
@@ -143,7 +132,7 @@ export function calculateTopLevelNodes(nodeList, nodeFetcher) {
  * @returns {Array<object>} Aggregated data for recursion purpose
  * @private
  */
-function calculateTopLevelNodes_helper(mysteryNode, nodeFetcher) {
+function prepareData_helper(mysteryNode, nodeFetcher) {
   // NOTE: Would accept both Object AND Array
   if (mysteryNode !== null && typeof(mysteryNode) === 'object') {
     if (mysteryNode.hasOwnProperty('metadata')) {
@@ -170,7 +159,7 @@ function calculateTopLevelNodes_helper(mysteryNode, nodeFetcher) {
             mysteryNodeData = nodeFetcher(mysteryNodeData);
           }
 
-          mergeAggregateChildren(aggregateChildren, calculateTopLevelNodes_helper(mysteryNodeData, nodeFetcher));
+          mergeAggregateChildren(aggregateChildren, prepareData_helper(mysteryNodeData, nodeFetcher));
         }
       }
       return aggregateChildren;
@@ -184,7 +173,7 @@ function calculateTopLevelNodes_helper(mysteryNode, nodeFetcher) {
           if (Array.isArray(mysteryNode[keyName])) {
             if (Constants.RECURSION_BLACK_LIST_KEY_NAME_LIST.indexOf(keyName) === -1) {
               mergeAggregateChildren(aggregateChildren, mysteryNode[keyName]);
-              mergeAggregateChildren(aggregateChildren, calculateTopLevelNodes_helper(mysteryNode[keyName], nodeFetcher));
+              mergeAggregateChildren(aggregateChildren, prepareData_helper(mysteryNode[keyName], nodeFetcher));
             }
           }
         }
@@ -502,18 +491,18 @@ function generateLinkForNode(parentNode, realSourceNode, nodes, links, nodeFetch
  * Detect if same link already exists in link pool, prevent adding duplicated line (performance purpose)
  *
  * @param links {Array<object>} links - Link pool
- * @param {object} sourceNode - source node reference
- * @param {object} targetNode - target node reference
+ * @param {object} sourceNode - source REAL node reference
+ * @param {object} targetNode - target REAL node reference
  * @returns {boolean} Return TRUE if link already exists in link pool
  * @private
  */
 function hasLink(links, sourceNode, targetNode) {
   for (let i = 0; i < links.length; i++) {
     const linkInfo = links[i];
-    if (linkInfo.source === sourceNode && linkInfo.target === targetNode) {
+    if (linkInfo.source.metadata === sourceNode && linkInfo.target.metadata === targetNode) {
       return true;
     }
-    else if (linkInfo.source === targetNode && linkInfo.target === sourceNode) {
+    else if (linkInfo.source.metadata === targetNode && linkInfo.target.metadata === sourceNode) {
       return true;
     }
   }
@@ -582,8 +571,6 @@ function isInViewHierarchy(targetNode, nodes) {
 export function expandNode(targetNode, nodes, expandInfo, nodeFetcher) {
   setNodeAttribute(targetNode, 'expand', false);
 
-  console.log(targetNode);
-
   // back-up original position
   if (!targetNode.hasOwnProperty('__original_point_backup__')) {
     targetNode['__original_point_backup__'] = {
@@ -599,30 +586,38 @@ export function expandNode(targetNode, nodes, expandInfo, nodeFetcher) {
  * This method will expand (join) all possible nodes to the current view hierarchy
  *
  * @param {object} targetNode - node reference
- * @param {Array<object>} nodes - current view hierarchy
+ * @param {Array<object>} nodes - nodes in current view hierarchy
  * @param {object} expandInfo - expand info
  * @param {Function} nodeFetcher - Function(nodeId: string): Object
  */
 function expandNodeToViewHierarchy(targetNode, nodes, expandInfo, nodeFetcher) {
   let newNodeList = [];
+  let newServiceList = [];
+
   Constants.EXPAND_KEYS.forEach(expandKeyName => {
     if (targetNode.hasOwnProperty(expandKeyName)) {
       const nodeList = targetNode[expandKeyName];
 
-      for (let i = 0; i < nodeList.length; i++) {
-        const extraNode = nodeFetcher(nodeList[i]);
-        if (extraNode && nodes.indexOf(extraNode) === -1) {
-          nodes.push(extraNode);
+      nodeList.forEach(nodeId => {
+        const extraNode = nodeFetcher(nodeId);
+
+        if (extraNode) {
           newNodeList.push(extraNode);
+
+          if (nodes.indexOf(extraNode) === -1) {
+            nodes.push(extraNode);
+          }
         }
-      }
+      });
     }
   });
 
   expandInfo[targetNode.id] = {
     id: targetNode.id,
     nodes: newNodeList,
+    services: newServiceList,
   };
+
   /**
    * We want to include children group to parent hull, we check now
    */

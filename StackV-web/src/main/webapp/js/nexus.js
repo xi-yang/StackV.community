@@ -655,7 +655,7 @@ function loadLoggingDataTable(apiUrl) {
     });
 
     $("#loggingData").on('preXhr.dt', function () {
-        // Event for opening loading animation        
+        // Event for opening loading animation
     });
     $("#loggingData").on('draw.dt', function () {
         // Event for closing loading animation

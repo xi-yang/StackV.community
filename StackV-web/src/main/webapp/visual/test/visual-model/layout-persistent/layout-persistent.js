@@ -82,11 +82,27 @@ class LayoutPersistent {
     return backupData;
   }
 
+  /**
+   * Read the local persistent data
+   * @param {string} backupData
+   * @param {boolean} compress
+   */
   read(backupData, compress = true) {
     if (compress) {
       backupData = LZString.decompress(backupData);
     }
-    this.persistentData = JSON.parse(backupData);
+    const parseResult = JSON.parse(backupData);
+    if (this.validate(parseResult)) {
+      this.persistentData = parseResult;
+    }
+  }
+
+  /**
+   * Validate if parse result is legal
+   * @param {object} parseResult - parse result
+   */
+  validate() {
+    return true;
   }
 }
 

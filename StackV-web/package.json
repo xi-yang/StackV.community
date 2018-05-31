@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "StackV Web Module",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MAX-UMD/StackV.git"
+  },
   "main": "src/main/webapp/visual/test/index.js",
   "scripts": {
     "server-build": "webpack --config ./webpack.server.js --mode development"

@@ -40,14 +40,28 @@ class ServerData {
    *
    * @param {object} serverData - Javascript Object directly parsed from HTTP API request from StackV server
    * @param {object} options - Extra parsing options (Not-Currently implemented)
-   * @returns {object} data model format KEY -> VALUE
+   * @returns {{ topLevel: Array<string>, serverData: object }} data model format KEY -> VALUE
    */
   static parse(serverData, options = {}) {
     if (options['deepCopy']) {
       serverData = _.cloneDeep(serverData);
     }
-    ServerData._parseHelper(serverData, options);
-    return ServerData._simplifyFormat(serverData);
+    // preserve TOP_LEVEL Node data
+    let topLevelNodeIdList = Object.keys(serverData);
+    let realServerData = {};
+
+    topLevelNodeIdList.forEach(topLevelNodeId => {
+      realServerData = {
+        ...realServerData,
+        ...JSON.parse(serverData[topLevelNodeId].json)
+      };
+    });
+
+    ServerData._parseHelper(realServerData, options);
+    return {
+      topLevel: topLevelNodeIdList,
+      serverData: ServerData._simplifyFormat(realServerData),
+    };
   }
 
   /**

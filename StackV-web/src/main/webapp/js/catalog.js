@@ -1,26 +1,26 @@
-'use strict';
+"use strict";
 /*
- * Copyright (c) 2013-2018 University of Maryland
- * Created by: Alberto Jimenez
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and/or hardware specification (the “Work”) to deal in the
- * Work without restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Work, and to permit persons to whom the Work is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Work.
- *
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
- * IN THE WORK.
- */
+* Copyright (c) 2013-2018 University of Maryland
+* Created by: Alberto Jimenez
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and/or hardware specification (the “Work”) to deal in the
+* Work without restriction, including without limitation the rights to use,
+* copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Work, and to permit persons to whom the Work is furnished to do so,
+* subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Work.
+*
+* THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+* FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
+* IN THE WORK.
+*/
 
 /* global XDomainRequest, baseUrl, keycloak, Power2, TweenLite, tweenBlackScreen, Mousetrap, swal, iziToast */
 // Tweens
@@ -34,74 +34,74 @@ var $licenseModal = $("#profile-license-modal");
 var $alertModal = $("#alert-modal");
 
 Mousetrap.bind({
-    'shift+left': function () {
+    "shift+left": function () {
         window.location.href = "/StackV-web/orch/graphTest.jsp";
     },
-    'shift+right': function () {
+    "shift+right": function () {
         window.location.href = "/StackV-web/portal/details/";
     },
-    'space': function () {
-        toggleModal('catalog');
+    "space": function () {
+        toggleModal("catalog");
     },
-    'shift+space': function () {
-        toggleModal('profile');
+    "shift+space": function () {
+        toggleModal("profile");
     }
 });
 function toggleModal(modalName) {
     switch (modalName) {
-        case "catalog":
-            // Toggle catalog modal
-            switch ($catModal.iziModal('getState')) {
-                case "opened":
-                    $catModal.iziModal('close');
-                    break;
-                case "closed":
-                    switch ($profModal.iziModal('getState')) {
-                        case "closed":
-                            $catModal.iziModal('open');
-                            break;
-                        case "opened":
-                            $profModal.iziModal('prev');
-                            break;
-                    }
-                    break;
-                case "opening":
-                case "closing":
-                    break;
-                default:
-                    switch ($profModal.iziModal('getState')) {
-                        case "closed":
-                            $profModal.iziModal('open');
-                            break;
-                        case "opened":
-                            $profModal.iziModal('close');
-                            break;
-                    }
-                    break;
+    case "catalog":
+        // Toggle catalog modal
+        switch ($catModal.iziModal("getState")) {
+        case "opened":
+            $catModal.iziModal("close");
+            break;
+        case "closed":
+            switch ($profModal.iziModal("getState")) {
+            case "closed":
+                $catModal.iziModal("open");
+                break;
+            case "opened":
+                $profModal.iziModal("prev");
+                break;
             }
             break;
-        case "profile":
-            // Toggle profile modal
-            switch ($catModal.iziModal('getState')) {
-                case "opened":
-                    $catModal.iziModal('next');
-                    break;
-                case "opening":
-                case "closing":
-                    break;
-                case "closed":
-                default:
-                    switch ($profModal.iziModal('getState')) {
-                        case "closed":
-                            $profModal.iziModal('open');
-                            break;
-                        case "opened":
-                            $profModal.iziModal('close');
-                            break;
-                    }
-                    break;
+        case "opening":
+        case "closing":
+            break;
+        default:
+            switch ($profModal.iziModal("getState")) {
+            case "closed":
+                $profModal.iziModal("open");
+                break;
+            case "opened":
+                $profModal.iziModal("close");
+                break;
             }
             break;
+        }
+        break;
+    case "profile":
+        // Toggle profile modal
+        switch ($catModal.iziModal("getState")) {
+        case "opened":
+            $catModal.iziModal("next");
+            break;
+        case "opening":
+        case "closing":
+            break;
+        case "closed":
+        default:
+            switch ($profModal.iziModal("getState")) {
+            case "closed":
+                $profModal.iziModal("open");
+                break;
+            case "opened":
+                $profModal.iziModal("close");
+                break;
+            }
+            break;
+        }
+        break;
     }
 }
 
@@ -125,7 +125,7 @@ function loadCatalogNavbar() {
 }
 
 function loadInstances() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/instances';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/logging/instances";
     loadInstanceDataTable(apiUrl);
 }
 
@@ -142,51 +142,51 @@ var profConfig = {
 };
 var alertConfig = {
     title: "Error",
-    icon: 'icon-power_settings_new',
-    headerColor: '#BD5B5B',
+    icon: "icon-power_settings_new",
+    headerColor: "#BD5B5B",
     width: 600,
     timeout: 15000,
     timeoutProgressbar: true,
-    transitionIn: 'fadeInDown',
-    transitionOut: 'fadeOutDown',
+    transitionIn: "fadeInDown",
+    transitionOut: "fadeOutDown",
     pauseOnHover: true
 };
 var detailsConfig = {
     width: 800,
-    headerColor: '#85ac97',
+    headerColor: "#85ac97",
     onClosed: function () {
-        $profModal.iziModal('open');
+        $profModal.iziModal("open");
     }
 };
 var licenseConfig = {
     width: 400,
-    headerColor: '#e7c642'
+    headerColor: "#e7c642"
 };
 
 var oldProfileName, oldProfileDescription;
 function loadModals() {
     // Initialize
-    $catModal.html('<div class="catalog-modal-body">' +
-            '<p class="catalog-modal-body-header">Select a service type:</p>' +
-            '<div id="catalog-modal-service-meta" class="list-group" style="cursor: pointer;"></div>' +
-            '<hr><button class="button-catalog-modal-switch btn btn-primary" data-izimodal-open="#profiles-modal">Load Saved Profile</button>' +
-            '</div>');
-    $profModal.html('<div class="profiles-modal-body">' +
-            '<p class="profiles-modal-body-header">Select a saved service profile:</p>' +
-            '<div id="profiles-modal-service-meta" class="list-group" style="cursor: pointer;"></div>' +
-            '<hr><button class="btn btn-primary" data-izimodal-open="#catalog-modal">Return to Service Catalog</button><button id="button-profile-blank-add" class="btn btn-default hidden" style="margin-left: 10px;">Add Blank Profile</button><input class="form-control" type="text" id="profileBlankName">' +
-            '</div>');
-    $detailsModal.html('<div style="height: 80vh;" class="profile-details-modal-body">' +
-            '<div id="profile-details-modal-meta"><div><div class="profile-details-modal-meta-name"><input class="form-control hidden" id="profileEditName" placeholder="New Name"><p class="profile-details-modal-meta-name-text"></p><button class="btn btn-default btn-xs hidden button-profile-meta-edit"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></button></div><div class="profile-details-modal-meta-description"><textarea class="form-control hidden" id="profileEditDescription" placeholder="New Description"></textarea><p class="profile-details-modal-meta-description-text"></p></div><p class="profile-details-modal-meta-author"></p></div><hr>' +
-            '<div style="padding-right:10px;" class="panel-group profile-details-modal-meta-sharing hidden"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#sharing-collapse" class="" aria-expanded="true">Profile Sharing</a></h4></div><div id="sharing-collapse" class="panel-collapse collapse in" aria-expanded="true" style=""><ul class="list-group profile-details-modal-meta-sharing-list"></ul><div class="panel-footer" style="height:85px;"><button class="button-profile-license-new btn-sm btn btn-default">Add New User</button><div><label class="profile-details-modal-meta-editable control-label">Allow Editing<input type="checkbox" style="margin-left: 10px;" id="profileEditable" checked="checked" value="on"></label></div></div></div></div></div>' +
-            '<div style="padding-right:10px;" class="panel-group profile-details-modal-meta-saving"><div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><a data-toggle="collapse" href="#saving-collapse" class="" aria-expanded="true">Save As</a></h4></div><div id="saving-collapse" class="panel-collapse collapse" aria-expanded="false" style=""><form class="form-horizontal"><input type="text" class="form-control" id="savingProfileName" placeholder="Profile Name" style="/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */"><input type="text" class="form-control" id="savingProfileDescription" placeholder="Profile Description" style="/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */"></form><div class="panel-footer"><button class="button-profile-save-new btn-sm btn btn-default">Save New Profile</button></div></div></div></div>' +
-            '<div class="profile-details-modal-meta-buttons"><p class="hidden read-only-flag" style="color: #ff5f5f;font-size: 1.25em;padding-right: 50px;">Read Only</p><button style="display: none;" class="button-profile-delete btn btn-danger">Delete</button><button class="button-profile-save btn btn-default">Save</button><input id="profile-alias" placeholder="Instance Alias"><button class="button-profile-submit btn btn-default">Submit</button></div></div>' +
-            '<div id="profile-details-modal-text"><textarea readonly id="profile-details-modal-text-area"></textarea></div>' +
-            '</div>');
-    $licenseModal.html('<div id="profile-license-modal-body" style="margin-bottom: 20px;padding: 15px;"><form class="form-horizontal"><div class="form-group profile-license-modal-username"><label class="col-sm-2 control-label">Username</label>' +
-            '<div class="col-sm-10 profile-license-modal-username-div"></div></div><div class="form-group"><label for="licenseRemaining" class="col-sm-2 control-label">Licenses</label><div class="col-sm-4"><input type="number" class="form-control" id="licenseRemaining"  style="width: 80%;margin-left: 25px;"></div></div>' +
-            '<div class="form-group"><label for="inputPassword" class="col-sm-2 control-label">Type</label><div class="col-sm-10"><label class="radio-inline" style="float: left;margin-left: 25px;"><input type="radio" name="licenseProfileType" id="ticketRadio" value="ticket" checked="">Tickets</label><label class="radio-inline" style="float: left;"><input type="radio" name="licenseProfileType" id="allocationRadio" value="allocation">Allocations</label></div></div>' +
-            '<div class="form-group"><button class="button-license-delete hidden btn btn-warning" style="padding-right: 25;">Remove</button><button class="button-license-update hidden btn btn-warning" style="padding-right: 25;">Update</button><button class="button-license-add hidden btn btn-warning" style="padding-right: 25;">Submit</button></div></form></div>');
+    $catModal.html("<div class=\"catalog-modal-body\">" +
+    "<p class=\"catalog-modal-body-header\">Select a service type:</p>" +
+    "<div id=\"catalog-modal-service-meta\" class=\"list-group\" style=\"cursor: pointer;\"></div>" +
+    "<hr><button class=\"button-catalog-modal-switch btn btn-primary\" data-izimodal-open=\"#profiles-modal\">Load Saved Profile</button>" +
+    "</div>");
+    $profModal.html("<div class=\"profiles-modal-body\">" +
+    "<p class=\"profiles-modal-body-header\">Select a saved service profile:</p>" +
+    "<div id=\"profiles-modal-service-meta\" class=\"list-group\" style=\"cursor: pointer;\"></div>" +
+    "<hr><button class=\"btn btn-primary\" data-izimodal-open=\"#catalog-modal\">Return to Service Catalog</button><button id=\"button-profile-blank-add\" class=\"btn btn-default hidden\" style=\"margin-left: 10px;\">Add Blank Profile</button><input class=\"form-control\" type=\"text\" id=\"profileBlankName\">" +
+    "</div>");
+    $detailsModal.html("<div style=\"height: 80vh;\" class=\"profile-details-modal-body\">" +
+    "<div id=\"profile-details-modal-meta\"><div><div class=\"profile-details-modal-meta-name\"><input class=\"form-control hidden\" id=\"profileEditName\" placeholder=\"New Name\"><p class=\"profile-details-modal-meta-name-text\"></p><button class=\"btn btn-default btn-xs hidden button-profile-meta-edit\"><span class=\"glyphicon glyphicon-pencil\" aria-hidden=\"true\"></span></button></div><div class=\"profile-details-modal-meta-description\"><textarea class=\"form-control hidden\" id=\"profileEditDescription\" placeholder=\"New Description\"></textarea><p class=\"profile-details-modal-meta-description-text\"></p></div><p class=\"profile-details-modal-meta-author\"></p></div><hr>" +
+    "<div style=\"padding-right:10px;\" class=\"panel-group profile-details-modal-meta-sharing hidden\"><div class=\"panel panel-default\"><div class=\"panel-heading\"><h4 class=\"panel-title\"><a data-toggle=\"collapse\" href=\"#sharing-collapse\" class=\"\" aria-expanded=\"true\">Profile Sharing</a></h4></div><div id=\"sharing-collapse\" class=\"panel-collapse collapse in\" aria-expanded=\"true\" style=\"\"><ul class=\"list-group profile-details-modal-meta-sharing-list\"></ul><div class=\"panel-footer\" style=\"height:85px;\"><button class=\"button-profile-license-new btn-sm btn btn-default\">Add New User</button><div><label class=\"profile-details-modal-meta-editable control-label\">Allow Editing<input type=\"checkbox\" style=\"margin-left: 10px;\" id=\"profileEditable\" checked=\"checked\" value=\"on\"></label></div></div></div></div></div>" +
+    "<div style=\"padding-right:10px;\" class=\"panel-group profile-details-modal-meta-saving\"><div class=\"panel panel-default\"><div class=\"panel-heading\"><h4 class=\"panel-title\"><a data-toggle=\"collapse\" href=\"#saving-collapse\" class=\"\" aria-expanded=\"true\">Save As</a></h4></div><div id=\"saving-collapse\" class=\"panel-collapse collapse\" aria-expanded=\"false\" style=\"\"><form class=\"form-horizontal\"><input type=\"text\" class=\"form-control\" id=\"savingProfileName\" placeholder=\"Profile Name\" style=\"/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */\"><input type=\"text\" class=\"form-control\" id=\"savingProfileDescription\" placeholder=\"Profile Description\" style=\"/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */\"></form><div class=\"panel-footer\"><button class=\"button-profile-save-new btn-sm btn btn-default\">Save New Profile</button></div></div></div></div>" +
+    "<div class=\"profile-details-modal-meta-buttons\"><p class=\"hidden read-only-flag\" style=\"color: #ff5f5f;font-size: 1.25em;padding-right: 50px;\">Read Only</p><button style=\"display: none;\" class=\"button-profile-delete btn btn-danger\">Delete</button><button class=\"button-profile-save btn btn-default\">Save</button><input id=\"profile-alias\" placeholder=\"Instance Alias\"><button class=\"button-profile-submit btn btn-default\">Submit</button></div></div>" +
+    "<div id=\"profile-details-modal-text\"><textarea readonly id=\"profile-details-modal-text-area\"></textarea></div>" +
+    "</div>");
+    $licenseModal.html("<div id=\"profile-license-modal-body\" style=\"margin-bottom: 20px;padding: 15px;\"><form class=\"form-horizontal\"><div class=\"form-group profile-license-modal-username\"><label class=\"col-sm-2 control-label\">Username</label>" +
+    "<div class=\"col-sm-10 profile-license-modal-username-div\"></div></div><div class=\"form-group\"><label for=\"licenseRemaining\" class=\"col-sm-2 control-label\">Licenses</label><div class=\"col-sm-4\"><input type=\"number\" class=\"form-control\" id=\"licenseRemaining\"  style=\"width: 80%;margin-left: 25px;\"></div></div>" +
+    "<div class=\"form-group\"><label for=\"inputPassword\" class=\"col-sm-2 control-label\">Type</label><div class=\"col-sm-10\"><label class=\"radio-inline\" style=\"float: left;margin-left: 25px;\"><input type=\"radio\" name=\"licenseProfileType\" id=\"ticketRadio\" value=\"ticket\" checked=\"\">Tickets</label><label class=\"radio-inline\" style=\"float: left;\"><input type=\"radio\" name=\"licenseProfileType\" id=\"allocationRadio\" value=\"allocation\">Allocations</label></div></div>" +
+    "<div class=\"form-group\"><button class=\"button-license-delete hidden btn btn-warning\" style=\"padding-right: 25;\">Remove</button><button class=\"button-license-update hidden btn btn-warning\" style=\"padding-right: 25;\">Update</button><button class=\"button-license-add hidden btn btn-warning\" style=\"padding-right: 25;\">Submit</button></div></form></div>");
 
     $catModal.iziModal(catConfig);
     $profModal.iziModal(profConfig);
@@ -194,11 +194,11 @@ function loadModals() {
     $detailsModal.iziModal(detailsConfig);
     $licenseModal.iziModal(licenseConfig);
 
-    // Load service metadata. 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/editor';
+    // Load service metadata.
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/panel/editor";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -210,13 +210,13 @@ function loadModals() {
                 var desc = meta[1];
                 var tag = meta[2];
 
-                var $service = $('<a></a>');
+                var $service = $("<a></a>");
                 $service.addClass("list-group-item list-group-item-action flex-column align-items-start");
                 $service.attr("data-tag", tag);
 
-                $service.append('<h4 style="display: inline-block;">' + name + '</h4>');
+                $service.append("<h4 style=\"display: inline-block;\">" + name + "</h4>");
                 if (desc) {
-                    $service.append('<p>' + desc + '</p>');
+                    $service.append("<p>" + desc + "</p>");
                 }
 
                 $("#catalog-modal-service-meta").append($service);
@@ -233,10 +233,10 @@ function loadModals() {
 
     // Load service profiles.
     var originalProfile;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/wizard';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/panel/wizard";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -259,14 +259,14 @@ function loadModals() {
                     lastEdited = lastEdited.split(".")[0];
                 }
 
-                var $profile = $('<a></a>');
+                var $profile = $("<a></a>");
                 $profile.addClass("list-group-item list-group-item-action flex-column align-items-start");
                 $profile.attr("data-id", id);
 
-                $profile.append('<h4 style="display: inline-block;">' + name + '</h4>');
+                $profile.append("<h4 style=\"display: inline-block;\">" + name + "</h4>");
 
-                // Properties                
-                var $note = $('<small></small>');
+                // Properties
+                var $note = $("<small></small>");
                 if (owner !== keycloak.tokenParsed.preferred_username) {
                     $note.css({"color": "#777", "padding": "5px"});
                     $note.text("created by " + owner + " ");
@@ -277,7 +277,7 @@ function loadModals() {
                     }
                 }
 
-                var $time = $('<small></small>');
+                var $time = $("<small></small>");
                 $time.css({"float": "right", "text-align": "right", "padding-top": "10px"});
                 var timeStr = "Created: " + created;
                 if (lastEdited) {
@@ -287,7 +287,7 @@ function loadModals() {
                 $profile.append($time);
 
                 if (desc) {
-                    $profile.append('<p>' + desc + '</p>');
+                    $profile.append("<p>" + desc + "</p>");
                 }
                 // ***
 
@@ -298,10 +298,10 @@ function loadModals() {
             $("#button-profile-blank-add").click(function () {
                 if ($("#profileBlankName").hasClass("opened")) {
                     // Save to DB
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                    var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/new";
                     $.ajax({
                         url: apiUrl,
-                        type: 'PUT',
+                        type: "PUT",
                         data: JSON.stringify({
                             "name": $("#profileBlankName").val(),
                             "username": keycloak.tokenParsed.preferred_username,
@@ -325,10 +325,10 @@ function loadModals() {
             $("#profiles-modal-service-meta").on("click", "a", function (evt) {
                 var profileID = $(this).data("id");
                 $profModal.attr("data-profile-id", profileID);
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID;
+                var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + profileID;
                 $.ajax({
                     url: apiUrl,
-                    type: 'GET',
+                    type: "GET",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
@@ -340,7 +340,7 @@ function loadModals() {
                         $(".profile-details-modal-meta-description-text").text(result["description"]);
 
                         if (result["owner"] === keycloak.tokenParsed.preferred_username
-                                || result["editable"] === "1") {
+                        || result["editable"] === "1") {
                             $(".profile-details-modal-meta-saving").removeClass("hidden");
                             $textArea.removeAttr("readonly");
                             $(".button-profile-save").removeAttr("disabled");
@@ -348,16 +348,16 @@ function loadModals() {
                             $(".read-only-flag").addClass("hidden");
                         } else {
                             $textArea.attr("readonly", true);
-                            $(".button-profile-save").attr('disabled', true);
-                            $(".button-profile-save-as").attr('disabled', true);
+                            $(".button-profile-save").attr("disabled", true);
+                            $(".button-profile-save-as").attr("disabled", true);
                             $(".read-only-flag").removeClass("hidden");
                         }
 
                         $textArea.val(result["wizard_json"]);
                         originalProfile = result["wizard_json"];
-                        $(".button-profile-save").attr('id', profileID);
-                        $(".button-profile-save-as").attr('id', profileID);
-                        $(".button-profile-submit").attr('id', profileID);
+                        $(".button-profile-save").attr("id", profileID);
+                        $(".button-profile-save-as").attr("id", profileID);
+                        $(".button-profile-submit").attr("id", profileID);
 
                         // Owner of profile
                         if (result["owner"] === keycloak.tokenParsed.preferred_username) {
@@ -367,21 +367,21 @@ function loadModals() {
                                 var license = result["licenses"][i];
 
                                 if (license["type"] === "ticket") {
-                                    var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
-                                            + '<p style="display: inline;">' + license["username"]
-                                            + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' use(s)</p></li>');
+                                    var $opt = $("<li class=\"list-group-item license-" + license["type"] + "\">"
+                                    + "<p style=\"display: inline;\">" + license["username"]
+                                    + "</p><p style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + license["remaining"] + " use(s)</p></li>");
                                     $(".profile-details-modal-meta-sharing-list").append($opt);
                                 } else {
-                                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID + '/uses/' + license["username"];
+                                    var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + profileID + "/uses/" + license["username"];
                                     $.ajax({
                                         url: apiUrl,
-                                        type: 'GET',
+                                        type: "GET",
                                         async: false,
                                         contentType: "application/json; charset=utf-8",
                                         success: function (result) {
-                                            var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
-                                                    + '<p style="display: inline;">' + license["username"]
-                                                    + '</p><p id="' + license["username"] + '-slots-used" style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + result + '/' + license["remaining"] + ' slot(s)</p></li>');
+                                            var $opt = $("<li class=\"list-group-item license-" + license["type"] + "\">"
+                                            + "<p style=\"display: inline;\">" + license["username"]
+                                            + "</p><p id=\"" + license["username"] + "-slots-used\" style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + result + "/" + license["remaining"] + " slot(s)</p></li>");
                                             $(".profile-details-modal-meta-sharing-list").append($opt);
                                         }
                                     });
@@ -417,17 +417,17 @@ function loadModals() {
                                 }
                                 $(".profile-details-modal-meta-author").html(metaText);
                             } else {
-                                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID + '/uses/' + keycloak.tokenParsed.preferred_username;
+                                var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + profileID + "/uses/" + keycloak.tokenParsed.preferred_username;
                                 $.ajax({
                                     url: apiUrl,
-                                    type: 'GET',
+                                    type: "GET",
                                     contentType: "application/json; charset=utf-8",
                                     success: function (result) {
                                         var used = result;
                                         metaText += "Using " + used + " out of " + remaining + " slots.";
 
                                         if (used >= remaining) {
-                                            $(".button-profile-submit").attr('disabled', true);
+                                            $(".button-profile-submit").attr("disabled", true);
                                             $(".profile-details-modal-meta-author").addClass("invalid");
                                         }
                                         $(".profile-details-modal-meta-author").html(metaText);
@@ -438,8 +438,8 @@ function loadModals() {
 
                         prettyPrintInfo();
 
-                        $profModal.iziModal('close');
-                        $detailsModal.iziModal('open');
+                        $profModal.iziModal("close");
+                        $detailsModal.iziModal("open");
                     },
                     error: function (textStatus, errorThrown) {
                         console.log(textStatus);
@@ -453,12 +453,12 @@ function loadModals() {
             $(".button-profile-license-new").click(function (evt) {
                 resetLicenseModal();
 
-                var $select = $('<select class="form-control" id="licenseUsername" style="width: 70%;margin-left: 25px;"></select>');
+                var $select = $("<select class=\"form-control\" id=\"licenseUsername\" style=\"width: 70%;margin-left: 25px;\"></select>");
 
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users';
+                var apiUrl = baseUrl + "/StackV-web/restapi/app/keycloak/users";
                 $.ajax({
                     url: apiUrl,
-                    type: 'GET',
+                    type: "GET",
                     contentType: "application/json; charset=utf-8",
                     success: function (result) {
                         var $existingArr = $(".profile-details-modal-meta-sharing-list li p:first-child");
@@ -478,7 +478,7 @@ function loadModals() {
                         }
                         $(".profile-license-modal-username-div").append($select);
                         $(".button-license-add").removeClass("hidden");
-                        $licenseModal.iziModal('open');
+                        $licenseModal.iziModal("open");
                     }
                 });
 
@@ -488,19 +488,19 @@ function loadModals() {
             $(".profile-details-modal-meta-sharing-list").on("click", "li", function (evt) {
                 resetLicenseModal();
 
-                $(".profile-license-modal-username-div").append('<p class="form-control-static">' + $(this).children()[0].innerHTML + '</p>');
+                $(".profile-license-modal-username-div").append("<p class=\"form-control-static\">" + $(this).children()[0].innerHTML + "</p>");
                 $("#licenseRemaining").val($($(this).children()[1]).data("remaining"));
 
                 $(".button-license-update").removeClass("hidden");
                 $(".button-license-delete").removeClass("hidden");
 
                 if ($(this).hasClass("license-allocation")) {
-                    $('#allocationRadio').prop("checked", true);
+                    $("#allocationRadio").prop("checked", true);
                 } else {
-                    $('#ticketRadio').prop("checked", true);
+                    $("#ticketRadio").prop("checked", true);
                 }
 
-                $licenseModal.iziModal('open');
+                $licenseModal.iziModal("open");
 
                 evt.preventDefault();
             });
@@ -521,10 +521,10 @@ function loadModals() {
                     $("#profileEditDescription").removeClass("hidden");
                     $span.removeClass("glyphicon-pencil").addClass("glyphicon-ok");
                 } else {
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/meta';
+                    var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + $(".button-profile-save").attr("id") + "/meta";
                     $.ajax({
                         url: apiUrl,
-                        type: 'PUT',
+                        type: "PUT",
                         data: JSON.stringify({
                             "name": $("#profileEditName").val(),
                             "description": $("#profileEditDescription").val()
@@ -556,19 +556,19 @@ function loadModals() {
             });
 
             $(".button-license-add").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/licenses';
+                var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + $(".button-profile-save").attr("id") + "/licenses";
                 $.ajax({
                     url: apiUrl,
-                    type: 'POST',
+                    type: "POST",
                     data: JSON.stringify({
                         "username": $("#licenseUsername").val(),
-                        "type": $('input[name=licenseProfileType]:checked').val(),
+                        "type": $("input[name=licenseProfileType]:checked").val(),
                         "remaining": $("#licenseRemaining").val()
                     }),
                     contentType: "application/json; charset=utf-8",
                     success: function () {
                         reloadModals();
-                        $licenseModal.iziModal('close');
+                        $licenseModal.iziModal("close");
                     }
                 });
 
@@ -576,19 +576,19 @@ function loadModals() {
             });
 
             $(".button-license-update").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/licenses';
+                var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + $(".button-profile-save").attr("id") + "/licenses";
                 $.ajax({
                     url: apiUrl,
-                    type: 'PUT',
+                    type: "PUT",
                     data: JSON.stringify({
                         "username": $(".profile-license-modal-username-div p")[0].innerHTML,
-                        "type": $('input[name=licenseProfileType]:checked').val(),
+                        "type": $("input[name=licenseProfileType]:checked").val(),
                         "remaining": $("#licenseRemaining").val()
                     }),
                     contentType: "application/json; charset=utf-8",
                     success: function () {
                         reloadModals();
-                        $licenseModal.iziModal('close');
+                        $licenseModal.iziModal("close");
                     }
                 });
 
@@ -596,10 +596,10 @@ function loadModals() {
             });
 
             $(".button-license-delete").on("click", function (evt) {
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id") + '/licenses';
+                var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + $(".button-profile-save").attr("id") + "/licenses";
                 $.ajax({
                     url: apiUrl,
-                    type: 'PUT',
+                    type: "PUT",
                     data: JSON.stringify({
                         "username": $(".profile-license-modal-username-div p")[0].innerHTML,
                         "remaining": "0"
@@ -607,14 +607,14 @@ function loadModals() {
                     contentType: "application/json; charset=utf-8",
                     success: function () {
                         reloadModals();
-                        $licenseModal.iziModal('close');
+                        $licenseModal.iziModal("close");
                     }
                 });
 
                 evt.preventDefault();
             });
 
-            // Legacy modal listeners.  
+            // Legacy modal listeners.
             $(".button-profile-delete").on("click", function (evt) {
                 swal("Confirm deletion?", {
                     buttons: {
@@ -623,16 +623,16 @@ function loadModals() {
                     }
                 }).then((value) => {
                     if (value) {
-                        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + $(".button-profile-save").attr("id");
+                        var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + $(".button-profile-save").attr("id");
                         $.ajax({
                             url: apiUrl,
-                            type: 'DELETE',
+                            type: "DELETE",
                             beforeSend: function (xhr) {
                                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                             },
                             success: function () {
                                 reloadModals();
-                                $detailsModal.iziModal('close');
+                                $detailsModal.iziModal("close");
                             },
                             error: function (textStatus, errorThrown) {
                                 console.log(textStatus);
@@ -650,11 +650,11 @@ function loadModals() {
                     var profile = JSON.parse($("#profile-details-modal-text-area").val());
                     profile["alias"] = $("#profile-alias").val();
 
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
+                    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/uuid";
                     $.ajax({
                         url: apiUrl,
                         async: false,
-                        type: 'GET',
+                        type: "GET",
                         dataType: "text",
                         beforeSend: function (xhr) {
                             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -665,13 +665,13 @@ function loadModals() {
                             manifest["uuid"] = result;
                             manifest["data"]["uuid"] = result;
                             manifest["data"]["options"] = manifest["options"];
-                            manifest["profileID"] = $(".button-profile-submit").attr('id');
+                            manifest["profileID"] = $(".button-profile-submit").attr("id");
 
-                            manifest['proceed'] = "true";
-                            var apiUrl = baseUrl + '/StackV-web/restapi/app/profile';
+                            manifest["proceed"] = "true";
+                            var apiUrl = baseUrl + "/StackV-web/restapi/app/profile";
                             $.ajax({
                                 url: apiUrl,
-                                type: 'POST',
+                                type: "POST",
                                 data: JSON.stringify(manifest),
                                 contentType: "application/json; charset=utf-8",
                                 dataType: "json",
@@ -680,15 +680,15 @@ function loadModals() {
                                     xhr.setRequestHeader("Refresh", keycloak.refreshToken);
                                 },
                                 success: function (result) {
-                                    $profModal.iziModal('close');
+                                    $profModal.iziModal("close");
                                 },
                                 error: function (jqXHR, textStatus, errorThrown) {
                                     console.log(jqXHR.status + " | " + textStatus + " | " + errorThrown);
 
                                     if (jqXHR.status === 401) {
-                                        $alertModal.iziModal('setSubtitle', 'You are not authorized for the service associated with this profile.');
-                                        $alertModal.iziModal('setTop', 100);
-                                        $alertModal.iziModal('open');
+                                        $alertModal.iziModal("setSubtitle", "You are not authorized for the service associated with this profile.");
+                                        $alertModal.iziModal("setTop", 100);
+                                        $alertModal.iziModal("open");
                                     }
                                 }
                             });
@@ -696,7 +696,7 @@ function loadModals() {
                     });
                     // reload top table and hide modal
                     reloadData();
-                    $detailsModal.iziModal('close');
+                    $detailsModal.iziModal("close");
                     evt.preventDefault();
                 } else {
                     $("#profile-alias").addClass("invalid");
@@ -710,7 +710,7 @@ function loadModals() {
             $(".button-profile-save-new").on("click", function (evt) {
                 var profileString = $("#profile-details-modal-text-area").val();
                 if (isJSONString(profileString)) {
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+                    var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/new";
                     var data = {
                         name: $("#savingProfileName").val(),
                         username: keycloak.tokenParsed.preferred_username,
@@ -720,7 +720,7 @@ function loadModals() {
 
                     $.ajax({
                         url: apiUrl,
-                        type: 'PUT',
+                        type: "PUT",
                         data: JSON.stringify(data), //stringify to get escaped JSON in backend
                         contentType: "application/json; charset=utf-8",
                         dataType: "json",
@@ -730,7 +730,7 @@ function loadModals() {
                         },
                         success: function () {
                             reloadData();
-                            $detailsModal.iziModal('close');
+                            $detailsModal.iziModal("close");
                         },
                         error: function (textStatus, errorThrown) {
                             console.log(textStatus);
@@ -740,18 +740,18 @@ function loadModals() {
 
                     evt.preventDefault();
                 } else {
-                    swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');
+                    swal("JSON Error", "Data submitted is not a valid JSON! Please correct and try again.", "error");
                 }
             });
 
             $(".button-profile-save").on("click", function (evt) {
                 var profileString = $("#profile-details-modal-text-area").val();
                 if (isJSONString(profileString)) {
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + this.id + '/edit';
+                    var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + this.id + "/edit";
 
                     $.ajax({
                         url: apiUrl,
-                        type: 'PUT',
+                        type: "PUT",
                         data: JSON.stringify({
                             "data": profileString,
                             "editable": $("#profileEditable").prop("checked")
@@ -765,9 +765,9 @@ function loadModals() {
                         success: function () {
                             iziToast.success({
                                 timeout: 3000,
-                                title: 'OK',
-                                message: 'Profile saved!',
-                                position: 'topRight',
+                                title: "OK",
+                                message: "Profile saved!",
+                                position: "topRight",
                                 pauseOnHover: false
                             });
                         },
@@ -780,7 +780,7 @@ function loadModals() {
                     $("#info-panel").removeClass("active");
                     evt.preventDefault();
                 } else {
-                    swal('JSON Error', 'Data submitted is not a valid JSON! Please correct and try again.', 'error');
+                    swal("JSON Error", "Data submitted is not a valid JSON! Please correct and try again.", "error");
                 }
             });
         }
@@ -795,7 +795,7 @@ function resetProfileModal() {
     $(".profile-details-modal-meta-sharing-list").empty();
     $("#info-panel-share-edit :not(:disabled)").remove();
     $(".profile-details-modal-meta-author").removeClass("invalid");
-    $(".button-profile-submit").removeAttr('disabled');
+    $(".button-profile-submit").removeAttr("disabled");
 
     $("#profile-alias").val(null);
     $("#profile-details-modal-text-area").val(null);
@@ -829,13 +829,13 @@ function reloadModals() {
         $("#button-profile-blank-add").addClass("hidden");
     }
 
-    // Load service metadata. 
+    // Load service metadata.
     catCount = 0, profCount = 0;
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/editor';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/panel/editor";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -848,13 +848,13 @@ function reloadModals() {
                 var desc = meta[1];
                 var tag = meta[2];
 
-                var $service = $('<a></a>');
+                var $service = $("<a></a>");
                 $service.addClass("list-group-item list-group-item-action flex-column align-items-start");
                 $service.attr("data-tag", tag);
 
-                $service.append('<h4 style="display: inline-block;">' + name + '</h4>');
+                $service.append("<h4 style=\"display: inline-block;\">" + name + "</h4>");
                 if (desc) {
-                    $service.append('<p>' + desc + '</p>');
+                    $service.append("<p>" + desc + "</p>");
                 }
 
                 $("#catalog-modal-service-meta").append($service);
@@ -864,10 +864,10 @@ function reloadModals() {
     });
 
     // Load service profiles.
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/panel/wizard';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/panel/wizard";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -887,14 +887,14 @@ function reloadModals() {
                     lastEdited = lastEdited.split(".")[0];
                 }
 
-                var $profile = $('<a></a>');
+                var $profile = $("<a></a>");
                 $profile.addClass("list-group-item list-group-item-action flex-column align-items-start");
                 $profile.attr("data-id", id);
 
-                $profile.append('<h4 style="display: inline-block;">' + name + '</h4>');
+                $profile.append("<h4 style=\"display: inline-block;\">" + name + "</h4>");
 
-                // Properties                
-                var $note = $('<small></small>');
+                // Properties
+                var $note = $("<small></small>");
                 if (owner !== keycloak.tokenParsed.preferred_username) {
                     $note.css({"color": "#777", "padding": "5px"});
                     $note.text("created by " + owner + " ");
@@ -905,7 +905,7 @@ function reloadModals() {
                     }
                 }
 
-                var $time = $('<small></small>');
+                var $time = $("<small></small>");
                 $time.css({"float": "right", "text-align": "right", "padding-top": "10px"});
                 var timeStr = "Created: " + created;
                 if (lastEdited) {
@@ -915,7 +915,7 @@ function reloadModals() {
                 $profile.append($time);
 
                 if (desc) {
-                    $profile.append('<p>' + desc + '</p>');
+                    $profile.append("<p>" + desc + "</p>");
                 }
                 // ***
 
@@ -928,10 +928,10 @@ function reloadModals() {
     // Reload open profile
     if ($profModal.data("profile-id")) {
         var profileID = $profModal.data("profile-id");
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID;
+        var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + profileID;
         $.ajax({
             url: apiUrl,
-            type: 'GET',
+            type: "GET",
             async: false,
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -943,24 +943,24 @@ function reloadModals() {
                         var license = result["licenses"][i];
 
                         if (license["type"] === "ticket") {
-                            var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
-                                    + '<p style="display: inline;">' + license["username"]
-                                    + '</p><p style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + license["remaining"] + ' use(s)</p></li>');
+                            var $opt = $("<li class=\"list-group-item license-" + license["type"] + "\">"
+                            + "<p style=\"display: inline;\">" + license["username"]
+                            + "</p><p style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + license["remaining"] + " use(s)</p></li>");
                             $(".profile-details-modal-meta-sharing-list").append($opt);
                         } else {
-                            var $opt = $('<li class="list-group-item license-' + license["type"] + '">'
-                                    + '<p style="display: inline;">' + license["username"]
-                                    + '</p><p id="' + license["username"] + '-slots-used" style="display: inline;float: right;color: #777777;font-size: .9em;" data-remaining="' + license["remaining"] + '">' + '/' + license["remaining"] + ' slot(s)</p></li>');
+                            var $opt = $("<li class=\"list-group-item license-" + license["type"] + "\">"
+                            + "<p style=\"display: inline;\">" + license["username"]
+                            + "</p><p id=\"" + license["username"] + "-slots-used\" style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + "/" + license["remaining"] + " slot(s)</p></li>");
                             $(".profile-details-modal-meta-sharing-list").append($opt);
 
-                            var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/' + profileID + '/uses/' + license["username"];
+                            var apiUrl = baseUrl + "/StackV-web/restapi/app/profile/" + profileID + "/uses/" + license["username"];
                             $.ajax({
                                 url: apiUrl,
-                                type: 'GET',
+                                type: "GET",
                                 async: false,
                                 contentType: "application/json; charset=utf-8",
                                 success: function (result) {
-                                    var $slot = $("#" + license["username"] + '-slots-used');
+                                    var $slot = $("#" + license["username"] + "-slots-used");
                                     $slot.text(result + $slot.text());
                                 }
                             });
@@ -980,7 +980,7 @@ function reloadModals() {
 
 function moderateModals() {
     // Check if catalog modal has been destroyed.
-    if (typeof $catModal.iziModal('getState') === "object") {
+    if (typeof $catModal.iziModal("getState") === "object") {
         // Check if it requires reconstruction.
         if (catCount > 0) {
             $catModal.iziModal(catConfig);
@@ -988,7 +988,7 @@ function moderateModals() {
     } else {
         // Check if it requires destruction.
         if (catCount === 0) {
-            $catModal.iziModal('destroy');
+            $catModal.iziModal("destroy");
         }
     }
 }
@@ -1003,7 +1003,7 @@ function isJSONString(str) {
 }
 
 function getURLParameter(name) {
-    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+    return decodeURIComponent((new RegExp("[?|&]" + name + "=" + "([^&;]+?)(&|#|;|$)").exec(location.search) || [null, ""])[1].replace(/\+/g, "%20")) || null;
 }
 
 
@@ -1024,19 +1024,19 @@ function reloadData() {
 
 
 /*
- * Calls '/StackV-web/restapi/service/ready'
- * The API call returns true or false.
- * The prerequiste for this function is having a this div structure in the:
- * <div id="system-health-check">
- <div id="system-health-check-text"></div>
- </div>
- */
+* Calls '/StackV-web/restapi/service/ready'
+* The API call returns true or false.
+* The prerequiste for this function is having a this div structure in the:
+* <div id="system-health-check">
+<div id="system-health-check-text"></div>
+</div>
+*/
 var systemHealthPass;
 function loadSystemHealthCheck() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
+    var apiUrl = baseUrl + "/StackV-web/restapi/service/ready";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         dataType: "json",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -1046,10 +1046,10 @@ function loadSystemHealthCheck() {
             if (systemHealthPass !== result) {
                 if (result === true) {
                     $("#system-health-span").removeClass("fail").removeClass("glyphicon-ban-circle")
-                            .addClass("pass").addClass("glyphicon-ok-circle");
+                        .addClass("pass").addClass("glyphicon-ok-circle");
                 } else {
                     $("#system-health-span").removeClass("pass").removeClass("glyphicon-ok-circle")
-                            .addClass("fail").addClass("glyphicon-ban-circle");
+                        .addClass("fail").addClass("glyphicon-ban-circle");
                 }
 
                 systemHealthPass = result;
