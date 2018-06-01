@@ -1,27 +1,31 @@
-/* 
- * Copyright (c) 2013-2016 University of Maryland
- * Created by: Jared Welsh
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
- * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
- * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
- * IN THE WORK.
- */
+/*
+* Copyright (c) 2013-2016 University of Maryland
+* Created by: Jared Welsh
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and/or hardware specification (the “Work”) to deal in the
+* Work without restriction, including without limitation the rights to use,
+* copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+* the Work, and to permit persons to whom the Work is furnished to do so,
+* subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Work.
+*
+* THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+* FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
+* IN THE WORK.
+*/
 
-/* global XDomainRequest, baseUrl, keycloak, loggedIn, TweenLite, Power2, Mousetrap, swal */
+/* global XDomainRequest, TweenLite, Power2, Mousetrap, swal */
+import { keycloak} from "../nexus";
+import { loadLogs } from "../logging";
+import { setRefresh, refreshSync } from "../refresh";
+
 var tweenInstalledPanel = new TweenLite("#installed-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px"});
 var tweenAddPanel = new TweenLite("#driver-add-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
 var tweenTemplatePanel = new TweenLite("#driver-template-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
@@ -32,103 +36,87 @@ var view = "center";
 
 
 Mousetrap.bind({
-    'shift+left': function () {
+    "shift+left": function () {
         window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
     },
-    'shift+right': function () {
+    "shift+right": function () {
         window.location.href = "/StackV-web/portal/acl/";
     },
-    'left': function () {
+    "left": function () {
         viewShift("left");
     },
-    'right': function () {
+    "right": function () {
         viewShift("right");
     },
-    'escape': function () {
+    "escape": function () {
         closeContentPanel();
     }
 });
 function viewShift(dir) {
     switch (view) {
+    case "left":
+        if (dir === "right") {
+            newView("installed");
+        }
+        break;
+    case "center":
+        switch (dir) {
         case "left":
-            if (dir === "right") {
-                newView("installed");
-            }
-            break;
-        case "center":
-            switch (dir) {
-                case "left":
-                    newView("add");
-                    break;
-                case "right":
-                    newView("template");
-                    break;
-            }
-            view = dir;
+            newView("add");
             break;
         case "right":
-            if (dir === "left") {
-                newView("installed");
-            }
+            newView("template");
             break;
+        }
+        view = dir;
+        break;
+    case "right":
+        if (dir === "left") {
+            newView("installed");
+        }
+        break;
     }
 }
 function newView(panel) {
     resetView();
     switch (panel) {
-        case "add":
-            tweenAddPanel.play();
-            $("#driver-add-tab").addClass("active");
-            view = "left";
-            break;
-        case "installed":
-            tweenInstalledPanel.play();
-            $("#installed-tab").addClass("active");
-            view = "center";
-            break;
-        case "template":
-            tweenTemplatePanel.play();
-            $("#driver-template-tab").addClass("active");
-            view = "right";
-            break;
+    case "add":
+        tweenAddPanel.play();
+        $("#driver-add-tab").addClass("active");
+        view = "left";
+        break;
+    case "installed":
+        tweenInstalledPanel.play();
+        $("#installed-tab").addClass("active");
+        view = "center";
+        break;
+    case "template":
+        tweenTemplatePanel.play();
+        $("#driver-template-tab").addClass("active");
+        view = "right";
+        break;
     }
 }
 function resetView() {
     switch (view) {
-        case "left":
-            $("#sub-nav .active").removeClass("active");
-            if ($("#driver-content-panel").hasClass("open")) {
-                tweenContentPanel.reverse();
-                tweenBlackScreen.reverse();
-            }
-            tweenAddPanel.reverse();
-            break;
-        case "center":
-            $("#sub-nav .active").removeClass("active");
-            tweenInstalledPanel.reverse();
-            break;
-        case "right":
-            $("#sub-nav .active").removeClass("active");
-            tweenTemplatePanel.reverse();
-            break;
+    case "left":
+        $("#sub-nav .active").removeClass("active");
+        if ($("#driver-content-panel").hasClass("open")) {
+            tweenContentPanel.reverse();
+            tweenBlackScreen.reverse();
+        }
+        tweenAddPanel.reverse();
+        break;
+    case "center":
+        $("#sub-nav .active").removeClass("active");
+        tweenInstalledPanel.reverse();
+        break;
+    case "right":
+        $("#sub-nav .active").removeClass("active");
+        tweenTemplatePanel.reverse();
+        break;
     }
 }
-
-
-$(function () {
-    $(".checkbox-level").change(function () {
-        if ($(this).is(":checked")) {
-            $("#log-div").removeClass("hide-" + this.name);
-        } else {
-            $("#log-div").addClass("hide-" + this.name);
-        }
-    });
-    $("#filter-search-clear").click(function () {
-        $("#filter-search-input").val("");
-        loadLogs();
-    });
-});
-
 
 //opens the dialog to view details about a driver (of currently installed drivers)
 function openContentPanel() {
@@ -152,19 +140,27 @@ function closeContentPanel() {
     }
 }
 
-function loadDriverNavbar() {
+export function loadDriverPortal() {
+    $(".checkbox-level").change(function () {
+        if ($(this).is(":checked")) {
+            $("#log-div").removeClass("hide-" + this.name);
+        } else {
+            $("#log-div").addClass("hide-" + this.name);
+        }
+    });
+
     $("#sub-nav").load("/StackV-web/nav/driver_navbar.html", function () {
         setRefresh($("#refresh-timer").val());
         switch (view) {
-            case "left":
-                $("#driver-add-tab").addClass("active");
-                break;
-            case "center":
-                $("#installed-tab").addClass("active");
-                break;
-            case "right":
-                $("#driver-template-tab").addClass("active");
-                break;
+        case "left":
+            $("#driver-add-tab").addClass("active");
+            break;
+        case "center":
+            $("#installed-tab").addClass("active");
+            break;
+        case "right":
+            $("#driver-template-tab").addClass("active");
+            break;
         }
 
         $("#driver-add-tab").click(function () {
@@ -180,9 +176,12 @@ function loadDriverNavbar() {
             newView("template");
         });
     });
-}
 
-function loadDriverPortal() {
+    $("#filter-search-clear").click(function () {
+        $("#filter-search-input").val("");
+        loadLogs();
+    });
+
     getAllDetails();
     updateDrivers(); //explicitly calling the function to load the driver templates
 
@@ -191,6 +190,36 @@ function loadDriverPortal() {
 
     $(".install-button").click(function () {
         openContentPanel();
+        clearPanel();
+        activateSide();
+
+        switch($(this).id()) {
+        case "button-install-aws":
+            installAWS();
+            changeNameInst();
+            break;
+        case "button-install-generic":
+            installGeneric();
+            changeNameInst();
+            break;
+        case "button-install-openstack":
+            installOpenstack();
+            changeNameInst();
+            break;
+        case "button-install-stack":
+            installStack();
+            changeNameInst();
+            break;
+        case "button-install-stub":
+            installStub();
+            changeNameInst();
+            break;
+        case "button-install-raw":
+            installRaw();
+            changeNameInstRaw();
+            break;
+        }
+
     });
 }
 
@@ -223,12 +252,12 @@ function installed_tab_fix() {
 function activateSide() {
     $("#driver-content-panel").removeClass("hidden");
     $("#driver-content-panel").addClass("active");
-    $('#driver-panel-right').addClass('active-detail');
-    $('#install-content').addClass('active');
-    $('#driver-panel-top').removeClass('no-side-tab');
-    $('#driver-panel-bot').removeClass('no-side-tab');
-    $('#driver-panel-top').addClass('side-tab');
-    $('#driver-panel-bot').addClass('side-tab');
+    $("#driver-panel-right").addClass("active-detail");
+    $("#install-content").addClass("active");
+    $("#driver-panel-top").removeClass("no-side-tab");
+    $("#driver-panel-bot").removeClass("no-side-tab");
+    $("#driver-panel-top").addClass("side-tab");
+    $("#driver-panel-bot").addClass("side-tab");
 }
 
 function closeSide() {
@@ -237,12 +266,12 @@ function closeSide() {
     $("#driver-content-panel").addClass("hidden");
 
     document.getElementById("driver-panel-right").className = "inactive";
-    $('#install-tab').removeClass = "active";
-    $('#install-content').removeClass('active');
-    $('#driver-panel-top').removeClass('side-tab');
-    $('#driver-panel-bot').removeClass('side-tab');
-    $('#driver-panel-top').addClass('no-side-tab');
-    $('#driver-panel-bot').addClass('no-side-tab');
+    $("#install-tab").removeClass = "active";
+    $("#install-content").removeClass("active");
+    $("#driver-panel-top").removeClass("side-tab");
+    $("#driver-panel-bot").removeClass("side-tab");
+    $("#driver-panel-top").addClass("no-side-tab");
+    $("#driver-panel-bot").addClass("no-side-tab");
 
 }
 function installRaw() {
@@ -253,7 +282,7 @@ function installRaw() {
     $("#info-panel-title").text("Raw Driver");
 
     //the correct driverEjbPath
-    //$("#info-panel-title").prop("title","RawDriver"); 
+    //$("#info-panel-title").prop("title","RawDriver");
     document.getElementById("info-panel-title").title = "RawDriver";
 
 
@@ -275,7 +304,7 @@ function installStub() {
     $("#info-panel-title").text("Stub System Driver");
 
     //the correct driverEjbPath
-    //$("#info-panel-title").prop("title","StubSystemDriver"); 
+    //$("#info-panel-title").prop("title","StubSystemDriver");
     document.getElementById("info-panel-title").title = "StubSystemDriver";
 
     first.innerHTML = "Topology URI:";
@@ -441,7 +470,7 @@ function installOpenstack() {
     document.getElementById("info-panel-title").title = "OpenStackDriver";
 
 
-    for (var i = 0; i < 26; i += 2) {
+    for (let i = 0; i < 26; i += 2) {
         var textbox = document.createElement("p");
         var input = document.createElement("input");
         textbox.style.color = "#333";
@@ -484,7 +513,7 @@ function installOpenstack() {
     ext.cols = "30";
 
 
-    for (var i = 0; i < 26; i++) {
+    for (let i = 0; i < 26; i++) {
         divContent.appendChild(content[i]);
     }
 
@@ -506,7 +535,7 @@ function installStack() {
     $("#info-panel-title").text("Stack System Driver");
 
     //the correct driverEjbPath
-    //$("#info-panel-title").prop("title","StackSystemDriver"); 
+    //$("#info-panel-title").prop("title","StackSystemDriver");
     document.getElementById("info-panel-title").title = "StackSystemDriver";
 
     first.innerHTML = "Topology URI:";
@@ -519,7 +548,7 @@ function installStack() {
     third.style.color = "#333";
 
     fourth.type = "text";
-    fourth.id = "subsystemBaseUrl";
+    fourth.id = "subsystemwindow.location.origin";
 
     fifth.innerHTML = "Authorization Server:";
     fifth.style.color = "#333";
@@ -553,7 +582,7 @@ function installGeneric() {
     $("#info-panel-title").text("Generic REST Driver");
 
     //the correct driverEjbPath
-    //$("#info-panel-title").prop("title","GenericRESTDriver"); 
+    //$("#info-panel-title").prop("title","GenericRESTDriver");
     document.getElementById("info-panel-title").title = "GenericRESTDriver";
 
     first.innerHTML = "Topology URI:";
@@ -566,7 +595,7 @@ function installGeneric() {
     third.style.color = "#333";
 
     fourth.type = "text";
-    fourth.id = "subsystemBaseUrl";
+    fourth.id = "subsystemwindow.location.origin";
 
     divContent.appendChild(first);
     divContent.appendChild(second);
@@ -575,9 +604,9 @@ function installGeneric() {
 }
 function clearPanel() {
     $("#info-panel-title").text("Details");
-    $('#install-type').empty();
-    $('#install-options').empty();
-    $('#install-type-right').empty();
+    $("#install-type").empty();
+    $("#install-options").empty();
+    $("#install-type-right").empty();
 
     document.getElementById("info-panel-title").title = "";
     document.getElementById("install-type-right").style = "";
@@ -591,7 +620,7 @@ function clearPanel() {
         clearPanel();
         closeContentPanel();
     };
-    document.getElementById('install-options').appendChild(closeButton);
+    document.getElementById("install-options").appendChild(closeButton);
 }
 function clearText() {
     for (var temp of document.getElementsByTagName("input")) {
@@ -605,7 +634,7 @@ function changeNameInst() {
     saveButton.onclick = function () {
         openWindow();
     };
-    document.getElementById('install-options').appendChild(saveButton);
+    document.getElementById("install-options").appendChild(saveButton);
 
     var instButton = document.createElement("button");
     instButton.innerHTML = "Install Driver";
@@ -615,7 +644,7 @@ function changeNameInst() {
         reloadData();
         closeContentPanel();
     };
-    document.getElementById('install-options').appendChild(instButton);
+    document.getElementById("install-options").appendChild(instButton);
 }
 function changeNameInstRaw() {
     var instButton = document.createElement("button");
@@ -626,16 +655,16 @@ function changeNameInstRaw() {
         reloadData();
         closeContentPanel();
     };
-    document.getElementById('install-options').appendChild(instButton);
+    document.getElementById("install-options").appendChild(instButton);
 }
 
 /*
- * Opens an input box for the user to enter the driver template name and description
- * for the driver they want to save as a template (during the installation process).
- */
+* Opens an input box for the user to enter the driver template name and description
+* for the driver they want to save as a template (during the installation process).
+*/
 function openWindow() {
-    $('#info-fields').empty();
-    $('#info-option').empty();
+    $("#info-fields").empty();
+    $("#info-option").empty();
     var divContent = document.getElementById("info-fields");
     var drivername = document.createElement("p");
     var driver = document.createElement("input");
@@ -647,7 +676,7 @@ function openWindow() {
     saveButton.className = "button-profile-select btn btn-warning";
     closeButton.className = "button-profile-select btn btn-default";
 
-    $('#info-panel').addClass("active");
+    $("#info-panel").addClass("active");
 
     drivername.innerHTML = "Driver Name:";
     driver.type = "text";
@@ -682,7 +711,7 @@ function openWindow() {
     closeButton.innerHTML = "Close";
     closeButton.style = "margin: 5px";
     closeButton.onclick = function () {
-        $('#info-panel').removeClass("active");
+        $("#info-panel").removeClass("active");
     };
 
     document.getElementById("info-option").appendChild(closeButton);
@@ -690,12 +719,12 @@ function openWindow() {
 }
 
 /*
- * Saves the driver as a template. Reads values directly from the input box
- * @returns {undefined}
- */
+* Saves the driver as a template. Reads values directly from the input box
+* @returns {undefined}
+*/
 function addDriver() {
     var userId = keycloak.tokenParsed.preferred_username;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/add';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/driver/" + userId + "/add";
     var jsonData = [];
     var tempData = {};
     var description = document.getElementById("description").value;
@@ -703,19 +732,19 @@ function addDriver() {
     var URI = document.getElementById("TOPURI").value;
     var type = document.getElementById("info-panel-title").title;
 
-    $('#black-screen').addClass("off");
-    $('#info-panel').removeClass();
+    $("#black-screen").addClass("off");
+    $("#info-panel").removeClass();
 
-    for (var temp of document.getElementsByTagName("input")) {
+    for (let temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
-                temp !== document.getElementById("drivername")
-                && temp.value !== '') {
+        temp !== document.getElementById("drivername")
+        && temp.value !== "") {
             tempData[temp.id] = temp.value;
         }
     }
 
-    for (var temp of document.getElementsByTagName("textarea")) {
-        if (temp.value !== '')
+    for (let temp of document.getElementsByTagName("textarea")) {
+        if (temp.value !== "")
             tempData[temp.id] = temp.value;
     }
 
@@ -735,12 +764,12 @@ function addDriver() {
 
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        contentType: 'application/json',
+        contentType: "application/json",
         data: sentData,
         success: function () {
             // since the driver is being added during the installation process, do not jump out of the installation process
@@ -771,15 +800,15 @@ function addDriver() {
 }
 
 /*
- * Deletes saved templates based on topuri
- */
+* Deletes saved templates based on topuri
+*/
 function removeDriverProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var topuri = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/delete/' + topuri;
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/driver/" + userId + "/delete/" + topuri;
     $.ajax({
         url: apiUrl,
-        type: 'DELETE',
+        type: "DELETE",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
@@ -789,9 +818,9 @@ function removeDriverProfile(clickID) {
             reloadData();
         },
         error: function (err) {
-            var responseText = err['responseText'];
-            var status = err['status'];
-            var statusText = err['statusText'];
+            var responseText = err["responseText"];
+            var status = err["status"];
+            var statusText = err["statusText"];
             console.log("removeDriverProfile error: \nResponse Text: " + JSON.stringify(responseText) + "\nStatus: " + status + "\nStatus Text: " + statusText);
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text("EXCEPTION:" + responseText);
@@ -823,28 +852,28 @@ function removeDriverProfile(clickID) {
 function updateDrivers() {
     var userId = keycloak.tokenParsed.preferred_username;
     var table = document.getElementById("saved-table");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/get';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/driver/" + userId + "/get";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            $('#saved-table').empty();
+            $("#saved-table").empty();
 
             /*
-             * The return format for the rest query is the columns of each record
-             * in the SQL table separated by commas. Each record is also separated
-             * by commas as well.
-             * Example: Given there are records in the templates table like so:
-             * Record 1: Driver1Name | Driver1Type | Driver1TopUri | Driver1Desc | Driver1Data
-             * Record 2: Driver2Name | Driver2Type | Driver2TopUri | Driver2Desc | Driver2Data
-             * 
-             * The result of the query would like this:
-             * Driver1Name,Driver1Type,Driver1TopUri,Driver1Desc,Driver1Data,Driver2Name,Driver2Type,Driver2TopUri,Driver2Desc,Driver2Data
-             */
+            * The return format for the rest query is the columns of each record
+            * in the SQL table separated by commas. Each record is also separated
+            * by commas as well.
+            * Example: Given there are records in the templates table like so:
+            * Record 1: Driver1Name | Driver1Type | Driver1TopUri | Driver1Desc | Driver1Data
+            * Record 2: Driver2Name | Driver2Type | Driver2TopUri | Driver2Desc | Driver2Data
+            *
+            * The result of the query would like this:
+            * Driver1Name,Driver1Type,Driver1TopUri,Driver1Desc,Driver1Data,Driver2Name,Driver2Type,Driver2TopUri,Driver2Desc,Driver2Data
+            */
             for (var i = 0; i < result.length; i += 5) {
                 var row = document.createElement("tr");
                 var drivername = document.createElement("td");
@@ -937,7 +966,7 @@ function updateDrivers() {
                 installButton.id = uri; //set the topuri as the button id
                 installButton.onclick = function () {
                     plugDriver(this.id); // Install the profile as a driver
-                }
+                };
 
 
 
@@ -961,15 +990,15 @@ function updateDrivers() {
 function editDriverProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var panel = document.getElementById("install-type");
-    var botpanel = document.getElementById('install-options');
+    var botpanel = document.getElementById("install-options");
     var topuri = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/getdetails/' + topuri;
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/driver/" + userId + "/getdetails/" + topuri;
     var table = document.createElement("table");
     var thead = document.createElement("thead");
     var head_row = document.createElement("tr");
     var headkey = document.createElement("th");
     var headval = document.createElement("th");
-    $(table).addClass('management-table');
+    $(table).addClass("management-table");
     table.id = "details_table";
     headkey.innerHTML = "Key";
     headval.innerHTML = "Value";
@@ -979,7 +1008,7 @@ function editDriverProfile(clickID) {
     table.appendChild(thead);
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
@@ -1027,11 +1056,11 @@ function editDriverProfile(clickID) {
 }
 
 /*
- * Get value in the install-options divs and updates the driver profile
- */
+* Get value in the install-options divs and updates the driver profile
+*/
 function saveEditedDriverProfile(oldtopuri) {
     var userId = keycloak.tokenParsed.preferred_username;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/edit/' + oldtopuri;
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/driver/" + userId + "/edit/" + oldtopuri;
     var jsonData = [];
     var tempData = {};
     var newtopuri = document.getElementById("TOPURI").value; // get the new topuri since it also has be to changed in the table
@@ -1040,7 +1069,7 @@ function saveEditedDriverProfile(oldtopuri) {
 
     // read all the inputs present (should only be the inputs present on the edit details screen)
     for (var temp of document.getElementsByTagName("textarea")) {
-        if (temp !== '') {
+        if (temp !== "") {
             tempData[temp.id] = temp.value;
         }
     }
@@ -1055,16 +1084,16 @@ function saveEditedDriverProfile(oldtopuri) {
 
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        contentType: 'application/json',
+        contentType: "application/json",
         data: sendData,
         success: function (result) {
             // update all previous id attributes of the old topuri with the new top uri
-            $('button[id=' + oldtopuri + ']').attr("id", newtopuri);
+            $("button[id=" + oldtopuri + "]").attr("id", newtopuri);
 
             closeContentPanel(); //hide the edit driver panel
             //setting text of the jquery dialog
@@ -1096,21 +1125,21 @@ function saveEditedDriverProfile(oldtopuri) {
 }
 
 /*
- * @param {string} clickID - the topology URI
- * Creating the drivers details panel for one saved template/profile
- */
+* @param {string} clickID - the topology URI
+* Creating the drivers details panel for one saved template/profile
+*/
 function getDetailsProfile(clickID) {
     var userId = keycloak.tokenParsed.preferred_username;
     var panel = document.getElementById("install-type");
-    var botpanel = document.getElementById('install-options');
+    var botpanel = document.getElementById("install-options");
     var topuri = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/getdetails/' + topuri;
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/driver/" + userId + "/getdetails/" + topuri;
     var table = document.createElement("table");
     var thead = document.createElement("thead");
     var head_row = document.createElement("tr");
     var headkey = document.createElement("th");
     var headval = document.createElement("th");
-    $(table).addClass('management-table');
+    $(table).addClass("management-table");
     table.id = "details_table";
     headkey.innerHTML = "Key";
     headval.innerHTML = "Value";
@@ -1120,13 +1149,13 @@ function getDetailsProfile(clickID) {
     table.appendChild(thead);
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            $('#installed-type').empty();
+            $("#installed-type").empty();
             for (var key in result) {
                 if (result.hasOwnProperty(key)) {
                     var row = document.createElement("tr");
@@ -1157,17 +1186,17 @@ function getDetailsProfile(clickID) {
 
 function getAllDetails() {
     var table = document.getElementById("installed-body");
-    var apiUrl = baseUrl + '/StackV-web/restapi/driver/';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/driver/";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
             //fill installed table
-            $('#installed-body').empty();
+            $("#installed-body").empty();
             for (var i = 0; i < result.length; i += 3) {
                 var row = document.createElement("tr");
                 var drivername = document.createElement("td");
@@ -1249,27 +1278,27 @@ function getAllDetails() {
 }
 
 /*
- * Delete the specified Service Instance
- * @param {string} serviceUUID
- */
+* Delete the specified Service Instance
+* @param {string} serviceUUID
+*/
 function deleteServiceInstance(serviceUUID, $button) {
-    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + serviceUUID + "/status/";
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + serviceUUID + "/status/";
 
     var status = "";
     $.ajax({
         url: apiUrl,
         async: false,
-        type: 'GET',
+        type: "GET",
         success: function (result) {
             status = result;
         }
     });
 
     if (status === "") {
-        var apiUrl = baseUrl + "/StackV-web/restapi/service/" + serviceUUID;
+        apiUrl = window.location.origin + "/StackV-web/restapi/service/" + serviceUUID;
         $.ajax({
             url: apiUrl,
-            type: 'DELETE',
+            type: "DELETE",
             success: function (result) {
                 //setting text of jquery dialog
                 $("#dialog-confirm-text").text(result);
@@ -1310,10 +1339,10 @@ function deleteServiceInstance(serviceUUID, $button) {
                 {
                     text: "Confirm",
                     click: function () {
-                        var apiUrl = baseUrl + "/StackV-web/restapi/service/" + serviceUUID;
+                        var apiUrl = window.location.origin + "/StackV-web/restapi/service/" + serviceUUID;
                         $.ajax({
                             url: apiUrl,
-                            type: 'DELETE',
+                            type: "DELETE",
                             success: function (result) {
                                 //setting text of jquery dialog
                                 $("#dialog-confirm-text").text(result);
@@ -1355,11 +1384,11 @@ function deleteServiceInstance(serviceUUID, $button) {
 
 function removeDriver(clickID) {
     var topUri = clickID;
-    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + topUri;
+    var apiUrl = window.location.origin + "/StackV-web/restapi/driver/" + topUri;
     $.ajax({
         url: apiUrl,
-        type: 'DELETE',
-        datatype: 'json',
+        type: "DELETE",
+        datatype: "json",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
@@ -1370,14 +1399,14 @@ function removeDriver(clickID) {
         },
         error: function (result) {
             /*
-             * The format of result in case of an error looks like this:
-             * {"readyState":4,
-             * "responseText":"[507afdf3-11a7-4d9e-b97b-4aa604e2c722, 776f8022-2a84-403f-9255-4d9dbd30753b]",
-             * "status":409,"statusText":"Conflict"}
-             * The above is JS object. What we need are the UUIDs in the "responseText". However, the responsetext array is not formatted
-             * properly for JavaScript - its elements should be quoted as it mixes numbers and characters. So a string replace is needed
-             * in order to replace [ with [", ] with "], and commas with ","
-             */
+            * The format of result in case of an error looks like this:
+            * {"readyState":4,
+            * "responseText":"[507afdf3-11a7-4d9e-b97b-4aa604e2c722, 776f8022-2a84-403f-9255-4d9dbd30753b]",
+            * "status":409,"statusText":"Conflict"}
+            * The above is JS object. What we need are the UUIDs in the "responseText". However, the responsetext array is not formatted
+            * properly for JavaScript - its elements should be quoted as it mixes numbers and characters. So a string replace is needed
+            * in order to replace [ with [", ] with "], and commas with ","
+            */
             clearPanel();
             activateSide();
             console.log("removeDriver error: " + JSON.stringify(result));
@@ -1386,10 +1415,10 @@ function removeDriver(clickID) {
 
             // begin formatting of the responseText
             var badFormatResponseText = result["responseText"];
-            var replaceLeftBrackets = badFormatResponseText.replace(/\[/g, '[\"'); // replace a [ with ["
-            var replaceCommas = replaceLeftBrackets.replace(/,/g, '","'); // replace commas with ","
-            var replaceRightBrackets = replaceCommas.replace(/\]/g, '"]'); //replace a ] with "]
-            var replaceSpaces = replaceRightBrackets.replace(/\s/g, ''); // replace spaces with nothing
+            var replaceLeftBrackets = badFormatResponseText.replace(/\[/g, "[\""); // replace a [ with ["
+            var replaceCommas = replaceLeftBrackets.replace(/,/g, "\",\""); // replace commas with ","
+            var replaceRightBrackets = replaceCommas.replace(/\]/g, "\"]"); //replace a ] with "]
+            var replaceSpaces = replaceRightBrackets.replace(/\s/g, ""); // replace spaces with nothing
             var wellFormattedResult; // parse the formatted string to JS array intoi this variable
 
             //in case the error cannot be parsed since array is in Java syntax
@@ -1473,18 +1502,18 @@ function removeDriver(clickID) {
 }
 
 /*
- * Gets the details of one single installed driver
- */
+* Gets the details of one single installed driver
+*/
 function getDetails(clickID) {
     var driverId = clickID;
     var panel = document.getElementById("install-type");
-    var apiUrl = baseUrl + '/StackV-web/restapi/driver/' + driverId;
+    var apiUrl = window.location.origin + "/StackV-web/restapi/driver/" + driverId;
     var table = document.createElement("table");
     var thead = document.createElement("thead");
     var head_row = document.createElement("tr");
     var headkey = document.createElement("th");
     var headval = document.createElement("th");
-    $(table).addClass('management-table');
+    $(table).addClass("management-table");
     headkey.innerHTML = "Key";
     headval.innerHTML = "Value";
     head_row.appendChild(headkey);
@@ -1494,7 +1523,7 @@ function getDetails(clickID) {
 
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
@@ -1526,7 +1555,7 @@ function getDetails(clickID) {
                         var detailName = this.id;
                         var detailValue = this.title;
 
-                        // setting the value of the detail to body of the dialog 
+                        // setting the value of the detail to body of the dialog
                         $("#dialog-overflow-details-text").text(detailValue);
 
                         $("#dialog-overflow-details").dialog({
@@ -1565,16 +1594,16 @@ function getDetails(clickID) {
 }
 
 /*
- * Installs a driver from its driver profile
- */
+* Installs a driver from its driver profile
+*/
 function plugDriver(topuri) {
     var URI = topuri;
     var userId = keycloak.tokenParsed.preferred_username;
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/' + userId + '/install/' + URI;
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/driver/" + userId + "/install/" + URI;
 
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
@@ -1613,32 +1642,32 @@ function plugDriver(topuri) {
 }
 
 /*
- * Installs a driver from json
- */
+* Installs a driver from json
+*/
 function installDriver() {
     var panel = document.getElementById("install-type");
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/driver/install';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/driver/install";
     var jsonData = [];
     var tempData = {};
     var type = document.getElementById("info-panel-title").title;
 
     console.log("installDriver type: " + type);
 
-    for (var temp of document.getElementsByTagName("input")) {
+    for (let temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
-                temp !== document.getElementById("drivername")
-                && temp.value !== '') {
+        temp !== document.getElementById("drivername")
+        && temp.value !== "") {
             tempData[temp.id] = temp.value;
         }
     }
-    for (var temp of document.getElementsByTagName("textarea")) {
-        if (temp.value !== '')
+    for (let temp of document.getElementsByTagName("textarea")) {
+        if (temp.value !== "")
             tempData[temp.id] = temp.value;
     }
-    for (var temp of document.getElementsByTagName("select")) {
+    for (let temp of document.getElementsByTagName("select")) {
         if (temp !== document.getElementById("select-logging-level")
-                && temp !== document.getElementById("refresh-timer")
-                && temp.value !== '')
+        && temp !== document.getElementById("refresh-timer")
+        && temp.value !== "")
             tempData[temp.id] = temp.value;
     }
 
@@ -1649,12 +1678,12 @@ function installDriver() {
 
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
-        contentType: 'application/json',
+        contentType: "application/json",
         data: settings,
         success: function (result) {
 
@@ -1684,9 +1713,9 @@ function installDriver() {
             setTimeout(getAllDetails(), 3000);
         },
         error: function (err) {
-            var responseText = err['responseText'];
-            var status = err['status'];
-            var statusText = err['statusText'];
+            var responseText = err["responseText"];
+            var status = err["status"];
+            var statusText = err["statusText"];
             console.log("installDriver error: \nResponse Text: " + JSON.stringify(responseText) + "\nStatus: " + status + "\nStatus Text: " + statusText);
             //setting text of the jquery dialog
             $("#dialog-confirm-text").text("EXCEPTION:" + responseText);
@@ -1715,13 +1744,13 @@ function installDriver() {
 
 
 function plugRaw() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/driver';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/driver";
     var sentData = document.getElementById("rawXML").value;
 
     $.ajax({
         url: apiUrl,
         data: sentData,
-        type: 'POST',
+        type: "POST",
         contentType: "application/xml",
         dataType: "xml",
         beforeSend: function (xhr) {
@@ -1747,7 +1776,7 @@ function reloadData() {
                 tweenInstalledPanel.reverse();
             }
             setTimeout(function () {
-                // Refresh Operations                        
+                // Refresh Operations
                 loadDriverPortal();
                 loadSystemHealthCheck();
                 refreshSync(refreshed, timerSetting);
@@ -1763,21 +1792,21 @@ function reloadData() {
 }
 
 /*
- * Calls '/StackV-web/restapi/service/ready'
- * The API call returns true or false.
- * The prerequiste for this function is having a this div structure in the:
- * <div id="system-health-check">
- <div id="system-health-check-text"></div>
- </div>
- */
+* Calls '/StackV-web/restapi/service/ready'
+* The API call returns true or false.
+* The prerequiste for this function is having a this div structure in the:
+* <div id="system-health-check">
+<div id="system-health-check-text"></div>
+</div>
+*/
 var systemHealthPass;
 function loadSystemHealthCheck() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/service/ready';
-    var dialogObj = $('#system-health-check');
-    var dialogText = $('#system-health-check-text');
+    var apiUrl = window.location.origin + "/StackV-web/restapi/service/ready";
+    var dialogObj = $("#system-health-check");
+    var dialogText = $("#system-health-check-text");
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         dataType: "json",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);

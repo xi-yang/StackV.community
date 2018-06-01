@@ -2,22 +2,22 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Modified by: Antonio Heard 2016
 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in 
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 
@@ -27,12 +27,12 @@
 var selectedNode;
 var debugPoint = {x: 0, y: 0};
 define([
-    "local/d3",
-    "local/stackv/utils",
-    "local/stackv/topology/PortDisplayPopup",
-    "local/stackv/topology/switchServicePopup",
-    "local/stackv/topology/VolumeDisplayPopup",
-    "local/stackv/topology/modelConstants"
+    "../../d3",
+    "../utils",
+    "./PortDisplayPopup",
+    "./switchServicePopup",
+    "./VolumeDisplayPopup",
+    "./modelConstants"
 
 ], function (d3, utils, PortDisplayPopup, SwitchPopup, VolumeDisplayPopup, values) {
 
@@ -96,9 +96,9 @@ define([
         DIALOG_PORT_BUFFER_VERT: 2,
         DIALOG_PORT_BUFFER_HORZ: 3,
         DIALOG_OFFSET_X: -20,
-        DIALOG_OFFSET_Y: -20      
+        DIALOG_OFFSET_Y: -20
     };
-    
+
     var switchSettings = {
         NODE_SIZE: 30,
         SERVICE_SIZE: 10,
@@ -140,12 +140,12 @@ define([
     var didDrag = false;
     var highlightedNode = null;
     var previousHighlight = null;
-    
+
     var highlightedNodesMap = [];
     var prevHighlightedNodesMap = [];
-    
+
     var trashcan = [];
-    
+
     var lastMouse;
     var switchPopup = {};
     var topLevelTopologies = [];
@@ -155,16 +155,16 @@ define([
      **/
     function doRender(outputApi, model, fullSize, modelMap, outputApiMap) {
         // default parameter
-        var fullSize = typeof fullSize !== 'undefined' ?  fullSize : true;
-        var modelMap = typeof modelMap !== 'undefined' ?  modelMap : null;
-        var outputApiMap = typeof outputApiMap !== 'undefined' ?  outputApiMap : null;
-        
+        var fullSize = typeof fullSize !== "undefined" ?  fullSize : true;
+        var modelMap = typeof modelMap !== "undefined" ?  modelMap : null;
+        var outputApiMap = typeof outputApiMap !== "undefined" ?  outputApiMap : null;
+
         var svgContainer = outputApi.getSvgContainer();
         if (firstRun) {
             firstRun = false;
-            //outputApi may start zoomed in, as a workaround for the limit of how 
-            //far out we can zoom. in order to prevent changes in this parameter 
-            //affecting the meaning of our size related parameters, we scale them 
+            //outputApi may start zoomed in, as a workaround for the limit of how
+            //far out we can zoom. in order to prevent changes in this parameter
+            //affecting the meaning of our size related parameters, we scale them
             //appropriatly
             settings.NODE_SIZE /= outputApi.getZoom();
             settings.SERVICE_SIZE /= outputApi.getZoom();
@@ -205,7 +205,7 @@ define([
             switchSettings.DIALOG_BUFFER /= outputApi.getZoom();
             switchSettings.DIALOG_INNER_BUFFER /= outputApi.getZoom();
             switchSettings.DIALOG_TAB_TEXT_SIZE /= outputApi.getZoom();
-            
+
             if (fullSize) {
                 svgContainer.on("click", function () {
                     //Clear the selected element.
@@ -215,10 +215,10 @@ define([
                         selectElement(null);
                     }
                 });
-                selectElement(null); // show top level topologies in display panel 
+                selectElement(null); // show top level topologies in display panel
             }
-        } 
-        
+        }
+
         if (!switchPopup[outputApi.svgContainerName] || !fullSize) {
             switchPopup[outputApi.svgContainerName] = buildSwitchPopup();
         }
@@ -238,8 +238,8 @@ define([
                 var currentModel = model;
                 var nList = currentModel.listNodes();
                 var pList = currentModel.listPolicies();
-                var eList = currentModel.listEdges();                
-                
+                var eList = currentModel.listEdges();
+
                 nodeList = nList;
                 policyList = pList;
                 edgeList = eList;
@@ -252,7 +252,7 @@ define([
             svgc.select("#parentPort" + "_" + svgcn).selectAll("*").remove();
             svgc.select("#switchPopup" + "_" + svgcn).selectAll("*").remove();
             svgc.select("#volume" + "_" + svgcn).selectAll("*").remove();
-                        
+
             var polEdges = currentModel.policyEdges;
             for (var i in polEdges) edgeList.push(polEdges[i]);
 
@@ -272,45 +272,45 @@ define([
         /**@param {Node} n**/
         function drawNode(n) {
 
-                if (n.isLeaf()) {
-                    if (!n.portPopup) {
-                        n.portPopup = buildPortDisplayPopup(n);
-                    }
-                    if (!n.volumePopup) {
-                        n.volumePopup = buildVolumeDisplayPopup(n);
-                    }
-                    n.svgNode = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("image")
-                            .attr("xlink:href", n.getIconPath())
-                            .on("click", onNodeClick.bind(undefined, n))
-                            .on("dblclick", onNodeDblClick.bind(undefined, n))
-                            .on("mousemove", onNodeMouseMove.bind(undefined, n))
-                            .on("mouseleave", onNodeMouseLeave.bind(undefined, n));                    
-                    if (outputApi.contextMenu) {
-                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
-                    } 
-                    if (n.detailsReference) {
-                        n.svgNode.style("opacity", .4);
-                    }
-                    n.svgNode.call(makeDragBehaviour(n));
-                    
-                    setElementSize(n, false);
-                    drawServices(n);
-                    updateSvgChoordsNode(n);
+            if (n.isLeaf()) {
+                if (!n.portPopup) {
+                    n.portPopup = buildPortDisplayPopup(n);
                 }
+                if (!n.volumePopup) {
+                    n.volumePopup = buildVolumeDisplayPopup(n);
+                }
+                n.svgNode = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("image")
+                    .attr("xlink:href", n.getIconPath())
+                    .on("click", onNodeClick.bind(undefined, n))
+                    .on("dblclick", onNodeDblClick.bind(undefined, n))
+                    .on("mousemove", onNodeMouseMove.bind(undefined, n))
+                    .on("mouseleave", onNodeMouseLeave.bind(undefined, n));
+                if (outputApi.contextMenu) {
+                    n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));
+                }
+                if (n.detailsReference) {
+                    n.svgNode.style("opacity", .4);
+                }
+                n.svgNode.call(makeDragBehaviour(n));
+
+                setElementSize(n, false);
+                drawServices(n);
+                updateSvgChoordsNode(n);
+            }
         }
-        
+
         function drawPolicy(p) {
             p.svgNode = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("image")
-                    .attr("xlink:href", p.getIconPath())
-                    .on("click", onPolicyClick.bind(undefined, p))
-                    .on("dblclick", onPolicyDblClick.bind(undefined, p))
-                    .on("mousemove", onPolicyMouseMove.bind(undefined, p))
-                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));      
-          
-          var shortName = p.getName().split(":");
-          shortName = shortName[shortName.length-1];
-            
-         p.nameText = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("text")
+                .attr("xlink:href", p.getIconPath())
+                .on("click", onPolicyClick.bind(undefined, p))
+                .on("dblclick", onPolicyDblClick.bind(undefined, p))
+                .on("mousemove", onPolicyMouseMove.bind(undefined, p))
+                .on("mouseleave", onPolicyMouseLeave.bind(undefined, p));
+
+            var shortName = p.getName().split(":");
+            shortName = shortName[shortName.length-1];
+
+            p.nameText = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("text")
                 .attr("dx", p.x)
                 .attr("dy", p.y+(screen.height*.03)) // reposition
                 .text(shortName  )
@@ -322,8 +322,8 @@ define([
 
 
             if (outputApi.contextMenu) {
-                p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));    
-            } 
+                p.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, p));
+            }
             if (p.detailsReference) {
                 p.svgNode.style("opacity", .4);
             }
@@ -331,9 +331,9 @@ define([
 
             setElementSize(p, false);
             //drawServices(n);
-            updateSvgChoordsPolicy(p);           
+            updateSvgChoordsPolicy(p);
         }
-        
+
         /**@param {Node} n**/
         function drawTopology(n) {
 
@@ -348,8 +348,8 @@ define([
                 //render the convex hull surounding the decendents of n
                 var path = getTopolgyPath(n);
                 var color = settings.HULL_COLORS[n.getDepth() % settings.HULL_COLORS.length];
-                
-                 n.svgNode = svgContainer.select("#topology" + "_" + outputApi.svgContainerName).append("path")
+
+                n.svgNode = svgContainer.select("#topology" + "_" + outputApi.svgContainerName).append("path")
                     .style("fill", color)
                     .style("stroke", color)
                     .style("stroke-width", settings.TOPOLOGY_SIZE + settings.TOPOLOGY_BUFFER * n.getHeight())
@@ -361,64 +361,64 @@ define([
                     .on("mousemove", onNodeMouseMove.bind(undefined, n))
                     .on("mouseleave", onNodeMouseLeave.bind(undefined, n));
                 if (outputApi.contextMenu) {
-                        n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));    
+                    n.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));
                 }
                 n.svgNode.call(makeDragBehaviour(n));
-                
+
                 n.svgNodeAnchor = svgContainer.select("#anchor" + "_" + outputApi.svgContainerName).append("rect")
-                        .style("fill", "white")
-                        .style("stroke", "black")
-                        .style("stroke-width", settings.TOPOLOGY_ANCHOR_STROKE)
-                        .on("click", onNodeClick.bind(undefined, n))
-                        .on("dblclick", onNodeDblClick.bind(undefined, n))
-                        .on("mousemove", onNodeMouseMove.bind(undefined, n))
-                        .on("mouseleave", onNodeMouseLeave.bind(undefined, n));  
+                    .style("fill", "white")
+                    .style("stroke", "black")
+                    .style("stroke-width", settings.TOPOLOGY_ANCHOR_STROKE)
+                    .on("click", onNodeClick.bind(undefined, n))
+                    .on("dblclick", onNodeDblClick.bind(undefined, n))
+                    .on("mousemove", onNodeMouseMove.bind(undefined, n))
+                    .on("mouseleave", onNodeMouseLeave.bind(undefined, n));
                 if (outputApi.contextMenu) {
-                    n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));                
+                    n.svgNodeAnchor.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, n));
                 }
                 if (n.detailsReference) {
                     n.svgNode.style("opacity", .4);
                 }
-                
+
                 n.svgNodeAnchor.call(makeDragBehaviour(n));
-                
+
                 setElementSize(n, false);
                 drawServices(n);
                 updateSvgChoordsNode(n);
-//                //Debug, show the coordinate of the topology node itself
-//                svgContainer.select("#topology").append("circle")
-//                        .attr("cx", n.x)
-//                        .attr("cy", n.y)
-//                        .attr("r", 2)
-//                        .style("fill", "red")
+                //                //Debug, show the coordinate of the topology node itself
+                //                svgContainer.select("#topology").append("circle")
+                //                        .attr("cx", n.x)
+                //                        .attr("cy", n.y)
+                //                        .attr("r", 2)
+                //                        .style("fill", "red")
             }
 
         }
-        
+
         /**@param {Node} n**/
         function drawServices(n) {
             n.svgNodeServices = svgContainer.select("#node" + "_" + outputApi.svgContainerName).append("g");
             map_(n.services, /**@param {Service} service**/function (service) {
                 service.svgNode = n.svgNodeServices.append("image")
-                        .attr("xlink:href", service.getIconPath())
-                        //The click events fold move, and select nodes, in 
-                        //which case, we want to behave the same regardless
-                        //of if a node or its service was the target. In 
-                        //contrast, the mousMove event is for the popup, and
-                        //we may want to display different info when we
-                        //hover over a service
-                        .on("click", onServiceClick.bind(undefined, service))
-                        .on("dblclick", onNodeDblClick.bind(undefined, n))
-                        .on("mousemove", onNodeMouseMove.bind(undefined, service))
-                        .on("mouseleave", onNodeMouseLeave.bind(undefined, service));
+                    .attr("xlink:href", service.getIconPath())
+                //The click events fold move, and select nodes, in
+                //which case, we want to behave the same regardless
+                //of if a node or its service was the target. In
+                //contrast, the mousMove event is for the popup, and
+                //we may want to display different info when we
+                //hover over a service
+                    .on("click", onServiceClick.bind(undefined, service))
+                    .on("dblclick", onNodeDblClick.bind(undefined, n))
+                    .on("mousemove", onNodeMouseMove.bind(undefined, service))
+                    .on("mouseleave", onNodeMouseLeave.bind(undefined, service));
 
                 if (outputApi.contextMenu) {
                     service.svgNode.on("contextmenu", outputApi.contextMenu.renderedElemContextListener.bind(undefined, service));
-                }    
+                }
                 if (service.detailsReference) {
                     service.svgNode.style("opacity", .4);
                 }
-                
+
                 service.svgNode.call(makeDragBehaviour(n));
 
                 setElementSize(service, false);
@@ -444,7 +444,7 @@ define([
 
             svgc.select("#volumeDialogBox" + "_" + svgcn).selectAll("*").remove();
             svgc.select("#volume" + "_" + svgcn).selectAll("*").remove();
-    
+
             map_(nList, function (n) {
                 n.portPopup.render();
                 n.volumePopup.render();
@@ -488,7 +488,7 @@ define([
                     }
 
                     var p = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2};
-                    //compute the desired distance between the services, and the line p1p2 
+                    //compute the desired distance between the services, and the line p1p2
                     var normalOffset = settings.TOPOLOGY_SIZE / 2 + settings.TOPOLOGY_BUFFER / 2 * (n.getHeight()) + settings.SERVICE_SIZE / 2;
                     //convert the above offset into the xy plane, and apply it to p
                     var theta = Math.atan2(p1.y - p2.y, p1.x - p2.x);
@@ -527,9 +527,9 @@ define([
             if (leaves.length === 1) {
                 //If all leaves are the same point, then the hull will be just
                 //A single point, and not get rendered.
-                //By forcing it to take distinct points, the stroke-width 
+                //By forcing it to take distinct points, the stroke-width
                 //Causes it to render at full size
-                //For some reason, using an svg transform (as we do to implement highlighting" 
+                //For some reason, using an svg transform (as we do to implement highlighting"
                 //causes sub-unit diferences to be ignored
                 var leaf = leaves[0];
                 leaves.push({x: leaf.x + .01, y: leaf.y + .01});
@@ -541,13 +541,13 @@ define([
             }
 
             var path = d3.geom.hull()
-                    .x(function (n) {
-                        return n.x;
-                    })
-                    .y(function (n) {
-                        return n.y;
-                    })
-                    (leaves);
+                .x(function (n) {
+                    return n.x;
+                })
+                .y(function (n) {
+                    return n.y;
+                })
+                (leaves);
             return path;
         }
         function topologyPathToString(path) {
@@ -587,7 +587,7 @@ define([
                     svgSubnet.attr("d", topologyPathToString(path));
                 }
             }
-            
+
             n.nameText.attr("dx", n.x);
             n.nameText.attr("dy", n.y + screen.height*.03);
 
@@ -643,9 +643,9 @@ define([
                 var midY = coords.y + service.dy - settings.SERVICE_SIZE / 2 + service.size / 2;
                 var midX = coords.x + service.dx - settings.SERVICE_SIZE / 2 + service.size / 2;
                 service.svgNode
-                        .attr("y", coords.y + service.dy - settings.SERVICE_SIZE / 2)
-                        .attr("x", coords.x + service.dx - settings.SERVICE_SIZE / 2)
-                        .attr("transform", "rotate(" + coords.rotation + " " + midX + " " + midY + ")");
+                    .attr("y", coords.y + service.dy - settings.SERVICE_SIZE / 2)
+                    .attr("x", coords.x + service.dx - settings.SERVICE_SIZE / 2)
+                    .attr("transform", "rotate(" + coords.rotation + " " + midX + " " + midY + ")");
                 coords.x += coords.dx;
                 coords.y += coords.dy;
             });
@@ -657,7 +657,7 @@ define([
             if (!e.leftPort || !e.rightPort) {
                 return;
             }
-            
+
             var src = e.leftPort.getFirstVisibleParent();
             var tgt = e.rightPort.getFirstVisibleParent();
             var srcChoords = src.getCenterOfMass();
@@ -666,7 +666,7 @@ define([
             var tgtLead = e.svgLeadRight;
 
             //Without loss of generality, let src be on the left
-            if (e.edgeType === null) {                
+            if (e.edgeType === null) {
                 if (srcChoords.x > tgtChoords.x) {
                     var tmp = src;
                     src = tgt;
@@ -685,34 +685,34 @@ define([
             if (src.getType() === "Port") {
                 srcChoords.x += settings.DIALOG_PORT_LEAD;
                 srcLead.style("visibility", "visible")
-                        .attr("x1", srcChoords.x)
-                        .attr("y1", srcChoords.y)
-                        .attr("x2", srcChoords.x - settings.DIALOG_PORT_LEAD)
-                        .attr("y2", srcChoords.y);
+                    .attr("x1", srcChoords.x)
+                    .attr("y1", srcChoords.y)
+                    .attr("x2", srcChoords.x - settings.DIALOG_PORT_LEAD)
+                    .attr("y2", srcChoords.y);
             } else {
                 srcLead.style("visibility", "hidden");
             }
             if (tgt.getType() === "Port") {
                 tgtChoords.x -= settings.DIALOG_PORT_LEAD;
                 tgtLead.style("visibility", "visible")
-                        .attr("x1", tgtChoords.x)
-                        .attr("y1", tgtChoords.y)
-                        .attr("x2", tgtChoords.x + settings.DIALOG_PORT_LEAD)
-                        .attr("y2", tgtChoords.y);
+                    .attr("x1", tgtChoords.x)
+                    .attr("y1", tgtChoords.y)
+                    .attr("x2", tgtChoords.x + settings.DIALOG_PORT_LEAD)
+                    .attr("y2", tgtChoords.y);
             } else {
                 tgtLead.style("visibility", "hidden");
             }
-            
-            if (e.edgeType !== null) {                
+
+            if (e.edgeType !== null) {
                 e.svgNode.attr("x1", srcChoords.x)
-                        .attr("y1", srcChoords.y)
-                        .attr("x2", tgtChoords.x  )
-                        .attr("y2", tgtChoords.y );
+                    .attr("y1", srcChoords.y)
+                    .attr("x2", tgtChoords.x  )
+                    .attr("y2", tgtChoords.y );
             } else {
                 e.svgNode.attr("x1", srcChoords.x)
-                        .attr("y1", srcChoords.y)
-                        .attr("x2", tgtChoords.x)
-                        .attr("y2", tgtChoords.y);                
+                    .attr("y1", srcChoords.y)
+                    .attr("x2", tgtChoords.x)
+                    .attr("y2", tgtChoords.y);
             }
         }
 
@@ -721,77 +721,77 @@ define([
 
         function makeDragBehaviour(n) {
             return d3.behavior.drag()
-                    .on("drag", function () {
-                        didDrag = true;
-                        //Using the dx,dy from d3 can lead to some artifacts when also using
-                        //These seem to occur when moving between different transforms
-                        var e = d3.event.sourceEvent;
-                        var dx = (e.clientX - lastMouse.clientX) / outputApi.getZoom();
-                        var dy = (e.clientY - lastMouse.clientY) / outputApi.getZoom();
-                        lastMouse = e;
-                        move(n, dx, dy);
-                        //Fix the topolgies above us
-                        var cursor = n._parent;
-                        while (cursor) {
-                            if (n.getType() === 'Policy') {
-                                updateSvgChoordsPolicy(cursor);
-                            } else { 
-                                updateSvgChoordsNode(cursor);
-                            }
-                            cursor = cursor._parent;
+                .on("drag", function () {
+                    didDrag = true;
+                    //Using the dx,dy from d3 can lead to some artifacts when also using
+                    //These seem to occur when moving between different transforms
+                    var e = d3.event.sourceEvent;
+                    var dx = (e.clientX - lastMouse.clientX) / outputApi.getZoom();
+                    var dy = (e.clientY - lastMouse.clientY) / outputApi.getZoom();
+                    lastMouse = e;
+                    move(n, dx, dy);
+                    //Fix the topolgies above us
+                    var cursor = n._parent;
+                    while (cursor) {
+                        if (n.getType() === "Policy") {
+                            updateSvgChoordsPolicy(cursor);
+                        } else {
+                            updateSvgChoordsNode(cursor);
                         }
+                        cursor = cursor._parent;
+                    }
 
 
-                        //As we drag, the cursor may enter and leave the bounding box of n
-                        //In onNodeMouseLeave we make the hoverdiv stay visible in this case,
-                        //However, we also want it to continue tracking us.
-                        outputApi.setHoverLocation(e.clientX, e.clientY);
-                        drawHighlight();
-                        highlightElements("serviceHighlighting");
-                        highlightElements("trashcan");
-                        switchPopup[outputApi.svgContainerName].render();
-                        //fix all edges
-                        map_(edgeList, updateSvgChoordsEdge);
-                    })
-                    .on("dragstart", function () {
-                        lastMouse = d3.event.sourceEvent;
-                        outputApi.disablePanning();
-                        isDragging = true;
-                        didDrag = false;
-                    })
-                    .on("dragend", function () {
-                        outputApi.enablePanning();
-                        isDragging = false;
-                    });
+                    //As we drag, the cursor may enter and leave the bounding box of n
+                    //In onNodeMouseLeave we make the hoverdiv stay visible in this case,
+                    //However, we also want it to continue tracking us.
+                    outputApi.setHoverLocation(e.clientX, e.clientY);
+                    drawHighlight();
+                    highlightElements("serviceHighlighting");
+                    highlightElements("trashcan");
+                    switchPopup[outputApi.svgContainerName].render();
+                    //fix all edges
+                    map_(edgeList, updateSvgChoordsEdge);
+                })
+                .on("dragstart", function () {
+                    lastMouse = d3.event.sourceEvent;
+                    outputApi.disablePanning();
+                    isDragging = true;
+                    didDrag = false;
+                })
+                .on("dragend", function () {
+                    outputApi.enablePanning();
+                    isDragging = false;
+                });
         }
 
         /**@param {Edge} e**/
         function drawEdge(e) {
             e.svgNode = svgContainer.select("#edge1" + "_" + outputApi.svgContainerName).append("line")
-                    .style("stroke", settings.EDGE_COLOR)
-                    .style("stroke-width", settings.EDGE_WIDTH);
-            
+                .style("stroke", settings.EDGE_COLOR)
+                .style("stroke-width", settings.EDGE_WIDTH);
+
             if (e.edgeType === "dependOn") {
                 d3.select(e.svgNode.node())
-                        .style("stroke", settings.EDGE_COLOR)
-                        .style("stroke-width", settings.EDGE_WIDTH)
-                        .style("opacity", "1")
-                        .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")
-                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));   
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH)
+                    .style("opacity", "1")
+                    .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")
+                    .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
                 if (isFirefox()) {
                     d3.select(e.svgNode.node()).style("filter", "url(#spaDependOnOutlineFF)");
                 } else {
                     d3.select(e.svgNode.node()).style("filter", "url(#spaDependOnOutline)");
                 }
             } else if (e.edgeType === "importFrom") {
-                 d3.select(e.svgNode.node())
+                d3.select(e.svgNode.node())
                     .style("stroke", settings.EDGE_COLOR)
-                    .style("stroke-width", settings.EDGE_WIDTH)                
+                    .style("stroke-width", settings.EDGE_WIDTH)
                     .style("opacity", "1")
-                    .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")                
+                    .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")
                     .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));   
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
                 if (isFirefox()) {
                     d3.select(e.svgNode.node()).style("filter", "url(#spaImportFromOutlineFF)");
                 } else {
@@ -799,12 +799,12 @@ define([
                 }
             } else if (e.edgeType === "exportTo") {
                 d3.select(e.svgNode.node())
-                        .style("stroke", settings.EDGE_COLOR)
-                        .style("stroke-width", settings.EDGE_WIDTH)                
-                        .style("opacity", "1")
-                        .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")                
-                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH)
+                    .style("opacity", "1")
+                    .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")
+                    .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
                 if (isFirefox()) {
                     d3.select(e.svgNode.node()).style("filter", "url(#spaExportToOutlineFF)");
                 } else {
@@ -812,41 +812,41 @@ define([
                 }
             } else if (e.edgeType !== null) {
                 d3.select(e.svgNode.node())
-                        .style("stroke", settings.EDGE_COLOR)
-                        .style("stroke-width", settings.EDGE_WIDTH)                
-                        .style("opacity", "1")
-                        .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")                
-                        .on("mousemove", onPolicyMouseMove.bind(undefined, e))
-                        .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
+                    .style("stroke", settings.EDGE_COLOR)
+                    .style("stroke-width", settings.EDGE_WIDTH)
+                    .style("opacity", "1")
+                    .attr("marker-end", "url(#marker_arrow_" + outputApi.svgContainerName + ")")
+                    .on("mousemove", onPolicyMouseMove.bind(undefined, e))
+                    .on("mouseleave", onPolicyMouseLeave.bind(undefined, e));
             }
-            
+
             e.svgLeadLeft = svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).append("line")
-                    .style("stroke", settings.EDGE_COLOR)
-                    .style("stroke-width", settings.EDGE_WIDTH)
-                    .style("visibility", "hidden")
-                    .attr("stroke-linecap", "round");
+                .style("stroke", settings.EDGE_COLOR)
+                .style("stroke-width", settings.EDGE_WIDTH)
+                .style("visibility", "hidden")
+                .attr("stroke-linecap", "round");
             e.svgLeadRight = svgContainer.select("#edge2" + "_" + outputApi.svgContainerName).append("line")
-                    .style("stroke", settings.EDGE_COLOR)
-                    .style("stroke-width", settings.EDGE_WIDTH)
-                    .style("visibility", "hidden")
-                    .attr("stroke-linecap", "round");
+                .style("stroke", settings.EDGE_COLOR)
+                .style("stroke-width", settings.EDGE_WIDTH)
+                .style("visibility", "hidden")
+                .attr("stroke-linecap", "round");
             updateSvgChoordsEdge(e);
         }
 
-        
+
         function onPolicyClick(n, currentOutputApi) {
             if (!fullSize && currentOutputApi) {
-              var o = currentOutputApi;  
-              var m = modelMap[o.svgContainerName];
-            } else if (!fullSize) { 
-              var divname = getRenderedElementParentDiv(n);
-              var o = outputApiMap[divname];
-              var m = modelMap[o.svgContainerName];
-            } else{ 
-              var o = outputApi;
-              var m = model;
+                var o = currentOutputApi;
+                var m = modelMap[o.svgContainerName];
+            } else if (!fullSize) {
+                var divname = getRenderedElementParentDiv(n);
+                var o = outputApiMap[divname];
+                var m = modelMap[o.svgContainerName];
+            } else{
+                var o = outputApi;
+                var m = model;
             }
-             if (d3.event) {
+            if (d3.event) {
                 //In the case of artificial clicks, d3.event may be null
                 d3.event.stopPropagation(); //prevent the click from being handled by the background, which would hide the panel
             }
@@ -868,25 +868,25 @@ define([
                 displayTree.clear();
                 var e = m.elementMap[n.getName()];
                 e.populateProperties(displayTree);
-            
+
                 if (e.misc_elements.length > 0 )
                     displayTree.addChild("", "Separator", null);
 
                 e.populateTreeMenu(displayTree);
                 displayTree.addToHistory(e.getName(), "Policy");
                 displayTree.draw();
-                displayTree.topViewShown = false;    
+                displayTree.topViewShown = false;
                 if (fullSize) {
                     displayTree.open();
                 }
             }
-            highlightElements("serviceHighlighting"); // show stuff that was highlighting when it has an svg node 
+            highlightElements("serviceHighlighting"); // show stuff that was highlighting when it has an svg node
 
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
-            selectedNode = n;           
+            selectedNode = n;
         }
-        
+
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
@@ -894,19 +894,19 @@ define([
             var policyType = n.getTypeDetailed();
             if (policyType === "PolicyData") {
                 $("#dialog_policyData").text("");
-                
+
                 if (n.data !== undefined && n.data !== null){
                     $("#dialog_policyData").append("<pre class=\"jSonDialog\">" + n.data  + "</pre>");
-                }else{ 
+                }else{
                     $("#dialog_policyData").append("<pre class=\"jSonDialog\">N/A</pre>");
                 }
                 $("#dialog_policyData").dialog("open");
-                $('.ui-dialog :button').blur();
+                $(".ui-dialog :button").blur();
             } else if (policyType === "PolicyAction") {
                 $("#dialog_policyAction").text("");
                 $("#dialog_policyAction").append(n.data);
                 $("#dialog_policyAction").dialog("open");
-                $('.ui-dialog :button').blur();
+                $(".ui-dialog :button").blur();
             }
             //We will never send a mouseleave event as the node is being removed
             outputApi.setHoverVisible(false);
@@ -925,8 +925,8 @@ define([
             //of said node, causing flicker of the hoverdiv
             if (!isDragging) {
                 if  (n.edgeType !== undefined && n.edgeType !== null) {
-                    outputApi.setHoverText(n.edgeType);                    
-                } else {    
+                    outputApi.setHoverText(n.edgeType);
+                } else {
                     outputApi.setHoverText(n.getName());
                     setElementSize(n, true);
 
@@ -941,26 +941,26 @@ define([
             //of said node, causing flicker of the hoverdiv
             if (!isDragging) {
                 outputApi.setHoverVisible(false);
-                  if  (n.edgeType === null) {
-                     setElementSize(n, false);
-                 }
+                if  (n.edgeType === null) {
+                    setElementSize(n, false);
+                }
             }
         }
-        
+
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
         function onNodeClick(n, currentOutputApi) {
             if (!fullSize && currentOutputApi) {
-              var o = currentOutputApi;  
-              var m = modelMap[o.svgContainerName];
-            } else if (!fullSize) { 
-              var divname = getRenderedElementParentDiv(n);
-              var o = outputApiMap[divname];
-              var m = modelMap[o.svgContainerName];
-            } else{ 
-              var o = outputApi;
-              var m = model;
+                var o = currentOutputApi;
+                var m = modelMap[o.svgContainerName];
+            } else if (!fullSize) {
+                var divname = getRenderedElementParentDiv(n);
+                var o = outputApiMap[divname];
+                var m = modelMap[o.svgContainerName];
+            } else{
+                var o = outputApi;
+                var m = model;
             }
             if (d3.event) {
                 //In the case of artificial clicks, d3.event may be null
@@ -979,7 +979,7 @@ define([
                 if (highlightedNodesMap["trashcan"] === undefined) {
                     highlightedNodesMap["trashcan"] = [];
                 }
-                
+
                 highlightedNodesMap["trashcan"].push(n);
             }
             highlightedNode = n;
@@ -991,25 +991,25 @@ define([
                 displayTree.clear();
                 var e = m.elementMap[n.getName()];
                 e.populateProperties(displayTree);
-            
+
                 if (e.misc_elements.length > 0 )
                     displayTree.addChild("", "Separator", null);
 
                 e.populateTreeMenu(displayTree);
                 displayTree.addToHistory(e.getName(), "Node");
                 displayTree.draw();
-                displayTree.topViewShown = false;    
+                displayTree.topViewShown = false;
                 if (fullSize) {
                     displayTree.open();
-                }                
+                }
             }
-            // Only show these popups if there are acutally ports and volumes 
-            if (n.ports.length !== 0) 
+            // Only show these popups if there are acutally ports and volumes
+            if (n.ports.length !== 0)
                 n.portPopup.toggleVisible();
             if (n.volumes.length !== 0)
-                 n.volumePopup.toggleVisible();
+                n.volumePopup.toggleVisible();
             drawPopups();
-            highlightElements("serviceHighlighting"); // show stuff that was highlighting when it has an svg node 
+            highlightElements("serviceHighlighting"); // show stuff that was highlighting when it has an svg node
             highlightElements("trashcan");
             map_(edgeList, updateSvgChoordsEdge);
             selectElement(n);
@@ -1018,15 +1018,15 @@ define([
 
         function onServiceClick(n, currentOutputApi) {
             if (!fullSize && currentOutputApi) {
-              var o = currentOutputApi;  
-              var m = modelMap[o.svgContainerName];
-            } else if (!fullSize) { 
-              var divname = getRenderedElementParentDiv(n);
-              var o = outputApiMap[divname];
-              var m = modelMap[o.svgContainerName];
-            } else{ 
-              var o = outputApi;
-              var m = model;
+                var o = currentOutputApi;
+                var m = modelMap[o.svgContainerName];
+            } else if (!fullSize) {
+                var divname = getRenderedElementParentDiv(n);
+                var o = outputApiMap[divname];
+                var m = modelMap[o.svgContainerName];
+            } else{
+                var o = outputApi;
+                var m = model;
             }
             selectedNode = n;
             if (d3.event) {
@@ -1046,7 +1046,7 @@ define([
                 if (highlightedNodesMap["trashcan"] === undefined) {
                     highlightedNodesMap["trashcan"] = [];
                 }
-                
+
                 highlightedNodesMap["trashcan"].push(n);
             }
             highlightedNode = n;
@@ -1059,7 +1059,7 @@ define([
                 e.populateProperties(displayTree);
 
                 if (e.misc_elements.length > 0 )
-                 displayTree.addChild("", "Separator", null);
+                    displayTree.addChild("", "Separator", null);
 
                 e.populateTreeMenu(displayTree);
                 displayTree.addToHistory(e.getName(), "Service");
@@ -1067,7 +1067,7 @@ define([
                 displayTree.topViewShown = false;
                 if (fullSize) {
                     displayTree.open();
-                }                
+                }
             }
             if (n.getTypeBrief() === "SwitchingService") {
 
@@ -1075,24 +1075,24 @@ define([
                     switchPopup[o.svgContainerName].clear();
                 } else {
                     switchPopup[o.svgContainerName].clear()
-                            .setOffset(settings.DIALOG_OFFSET_X, -settings.DIALOG_OFFSET_Y)
-                            .setHostNode(n)
-                            .render();
+                        .setOffset(settings.DIALOG_OFFSET_X, -settings.DIALOG_OFFSET_Y)
+                        .setHostNode(n)
+                        .render();
                 }
 
             }
         }
-        
-        // generalize these 
-        function setHighlights(x, feature){          
+
+        // generalize these
+        function setHighlights(x, feature){
             highlightedNodesMap[feature] = x;
         }
-        
+
         function removeHighlights(feature) {
             highlightedNodesMap[feature] = [];
             prevHighlightedNodesMap[feature] = [];
         }
-        
+
         function highlightElements(feature){
             if (fullSize) {
                 if (prevHighlightedNodesMap[feature] !== []) {
@@ -1110,15 +1110,15 @@ define([
 
                         var toAppend = highlightedNodesMap[feature][i].svgNode.node().cloneNode();
                         prevHighlightedNodesMap[feature].push(d3.select(toAppend)
-                                    .style("opacity", "1")
-                                    .attr("pointer-events", "none"));
-                            
+                            .style("opacity", "1")
+                            .attr("pointer-events", "none"));
+
                         var last = prevHighlightedNodesMap[feature].length - 1;
                         if (feature === "trashcan") {
-                             prevHighlightedNodesMap[feature][last].style("filter", "url(#trashcanHighlight)"); 
+                            prevHighlightedNodesMap[feature][last].style("filter", "url(#trashcanHighlight)");
                         } else {
                             if (!isFirefox()) {
-                                prevHighlightedNodesMap[feature][last].style("filter", "url(#subnetHighlight)"); 
+                                prevHighlightedNodesMap[feature][last].style("filter", "url(#subnetHighlight)");
                             } else {
                                 prevHighlightedNodesMap[feature][last].style("filter", "url(#subnetHighlightFF)");
                             }
@@ -1128,12 +1128,12 @@ define([
                             //If we are coming out of a fold, the parentNode might no longer exist
                             parentNode.appendChild(toAppend);
                         }
-                    }                
-                }           
-                map_(edgeList, updateSvgChoordsEdge);         
+                    }
+                }
+                map_(edgeList, updateSvgChoordsEdge);
             }
         }
-        
+
         function drawHighlight() {
             if (previousHighlight) {
                 previousHighlight.remove();
@@ -1142,15 +1142,15 @@ define([
             if (highlightedNode && highlightedNode.svgNode) {
                 var toAppend = highlightedNode.svgNode.node().cloneNode();
                 previousHighlight = d3.select(toAppend)
-                            .style("opacity", "1")
-                            .attr("pointer-events", "none");                    
+                    .style("opacity", "1")
+                    .attr("pointer-events", "none");
 
                 if (!isFirefox()) {
                     previousHighlight.style("filter", "url(#outline)");
                 } else {
                     previousHighlight.style("filter", "url(#outlineFF)");
                 }
-                                            
+
                 var parentNode = highlightedNode.svgNode.node().parentNode;
                 if (parentNode) {
                     //If we are coming out of a fold, the parentNode might no longer exist
@@ -1161,33 +1161,33 @@ define([
                 console.log("Trying to highlight an element without an svgNode");
             }
         }
-        
+
         function selectElement(elem, currentOutputApi) {
             if (!fullSize && currentOutputApi) {
-              var o = currentOutputApi;
-              var m = modelMap[o.svgContainerName];  
+                var o = currentOutputApi;
+                var m = modelMap[o.svgContainerName];
             } else {
-              var m = model;
-              var o = outputApi;
+                var m = model;
+                var o = outputApi;
             }
-            
+
             if (outputApi.getDisplayTree()) {
                 if (!elem) {
                     //deselect element
                     o.setDisplayName("Topologies");
                     var displayTree = o.getDisplayTree();
                     o.getDisplayTree().clear();
-                    
+
                     if (topLevelTopologies.length === 0) {
                         for (var key in m.elementMap) {
-                             var e = m.elementMap[key];
-                             if (e.getType() === "Topology" && e.topLevel) {
-                                 topLevelTopologies.push(e);                                
-                                 var child = displayTree.addChild(e.getName(), "Element", e);
-                                 e.populateTreeMenu(child);
-                             }
+                            var e = m.elementMap[key];
+                            if (e.getType() === "Topology" && e.topLevel) {
+                                topLevelTopologies.push(e);
+                                var child = displayTree.addChild(e.getName(), "Element", e);
+                                e.populateTreeMenu(child);
+                            }
                         }
-                        // if still no top level topoligies  
+                        // if still no top level topoligies
                         if (topLevelTopologies.length === 0) {
                             displayTree.addChild("No top level topologies.", "Title", "No top level topologies.");
                         }
@@ -1195,10 +1195,10 @@ define([
                         for (var i in topLevelTopologies) {
                             var topology = topLevelTopologies[i];
                             var child = displayTree.addChild(topology.getName(), "Element", e);
-                            topology.populateTreeMenu(child);                        
+                            topology.populateTreeMenu(child);
                         }
                     }
-                    
+
                     displayTree.draw();
                 } else {
                     o.setDisplayName(elem.getName());
@@ -1216,7 +1216,7 @@ define([
                     displayTree.draw();
                     if (fullSize) {
                         displayTree.open();
-                    }                
+                    }
 
                 }
             }
@@ -1224,7 +1224,7 @@ define([
             drawHighlight();
             selectedNode = elem;
         }
-        
+
         /**
          * Note that n could also be a topology
          * @param {Node} n**/
@@ -1264,38 +1264,38 @@ define([
         function setElementSize(n, enlarge) {
             var size, svg, ds, x, y;
             switch (n.getType()) {
-                
-                case "Node":
-                case "Policy":
-                    var size = settings.NODE_SIZE;
-                    svg = n.svgNode;
-                    x = n.x - settings.NODE_SIZE / 2;
-                    y = n.y - settings.NODE_SIZE / 2;
-                    //if (isNaN(n)) console.log("NAN N");                    
-                    if (isNaN(settings.NODE_SIZE)) alert("NAN SETTINGS");
-                    if (isNaN(x) || isNaN(y)) alert("NAN NODE" + "\n" + settings.NODE_SIZE
+
+            case "Node":
+            case "Policy":
+                var size = settings.NODE_SIZE;
+                svg = n.svgNode;
+                x = n.x - settings.NODE_SIZE / 2;
+                y = n.y - settings.NODE_SIZE / 2;
+                //if (isNaN(n)) console.log("NAN N");
+                if (isNaN(settings.NODE_SIZE)) alert("NAN SETTINGS");
+                if (isNaN(x) || isNaN(y)) alert("NAN NODE" + "\n" + settings.NODE_SIZE
                             + "\nx: " + n.x + "\ny: " + n.y);
-                    break;
-                case "Topology":
-                    var size = settings.TOPOLOGY_ANCHOR_SIZE;
-                    svg = n.svgNodeAnchor;
-                    var choords = n.getCenterOfMass();
-                    x = choords.x - settings.TOPOLOGY_ANCHOR_SIZE / 2;
-                    y = choords.y - settings.TOPOLOGY_ANCHOR_SIZE / 2;
-                    enlarge = false; //Enlarging the topology does not look good
-                    if (isNaN(x) || isNaN(y)) alert("NAN TOPO" + "\n" + settings.TOPOLOGY_ANCHOR_SIZE
+                break;
+            case "Topology":
+                var size = settings.TOPOLOGY_ANCHOR_SIZE;
+                svg = n.svgNodeAnchor;
+                var choords = n.getCenterOfMass();
+                x = choords.x - settings.TOPOLOGY_ANCHOR_SIZE / 2;
+                y = choords.y - settings.TOPOLOGY_ANCHOR_SIZE / 2;
+                enlarge = false; //Enlarging the topology does not look good
+                if (isNaN(x) || isNaN(y)) alert("NAN TOPO" + "\n" + settings.TOPOLOGY_ANCHOR_SIZE
                             + "\nx: " + choords.x + "\ny: " + choords.y);
-                    break;
-                case "Service":
-                    var size = settings.SERVICE_SIZE;
-                    svg = n.svgNode;
-                    x = n.x - settings.SERVICE_SIZE / 2;
-                    y = n.y - settings.SERVICE_SIZE / 2;
-                    if (isNaN(x) || isNaN(y)) alert("NAN SERVICE" + "\n" + settings.SERVICE_SIZE
+                break;
+            case "Service":
+                var size = settings.SERVICE_SIZE;
+                svg = n.svgNode;
+                x = n.x - settings.SERVICE_SIZE / 2;
+                y = n.y - settings.SERVICE_SIZE / 2;
+                if (isNaN(x) || isNaN(y)) alert("NAN SERVICE" + "\n" + settings.SERVICE_SIZE
                             + "\nx: " + n.x + "\ny: " + n.y);
-                    break;
-                default:
-                    console.log("Unknown Type: " + n.getType());
+                break;
+            default:
+                console.log("Unknown Type: " + n.getType());
             }
             if (enlarge) {
                 ds = size * settings.ENLARGE_FACTOR;
@@ -1306,20 +1306,20 @@ define([
             n.dx = -ds / 2;
             n.dy = -ds / 2;
             n.size = size;
-               svg
-                    .attr("width", size)
-                    .attr("height", size)
-                    .attr("x", x + n.dx)//make it appear to zoom into center of the icon
-                    .attr("y", y + n.dy);
+            svg
+                .attr("width", size)
+                .attr("height", size)
+                .attr("x", x + n.dx)//make it appear to zoom into center of the icon
+                .attr("y", y + n.dy);
             if (n.svgNodeSubnetHighlight) {
                 n.svgNodeSubnetHighlight
-                        .attr("width", size)
-                        .attr("height", size)
-                        .attr("x", x + n.dx)
-                        .attr("y", y + n.dy);
-            }        
+                    .attr("width", size)
+                    .attr("height", size)
+                    .attr("x", x + n.dx)
+                    .attr("y", y + n.dy);
+            }
 
-            
+
             drawHighlight();
         }
 
@@ -1330,160 +1330,160 @@ define([
             map_(n.children, function (child) {
                 move(child, dx, dy);
             });
-            
-            if (n.getType() === 'Policy') {
+
+            if (n.getType() === "Policy") {
                 updateSvgChoordsPolicy(n);
-            } else { 
+            } else {
                 updateSvgChoordsNode(n);
             }
 
         }
-        
+
         function buildVolumeDisplayPopup(n) {
-             return new VolumeDisplayPopup(outputApi, API)
-                    .setHostNode(n)
-                    .setOffset(volumeSettings.DIALOG_OFFSET_X, volumeSettings.DIALOG_OFFSET_Y)
-                    .setContainer(svgContainer)
-                    .setDimensions(volumeSettings.DIALOG_MIN_WIDTH, volumeSettings.DIALOG_MIN_HEIGHT)
-                    .setBevel(volumeSettings.DIALOG_BEVEL)
-                    .setColor(volumeSettings.DIALOG_COLOR)
-                    .setVolumeDimensions(volumeSettings.DIALOG_PORT_WIDTH, volumeSettings.DIALOG_PORT_HEIGHT)
-                    .setVolumeBuffer(volumeSettings.DIALOG_PORT_BUFFER_VERT, volumeSettings.DIALOG_PORT_BUFFER_HORZ)
-                    .setEnlargeFactor(volumeSettings.ENLARGE_FACTOR)
-                    .setOpacity(volumeSettings.DIALOG_OPACITY);           
+            return new VolumeDisplayPopup(outputApi, API)
+                .setHostNode(n)
+                .setOffset(volumeSettings.DIALOG_OFFSET_X, volumeSettings.DIALOG_OFFSET_Y)
+                .setContainer(svgContainer)
+                .setDimensions(volumeSettings.DIALOG_MIN_WIDTH, volumeSettings.DIALOG_MIN_HEIGHT)
+                .setBevel(volumeSettings.DIALOG_BEVEL)
+                .setColor(volumeSettings.DIALOG_COLOR)
+                .setVolumeDimensions(volumeSettings.DIALOG_PORT_WIDTH, volumeSettings.DIALOG_PORT_HEIGHT)
+                .setVolumeBuffer(volumeSettings.DIALOG_PORT_BUFFER_VERT, volumeSettings.DIALOG_PORT_BUFFER_HORZ)
+                .setEnlargeFactor(volumeSettings.ENLARGE_FACTOR)
+                .setOpacity(volumeSettings.DIALOG_OPACITY);
         }
-        
+
         function buildPortDisplayPopup(n) {
             return new PortDisplayPopup(outputApi, API)
-                    .setHostNode(n)
-                    .setOffset(settings.DIALOG_OFFSET_X, settings.DIALOG_OFFSET_Y)
-                    .setContainer(svgContainer)
-                    .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)
-                    .setBevel(settings.DIALOG_BEVEL)
-                    .setColor(settings.DIALOG_COLOR)
-                    .setPortColors(settings.DIALOG_PORT_COLORS)
-                    .setPortEmptyColor(settings.DIALOG_PORT_EMPTY_COLOR)
-                    .setPortDimensions(settings.DIALOG_PORT_WIDTH, settings.DIALOG_PORT_HEIGHT)
-                    .setPortBuffer(settings.DIALOG_PORT_BUFFER_VERT, settings.DIALOG_PORT_BUFFER_HORZ)
-                    .setEnlargeFactor(settings.ENLARGE_FACTOR)
-                    .setOpacity(settings.DIALOG_OPACITY);
+                .setHostNode(n)
+                .setOffset(settings.DIALOG_OFFSET_X, settings.DIALOG_OFFSET_Y)
+                .setContainer(svgContainer)
+                .setDimensions(settings.DIALOG_MIN_WIDTH, settings.DIALOG_MIN_HEIGHT)
+                .setBevel(settings.DIALOG_BEVEL)
+                .setColor(settings.DIALOG_COLOR)
+                .setPortColors(settings.DIALOG_PORT_COLORS)
+                .setPortEmptyColor(settings.DIALOG_PORT_EMPTY_COLOR)
+                .setPortDimensions(settings.DIALOG_PORT_WIDTH, settings.DIALOG_PORT_HEIGHT)
+                .setPortBuffer(settings.DIALOG_PORT_BUFFER_VERT, settings.DIALOG_PORT_BUFFER_HORZ)
+                .setEnlargeFactor(settings.ENLARGE_FACTOR)
+                .setOpacity(settings.DIALOG_OPACITY);
         }
 
         function buildSwitchPopup() {
             return new SwitchPopup(outputApi)
 
-                    .setContainer(svgContainer)
-                    .setDimensions(switchSettings.DIALOG_MIN_WIDTH, switchSettings.DIALOG_MIN_HEIGHT)
-                    .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT)
-                    .setBevel(switchSettings.DIALOG_BEVEL)
-                    .setColor(switchSettings.DIALOG_COLOR)
-                    .setTabColor(switchSettings.DIALOG_TAB_COLOR)
-                    .setTabColorSelected(switchSettings.DIALOG_TAB_COLOR_SELECTED)
-                    .setPortColor(switchSettings.DIALOG_PORT_COLOR)
-                    .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
-                    .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH, switchSettings.DIALOG_PORT_HEIGHT)
-                    .setBuffer(switchSettings.DIALOG_BUFFER)
-                    .setInnerBuffer(switchSettings.DIALOG_INNER_BUFFER)
-                    .setTextSize(switchSettings.DIALOG_TAB_TEXT_SIZE);
+                .setContainer(svgContainer)
+                .setDimensions(switchSettings.DIALOG_MIN_WIDTH, switchSettings.DIALOG_MIN_HEIGHT)
+                .setTabDimensions(switchSettings.SWITCH_MIN_WIDTH, switchSettings.SWITCH_MIN_HEIGHT)
+                .setBevel(switchSettings.DIALOG_BEVEL)
+                .setColor(switchSettings.DIALOG_COLOR)
+                .setTabColor(switchSettings.DIALOG_TAB_COLOR)
+                .setTabColorSelected(switchSettings.DIALOG_TAB_COLOR_SELECTED)
+                .setPortColor(switchSettings.DIALOG_PORT_COLOR)
+                .setPortEmptyColor(switchSettings.DIALOG_PORT_EMPTY_COLOR)
+                .setPortDimensions(switchSettings.DIALOG_PORT_WIDTH, switchSettings.DIALOG_PORT_HEIGHT)
+                .setBuffer(switchSettings.DIALOG_BUFFER)
+                .setInnerBuffer(switchSettings.DIALOG_INNER_BUFFER)
+                .setTextSize(switchSettings.DIALOG_TAB_TEXT_SIZE);
         }
         function clickNode(name, type, currentOutputApi) {
             if (!fullSize && currentOutputApi) {
-              var o = currentOutputApi;  
-              var m = modelMap[o.svgContainerName];
+                var o = currentOutputApi;
+                var m = modelMap[o.svgContainerName];
             } else {
-              var o = outputApi;
-              var m = model;
+                var o = outputApi;
+                var m = model;
             }
-            
-           var element = m.elementMap[name];
-           if (element === undefined) {
-               if (fullSize) {
-                   alert("Element not found. Please enter valid URN.");
-               }
-           } else {
-                type = element.getType();
-                
-                switch (type) {
-                 case "Topology":
-                 case "Node":
-                     onNodeClick(m.nodeMap[name], o);
-                     if (o.getDisplayTree()) {
-                        o.getDisplayTree().addToHistory(name, type);
-                        o.getDisplayTree().topViewShown = false;
-                     }
-                     console.log("i'm node: " + model.nodeMap[name].getName());
 
-                     break;
-                 case "SwitchingService":
-                 case "HypervisorService":
-                 case "RoutingService":
-                 case "VirtualCloudService":
-                 case "BlockStorageService":
-                 case "ObjectStorageService":
-                 case "VirtualSwitchService":
-                 case "HypervisorBypassInterfaceService":
-                 case "StorageService":
-                 case "IOPerformanceMeasurementService":
-                 case "DataTransferService":
-                 case "DataTransferClusterService":
-                 case "NetworkObject":
-                 case "Service":
-                     if (o.svgContainerName.indexOf("servr") < 0) {
-                        onServiceClick(m.serviceMap[name], o);
-                     } else {
-                        onNodeClick(m.nodeMap[name], o);
-                     }                 
-                     if (o.getDisplayTree()) {
+            var element = m.elementMap[name];
+            if (element === undefined) {
+                if (fullSize) {
+                    alert("Element not found. Please enter valid URN.");
+                }
+            } else {
+                type = element.getType();
+
+                switch (type) {
+                case "Topology":
+                case "Node":
+                    onNodeClick(m.nodeMap[name], o);
+                    if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);
                         o.getDisplayTree().topViewShown = false;
-                     }
-                     console.log("i'm service");
-                     break;
-                 case "Port":
-                 case "BidirectionalPort":
-                     if (o.svgContainerName.indexOf("servr") < 0) {
-                        selectElement(m.portMap[name], o);
-                     } else {
-                        selectElement(m.nodeMap[name], o);
-                     }
-                     if (o.getDisplayTree()) {
-                        o.getDisplayTree().addToHistory(name, type);  
-                        o.getDisplayTree().topViewShown = false;
-                     }
-                     console.log("i'm port");
-                     break;
-                 case "Volume":
-                     if (o.svgContainerName.indexOf("servr") < 0) {
-                        selectElement(m.volumeMap[name], o);   
-                     } else {
-                        selectElement(m.nodeMap[name], o);
-                     }
-                     if (o.getDisplayTree()) {
-                        o.getDisplayTree().addToHistory(name, type);   
-                        o.getDisplayTree().topViewShown = false;
-                     }
-                     console.log("i'm volume");
-                     break;
-                 case "PolicyData":
-                 case "PolicyAction":
-                     selectElement(m.policyMap[name], o);    
-                     if (o.getDisplayTree()) {
-                        o.getDisplayTree().addToHistory(name, type);   
-                        o.getDisplayTree().topViewShown = false;
-                     }                    
+                    }
+                    console.log("i'm node: " + model.nodeMap[name].getName());
+
                     break;
-                 default:
-                     selectElement(m.elementMap[name], o);                    
-                     if (o.getDisplayTree()) {
+                case "SwitchingService":
+                case "HypervisorService":
+                case "RoutingService":
+                case "VirtualCloudService":
+                case "BlockStorageService":
+                case "ObjectStorageService":
+                case "VirtualSwitchService":
+                case "HypervisorBypassInterfaceService":
+                case "StorageService":
+                case "IOPerformanceMeasurementService":
+                case "DataTransferService":
+                case "DataTransferClusterService":
+                case "NetworkObject":
+                case "Service":
+                    if (o.svgContainerName.indexOf("servr") < 0) {
+                        onServiceClick(m.serviceMap[name], o);
+                    } else {
+                        onNodeClick(m.nodeMap[name], o);
+                    }
+                    if (o.getDisplayTree()) {
                         o.getDisplayTree().addToHistory(name, type);
                         o.getDisplayTree().topViewShown = false;
-                     }
-                     console.log("I'm element");
-                     break;
-               }
-           }
+                    }
+                    console.log("i'm service");
+                    break;
+                case "Port":
+                case "BidirectionalPort":
+                    if (o.svgContainerName.indexOf("servr") < 0) {
+                        selectElement(m.portMap[name], o);
+                    } else {
+                        selectElement(m.nodeMap[name], o);
+                    }
+                    if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
+                    }
+                    console.log("i'm port");
+                    break;
+                case "Volume":
+                    if (o.svgContainerName.indexOf("servr") < 0) {
+                        selectElement(m.volumeMap[name], o);
+                    } else {
+                        selectElement(m.nodeMap[name], o);
+                    }
+                    if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
+                    }
+                    console.log("i'm volume");
+                    break;
+                case "PolicyData":
+                case "PolicyAction":
+                    selectElement(m.policyMap[name], o);
+                    if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
+                    }
+                    break;
+                default:
+                    selectElement(m.elementMap[name], o);
+                    if (o.getDisplayTree()) {
+                        o.getDisplayTree().addToHistory(name, type);
+                        o.getDisplayTree().topViewShown = false;
+                    }
+                    console.log("I'm element");
+                    break;
+                }
+            }
         }
-        
+
 
         API["redraw"] = redraw;
         API["redrawPopups"] = drawPopups;
@@ -1492,9 +1492,9 @@ define([
         API["selectElement"] = selectElement;
         API["layoutEdges"] = function (o) {
             if (!fullSize) {
-              var e = modelMap[o.svgContainerName].listEdges();
+                var e = modelMap[o.svgContainerName].listEdges();
             } else {
-              var e = edgeList;
+                var e = edgeList;
             }
             map_(e, updateSvgChoordsEdge);
         };
@@ -1515,7 +1515,7 @@ define([
         doRender: doRender,
         redraw: function () {
             redraw_();
-        }, 
+        },
         API: API
     };
 });

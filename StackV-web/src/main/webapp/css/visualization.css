@@ -1,8 +1,7 @@
 #vis-panel {
     padding: 20px;
     margin: auto;
-    height: 100%;
-    visibility: hidden;
+    height: 100%;    
 }
 
 #details-modal .container {

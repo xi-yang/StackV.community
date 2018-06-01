@@ -21,7 +21,10 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, baseUrl, keycloak, TweenLite, Power2, Mousetrap */
+/* global XDomainRequest, TweenLite, swal, Power2, Mousetrap */
+import { keycloak } from "../nexus";
+import * as ipa from "./ipa";
+
 // ipa.js must be loaded in order to access the IPA ACL functions
 
 // Tweens
@@ -35,67 +38,69 @@ var tweenHideUserPanel = new TweenLite("#acl-role-user-div", .5, {ease: Power2.e
 var view = "center";
 
 Mousetrap.bind({
-    'shift+left': function () {
+    "shift+left": function () {
         window.location.href = "/StackV-web/portal/driver/";
     },
-    'left': function () {
+    "left": function () {
         viewShift("left");
     },
-    'right': function () {
+    "right": function () {
         viewShift("right");
     }
 });
 
 function viewShift(dir) {
     switch (view) {
-        case "left":
-            if (dir === "right") {
-                newView("instances");
-            }
-            break;
-        case "center":
-            if (dir === "left") {
-                newView("roles");
-            }
-            break;
+    case "left":
+        if (dir === "right") {
+            newView("instances");
+        }
+        break;
+    case "center":
+        if (dir === "left") {
+            newView("roles");
+        }
+        break;
     }
 }
 function resetView() {
     switch (view) {
-        case "left":
-            $("#sub-nav .active").removeClass("active");
-            tweenRolePanel.reverse();
-            break;
-        case "center":
-            $("#sub-nav .active").removeClass("active");
-            tweenInstancePanel.reverse();
-            break;
+    case "left":
+        $("#sub-nav .active").removeClass("active");
+        tweenRolePanel.reverse();
+        break;
+    case "center":
+        $("#sub-nav .active").removeClass("active");
+        tweenInstancePanel.reverse();
+        break;
     }
 }
 function newView(panel) {
     resetView();
     switch (panel) {
-        case "roles":
-            tweenRolePanel.play();
-            $("#roles-tab").addClass("active");
-            view = "left";
-            break;
-        case "instances":
-            tweenInstancePanel.play();
-            $("#instances-tab").addClass("active");
-            view = "center";
-            break;
+    case "roles":
+        tweenRolePanel.play();
+        $("#roles-tab").addClass("active");
+        view = "left";
+        break;
+    case "instances":
+        tweenInstancePanel.play();
+        $("#instances-tab").addClass("active");
+        view = "center";
+        break;
     }
 }
-function loadACLNavbar() {
+
+// ACL Load
+export function loadACLPortal() {
     $("#sub-nav").load("/StackV-web/nav/acl_navbar.html", function () {
         switch (view) {
-            case "left":
-                $("#roles-tab").addClass("active");
-                break;
-            case "center":
-                $("#instances-tab").addClass("active");
-                break;
+        case "left":
+            $("#roles-tab").addClass("active");
+            break;
+        case "center":
+            $("#instances-tab").addClass("active");
+            break;
         }
 
         $("#roles-tab").click(function () {
@@ -107,33 +112,28 @@ function loadACLNavbar() {
             newView("instances");
         });
     });
-}
 
-
-// ACL Load
-function loadACLPortal() {
     subloadRoleACLUsers();
     subloadRoleACLRoles();
 
     subloadInstanceACLInstances();
     subloadInstanceACLUsers();
 
-    // Roles   
+    // Roles
     $("#acl-group-add").click(function (evt) {
         var subject = $("#acl-user").val();
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/groups';
+        var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/users/" + subject + "/groups";
         keycloak.updateToken(30).success(function () {
             $.ajax({
                 url: apiUrl,
-                type: 'POST',
-                data: '{"id":"' + $("#acl-group-select").val() + '","name":"' + $('#acl-group-select').children("option:selected").text() + '"}',
+                type: "POST",
+                data: "{\"id\":\"" + $("#acl-group-select").val() + "\",\"name\":\"" + $("#acl-group-select").children("option:selected").text() + "\"}",
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
                 beforeSend: function (xhr) {
                     xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 },
                 success: function () {
-                    subloadRoleACLUserGroups();
                     subloadRoleACLUserRoles();
                 }
             });
@@ -146,12 +146,12 @@ function loadACLPortal() {
 
     $("#acl-role-add").click(function (evt) {
         var subject = $("#acl-user").val();
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/roles';
+        var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/users/" + subject + "/roles";
         keycloak.updateToken(30).success(function () {
             $.ajax({
                 url: apiUrl,
-                type: 'POST',
-                data: '{"id":"' + $("#acl-role-select").val() + '","name":"' + $('#acl-role-select').children("option:selected").text() + '"}',
+                type: "POST",
+                data: "{\"id\":\"" + $("#acl-role-select").val() + "\",\"name\":\"" + $("#acl-role-select").children("option:selected").text() + "\"}",
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
                 beforeSend: function (xhr) {
@@ -171,7 +171,6 @@ function loadACLPortal() {
     $(".acl-user-close").click(function (evt) {
         $(".acl-role-selected-row").removeClass("acl-role-selected-row");
 
-        tweenRoleGroupsPanel.reverse();
         tweenRoleRolesPanel.reverse();
         evt.preventDefault();
     });
@@ -192,16 +191,16 @@ function loadACLPortal() {
 function subloadRoleACLUsers() {
     var tbody = document.getElementById("user-body");
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/users";
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
-            type: 'GET',
+            type: "GET",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
             success: function (result) {
-                for (i = 0; i < result.length; i++) {
+                for (let i = 0; i < result.length; i++) {
                     var user = result[i];
 
                     var row = document.createElement("tr");
@@ -235,16 +234,16 @@ function subloadRoleACLUsers() {
 }
 
 function subloadRoleACLRoles() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/roles";
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
-            type: 'GET',
+            type: "GET",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
             success: function (result) {
-                for (i = 0; i < result.length; i++) {
+                for (let i = 0; i < result.length; i++) {
                     var role = result[i];
 
                     $("#acl-role-select").append(new Option(role[1], role[0]));
@@ -264,16 +263,16 @@ function subloadRoleACLUserRoles() {
     tbody.innerHTML = "";
     $("#acl-role-select option.hide").removeClass("hide");
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/roles';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/users/" + subject + "/roles";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
             if (result) {
-                for (i = 0; i < result.length; i++) {
+                for (let i = 0; i < result.length; i++) {
                     var role = result[i];
 
                     var row = document.createElement("tr");
@@ -281,11 +280,11 @@ function subloadRoleACLUserRoles() {
 
                     var cell1_1 = document.createElement("td");
                     if (role.hasOwnProperty("from")) {
-                        cell1_1.innerHTML = role.name + ' (delegated from ' + role.from + ')';
+                        cell1_1.innerHTML = role.name + " (delegated from " + role.from + ")";
                     } else {
-                        cell1_1.innerHTML = role.name + '<button data-roleid="'
-                                + role.id + '" data-rolename="' + role.name
-                                + '" class="button-role-delete btn btn-default pull-right">Remove</button>';
+                        cell1_1.innerHTML = role.name + "<button data-roleid=\""
+                                + role.id + "\" data-rolename=\"" + role.name
+                                + "\" class=\"button-role-delete btn btn-default pull-right\">Remove</button>";
                     }
 
                     row.appendChild(cell1_1);
@@ -300,12 +299,12 @@ function subloadRoleACLUserRoles() {
 
                     var roleID = $(this).data("roleid");
                     var roleName = $(this).data("rolename");
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users/' + subject + '/roles';
+                    var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/users/" + subject + "/roles";
                     keycloak.updateToken(30).success(function () {
                         $.ajax({
                             url: apiUrl,
-                            type: 'DELETE',
-                            data: '{"id":"' + roleID + '","name":"' + roleName + '"}',
+                            type: "DELETE",
+                            data: "{\"id\":\"" + roleID + "\",\"name\":\"" + roleName + "\"}",
                             contentType: "application/json; charset=utf-8",
                             dataType: "json",
                             beforeSend: function (xhr) {
@@ -334,17 +333,17 @@ function subloadInstanceACLInstances() {
     var userId = keycloak.subject;
     var tbody = document.getElementById("instance-body");
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/instances';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/instances";
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
-            type: 'GET',
+            type: "GET",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
             success: function (result) {
                 if (result) {
-                    for (i = 0; i < result.data.length; i++) {
+                    for (let i = 0; i < result.data.length; i++) {
                         var instance = result.data[i];
 
                         var row = document.createElement("tr");
@@ -386,20 +385,20 @@ function subloadInstanceACLInstances() {
 }
 
 function subloadInstanceACLUsers() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/users';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/users";
     var tbody = document.getElementById("users-body");
     tbody.innerHTML = "";
 
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
-            type: 'GET',
+            type: "GET",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
             success: function (result) {
                 if (result) {
-                    for (i = 0; i < result.length; i++) {
+                    for (let i = 0; i < result.length; i++) {
                         var user = result[i];
 
                         var row = document.createElement("tr");
@@ -410,7 +409,7 @@ function subloadInstanceACLUsers() {
                         var cell1_3 = document.createElement("td");
                         cell1_3.innerHTML = user[2];
                         var cell1_4 = document.createElement("td");
-                        cell1_4.innerHTML = '<button data-username="' + user[0] + '" class="button-instanceacl-add btn btn-default pull-right">Add</button>';
+                        cell1_4.innerHTML = "<button data-username=\"" + user[0] + "\" class=\"button-instanceacl-add btn btn-default pull-right\">Add</button>";
                         row.appendChild(cell1_1);
                         row.appendChild(cell1_2);
                         row.appendChild(cell1_3);
@@ -422,11 +421,11 @@ function subloadInstanceACLUsers() {
                         var username = $(this).data("username");
                         var refUUID = $("#acl-instance").val();
 
-                        var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/' + refUUID;
+                        var apiUrl = window.location.origin + "/StackV-web/restapi/app/acl/" + refUUID;
                         keycloak.updateToken(30).success(function () {
                             $.ajax({
                                 url: apiUrl,
-                                type: 'POST',
+                                type: "POST",
                                 data: username,
                                 contentType: "application/json; charset=utf-8",
                                 dataType: "json",
@@ -456,21 +455,21 @@ function subloadInstanceACLTable(refUUID) {
     tweenInstanceACLPanel.reverse();
     setTimeout(function () {
         keycloak.updateToken(30).success(function () {
-            var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/' + refUUID;
+            var apiUrl = window.location.origin + "/StackV-web/restapi/app/acl/" + refUUID;
             var tbody = document.getElementById("acl-body");
             tbody.innerHTML = "";
 
             $("#acl-instance").val(refUUID);
             $.ajax({
                 url: apiUrl,
-                type: 'GET',
+                type: "GET",
                 beforeSend: function (xhr) {
                     xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                 },
                 success: function (result) {
                     var allowedUsers = [];
                     if (result) {
-                        for (i = 0; i < result.length; i++) {
+                        for (let i = 0; i < result.length; i++) {
                             var user = result[i];
                             allowedUsers.push(user[0]);
 
@@ -486,7 +485,7 @@ function subloadInstanceACLTable(refUUID) {
                             cell1_3.innerHTML = user[2]; // email
 
                             var cell1_4 = document.createElement("td"); // remove button
-                            cell1_4.innerHTML = '<button data-username="' + user[0] + '" class="button-acl-remove btn btn-default pull-right">Remove</button>';
+                            cell1_4.innerHTML = "<button data-username=\"" + user[0] + "\" class=\"button-acl-remove btn btn-default pull-right\">Remove</button>";
 
                             var cell1_5 = document.createElement("td"); // login checkbox
                             var checkBoxLogin = document.createElement("input");
@@ -498,7 +497,7 @@ function subloadInstanceACLTable(refUUID) {
 
                             checkBoxLogin.onmouseover = function () {
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
-                                var apiServiceStatusUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
+                                var apiServiceStatusUrl = window.location.origin + "/StackV-web/restapi/service/" + uuid + "/status";
 
                                 var ajaxSettings = {
                                     "url": apiServiceStatusUrl,
@@ -536,11 +535,11 @@ function subloadInstanceACLTable(refUUID) {
                                     }).then(function (res) {
                                         swal("The ACL Request could not be completed.", "Please try again.", "error");
                                         subloadInstanceACLTable(uuid);
-                                        removeACLPolicy(uuid, "login"); //remove any completed steps
+                                        ipa.removeACLPolicy(uuid, "login"); //remove any completed steps
                                     });
                                     // ensure the user is logged in before making any IPA requests
-                                    $.when(ipaLogin()).done(function () {
-                                        $.when(checkForExistingACLPolicy(uuid, "login")).done(function (existsRes) {
+                                    $.when(ipa.ipaLogin()).done(function () {
+                                        $.when(ipa.checkForExistingACLPolicy(uuid, "login")).done(function (existsRes) {
                                             /**
                                              * Check before creation if a policy already exists
                                              * If it exists, then creation will fail. Instead just add
@@ -549,19 +548,19 @@ function subloadInstanceACLTable(refUUID) {
 
                                             // if no ACL policy exists, then create it
                                             if (existsRes["result"]["count"] === 0) {
-                                                createLoginAclPolicy(uuid, username).done(function (result) {
+                                                ipa.createLoginAclPolicy(uuid, username).done(function (result) {
                                                     // success keys in the returned json (see ipa.js creation methods for json structure)
                                                     if (result["GroupAndRuleCreatedAndRightHostsFound"] === true && result["AddedUsersHostsToGroupAndServicesToRule"] === true) {
                                                         swal("Login ACL Policy Created Successfully!", "Added " + username + " to the Login ACL Policy", "success");
                                                     } else {
                                                         subloadInstanceACLTable(uuid);
-                                                        swal("Login ACL Policy Creation Failed!", parseACLPolicyResult(result), "error");
+                                                        swal("Login ACL Policy Creation Failed!", ipa.parseACLPolicyResult(result), "error");
                                                     }
                                                 });
                                             } else {
                                                 // just add the user to the existing policy by adding them to the right user group
                                                 var usergroupLogin = "ug-login-" + uuid;
-                                                addUsersToUserGroup(username, usergroupLogin).done(function (result) {
+                                                ipa.addUsersToUserGroup(username, usergroupLogin).done(function (result) {
                                                     if (result["error"] === null && result["result"]["completed"] === 1) {
                                                         swal({
                                                             title: "Added " + username + " to the Login ACL Policy!",
@@ -579,7 +578,7 @@ function subloadInstanceACLTable(refUUID) {
                                             // if something fails due not due to the content of the request
                                             subloadInstanceACLTable(uuid);
                                             swal("Request could not be completed", "Error: " + JSON.stringify(err), "error");
-                                            removeACLPolicy(uuid, "login");
+                                            ipa.removeACLPolicy(uuid, "login");
                                         });
                                     });
                                 } else {
@@ -593,11 +592,11 @@ function subloadInstanceACLTable(refUUID) {
                                     }).then(function (res) {
                                         swal("The ACL Request could not be completed.", "Please try again.", "error");
                                         subloadInstanceACLTable(uuid);
-                                        removeACLPolicy(uuid, "login"); //remove any completed steps
+                                        ipa.removeACLPolicy(uuid, "login"); //remove any completed steps
                                     });
-                                    ;
-                                    $.when(ipaLogin()).done(function () {
-                                        removeUserFromACLPolicy(username, uuid, "login").done(function (result) {
+
+                                    $.when(ipa.ipaLogin()).done(function () {
+                                        ipa.removeUserFromACLPolicy(username, uuid, "login").done(function (result) {
                                             // if no error
                                             if (result["error"] === null && result["result"]["completed"] === 1) {
                                                 swal({
@@ -610,14 +609,14 @@ function subloadInstanceACLTable(refUUID) {
                                                 swal("Not able to remove " + username + " from Login ACL Policy", "Ensure " + username + " is in the ACL policy", "error");
                                             }
 
-                                            // if the login checkbox is unchecked, 
+                                            // if the login checkbox is unchecked,
                                             // then uncheck (if checked) the sudo checkbox (which should remove the sudo access for the user)
                                             var sudoCheckbox = document.getElementById("sudoaccess-" + username);
                                             if (sudoCheckbox.checked) {
                                                 // there are browser caveats to .click() (https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click)
                                                 sudoCheckbox.click();
 
-                                                // tried setting the checkbox to boolean but this wouldn't run the onclick function 
+                                                // tried setting the checkbox to boolean but this wouldn't run the onclick function
                                                 // and neither would using jquery's trigger function
                                             }
 
@@ -625,7 +624,7 @@ function subloadInstanceACLTable(refUUID) {
                                     }).fail(function (err) {
                                         subloadInstanceACLTable(uuid);
                                         swal("Request could not be completed", "Error: " + JSON.stringify(err), "error");
-                                        removeACLPolicy(uuid, "login"); //remove any completed steps                                    
+                                        ipa.removeACLPolicy(uuid, "login"); //remove any completed steps
                                     });
                                 }
 
@@ -645,7 +644,7 @@ function subloadInstanceACLTable(refUUID) {
 
                             checkBoxSudo.onmouseover = function () {
                                 var uuid = $("#instance-body > tr.acl-instance-selected-row").attr("data-uuid");
-                                var apiServiceStatusUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
+                                var apiServiceStatusUrl = window.location.origin + "/StackV-web/restapi/service/" + uuid + "/status";
 
                                 var ajaxSettings = {
                                     "url": apiServiceStatusUrl,
@@ -681,11 +680,11 @@ function subloadInstanceACLTable(refUUID) {
                                     }).then(function (res) {
                                         subloadInstanceACLTable(uuid);
                                         swal("The ACL Request could not be completed.", "Please try again.", "error");
-                                        removeACLPolicy(uuid, "sudo"); //remove any completed steps
+                                        ipa.removeACLPolicy(uuid, "sudo"); //remove any completed steps
                                     });
                                     // ensure the user is logged in before making any IPA requests
-                                    $.when(ipaLogin()).done(function () {
-                                        $.when(checkForExistingACLPolicy(uuid, "sudo")).done(function (existsRes) {
+                                    $.when(ipa.ipaLogin()).done(function () {
+                                        $.when(ipa.checkForExistingACLPolicy(uuid, "sudo")).done(function (existsRes) {
 
                                             /**
                                              * Check before creation if a policy already exists
@@ -695,18 +694,18 @@ function subloadInstanceACLTable(refUUID) {
 
                                             // if no ACL policy exists, then create it
                                             if (existsRes["result"]["count"] === 0) {
-                                                createSudoAclPolicy(uuid, username).done(function (result) {
+                                                ipa.createSudoAclPolicy(uuid, username).done(function (result) {
                                                     if (result["GroupAndRuleCreatedAndRightHostsFound"] === true && result["AddedUsersHostsToGroupAndServicesToRule"] === true) {
                                                         swal("Sudo ACL Policy Created Successfully", "Added " + username + " to the Sudo ACL Policy", "success");
                                                     } else {
-                                                        swal("Sudo ACL Policy Creation Failed", parseACLPolicyResult(result), "error");
-                                                        $('#sudoaccess-' + username).attr("checked", false);
+                                                        swal("Sudo ACL Policy Creation Failed", ipa.parseACLPolicyResult(result), "error");
+                                                        $("#sudoaccess-" + username).attr("checked", false);
                                                     }
                                                 });
                                             } else {
                                                 // just add the user to the existing policy by adding them to the right user group
                                                 var usergroupSudo = "ug-sudo-" + uuid;
-                                                addUsersToUserGroup(username, usergroupSudo).done(function (result) {
+                                                ipa.addUsersToUserGroup(username, usergroupSudo).done(function (result) {
                                                     if (result["error"] === null && result["result"]["completed"] === 1) {
                                                         swal({
                                                             title: "Added " + username + " to the Sudo ACL Policy",
@@ -719,7 +718,7 @@ function subloadInstanceACLTable(refUUID) {
                                                 });
                                             }
 
-                                            // if the sudo checkbox is checked, 
+                                            // if the sudo checkbox is checked,
                                             // then check the login checkbox (which should autorun the login ACL policy creation)
                                             var loginCheckbox = document.getElementById("loginaccess-" + username);
                                             console.log("login check box checked?: " + loginCheckbox.checked);
@@ -727,14 +726,14 @@ function subloadInstanceACLTable(refUUID) {
                                                 // there are browser caveats to .click() (https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/click)
                                                 loginCheckbox.click();
 
-                                                // tried setting the checkbox to boolean but this wouldn't run the onclick function 
+                                                // tried setting the checkbox to boolean but this wouldn't run the onclick function
                                                 // and neither would using jquery's trigger function
                                             }
 
                                         }).fail(function (err) {
                                             subloadInstanceACLTable(uuid);
                                             swal("Request could not be completed", "Error: " + JSON.stringify(err), "error");
-                                            removeACLPolicy(uuid, "sudo");
+                                            ipa.removeACLPolicy(uuid, "sudo");
                                         });
                                     });
                                 } else {
@@ -748,10 +747,10 @@ function subloadInstanceACLTable(refUUID) {
                                     }).then(function (res) {
                                         swal("The ACL Request could not be completed.", "Please try again.", "error");
                                         subloadInstanceACLTable(uuid);
-                                        removeACLPolicy(uuid, "sudo"); //remove any completed steps
+                                        ipa.removeACLPolicy(uuid, "sudo"); //remove any completed steps
                                     });
-                                    $.when(ipaLogin()).done(function () {
-                                        removeUserFromACLPolicy(username, uuid, "sudo").done(function (result) {
+                                    $.when(ipa.ipaLogin()).done(function () {
+                                        ipa.removeUserFromACLPolicy(username, uuid, "sudo").done(function (result) {
                                             // if no error
                                             if (result["error"] === null && result["result"]["completed"] === 1) {
                                                 swal({
@@ -767,7 +766,7 @@ function subloadInstanceACLTable(refUUID) {
                                         }).fail(function (err) {
                                             subloadInstanceACLTable(uuid);
                                             swal("Request could not be completed", "Error: " + JSON.stringify(err), "error");
-                                            removeACLPolicy(uuid, "sudo"); //remove any completed steps
+                                            ipa.removeACLPolicy(uuid, "sudo"); //remove any completed steps
                                         });
                                     });
                                 }
@@ -777,7 +776,7 @@ function subloadInstanceACLTable(refUUID) {
                             cell1_6.appendChild(checkBoxSudo);
 
                             row.appendChild(cell1_1); //username
-                            row.appendChild(cell1_2); //full name                            
+                            row.appendChild(cell1_2); //full name
                             row.appendChild(cell1_3); //email
                             row.appendChild(cell1_5); //login access checkbox
                             row.appendChild(cell1_6); //sudo access checkbox
@@ -795,28 +794,28 @@ function subloadInstanceACLTable(refUUID) {
                                  * Steps:
                                  * 1) Get and check the checkboxes for login and sudo access to see if user
                                  * is in an ACL policy
-                                 * 2) If the user is in an ACL policy, then remove them                                                          
+                                 * 2) If the user is in an ACL policy, then remove them
                                  */
 
                                 // getting and checking the Login checkbox
-                                var loginCheckbox = document.getElementById("loginaccess-" + username);                               
-                                if (loginCheckbox.checked === true) {                                                
+                                var loginCheckbox = document.getElementById("loginaccess-" + username);
+                                if (loginCheckbox.checked === true) {
                                     // remove the user from any ACL policy associated with the service instance
-                                    swal("Not able to remove " + username + " from Login ACL Policy", "Please uncheck the Login Access checkbox", "error");                         
+                                    swal("Not able to remove " + username + " from Login ACL Policy", "Please uncheck the Login Access checkbox", "error");
                                 }
-                                                                                                
+
                                 // getting and checking the Login checkbox
-                                var sudoCheckbox = document.getElementById("sudoaccess-" + username);                                
-                                if (sudoCheckbox.checked === true) {                                                
-                                   swal("Not able to remove " + username + " from Sudo ACL Policy", "Please uncheck the Sudo Access checkbox", "error");                                    
-                                } 
-                                
+                                var sudoCheckbox = document.getElementById("sudoaccess-" + username);
+                                if (sudoCheckbox.checked === true) {
+                                    swal("Not able to remove " + username + " from Sudo ACL Policy", "Please uncheck the Sudo Access checkbox", "error");
+                                }
+
                                 if (loginCheckbox.checked === false && sudoCheckbox.checked === false) {
-                                    var apiUrl = baseUrl + '/StackV-web/restapi/app/acl/' + refUUID;
+                                    var apiUrl = window.location.origin + "/StackV-web/restapi/app/acl/" + refUUID;
                                     keycloak.updateToken(30).success(function () {
                                         $.ajax({
                                             url: apiUrl,
-                                            type: 'DELETE',
+                                            type: "DELETE",
                                             data: username,
                                             contentType: "application/json; charset=utf-8",
                                             dataType: "json",
@@ -824,19 +823,19 @@ function subloadInstanceACLTable(refUUID) {
                                                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                                             },
                                             success: function (result) {
-                                                $('.button-acl-remove[data-username="' + username + '"]').closest('tr').hide();                                                
-                                                
+                                                $(".button-acl-remove[data-username=\"" + username + "\"]").closest("tr").hide();
+
                                                 // compares which rows are the same in the acl and users tables and unhides the user row in the users table
                                                 var userRows = $("#users-body tr");
                                                 userRows.removeClass("hide");
-                                                for (userindex = 0; userindex < userRows.length; ++userindex) {
+                                                for (let userindex = 0; userindex < userRows.length; ++userindex) {
                                                     var aclRows = $("#acl-body tr");
-                                                    for (aclindex = 0; aclindex < aclRows.length; ++aclindex) {
+                                                    for (let aclindex = 0; aclindex < aclRows.length; ++aclindex) {
                                                         if (userRows[userindex].firstChild.innerHTML === aclRows[aclindex].firstChild.innerHTML) {
                                                             userRows[userindex].className = "";
                                                         }
                                                     }
-                                                }                                                                        
+                                                }
                                                 tweenInstanceACLPanel.play();
                                             }
                                         });
@@ -844,17 +843,17 @@ function subloadInstanceACLTable(refUUID) {
                                         console.log("Fatal Error: Token update failed!");
                                     });
 
-                                evt.preventDefault();
-                                }                                
+                                    evt.preventDefault();
+                                }
                             });
                         }
-                        
+
                         // compares which rows are the same in the acl and users tables and hides the user row in the users table
                         var userRows = $("#users-body tr");
                         userRows.removeClass("hide");
-                        for (userindex = 0; userindex < userRows.length; ++userindex) {
+                        for (let userindex = 0; userindex < userRows.length; ++userindex) {
                             var aclRows = $("#acl-body tr");
-                            for (aclindex = 0; aclindex < aclRows.length; ++aclindex) {
+                            for (let aclindex = 0; aclindex < aclRows.length; ++aclindex) {
                                 if (userRows[userindex].firstChild.innerHTML === aclRows[aclindex].firstChild.innerHTML) {
                                     userRows[userindex].className = "hide";
                                 }
@@ -865,9 +864,9 @@ function subloadInstanceACLTable(refUUID) {
 
                     // checks if the users in the table have been added to an ACL policy or not
                     allowedUsers.forEach(function (u) {
-                        // check whether the user is already added to the ACL policy and check the checkbox accordingly                            
-                        $.when(ipaLogin()).done(function () {
-                            isUserInAclPolicy(refUUID, "login", u).done(function (aclResult) {
+                        // check whether the user is already added to the ACL policy and check the checkbox accordingly
+                        $.when(ipa.ipaLogin()).done(function () {
+                            ipa.isUserInAclPolicy(refUUID, "login", u).done(function (aclResult) {
                                 var count = aclResult["result"]["count"];
 
                                 // only one user should be matched
@@ -875,14 +874,14 @@ function subloadInstanceACLTable(refUUID) {
                                     // the uid of the user is stored as a list
                                     var uidList = aclResult["result"]["result"][0]["uid"];
                                     if (uidList.includes(u)) {
-                                        $('#loginaccess-' + u).prop('checked', true);
+                                        $("#loginaccess-" + u).prop("checked", true);
                                     } else {
-                                        $('#loginaccess-' + u).prop('checked', false);
+                                        $("#loginaccess-" + u).prop("checked", false);
                                     }
                                 }
                             });
 
-                            isUserInAclPolicy(refUUID, "sudo", u).done(function (aclResult) {
+                            ipa.isUserInAclPolicy(refUUID, "sudo", u).done(function (aclResult) {
                                 var count = aclResult["result"]["count"];
 
                                 // only one user should be matched
@@ -890,9 +889,9 @@ function subloadInstanceACLTable(refUUID) {
                                     // the uid of the user is stored as a list
                                     var uidList = aclResult["result"]["result"][0]["uid"];
                                     if (uidList.includes(u)) {
-                                        $('#sudoaccess-' + u).prop('checked', true);
+                                        $("#sudoaccess-" + u).prop("checked", true);
                                     } else {
-                                        $('#sudoaccess-' + u).prop('checked', false);
+                                        $("#sudoaccess-" + u).prop("checked", false);
                                     }
                                 }
                             });
@@ -909,17 +908,17 @@ function subloadInstanceACLTable(refUUID) {
 
 }
 function subloadRoleACLRoles1() {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/roles";
     keycloak.updateToken(30).success(function () {
         $.ajax({
             url: apiUrl,
-            type: 'GET',
+            type: "GET",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
             success: function (result) {
-                $("#acl-role-select1").find('option').remove().end();
-                for (i = 0; i < result.length; i++) {
+                $("#acl-role-select1").find("option").remove().end();
+                for (let i = 0; i < result.length; i++) {
                     var role = result[i];
 
                     $("#acl-role-select1").append(new Option(role[1], role[0]));
@@ -948,11 +947,11 @@ function loadGroupTable(groupname) {
 
     $("#acl-group-role-table > tbody").html("");
 
-    var apiUrl = baseUrl + "/StackV-web/restapi/app/keycloak/groups/" + group;
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/groups/" + group;
     alert(apiUrl);
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
@@ -963,38 +962,35 @@ function loadGroupTable(groupname) {
             tbody1.empty();
             tbody1.html("");
 
-            for (i = 0; i < result.length; i++) {
+            for (let i = 0; i < result.length; i++) {
                 var role = result[i];
 
                 var row = document.createElement("tr");
 
                 var cell1_1 = document.createElement("td");
                 if (role[2] === "assigned") {
-                    cell1_1.innerHTML = role[1] + '<button data-roleid="' + role[0] + '" data-rolename="' + role[1] + '" class="button-role-delete btn btn-default pull-right">Remove</button>';
+                    cell1_1.innerHTML = role[1] + "<button data-roleid=\"" + role[0] + "\" data-rolename=\"" + role[1] + "\" class=\"button-role-delete btn btn-default pull-right\">Remove</button>";
                 } else {
-                    cell1_1.innerHTML = role[1] + '<button data-rolename="' + role[1] + '" class="button-role-delete1 btn btn-default pull-right">Remove</button>';
+                    cell1_1.innerHTML = role[1] + "<button data-rolename=\"" + role[1] + "\" class=\"button-role-delete1 btn btn-default pull-right\">Remove</button>";
                 }
 
                 row.appendChild(cell1_1);
                 tbody.appendChild(row);
-
-
             }
 
             subloadRoleACLRoles1();
             tweenHideUserPanel.play();
-            tweenGroupRolePanel.play();
 
             $(".button-role-delete1").click(function (evt) {
 
 
                 var option = $(this).data("rolename");
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles/' + option;
+                var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/roles/" + option;
 
 
                 $.ajax({
                     url: apiUrl,
-                    type: 'GET',
+                    type: "GET",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
@@ -1002,11 +998,11 @@ function loadGroupTable(groupname) {
                         var str = String(result).split(",");
                         var output = "[{ \"id\": \"" + str[0] + "\", \"name\": \"" + str[1] + "\",\"scopeParamRequired\": " + str[2] + ", \"composite\": " + str[3] + ", \"clientRole\":" + str[4] + ",\"containerId\":\"" + str[5] + "\"}]";
 
-                        var apiUrl2 = baseUrl + '/StackV-web/restapi/app/keycloak/groups/' + groupname;
+                        var apiUrl2 = window.location.origin + "/StackV-web/restapi/app/keycloak/groups/" + groupname;
 
                         $.ajax({
                             url: apiUrl2,
-                            type: 'DELETE',
+                            type: "DELETE",
                             data: output,
                             contentType: "application/json; charset=utf-8",
                             dataType: "json",
@@ -1024,18 +1020,17 @@ function loadGroupTable(groupname) {
 
             $(".acl-group-roles").click(function (evt) {
                 tweenHideUserPanel.reverse();
-                tweenGroupRolePanel.reverse();
                 evt.preventDefault();
             });
 
             $("#acl-group-role-add").click(function () {
-                var option = $('#acl-role-select1').children("option:selected").text();
+                var option = $("#acl-role-select1").children("option:selected").text();
 
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/keycloak/roles/' + option;
+                var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/roles/" + option;
 
                 $.ajax({
                     url: apiUrl,
-                    type: 'GET',
+                    type: "GET",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
@@ -1043,11 +1038,11 @@ function loadGroupTable(groupname) {
                         var str = String(result).split(",");
                         var output = "[{ \"id\": \"" + str[0] + "\", \"name\": \"" + str[1] + "\",\"scopeParamRequired\": " + str[2] + ", \"composite\": " + str[3] + ", \"clientRole\":" + str[4] + ",\"containerId\":\"" + str[5] + "\"}]";
 
-                        var apiUrl2 = baseUrl + '/StackV-web/restapi/app/keycloak/groups/' + groupname;
+                        var apiUrl2 = window.location.origin + "/StackV-web/restapi/app/keycloak/groups/" + groupname;
 
                         $.ajax({
                             url: apiUrl2,
-                            type: 'POST',
+                            type: "POST",
                             data: output,
                             contentType: "application/json; charset=utf-8",
                             dataType: "json",
@@ -1078,5 +1073,3 @@ function loadGroupTable(groupname) {
 
 
 }
-
-

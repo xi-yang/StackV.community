@@ -9,7 +9,7 @@
             <value>java:module/GenericRESTDriver</value>
         </entry>
         <entry>
-            <key>subsystemBaseUrl</key>
+            <key>subsystemwindow.location.origin</key>
             <value>http://charon.dragon.maxgigapop.net:8080/VersaNS-0.0.1-SNAPSHOT</value>
         </entry>
     </properties>

@@ -25,9 +25,9 @@
 var forceGlobal;
 
 define([
-    "local/d3",
-    "local/stackv/utils",
-    "local/stackv/topology/Edge"
+    "../../d3",
+    "../utils",
+    "./Edge"
 ], function (d3, utils, Edge) {
     var map_ = utils.map_;
     var force;

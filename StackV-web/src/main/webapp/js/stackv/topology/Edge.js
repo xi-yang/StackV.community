@@ -2,29 +2,29 @@
  * Copyright (c) 2013-2016 University of Maryland
  * Modified by: Antonio Heard 2016
 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in 
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 
 "use strict";
-define(["local/stackv/utils"], function (utils) {
+define(["../utils"], function (utils) {
     /**
-     * 
+     *
      * @param {Port} leftPort
      * @param {Port} rightPort
      */
@@ -42,7 +42,7 @@ define(["local/stackv/utils"], function (utils) {
         this.svgLeadLeft = null;
         this.svgLeadRight = null;
         this.edgeType = null;
-        
+
         this._isProper = function () {
             if (!this.leftPort) {
                 console.log("Left Port Missing!");
@@ -50,8 +50,8 @@ define(["local/stackv/utils"], function (utils) {
             } else if (!this.rightPort) {
                 console.log("Right Port Missing!");
                 return false;
-            } 
-            
+            }
+
             if (this.leftPort.getType() !== "Port" && this.rightPort.getType() !== "Port") {
                 this.source = this.leftPort;
                 this.target = this.rightPort;
@@ -91,7 +91,7 @@ define(["local/stackv/utils"], function (utils) {
 
         this.getType = function() {
             return "Edge";
-        }
+        };
 
     }
     return Edge;

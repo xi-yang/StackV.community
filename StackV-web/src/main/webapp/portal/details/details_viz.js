@@ -2,7 +2,7 @@ var settings = {
     ZOOM_FACTOR: .04,
     ZOOM_MIN: .8,
     INIT_ZOOM: 2  //The initial zoom factor effects the preciosion in which we can specify the highlighting effect
-            //However, it also seems to effect the error in zooming
+    //However, it also seems to effect the error in zooming
 };
 var ModelConstructor;
 var model;
@@ -16,7 +16,7 @@ var modelMap = {}; // stores models in <visualization div, model> format
 var outputApiMap = {};
 var outputApi;
 
-function onload() {
+export function details_viz() {
     $(function () {
         $("#dialog_policyAction").dialog({
             autoOpen: false
@@ -26,9 +26,9 @@ function onload() {
             maxHeight: 500,
             minHeight: 50,
             width: "auto",
-//                         height: 400,
-//                         width: "80%",
-//                         maxWidth: 500,  jquery ui bug, this doens't work
+            //                         height: 400,
+            //                         width: "80%",
+            //                         maxWidth: 500,  jquery ui bug, this doens't work
             create: function (event, ui) {
                 //$( "#dialog_policyData" ).css("maxWidth",  "800px" );
             },
@@ -38,114 +38,114 @@ function onload() {
         });
 
     });
-    require(["local/stackv/topology/model",
-        "local/stackv/topology/layout",
-        "local/stackv/topology/render",
-        "local/d3",
-        "local/stackv/utils",
-        "local/stackv/topology/DropDownTree",
-        "local/stackv/topology/ContextMenu"],
-            function (m, l, r, d3_, utils_, tree, c) {
-                var token = sessionStorage.getItem("token");
+    require(["../../js/stackv/topology/model",
+        "../../js/stackv/topology/layout",
+        "../../js/stackv/topology/render",
+        "../../js/d3",
+        "../../js/stackv/utils",
+        "../../js/stackv/topology/DropDownTree",
+        "../../js/stackv/topology/ContextMenu"],
+    function (m, l, r, d3_, utils_, tree, c) {
+        var token = sessionStorage.getItem("token");
 
-                $.ajax({
-                    crossDomain: true,
-                    type: "GET",
-                    url: "/StackV-web/restapi/service/ready",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + token);
-                    },
+        $.ajax({
+            crossDomain: true,
+            type: "GET",
+            url: "/StackV-web/restapi/service/ready",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + token);
+            },
 
-                    dataType: "text",
+            dataType: "text",
 
-                    success: function (data, textStatus, jqXHR) {
-                        if (data === "true") {
-//                                //alert(textStatus);
-                            layout = l;
-                            render = r;
-                            d3 = d3_;
-                            utils = utils_;
-                            map_ = utils.map_;
-                            bsShowFadingMessage = utils.bsShowFadingMessage;
-                            positionDisplayPanel = utils.positionDisplayPanel;
+            success: function (data, textStatus, jqXHR) {
+                if (data === "true") {
+                    //                                //alert(textStatus);
+                    layout = l;
+                    render = r;
+                    d3 = d3_;
+                    utils = utils_;
+                    map_ = utils.map_;
+                    bsShowFadingMessage = utils.bsShowFadingMessage;
+                    positionDisplayPanel = utils.positionDisplayPanel;
 
-                            // possibly pass in map here later for all possible dialogs
-                            ContextMenu = c;
-                            DropDownTree = tree;
+                    // possibly pass in map here later for all possible dialogs
+                    ContextMenu = c;
+                    DropDownTree = tree;
 
-                            ModelConstructor = m;
-                            model = new ModelConstructor();
-                            model.init(1, renderModels, null, "default");
+                    ModelConstructor = m;
+                    model = new ModelConstructor();
+                    model.init(1, renderModels, null, "default");
 
-                            functionMap['ModelBrowser'] = function (o, m, e) {
-                                positionDisplayPanel(m + "_displayPanel", e);
-                                var browser = document.querySelector("#" + m + "_displayPanel");
-                                $(".displayPanel").removeClass("displayPanel-active");
-                                browser.classList.add("displayPanel-active");
-                                render.API.selectElement(o, outputApiMap[m]);
+                    functionMap["ModelBrowser"] = function (o, m, e) {
+                        positionDisplayPanel(m + "_displayPanel", e);
+                        var browser = document.querySelector("#" + m + "_displayPanel");
+                        $(".displayPanel").removeClass("displayPanel-active");
+                        browser.classList.add("displayPanel-active");
+                        render.API.selectElement(o, outputApiMap[m]);
 
-                            };
+                    };
 
-                            contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
-                            contextMenu.init();
-//
-                            console.log("after model.");
-                        } else {
-                            displayError("Backend not Ready", d3, "va_viz", -80);
-                            disableButtons("va");
-                            displayError("Backend not Ready", d3, "ur_viz", -80);
-                            disableButtons("ur");
-                            displayError("Backend not Ready", d3, "ua_viz", -80);
-                            disableButtons("ua");
-                            displayError("Backend not Ready", d3, "vr_viz", -80);
-                            disableButtons("vr");
+                    contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
+                    contextMenu.init();
+                    //
+                    console.log("after model.");
+                } else {
+                    displayError("Backend not Ready", d3, "va_viz", -80);
+                    disableButtons("va");
+                    displayError("Backend not Ready", d3, "ur_viz", -80);
+                    disableButtons("ur");
+                    displayError("Backend not Ready", d3, "ua_viz", -80);
+                    disableButtons("ua");
+                    displayError("Backend not Ready", d3, "vr_viz", -80);
+                    disableButtons("vr");
 
-                            displayError("Backend not Ready", d3, "serva_viz", -80);
-                            disableButtons("serva");
-                            displayError("Backend not Ready", d3, "servr_viz", -80);
-                            disableButtons("servr");
-                            displayError("Backend not Ready", d3, "sysa_viz", -80);
-                            disableButtons("sysa");
-                            displayError("Backend not Ready", d3, "sysr_viz", -80);
-                            disableButtons("sysr");
-                        }
-                    },
+                    displayError("Backend not Ready", d3, "serva_viz", -80);
+                    disableButtons("serva");
+                    displayError("Backend not Ready", d3, "servr_viz", -80);
+                    disableButtons("servr");
+                    displayError("Backend not Ready", d3, "sysa_viz", -80);
+                    disableButtons("sysa");
+                    displayError("Backend not Ready", d3, "sysr_viz", -80);
+                    disableButtons("sysr");
+                }
+            },
 
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        console.log("Debugging: timeout at start..");
-                        // displayError("Visualization Unavailable", d3_);
-                        //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
-                        displayError("Unavailable", d3, "va_viz");
-                        disableButtons("va");
-                        displayError("Unavailable", d3, "ur_viz");
-                        disableButtons("ur");
-                        displayError("Unavailable", d3, "ua_viz");
-                        disableButtons("ua");
-                        displayError("Unavailable", d3, "vr_viz");
-                        disableButtons("vr");
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log("Debugging: timeout at start..");
+                // displayError("Visualization Unavailable", d3_);
+                //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                displayError("Unavailable", d3, "va_viz");
+                disableButtons("va");
+                displayError("Unavailable", d3, "ur_viz");
+                disableButtons("ur");
+                displayError("Unavailable", d3, "ua_viz");
+                disableButtons("ua");
+                displayError("Unavailable", d3, "vr_viz");
+                disableButtons("vr");
 
-                        displayError("Unavailable", d3, "serva_viz");
-                        disableButtons("serva");
-                        displayError("Unavailable", d3, "servr_viz");
-                        disableButtons("servr");
-                        displayError("Unavailable", d3, "sysa_viz");
-                        disableButtons("sysa");
-                        displayError("Unavailable", d3, "sysr_viz");
-                        disableButtons("sysr");
-                    }
-                });
-                $(".displayPanelCloser").on("click", function () {
-                    $(".displayPanel").removeClass("displayPanel-active");
+                displayError("Unavailable", d3, "serva_viz");
+                disableButtons("serva");
+                displayError("Unavailable", d3, "servr_viz");
+                disableButtons("servr");
+                displayError("Unavailable", d3, "sysa_viz");
+                disableButtons("sysa");
+                displayError("Unavailable", d3, "sysr_viz");
+                disableButtons("sysr");
+            }
+        });
+        $(".displayPanelCloser").on("click", function () {
+            $(".displayPanel").removeClass("displayPanel-active");
 
-                });
+        });
 
-//                            document.getElementById("displayPanelCloser").onclick = function() {
-//                              // $("#displayPanel").removeClass( "displayPanel-active");
-//                                $(".displayPanel").removeClass("displayPanel-active");
-//
-//                            };
+        //                            document.getElementById("displayPanelCloser").onclick = function() {
+        //                              // $("#displayPanel").removeClass( "displayPanel-active");
+        //                                $(".displayPanel").removeClass("displayPanel-active");
+        //
+        //                            };
 
-            });
+    });
 }
 
 function make_display_panel(div_id, prefix) {
@@ -176,11 +176,11 @@ function make_viz(div_id, prefix) {
     var viz = "<div id=\"" + prefix + "_viz_div\" class=\"hidden details_viz_div\">" +
             "<div class=\"hover_div\" id=\"hoverdiv_" + prefix + "_viz\"></div>" +
             "<svg class =\"details_viz\" id= \"" + prefix + "_viz\"> " +
-            '<defs>' +
-            '  <marker id="marker_arrow_' + prefix + '_viz" markerWidth="10" markerHeight="10" refx="15" refy="3" orient="auto" markerUnits="strokeWidth">' +
-            '      <path d="M0,0 L0,6 L9,3 z" fill="black" />' +
-            '  </marker>' +
-            '</defs>' +
+            "<defs>" +
+            "  <marker id=\"marker_arrow_" + prefix + "_viz\" markerWidth=\"10\" markerHeight=\"10\" refx=\"15\" refy=\"3\" orient=\"auto\" markerUnits=\"strokeWidth\">" +
+            "      <path d=\"M0,0 L0,6 L9,3 z\" fill=\"black\" />" +
+            "  </marker>" +
+            "</defs>" +
             "<g id=\"transform_" + prefix + "_viz\"> " +
             "<g id=\"topology_" + prefix + "_viz\"/> " +
             "<g id=\"edge1_" + prefix + "_viz\"/> " +
@@ -218,7 +218,7 @@ function recenterGraph(o, model, width, height) {
 
     if (o.svgContainerName.includes("serv")) {
         width = $(window).width() * .85;
-        ; //$("#" + viz_id).width();
+        //$("#" + viz_id).width();
         height = $(window).height() * .1; //$("#" + viz_id).height();
 
         buildTreeViz(model.dept_trees, model.resources, model, width, height, o.svgContainerName);
@@ -232,8 +232,8 @@ function recenterGraph(o, model, width, height) {
     }
 
     //layout.force().gravity(1).charge(-900).start();
-//        layout.doLayout(model, null, width, height);
-//        layout.doLayout(model, null, width, height);
+    //        layout.doLayout(model, null, width, height);
+    //        layout.doLayout(model, null, width, height);
 
     o.resetZoom();
     render.doRender(o, model, false, modelMap, outputApiMap);
@@ -241,11 +241,11 @@ function recenterGraph(o, model, width, height) {
 
 function displayError(error, d3_obj) {
     d3_obj.select("#viz").append("text")
-            .attr("x", $(window).width() / 2)
-            .attr("y", $(window).height() / 2)
-            .attr("fill", "black")
-            .attr("font-size", "80px")
-            .text(error);
+        .attr("x", $(window).width() / 2)
+        .attr("y", $(window).height() / 2)
+        .attr("fill", "black")
+        .attr("font-size", "80px")
+        .text(error);
 
 }
 
@@ -256,11 +256,11 @@ function drawGraph(outputApi, model2) {
 
     if (outputApi.svgContainerName.includes("serv") || outputApi.svgContainerName.includes("sys")) {
         var width = $(window).width() * .85;
-        ; //$("#" + viz_id).width();
+        //$("#" + viz_id).width();
         var height = $(window).height() * .1; //$("#" + viz_id).height();
     } else {
         var width = 993;
-        ; //$("#" + viz_id).width();
+        //$("#" + viz_id).width();
         var height = 130; //$("#" + viz_id).height();
     }
     var tdID = $("#" + outputApi.svgContainerName).closest("td").attr("id");
@@ -284,11 +284,11 @@ function drawGraph(outputApi, model2) {
 function displayError(error, d3_obj, viz_id, offset) {
     if (viz_id.includes("serv") || viz_id.includes("sys")) {
         var div_width = $(window).width() * .85;
-        ; //$("#" + viz_id).width();
+        //$("#" + viz_id).width();
         var div_height = $(window).height() * .1; //$("#" + viz_id).height();
     } else {
         var div_width = 993;
-        ; //$("#" + viz_id).width();
+        //$("#" + viz_id).width();
         var div_height = 130; //$("#" + viz_id).height();
     }
     var x = (div_width / 4) + (div_width / 6);
@@ -303,12 +303,12 @@ function displayError(error, d3_obj, viz_id, offset) {
     }
 
     d3_obj.select("#" + viz_id).append("text")
-            .attr("x", x + offset)
-            .attr("y", y)
-            .attr("fill", "black")
-            .attr("font-size", "50px")
-            .attr("opacity", .4)
-            .text(error);
+        .attr("x", x + offset)
+        .attr("y", y)
+        .attr("fill", "black")
+        .attr("font-size", "50px")
+        .attr("opacity", .4)
+        .text(error);
 }
 
 function displayText(text, d3_obj, viz_id, x, y, text_id) {
@@ -319,13 +319,13 @@ function displayText(text, d3_obj, viz_id, x, y, text_id) {
         currentText.setAttribute("y", y);
     } else {
         d3_obj.select("#" + viz_id).append("text")
-                .attr("x", x)
-                .attr("y", y)
-                .attr("fill", "black")
-                .attr("font-size", "25px")
-                .attr("opacity", .4)
-                .attr("id", text_id)
-                .text(text);
+            .attr("x", x)
+            .attr("y", y)
+            .attr("fill", "black")
+            .attr("font-size", "25px")
+            .attr("opacity", .4)
+            .attr("id", text_id)
+            .text(text);
     }
 }
 function showDiactivatedViz(viz_id) {
@@ -340,7 +340,7 @@ function showDiactivatedViz(viz_id) {
 }
 function showManifest() {
     var uuid = sessionStorage.getItem("instance-uuid");
-    window.open('/StackV-web/visual/manifest/manifestPortal.jsp?uuid=' + uuid, 'newwindow', config = 'height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no');
+    window.open("/StackV-web/visual/manifest/manifestPortal.jsp?uuid=" + uuid, "newwindow", config = "height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no");
 }
 function createTextToggle(prefix, textModel) {
     var button = $("#" + prefix + "_viz_toggle_model");
@@ -374,8 +374,8 @@ function createTextToggle(prefix, textModel) {
 }
 
 function disableButtons(prefix) {
-    $("#" + prefix + "_viz_recenter_button").attr('disabled', 'disabled');
-    $("#" + prefix + "_viz_toggle_model").attr('disabled', 'disabled');
+    $("#" + prefix + "_viz_recenter_button").attr("disabled", "disabled");
+    $("#" + prefix + "_viz_toggle_model").attr("disabled", "disabled");
 }
 
 function renderModels() {
@@ -390,7 +390,7 @@ function renderModels() {
         },
         dataType: "json",
         success: function (data, textStatus, jqXHR) {
-            $('.details_viz_div').bind('emptyViz', function () {
+            $(".details_viz_div").bind("emptyViz", function () {
                 var id = $(this).attr("id");
                 if (id.includes("ser") || id.includes("sys"))
                     removeIfEmpty(id);
@@ -413,7 +413,7 @@ function renderModels() {
                         evt.preventDefault();
                     });
                     createTextToggle("serva", data.serviceModelAddition);
-                } else {                    
+                } else {
                     displayError("Empty", d3, "serva_viz");
                     disableButtons("serva");
                 }
@@ -500,7 +500,7 @@ function renderModels() {
         dataType: "json",
 
         success: function (data, textStatus, jqXHR) {
-            if (data.verified_addition && data.verified_addition !== '{ }') {
+            if (data.verified_addition && data.verified_addition !== "{ }") {
                 var vaObj = JSON.parse(data.verified_addition);
                 var vaModel = new ModelConstructor();
                 vaModel.initWithMap(vaObj, model);
@@ -518,7 +518,7 @@ function renderModels() {
                 disableButtons("va");
             }
 
-            if (data.verified_reduction && data.verified_reduction !== '{ }') {
+            if (data.verified_reduction && data.verified_reduction !== "{ }") {
                 var vrObj = JSON.parse(data.verified_reduction);
                 var vrModel = new ModelConstructor();
                 vrModel.initWithMap(vrObj, model);
@@ -536,7 +536,7 @@ function renderModels() {
                 disableButtons("vr");
             }
 
-            if (data.unverified_addition && data.unverified_addition !== '{ }') {
+            if (data.unverified_addition && data.unverified_addition !== "{ }") {
                 var uaObj = JSON.parse(data.unverified_addition);
                 var uaModel = new ModelConstructor();
                 uaModel.initWithMap(uaObj, model);
@@ -554,7 +554,7 @@ function renderModels() {
                 disableButtons("ua");
             }
 
-            if (data.unverified_reduction && data.unverified_reduction !== '{ }') {
+            if (data.unverified_reduction && data.unverified_reduction !== "{ }") {
                 var urObj = JSON.parse(data.unverified_reduction);
                 var urModel = new ModelConstructor();
                 urModel.initWithMap(urObj, model);
@@ -663,7 +663,7 @@ function outputApi_(renderAPI, contextMenu, svg) {
 
     this._updateTransform = function () {
         d3.select("#transform" + "_" + this.svgContainerName).
-                attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
+            attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
     };
     this._updateTransform();
     //Return the svg coordinates of the point under the given mouse coords
@@ -715,37 +715,37 @@ function outputApi_(renderAPI, contextMenu, svg) {
             return;
         }
         switch (n.getType()) {
-            case "Subnet":
-                var forms = document.getElementsByName("subnets");
-                if (forms.length === 0) {
-                    break;
-                }
-                if (forms.length > 1) {
-                    console.log("More than 1 subnets forms");
-                    break;
-                }
-                var form = forms[0];
-                var subnetStrs = [];
-                var toToggle = n.getNameBrief();
-                var add = true;
-                //If the form is already empty, we would add an extranous empty line
-                if (form.value.trim() !== "") {
-                    map_(form.value.split('\n'), function (subnetStr) {
-                        if (subnetStr.trim() === toToggle) {
-                            add = false;
-                        } else {
-                            subnetStrs.push(subnetStr);
-                        }
-                        ;
-                    });
-                }
-                if (add) {
-                    subnetStrs.push(toToggle);
-                }
-                form.value = subnetStrs.join('\n');
+        case "Subnet":
+            var forms = document.getElementsByName("subnets");
+            if (forms.length === 0) {
                 break;
-            default:
-                console.log("Unhandled type in formSelect: " + n.getType());
+            }
+            if (forms.length > 1) {
+                console.log("More than 1 subnets forms");
+                break;
+            }
+            var form = forms[0];
+            var subnetStrs = [];
+            var toToggle = n.getNameBrief();
+            var add = true;
+            //If the form is already empty, we would add an extranous empty line
+            if (form.value.trim() !== "") {
+                map_(form.value.split("\n"), function (subnetStr) {
+                    if (subnetStr.trim() === toToggle) {
+                        add = false;
+                    } else {
+                        subnetStrs.push(subnetStr);
+                    }
+
+                });
+            }
+            if (add) {
+                subnetStrs.push(toToggle);
+            }
+            form.value = subnetStrs.join("\n");
+            break;
+        default:
+            console.log("Unhandled type in formSelect: " + n.getType());
         }
     };
 

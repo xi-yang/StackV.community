@@ -1,28 +1,29 @@
-'use strict';
-/* 
+"use strict";
+/*
  * Copyright (c) 2013-2018 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 
-/* global Mousetrap, keycloak, Power2, baseUrl */
+/* global Mousetrap, Power2, TweenLite */
+import { keycloak, getURLParameter } from "../nexus";
 
 var options = [];
 var factories = {};
@@ -42,11 +43,11 @@ var simpleManifest = false;
 var typingTimer = null;
 
 Mousetrap.bind({
-    'left': function () {
+    "left": function () {
         if ($activeStage)
             prevStage();
     },
-    'right': function () {
+    "right": function () {
         if ($activeStage)
             nextStage();
     }
@@ -54,18 +55,18 @@ Mousetrap.bind({
 
 var $errorModal = $("#error-modal").iziModal({
     title: "Input Error",
-    subtitle: 'There are invalid inputs. Please review and correct!',
-    headerColor: '#BD5B5B',
+    subtitle: "There are invalid inputs. Please review and correct!",
+    headerColor: "#BD5B5B",
     width: 600,
     top: 300,
     timeout: 5000,
     timeoutProgressbar: true,
-    transitionIn: 'fadeInDown',
-    transitionOut: 'fadeOutDown',
+    transitionIn: "fadeInDown",
+    transitionOut: "fadeOutDown",
     pauseOnHover: true
 });
 
-function loadIntent(type) {
+export function loadIntent(type) {
     intentType = type;
     $.ajax({
         type: "GET",
@@ -77,16 +78,16 @@ function loadIntent(type) {
             parseSchemaIntoManifest(intent);
             if (getURLParameter("preload")) {
                 switch (type) {
-                    case "dnc":
-                        preloadDNC();
-                        break;
-                    case "hybridcloud":
-                        preloadAHC();
-                        break;
-                    case "vcn":
-                        preloadAWSVCN();
-                        //preloadOPSVCN();
-                        break;
+                case "dnc":
+                    preloadDNC();
+                    break;
+                case "hybridcloud":
+                    preloadAHC();
+                    break;
+                case "vcn":
+                    preloadAWSVCN();
+                    //preloadOPSVCN();
+                    break;
                 }
             }
             if (getURLParameter("fullTest")) {
@@ -94,17 +95,17 @@ function loadIntent(type) {
             }
         },
         error: function (err) {
-            console.log('Error Loading XML! \n' + err);
+            console.log("Error Loading XML! \n" + err);
         }
     });
 
-    refreshTimer = setInterval(function () {
+    var refreshTimer = setInterval(function () {
         keycloak.updateToken(90);
     }, (60000));
 }
 
 function renderIntent() {
-    // Stage 1: Initialization                
+    // Stage 1: Initialization
     initializeIntent();
 
     // Stage 2: Factorization
@@ -150,7 +151,7 @@ function initializeIntent() {
 
         panel.append($div);
         stages[id] = $div;
-        $currentStageDiv = $div;
+        var $currentStageDiv = $div;
         gsap[id] = new TweenLite("#" + id, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
 
         if (i === 1) {
@@ -199,7 +200,7 @@ function initMeta(meta) {
     var $blockDiv = $("<div>").attr("id", "intent-panel-meta-block");
     var blocks = meta.getElementsByTagName("block");
     for (var i = 0; i < blocks.length; i++) {
-        var $div = $("<div>", style = "margin-bottom:20px;");
+        var $div = $("<div>").css("margin-bottom","20px");
         var block = blocks[i];
         var tag = block.children[0].innerHTML;
         var str = block.children[1].innerHTML;
@@ -231,7 +232,7 @@ function initMeta(meta) {
                     count++;
                 }
             }
-            // Removing elements            
+            // Removing elements
             while (val < count) {
                 if (count === 1) {
                     // Remove last element (superficially)
@@ -301,10 +302,10 @@ function renderInputs(arr, $parent) {
 
             var $div = $("<div>", {class: "intent-group-div", id: eleID});
             $parent.append($div);
-            var $name = $('<div class="group-header col-sm-12"><div class="group-name">' + str + "</div></div>");
+            var $name = $("<div class=\"group-header col-sm-12\"><div class=\"group-name\">" + str + "</div></div>");
             $div.append($name);
 
-            // Handle potential element modifiers            
+            // Handle potential element modifiers
             var $targetDiv = $div;
             if (collapsible === "true") {
                 if (opened === "true") {
@@ -315,14 +316,14 @@ function renderInputs(arr, $parent) {
             }
             if (factory === "true") {
                 $div.addClass("factory");
-                var factObj = {};
+                let factObj = {};
                 factObj["count"] = 1;
                 factories[eleID] = factObj;
             }
             if (block) {
                 $div.addClass("factory");
                 $div.addClass("block-" + block);
-                var factObj = {};
+                let factObj = {};
                 factObj["count"] = 1;
                 factObj["block"] = block;
                 factories[eleID] = factObj;
@@ -359,19 +360,19 @@ function renderInputs(arr, $parent) {
                 }
                 var binding = bindings[eleID];
 
-                for (var j = 0; j < boundArr.length; j++) {
-                    var name = boundArr[j].children[0].innerHTML;
-                    var val = boundArr[j].children[1].innerHTML;
+                for (let j = 0; j < boundArr.length; j++) {
+                    let name = boundArr[j].children[0].innerHTML;
+                    let val = boundArr[j].children[1].innerHTML;
                     if (!(name in binding)) {
                         binding[name] = {};
                     }
                     binding[name][val] = {};
 
-                    var minEle = $(boundArr[j]).children("min")[0];
+                    let minEle = $(boundArr[j]).children("min")[0];
                     if (minEle) {
                         binding[name][val]["min"] = minEle.innerHTML;
                     }
-                    var maxEle = $(boundArr[j]).children("max")[0];
+                    let maxEle = $(boundArr[j]).children("max")[0];
                     if (maxEle) {
                         binding[name][val]["max"] = maxEle.innerHTML;
                     }
@@ -394,12 +395,12 @@ function renderInputs(arr, $parent) {
             // Recurse!
             renderInputs(ele.children, $targetDiv);
         } else if (ele.nodeName === "input") {
-            var type = ele.children[1].innerHTML;
-            var name = constructID(ele);
-            var trigger = ele.getAttribute("trigger");
-            var condition = ele.getAttribute("condition");
-            var hidden = ele.getAttribute("hidden");
-            var required = ele.getAttribute("required");
+            let type = ele.children[1].innerHTML;
+            let name = constructID(ele);
+            let trigger = ele.getAttribute("trigger");
+            let condition = ele.getAttribute("condition");
+            let hidden = ele.getAttribute("hidden");
+            let required = ele.getAttribute("required");
 
             var $label = $("<label>").text(ele.children[0].innerHTML);
             var $input = $("<input>", {type: type, class: "intent-input", id: name});
@@ -410,15 +411,15 @@ function renderInputs(arr, $parent) {
 
             var $message = null;
             switch (type) {
-                case "button":
-                    $input.removeClass("intent-input");
-                    $input.click(function (e) {
-                        nextStage(true);
+            case "button":
+                $input.removeClass("intent-input");
+                $input.click(function (e) {
+                    nextStage(true);
 
-                        e.preventDefault();
-                    });
-                    $input.val("Select");
-                    break;
+                    e.preventDefault();
+                });
+                $input.val("Select");
+                break;
             }
 
             if (ele.children[0].innerHTML.toLowerCase() === "name" && ele.parentElement.tagName === "group") {
@@ -436,17 +437,17 @@ function renderInputs(arr, $parent) {
             // Handle potential element modifiers
             if (ele.getElementsByTagName("size").length > 0) {
                 switch (ele.getElementsByTagName("size")[0].innerHTML) {
-                    case "small":
-                        $label.addClass("col-sm-4");
-                        break;
-                    case "large":
-                        $label.addClass("col-sm-8");
-                        break;
-                    case "xlarge":
-                        $label.addClass("col-sm-12");
-                        break;
-                    default:
-                        $label.addClass("col-sm-6");
+                case "small":
+                    $label.addClass("col-sm-4");
+                    break;
+                case "large":
+                    $label.addClass("col-sm-8");
+                    break;
+                case "xlarge":
+                    $label.addClass("col-sm-12");
+                    break;
+                default:
+                    $label.addClass("col-sm-6");
                 }
             } else {
                 $label.addClass("col-sm-6");
@@ -482,7 +483,7 @@ function renderInputs(arr, $parent) {
                         source.children[0].innerHTML;
                 $.ajax({
                     url: apiURL,
-                    type: 'GET',
+                    type: "GET",
                     sourceSettings: [source.children[1].innerHTML, source.children[2].innerHTML, source.children[3].innerHTML],
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -514,7 +515,7 @@ function renderInputs(arr, $parent) {
                 });
             } else if (ele.getElementsByTagName("link").length > 0) {
                 $input = $("<select>", {id: name, class: "intent-input"});
-                var selectName = name;
+                let selectName = name;
                 var link = ele.getElementsByTagName("link")[0].innerHTML;
                 $input.attr("data-link", link);
                 var $default = $("<option>", {selected: true}).text("");
@@ -525,15 +526,15 @@ function renderInputs(arr, $parent) {
                 }
             } else if (ele.getElementsByTagName("options").length > 0) {
                 $input = $("<select>", {id: name, class: "intent-input"});
-                var selectName = name;
+                let selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
                 if (!ele.getAttribute("required")) {
                     var $null = $("<option>").text("N/A").val("");
                     $input.append($null);
                 }
 
-                var def;
-                for (var j = 0; j < options.length; j++) {
+                let def;
+                for (let j = 0; j < options.length; j++) {
                     var $option;
                     if (options[j].getAttribute("condition") !== null) {
                         $option = $("<option>", {disabled: true});
@@ -562,14 +563,14 @@ function renderInputs(arr, $parent) {
             }
             if (trigger) {
                 switch (type) {
-                    case "text":
-                        break;
-                    case "button":
-                        $label.attr("data-trigger", trigger);
-                        $label.click(function () {
-                            addOption($(this).data("trigger"));
-                        });
-                        break;
+                case "text":
+                    break;
+                case "button":
+                    $label.attr("data-trigger", trigger);
+                    $label.click(function () {
+                        addOption($(this).data("trigger"));
+                    });
+                    break;
                 }
             }
             if (condition) {
@@ -606,12 +607,12 @@ function factorizeRendering() {
 
 
     // Step 2: Insert user elements
-    for (var i = 0; i < factoryArr.length; i++) {
-        var fact = factoryArr[i];
-        var id = fact.id;
-        var head = fact.children[0];
-        var name = head.children[0].innerText.split(" #")[0];
-        var key = id.replace(new RegExp("\\_num\\d*", "gm"), "");
+    for (let i = 0; i < factoryArr.length; i++) {
+        let fact = factoryArr[i];
+        let id = fact.id;
+        let head = fact.children[0];
+        let name = head.children[0].innerText.split(" #")[0];
+        let key = id.replace(new RegExp("\\_num\\d*", "gm"), "");
         if (factories[key]["block"] === undefined) {
             var $button = $("<button>", {class: "intent-button-factory", text: "Add " + name});
             $button.attr("data-factory", key);
@@ -640,17 +641,17 @@ function factorizeRendering() {
 
     initializeInputs();
     // Step 4: Cache schemas
-    for (var i = 0; i < factoryArr.length; i++) {
-        var fact = factoryArr[i];
-        var id = fact.id;
-        var key = id.replace(new RegExp("\\_num\\d*", "gm"), "");
+    for (let i = 0; i < factoryArr.length; i++) {
+        let fact = factoryArr[i];
+        let id = fact.id;
+        let key = id.replace(new RegExp("\\_num\\d*", "gm"), "");
 
         var $clone = $(fact).clone(true, true);
         $clone.find("[data-initial]").removeAttr("data-initial");
         factories[key]["clone"] = $clone;
     }
 
-    // Step 5: Finishing work        
+    // Step 5: Finishing work
     refreshLinks();
     enforceBounds();
     expandStarters();
@@ -686,7 +687,7 @@ function submitIntent(mode) {
     //gsap["intent"].reverse();
     refreshLinks();
     if ($(".invalid-input").length === 0) {
-        // Validate        
+        // Validate
         var valid = true;
         if (!($("#meta-alias").val()) && mode === 0) {
             valid = false;
@@ -698,22 +699,20 @@ function submitIntent(mode) {
             // Parse manifest
             var json = {};
             $("#intent-panel-body .intent-input").each(function () {
-                var cond = $(this).parents('.conditional').length;
-                if (cond > 0 && $(this).parents('.conditioned').length < cond) {
-                    ;
-                } else {
+                var cond = $(this).parents(".conditional").length;
+                if (!(cond > 0 && $(this).parents(".conditioned").length < cond)) {
                     var arr = this.id.split("-");
 
                     var last = json;
                     var i;
                     for (i = 1; i < (arr.length - 1); i++) {
-                        var key = arr[i];
+                        let key = arr[i];
                         if (!(key in last)) {
                             last[key] = {};
                         }
                         last = last[key];
                     }
-                    var key = arr[i];
+                    let key = arr[i];
                     if ($(this).attr("type") === "checkbox") {
                         last[key] = $(this).is(":checked");
                     } else {
@@ -736,11 +735,11 @@ function submitIntent(mode) {
                     console.log(JSON.stringify(manifest));
                 } else {
                     // Submit to backend
-                    pack['proceed'] = "true";
-                    var apiUrl = baseUrl + '/StackV-web/restapi/app/service';
+                    pack["proceed"] = "true";
+                    var apiUrl = window.location.origin + "/StackV-web/restapi/app/service";
                     $.ajax({
                         url: apiUrl,
-                        type: 'POST',
+                        type: "POST",
                         data: JSON.stringify(pack),
                         contentType: "application/json; charset=utf-8",
                         dataType: "json",
@@ -794,7 +793,7 @@ function validateInput($input) {
                 }
             } else if ($input.val().match(regex) === null) {
                 $input.addClass("invalid-input");
-                var $stage = $($input.parents(".intent-stage-div")[0]);
+                let $stage = $($input.parents(".intent-stage-div")[0]);
                 $("#prog-" + $stage.attr("id")).addClass("invalid-input");
                 $(".intent-operations").addClass("blocked");
                 return false;
@@ -802,7 +801,7 @@ function validateInput($input) {
         }
     }
     $input.removeClass("invalid-input");
-    var $stage = $($input.parents(".intent-stage-div")[0]);
+    $stage = $($input.parents(".intent-stage-div")[0]);
     $("#prog-" + $stage.attr("id")).removeClass("invalid-input");
 
     if ($(".invalid-input").length === 0) {
@@ -829,8 +828,8 @@ function collapseGroups() {
         var collapseStr = "collapse-" + $div.attr("id");
         var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});
         var $toggle = $("<a>").attr("data-toggle", "collapse")
-                .attr("data-target", "#" + collapseStr)
-                .addClass("group-collapse-toggle");
+            .attr("data-target", "#" + collapseStr)
+            .addClass("group-collapse-toggle");
 
         $($($div.children()[0]).children()[0]).after($toggle);
         $div.children().each(function () {
@@ -848,8 +847,8 @@ function collapseGroups() {
         var collapseStr = "collapse-" + $div.attr("id");
         var $collapseDiv = $("<div>", {class: "collapse", id: collapseStr});
         var $toggle = $("<a>").attr("data-toggle", "collapse")
-                .attr("data-target", "#" + collapseStr)
-                .addClass("group-collapse-toggle collapsed");
+            .attr("data-target", "#" + collapseStr)
+            .addClass("group-collapse-toggle collapsed");
 
         $($($div.children()[0]).children()[0]).after($toggle);
         $div.children().each(function () {
@@ -869,8 +868,8 @@ function collapseDiv($name, $div) {
     var parent = getParentName($div.attr("id"));
     var collapseStr = "collapse-" + parent.replace(/ /g, "_") + "-" + name.replace(/ /g, "_");
     var $toggle = $("<a>").attr("data-toggle", "collapse")
-            .attr("data-target", "#" + collapseStr)
-            .addClass("group-collapse-toggle");
+        .attr("data-target", "#" + collapseStr)
+        .addClass("group-collapse-toggle");
 
     var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});
 
@@ -1021,21 +1020,21 @@ function buildClone(key, target, $factoryBtn) {
         var origReg = new RegExp("id=\"" + origID, "g");
         $clone.html($clone.html().replace(origReg, "id=\"" + targetID));
     } else {
-        var origID = $clone.attr("id");
-        var targetID = $clone.attr("id").substring(0, $clone.attr("id").length - 1) + count;
+        let origID = $clone.attr("id");
+        let targetID = $clone.attr("id").substring(0, $clone.attr("id").length - 1) + count;
         $clone.attr("id", targetID);
 
-        var origReg = new RegExp("id=\"" + origID, "g");
+        let origReg = new RegExp("id=\"" + origID, "g");
         $clone.html($clone.html().replace(origReg, "id=\"" + targetID));
     }
-    // Match parent (sub-factories)    
+    // Match parent (sub-factories)
     $clone.addClass("factored");
     var cloneID = $clone.attr("id");
 
-    // Replace control buttons    
+    // Replace control buttons
     var $button = $("<button>", {class: "intent-button-remove close"});
     $button.attr("aria-label", "Close");
-    $button.html('<span aria-hidden="true">&times;</span>');
+    $button.html("<span aria-hidden=\"true\">&times;</span>");
     $button.click(function () {
         var $btn = $(this);
         var id = $btn.parent().parent().attr("id");
@@ -1061,7 +1060,7 @@ function buildClone(key, target, $factoryBtn) {
     gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
     gsap[cloneID].play();
 
-    // Reset listeners  
+    // Reset listeners
     $(".intent-button-factory").off("click");
     $(".intent-button-factory").click(function (e) {
         // Modify clone for current index
@@ -1254,7 +1253,7 @@ function parseSchemaIntoManifest(schema) {
             }
             last = last[key];
         }
-        var key = arr[i];
+        key = arr[i];
         last[key] = "";
     });
 
@@ -1325,11 +1324,11 @@ function parseManifestIntoJSON() {
     manifest = newManifest;
     manifest["service"] = intentType;
 
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/uuid';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/service/uuid";
     $.ajax({
         url: apiUrl,
         async: false,
-        type: 'GET',
+        type: "GET",
         dataType: "text",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -1343,13 +1342,13 @@ function parseManifestIntoJSON() {
                 manifest["data"]["options"] = options;
             }
 
-            // Render template            
-//            var rendered = render(manifest);
-//            if (!rendered) {
-//                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
-//                manifest = null;
-//                return;
-//            }
+            // Render template
+            //            var rendered = render(manifest);
+            //            if (!rendered) {
+            //                swal("Templating Error", "The manifest submitted could not be properly rendered. Please contact a system administrator.", "error");
+            //                manifest = null;
+            //                return;
+            //            }
 
             pack["service"] = intentType;
             pack["alias"] = $("#meta-alias").val();
@@ -1413,7 +1412,7 @@ function enforceBounds() {
 }
 
 function stripID($ele) {
-    return id = $ele.attr("id").replace(new RegExp("\\_num\\d*", "gm"), "");
+    return $ele.attr("id").replace(new RegExp("\\_num\\d*", "gm"), "");
 }
 
 function firstOf($ele) {
@@ -1604,7 +1603,7 @@ function findFamilyInput($recur, key) {
         }
     }
 
-    // No match found, recurse upwards    
+    // No match found, recurse upwards
     // If at stage level and no match, no match found
     if ($recur.hasClass("intent-stage-div")) {
         return null;
@@ -1646,17 +1645,17 @@ function recondition() {
     // Iterate over all conditional options
     $("[data-condition-select]").attr("disabled", true);
     $conArr = $("[data-condition-select]");
-    for (var i = 0; i < $conArr.length; i++) {
-        var $ele = $($conArr[i]);
-        var conArr = $ele.data("condition-select").split(",");
+    for (let i = 0; i < $conArr.length; i++) {
+        let $ele = $($conArr[i]);
+        let conArr = $ele.data("condition-select").split(",");
         // Parse each condition from element
-        for (var j = 0; j < conArr.length; j++) {
-            var con = conArr[j];
+        for (let j = 0; j < conArr.length; j++) {
+            let con = conArr[j];
             if (con.split("::").length > 1) {
                 // Reference value
-                var splitArr = con.split("::");
-                var $ref = findFamilyInput($ele, splitArr[0]);
-                var key = splitArr[1].toLowerCase().replace(/ /g, "_");
+                let splitArr = con.split("::");
+                let $ref = findFamilyInput($ele, splitArr[0]);
+                let key = splitArr[1].toLowerCase().replace(/ /g, "_");
                 if ($ref && $ref.val() && ($ref.val().toLowerCase().replace(/ /g, "_") === key)) {
                     $ele.removeAttr("disabled");
                 }
@@ -1672,7 +1671,7 @@ function recondition() {
 
 function initializeInputs() {
     var $arr = $("[data-initial]");
-    for (var i = 0; i < $arr.length; i++) {
+    for (let i = 0; i < $arr.length; i++) {
         var $input = $($arr[i]);
         var val = $input.data("initial");
         $input.val(val);
@@ -1680,10 +1679,10 @@ function initializeInputs() {
     }
 
     var $boundArr = $("[data-bound]");
-    for (var i = 0; i < $boundArr.length; i++) {
+    for (let i = 0; i < $boundArr.length; i++) {
         var $ele = $($boundArr[i]);
         for (var key in bindings[$ele.data("bound")]) {
-            var $input = findFamilyInput($ele, key);
+            let $input = findFamilyInput($ele, key);
             if ($input && !$input.hasClass("binding")) {
                 $input.change(function () {
                     enforceBounds();
@@ -1695,12 +1694,12 @@ function initializeInputs() {
     }
 
     var validation = $("[data-valid]");
-    for (var i = 0; i < validation.length; i++) {
-        var $input = $(validation[i]);
-        var validRef = $input.data("valid");
-        var validEle = intent.children[0].getElementsByTagName("validation")[0];
-        var constEle = null;
-        for (var j = 0; j < validEle.children.length; j++) {
+    for (let i = 0; i < validation.length; i++) {
+        let $input = $(validation[i]);
+        let validRef = $input.data("valid");
+        let validEle = intent.children[0].getElementsByTagName("validation")[0];
+        let constEle = null;
+        for (let j = 0; j < validEle.children.length; j++) {
             var constraint = validEle.children[j];
             if (constraint.children[0].innerHTML === validRef) {
                 constEle = constraint;
@@ -1737,8 +1736,8 @@ function addOption(trigger) {
 }
 
 function isEnabledInput($input) {
-    var cond = $input.parents('.conditional').length;
-    if (cond > 0 && $input.parents('.conditioned').length < cond) {
+    var cond = $input.parents(".conditional").length;
+    if (cond > 0 && $input.parents(".conditioned").length < cond) {
         return false;
     }
     if ($input.hasClass("conditional") && !$input.hasClass("conditioned")) {
@@ -1762,10 +1761,10 @@ function saveManifest() {
     scaffManifest["data"] = manifest;
 
     // Save to DB
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/profile/new';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/profile/new";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         data: JSON.stringify(scaffManifest),
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
@@ -1782,16 +1781,16 @@ function parseTestManifest() {
         var tag = this.tagName;
         var id = $(this).attr("id");
         switch (tag) {
-            case "INPUT":
-                $(this).val(id);
-                break;
-            case "SELECT":
-                if ($(this).children('option[value!=""][value]').size() > 0) {
-                    $(this).val($(this).children('option[value!=""][value]').first().val());
-                } else {
-                    $(this).append($("<option>").val(id));
-                }
-                break;
+        case "INPUT":
+            $(this).val(id);
+            break;
+        case "SELECT":
+            if ($(this).children("option[value!=\"\"][value]").size() > 0) {
+                $(this).val($(this).children("option[value!=\"\"][value]").first().val());
+            } else {
+                $(this).append($("<option>").val(id));
+            }
+            break;
         }
     });
 

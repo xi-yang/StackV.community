@@ -22,7 +22,7 @@
  */
 
 "use strict";
-define(["local/stackv/utils"], function (utils) {
+define(["../utils"], function (utils) {
     var map_ = utils.map_;
     function RenderedObject(x, y, dx, dy, size) {        
         this.x = x;

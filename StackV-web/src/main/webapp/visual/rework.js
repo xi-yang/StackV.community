@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import $ from "jquery";
 
 import AllMockData from "./data.mock";
 import DataModel from "./data-model/data-model";

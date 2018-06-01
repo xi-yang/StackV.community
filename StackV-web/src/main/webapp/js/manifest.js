@@ -1,8 +1,8 @@
-/* global baseUrl, keycloak */
+/* global window.location.origin, keycloak */
 
 function loadManifest() {
     var uuid = location.search.split("?uuid=")[1];
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/details/' + uuid + '/instance';
+    var apiUrl = window.location.origin + '/StackV-web/restapi/app/details/' + uuid + '/instance';
     $.ajax({
         url: apiUrl,
         type: 'GET',

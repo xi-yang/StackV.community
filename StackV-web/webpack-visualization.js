@@ -5,11 +5,11 @@ const PACKAGE = require("./package.json");
 module.exports = {
     entry: [
         "@babel/polyfill",
-        __dirname + "/src/main/webapp/visual/test/rework.js",
+        __dirname + "/src/main/webapp/visual/rework.js",
     ],
     output: {
-        filename: "StackV-graphic-" + PACKAGE.version + ".bundle.js",
-        path: __dirname + "/src/main/webapp/visual/test/",
+        filename: "StackV-visualization.bundle.js",
+        path: __dirname + "/src/main/webapp/js/",
         library: "SVGraphic",
         libraryTarget: "umd",
     },
@@ -42,8 +42,8 @@ module.exports = {
         ]
     },
     externals: {
-        "d3": "d3",
-        "lodash": "_",
-        "lz-string": "LZString",
+        'd3': 'd3',
+        'lodash': '_',
+        'lz-string': 'LZString',
     },
 };

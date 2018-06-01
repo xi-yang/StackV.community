@@ -1,6 +1,6 @@
 "use strict";
 define([
-    "local/d3", "local/stackv/model", "local/stackv/utils", "local/stackv/loading", "local/d3.tip.v0.6.3"
+    "../d3", "./model", "./utils", "./loading", "../d3.tip.v0.6.3"
 ], function (d3, model, utils, loading) {
     /** Document and canvas sizes **/
     var width = document.documentElement.clientWidth;
@@ -17,15 +17,15 @@ define([
     var fill = d3.scale.category20();
     var css = {
         classes: {
-            nodeText: '.node text',
-            nodeImage: '.node image',
-            nodeCircle: '.node circle',
-            link: 'line.link'
+            nodeText: ".node text",
+            nodeImage: ".node image",
+            nodeCircle: ".node circle",
+            link: "line.link"
         },
         IDs: {
-//            zoomSlider: '#zoomSlider',
-            zoomValue: '#zoomValue',
-            infobox: '#networks'
+            //            zoomSlider: '#zoomSlider',
+            zoomValue: "#zoomValue",
+            infobox: "#networks"
         }
     };
     var settings = {
@@ -33,7 +33,7 @@ define([
          * Zoom takes on values in the range [0, 100].
          * The base zoom value defines 1x zoom.
          * Any other zoom value causes a scaling equal to a
-         * percentage of the base zoom value. 
+         * percentage of the base zoom value.
          */
         baseZoomValue: 50,
         /** Font size in px **/
@@ -49,7 +49,7 @@ define([
         topologyPanelHeight: 50,
         topologyPanelBorderRounding: 5,
         /*
-         * Force graph fundamental values 
+         * Force graph fundamental values
          * charge - node-node force strength
          * gravity - node-center force strength
          * distance - minimum distance between linked nodes
@@ -66,7 +66,7 @@ define([
 
     /** FUNCTIONALITY **/
     function initForceGraph() {
-        console.info('Initialising force graph...');
+        console.info("Initialising force graph...");
 
         /**
          * k is porportional to the square root of the graph density
@@ -75,7 +75,7 @@ define([
          * credit to mbostock on Stack Overflow for the idea
          */
         var k = Math.sqrt(data.nodes.length / (canvasWidth * canvasHeight));
-        console.info('Calculated k-value ' + k);
+        console.info("Calculated k-value " + k);
         //        var charge = settings.baseCharge / k;
         //        var gravity = settings.baseGravity * k;
         //        var distance = settings.baseDistance * (1 + (100 * k));
@@ -83,31 +83,31 @@ define([
         var charge = settings.baseCharge;
         var gravity = settings.baseGravity;
         var distance = settings.baseDistance;
-        force = d3.layout.force().size([canvasWidth, canvasHeight]).charge(charge).gravity(gravity).linkDistance(distance).friction(friction).on('tick', tick)
-                .on('start', function () {
-                    setTimeout(function () {
-                        force.alpha(force.alpha() / 3);
-                    }, 250);
-                    setTimeout(function () {
-                        force.alpha(force.alpha() / 3);
-                    }, 500);
-                    setTimeout(function () {
-                        force.stop();
-                    }, 1000);
-                });
-        svg = d3.select('#topologyLarge').attr('width', canvasWidth).attr('height', canvasHeight);
-        hullg = svg.append('g');
-        linkg = svg.append('g');
-        nodeg = svg.append('g');
-        tip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]).html(function (d) {
+        force = d3.layout.force().size([canvasWidth, canvasHeight]).charge(charge).gravity(gravity).linkDistance(distance).friction(friction).on("tick", tick)
+            .on("start", function () {
+                setTimeout(function () {
+                    force.alpha(force.alpha() / 3);
+                }, 250);
+                setTimeout(function () {
+                    force.alpha(force.alpha() / 3);
+                }, 500);
+                setTimeout(function () {
+                    force.stop();
+                }, 1000);
+            });
+        svg = d3.select("#topologyLarge").attr("width", canvasWidth).attr("height", canvasHeight);
+        hullg = svg.append("g");
+        linkg = svg.append("g");
+        nodeg = svg.append("g");
+        tip = d3.tip().attr("class", "d3-tip").offset([-10, 0]).html(function (d) {
             return "<strong>" + d.name + "</strong>";
         });
         svg.call(tip);
-        curve = d3.svg.line().interpolate('cardinal-closed').tension(.85);
-        svg.attr('opacity', 1e-6) // fade in the graph
-                .transition().duration(1000).attr('opacity', 1.5);
-        drag = force.drag().on('drag', ondrag);
-        console.info('Force graph initialised');
+        curve = d3.svg.line().interpolate("cardinal-closed").tension(.85);
+        svg.attr("opacity", 1e-6) // fade in the graph
+            .transition().duration(1000).attr("opacity", 1.5);
+        drag = force.drag().on("drag", ondrag);
+        console.info("Force graph initialised");
         loading.end(loadingItem, true);
         restart();
     }
@@ -120,36 +120,36 @@ define([
         map = network(data, map, expand);
 
         force.nodes(map.nodes).links(map.links);
-        hullg.selectAll('path.hull').remove();
-        hull = hullg.selectAll('path.hull').data(convexHulls(map.nodes, settings.hullOffset, expand)).enter().append('path').attr('class', 'hull').attr('d', drawCluster).style('fill', function (d) {
+        hullg.selectAll("path.hull").remove();
+        hull = hullg.selectAll("path.hull").data(convexHulls(map.nodes, settings.hullOffset, expand)).enter().append("path").attr("class", "hull").attr("d", drawCluster).style("fill", function (d) {
             return fill(d.id);
-        }).on('dblclick', function (d) {
-            console.log('hull click', d, arguments, this, expand[d.id]);
+        }).on("dblclick", function (d) {
+            console.log("hull click", d, arguments, this, expand[d.id]);
             cycleState(d.id);
             restart();
-        }).on('mousemove', tip.show).on('mouseout', tip.hide);
+        }).on("mousemove", tip.show).on("mouseout", tip.hide);
         link = linkg.selectAll(css.classes.link).data(map.links, getLinkID);
         link.exit().remove();
-        link.enter().append('line').classed('link', true).style('stroke-width', function (d) {
+        link.enter().append("line").classed("link", true).style("stroke-width", function (d) {
             return d.size || 1;
         });
-        node = nodeg.selectAll('g').data(map.nodes, getUID);
+        node = nodeg.selectAll("g").data(map.nodes, getUID);
         node.exit().remove();
-        var nodeEnter = node.enter().append('g')
-                // if (d.size) -- d.size > 0 when d is a group node.
-                .attr('class', function (d) {
-                    return 'node' + (d.size > 0 ? '' : ' leaf');
-                }).on('dblclick', dblclick).on('click', click).call(drag).on('mousemove', tip.show).on('mouseout', tip.hide);
+        var nodeEnter = node.enter().append("g")
+        // if (d.size) -- d.size > 0 when d is a group node.
+            .attr("class", function (d) {
+                return "node" + (d.size > 0 ? "" : " leaf");
+            }).on("dblclick", dblclick).on("click", click).call(drag).on("mousemove", tip.show).on("mouseout", tip.hide);
 
         nodeEnter.append("svg:image")
-                .attr("class", "circle")
-                .attr("xlink:href", function (d) {
-                    return d.icon;
-                })
-                .attr("x", "-15px")
-                .attr("y", "-15px")
-                .attr("width", "30px")
-                .attr("height", "30px");
+            .attr("class", "circle")
+            .attr("xlink:href", function (d) {
+                return d.icon;
+            })
+            .attr("x", "-15px")
+            .attr("y", "-15px")
+            .attr("width", "30px")
+            .attr("height", "30px");
         force.start();
         for (var i = 0; i < 3; i++)
             force.tick();
@@ -157,12 +157,12 @@ define([
 
     function processPrevious(node, groups, centroids) {
         if (node.hasNode) {
-            groups[node.id] = node; // then add entry to list of previous groups 
+            groups[node.id] = node; // then add entry to list of previous groups
             node.size = 0;
         }
 
         if (isChild(node)) { // else if processing group member node
-// then add its information to group's centroid
+            // then add its information to group's centroid
             var c = centroids[node.parent] || (centroids[node.parent] = {
                 x: 0,
                 y: 0,
@@ -175,25 +175,25 @@ define([
     }
 
     function network(data, previous, expand) {
-        console.info('Input data', data);
+        console.info("Input data", data);
         var groupMap = {},
-                nodeMap = {},
-                linkMap = {},
-                previousGroups = {},
-                previousCentroids = {},
-                outputNodes = [],
-                outputLinks = [];
+            nodeMap = {},
+            linkMap = {},
+            previousGroups = {},
+            previousCentroids = {},
+            outputNodes = [],
+            outputLinks = [];
         if (previous) { // process nodes from previous iteration
             previous.nodes.forEach(function (node) {
                 processPrevious(node, previousGroups, previousCentroids);
             });
-            console.info('Processed previous', 'previous group', previousGroups, 'previous nodes', previousCentroids);
+            console.info("Processed previous", "previous group", previousGroups, "previous nodes", previousCentroids);
         }
 
-// determine nodes
+        // determine nodes
         for (var k = 0, l = data.nodes.length; k < l; ++k) {
             var n = data.nodes[k],
-                    i = n.id;
+                i = n.id;
             if (n.hasNode || (n.children != null && n.children.length > 0) || n.hasService || n.hasPort) {
                 if (isDisplayed(n)) {
                     nodeMap[n.id] = n.id;
@@ -262,7 +262,7 @@ define([
             groupMap[i].link_count = 0;
         }
 
-// determine links
+        // determine links
         for (k = 0, l = data.links.length; k < l; ++k) {
             var e = data.links[k];
             // while d3.layout.force does convert link.source and link.target NUMERIC values to direct node references,
@@ -270,9 +270,9 @@ define([
             // references to skip the d3.layout.force implicit links conversion later on and ensure that both .source/.target
             // and .real_source/.real_target are of the same type and pointing at valid nodes.
             var u = nodeMap[e.source.id],
-                    v = nodeMap[e.target.id];
+                v = nodeMap[e.target.id];
             if (u == v) {
-// skip links from node to same (A-A); they are rendered as 0-length lines anyhow. Less links in array = faster animation.
+                // skip links from node to same (A-A); they are rendered as 0-length lines anyhow. Less links in array = faster animation.
                 continue;
             }
 
@@ -302,7 +302,7 @@ define([
         // create point sets
         for (var k = 0, l = nodes.length; k < l; ++k) {
             var n = nodes[k],
-                    i = n.parentID || n.id;
+                i = n.parentID || n.id;
             if (expand[i] === 0 || (!isChild(n) && !(n.hasNode || n.hasService))) {
                 continue;
             }
@@ -317,7 +317,7 @@ define([
 
         for (var k = 0, l = nodes.length; k < l; ++k) {
             var n = nodes[k],
-                    i = n.parentID || n.id;
+                i = n.parentID || n.id;
             if (expand[i] === 0 || (!isChild(n) && !(n.hasNode || n.hasService))) {
                 continue;
             }
@@ -333,7 +333,7 @@ define([
             h.push([maxX, maxY]);
         }
 
-// create convex hulls
+        // create convex hulls
         var hullset = [];
         for (i in hulls) {
             hullset.push({
@@ -385,9 +385,9 @@ define([
         }
 
         if (toggleLock.fixed === true) {
-            d3.select('#lockButton').html('Unlock');
+            d3.select("#lockButton").html("Unlock");
         } else {
-            d3.select('#lockButton').html('Lock');
+            d3.select("#lockButton").html("Lock");
         }
     }
 
@@ -422,7 +422,7 @@ define([
             data.links[i].visible = k.visible;
         }
 
-        console.log('loaded layout', data);
+        console.log("loaded layout", data);
         restart();
     }
 
@@ -456,7 +456,7 @@ define([
             layout.links[i].visible = k.visible;
         }
 
-        console.log('Saved layout', layout);
+        console.log("Saved layout", layout);
         layoutExpand = JSON.stringify(expand);
     }
     /** END FUNCTIONALITY **/
@@ -509,16 +509,16 @@ define([
 
     function getLinkID(d) {
         var u = d.source.name,
-                v = d.target.name;
+            v = d.target.name;
         if (u < v) {
-            return u + '|' + v;
+            return u + "|" + v;
         } else {
-            return v + '|' + u;
+            return v + "|" + u;
         }
     }
 
     function getUID(n) {
-        return (n.isTopology ? 'Topology ' : 'Node ') + n.name;
+        return (n.isTopology ? "Topology " : "Node ") + n.name;
     }
     /** END UTILITY FUNCTIONS **/
 
@@ -532,9 +532,9 @@ define([
     }
 
     function addNode() {
-        var node = new model.Node('test addNode ' + Math.floor(Math.random() * 10000), data.dictionary.length, data.dictionary[53].json, data.dictionary[53].icon);
+        var node = new model.Node("test addNode " + Math.floor(Math.random() * 10000), data.dictionary.length, data.dictionary[53].json, data.dictionary[53].icon);
         node.parentID = lastClicked.id;
-        console.log('Adding node', node, 'to', lastClicked);
+        console.log("Adding node", node, "to", lastClicked);
         var childrenList = lastClicked.children || [];
         childrenList.push(node.id);
         data.dictionary.push(node);
@@ -549,67 +549,67 @@ define([
         restart();
     }
 
-// TODO document updateInfobox.open behavior
+    // TODO document updateInfobox.open behavior
     function updateInfobox(d) {
-//        if (updateInfobox.open === undefined) {
-//            updateInfobox.open = false;
-//        }
-//        if (lastClicked === d && updateInfobox.open) {
-//            d3.select(css.IDs.infobox).style({
-//                'margin-left': '-180px'
-//            }).html('');
-//            updateInfobox.open = false;
-//        } else {
+        //        if (updateInfobox.open === undefined) {
+        //            updateInfobox.open = false;
+        //        }
+        //        if (lastClicked === d && updateInfobox.open) {
+        //            d3.select(css.IDs.infobox).style({
+        //                'margin-left': '-180px'
+        //            }).html('');
+        //            updateInfobox.open = false;
+        //        } else {
 
-        var html = '<button id="networksButton" data-dojo-type="dijit/form/Button" type="button">Show Test Networks</button>';
-        html += '<br /><strong>Clicked!<br />Name: <span style="color:#718087">' + d.name + '</span><br />ID: <span style="color:#718087">~' + d.id + '</span></strong>';
-        html += '<br /><button id="addNodeButton" data-dojo-type="dijit/form/Button" type="button">Add Test Node</button>';
+        var html = "<button id=\"networksButton\" data-dojo-type=\"dijit/form/Button\" type=\"button\">Show Test Networks</button>";
+        html += "<br /><strong>Clicked!<br />Name: <span style=\"color:#718087\">" + d.name + "</span><br />ID: <span style=\"color:#718087\">~" + d.id + "</span></strong>";
+        html += "<br /><button id=\"addNodeButton\" data-dojo-type=\"dijit/form/Button\" type=\"button\">Add Test Node</button>";
         if (d.hasParent()) {
-            html += '<br /><strong>Parent: <span style="color:#718087"';
+            html += "<br /><strong>Parent: <span style=\"color:#718087\"";
             var parent = data.dictionary[d.parentID];
-            html += ('<br />~' + parent.id + ': ' + parent.name);
-            html += '</span></strong>';
+            html += ("<br />~" + parent.id + ": " + parent.name);
+            html += "</span></strong>";
         }
 
         if (d.children != null && d.children.length > 0) {
-            html += '<br /><strong>Child Nodes: <span style="color:#718087"';
+            html += "<br /><strong>Child Nodes: <span style=\"color:#718087\"";
             for (var c in d.children) {
                 var child = data.dictionary[d.children[c]];
-                html += ('<br />~' + child.id);
+                html += ("<br />~" + child.id);
             }
-            html += '</span></strong>';
+            html += "</span></strong>";
         }
 
         if (d.hasService) {
-            html += '<br /><strong>Services: <span style="color:#718087"';
+            html += "<br /><strong>Services: <span style=\"color:#718087\"";
             for (var s in d.services) {
                 var service = data.dictionary[d.services[s]];
-                html += ('<br />~' + service.id);
+                html += ("<br />~" + service.id);
             }
-            html += '</span></strong>';
+            html += "</span></strong>";
         }
 
         if (d.hasPort) {
-            html += '<br /><strong>Ports: <span style="color:#718087"';
+            html += "<br /><strong>Ports: <span style=\"color:#718087\"";
             for (var p in d.ports) {
                 var port = data.dictionary[d.ports[p]];
-                html += ('<br />~' + port.id);
+                html += ("<br />~" + port.id);
             }
-            html += '</span></strong>';
+            html += "</span></strong>";
         }
 
         d3.select(css.IDs.infobox).html(html);
         updateInfobox.open = true;
-//        }
+        //        }
 
         lastClicked = d;
         require(["dojo/on", "dijit/registry", "dojo/ready"], function (on, registry, ready) {
             ready(function () {
-                registry.byId('networks').set('content', html);
+                registry.byId("networks").set("content", html);
                 var networksButton = registry.byId("networksButton");
-                on(networksButton, 'click', callSwitchPanelsWith("Networks"));
+                on(networksButton, "click", callSwitchPanelsWith("Networks"));
                 var addNodeButton = registry.byId("addNodeButton");
-                on(addNodeButton, 'click', addNode);
+                on(addNodeButton, "click", addNode);
             });
         });
     }
@@ -620,7 +620,7 @@ define([
     }
 
     function ondrag(d) {
-//        d3.select(this).classed('fixed', d.fixed = true);
+        //        d3.select(this).classed('fixed', d.fixed = true);
     }
 
     function radius(d) {
@@ -645,33 +645,33 @@ define([
     /** GRAPH UPDATE **/
     function tick() {
         if (!hull.empty()) {
-            hull.data(convexHulls(map.nodes, settings.hullOffset, expand)).attr('d', drawCluster);
+            hull.data(convexHulls(map.nodes, settings.hullOffset, expand)).attr("d", drawCluster);
         }
 
         link = linkg.selectAll(css.classes.link);
-        link.attr('x1', function (d) {
+        link.attr("x1", function (d) {
             return d.source.x;
-        }).attr('y1', function (d) {
+        }).attr("y1", function (d) {
             return d.source.y;
-        }).attr('x2', function (d) {
+        }).attr("x2", function (d) {
             return d.target.x;
-        }).attr('y2', function (d) {
+        }).attr("y2", function (d) {
             return d.target.y;
         });
-        link.attr('opacity', function (d) {
+        link.attr("opacity", function (d) {
             if (d.visible) {
                 return 100;
             } else {
                 return 0;
             }
         });
-        node = nodeg.selectAll('g');
-        node.attr('transform', function (d) {
-//            var r = radius(d),
-//                    x = Math.max(r, Math.min(canvasWidth - r, d.x)),
-//                    y = Math.max(r, Math.min(canvasHeight - r, d.y));
+        node = nodeg.selectAll("g");
+        node.attr("transform", function (d) {
+            //            var r = radius(d),
+            //                    x = Math.max(r, Math.min(canvasWidth - r, d.x)),
+            //                    y = Math.max(r, Math.min(canvasHeight - r, d.y));
 
-            return 'translate(' + d.x + ',' + d.y + ')';
+            return "translate(" + d.x + "," + d.y + ")";
         });
     }
 

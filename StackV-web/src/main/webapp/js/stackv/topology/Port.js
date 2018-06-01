@@ -23,9 +23,9 @@
 
 "use strict";
 define([
-    "local/stackv/utils",
-    "local/stackv/topology/Edge",
-    "local/stackv/topology/modelConstants"
+    "../utils",
+    "./Edge",
+    "./modelConstants"
 ], function (utils, Edge, values) {
     var map_ = utils.map_;
     function Port(backing, map) {

@@ -24,7 +24,6 @@
 */
 
 /* global XDomainRequest, Mousetrap, iziToast */
-
 var clipbook = {};
 const $clipModal = $("#clipbook-modal");
 const clipConfig = {
@@ -36,50 +35,50 @@ const clipConfig = {
     group: "clip"
 };
 
-//function loadClipboard() {
-$clipModal.iziModal(clipConfig);
-$("#clipbook-modal .iziModal-content").append("<div class='clipbook-data'><div class='panel panel-default'><div class='clipbook-add' style='display: none;'></div><div class='list-group clipbook-list'></div><div style='height:50px;'><button class='btn btn-default' id='button-clipbook-add'>Add</button><button style='display: none;' class='btn btn-success' id='button-clipbook-submit'>Submit</button></div></div></div>");
-$(".clipbook-add").append("<div class='form-group'><label for='input-clipbook-name'>Clip Name</label><input type='text' class='form-control' id='input-clipbook-name' placeholder='Name'></div>");
-$(".clipbook-add").append("<div class='form-group'><label for='input-clipbook-text'>Clip Text</label><textarea type='text' class='form-control' id='input-clipbook-text' placeholder='Text'></textarea></div>");
+export function loadClipbook() {
+    $clipModal.iziModal(clipConfig);
+    $("#clipbook-modal .iziModal-content").append("<div class='clipbook-data'><div class='panel panel-default'><div class='clipbook-add' style='display: none;'></div><div class='list-group clipbook-list'></div><div style='height:50px;'><button class='btn btn-default' id='button-clipbook-add'>Add</button><button style='display: none;' class='btn btn-success' id='button-clipbook-submit'>Submit</button></div></div></div>");
+    $(".clipbook-add").append("<div class='form-group'><label for='input-clipbook-name'>Clip Name</label><input type='text' class='form-control' id='input-clipbook-name' placeholder='Name'></div>");
+    $(".clipbook-add").append("<div class='form-group'><label for='input-clipbook-text'>Clip Text</label><textarea type='text' class='form-control' id='input-clipbook-text' placeholder='Text'></textarea></div>");
 
-Mousetrap.bind("command+shift+c", () => { reloadClipboard();$clipModal.iziModal("open"); });
-$(".clipbook-list").on("click", "a", function() {
-    copyTextToClipboard($(this).attr("data-clip"));
-});
-$(".clipbook-list").on("click", "span", function() {
-    deleteFromClipbook($(this).parent().text());
+    Mousetrap.bind("command+shift+x", () => { reloadClipboard();$clipModal.iziModal("open"); });
+    $(".clipbook-list").on("click", "a", function() {
+        copyTextToClipboard($(this).attr("data-clip"));
+    });
+    $(".clipbook-list").on("click", "span", function() {
+        deleteFromClipbook($(this).parent().text());
+        syncClipbook();
+    });
+
+    clipbook = [
+        {
+            "name": "testClip1",
+            "clip": "urn:ogf:network:service+45e188ec-d820-4e69-a618-08045ec58835:resource+virtual_clouds:tag+vpc1",
+            "color": "blue"
+        },
+        {
+            "name": "testClip2",
+            "clip": "urn:ogf:network:service+45e188ec-d820-4e69-a618-08045ec58835:resource+virtual_clouds:tag+vpc2",
+            "color": "green"
+        }
+    ];
+
     syncClipbook();
-});
-
-clipbook = [
-    {
-        "name": "testClip1",
-        "clip": "urn:ogf:network:service+45e188ec-d820-4e69-a618-08045ec58835:resource+virtual_clouds:tag+vpc1",
-        "color": "blue"
-    },
-    {
-        "name": "testClip2",
-        "clip": "urn:ogf:network:service+45e188ec-d820-4e69-a618-08045ec58835:resource+virtual_clouds:tag+vpc2",
-        "color": "green"
-    }
-];
-
-syncClipbook();
-$("#button-clipbook-add").click(function() {
-    if ($(this).hasClass("btn-default")) {
-        toggleClipbook("add");
-    } else {
-        toggleClipbook("list");
-    }
-});
-$("#button-clipbook-submit").click(function() {
-    let name = $("#input-clipbook-name").val();
-    let text = $("#input-clipbook-text").val();
-    addToClipbook(name, text);
-    syncClipbook();
-    $("#button-clipbook-add").click();
-});
-//}
+    $("#button-clipbook-add").click(function() {
+        if ($(this).hasClass("btn-default")) {
+            toggleClipbook("add");
+        } else {
+            toggleClipbook("list");
+        }
+    });
+    $("#button-clipbook-submit").click(function() {
+        let name = $("#input-clipbook-name").val();
+        let text = $("#input-clipbook-text").val();
+        addToClipbook(name, text);
+        syncClipbook();
+        $("#button-clipbook-add").click();
+    });
+}
 
 function toggleClipbook(mode) {
     switch (mode) {
@@ -106,7 +105,7 @@ function toggleClipbook(mode) {
     }
 }
 
-function openClipbookAdd() {
+export function openClipbookAdd() {
     $("#input-clipbook-name").val();
     $clipModal.iziModal("open");
     toggleClipbook("add");

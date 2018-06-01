@@ -22,7 +22,7 @@
  */
 
 "use strict";
-define(["local/d3", "local/stackv/utils"],
+define(["../../d3", "../utils"],
         function (d3, utils) {
             var map_ = utils.map_;
             function SwitchPopup(outputApi) {

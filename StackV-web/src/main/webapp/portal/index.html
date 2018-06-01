@@ -1,106 +1,86 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>StackV Portal</title>
+<head>
+    <meta charset="UTF-8">
+    <title>StackV Portal</title>
 
-        <link rel="stylesheet" href="/StackV-web/css/style.css">        
-    </head>
+    <link rel="stylesheet" href="/StackV-web/css/style.css">
+</head>
 
-    <body>
-        <!-- NAV BAR -->
-        <div id="nav">
+<body>
+    <!-- NAV BAR -->
+    <div id="nav">
+    </div>
+    <div id="sub-nav">
+    </div>
+    <!-- TAG PANEL -->
+    <div id="tag-panel">
+    </div>
+    <!-- MAIN PANEL -->
+    <div class="sub-main" id="main-pane">
+        <div id="instance-panel">
+            <div id="instance-header">
+                <b>Service Instances</b>
+                <button class="button-service-create btn btn-primary">Create New</button>
+            </div>
+            <div id="instance-body">
+                <table id="loggingData" class="table table-striped table-bordered display" cellspacing="0" width="100%">
+                    <thead>
+                        <tr>
+                            <th>Alias</th>
+                            <th>Type</th>
+                            <th>Reference UUID</th>
+                            <th>State</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
         </div>
-        <div id="sub-nav">
-        </div>
+
+        <!-- LOADING PANEL -->
+        <div id="loading-panel"></div>
         <!-- TAG PANEL -->
-        <div id="tag-panel">
+        <div id="tag-panel"></div>
+
+        <!-- jQuery dialog for the system health check -->
+        <div id="system-health-check">
+            <div id="system-health-check-text"></div>
         </div>
-        <!-- MAIN PANEL -->
-        <div class="sub-main" id="main-pane">
-            <div id="instance-panel">
-                <div id="instance-header">
-                    <b>Service Instances</b>
-                    <button class="button-service-create btn btn-primary">Create New</button>
-                </div>
-                <div id="instance-body">
-                    <table id="loggingData" class="table table-striped table-bordered display" cellspacing="0" width="100%">
-                        <thead>
-                            <tr>
-                                <th>Alias</th>
-                                <th>Type</th>
-                                <th>Reference UUID</th>
-                                <th>State</th>                             
-                            </tr>
-                        </thead>                                                
-                    </table>
-                </div>            
-            </div>
+    </div>
 
-            <!-- LOADING PANEL -->
-            <div id="loading-panel"></div>
-            <!-- TAG PANEL -->
-            <div id="tag-panel"></div>
+    <!-- Catalog Modal -->
+    <div id="catalog-modal" data-iziModal-title="Service Catalog" data-iziModal-icon="icon-home"></div>
 
-            <!-- jQuery dialog for the system health check -->
-            <div id="system-health-check">
-                <div id="system-health-check-text"></div>
-            </div>
-        </div>
+    <!-- Profiles Modal -->
+    <div id="profiles-modal" data-iziModal-title="Service Profiles" data-iziModal-icon="icon-home"></div>
 
-        <!-- Catalog Modal -->
-        <div id="catalog-modal" data-iziModal-title="Service Catalog" data-iziModal-icon="icon-home"></div>
+    <!-- Profile Details Modal -->
+    <div id="profile-details-modal" data-iziModal-title="Profile Details" data-iziModal-icon="icon-home"></div>
 
-        <!-- Profiles Modal -->
-        <div id="profiles-modal" data-iziModal-title="Service Profiles" data-iziModal-icon="icon-home"></div> 
+    <!-- License Details Modal -->
+    <div id="profile-license-modal" data-iziModal-title="License Management" data-iziModal-icon="icon-home"></div>
 
-        <!-- Profile Details Modal -->
-        <div id="profile-details-modal" data-iziModal-title="Profile Details" data-iziModal-icon="icon-home"></div> 
+    <!-- Alert Modal -->
+    <div id="alert-modal"></div>
 
-        <!-- License Details Modal -->
-        <div id="profile-license-modal" data-iziModal-title="License Management" data-iziModal-icon="icon-home"></div> 
+    <!-- CORE JS PACKAGE-->
+    <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/js/iziModal.min.js"></script>
+    <script src="/StackV-web/js/iziToast.min.js"></script>
 
-        <!-- Alert Modal -->
-        <div id="alert-modal"></div> 
+    <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+    <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
+    <script src="/StackV-web/js/mousetrap.js"></script>
+    <script src="/StackV-web/js/mousetrap-dict.js"></script>
+    <!-- -->
 
-        <!-- CORE JS PACKAGE-->
-        <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
+    <!-- DATATABLES -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/pdfmake.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/vfs_fonts.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.js"></script>
+    <!---->
 
-        <script src="https://code.jquery.com/jquery-2.2.4.min.js"
-                integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
-                crossorigin="anonymous">
-        </script>   
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
-                integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
-                crossorigin="anonymous">
-        </script>
-        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"
-                integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30="
-                crossorigin="anonymous">
-        </script>
-
-        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>                
-
-        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
-        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-        <script src="/StackV-web/js/mousetrap.js"></script>
-        <script src="/StackV-web/js/mousetrap-dict.js"></script>
-
-        <script src="/StackV-web/js/nexus.js"></script>
-        <!---->
-
-        <!-- DATATABLES -->
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/pdfmake.min.js"></script>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/vfs_fonts.js"></script>
-        <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.js"></script>
-        <!---->
-
-        <!-- IZI -->        
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/js/iziModal.min.js"></script>
-        <script src="/StackV-web/js/iziToast.min.js"></script>
-        <!---->
-        
-        <script src="/StackV-web/js/catalog.js"></script>
-        <script src="/StackV-web/js/intentEngine.js"></script>
-    </body>
+    <script src="/StackV-web/js/StackV-main.bundle.js"></script>
+</body>
 </html>

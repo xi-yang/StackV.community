@@ -23,8 +23,8 @@
 
 "use strict";
 define([
-    "local/stackv/utils",
-    "local/stackv/topology/modelConstants"],
+    "../utils",
+    "./modelConstants"],
         function (utils, values) {
             var map_ = utils.map_;
             function Service(backing, map) {

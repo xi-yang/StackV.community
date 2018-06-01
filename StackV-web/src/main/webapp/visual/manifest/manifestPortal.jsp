@@ -70,7 +70,7 @@
     <script src="/StackV-web/js/mousetrap.js"></script>
     <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
-    <script src="/StackV-web/js/nexus.js"></script>
+    <script src="/StackV-web/js/StackV-1.0.0.bundle.js"></script>
     <!---->
 
     <script src="/StackV-web/js/manifest.js"></script>

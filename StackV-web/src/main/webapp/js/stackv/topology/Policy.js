@@ -23,8 +23,8 @@
 
 
 "use strict";
-define(["local/stackv/topology/modelConstants",
-    "local/stackv/utils"],
+define(["./modelConstants",
+    "../utils"],
         function (values, utils) {
             /**
              * There are two graphs we want to consider. The first is the tree representing the node/subnode relationships

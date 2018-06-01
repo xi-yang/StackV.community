@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import * as Clipbook from "src/main/webapp/portal/clipbook";
+import * as Clipbook from "../../portal/clipbook";
 
 import DataModel from '../data-model/data-model';
 import getIcon from '../icon';

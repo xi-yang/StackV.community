@@ -22,7 +22,7 @@
  */
 
 "use strict";
-define(["local/stackv/utils"], function (utils) {
+define(["../utils"], function (utils) {
     var bsShowFadingMessage = utils.bsShowFadingMessage;
     
     function TagDialog (userName) {

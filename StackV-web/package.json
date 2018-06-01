@@ -7,27 +7,30 @@
     "type": "git",
     "url": "https://github.com/MAX-UMD/StackV.git"
   },
-  "main": "src/main/webapp/visual/test/index.js",
+  "main": "src/main/webapp/portal/nexus.js",
   "scripts": {
-    "server-build": "webpack --config ./webpack.server.js --mode development"
+    "main-build": "webpack --config ./webpack-main.js --mode development",
+    "visualization-build": "webpack --config ./webpack-visualization.js --mode development"
   },
   "dependencies": {
     "babel-loader": "^8.0.0-beta.2",
+    "bootstrap": "^3.3.7",
     "d3": "^5.4.0",
+    "jquery": "^3.3.1",
     "lodash": "^4.17.10",
     "lz-string": "^1.4.4"
   },
   "devDependencies": {
-    "@babel/core": "7.0.0-beta.47",
-    "@babel/plugin-proposal-class-properties": "^7.0.0-beta.47",
-    "@babel/plugin-transform-runtime": "7.0.0-beta.47",
-    "@babel/polyfill": "^7.0.0-beta.47",
-    "@babel/preset-env": "^7.0.0-beta.47",
-    "@babel/preset-stage-0": "7.0.0-beta.47",
-    "@babel/runtime": "7.0.0-beta.47",
+    "@babel/core": "^7.0.0-beta.49",
+    "@babel/plugin-proposal-class-properties": "^7.0.0-beta.49",
+    "@babel/plugin-transform-runtime": "7.0.0-beta.49",
+    "@babel/polyfill": "^7.0.0-beta.49",
+    "@babel/preset-env": "^7.0.0-beta.49",
+    "@babel/preset-stage-0": "7.0.0-beta.49",
+    "@babel/runtime": "7.0.0-beta.49",
     "@types/d3": "^5.0.0",
-    "@types/node": "^10.1.2",
-    "webpack": "^4.8.3",
+    "@types/node": "^10.3.0",
+    "webpack": "^4.10.2",
     "webpack-cli": "^2.1.4",
     "webpack-dev-server": "^3.1.4"
   },

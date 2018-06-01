@@ -22,7 +22,7 @@
  */
 
 "use strict";
-define(["local/stackv/topology/modelConstants", "local/stackv/utils"], function (values, utils) {
+define(["./modelConstants", "../utils"], function (values, utils) {
     var map = utils.map_;
     function Subnet(backing, map) {
         this.svgNode = null;

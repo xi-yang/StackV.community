@@ -1,4 +1,4 @@
-/* global XDomainRequest, baseUrl, keycloak */
+/* global XDomainRequest, window.location.origin, keycloak */
 function loadLabels() {
     $("#tagPanel-tab").click(function (evt) {
         $("#tagPanel").toggleClass("closed");
@@ -18,13 +18,13 @@ function loadLabels() {
         userName = sessionStorage.getItem("username");
         var token = sessionStorage.getItem("token");
         var loggedIn = sessionStorage.getItem("loggedIn");
-        var baseUrl = window.location.origin;
+        var window.location.origin = window.location.origin;
 
         if (loggedIn) {
             $.ajax({
                 // crossDomain: true,
                 type: "GET",
-                url: baseUrl + "/StackV-web/restapi/app/label/" + userName,
+                url: window.location.origin + "/StackV-web/restapi/app/label/" + userName,
                 dataType: "json",
                 beforeSend: function (xhr) {
                     xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);

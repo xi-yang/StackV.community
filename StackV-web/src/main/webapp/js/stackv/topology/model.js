@@ -39,20 +39,20 @@
  */
 "use strict";
 
-/* global XDomainRequest, baseUrl, keycloak */
+/* global XDomainRequest, window.location.origin, keycloak */
 //debug code to modify the model before parsing=
 var INJECT = false;
 define([
-    "local/stackv/utils",
-    "local/stackv/topology/Node",
-    "local/stackv/topology/Port",
-    "local/stackv/topology/Service",
-    "local/stackv/topology/modelConstants",
-    "local/stackv/topology/Subnet",
-    "local/stackv/topology/Volume",
-    "local/stackv/topology/Element",
-    "local/stackv/topology/Policy",
-    "local/stackv/topology/Edge"
+    "../utils",
+    "./Node",
+    "./Port",
+    "./Service",
+    "./modelConstants",
+    "./Subnet",
+    "./Volume",
+    "./Element",
+    "./Policy",
+    "./Edge"
 
 ], function (utils, Node, Port, Service, values, Subnet, Volume, Element, Policy, Edge) {
 
