@@ -876,7 +876,7 @@ public class MCETools {
     // 1. verify not exceeding maximumCapacity for bestEffort and softCapped
     // 2. verify not exceeding reservableCapacity for softCapped and guaranteedCapped (and availableCapacity if present)
     // 3. anyAvailable is treated the same as guaranteedCapped, except that it will override the bandwidth value later
-    private static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
+    public static boolean canProvideBandwith(BandwidthProfile bwpfAvailable, BandwidthProfile bwpfRequest) {
         if (bwpfRequest.type.equalsIgnoreCase("bestEffort") || bwpfRequest.type.equalsIgnoreCase("softCapped")) { 
             if (bwpfAvailable.maximumCapacity != null && bwpfRequest.maximumCapacity != null 
                     && bwpfAvailable.maximumCapacity  < bwpfRequest.maximumCapacity) {

@@ -41,6 +41,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
@@ -56,6 +58,7 @@ import net.maxgigapop.mrs.common.TagSet;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_action;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_flow;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_match;
+import net.maxgigapop.mrs.service.compute.MCETools.BandwidthProfile;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -83,6 +86,9 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             + "   }\n"
             + "	]\n"
             + "}";
+    
+    //private static final String URI_SvcDef_L2MpEs = "http://services.ogf.org/nsi/2018/06/descriptions/l2-mp-es";
+    private static final String URI_SvcDef_L2MpEs = "http://services.ogf.org/nsi/2013/12/descriptions/EVTS.A-GOLE";
     
     @Override
     @Asynchronous
@@ -184,8 +190,10 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 mpvbPath.addAll(bridgePath);
                 mpvbPath.getOntModel().add(bridgePath.getOntModel().getBaseModel());
             }
-            // Add MAC list flows
-            if (((JSONObject)jsonTerminals.get(terminal1.getURI())).containsKey("mac_list") && ((JSONObject)jsonTerminals.get(terminal2.getURI())).containsKey("mac_list")) {
+            // Add MAC list flows for Openflow bridged path
+            if (jsonConnReq.containsKey("bridge_type") && ((String)jsonConnReq.get("bridge_type")).equalsIgnoreCase("openflow") 
+                    && ((JSONObject)jsonTerminals.get(terminal1.getURI())).containsKey("mac_list") 
+                    && ((JSONObject)jsonTerminals.get(terminal2.getURI())).containsKey("mac_list")) {
                 addMacFlowsToBridges(mpvbPath, transformedModel, jsonTerminals, portVlanMap);
             }
             // Tag path hops
@@ -198,8 +206,164 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
 
     private MCETools.Path connectTerminalToPath(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX, JSONObject jsonConnReq, Map portVlanMap) {
         String method = "connectTerminalToPath";
+        String bridgeType = (jsonConnReq.containsKey("bridge_type") ? (String)jsonConnReq.get("bridge_type") : "ethernet");
+        if (bridgeType.equalsIgnoreCase("ethernet")) {
+            return connectTerminalToPath_Ethernet(transformedModel, mpvbPath, terminalX, jsonConnReq, portVlanMap);
+        } else if (bridgeType.equalsIgnoreCase("openflow")) {
+            return connectTerminalToPath_Openflow(transformedModel, mpvbPath, terminalX, jsonConnReq, portVlanMap);
+        } else {
+            throw logger.error_throwing(method, String.format("Unrecognized bridge type '%s' in request connecting to terminal '%s'", bridgeType, terminalX));
+        }
+    }
+
+    private MCETools.Path connectTerminalToPath_Ethernet(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX, JSONObject jsonConnReq, Map portVlanMap) {
+        String method = "connectTerminalToPath_Ethernet";
+        JSONObject jsonTerminals = (JSONObject) jsonConnReq.get("terminals");
+        Resource bridgeSwitchingService = checkTerminalOnPath_Ethernet(transformedModel, mpvbPath, terminalX);
+        BandwidthProfile reqBandwithProfile = null;
+        if (jsonConnReq.containsKey("bandwidth")) {
+            JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
+            Long maximum = jsonBw.containsKey("maximum") ? Long.getLong(jsonBw.get("maximum").toString()) : null;
+            Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+            reqBandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
+            reqBandwithProfile.availableCapacity = jsonBw.containsKey("available") ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
+            reqBandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+            reqBandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+            reqBandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
+        }
+        if (bridgeSwitchingService != null) {
+            // get SwitchingSubnet provided by bridgeSwitchingService from mpvbPath 
+            String sparql = "SELECT ?subnet WHERE {"
+                    + String.format("<%s> mrs:providesSubnet ?subnet. ", bridgeSwitchingService)
+                    + "}";
+            ResultSet rs = ModelUtil.sparqlQuery(mpvbPath.getOntModel(), sparql);
+            if (!rs.hasNext()) {
+                throw logger.error_throwing(method, "path has no subnet provided by SwitchingService: " + bridgeSwitchingService);
+            }
+            QuerySolution qs = rs.next();
+            Resource bridgeSwitchingSubnet = qs.getResource("subnet");
+            //$$ check VLAN and bandwidth from terminalX
+            sparql = "SELECT ?x_vlan_range WHERE {"
+                    + String.format("<%s> mrs:hasLabelGroup ?lg. ", terminalX)
+                    + "?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg mrs:values ?x_vlan_range. "
+                    + "}";   
+            rs = ModelUtil.sparqlQuery(transformedModel, sparql);
+            if (!rs.hasNext()) {
+                throw logger.error_throwing(method, "cannot get vlan_range for port: " + terminalX);
+            }
+            qs = rs.next();
+            String vlanXrange = qs.getLiteral("x_vlan_range").getString();
+            String vlanXreq = (String)((JSONObject)jsonTerminals.get(terminalX.getURI())).get("vlan_tag");
+            if (vlanXreq.equalsIgnoreCase("any")) {
+                TagSet allowedVlanRange;
+                try {
+                    allowedVlanRange = new TagSet(vlanXrange);
+                } catch (TagSet.InvalidVlanRangeExeption ex) {
+                    throw logger.error_throwing(method, "invalid vlan_range (" + vlanXrange + ")  for port: " + terminalX);
+                }
+                Integer vtag = allowedVlanRange.getRandom();
+                vlanXreq = vtag.toString();
+            }
+            BandwidthProfile bwProfileX = MCETools.getHopBandwidthPorfile(transformedModel, terminalX);
+            if (reqBandwithProfile != null && bwProfileX != null) {
+                bwProfileX = MCETools.normalizeBandwidthPorfile(bwProfileX);
+                reqBandwithProfile = MCETools.normalizeBandwidthPorfile(reqBandwithProfile);
+                if(!MCETools.canProvideBandwith(bwProfileX, reqBandwithProfile)) {
+                    throw logger.error_throwing(method, "cannot requested bandwidth profile for terminal: " + terminalX);
+                }
+            }
+            // create VLAN subPort and add to under the subnet and terminalX
+            MCETools.Path bridgePath = new MCETools.Path();
+            OntModel bridgePathModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+            Statement bridgeHop = bridgePathModel.createStatement(bridgeSwitchingService, Nml.connectsTo, terminalX);
+            bridgePathModel.add(bridgeHop);
+            bridgePath.add(bridgeHop);
+            bridgePath.setOntModel(bridgePathModel);
+            String vlanPortUrn = terminalX.toString() + ":vlanport+" + vlanXreq;
+            Resource resVlanPort = RdfOwl.createResource(bridgePathModel, vlanPortUrn, Nml.BidirectionalPort);
+            String vlanLabelUrn = vlanPortUrn + ":label+" + vlanXreq;
+            Resource resVlanPortLabel = RdfOwl.createResource(bridgePathModel, vlanLabelUrn, Nml.Label);
+            bridgePathModel.add(bridgePathModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
+            bridgePathModel.add(bridgePathModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
+            bridgePathModel.add(bridgePathModel.createStatement(resVlanPortLabel, Nml.value, vlanXreq));
+            bridgePathModel.add(bridgePathModel.createStatement(terminalX, Nml.hasBidirectionalPort, resVlanPort));
+            bridgePathModel.add(bridgePathModel.createStatement(bridgeSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
+            return bridgePath;
+        } else {
+            // Connect terminal via iterating bridge ports on path
+            List<Resource> etherBridgePorts = listEtherBridgePortsOnPath(transformedModel, mpvbPath);
+            if (etherBridgePorts.isEmpty()) {
+                throw logger.error_throwing(method, "listEtherBridgePortsOnPath cannot find Ethernet bridge on path");
+            }
+            for (Resource etherBridgePort : etherBridgePorts) {
+                Property[] filterProperties = {Nml.connectsTo};
+                Filter<Statement> connFilters = new OntTools.PredicatesFilter(filterProperties);
+                List<MCETools.Path> KSP = MCETools.computeKShortestPaths(transformedModel, etherBridgePort, terminalX, MCETools.KSP_K_DEFAULT, connFilters);
+                if (KSP == null || KSP.size() == 0) {
+                    continue;
+                }
+                // loop through KSP, and shorten, verify and generate path model
+                // Verify TE constraints (switching label and ?adaptation?), 
+                Iterator<MCETools.Path> itP = KSP.iterator();
+                while (itP.hasNext()) {
+                    MCETools.Path bridgePath = itP.next();
+                    // cut overalapping and loopback segments of the bridgePath and identify bridge SwitchingService and Port 
+                    bridgeSwitchingService = shortenBridgePath_Ethernet(transformedModel, mpvbPath, bridgePath);
+                    Resource bridgePort = bridgePath.get(0).getSubject();
+                    // initial vlanRange in of bridgePort could be full range but will eventually constrained by terminalX
+                    boolean verified;
+                    try {
+                        verified = MCETools.verifyL2Path(transformedModel, bridgePath);
+                    } catch (Exception ex) {
+                        throw logger.throwing(method, "verifyL2Path -exception- ", ex);
+                    }
+                    if (verified && jsonConnReq.containsKey("bandwidth")) {
+                        bridgePath.bandwithProfile = reqBandwithProfile;
+                        verified = MCETools.verifyPathBandwidthProfile(transformedModel, bridgePath);
+                    }
+                    if (verified) {
+                        // connect bridge path into MPVB bridging subnet
+                        OntModel bridgePathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonTerminals);
+                        if (bridgePathModel != null) {
+                            // find switchingSubnet under bridgeSwitching service in mpvbPath
+                            String sparql = "SELECT ?vlan_port WHERE {"
+                                    + String.format("<%s> mrs:providesSubnet ?subnet. ", bridgeSwitchingService)
+                                    + "}";
+                            ResultSet rs = ModelUtil.sparqlQuery(mpvbPath.getOntModel(), sparql);
+                            if (!rs.hasNext()) {
+                                continue;
+                            }
+                            QuerySolution qs = rs.nextSolution();
+                            Resource bridgeSwitchingSubnet = qs.getResource("subnet");
+                            sparql = "SELECT ?vlan_port WHERE {"
+                                    + String.format("<%s> nml:hasBidirectionalPort ?vlan_port. ", bridgePort)
+                                    + "?vlan_port mrs:hasLabel ?label. ?label nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?label mrs:value ?vlan. "
+                                    + "}";
+                            rs = ModelUtil.sparqlQuery(bridgePathModel, sparql);
+                            if (!rs.hasNext()) {
+                                continue;
+                            }
+                            qs = rs.nextSolution();
+                            Resource resVlanPort = qs.getResource("vlan_port");
+                            bridgePathModel.add(bridgePathModel.createStatement(bridgeSwitchingSubnet, Nml.hasBidirectionalPort, resVlanPort));
+                            // return the first feasible bridge path of KSP from the first feasible openflowPort of openflowPorts 
+                            // @TODO: picking with optimization criteria OR random from all of the openflowPorts and their KSPs
+                            bridgePath.setOntModel(bridgePathModel);
+                            bridgePath.add(0, bridgePathModel.createStatement(bridgeSwitchingService, Nml.connectsTo, bridgePort));
+                            return bridgePath;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+    }
+    
+    
+    private MCETools.Path connectTerminalToPath_Openflow(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX, JSONObject jsonConnReq, Map portVlanMap) {
+        String method = "connectTerminalToPath_Openflow";
         JSONObject jsonTerminals = (JSONObject)jsonConnReq.get("terminals");
-        Resource bridgeOpenflowService = checkTerminalOnPath(transformedModel, mpvbPath, terminalX);
+        Resource bridgeOpenflowService = checkTerminalOnPath_Openflow(transformedModel, mpvbPath, terminalX);
         if (bridgeOpenflowService != null) {
             Resource bridgePort = terminalX;
             JSONObject jsonTe = (JSONObject) jsonTerminals.get(terminalX.getURI());
@@ -244,7 +408,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 while (itP.hasNext()) {
                     MCETools.Path bridgePath = itP.next();
                     // cut overalapping and loopback segments of the bridgePath and identify bridge OF service and Port 
-                    bridgeOpenflowService = shortenBridgePath(transformedModel, mpvbPath, bridgePath);
+                    bridgeOpenflowService = shortenBridgePath_Openflow(transformedModel, mpvbPath, bridgePath);
                     Resource bridgePort = bridgePath.get(0).getSubject();
                     Resource bridgePortNext = bridgePath.get(0).getObject().asResource();
                     // initial vlanRange in of bridgePort could be full range but will eventually constrained by terminalX
@@ -303,7 +467,28 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         }
     }
 
-    private Resource checkTerminalOnPath(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX) {
+    private Resource checkTerminalOnPath_Ethernet(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX) {
+        Iterator<Statement> itStmt = mpvbPath.iterator();
+        itStmt.next();
+        while (itStmt.hasNext()) {
+            Statement stmt = itStmt.next();
+            Resource resOriginal = stmt.getSubject();
+            String sparql = "SELECT ?svc WHERE {"
+                    + "?svc a nml:SwitchingService. "
+                    + "?svc sd:hasServiceDefinition ?svc_sd. "
+                    + String.format("?svc_sd sd:serviceType <%s>. ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc nml:hasBidirectionalPort <%s>. "
+                            + "FILTER (?svc=<%s>)", terminalX, resOriginal)
+                    + "}";
+            ResultSet rs = ModelUtil.sparqlQuery(transformedModel, sparql);
+            if (rs.hasNext()) {
+                return rs.next().getResource("svc");
+            }
+        }
+        return null;
+    }
+
+    private Resource checkTerminalOnPath_Openflow(OntModel transformedModel, MCETools.Path mpvbPath, Resource terminalX) {
         Iterator<Statement> itStmt = mpvbPath.iterator();
         itStmt.next();
         while (itStmt.hasNext()) {
@@ -322,7 +507,49 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         return null;
     }
     
-    Resource shortenBridgePath(OntModel transformedModel, MCETools.Path connPath, MCETools.Path bridgePath) {
+    Resource shortenBridgePath_Ethernet(OntModel transformedModel, MCETools.Path connPath, MCETools.Path bridgePath) {
+        Resource bridgePort = bridgePath.get(0).getSubject();
+        Resource bridgeSvc = bridgePath.get(0).getObject().asResource();
+        Iterator<Statement> itStmt = bridgePath.iterator();
+        itStmt.next();
+        //find the fartherest bridgePort on bridgePath that diverges from connPath (share SwSvc with another port)
+        while (itStmt.hasNext()) {
+            Statement stmt = itStmt.next();
+            Resource resDiverge = stmt.getSubject();
+            Iterator<Statement> itStmt2 = connPath.iterator();
+            while (itStmt2.hasNext()) {
+                Statement stmt2 = itStmt2.next();
+                Resource resOriginal = stmt2.getSubject();
+                String sparql = "SELECT ?svc WHERE {"
+                    + "?svc a nml:SwitchingService. "
+                    + "?svc sd:hasServiceDefinition ?svc_sd. "
+                    + String.format("?svc_sd sd:serviceType <%s>. ", URI_SvcDef_L2MpEs)
+                        + String.format("?svc nml:hasBidirectionalPort <%s>. "
+                                + "FILTER (?svc=<%s>)", resDiverge, resOriginal)
+                        + "}";
+                ResultSet rs = ModelUtil.sparqlQuery(transformedModel, sparql);
+                if (rs.hasNext()) {
+                    bridgePort = resDiverge;
+                    bridgeSvc = rs.next().getResource("svc");
+                    break;
+                }
+            }
+        }
+        //remove segment before the divergence (remaning segment still in port-port-sw_svc-... form) 
+        itStmt = bridgePath.iterator();
+        while (itStmt.hasNext()) {
+            Statement stmt = itStmt.next();
+            Resource resDiverge = stmt.getSubject();
+            if (resDiverge.equals(bridgePort)) {
+                break;
+            } else {
+                itStmt.remove();
+            }
+        }
+        return bridgeSvc;
+    }
+    
+    Resource shortenBridgePath_Openflow(OntModel transformedModel, MCETools.Path connPath, MCETools.Path bridgePath) {
         Resource bridgePort = bridgePath.get(0).getSubject();
         Resource bridgeSvc = bridgePath.get(0).getObject().asResource();
         Iterator<Statement> itStmt = bridgePath.iterator();
@@ -361,7 +588,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         }
         return bridgeSvc;
     }
-    
+
     //@TODO: use action name and value for URI, add mrs:order 
     private OntModel createBridgePathFlows(OntModel transformedModel, MCETools.Path mpvbPath, OntModel bridgePathModel,
             Resource bridgeOpenflowService, Resource bridgePort, String bridgeVlanTag, JSONObject jsonTerminals, Map portVlanMap) {
@@ -529,6 +756,41 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         return bridgePathModel;
     }
 
+    private List<Resource> listEtherBridgePortsOnPath(OntModel transformedModel, MCETools.Path connPath) {
+        List<Resource> listNodes = new ArrayList();
+        Iterator<Statement> itStmt = connPath.iterator();
+        while (itStmt.hasNext()) {
+            Statement stmt = itStmt.next();
+            Resource resObj = stmt.getSubject();
+            String sparql = "SELECT ?svc WHERE {"
+                    + "?svc a nml:SwitchingService. "
+                    + "?svc sd:hasServiceDefinition ?svc_sd. "
+                    + String.format("?svc_sd sd:serviceType <%s>. ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc nml:hasBidirectionalPort <%s>. ",
+                            resObj)
+                    + "}";
+            ResultSet rs = ModelUtil.sparqlQuery(transformedModel, sparql);
+            if (rs.hasNext()) {
+                listNodes.add(resObj);
+            }
+            if (!itStmt.hasNext()) {
+                resObj = stmt.getObject().asResource();
+                sparql = "SELECT ?svc WHERE {"
+                    + "?svc a nml:SwitchingService. "
+                    + "?svc sd:hasServiceDefinition ?svc_sd. "
+                    + String.format("?svc_sd sd:serviceType <%s>. ", URI_SvcDef_L2MpEs)
+                        + String.format("?svc nml:hasBidirectionalPort <%s>. ",
+                                resObj)
+                        + "}";
+                rs = ModelUtil.sparqlQuery(transformedModel, sparql);
+                if (rs.hasNext()) {
+                    listNodes.add(resObj);
+                }
+            }
+        }
+        return listNodes;
+    }
+    
     private Resource getOpenflowNodeOnPath(OntModel transformedModel, MCETools.Path connPath) {
         Iterator<Statement> itStmt = connPath.iterator();
         while (itStmt.hasNext()) {
