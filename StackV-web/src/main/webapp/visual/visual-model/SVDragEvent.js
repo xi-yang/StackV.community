@@ -1,7 +1,7 @@
 /**
  * This class will try to prevent calling dragStart or dragEnd if the mouse DID NOT MOVE
  */
-export default class SVDragEvent {
+class SVDragEvent {
   constructor(eventHandler) {
     this.eventHandler = eventHandler;
     this.dragStarted = false;
@@ -38,3 +38,5 @@ export default class SVDragEvent {
     };
   }
 }
+
+export default SVDragEvent;

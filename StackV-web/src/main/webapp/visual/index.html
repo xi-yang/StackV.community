@@ -1,78 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, user-scalable=no">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <title>StackV Visualization</title>
 
-    <title>StackV Visualization</title>
-
-    <link rel="stylesheet" href="/StackV-web/css/style.css">
+  <link rel="stylesheet" href="/StackV-web/css/style.css">
 </head>
 <body>
-    <!-- NAV BAR -->
-    <div id="nav"></div>
-    <div id="sub-nav"></div>
+  <!-- NAV BAR -->
+  <div id="nav"></div>
+  <div id="sub-nav"></div>
 
-    <!-- Profiles Modal -->
-    <div id="details-modal" style="right:-75vh;" data-iziModal-title="Node Details" data-izimodal-preventClose="">
-        <div class="container">
-            <p class="" id="details-modal-id"></p>
-            <div class="" id="details-modal-data"></div>
-        </div>
+  <!-- Profiles Modal -->
+  <div id="details-modal" style="right:-75vh;" data-iziModal-title="Node Details" data-izimodal-preventClose="">
+    <div class="container">
+      <p class="" id="details-modal-id"></p>
+      <div class="" id="details-modal-data"></div>
     </div>
+  </div>
 
 
-    <div id="log"></div>
-    <div>
-        <div id="vis-panel">
-            <div id="render-indicator">
-                <span class="circle"></span>
-                <span class="text"></span>
-            </div>
-            <button id="reset-page">Reset Visualization</button>
-            <button id="del-state">Remove Local Render Result</button>
-        </div>
+  <div id="log"></div>
+  <div>
+    <div id="vis-panel">
+      <div id="render-indicator">
+        <span class="circle"></span>
+        <span class="text"></span>
+      </div>    
     </div>
+  </div>
 
-    <!-- CORE JS PACKAGE-->
-    <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
+  <!-- CORE JS PACKAGE-->
+  <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
 
-    <script src="https://code.jquery.com/jquery-2.2.4.min.js"
-    integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
-    crossorigin="anonymous">
-    </script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
-    integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
-    crossorigin="anonymous">
-    </script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"
-    integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30="
-    crossorigin="anonymous">
-    </script>
+  <script src="https://code.jquery.com/jquery-2.2.4.min.js"
+  integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+  crossorigin="anonymous">
+  </script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+  integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+  crossorigin="anonymous">
+  </script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"
+  integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30="
+  crossorigin="anonymous">
+  </script>
 
-    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+  <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
-    <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
-    <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-    <script src="/StackV-web/js/mousetrap.js"></script>
-    <script src="/StackV-web/js/mousetrap-dict.js"></script>
+  <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+  <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
+  <script src="/StackV-web/js/mousetrap.js"></script>
+  <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
-    <!---->
+  <!---->
 
-    <!-- IZI -->
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/js/iziModal.min.js"></script>
-    <script src="/StackV-web/js/iziToast.min.js"></script>
-    <!---->
+  <!-- IZI -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/js/iziModal.min.js"></script>
+  <script src="/StackV-web/js/iziToast.min.js"></script>
+  <!---->
 
-    <!-- Visualization -->
-    <script src="//d3js.org/d3.v5.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.10/lodash.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
-    <!---->
+  <!-- Visualization -->
+  <script src="//d3js.org/d3.v5.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.10/lodash.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+  <!---->
 
-    <!-- Main -->
-    <script src="/StackV-web/js/StackV-main.bundle.js"></script>
-    <script src="/StackV-web/js/StackV-visualization.bundle.js"></script>
+  <!-- Main -->
+  <script src="/StackV-web/js/StackV-main.bundle.js"></script>
+  <script src="/StackV-web/js/StackV-visualization.bundle.js"></script>
+</div>
 </body>
 
 </html>

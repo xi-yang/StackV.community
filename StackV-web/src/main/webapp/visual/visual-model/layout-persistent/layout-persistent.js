@@ -14,7 +14,11 @@ class LayoutPersistent {
     nodeInfo: {},
     zoom: {},
   };
-
+  /**
+   * The nodes listed here will be expanded AFTER RENDERING
+   * @type {Array<object>}
+   */
+  postRenderExpandNodeWrapperList;
   /**
    * receive a visual model instance and create backup
    * @param {VisualModel} visualModel - visual model instance
@@ -42,6 +46,52 @@ class LayoutPersistent {
    */
   apply(visualModel) {
     const dataModel = visualModel.dataModel;
+
+    const staticExpandNodeWrapperList = [];
+    this.postRenderExpandNodeWrapperList = [];
+    /**
+     * If New Nodes being added in Expanded Hulls
+     * We have no Coordinate backup for New Nodes
+     * And these New Nodes will float everywhere
+     *
+     * In order to prevent this, check if all nodes inside a Expanded Node have Coordinate Backup
+     * If not, then remove all backup Coordinate of children nodes under that Expanded Node
+     *
+     * Node being treated will EXPAND in view layer, since it need to prepare space
+     *
+     * REVERSE TRAVEL prevent UI being messed up
+     */
+    for (let idx = this.persistentData.expandInfo.length - 1; idx >= 0; idx -= 1) {
+      const nodeId = this.persistentData.expandInfo[idx];
+      const nodeWrapper = dataModel.nodeFetcher(nodeId, true);
+
+      if (nodeWrapper) {
+        if (nodeWrapper.metadata) {
+          const childrenIdList = dataModel.childrenElementIdList(nodeWrapper.metadata);
+
+          let haveAllBackup = true;
+          for (let i = 0; i < childrenIdList.length; i++) {
+            const innerNodeId = childrenIdList[i];
+
+            if (!this.persistentData.nodeInfo.hasOwnProperty(innerNodeId)) {
+              // if one of all has NO backup
+              haveAllBackup = false;
+              break;
+            }
+          }
+
+          if (!haveAllBackup) {
+            childrenIdList.forEach(innerNodeId => delete this.persistentData.nodeInfo[innerNodeId]);
+            delete this.persistentData.nodeInfo[nodeId];
+            this.postRenderExpandNodeWrapperList.push(nodeWrapper);
+          }
+          else {
+            staticExpandNodeWrapperList.push(nodeWrapper);
+          }
+        }
+      }
+    }
+
     for (let key in this.persistentData.nodeInfo) {
       if (this.persistentData.nodeInfo.hasOwnProperty(key)) {
         if (dataModel.data.hasOwnProperty(key)) {
@@ -50,8 +100,21 @@ class LayoutPersistent {
       }
     }
 
-    this.persistentData.expandInfo.forEach(nodeId => {
-      dataModel.expandNode(dataModel.nodeFetcher(nodeId, true));
+    staticExpandNodeWrapperList.forEach(nodeWrapper => dataModel.expandNode(nodeWrapper));
+  }
+
+  /**
+   * Expand nodes after first rendering
+   *
+   * @param {VisualModel} visualModel - visual model instance
+   */
+  applyPostRenderExpansion(visualModel) {
+    visualModel.renderQueue.push({
+      type: 'POST_RENDER_EXPANSION',
+      run: () => {
+        this.postRenderExpandNodeWrapperList.forEach(nodeWrapper => visualModel.toggleNode(nodeWrapper, true));
+        this.postRenderExpandNodeWrapperList = [];
+      },
     });
   }
 

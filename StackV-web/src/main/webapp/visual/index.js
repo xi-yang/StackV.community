@@ -1,8 +1,4 @@
-import DataModel from './data-model/data-model';
-import VisualModel from './visual-model/visual-model';
+import StackVGraphic from './visual-model/visual-model';
 
 
-export {
-  DataModel,
-  VisualModel,
-}
+export default StackVGraphic;

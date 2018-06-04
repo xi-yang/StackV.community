@@ -40,27 +40,53 @@ class ServerData {
    *
    * @param {object} serverData - Javascript Object directly parsed from HTTP API request from StackV server
    * @param {object} options - Extra parsing options (Not-Currently implemented)
-   * @returns {{ topLevel: Array<string>, serverData: object }} data model format KEY -> VALUE
+   * @returns {{ topLevel: Object.<string, object>, serverData: object }}
    */
-  static parse(serverData, options = {}) {
-    if (options['deepCopy']) {
-      serverData = _.cloneDeep(serverData);
-    }
+  static parse(serverData) {
+    serverData = _.cloneDeep(serverData);
     // preserve TOP_LEVEL Node data
     let topLevelNodeIdList = Object.keys(serverData);
+    let serverDataKeyStructure = {};
+
     let realServerData = {};
 
     topLevelNodeIdList.forEach(topLevelNodeId => {
-      realServerData = {
-        ...realServerData,
-        ...JSON.parse(serverData[topLevelNodeId].json)
-      };
+      if (serverData[topLevelNodeId]) {
+        const innerData = JSON.parse(serverData[topLevelNodeId].json);
+        realServerData = {
+          ...realServerData,
+          ...innerData,
+        };
+        serverDataKeyStructure[topLevelNodeId] = Object.keys(innerData);
+        serverDataKeyStructure[topLevelNodeId] = Object.keys(innerData);
+      }
+      else {
+        serverDataKeyStructure[topLevelNodeId] = [];
+      }
     });
 
-    ServerData._parseHelper(realServerData, options);
+    let versionRecord = {};
+
+    topLevelNodeIdList.forEach(topLevelId => {
+      if (serverData[topLevelId] != null) {
+        versionRecord[topLevelId] = {
+          time: serverData[topLevelId].time,
+          uuid: serverData[topLevelId].uuid,
+        };
+      }
+      else {
+        versionRecord[topLevelId] = {
+          time: -1,
+          uuid: '30624700-30624770-534202-13942-43140624',  // dummy uuid
+        };
+      }
+    });
+
+    ServerData._parseHelper(realServerData);
     return {
-      topLevel: topLevelNodeIdList,
+      topLevel: serverDataKeyStructure,
       serverData: ServerData._simplifyFormat(realServerData),
+      versionRecord: versionRecord,
     };
   }
 
@@ -68,10 +94,9 @@ class ServerData {
    * Parse the server data recursively
    *
    * @param {object} serverData - Javascript Object directly parsed from HTTP API request from StackV server
-   * @param {object} options - Extra parsing options (Not-Currently implemented)
    * @private
    */
-  static _parseHelper(serverData, options = {}) {
+  static _parseHelper(serverData) {
     /**
      * Server data must in this FORMAT
      * {

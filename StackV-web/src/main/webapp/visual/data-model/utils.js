@@ -19,11 +19,11 @@ function setNodeAttribute(node, key, value) {
  * Prepare nodes data for further calculation
  *
  * @param {object|Array} nodeList - Clean-up-ed node data, [ NODE ] or { NODE_ID: NODE }
- * @param {Array<string>} topLevelNodeIdList - A list of pre-calculated top-level nodeId (REAL ID) list
+ * @param {Object.<string, Array<string>>} serverDataStructure - A list of pre-calculated top-level nodeId (REAL ID) map
  * @param {Function} nodeFetcher - Function(nodeId: string): Object
  * @returns {Array<object>} The top-level node list
  */
-export function prepareData(nodeList, topLevelNodeIdList, nodeFetcher) {
+export function prepareData(nodeList, serverDataStructure, nodeFetcher) {
   /**
    * How this wrapper works:
    *
@@ -34,6 +34,7 @@ export function prepareData(nodeList, topLevelNodeIdList, nodeFetcher) {
    * @param nodeId - node id
    * @returns {object} node reference
    */
+  let topLevelNodeIdList = Object.keys(serverDataStructure);
   let wrappedNodeFetcher = (nodeId) => {
     return nodeFetcher(nodeId);
   };
@@ -116,7 +117,6 @@ export function prepareData(nodeList, topLevelNodeIdList, nodeFetcher) {
       node['__orig__'] = _.cloneDeep(node);
     }
   }
-
   return topLevelNodeIdList.map(nodeId => nodeFetcher(nodeId));
 }
 
@@ -422,7 +422,7 @@ function generateLinkForNode(parentNode, realSourceNode, nodes, links, nodeFetch
         const linkTargetNodeId = topLevelNodeId;
 
         if (linkSourceNodeId !== linkTargetNodeId) {
-          console.log(`Found Link ${linkSourceNodeId} -> ${linkTargetNodeId}`);
+          // console.log(`Found Link ${linkSourceNodeId} -> ${linkTargetNodeId}`);
 
           const sourceNode = nodeFetcher(linkSourceNodeId);
           const targetNode = nodeFetcher(linkTargetNodeId);
@@ -592,7 +592,6 @@ export function expandNode(targetNode, nodes, expandInfo, nodeFetcher) {
  */
 function expandNodeToViewHierarchy(targetNode, nodes, expandInfo, nodeFetcher) {
   let newNodeList = [];
-  let newServiceList = [];
 
   Constants.EXPAND_KEYS.forEach(expandKeyName => {
     if (targetNode.hasOwnProperty(expandKeyName)) {
@@ -615,7 +614,6 @@ function expandNodeToViewHierarchy(targetNode, nodes, expandInfo, nodeFetcher) {
   expandInfo[targetNode.id] = {
     id: targetNode.id,
     nodes: newNodeList,
-    services: newServiceList,
   };
 
   /**
@@ -698,7 +696,7 @@ function shrinkNodeFromViewHierarchy(targetNode, nodes, nodeFetcher, expandInfo)
   /**
    * IMPORTANT: Remove force layout parameters, it will stop the next expansion
    */
-  needToRemoveNodeList.forEach(d => cleanForceLayoutData(d, nodeFetcher));
+  needToRemoveNodeList.forEach(d => cleanForceLayoutData(d));
 
   for (let i = nodes.length - 1; i >= 0; i -= 1) {
     const d = nodes[i];
@@ -717,7 +715,6 @@ function shrinkNodeFromViewHierarchy(targetNode, nodes, nodeFetcher, expandInfo)
  * @private
  */
 function recursiveRemoveExpandedNode(currentNodeId, expandInfo, needToRemoveNodeList) {
-  console.log(currentNodeId);
   const currentNodeExpandInfo = expandInfo[currentNodeId];
 
   if (currentNodeExpandInfo.hasOwnProperty('children')) {
@@ -736,12 +733,9 @@ function recursiveRemoveExpandedNode(currentNodeId, expandInfo, needToRemoveNode
  * Restore the node back to its original keys, DELETE all d3.forceLayout keys
  *
  * @param {object} nodeWrapper - node reference
- * @param {Function} nodeFetcher - node fetcher
  * @private
  */
-function cleanForceLayoutData(nodeWrapper, nodeFetcher) {
-  nodeWrapper = nodeFetcher(nodeWrapper.id, true);
-
+export function cleanForceLayoutData(nodeWrapper) {
   for (let keyName in nodeWrapper) {
     if (nodeWrapper.hasOwnProperty(keyName)) {
       if (Constants.D3_GRAPHIC_KEYS.indexOf(keyName) !== -1) {

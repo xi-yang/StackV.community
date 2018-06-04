@@ -57,7 +57,7 @@ class NodeServices extends NodeDetail {
   prepareContent(content) {
     this.nodeData.metadata['hasService'].forEach(portId => {
       const { id: aliasPortId, metadata: portData } = this.controller.nodeFetcher(portId, true);
-      let url = '/src/static/img/circle-o.svg';
+      let url = '/StackV-web/img/circle-o.svg';
 
       content.append('img')
           .attr('id', `service-node-${aliasPortId}`)

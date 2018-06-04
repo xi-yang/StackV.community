@@ -32,11 +32,15 @@ class NodeHighlighter {
    * Toggle a global highlight for a node, ONLY ONE CAN EXIST AT A TIME
    * @param {string} nodeId - node REAL id
    */
-  toggleGlobal(nodeId) {
+  toggleGlobal(nodeId = this.currentHighlightId) {
     if (nodeId !== this.currentHighlightId) {
+      this.hide(this.currentHighlightId);
       this.currentHighlightId = nodeId;
+      this.show(this.currentHighlightId);
     }
-    this.toggle(this.currentHighlightId);
+    else if (this.currentHighlightId) {
+      this.toggle(this.currentHighlightId);
+    }
   }
 
   /**
@@ -57,7 +61,7 @@ class NodeHighlighter {
    * Highlight a node with nodeId
    * @param {string} nodeId - node REAL id
    */
-  show(nodeId) {
+  show(nodeId = this.currentHighlightId) {
     const targetNode = this.searchNode(nodeId);
     if (targetNode) {
       targetNode.classed('user-highlight', true);
@@ -68,7 +72,7 @@ class NodeHighlighter {
    * Dismiss a highlight with nodeId
    * @param {string} nodeId - node REAL id
    */
-  hide(nodeId) {
+  hide(nodeId = this.currentHighlightId) {
     const targetNode = this.searchNode(nodeId);
     if (targetNode) {
       targetNode.classed('user-highlight', false);
@@ -78,15 +82,32 @@ class NodeHighlighter {
   /**
    * Find HTML Node for highlight purpose
    * @param {string} nodeId - node REAL id
+   * @returns {object} D3 selction
    */
   searchNode(nodeId) {
-    this.visitHistory = [];
-    return d3.select(this.searchNode_helper(nodeId));
+    // Find Hull first
+    if (this.visualModel.dataModel.isNodeExpanded(nodeId)) {
+      let returnNode;
+      this.visualModel.svg.hulls.each(function(d) {
+        if (returnNode) return true;
+        if (d.id === nodeId) {
+          // FOUND
+          returnNode = d3.select(this);
+        }
+      });
+
+      if (returnNode) return returnNode;
+    }
+    else {
+      this.visitHistory = [];
+      return d3.select(this.searchNode_helper(nodeId));
+    }
   }
 
   /**
    * RECURSION HELPER Find HTML Node for highlight purpose
    * @param {string} nodeId - node REAL id
+   * @returns {HTMLElement} HTML Element
    */
   searchNode_helper(nodeId) {
     if (this.visitHistory.indexOf(nodeId) === -1) {

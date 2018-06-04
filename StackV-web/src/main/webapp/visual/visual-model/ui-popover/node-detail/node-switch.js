@@ -60,7 +60,7 @@ class NodeSwitch extends NodeDetail {
 
       let portAvailable = portData.hasOwnProperty('isAlias');
 
-      let url = portAvailable ? '/src/static/img/rj45_on.svg' : '/src/static/img/rj45_off.svg';
+      let url = portAvailable ? '/StackV-web/img/rj45_on.svg' : '/StackV-web/img/rj45_off.svg';
 
       let portElement = content.append('img')
           .attr('id', `switch-port-${aliasPortId}`)

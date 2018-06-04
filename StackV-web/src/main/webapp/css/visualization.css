@@ -1,90 +1,236 @@
 #vis-panel {
     padding: 20px;
     margin: auto;
-    height: 100%;    
+    height: 100%;
 }
 
 #details-modal .container {
-  padding: 10px 20px;
-  width: 100%;
-  word-wrap: break-word;
-  max-height: 50vh;
-  overflow: scroll;
+    padding: 10px 20px;
+    width: 100%;
+    word-wrap: break-word;
+    max-height: 50vh;
+    overflow: scroll;
 }
 #details-modal .row {
-  margin: auto;
-  padding-bottom: 5px;
-  width: 100%;
+    margin: auto;
+    padding-bottom: 5px;
+    width: 100%;
 }
 #details-modal-id {
-  font-size: 1.25em;
-  vertical-align: top;
-  padding-right: 40px;
-  padding-bottom: 10px;
+    font-size: 1.25em;
+    vertical-align: top;
+    padding-right: 40px;
+    padding-bottom: 10px;
 }
 #details-modal .list-group {
-  max-height: 200px;
-  overflow: scroll;
+    max-height: 200px;
+    overflow: scroll;
 }
 #details-modal .iziModal-header-title {
-  white-space: normal;
-  font-size: 1.15em;
+    white-space: normal;
+    font-size: 1.15em;
 }
 
 /* SVG */
 body > svg {
-  border: 1px solid hotpink;
+    border: 1px solid hotpink;
 }
 svg {
-  border: 1px solid #ccc;
-  pointer-events: auto;
-  background: #f9f9f9;
-  box-shadow: 0px 3px 10px 2px #333;
+    border: 1px solid #ccc;
+    pointer-events: auto;
+    background: #f9f9f9;
+    box-shadow: 0px 3px 10px 2px #333;
 }
 circle.node {
-  fill: lightsteelblue;
-  stroke: #555;
-  stroke-width: 3px;
+    fill: lightsteelblue;
+    stroke: #555;
+    stroke-width: 3px;
 }
 circle.leaf {
-  stroke: #fff;
-  stroke-width: 1.5px;
+    stroke: #fff;
+    stroke-width: 1.5px;
 }
 path.hull {
-  fill: lightsteelblue;
-  fill-opacity: 0.3;
+    fill: lightsteelblue;
+    fill-opacity: 0.3;
 }
 line.link {
-  stroke: #333;
-  stroke-opacity: 0.5;
-  pointer-events: none;
+    stroke: #333;
+    stroke-opacity: 0.5;
+    pointer-events: none;
 }
 .node-wrapper {
-  cursor: pointer;
+    cursor: pointer;
 }
 .convex-hull {
-  cursor: pointer;
+    cursor: pointer;
 }
 .node-link {
-  stroke: #000;
-  stroke-width: 2px;
+    stroke: #000;
+    stroke-width: 2px;
 }
 #render-indicator {
-  position: fixed;
-  left: 15px;
-  top: 15px;
-  font-family: 'Helvetica Neue', serif;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
+    position: fixed;
+    left: 15px;
+    top: 15px;
+    font-family: 'Helvetica Neue', serif;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
 }
 #render-indicator .circle {
-  height: 20px;
-  width: 20px;
-  display: inline-block;
-  border-radius: 10px;
-  margin-right: 5px;
+    height: 20px;
+    width: 20px;
+    display: inline-block;
+    border-radius: 10px;
+    margin-right: 5px;
 }
 #render-indicator .text {
-  font-size: 15px;
+    font-size: 15px;
+}
+
+.stackv-graphic {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #ccc;
+}
+
+.stackv-graphic .loading-mask {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(238, 238, 238, 0.85);
+}
+.stackv-graphic .loading-mask img {
+    width: 5%;
+    animation: spin 4s linear infinite;
+}
+.stackv-graphic .loading-mask span {
+    font-size: 15px;
+    margin-top: 15px;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.stackv-graphic .node-wrapper {
+    cursor: pointer;
+}
+.stackv-graphic .node-wrapper path {
+    stroke: transparent;
+    stroke-width: 30px;
+    transition: stroke 0.25s;
+}
+.stackv-graphic .node-wrapper.user-highlight path {
+    stroke: #F48FB1;
+}
+.stackv-graphic .convex-hull {
+    cursor: pointer;
+    stroke: transparent;
+    stroke-width: 3px;
+    transition: stroke 0.25s;
+}
+.stackv-graphic .convex-hull.user-highlight {
+    stroke: #F48FB1;
+}
+.stackv-graphic .node-link {
+    stroke: #000;
+    stroke-width: 2px;
+}
+
+.popover-container {
+    user-select: text;
+}
+.popover-container .close-x {
+    position: absolute;
+    top: -11px;
+    right: -11px;
+    width: 23px;
+    height: 23px;
+    border: 2px solid #eef5df;
+    border-radius: 50%;
+    background-color: #9E9E9E;
+}
+.popover-container .close-x::before,
+.popover-container .close-x::after {
+    position: absolute;
+    top: 8px;
+    left: 3px;
+    width: 13px;
+    height: 3px;
+    content: "";
+    background-color: #eef5df;
+    display: block;
+}
+.popover-container .close-x::before {
+    -ms-transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
+    transform: rotate(-45deg);
+}
+.popover-container .close-x::after {
+    -ms-transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+.popover-container .close-x:hover {
+    cursor: pointer;
+    background-color: #ff5248;
+}
+
+.switch-container,
+.services-container {
+    position: absolute;
+    height: 40px;
+    transform: translateX(-50%);
+    background: rgba(224, 224, 224, 0.75);
+    border-radius: 5px;
+    padding-left: 5px;
+    padding-right: 5px;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    display: flex;
+}
+
+.services-container {
+    padding-right: 10px;
+}
+
+.switch-ports,
+.services-ports {
+    height: 100%;
+}
+
+.switch-ports img {
+    width: 35px;
+    height: 40px;
+    transition: background 0.25s;
+}
+
+.switch-ports img:hover {
+    background: rgba(189, 189, 189, 0.8);
+}
+
+.switch-ports img.user-highlight {
+    background: #C5CAE9;
+}
+
+.services-ports img {
+    width: 35px;
+    height: 40px;
+    padding: 0 2px;
+    transition: background 0.25s;
+}
+
+.services-ports img:hover {
+    background: rgba(189, 189, 189, 0.8);
 }
