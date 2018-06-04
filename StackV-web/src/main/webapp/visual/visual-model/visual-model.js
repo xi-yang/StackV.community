@@ -121,7 +121,7 @@ class VisualModel {
    * @param {number} height - initial height
    * @param {boolean} persistence - Enable or Disable the layout persistence
    */
-  constructor(dataModel, domElement, width = 1024, height = 768, persistence = true) {
+  constructor(dataModel, domElement, width = "100%", height = "70vh", persistence = true) {
     this.dataModel = dataModel;
 
     let layoutPersistent;
@@ -140,8 +140,8 @@ class VisualModel {
     this.svg.outerWrapper = d3.select(domElement)
         .insert('div', ':first-child')
         .attr('class', 'stackv-graphic')
-        .style('width', `${width}px`)
-        .style('height', `${height}px`)
+        .style('width', `${width}`)
+        .style('height', `${height}`)
         .style('margin', 'auto');
 
     this.svg.root = this.svg.outerWrapper

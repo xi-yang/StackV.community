@@ -145,7 +145,7 @@ $(function () {
             }
             break;
         case "manifest":
-            loadManifest();
+            //loadManifest();
             break;
         case "visualization":
             //loadVisualization();

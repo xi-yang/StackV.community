@@ -27,7 +27,7 @@
 var clipbook = {};
 const $clipModal = $("#clipbook-modal");
 const clipConfig = {
-    title: "Clipboard",
+    title: "Clipbook",
     headerColor: "#676e77",
     width: "60vh",
     transitionIn: "fadeInUp",
