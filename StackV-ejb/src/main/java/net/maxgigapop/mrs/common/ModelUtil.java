@@ -218,7 +218,7 @@ public class ModelUtil {
                 + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
                 + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
                 + "prefix sna: <http://schemas.ogf.org/sna/2015/08/network#>\n"
-                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>.\n"
+                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>\n"
                 + sparqlStringWithoutPrefix;
         Query query = QueryFactory.create(sparqlString);
         QueryExecution qexec = QueryExecutionFactory.create(query, model);
@@ -233,7 +233,7 @@ public class ModelUtil {
                 + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
                 + "prefix spa: <http://schemas.ogf.org/mrs/2015/02/spa#>\n"
                 + "prefix sna: <http://schemas.ogf.org/sna/2015/08/network#>\n"
-                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>.\n"
+                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>\n"
                 + sparqlStringWithoutPrefix;
         UpdateRequest update = UpdateFactory.create(sparqlString);
         UpdateAction.execute(update, model);
@@ -244,7 +244,7 @@ public class ModelUtil {
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                 + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
                 + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
-                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>.\n"
+                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>\n"
                 + queryString;
         
         Query query = QueryFactory.create(queryString);
@@ -263,7 +263,7 @@ public class ModelUtil {
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                 + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
                 + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
-                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>.\n"
+                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>\n"
                 + queryString;
         
         Model unionModel = ModelFactory.createUnion(refModel, model);
@@ -354,7 +354,7 @@ public class ModelUtil {
                 + "prefix owl: <http://www.w3.org/2002/07/owl#>\n"
                 + "prefix nml: <http://schemas.ogf.org/nml/2013/03/base#>\n"
                 + "prefix mrs: <http://schemas.ogf.org/mrs/2013/12/topology#>\n"
-                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>.\n"
+                + "prefix sd: <http://schemas.ogf.org/nsi/2013/12/services/definition#>\n"
                 + "SELECT ?topology WHERE {?topology a nml:Topology}";
         Query query = QueryFactory.create(sparqlString);
         List<RDFNode> listRes = null;

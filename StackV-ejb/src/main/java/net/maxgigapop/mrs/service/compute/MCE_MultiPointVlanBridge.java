@@ -195,7 +195,9 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     && ((JSONObject)jsonTerminals.get(terminal1.getURI())).containsKey("mac_list") 
                     && ((JSONObject)jsonTerminals.get(terminal2.getURI())).containsKey("mac_list")) {
                 addMacFlowsToBridges(mpvbPath, transformedModel, jsonTerminals, portVlanMap);
-            }
+            } 
+            //@TODO: make this configurable in connDataMap JSON (default = false)
+            MCETools.pairupPathHops(mpvbPath, transformedModel);
             // Tag path hops
             MCETools.tagPathHops(mpvbPath, "l2path+"+resConn.getURI()+":"+connId+"");
             transformedModel.add(mpvbPath.getOntModel());
@@ -223,13 +225,13 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         BandwidthProfile reqBandwithProfile = null;
         if (jsonConnReq.containsKey("bandwidth")) {
             JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
-            Long maximum = jsonBw.containsKey("maximum") ? Long.getLong(jsonBw.get("maximum").toString()) : null;
-            Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.getLong(jsonBw.get("maximum").toString()) : null;
+            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.getLong(jsonBw.get("reservable").toString()) : null;
             reqBandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
-            reqBandwithProfile.availableCapacity = jsonBw.containsKey("available") ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
-            reqBandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
-            reqBandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
-            reqBandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
+            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
+            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+            reqBandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class") != null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+            reqBandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
         }
         if (bridgeSwitchingService != null) {
             // get SwitchingSubnet provided by bridgeSwitchingService from mpvbPath 
@@ -264,12 +266,14 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 Integer vtag = allowedVlanRange.getRandom();
                 vlanXreq = vtag.toString();
             }
-            BandwidthProfile bwProfileX = MCETools.getHopBandwidthPorfile(transformedModel, terminalX);
-            if (reqBandwithProfile != null && bwProfileX != null) {
-                bwProfileX = MCETools.normalizeBandwidthPorfile(bwProfileX);
-                reqBandwithProfile = MCETools.normalizeBandwidthPorfile(reqBandwithProfile);
-                if(!MCETools.canProvideBandwith(bwProfileX, reqBandwithProfile)) {
-                    throw logger.error_throwing(method, "cannot requested bandwidth profile for terminal: " + terminalX);
+            if (reqBandwithProfile != null) {
+                BandwidthProfile bwProfileX = MCETools.getHopBandwidthPorfile(transformedModel, terminalX);
+                if (bwProfileX != null) {
+                    bwProfileX = MCETools.normalizeBandwidthPorfile(bwProfileX);
+                    reqBandwithProfile = MCETools.normalizeBandwidthPorfile(reqBandwithProfile);
+                    if (!MCETools.canProvideBandwith(bwProfileX, reqBandwithProfile)) {
+                        throw logger.error_throwing(method, "cannot requested bandwidth profile for terminal: " + terminalX);
+                    }
                 }
             }
             // create VLAN subPort and add to under the subnet and terminalX
@@ -326,7 +330,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                         OntModel bridgePathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonTerminals);
                         if (bridgePathModel != null) {
                             // find switchingSubnet under bridgeSwitching service in mpvbPath
-                            String sparql = "SELECT ?vlan_port WHERE {"
+                            String sparql = "SELECT ?subnet WHERE {"
                                     + String.format("<%s> mrs:providesSubnet ?subnet. ", bridgeSwitchingService)
                                     + "}";
                             ResultSet rs = ModelUtil.sparqlQuery(mpvbPath.getOntModel(), sparql);
@@ -337,7 +341,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                             Resource bridgeSwitchingSubnet = qs.getResource("subnet");
                             sparql = "SELECT ?vlan_port WHERE {"
                                     + String.format("<%s> nml:hasBidirectionalPort ?vlan_port. ", bridgePort)
-                                    + "?vlan_port mrs:hasLabel ?label. ?label nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?label mrs:value ?vlan. "
+                                    + "?vlan_port nml:hasLabel ?label. ?label nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?label nml:value ?vlan. "
                                     + "}";
                             rs = ModelUtil.sparqlQuery(bridgePathModel, sparql);
                             if (!rs.hasNext()) {
@@ -364,6 +368,17 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         String method = "connectTerminalToPath_Openflow";
         JSONObject jsonTerminals = (JSONObject)jsonConnReq.get("terminals");
         Resource bridgeOpenflowService = checkTerminalOnPath_Openflow(transformedModel, mpvbPath, terminalX);
+        BandwidthProfile reqBandwithProfile = null;
+        if (jsonConnReq.containsKey("bandwidth")) {
+            JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
+            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.getLong(jsonBw.get("maximum").toString()) : null;
+            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+            reqBandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
+            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
+            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+            reqBandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class") != null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+            reqBandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
+        }
         if (bridgeOpenflowService != null) {
             Resource bridgePort = terminalX;
             JSONObject jsonTe = (JSONObject) jsonTerminals.get(terminalX.getURI());
@@ -378,6 +393,16 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 bridgeVlanTag = Integer.toString(vlanRange.getRandom());
             } else {
                 throw logger.error_throwing(method, String.format("terminal '%s' has no 'vlan_tag' parameter in request data.", terminalX));
+            }
+            if (reqBandwithProfile != null) {
+                BandwidthProfile bwProfileX = MCETools.getHopBandwidthPorfile(transformedModel, terminalX);
+                if (bwProfileX != null) {
+                    bwProfileX = MCETools.normalizeBandwidthPorfile(bwProfileX);
+                    reqBandwithProfile = MCETools.normalizeBandwidthPorfile(reqBandwithProfile);
+                    if (!MCETools.canProvideBandwith(bwProfileX, reqBandwithProfile)) {
+                        throw logger.error_throwing(method, "cannot requested bandwidth profile for terminal: " + terminalX);
+                    }
+                }
             }
             MCETools.Path bridgePath = new MCETools.Path();
             OntModel bridgePathModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
@@ -419,14 +444,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                         throw logger.throwing(method, "verifyL2Path -exception- ", ex);
                     }
                     if (verified && jsonConnReq.containsKey("bandwidth")) {
-                        JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
-                        Long maximum = jsonBw.containsKey("maximum") ? Long.getLong(jsonBw.get("maximum").toString()) : null;
-                        Long reservable = jsonBw.containsKey("reservable") ? Long.getLong(jsonBw.get("reservable").toString()) : null;
-                        bridgePath.bandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
-                        bridgePath.bandwithProfile.availableCapacity = jsonBw.containsKey("available") ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
-                        bridgePath.bandwithProfile.granularity = jsonBw.containsKey("granularity") ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
-                        bridgePath.bandwithProfile.type = jsonBw.containsKey("qos_class") ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
-                        bridgePath.bandwithProfile.priority = jsonBw.containsKey("priority") ? jsonBw.get("priority").toString() : "0"; //default = "0"
+                        bridgePath.bandwithProfile = reqBandwithProfile;
                         verified = MCETools.verifyPathBandwidthProfile(transformedModel, bridgePath);
                     }
                     if (verified) {
@@ -476,7 +494,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             String sparql = "SELECT ?svc WHERE {"
                     + "?svc a nml:SwitchingService. "
                     + "?svc sd:hasServiceDefinition ?svc_sd. "
-                    + String.format("?svc_sd sd:serviceType <%s>. ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc_sd sd:serviceType \"%s\". ", URI_SvcDef_L2MpEs)
                     + String.format("?svc nml:hasBidirectionalPort <%s>. "
                             + "FILTER (?svc=<%s>)", terminalX, resOriginal)
                     + "}";
@@ -523,7 +541,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 String sparql = "SELECT ?svc WHERE {"
                     + "?svc a nml:SwitchingService. "
                     + "?svc sd:hasServiceDefinition ?svc_sd. "
-                    + String.format("?svc_sd sd:serviceType <%s>. ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc_sd sd:serviceType \"%s\". ", URI_SvcDef_L2MpEs)
                         + String.format("?svc nml:hasBidirectionalPort <%s>. "
                                 + "FILTER (?svc=<%s>)", resDiverge, resOriginal)
                         + "}";
@@ -765,7 +783,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             String sparql = "SELECT ?svc WHERE {"
                     + "?svc a nml:SwitchingService. "
                     + "?svc sd:hasServiceDefinition ?svc_sd. "
-                    + String.format("?svc_sd sd:serviceType <%s>. ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc_sd sd:serviceType \"%s\". ", URI_SvcDef_L2MpEs)
                     + String.format("?svc nml:hasBidirectionalPort <%s>. ",
                             resObj)
                     + "}";
@@ -778,7 +796,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 sparql = "SELECT ?svc WHERE {"
                     + "?svc a nml:SwitchingService. "
                     + "?svc sd:hasServiceDefinition ?svc_sd. "
-                    + String.format("?svc_sd sd:serviceType <%s>. ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc_sd sd:serviceType \"%s\". ", URI_SvcDef_L2MpEs)
                         + String.format("?svc nml:hasBidirectionalPort <%s>. ",
                                 resObj)
                         + "}";
