@@ -1,27 +1,27 @@
-import * as d3 from 'd3';
+import * as d3 from "d3";
 
 import { openClipbookAdd } from "../../portal/clipbook";
-import DataModel from '../data-model/data-model';
-import getIcon from '../icon';
-import SVDragEvent from './SVDragEvent';
-import LayoutPersistent from './layout-persistent/layout-persistent';
-import {LP_LOCALSTORAGE_KEY} from './layout-persistent/consts';
-import NodeDetailController from './ui-popover/node-detail/controller';
-import NodeHighlighter from './node-highlighter/highlighter';
+import DataModel from "../data-model/data-model";
+import getIcon from "../icon";
+import SVDragEvent from "./SVDragEvent";
+import LayoutPersistent from "./layout-persistent/layout-persistent";
+import {LP_LOCALSTORAGE_KEY} from "./layout-persistent/consts";
+import NodeDetailController from "./ui-popover/node-detail/controller";
+import NodeHighlighter from "./node-highlighter/highlighter";
 
 const $detailsModal = $("#details-modal");
 const detailsConfig = {
-    title: 'Details',
-    headerColor: '#3e4d5f',
-    width: '50vh',
-    transitionIn: 'fadeInDown',
-    transitionOut: 'fadeOutUp',
-    top: '104px',
+    title: "Details",
+    headerColor: "#3e4d5f",
+    width: "50vh",
+    transitionIn: "fadeInDown",
+    transitionOut: "fadeOutUp",
+    top: "104px",
     overlay: false
 };
 
-const NODE_COLOR = d3.scaleOrdinal(['#63a4ff']);
-const HULL_COLOR = d3.scaleOrdinal(['rgba(26, 35, 126, 0.85)']);
+const NODE_COLOR = d3.scaleOrdinal(["#63a4ff"]);
+const HULL_COLOR = d3.scaleOrdinal(["rgba(26, 35, 126, 0.85)"]);
 
 const DEFAULT_RENDER_SPEED = 5;
 
@@ -76,7 +76,7 @@ class VisualModel {
     /**
     * D3 SVG zoom controller
     */
-    zoom = d3.zoom().on('zoom', () => this.zoomed());
+    zoom = d3.zoom().on("zoom", () => this.zoomed());
     /**
     * Render speed
     * @type {number}
@@ -137,45 +137,45 @@ class VisualModel {
         this.size.height = height;
 
         this.svg.outerWrapper = d3.select(domElement)
-        .insert('div', ':first-child')
-        .attr('class', 'stackv-graphic')
-        .style('width', `${width}`)
-        .style('height', `${height}`);
+            .insert("div", ":first-child")
+            .attr("class", "stackv-graphic")
+            .style("width", `${width}`)
+            .style("height", `${height}`);
 
         this.svg.loadingMask = this.svg.outerWrapper
-        .append('div')
-        .attr('class', 'loading-mask');
+            .append("div")
+            .attr("class", "loading-mask");
 
-        this.svg.loadingMask.append('img').attr('src', '/StackV-web/img/spinner.svg');
-        this.svg.loadingMask.append('span').text('Render in progress');
+        this.svg.loadingMask.append("img").attr("src", "/StackV-web/img/spinner.svg");
+        this.svg.loadingMask.append("span").text("Render in progress");
 
         this.svg.root = this.svg.outerWrapper
-        .insert('svg', ':first-child')
-        .attr('width', this.size.width)
-        .attr('height', this.size.height)
-        .on('click', this.backgroundClickEvent)
-        .call(this.zoom);
+            .insert("svg", ":first-child")
+            .attr("width", this.size.width)
+            .attr("height", this.size.height)
+            .on("click", this.backgroundClickEvent)
+            .call(this.zoom);
 
         this.svg.container = this.svg.root
-        .append('g')
-        .attr('class', 'container');
+            .append("g")
+            .attr("class", "container");
 
         if (this.layoutPersistent) {
             this.layoutPersistent.applyZoomLevel(this);
         }
 
-        this.svg.hulls = this.svg.container.append('g')
-        .attr('class', 'hulls')
-        .selectAll('.convex-hull');
-        this.svg.nodes = this.svg.container.append('g')
-        .attr('class', 'nodes')
-        .selectAll('.node-wrapper');
-        this.svg.services = this.svg.container.append('g')
-        .attr('class', 'services')
-        .selectAll('.node-services');
-        this.svg.links = this.svg.container.append('g')
-        .attr('class', 'links')
-        .selectAll('.node-links');
+        this.svg.hulls = this.svg.container.append("g")
+            .attr("class", "hulls")
+            .selectAll(".convex-hull");
+        this.svg.nodes = this.svg.container.append("g")
+            .attr("class", "nodes")
+            .selectAll(".node-wrapper");
+        this.svg.services = this.svg.container.append("g")
+            .attr("class", "services")
+            .selectAll(".node-services");
+        this.svg.links = this.svg.container.append("g")
+            .attr("class", "links")
+            .selectAll(".node-links");
 
         this.forceConfig.centerForce = d3.forceCenter(width / 2, height / 2);
         this.forceConfig.centerRadialForce = d3.forceRadial(100, width / 2, height / 2);
@@ -186,32 +186,32 @@ class VisualModel {
             dragEnd: this.nodeDragEnd,
         });
         this.eventHandlers.node.drag = d3.drag()
-        .on('start', nodeDragEventHandler.dragStartEvent())
-        .on('drag', nodeDragEventHandler.dragMoveEvent())
-        .on('end', nodeDragEventHandler.dragEndEvent());
+            .on("start", nodeDragEventHandler.dragStartEvent())
+            .on("drag", nodeDragEventHandler.dragMoveEvent())
+            .on("end", nodeDragEventHandler.dragEndEvent());
 
         const self = this;
         const hullDragEventHandler = new SVDragEvent({
             dragStart: function (d) {
-                self.hullDragStart(d, d3.mouse(this))
+                self.hullDragStart(d, d3.mouse(this));
             },
             dragMove: this.hullDragMove,
             dragEnd: this.hullDragEnd,
         });
         this.eventHandlers.hull.drag = d3.drag()
-        .on('start', hullDragEventHandler.dragStartEvent())
-        .on('drag', hullDragEventHandler.dragMoveEvent())
-        .on('end', hullDragEventHandler.dragEndEvent());
+            .on("start", hullDragEventHandler.dragStartEvent())
+            .on("drag", hullDragEventHandler.dragMoveEvent())
+            .on("end", hullDragEventHandler.dragEndEvent());
 
         this.force = d3.forceSimulation()
-        .force('link', d3.forceLink()
-        .distance(d => d.metadata.length)
-        .strength(d => d.metadata.strength))
-        .force('charge', d3.forceManyBody())
-        .force('collision', d3.forceCollide().radius(d => d.metadata.renderConfig['collisionRadius']))
-        .force('center', this.forceConfig.centerForce)
-        .on('end', this.tickEnd)
-        .on('tick', this.ticked);
+            .force("link", d3.forceLink()
+                .distance(d => d.metadata.length)
+                .strength(d => d.metadata.strength))
+            .force("charge", d3.forceManyBody())
+            .force("collision", d3.forceCollide().radius(d => d.metadata.renderConfig["collisionRadius"]))
+            .force("center", this.forceConfig.centerForce)
+            .on("end", this.tickEnd)
+            .on("tick", this.ticked);
 
         // set up hooks
         const forceRestart = this.force.restart;
@@ -231,7 +231,7 @@ class VisualModel {
         this.highlighter = new NodeHighlighter(this);
 
         this.renderQueue.push({
-            type: 'INITIAL_RENDER_DONE',
+            type: "INITIAL_RENDER_DONE",
             run: () => {
                 this.hideLoadingMask();
             },
@@ -255,11 +255,11 @@ class VisualModel {
     }
 
     showLoadingMask = () => {
-        this.svg.loadingMask.style('display', '');
+        this.svg.loadingMask.style("display", "");
     };
 
     hideLoadingMask = () => {
-        this.svg.loadingMask.style('display', 'none');
+        this.svg.loadingMask.style("display", "none");
     };
 
     restart = () => {
@@ -268,109 +268,109 @@ class VisualModel {
         this.svg.hulls = this.svg.hulls.data(hulls);
         this.svg.hulls.exit().remove();
         this.svg.hulls = this.svg.hulls.enter()
-        .append('path')
-        .attr('class', 'convex-hull')
-        .style('fill', () => HULL_COLOR(Math.random()))
-        .on('click', (d) => {
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
-            this.highlighter.toggleGlobal(d.id);
+            .append("path")
+            .attr("class", "convex-hull")
+            .style("fill", () => HULL_COLOR(Math.random()))
+            .on("click", (d) => {
+                d3.event.preventDefault();
+                d3.event.stopPropagation();
+                this.highlighter.toggleGlobal(d.id);
 
-            this.loadModalData(d);
-            if ($detailsModal.iziModal("getState") === "closed") {
-                $detailsModal.iziModal("open");
-            }
-        })
-        .on('dblclick', (d) => {
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
+                this.loadModalData(d);
+                if ($detailsModal.iziModal("getState") === "closed") {
+                    $detailsModal.iziModal("open");
+                }
+            })
+            .on("dblclick", (d) => {
+                d3.event.preventDefault();
+                d3.event.stopPropagation();
 
-            if (this.canExpandByHull(d)) {
-                this.toggleNodeByHull(d);
-            }
-        })
-        .on('contextmenu', (d) => {
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
-            this.showPopover(d.id);
-            $("#input-clipbook-text").val(d.id);
-            openClipbookAdd();
-        })
-        .call(this.eventHandlers.hull.drag)
-        .merge(this.svg.hulls);
+                if (this.canExpandByHull(d)) {
+                    this.toggleNodeByHull(d);
+                }
+            })
+            .on("contextmenu", (d) => {
+                d3.event.preventDefault();
+                d3.event.stopPropagation();
+                this.showPopover(d.id);
+                $("#input-clipbook-text").val(d.id);
+                openClipbookAdd();
+            })
+            .call(this.eventHandlers.hull.drag)
+            .merge(this.svg.hulls);
 
         this.svg.links = this.svg.links.data(links);
         this.svg.links.exit().remove();
         this.svg.links = this.svg.links.enter()
-        .append('line')
-        .attr('class', 'node-link')
-        .attr('stroke-linecap', 'round')
-        .merge(this.svg.links);
-        this.svg.links.style('display', d => {
-            return (d.metadata && d.metadata.required) ? '' : 'none';
+            .append("line")
+            .attr("class", "node-link")
+            .attr("stroke-linecap", "round")
+            .merge(this.svg.links);
+        this.svg.links.style("display", d => {
+            return (d.metadata && d.metadata.required) ? "" : "none";
         });
 
         this.svg.nodes = this.svg.nodes.data(nodes);
         this.svg.nodes.exit().remove();
 
         let forceNodeEnter = this.svg.nodes.enter()
-        .append('g')
-        .attr('class', 'node-wrapper')
-        .on('click', (d) => {
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
+            .append("g")
+            .attr("class", "node-wrapper")
+            .on("click", (d) => {
+                d3.event.preventDefault();
+                d3.event.stopPropagation();
 
-            this.loadModalData(d);
-            if ($detailsModal.iziModal("getState") === "closed") {
-                $detailsModal.iziModal("open");
-            }
-        })
-        .on('dblclick', (d) => {
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
+                this.loadModalData(d);
+                if ($detailsModal.iziModal("getState") === "closed") {
+                    $detailsModal.iziModal("open");
+                }
+            })
+            .on("dblclick", (d) => {
+                d3.event.preventDefault();
+                d3.event.stopPropagation();
 
-            if (this.canExpand(d)) {
-                this.toggleNode(d);
-            }
-        })
-        .on('contextmenu', (d) => {
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
+                if (this.canExpand(d)) {
+                    this.toggleNode(d);
+                }
+            })
+            .on("contextmenu", (d) => {
+                d3.event.preventDefault();
+                d3.event.stopPropagation();
 
-            $("#input-clipbook-text").val(d.metadata.id);
-            openClipbookAdd();
-        })
-        .call(this.eventHandlers.node.drag);
-        forceNodeEnter.append('path')
-        .on('click', ({metadata: {id}}) => {
-            this.highlighter.toggleGlobal(id);
-        });
+                $("#input-clipbook-text").val(d.metadata.id);
+                openClipbookAdd();
+            })
+            .call(this.eventHandlers.node.drag);
+        forceNodeEnter.append("path")
+            .on("click", ({metadata: {id}}) => {
+                this.highlighter.toggleGlobal(id);
+            });
         this.svg.nodes = forceNodeEnter.merge(this.svg.nodes);
 
-        this.svg.nodes.select('path')
-        .attr('d', d => {
-            return this.canExpand(d) ? getIcon('cloud').d : getIcon('server').d;
-        })
-        .style('transform', d => {
-            return this.canExpand(d) ? getIcon('cloud').transform : getIcon('server').transform;
-        })
-        .style('fill', d => {
-            if (!d.fill) {
-                d.fill = NODE_COLOR(Math.random());
-            }
-            return d.fill;
-        })
-        .style('display', d => {
-            if (this.dataModel.isNodeExpanded(d)) {
-                return 'none';
-            }
-            else {
-                return '';
-            }
-        });
+        this.svg.nodes.select("path")
+            .attr("d", d => {
+                return this.canExpand(d) ? getIcon("cloud").d : getIcon("server").d;
+            })
+            .style("transform", d => {
+                return this.canExpand(d) ? getIcon("cloud").transform : getIcon("server").transform;
+            })
+            .style("fill", d => {
+                if (!d.fill) {
+                    d.fill = NODE_COLOR(Math.random());
+                }
+                return d.fill;
+            })
+            .style("display", d => {
+                if (this.dataModel.isNodeExpanded(d)) {
+                    return "none";
+                }
+                else {
+                    return "";
+                }
+            });
 
         this.force.nodes(nodes);
-        this.force.force('link').links(links);
+        this.force.force("link").links(links);
         this.force.alpha(0.3).restart();
 
         if (this.layoutPersistent && !this.postRenderExpansionFinished) {
@@ -383,7 +383,7 @@ class VisualModel {
     * Callback method for D3 SVG Zoom
     */
     zoomed = () => {
-        this.svg.container.attr('transform', d3.event.transform);
+        this.svg.container.attr("transform", d3.event.transform);
         this.applyLayoutPersistence();
         // remove all switch
         this.nodeDetailController && this.nodeDetailController.hideAllPopover();
@@ -399,14 +399,14 @@ class VisualModel {
         }
 
         this.svg.hulls.data(this.dataModel.updateHullCoordinate())
-        .attr('d', d => d.path);
+            .attr("d", d => d.path);
 
-        this.svg.links.attr('x1', (d) => d.source.x)
-        .attr('y1', (d) => d.source.y)
-        .attr('x2', (d) => d.target.x)
-        .attr('y2', (d) => d.target.y);
+        this.svg.links.attr("x1", (d) => d.source.x)
+            .attr("y1", (d) => d.source.y)
+            .attr("x2", (d) => d.target.x)
+            .attr("y2", (d) => d.target.y);
 
-        this.svg.nodes.attr('transform', (d) => `translate(${d.x}, ${d.y})`);
+        this.svg.nodes.attr("transform", (d) => `translate(${d.x}, ${d.y})`);
     };
 
     /**
@@ -416,9 +416,9 @@ class VisualModel {
         this.renderSpeed = DEFAULT_RENDER_SPEED;
 
         // "FREEZE" node
-        this.svg.nodes.attr('transform', d => {
-            d['fx'] = d.x;
-            d['fy'] = d.y;
+        this.svg.nodes.attr("transform", d => {
+            d["fx"] = d.x;
+            d["fy"] = d.y;
             return `translate(${d.x}, ${d.y})`;
         });
 
@@ -426,7 +426,7 @@ class VisualModel {
         if (!this.renderState.initialTickEnd) {
             this.renderState.initialTickEnd = true;
             // Changer to Radial Force to prevent collision of Hulls
-            this.force = this.force.force('center', this.forceConfig.centerRadialForce);
+            this.force = this.force.force("center", this.forceConfig.centerRadialForce);
         }
 
         this.stopRendering();
@@ -448,14 +448,14 @@ class VisualModel {
     * Preserved hook when D3 force layout starts
     */
     startRendering = () => {
-        console.log('RENDER START');
+        console.log("RENDER START");
     };
 
     /**
     * Preserved hook when D3 force layout stops
     */
     stopRendering = () => {
-        console.log('RENDER END');
+        console.log("RENDER END");
         this.applyLayoutPersistence();
     };
 
@@ -538,7 +538,7 @@ class VisualModel {
                     this.restart();
 
                     this.renderQueue.push({
-                        type: 'DELAYED_EXPAND_RENDERING',
+                        type: "DELAYED_EXPAND_RENDERING",
                         run: () => {
                             // restore expand space
                             this.dataModel.prepareSpaceDone(nodeWrapper);
@@ -685,12 +685,12 @@ class VisualModel {
     */
     buildBook = (data, tag) => {
         switch(tag) {
-            default:
-            let $panel = $('<div class="panel panel-default">');
-            $panel.append('<div class="panel-heading"><h3 class="panel-title">' + tag + '</h3></div>');
-            let $list = $('<div class="list-group">');
+        default:
+            let $panel = $("<div class=\"panel panel-default\">");
+            $panel.append("<div class=\"panel-heading\"><h3 class=\"panel-title\">" + tag + "</h3></div>");
+            let $list = $("<div class=\"list-group\">");
             for (var port of data[tag]) {
-                $list.append('<a class="list-group-item">' + port + '</a>')
+                $list.append("<a class=\"list-group-item\">" + port + "</a>");
             }
 
             $panel.append($list);
@@ -708,16 +708,16 @@ class VisualModel {
         if ("hullNodes" in d) {
             // Hull node
             $detailsModal.find(".iziModal-header-title").text(d.id);
-            $detailsModal.attr("current", d.id)
+            $detailsModal.attr("current", d.id);
         }
         else {
             // Standard node
             let data = d.metadata;
             $detailsModal.find(".iziModal-header-title").text(data.id);
-            $detailsModal.attr("current", data.id)
+            $detailsModal.attr("current", data.id);
 
             switch (data.type) {
-                default:
+            default:
                 // hasBidirectionalPort
                 if ("hasBidirectionalPort" in data) {
                     $data.append(this.buildBook(data, "hasBidirectionalPort"));

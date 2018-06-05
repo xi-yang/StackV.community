@@ -106,7 +106,9 @@ export function loadAdmin() {
         });
     });
 
-    $("#API-panel .action-button").click(executeRequest());
+    $("#API-panel .action-button").click(function () {
+        executeRequest();
+    });
 
     $(".checkbox-level").change(function () {
         if ($(this).is(":checked")) {
@@ -197,7 +199,11 @@ function executeRequest() {
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function (result) {
-                $("#api_result").val("Success");
+                if (type === "POST") {
+                    $("#api_result").val(result);    
+                } else {
+                    $("#api_result").val("Success");
+                }
             },
             error: function () {
                 $("#api_result").val("Failure");
