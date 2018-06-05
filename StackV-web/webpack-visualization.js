@@ -1,4 +1,3 @@
-/* eslint-disable */
 const path = require("path");
 const PACKAGE = require("./package.json");
 
@@ -42,8 +41,8 @@ module.exports = {
         ]
     },
     externals: {
-        'd3': 'd3',
-        'lodash': '_',
-        'lz-string': 'LZString',
+        "d3": "d3",
+        "lodash": "_",
+        "lz-string": "LZString",
     },
 };
