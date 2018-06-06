@@ -240,5 +240,37 @@ public class ModelResource {
         return Response.status(200).entity(jsonRet).build();
     }
     
-    
+    @GET
+    @Consumes({"application/json"})
+    @Produces({"application/json"})
+    @Path("/refresh/{topoURI}")
+    public Response refreshModelAllOrAny(@PathParam("topoURI") String topoURI) throws Exception {
+        JSONObject jsonRet = new JSONObject();
+        if (topoURI.equalsIgnoreCase("all")) {
+            Map<String, ModelBase> topoModelMap = systemCallHandler.retrieveAllLatestModels();
+            for (String aTopoUri: topoModelMap.keySet()) {
+                ModelBase modelBase = topoModelMap.get(aTopoUri);
+                JSONObject jsonTopo = new JSONObject();
+                jsonTopo.put("uuid", modelBase.getId());
+                jsonTopo.put("time", modelBase.getCreationTime());
+                jsonTopo.put("ttl", modelBase.getTtlModel());
+                jsonTopo.put("json", ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
+                jsonRet.put(aTopoUri, jsonTopo);
+            }
+            return Response.status(200).entity(jsonRet).build();
+        } else {
+            ModelBase modelBase = systemCallHandler.retrieveLatestModelByDriver(topoURI);
+            if (modelBase == null) {
+                return Response.status(Response.Status.NOT_FOUND).entity("no model available for topology: "+topoURI).build();
+            }
+            JSONObject jsonTopo = new JSONObject();
+            jsonTopo.put("uuid", modelBase.getId());
+            jsonTopo.put("time", modelBase.getCreationTime());
+            jsonTopo.put("ttl", modelBase.getTtlModel());
+            jsonTopo.put("json", ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
+            jsonRet.put(topoURI, jsonTopo);
+        }
+        return Response.status(200).entity(jsonRet).build();
+    }
+        
 }
