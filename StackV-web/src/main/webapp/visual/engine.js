@@ -3,7 +3,6 @@ import * as d3 from "d3";
 import $ from "jquery";
 
 import AllMockData from "./data.mock";
-import ServerData from "./data-model/server-data/server-data";
 
 var domains = [];
 
@@ -28,12 +27,14 @@ export default function initVisualization(selector) {
         success: function (result) {
             console.log(result);
         },
-    });    
+    });
 
     window.r = AllMockData;
-    window.server = ServerData;
     window.d3 = d3;
 
+    import(/* webpackPreload: true */ /* webpackChunkName: "serverdata" */ "./data-model/server-data/server-data").then(module => {
+        window.server = module.default;
+    });
     import(/* webpackPreload: true */ /* webpackChunkName: "datamodel" */ "./data-model/data-model").then(module => {
         window.d = module.default;
     });
