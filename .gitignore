@@ -12,7 +12,6 @@
 *.DS_Store
 *.swp
 *.out
-*.bundle.js
 /StackV-ejb/target/
 /StackV-web/target/
 /StackV-ear/target/
