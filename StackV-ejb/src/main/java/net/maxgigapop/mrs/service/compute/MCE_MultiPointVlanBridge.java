@@ -52,6 +52,7 @@ import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
+import net.maxgigapop.mrs.common.Sd;
 import net.maxgigapop.mrs.common.Spa;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TagSet;
@@ -86,9 +87,6 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             + "   }\n"
             + "	]\n"
             + "}";
-    
-    //private static final String URI_SvcDef_L2MpEs = "http://services.ogf.org/nsi/2018/06/descriptions/l2-mp-es";
-    private static final String URI_SvcDef_L2MpEs = "http://services.ogf.org/nsi/2013/12/descriptions/EVTS.A-GOLE";
     
     @Override
     @Asynchronous
@@ -494,7 +492,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             String sparql = "SELECT ?svc WHERE {"
                     + "?svc a nml:SwitchingService. "
                     + "?svc sd:hasServiceDefinition ?svc_sd. "
-                    + String.format("?svc_sd sd:serviceType \"%s\". ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc_sd sd:serviceType \"%s\". ", Sd.URI_SvcDef_L2MpEs)
                     + String.format("?svc nml:hasBidirectionalPort <%s>. "
                             + "FILTER (?svc=<%s>)", terminalX, resOriginal)
                     + "}";
@@ -541,7 +539,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 String sparql = "SELECT ?svc WHERE {"
                     + "?svc a nml:SwitchingService. "
                     + "?svc sd:hasServiceDefinition ?svc_sd. "
-                    + String.format("?svc_sd sd:serviceType \"%s\". ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc_sd sd:serviceType \"%s\". ", Sd.URI_SvcDef_L2MpEs)
                         + String.format("?svc nml:hasBidirectionalPort <%s>. "
                                 + "FILTER (?svc=<%s>)", resDiverge, resOriginal)
                         + "}";
@@ -783,7 +781,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             String sparql = "SELECT ?svc WHERE {"
                     + "?svc a nml:SwitchingService. "
                     + "?svc sd:hasServiceDefinition ?svc_sd. "
-                    + String.format("?svc_sd sd:serviceType \"%s\". ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc_sd sd:serviceType \"%s\". ", Sd.URI_SvcDef_L2MpEs)
                     + String.format("?svc nml:hasBidirectionalPort <%s>. ",
                             resObj)
                     + "}";
@@ -796,7 +794,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                 sparql = "SELECT ?svc WHERE {"
                     + "?svc a nml:SwitchingService. "
                     + "?svc sd:hasServiceDefinition ?svc_sd. "
-                    + String.format("?svc_sd sd:serviceType \"%s\". ", URI_SvcDef_L2MpEs)
+                    + String.format("?svc_sd sd:serviceType \"%s\". ", Sd.URI_SvcDef_L2MpEs)
                         + String.format("?svc nml:hasBidirectionalPort <%s>. ",
                                 resObj)
                         + "}";

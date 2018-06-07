@@ -52,6 +52,7 @@ import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
 import net.maxgigapop.mrs.common.RdfOwl;
 import net.maxgigapop.mrs.common.ResourceTool;
+import net.maxgigapop.mrs.common.Sd;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -200,6 +201,11 @@ public class OESSDriver implements IHandleDriverSystemCall {
         model.add(model.createStatement(resSwSvc, Nml.encoding, RdfOwl.labelTypeVLAN));
         model.add(model.createStatement(resSwSvc, Nml.labelSwapping, "true"));
         model.add(model.createStatement(resTopology, Nml.hasService, resSwSvc));
+        // add L2_MP_ES service definition
+        Resource resSwSvcDef = RdfOwl.createResource(model, resSwSvc.getURI() + ":sd+l2mpes", Sd.ServiceDefinition);
+        model.add(model.createStatement(resSwSvcDef, Sd.serviceType, Sd.URI_SvcDef_L2MpEs));
+        model.add(model.createStatement(resSwSvc, Sd.hasServiceDefinition, resSwSvcDef));
+        
         // get a valid group_id if defaultGroup == null
         if (workgroup == null) {
             workgroup = getGroupId(baseUrl, username, password);
