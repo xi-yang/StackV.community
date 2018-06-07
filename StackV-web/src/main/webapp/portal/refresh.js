@@ -26,6 +26,7 @@ import { openLogDetails, dataTable, reloadLogs } from "./logging";
 
 /* Enabled Scripts */
 import { reloadModals } from "./catalog";
+import { fetchNewData } from "../visual/engine";
 /* */
 
 var refreshTimer;
@@ -85,14 +86,19 @@ export function timerChange(sel) {
     }
 }
 export function setRefresh(time) {
-    countdown = time;
-    countdownTimer = setInterval(function () {
-        refreshCountdown(time);
-    }, 1000);
-    refreshTimer = setInterval(function () {
+    if (time === "off") {
+        document.getElementById("refresh-button").innerHTML = "Manually Refresh Now";
         $(".loading-prog").css("width", "0%");
-        reloadData();
-    }, (time * 1000));
+    } else {
+        countdown = time;
+        countdownTimer = setInterval(function () {
+            refreshCountdown(time);
+        }, 1000);
+        refreshTimer = setInterval(function () {
+            $(".loading-prog").css("width", "0%");
+            reloadData();
+        }, (time * 1000));
+    }
 }
 export function refreshCountdown() {
     $("#refresh-button").html("Refresh in " + (countdown - 1) + " seconds");
@@ -135,7 +141,6 @@ export function reloadData() {
             setTimeout(function () {
                 reloadLogs();
                 reloadModals();
-                loadSystemHealthCheck();
             }, 500);
             break;
         case "admin":
@@ -143,7 +148,13 @@ export function reloadData() {
                 reloadLogs();
             }, 500);
             break;
+
+        case "visualization":
+            fetchNewData();
+            break;
         }
+
+        loadSystemHealthCheck();
         refreshSync(refreshed, timerSetting);
     });
 }
@@ -158,7 +169,6 @@ export function reloadData() {
 <div id="system-health-check-text"></div>
 </div>
 */
-var systemHealthPass;
 function loadSystemHealthCheck() {
     var apiUrl = window.location.origin + "/StackV-web/restapi/service/ready";
     $.ajax({
@@ -170,16 +180,12 @@ function loadSystemHealthCheck() {
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
         },
         success: function (result) {
-            if (systemHealthPass !== result) {
-                if (result === true) {
-                    $("#system-health-span").removeClass("fail").removeClass("glyphicon-ban-circle")
-                        .addClass("pass").addClass("glyphicon-ok-circle");
-                } else {
-                    $("#system-health-span").removeClass("pass").removeClass("glyphicon-ok-circle")
-                        .addClass("fail").addClass("glyphicon-ban-circle");
-                }
-
-                systemHealthPass = result;
+            if (result === true) {
+                $("#system-health-span").removeClass("fail").removeClass("glyphicon-ban-circle")
+                    .addClass("pass").addClass("glyphicon-ok-circle");
+            } else {
+                $("#system-health-span").removeClass("pass").removeClass("glyphicon-ok-circle")
+                    .addClass("fail").addClass("glyphicon-ban-circle");
             }
         },
         error: function (err) {

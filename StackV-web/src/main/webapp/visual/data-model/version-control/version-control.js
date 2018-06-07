@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import _ from "lodash";
 
 
 /**
@@ -22,36 +22,36 @@ class VersionControl {
    * @returns {{changed: boolean, remove: Array<string>}} List of CHANGED node REAL id
    */
   diff(newParsedResult) {
-    let changed = false;
-    let removedIdList = [];
+      let changed = false;
+      let removedIdList = [];
 
-    Object.keys(newParsedResult.topLevel).forEach(topLevelId => {
-      const latestVersionRecord = newParsedResult.versionRecord[topLevelId];
-      const currentVersionRecord = this.versionRecord[topLevelId];
+      Object.keys(newParsedResult.topLevel).forEach(topLevelId => {
+          const latestVersionRecord = newParsedResult.versionRecord[topLevelId];
+          const currentVersionRecord = this.versionRecord[topLevelId];
 
-      if (!currentVersionRecord || (latestVersionRecord.time > currentVersionRecord.time &&
+          if (!currentVersionRecord || (latestVersionRecord.time > currentVersionRecord.time &&
           latestVersionRecord.uuid !== currentVersionRecord.uuid)) {
-        // mark changed
-        changed = true;
-        // latest node ID list under `topLevelId`
-        const latestIdList = newParsedResult.topLevel[topLevelId];
-        // current node ID list under `topLevelId`
-        const currentIdList = this.currentNodeStructure[topLevelId];
-        // diff 2 array get REMOVED NODE LIST
-        const diffArray = _.difference(currentIdList, latestIdList);
-        diffArray.forEach(d => removedIdList.push(d))
-      }
+              // mark changed
+              changed = true;
+              // latest node ID list under `topLevelId`
+              const latestIdList = newParsedResult.topLevel[topLevelId];
+              // current node ID list under `topLevelId`
+              const currentIdList = this.currentNodeStructure[topLevelId];
+              // diff 2 array get REMOVED NODE LIST
+              const diffArray = _.difference(currentIdList, latestIdList);
+              diffArray.forEach(d => removedIdList.push(d));
+          }
 
-      if (latestVersionRecord.time === -1) {
-        // If the node is being completely removed
-        this.currentNodeStructure[topLevelId].forEach(d => removedIdList.push(d));
-      }
-    });
+          if (latestVersionRecord.time === -1 && this.currentNodeStructure[topLevelId]) {
+              // If the node is being completely removed
+              this.currentNodeStructure[topLevelId].forEach(d => removedIdList.push(d));
+          }
+      });
 
-    return {
-      changed,
-      remove: removedIdList,
-    };
+      return {
+          changed,
+          remove: removedIdList,
+      };
   }
 
   /**
@@ -61,8 +61,8 @@ class VersionControl {
    * @returns {{change: Array<string>, remove: Array<string>}} List of CHANGED node REAL id
    */
   updateVersion(newParsedResult) {
-    _.assign(this.currentNodeStructure, newParsedResult.topLevel);
-    _.assign(this.versionRecord, newParsedResult.versionRecord);
+      _.assign(this.currentNodeStructure, newParsedResult.topLevel);
+      _.assign(this.versionRecord, newParsedResult.versionRecord);
   }
 }
 

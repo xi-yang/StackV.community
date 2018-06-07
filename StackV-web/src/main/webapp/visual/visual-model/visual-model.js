@@ -10,16 +10,6 @@ import NodeDetailController from "./ui-popover/node-detail/controller";
 import NodeHighlighter from "./node-highlighter/highlighter";
 
 const $detailsModal = $("#details-modal");
-const detailsConfig = {
-    title: "Details",
-    headerColor: "#3e4d5f",
-    width: "50vh",
-    transitionIn: "fadeInDown",
-    transitionOut: "fadeOutUp",
-    top: "104px",
-    overlay: false
-};
-
 const NODE_COLOR = d3.scaleOrdinal(["#63a4ff"]);
 const HULL_COLOR = d3.scaleOrdinal(["rgba(26, 35, 126, 0.85)"]);
 
@@ -251,6 +241,18 @@ class VisualModel {
 
         this.nodeDetailController = new NodeDetailController(this);
 
+        const detailsConfig = {
+            title: "Details",
+            headerColor: "#3e4d5f",
+            width: "50vh",
+            transitionIn: "fadeInDown",
+            transitionOut: "fadeOutUp",
+            top: "104px",
+            overlay: false,
+            onClosed: function () {
+                window.view.highlighter.hide();
+            }
+        };
         $detailsModal.iziModal(detailsConfig);
     }
 
@@ -448,14 +450,12 @@ class VisualModel {
     * Preserved hook when D3 force layout starts
     */
     startRendering = () => {
-        console.log("RENDER START");
     };
 
     /**
     * Preserved hook when D3 force layout stops
     */
     stopRendering = () => {
-        console.log("RENDER END");
         this.applyLayoutPersistence();
     };
 
@@ -684,11 +684,11 @@ class VisualModel {
     * Store panel construction recipes
     */
     buildBook = (data, tag) => {
+        let $panel = $("<div class=\"panel panel-default\">");
+        let $list = $("<div class=\"list-group\">");
         switch(tag) {
         default:
-            let $panel = $("<div class=\"panel panel-default\">");
             $panel.append("<div class=\"panel-heading\"><h3 class=\"panel-title\">" + tag + "</h3></div>");
-            let $list = $("<div class=\"list-group\">");
             for (var port of data[tag]) {
                 $list.append("<a class=\"list-group-item\">" + port + "</a>");
             }

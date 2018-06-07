@@ -1,35 +1,15 @@
 /* global keycloak */
 import * as d3 from "d3";
 import $ from "jquery";
-
-import AllMockData from "./data.mock";
-
-var domains = [];
+import { initRefresh, reloadData } from "../portal/refresh";
 
 export default function initVisualization(selector) {
-    fetchDomains();
-
-    let domainData = {};
-    for (let domain of domains) {
-        domainData.domain = "null";
-    }
-    var apiUrl = window.location.origin + "/StackV-web/restapi/model/refresh";
-    $.ajax({
-        url: apiUrl,
-        type: "POST",
-        data: JSON.stringify(domainData),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        success: function (result) {
-            console.log(result);
-        },
+    $("#sub-nav").load("/StackV-web/nav/visualization_navbar.html", function () {
+        initRefresh($("#refresh-timer").val());
     });
 
-    window.r = AllMockData;
+    fetchDomains();
+
     window.d3 = d3;
 
     import(/* webpackPreload: true */ /* webpackChunkName: "serverdata" */ "./data-model/server-data/server-data").then(module => {
@@ -43,36 +23,42 @@ export default function initVisualization(selector) {
         const StackVGraphic = module.default;
         window.v = StackVGraphic;
 
-        const view = new StackVGraphic(AllMockData[0], document.querySelector(selector));
-        window.data = view.dataModel;
-        window.view = view;
+        var apiUrl = window.location.origin + "/StackV-web/restapi/model/refresh/all";
+        var ret;
+        $.ajax({
+            url: apiUrl,
+            type: "GET",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function (result) {
+                console.log(result);
+                const view = new StackVGraphic(result, document.querySelector(selector));
+                window.data = view.dataModel;
+                window.view = view;
 
-        d3.select("#reset-page").on("click", () => {
-            view.restart();
+                d3.select("#reset-page").on("click", () => {
+                    view.restart();
+                });
+
+                d3.select("#del-state").on("click", () => {
+                    localStorage.clear();
+                    window.location.reload();
+                });
+
+                $("#refresh-test").click(f => {
+
+                });
+
+                view.restart();
+            },
         });
-
-        d3.select("#del-state").on("click", () => {
-            localStorage.clear();
-            window.location.reload();
-        });
-
-        d3.select("#dynamic-load-1").on("click", () => {
-            view.update(AllMockData[1]);
-        });
-
-        d3.select("#dynamic-load-2").on("click", () => {
-            view.update(AllMockData[2]);
-        });
-
-        d3.select("#dynamic-load-3").on("click", () => {
-            view.update(AllMockData[3]);
-        });
-
-        view.restart();
     });
 }
 
 function fetchDomains() {
+    var domains = [];
     var apiUrl = window.location.origin + "/StackV-web/restapi/driver";
     $.ajax({
         url: apiUrl,
@@ -89,4 +75,35 @@ function fetchDomains() {
             }
         },
     });
+
+    let domainData = {};
+    for (let domain of domains) {
+        domainData[domain] = "null";
+    }
+
+    window.domainData = domainData;
+}
+
+export function fetchNewData() {
+    fetchDomains();
+    var apiUrl = window.location.origin + "/StackV-web/restapi/model/refresh";
+    var ret;
+    $.ajax({
+        url: apiUrl,
+        type: "POST",
+        async: false,
+        data: JSON.stringify(window.domainData),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            console.log(result);
+            ret = result;
+        },
+    });
+
+    window.view.update(ret);
 }
