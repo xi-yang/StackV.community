@@ -244,8 +244,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             Resource bridgeSwitchingSubnet = qs.getResource("subnet");
             //$$ check VLAN and bandwidth from terminalX
             sparql = "SELECT ?x_vlan_range WHERE {"
-                    + String.format("<%s> mrs:hasLabelGroup ?lg. ", terminalX)
-                    + "?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg mrs:values ?x_vlan_range. "
+                    + String.format("<%s> nml:hasLabelGroup ?lg. ", terminalX)
+                    + "?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?x_vlan_range. "
                     + "}";   
             rs = ModelUtil.sparqlQuery(transformedModel, sparql);
             if (!rs.hasNext()) {
