@@ -245,10 +245,12 @@ public class OESSDriver implements IHandleDriverSystemCall {
                 model.add(model.createStatement(resNaNodeName, Mrs.type, "node_name"));
                 model.add(model.createStatement(resNaNodeName, Mrs.value, nodeName));
                 // get peer URI for resPort
-                String peerUri = this.lookupAliasUri(jsonExt, nodeName, intfName);
-                if (peerUri != null) {
-                    Resource resPeer = model.createResource(peerUri);
-                    model.add(model.createStatement(resPort, Nml.isAlias, resPeer));
+                if (jsonExt != null) {
+                    String peerUri = this.lookupAliasUri(jsonExt, nodeName, intfName);
+                    if (peerUri != null) {
+                        Resource resPeer = model.createResource(peerUri);
+                        model.add(model.createStatement(resPort, Nml.isAlias, resPeer));
+                    }
                 }
             }
         }
