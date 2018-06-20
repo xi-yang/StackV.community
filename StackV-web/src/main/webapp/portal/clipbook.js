@@ -23,8 +23,8 @@
 * IN THE WORK.
 */
 
-/* global XDomainRequest, Mousetrap, iziToast */
-var clipbook = {};
+/* global XDomainRequest, keycloak, Mousetrap, iziToast */
+var clipbook = [];
 const $clipModal = $("#clipbook-modal");
 const clipConfig = {
     title: "Clipbook",
@@ -35,33 +35,23 @@ const clipConfig = {
     group: "clip"
 };
 
-export function loadClipbook() {
+export default function loadClipbook() {
     $clipModal.iziModal(clipConfig);
     $("#clipbook-modal .iziModal-content").append("<div class='clipbook-data'><div class='panel panel-default'><div class='clipbook-add' style='display: none;'></div><div class='list-group clipbook-list'></div><div style='height:50px;'><button class='btn btn-default' id='button-clipbook-add'>Add</button><button style='display: none;' class='btn btn-success' id='button-clipbook-submit'>Submit</button></div></div></div>");
     $(".clipbook-add").append("<div class='form-group'><label for='input-clipbook-name'>Clip Name</label><input type='text' class='form-control' id='input-clipbook-name' placeholder='Name'></div>");
     $(".clipbook-add").append("<div class='form-group'><label for='input-clipbook-text'>Clip Text</label><textarea type='text' class='form-control' id='input-clipbook-text' placeholder='Text'></textarea></div>");
 
-    Mousetrap.bind("command+shift+x", () => { reloadClipboard();$clipModal.iziModal("open"); });
+    Mousetrap.bind("command+shift+x", () => { syncClipbook("open"); });
+
     $(".clipbook-list").on("click", "a", function() {
         copyTextToClipboard($(this).attr("data-clip"));
     });
-    $(".clipbook-list").on("click", "span", function() {
+    $(".clipbook-list").on("click", "span", function(evt) {
         deleteFromClipbook($(this).parent().text());
         syncClipbook();
-    });
 
-    clipbook = [
-        {
-            "name": "testClip1",
-            "clip": "urn:ogf:network:service+45e188ec-d820-4e69-a618-08045ec58835:resource+virtual_clouds:tag+vpc1",
-            "color": "blue"
-        },
-        {
-            "name": "testClip2",
-            "clip": "urn:ogf:network:service+45e188ec-d820-4e69-a618-08045ec58835:resource+virtual_clouds:tag+vpc2",
-            "color": "green"
-        }
-    ];
+        evt.stopPropagation();
+    });
 
     syncClipbook();
     $("#button-clipbook-add").click(function() {
@@ -75,8 +65,6 @@ export function loadClipbook() {
         let name = $("#input-clipbook-name").val();
         let text = $("#input-clipbook-text").val();
         addToClipbook(name, text);
-        syncClipbook();
-        $("#button-clipbook-add").click();
     });
 }
 
@@ -106,43 +94,86 @@ function toggleClipbook(mode) {
 }
 
 export function openClipbookAdd() {
-    $("#input-clipbook-name").val();
-    $clipModal.iziModal("open");
+    $("#input-clipbook-name").val(null);
+    syncClipbook("open");
     toggleClipbook("add");
 }
 
-function syncClipbook() {
-    reloadClipboard();
-}
+export function syncClipbook(mode) {
+    var newClipbook = [];
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/clipbook/" + keycloak.tokenParsed.preferred_username;
+    $.ajax({
+        url: apiUrl,
+        type: "GET",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            for (let clip of result) {
+                newClipbook.push(clip);
+            }
 
-function reloadClipboard() {
-    var $list = $(".clipbook-list").empty();
-    for (let clip of clipbook) {
-        if (clip !== undefined) {
-            let $item = $("<a class='list-group-item' data-clip='" + clip.clip + "'><p>" + clip.name + "<span style='float:right;z-index:99;' class='glyphicon glyphicon-remove-circle'></span></p><div class='clip-text'>" + clip.clip + "</div></a>");
-            $item.css({"box-shadow": clip.color + " 0px 0px 1px 1px inset"});
-            $list.append($item);
-        }
-    }
+            clipbook = newClipbook;
+
+            var $list = $(".clipbook-list").empty();
+            for (let clip of clipbook) {
+                if (clip !== undefined) {
+                    let $item = $("<a class='list-group-item' data-clip='" + clip.clip + "'><p>" + clip.name + "<span style='float:right;z-index:99;' class='glyphicon glyphicon-remove-circle'></span></p><div class='clip-text'>" + clip.clip + "</div></a>");
+                    $item.css({"box-shadow": clip.color + " 0px 0px 1px 1px inset"});
+                    $list.append($item);
+                }
+            }
+
+            switch (mode) {
+            case "open":
+                $clipModal.iziModal("open");
+                break;
+            case "add":
+                toggleClipbook("list");
+                break;
+            }
+        },
+    });
 }
 
 function addToClipbook(name, clip, color) {
     var newClip = {};
     newClip.name = name;
     newClip.clip = clip;
-    if (color !== undefined) {
-        newClip.color = color;
-    }
 
-    clipbook.push(newClip);
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/clipbook/" + keycloak.tokenParsed.preferred_username;
+    $.ajax({
+        url: apiUrl,
+        type: "POST",
+        data: JSON.stringify(newClip),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            syncClipbook("add");
+        },
+    });
 }
 function deleteFromClipbook(name) {
-    for (let i in clipbook) {
-        if (clipbook[i] && clipbook[i].name === name) {
-            delete clipbook[i];
-        }
-    }
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/clipbook/" + keycloak.tokenParsed.preferred_username + "/" + name;
+    $.ajax({
+        url: apiUrl,
+        type: "DELETE",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            syncClipbook();
+        },
+    });
 }
+
+// Copy utility function
 function copyTextToClipboard(text) {
     var textArea = document.createElement("textarea");
     textArea.style.position = "fixed";

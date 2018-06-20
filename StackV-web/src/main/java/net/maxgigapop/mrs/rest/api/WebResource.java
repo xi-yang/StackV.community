@@ -21,7 +21,7 @@
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
 * IN THE WORK.
-*/
+ */
 package net.maxgigapop.mrs.rest.api;
 
 import java.io.IOException;
@@ -101,10 +101,10 @@ import org.jboss.resteasy.spi.UnhandledException;
 import templateengine.TemplateEngine;
 
 /**
-* REST Web Service
-*
-* @author rikenavadur
-*/
+ * REST Web Service
+ *
+ * @author rikenavadur
+ */
 @Path("app")
 public class WebResource {
 
@@ -119,20 +119,20 @@ public class WebResource {
         HashMap<String, List<String>> result = new HashMap<>();
 
         result.put("vcn", Arrays.asList(
-        "Virtual Cloud Network",
-        "Network Creation Pilot Testbed."));
+                "Virtual Cloud Network",
+                "Network Creation Pilot Testbed."));
 
         result.put("dnc", Arrays.asList(
-        "Dynamic Network Connection",
-        "Creation of new network connections."));
+                "Dynamic Network Connection",
+                "Creation of new network connections."));
 
         result.put("ahc", Arrays.asList(
-        "Advanced Hybrid Cloud",
-        "Advanced Hybrid Cloud Service."));
+                "Advanced Hybrid Cloud",
+                "Advanced Hybrid Cloud Service."));
 
         result.put("ecc", Arrays.asList(
-        "EdgeCloud Connection",
-        "MAX EdgeCloud Pilot Service."));
+                "EdgeCloud Connection",
+                "MAX EdgeCloud Pilot Service."));
 
         return Collections.unmodifiableMap(result);
     }
@@ -161,8 +161,8 @@ public class WebResource {
     HandleSystemCall systemCallHandler;
 
     /**
-    * Creates a new instance of WebResource
-    */
+     * Creates a new instance of WebResource
+     */
     public WebResource() {
     }
 
@@ -205,24 +205,24 @@ public class WebResource {
     }
 
     /**
-    * @apiDefine AuthHeader
-    * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
-    */
+     * @apiDefine AuthHeader
+     * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
+     */
     // >ACL
     /**
-    * @api {post} /app/acl/:refUUID Add ACL Entry
-    * @apiVersion 1.0.0
-    * @apiDescription Add subject pairing to object specified by UUID.
-    * @apiGroup ACL
-    * @apiUse AuthHeader
-    * @apiParam {String} subject subject ID
-    * @apiParam {String} refUUID object reference UUID
-    *
-    * @apiExample {curl} Example Call:
-    * curl -X POST -H "Content-Type: application/json" -d "test1"
-    * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    */
+     * @api {post} /app/acl/:refUUID Add ACL Entry
+     * @apiVersion 1.0.0
+     * @apiDescription Add subject pairing to object specified by UUID.
+     * @apiGroup ACL
+     * @apiUse AuthHeader
+     * @apiParam {String} subject subject ID
+     * @apiParam {String} refUUID object reference UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X POST -H "Content-Type: application/json" -d "test1"
+     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @POST
     @Path(value = "/acl/{refUUID}")
     @Consumes(value = {"application/json", "application/xml"})
@@ -236,13 +236,13 @@ public class WebResource {
             logger.start(method);
             // Authorize service.
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-            .getName());
+                    .getName());
             final AccessToken accessToken = securityContext.getToken();
 
             front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
-            + "VALUES (?, '0', ?)");
+                    + "VALUES (?, '0', ?)");
             prep.setString(1, subject);
             prep.setString(2, refUUID);
             prep.executeUpdate();
@@ -257,19 +257,19 @@ public class WebResource {
     }
 
     /**
-    * @api {delete} /app/acl/:refUUID Delete ACL Entry
-    * @apiDescription Delete subject associated with object specified by UUID.
-    * @apiVersion 1.0.0
-    * @apiGroup ACL
-    * @apiUse AuthHeader
-    * @apiParam {String} subject subject ID
-    * @apiParam {String} refUUID object reference UUID
-    *
-    * @apiExample {curl} Example Call:
-    * curl -X DELETE -H "Content-Type: application/json" -d "test1"
-    * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    */
+     * @api {delete} /app/acl/:refUUID Delete ACL Entry
+     * @apiDescription Delete subject associated with object specified by UUID.
+     * @apiVersion 1.0.0
+     * @apiGroup ACL
+     * @apiUse AuthHeader
+     * @apiParam {String} subject subject ID
+     * @apiParam {String} refUUID object reference UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE -H "Content-Type: application/json" -d "test1"
+     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @DELETE
     @Path(value = "/acl/{refUUID}")
     @Consumes(value = {"application/json", "application/xml"})
@@ -283,7 +283,7 @@ public class WebResource {
             logger.start(method);
             // Authorize service.
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-            .getName());
+                    .getName());
             final AccessToken accessToken = securityContext.getToken();
 
             front_conn = factory.getConnection("frontend");
@@ -303,26 +303,26 @@ public class WebResource {
     }
 
     /**
-    * @api {GET} /app/acl/:refUUID Get ACL Entries
-    * @apiVersion 1.0.0
-    * @apiDescription Get all entries associated with object specified by UUID.
-    * @apiGroup ACL
-    * @apiUse AuthHeader
-    * @apiParam {String} refUUID object reference UUID
-    *
-    * @apiExample {curl} Example Call:
-    * curl
-    * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    *
-    * @apiSuccess {JSONArray} users users JSON
-    * @apiSuccess {JSONArray} users.user user JSON
-    * @apiSuccess {String} users.user.username username
-    * @apiSuccess {String} users.user.name full name
-    * @apiSuccess {String} users.user.email email
-    * @apiSuccessExample {json} Example Response:
-    * [["admin","",null]]
-    */
+     * @api {GET} /app/acl/:refUUID Get ACL Entries
+     * @apiVersion 1.0.0
+     * @apiDescription Get all entries associated with object specified by UUID.
+     * @apiGroup ACL
+     * @apiUse AuthHeader
+     * @apiParam {String} refUUID object reference UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl
+     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} users users JSON
+     * @apiSuccess {JSONArray} users.user user JSON
+     * @apiSuccess {String} users.user.username username
+     * @apiSuccess {String} users.user.name full name
+     * @apiSuccess {String} users.user.email email
+     * @apiSuccessExample {json} Example Response:
+     * [["admin","",null]]
+     */
     @GET
     @Path("/acl/{refUuid}")
     @Produces("application/json")
@@ -549,11 +549,11 @@ public class WebResource {
         JSONObject delSudoHbacrule = formatIpaDeleteJSON("hbacrule_del", sudoHbac);
 
         /**
-        * NOTE: if the groups or rules have not been created, there will an error
-        * in the resulting JSON but it is not fatal. The error will indicate
-        * the group or rule does not exist which is okay since some accesses
-        * will not be given (mainly sudo accesses).
-        */
+         * NOTE: if the groups or rules have not been created, there will an error
+         * in the resulting JSON but it is not fatal. The error will indicate
+         * the group or rule does not exist which is okay since some accesses
+         * will not be given (mainly sudo accesses).
+         */
         result.put("loginUgDel", ipaRequest(delLoginUsergroup.toJSONString()));
         result.put("loginHgDel", ipaRequest(delLoginHostgroup.toJSONString()));
         result.put("loginHbacDel", ipaRequest(delLoginHbacrule.toJSONString()));
@@ -564,6 +564,137 @@ public class WebResource {
 
         // return the JSONObject as a string
         return result.toJSONString();
+    }
+
+    // >Clipbook
+    /**
+     * Gets all clips associated with user.
+     * @param username
+     * @param clipObject
+     * @throws SQLException
+     */
+    @GET
+    @Path("/clipbook/{user}")
+    @Produces("application/json")
+    public JSONArray getClips(@PathParam("user") String username) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+            JSONArray retJSON = new JSONArray();
+
+            prep = front_conn.prepareStatement("SELECT name, clip FROM clipbook WHERE username = ?");
+            prep.setString(1, username);
+            rs = prep.executeQuery();
+
+            while (rs.next()) {
+                JSONObject clipJSON = new JSONObject();
+                clipJSON.put("name", rs.getString("name"));
+                clipJSON.put("clip", rs.getString("clip"));
+                retJSON.add(clipJSON);
+            }
+            return retJSON;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    /**
+     * Gets all clips associated with user.
+     * @param username
+     * @param clipObject
+     * @throws SQLException
+     */
+    @GET
+    @Path("/clipbook/{user}/{name}")
+    @Produces("application/json")
+    public String getClipByName(@PathParam("user") String username, @PathParam("name") String name) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+            prep = front_conn.prepareStatement("SELECT name, clip FROM clipbook WHERE username = ?");
+            prep.setString(1, username);
+            rs = prep.executeQuery();
+
+            while (rs.next()) {
+                return rs.getString("clip");
+            }
+            return null;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    /**
+     * Adds a clip.
+     * @param username
+     * @param clipObject
+     * @throws SQLException
+     */
+    @POST
+    @Path("/clipbook/{user}")
+    @Consumes(value = {"application/json"})
+    public void addClip(@PathParam("user") String username, final String dataInput) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            JSONObject inputJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(dataInput);
+                inputJSON = (JSONObject) obj;
+            } catch (ParseException ex) {
+                logger.catching("addClip", ex);
+            }
+
+            String name = (String) inputJSON.get("name");
+            String clip = (String) inputJSON.get("clip");
+            front_conn = factory.getConnection("frontend");
+
+            // excluding the topuri if the driver type is raw
+            prep = front_conn.prepareStatement("INSERT INTO frontend.clipbook (`username`, `name`, `clip`) VALUES (?, ?, ?)");
+            prep.setString(1, username);
+            prep.setString(2, name);
+            prep.setString(3, clip);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("addClip", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    /**
+     * Adds a clip.
+     * @param username
+     * @param clipObject
+     * @throws SQLException
+     */
+    @DELETE
+    @Path("/clipbook/{user}/{name}")
+    @Consumes(value = {"application/json"})
+    public void deleteClip(@PathParam("user") String username, @PathParam("name") String name) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+
+            // excluding the topuri if the driver type is raw
+            prep = front_conn.prepareStatement("DELETE FROM frontend.clipbook WHERE username = ? AND name = ?");
+            prep.setString(1, username);
+            prep.setString(2, name);            
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("deleteClip", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
     }
 
     // >Drivers
@@ -640,11 +771,11 @@ public class WebResource {
     }
 
     /**
-    * Adds a new driver profile
-    * @param username
-    * @param dataInput
-    * @throws SQLException
-    */
+     * Adds a new driver profile
+     * @param username
+     * @param dataInput
+     * @throws SQLException
+     */
     @PUT
     @Path("/driver/{user}/add")
     @Consumes(value = {"application/json"})
@@ -825,26 +956,26 @@ public class WebResource {
 
     // >Keycloak
     /**
-    * @api {get} /app/keycloak/users Get Users
-    * @apiVersion 1.0.0
-    * @apiDescription Get a list of existing users.
-    * @apiGroup Keycloak
-    * @apiUse AuthHeader
-    *
-    * @apiExample {curl} Example Call:
-    * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    *
-    * @apiSuccess {JSONArray} users users JSON
-    * @apiSuccess {JSONArray} users.user user JSON
-    * @apiSuccess {String} users.user.username username
-    * @apiSuccess {String} users.user.name full name
-    * @apiSuccess {String} users.user.email email
-    * @apiSuccess {String} users.user.time timestamp of user creation
-    * @apiSuccess {String} users.user.subject user ID
-    * @apiSuccessExample {json} Example Response:
-    * [["admin","",null,"1475506393070","1d183570-2798-4d69-80c3-490f926596ff"],["username","","email","1475506797561","1323ff3d-49f3-46ad-8313-53fd4c711ec6"]]
-    */
+     * @api {get} /app/keycloak/users Get Users
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of existing users.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} users users JSON
+     * @apiSuccess {JSONArray} users.user user JSON
+     * @apiSuccess {String} users.user.username username
+     * @apiSuccess {String} users.user.name full name
+     * @apiSuccess {String} users.user.email email
+     * @apiSuccess {String} users.user.time timestamp of user creation
+     * @apiSuccess {String} users.user.subject user ID
+     * @apiSuccessExample {json} Example Response:
+     * [["admin","",null,"1475506393070","1d183570-2798-4d69-80c3-490f926596ff"],["username","","email","1475506797561","1323ff3d-49f3-46ad-8313-53fd4c711ec6"]]
+     */
     @GET
     @Path("/keycloak/users")
     @Produces("application/json")
@@ -1206,20 +1337,20 @@ public class WebResource {
 
     // >Labels
     /**
-    * @api {get} /app/label/:user
-    * @apiVersion 1.0.0
-    * @apiDescription Get a list of labels belonging to the specified user.
-    * @apiGroup Labels
-    * @apiUse AuthHeader
-    * @apiParam {String} user user ID
-    *
-    ** @apiExample {curl} Example Call:
-    * TODO - Add Example Call
-    *
-    * @apiSuccess Object return TODO - Add Return
-    * @apiSuccessExample {json} Example Response:
-    * TODO - Add Example Response
-    */
+     * @api {get} /app/label/:user
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of labels belonging to the specified user.
+     * @apiGroup Labels
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @GET
     @Path("/label/{user}")
     @Produces("application/json")
@@ -1255,21 +1386,21 @@ public class WebResource {
     }
 
     /**
-    * @api {put} /app/label Add Label
-    * @apiVersion 1.0.0
-    * @apiDescription Add a new label.
-    * @apiGroup Labels
-    * @apiUse AuthHeader
-    * @apiParam {String} user user ID
-    * @apiParam {JSONObject} inputString TODO - Add Parameter Structure
-    *
-    ** @apiExample {curl} Example Call:
-    * TODO - Add Example Call
-    *
-    * @apiSuccess Object return TODO - Add Return
-    * @apiSuccessExample {json} Example Response:
-    * TODO - Add Example Response
-    */
+     * @api {put} /app/label Add Label
+     * @apiVersion 1.0.0
+     * @apiDescription Add a new label.
+     * @apiGroup Labels
+     * @apiUse AuthHeader
+     * @apiParam {String} user user ID
+     * @apiParam {JSONObject} inputString TODO - Add Parameter Structure
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @PUT
     @Path(value = "/label")
     @Consumes(value = {"application/json", "application/xml"})
@@ -1314,21 +1445,21 @@ public class WebResource {
     }
 
     /**
-    * @api {delete} /app/label/:username/delete/:identifier Delete Label
-    * @apiVersion 1.0.0
-    * @apiDescription Delete identified label owned by specified user.
-    * @apiGroup Labels
-    * @apiUse AuthHeader
-    * @apiParam {String} username username
-    * @apiParam {String} identifier label ID
-    *
-    ** @apiExample {curl} Example Call:
-    * TODO - Add Example Call
-    *
-    * @apiSuccess Object return TODO - Add Return
-    * @apiSuccessExample {json} Example Response:
-    * TODO - Add Example Response
-    */
+     * @api {delete} /app/label/:username/delete/:identifier Delete Label
+     * @apiVersion 1.0.0
+     * @apiDescription Delete identified label owned by specified user.
+     * @apiGroup Labels
+     * @apiUse AuthHeader
+     * @apiParam {String} username username
+     * @apiParam {String} identifier label ID
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @DELETE
     @Path(value = "/label/{username}/delete/{identifier}")
     public String deleteLabel(@PathParam(value = "username") String username, @PathParam(value = "identifier") String identifier) throws SQLException {
@@ -1356,20 +1487,20 @@ public class WebResource {
     }
 
     /**
-    * @api {delete} /app/label/:username/clearall Clear Labels
-    * @apiVersion 1.0.0
-    * @apiDescription Delete all labels owned by specified user.
-    * @apiGroup Labels
-    * @apiUse AuthHeader
-    * @apiParam {String} username username
-    *
-    ** @apiExample {curl} Example Call:
-    * TODO - Add Example Call
-    *
-    * @apiSuccess Object return TODO - Add Return
-    * @apiSuccessExample {json} Example Response:
-    * TODO - Add Example Response
-    */
+     * @api {delete} /app/label/:username/clearall Clear Labels
+     * @apiVersion 1.0.0
+     * @apiDescription Delete all labels owned by specified user.
+     * @apiGroup Labels
+     * @apiUse AuthHeader
+     * @apiParam {String} username username
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @DELETE
     @Path(value = "/label/{username}/clearall")
     public String clearLabels(@PathParam(value = "username") String username) throws SQLException {
@@ -1410,25 +1541,25 @@ public class WebResource {
         if (verifyUserRole("admin")) {
             switch (level) {
                 case "TRACE":
-                Configurator.setLevel(WebResource.class.getName(), Level.TRACE);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.TRACE);
-                break;
+                    Configurator.setLevel(WebResource.class.getName(), Level.TRACE);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.TRACE);
+                    break;
                 case "DEBUG":
-                Configurator.setLevel(WebResource.class.getName(), Level.DEBUG);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.DEBUG);
-                break;
+                    Configurator.setLevel(WebResource.class.getName(), Level.DEBUG);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.DEBUG);
+                    break;
                 case "INFO":
-                Configurator.setLevel(WebResource.class.getName(), Level.INFO);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.INFO);
-                break;
+                    Configurator.setLevel(WebResource.class.getName(), Level.INFO);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.INFO);
+                    break;
                 case "WARN":
-                Configurator.setLevel(WebResource.class.getName(), Level.WARN);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.WARN);
-                break;
+                    Configurator.setLevel(WebResource.class.getName(), Level.WARN);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.WARN);
+                    break;
                 case "ERROR":
-                Configurator.setLevel(WebResource.class.getName(), Level.ERROR);
-                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.ERROR);
-                break;
+                    Configurator.setLevel(WebResource.class.getName(), Level.ERROR);
+                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.ERROR);
+                    break;
             }
 
             logger.status("setLogLevel", level);
@@ -1456,37 +1587,37 @@ public class WebResource {
             else if (refUUID == null && level != null) {
                 switch (level) {
                     case "TRACE":
-                    prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
-                    break;
+                        prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
+                        break;
                     case "INFO":
-                    prep = front_conn.prepareStatement("SELECT * FROM log WHERE level != 'TRACE' ORDER BY timestamp DESC");
-                    break;
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE level != 'TRACE' ORDER BY timestamp DESC");
+                        break;
                     case "WARN":
-                    prep = front_conn.prepareStatement("SELECT * FROM log WHERE level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
-                    break;
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
+                        break;
                     case "ERROR":
-                    prep = front_conn.prepareStatement("SELECT * FROM log WHERE level = 'ERROR' ORDER BY timestamp DESC");
-                    break;
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE level = 'ERROR' ORDER BY timestamp DESC");
+                        break;
                 }
             } // Filtering by both
             else if (refUUID != null && level != null) {
                 switch (level) {
                     case "TRACE":
-                    prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
-                    prep.setString(1, refUUID);
-                    break;
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
+                        prep.setString(1, refUUID);
+                        break;
                     case "INFO":
-                    prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' ORDER BY timestamp DESC");
-                    prep.setString(1, refUUID);
-                    break;
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' ORDER BY timestamp DESC");
+                        prep.setString(1, refUUID);
+                        break;
                     case "WARN":
-                    prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
-                    prep.setString(1, refUUID);
-                    break;
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
+                        prep.setString(1, refUUID);
+                        break;
                     case "ERROR":
-                    prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level = 'ERROR' ORDER BY timestamp DESC");
-                    prep.setString(1, refUUID);
-                    break;
+                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level = 'ERROR' ORDER BY timestamp DESC");
+                        prep.setString(1, refUUID);
+                        break;
                 }
             }
 
@@ -1551,46 +1682,46 @@ public class WebResource {
             else if (refUUID == null && level != null) {
                 switch (level) {
                     case "INFO":
-                    prepString = prepString + " WHERE level != 'TRACE'";
-                    break;
+                        prepString = prepString + " WHERE level != 'TRACE'";
+                        break;
                     case "WARN":
-                    prepString = prepString + " WHERE level != 'TRACE' AND level != 'INFO'";
-                    break;
+                        prepString = prepString + " WHERE level != 'TRACE' AND level != 'INFO'";
+                        break;
                     case "ERROR":
-                    prepString = prepString + " WHERE level = 'ERROR'";
-                    break;
+                        prepString = prepString + " WHERE level = 'ERROR'";
+                        break;
                 }
             } // Filtering by both
             else if (refUUID != null && level != null) {
                 switch (level) {
                     case "TRACE":
-                    prepString = prepString + " WHERE referenceUUID = ?";
-                    break;
+                        prepString = prepString + " WHERE referenceUUID = ?";
+                        break;
                     case "INFO":
-                    prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE'";
-                    break;
+                        prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE'";
+                        break;
                     case "WARN":
-                    prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO'";
-                    break;
+                        prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO'";
+                        break;
                     case "ERROR":
-                    prepString = prepString + " WHERE referenceUUID = ? AND level = 'ERROR'";
-                    break;
+                        prepString = prepString + " WHERE referenceUUID = ? AND level = 'ERROR'";
+                        break;
                 }
             }
 
             if (!search.equals("")) {
                 if (prepString.contains("WHERE")) {
                     prepString = prepString + " AND (logger LIKE '%" + search + "%' "
-                    + "OR module LIKE '%" + search + "%' "
-                    + "OR method LIKE '%" + search + "%' "
-                    + "OR event LIKE '%" + search + "%' "
-                    + "OR message LIKE '%" + search + "%') ";
+                            + "OR module LIKE '%" + search + "%' "
+                            + "OR method LIKE '%" + search + "%' "
+                            + "OR event LIKE '%" + search + "%' "
+                            + "OR message LIKE '%" + search + "%') ";
                 } else {
                     prepString = prepString + " WHERE (logger LIKE '%" + search + "%' "
-                    + "OR module LIKE '%" + search + "%' "
-                    + "OR method LIKE '%" + search + "%' "
-                    + "OR event LIKE '%" + search + "%' "
-                    + "OR message LIKE '%" + search + "%') ";
+                            + "OR module LIKE '%" + search + "%' "
+                            + "OR method LIKE '%" + search + "%' "
+                            + "OR event LIKE '%" + search + "%' "
+                            + "OR message LIKE '%" + search + "%') ";
                 }
             }
 
@@ -1667,14 +1798,14 @@ public class WebResource {
 
             if (verifyUserRole("A_Admin")) {
                 prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
-                + "FROM service_instance I, service_verification V "
-                + "WHERE V.service_instance_id = I.service_instance_id "
-                + "ORDER BY I.creation_time");
+                        + "FROM service_instance I, service_verification V "
+                        + "WHERE V.service_instance_id = I.service_instance_id "
+                        + "ORDER BY I.creation_time");
             } else {
                 prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
-                + "FROM service_instance I, acl A, service_verification V "
-                + "WHERE I.referenceUUID = A.object AND V.service_instance_id = I.service_instance_id AND (A.subject = ? OR I.username = ?) "
-                + "ORDER BY I.creation_time");
+                        + "FROM service_instance I, acl A, service_verification V "
+                        + "WHERE I.referenceUUID = A.object AND V.service_instance_id = I.service_instance_id AND (A.subject = ? OR I.username = ?) "
+                        + "ORDER BY I.creation_time");
                 prep.setString(1, username);
                 prep.setString(2, username);
             }
@@ -1721,20 +1852,20 @@ public class WebResource {
 
     // >Manifests
     /**
-    * @api {get} /app/manifest/:svcUUID Get Manifest
-    * @apiVersion 1.0.0
-    * @apiDescription Get manifest for specified service instance.
-    * @apiGroup Manifests
-    * @apiUse AuthHeader
-    * @apiParam {String} svcUUID instance UUID
-    *
-    ** @apiExample {curl} Example Call:
-    * TODO - Add Example Call
-    *
-    * @apiSuccess Object return TODO - Add Return
-    * @apiSuccessExample {json} Example Response:
-    * TODO - Add Example Response
-    */
+     * @api {get} /app/manifest/:svcUUID Get Manifest
+     * @apiVersion 1.0.0
+     * @apiDescription Get manifest for specified service instance.
+     * @apiGroup Manifests
+     * @apiUse AuthHeader
+     * @apiParam {String} svcUUID instance UUID
+     *
+     ** @apiExample {curl} Example Call:
+     * TODO - Add Example Call
+     *
+     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccessExample {json} Example Response:
+     * TODO - Add Example Response
+     */
     @GET
     @Path("/manifest/{svcUUID}")
     @Produces("application/json")
@@ -1753,7 +1884,7 @@ public class WebResource {
             front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("select S.name from service_instance I, service S "
-            + "where I.referenceUUID=? AND I.service_id=S.service_id");
+                    + "where I.referenceUUID=? AND I.service_id=S.service_id");
             prep.setString(1, svcUUID);
             rs = prep.executeQuery();
             while (rs.next()) {
@@ -1772,13 +1903,13 @@ public class WebResource {
                     String result = executeHttpMethod(url, conn, "GET", null, auth);
                     switch (result) {
                         case "ops":
-                        serviceType = "Virtual Cloud Network - OPS";
-                        break;
+                            serviceType = "Virtual Cloud Network - OPS";
+                            break;
                         case "aws":
-                        serviceType = "Virtual Cloud Network - AWS";
-                        break;
+                            serviceType = "Virtual Cloud Network - AWS";
+                            break;
                         default:
-                        throw new EJBException("cannot tell type of VCN service without 'host' property");
+                            throw new EJBException("cannot tell type of VCN service without 'host' property");
                     }
                 } catch (IOException | EJBException ex) {
                     throw new EJBException("cannot tell type of VCN service without 'host' property", ex);
@@ -1787,19 +1918,19 @@ public class WebResource {
             String manifest = "";
             switch (serviceType) {
                 case "Dynamic Network Connection":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC, auth);
-                break;
+                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC, auth);
+                    break;
                 case "Advanced Hybrid Cloud":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC, auth);
-                break;
+                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC, auth);
+                    break;
                 case "Virtual Cloud Network - OPS":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS, auth);
-                break;
+                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS, auth);
+                    break;
                 case "Virtual Cloud Network - AWS":
-                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
-                break;
+                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
+                    break;
                 default:
-                throw new EJBException("cannot get manifest for service type=" + serviceType);
+                    throw new EJBException("cannot get manifest for service type=" + serviceType);
             }
             org.json.JSONObject obj = new org.json.JSONObject(manifest);
             if (!obj.has("jsonTemplate")) {
@@ -1843,9 +1974,9 @@ public class WebResource {
                 prep = front_conn.prepareStatement("SELECT DISTINCT * FROM service_wizard");
             } else {
                 prep = front_conn.prepareStatement("SELECT DISTINCT W.* FROM service_wizard W "
-                + "LEFT JOIN service_wizard_licenses L "
-                + "ON (W.service_wizard_id = L.service_wizard_id) "
-                + "WHERE W.owner = ? OR L.username = ?");
+                        + "LEFT JOIN service_wizard_licenses L "
+                        + "ON (W.service_wizard_id = L.service_wizard_id) "
+                        + "WHERE W.owner = ? OR L.username = ?");
                 prep.setString(1, username);
                 prep.setString(2, username);
             }
@@ -2004,7 +2135,7 @@ public class WebResource {
             front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT * FROM service_verification V, service_instance I "
-            + "WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+                    + "WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
@@ -2029,17 +2160,17 @@ public class WebResource {
     }
 
     /**
-    * @api {GET} /app/details/:siUUID/verification/drone Check Verification Drone
-    * @apiVersion 1.0.0
-    * @apiDescription Check if instance has an operational verification drone
-    * @apiGroup Service
-    * @apiUse AuthHeader
-    * @apiParam {String} siUUID instance UUID
-    *
-    * @apiExample {curl} Example Call:
-    * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    */
+     * @api {GET} /app/details/:siUUID/verification/drone Check Verification Drone
+     * @apiVersion 1.0.0
+     * @apiDescription Check if instance has an operational verification drone
+     * @apiGroup Service
+     * @apiUse AuthHeader
+     * @apiParam {String} siUUID instance UUID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @GET
     @Path(value = "/details/{siUUID}/verification/drone")
     public String hasVerifyDrone(@PathParam(value = "siUUID") final String refUUID) throws SQLException, IOException, InterruptedException {
@@ -2052,7 +2183,7 @@ public class WebResource {
             front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("SELECT timestamp FROM service_verification "
-            + "WHERE instanceUUID = ?");
+                    + "WHERE instanceUUID = ?");
             prep.setString(1, refUUID);
             rs = prep.executeQuery();
             while (rs.next()) {
@@ -2240,21 +2371,21 @@ public class WebResource {
 
     // >Profiles
     /**
-    * @api {get} /app/profile/:wizardID Get Profile
-    * @apiVersion 1.0.0
-    * @apiDescription Get specified profile.
-    * @apiGroup Profile
-    * @apiUse AuthHeader
-    * @apiParam {String} wizardID wizard ID
-    *
-    * @apiExample {curl} Example Call:
-    * curl http://localhost:8080/StackV-web/restapi/app/profile/11
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    *
-    * @apiSuccess {JSONObject} wizard_json Profile JSON
-    * @apiSuccessExample {json} Example Response:
-    * {"username": "admin","type": "netcreate","alias": "VCN.OPS.1VM_Ext.233","data": {"virtual_clouds": []}}
-    */
+     * @api {get} /app/profile/:wizardID Get Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Get specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/profile/11
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONObject} wizard_json Profile JSON
+     * @apiSuccessExample {json} Example Response:
+     * {"username": "admin","type": "netcreate","alias": "VCN.OPS.1VM_Ext.233","data": {"virtual_clouds": []}}
+     */
     @GET
     @Path("/profile/{wizardID}")
     @Produces("application/json")
@@ -2306,19 +2437,19 @@ public class WebResource {
     }
 
     /**
-    * @api {put} /app/profile/:wizardID/edit Modify Profile
-    * @apiVersion 1.0.0
-    * @apiDescription Modify the specified profile.
-    * @apiGroup Profile
-    * @apiUse AuthHeader
-    * @apiParam {String} wizardID wizard ID
-    * @apiParam {JSONObject} inputString Profile JSON
-    *
-    * @apiExample {curl} Example Call:
-    * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-    * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    */
+     * @api {put} /app/profile/:wizardID/edit Modify Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Modify the specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @PUT
     @Path("/profile/{wizardID}/edit")
     @RolesAllowed("F_Profiles-W")
@@ -2358,19 +2489,19 @@ public class WebResource {
     }
 
     /**
-    * @api {put} /app/profile/:wizardID/meta Modify Profile
-    * @apiVersion 1.0.0
-    * @apiDescription Modify the specified profile.
-    * @apiGroup Profile
-    * @apiUse AuthHeader
-    * @apiParam {String} wizardID wizard ID
-    * @apiParam {JSONObject} inputString Profile JSON
-    *
-    * @apiExample {curl} Example Call:
-    * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-    * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    */
+     * @api {put} /app/profile/:wizardID/meta Modify Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Modify the specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @PUT
     @Path("/profile/{wizardID}/meta")
     @RolesAllowed("F_Profiles-W")
@@ -2403,19 +2534,19 @@ public class WebResource {
     }
 
     /**
-    * @api {post} /app/profile/:wizardID/licenses Add Profile license
-    * @apiVersion 1.0.0
-    * @apiDescription
-    * @apiGroup Profile
-    * @apiUse AuthHeader
-    * @apiParam {String} wizardID wizard ID
-    * @apiParam {JSONObject} inputString Profile JSON
-    *
-    * @apiExample {curl} Example Call:
-    * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-    * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    */
+     * @api {post} /app/profile/:wizardID/licenses Add Profile license
+     * @apiVersion 1.0.0
+     * @apiDescription
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @POST
     @Path("/profile/{wizardID}/licenses")
     @Consumes(value = {"application/json"})
@@ -2450,19 +2581,19 @@ public class WebResource {
     }
 
     /**
-    * @api {put} /app/profile/:wizardID/licenses Modify Profile
-    * @apiVersion 1.0.0
-    * @apiDescription Modify the specified profile.
-    * @apiGroup Profile
-    * @apiUse AuthHeader
-    * @apiParam {String} wizardID wizard ID
-    * @apiParam {JSONObject} inputString Profile JSON
-    *
-    * @apiExample {curl} Example Call:
-    * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-    * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    */
+     * @api {put} /app/profile/:wizardID/licenses Modify Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Modify the specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @PUT
     @Path("/profile/{wizardID}/licenses")
     @Consumes(value = {"application/json"})
@@ -2504,15 +2635,15 @@ public class WebResource {
     }
 
     /**
-    * @api {get} /app/profile/:wizardID/uses Get license uses
-    * @apiVersion 1.0.0
-    * @apiDescription
-    * @apiGroup Profile
-    * @apiUse AuthHeader
-    * @apiParam {String} wizardID wizard ID
-    * @apiParam {String} username username
-    *
-    */
+     * @api {get} /app/profile/:wizardID/uses Get license uses
+     * @apiVersion 1.0.0
+     * @apiDescription
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     * @apiParam {String} username username
+     *
+     */
     @GET
     @Path("/profile/{wizardID}/uses/{username}")
     @Consumes(value = {"application/json"})
@@ -2528,7 +2659,7 @@ public class WebResource {
                 front_conn = factory.getConnection("frontend");
 
                 prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_instance WHERE"
-                + " service_wizard_id = ? AND username = ?");
+                        + " service_wizard_id = ? AND username = ?");
                 prep.setInt(1, wizardID);
                 prep.setString(2, username);
                 prep.executeQuery();
@@ -2547,18 +2678,18 @@ public class WebResource {
     }
 
     /**
-    * @api {put} /app/profile/new Add New Profile
-    * @apiVersion 1.0.0
-    * @apiDescription Save a new wizard profile.
-    * @apiGroup Profile
-    * @apiUse AuthHeader
-    * @apiParam {JSONObject} inputString Profile JSON
-    *
-    * @apiExample {curl} Example Call:
-    * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-    * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    */
+     * @api {put} /app/profile/new Add New Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Save a new wizard profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {JSONObject} inputString Profile JSON
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
+     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @PUT
     @Path("/profile/new")
     @RolesAllowed("F_Profiles-W")
@@ -2588,7 +2719,7 @@ public class WebResource {
 
             int authorized = (verifyUserRole("admin")) ? 1 : 0;
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
-            + "(owner, name, wizard_json, description, editable, authorized) VALUES (?, ?, ?, ?, ?, ?)");
+                    + "(owner, name, wizard_json, description, editable, authorized) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setString(1, username);
             prep.setString(2, name);
             prep.setString(3, inputDataString);
@@ -2608,7 +2739,7 @@ public class WebResource {
                 for (Object obj2 : licenseArr) {
                     JSONObject licenseObj = (JSONObject) obj2;
                     prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard_licenses` "
-                    + "(service_wizard_id, username, remaining) VALUES (?, ?, ?)");
+                            + "(service_wizard_id, username, remaining) VALUES (?, ?, ?)");
                     prep.setInt(1, wizardID);
                     prep.setString(2, (String) licenseObj.get("username"));
                     prep.setInt(3, (Integer) licenseObj.get("remaining"));
@@ -2627,17 +2758,17 @@ public class WebResource {
     }
 
     /**
-    * @api {delete} /app/profile/:wizardID Delete Profile
-    * @apiVersion 1.0.0
-    * @apiDescription Delete specified profile.
-    * @apiGroup Profile
-    * @apiUse AuthHeader
-    * @apiParam {String} wizardID wizard ID
-    *
-    * @apiExample {curl} Example Call:
-    * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/profile/11
-    * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-    */
+     * @api {delete} /app/profile/:wizardID Delete Profile
+     * @apiVersion 1.0.0
+     * @apiDescription Delete specified profile.
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     * @apiParam {String} wizardID wizard ID
+     *
+     * @apiExample {curl} Example Call:
+     * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/profile/11
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     */
     @DELETE
     @Path("/profile/{wizardId}")
     @RolesAllowed("F_Profiles-W")
@@ -2666,13 +2797,13 @@ public class WebResource {
     }
 
     /**
-    * @api {post} /app/profile/ Execute profile
-    * @apiVersion 1.0.0
-    * @apiDescription
-    * @apiGroup Profile
-    * @apiUse AuthHeader
-    *
-    */
+     * @api {post} /app/profile/ Execute profile
+     * @apiVersion 1.0.0
+     * @apiDescription
+     * @apiGroup Profile
+     * @apiUse AuthHeader
+     *
+     */
     @POST
     @Path(value = "/profile")
     @Consumes(value = {"application/json", "application/xml"})
@@ -2693,7 +2824,7 @@ public class WebResource {
 
             // Authorize service.
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-            .getName());
+                    .getName());
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
@@ -2817,7 +2948,7 @@ public class WebResource {
 
             // Authorize service.
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-            .getName());
+                    .getName());
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
@@ -2912,7 +3043,7 @@ public class WebResource {
     @PUT
     @Path(value = "/service/{siUUID}/superstate/{state}")
     public String adminChangeSuperState(@PathParam(value = "siUUID") final String refUUID,
-    @PathParam(value = "state") final String state) throws IOException, SQLException {
+            @PathParam(value = "state") final String state) throws IOException, SQLException {
         final String method = "adminChangeSuperState";
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -2941,8 +3072,8 @@ public class WebResource {
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
     public String operate(@PathParam(value = "siUUID")
-    final String refUuid, @PathParam(value = "action")
-    final String action) throws IOException {
+            final String refUuid, @PathParam(value = "action")
+            final String action) throws IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         final String method = "operate";
@@ -2965,8 +3096,8 @@ public class WebResource {
     @PUT
     @Path(value = "/service/{siUUID}/{action}/sync")
     public void operateSync(@PathParam(value = "siUUID")
-    final String refUuid, @PathParam(value = "action")
-    final String action) throws SQLException, InterruptedException, IOException {
+            final String refUuid, @PathParam(value = "action")
+            final String action) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         String method = "operateSync";
@@ -2978,7 +3109,7 @@ public class WebResource {
     @GET
     @Path(value = "/service/{siUUID}/call_verify")
     public String callVerify(@PathParam(value = "siUUID")
-    final String refUUID) throws SQLException, InterruptedException, IOException {
+            final String refUUID) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         String method = "callVerify";
@@ -3041,16 +3172,16 @@ public class WebResource {
 
     // Utility Methods ---------------------------------------------------------
     /**
-    * Executes HTTP Request.
-    *
-    * @param url destination url
-    * @param conn connection object
-    * @param method request method
-    * @param body request body
-    * @param authHeader authorization header
-    * @return response string.
-    * @throws IOException
-    */
+     * Executes HTTP Request.
+     *
+     * @param url destination url
+     * @param conn connection object
+     * @param method request method
+     * @param body request body
+     * @param authHeader authorization header
+     * @return response string.
+     * @throws IOException
+     */
     public static String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body, String authHeader) throws IOException {
         conn.setRequestMethod(method);
         conn.setRequestProperty("Content-type", "application/xml");
@@ -3092,8 +3223,8 @@ public class WebResource {
             URL url = new URL(String.format("%s/service/manifest/%s", host, refUuid));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-            + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
-            jsonTemplate);
+                    + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n</serviceManifest>",
+                    jsonTemplate);
             String result = executeHttpMethod(url, conn, "POST", data, auth);
             return result;
         } catch (IOException ex) {
@@ -3103,7 +3234,7 @@ public class WebResource {
 
     private String authUsername(String subject) {
         KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-        .getName());
+                .getName());
         AccessToken accessToken = securityContext.getToken();
         if (accessToken.getSubject().equals(subject)) {
             return accessToken.getPreferredUsername();
@@ -3129,7 +3260,7 @@ public class WebResource {
 
     private boolean verifyUserRole(String role) {
         KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-        .getName());
+                .getName());
         final AccessToken accessToken = securityContext.getToken();
 
         Set<String> roleSet;
@@ -3155,21 +3286,21 @@ public class WebResource {
     }
 
     /**
-    * Create the delete JSON for deleting a user group, host group, or HBAC rule.
-    * All three have the same format.
-    *
-    * var ipaRequestData = {
-    * "method": method,
-    * "params":[
-    * rule/group name,
-    * {}
-    * ],
-    * "id":0
-    * };
-    * @param method
-    * @param name
-    * @return
-    */
+     * Create the delete JSON for deleting a user group, host group, or HBAC rule.
+     * All three have the same format.
+     *
+     * var ipaRequestData = {
+     * "method": method,
+     * "params":[
+     * rule/group name,
+     * {}
+     * ],
+     * "id":0
+     * };
+     * @param method
+     * @param name
+     * @return
+     */
     private JSONObject formatIpaDeleteJSON(String method, String name) {
         JSONObject deleteJSON = new JSONObject();
 
@@ -3195,7 +3326,7 @@ public class WebResource {
             front_conn = factory.getConnection("frontend");
 
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-            .getName());
+                    .getName());
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
@@ -3203,22 +3334,22 @@ public class WebResource {
             boolean result = false;
             switch (category) {
                 case "profiles":
-                HashSet<String> nameSet = new HashSet<>();
-                prep = front_conn.prepareStatement("SELECT DISTINCT owner FROM service_wizard WHERE service_wizard_id = ?");
-                prep.setInt(1, id);
-                rs = prep.executeQuery();
-                while (rs.next()) {
-                    nameSet.add(rs.getString("owner"));
-                }
-                prep = front_conn.prepareStatement("SELECT DISTINCT username FROM service_wizard_licenses WHERE service_wizard_id = ?");
-                prep.setInt(1, id);
-                rs = prep.executeQuery();
-                while (rs.next()) {
-                    nameSet.add(rs.getString("username"));
-                }
+                    HashSet<String> nameSet = new HashSet<>();
+                    prep = front_conn.prepareStatement("SELECT DISTINCT owner FROM service_wizard WHERE service_wizard_id = ?");
+                    prep.setInt(1, id);
+                    rs = prep.executeQuery();
+                    while (rs.next()) {
+                        nameSet.add(rs.getString("owner"));
+                    }
+                    prep = front_conn.prepareStatement("SELECT DISTINCT username FROM service_wizard_licenses WHERE service_wizard_id = ?");
+                    prep.setInt(1, id);
+                    rs = prep.executeQuery();
+                    while (rs.next()) {
+                        nameSet.add(rs.getString("username"));
+                    }
 
-                result = nameSet.contains(username);
-                break;
+                    result = nameSet.contains(username);
+                    break;
             }
 
             if (result) {
@@ -3244,7 +3375,7 @@ public class WebResource {
             front_conn = factory.getConnection("frontend");
 
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-            .getName());
+                    .getName());
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
@@ -3252,17 +3383,17 @@ public class WebResource {
             boolean result = false;
             switch (category) {
                 case "instances":
-                prep = front_conn.prepareStatement("SELECT subject FROM acl WHERE object = ?");
-                prep.setString(1, uuid);
-                rs = prep.executeQuery();
+                    prep = front_conn.prepareStatement("SELECT subject FROM acl WHERE object = ?");
+                    prep.setString(1, uuid);
+                    rs = prep.executeQuery();
 
-                while (rs.next()) {
-                    if (rs.getString("subject").equals(username)) {
-                        result = true;
-                        break;
+                    while (rs.next()) {
+                        if (rs.getString("subject").equals(username)) {
+                            result = true;
+                            break;
+                        }
                     }
-                }
-                break;
+                    break;
 
             }
 

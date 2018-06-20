@@ -15,6 +15,7 @@
   overflow: hidden;
   white-space: nowrap;
   font-size: .8em;
+  text-align: left;
 }
 
 .clipbook-data .clipbook-add {

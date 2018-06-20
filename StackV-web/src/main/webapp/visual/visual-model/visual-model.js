@@ -65,7 +65,7 @@ class VisualModel {
     };
     /**
     * D3 SVG zoom controller
-    */
+    */  
     zoom = d3.zoom().on("zoom", () => this.zoomed());
     /**
     * Render speed

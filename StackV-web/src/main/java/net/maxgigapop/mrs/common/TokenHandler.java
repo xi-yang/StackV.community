@@ -121,8 +121,9 @@ public class TokenHandler {
             if (recur != 0) {
                 logger.status(method, "Refresh achieved after " + recur + " retry");
             }
-        } catch (SocketTimeoutException | java.net.ConnectException ex) {
+        } catch (ParseException | IOException ex) {
             // Keycloak connection timeout
+            logger.catching(method, ex);
             try {
                 recur++;
                 logger.warning(method, "Keycloak refresh timeout #" + recur);
@@ -131,8 +132,6 @@ public class TokenHandler {
             } catch (InterruptedException ex1) {
                 logger.catching(method, ex1);
             }
-        } catch (ParseException | IOException ex) {
-            logger.catching(method, ex);
         }
     }
 }

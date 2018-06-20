@@ -1,0 +1,33 @@
+{
+    "env": {
+        "node": true,
+	"browser": true,
+        "es6": true,
+	"jquery": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+        "sourceType": "module"
+    },
+    "parser": "babel-eslint",
+    "rules": {
+        "indent": [
+            "warn",
+            4
+        ],
+        "linebreak-style": [
+            "warn",
+            "unix"
+        ],
+        "quotes": [
+            "warn",
+            "double"
+        ],
+        "semi": [
+            "warn",
+            "always"
+        ],
+	"no-unused-vars": "off",
+	"no-console": "off"
+    }
+}

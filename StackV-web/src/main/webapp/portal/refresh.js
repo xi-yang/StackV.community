@@ -22,6 +22,7 @@
 * IN THE WORK.
 */
 import { keycloak, page } from "./nexus";
+import { syncClipbook } from "./clipbook";
 import { openLogDetails, dataTable, reloadLogs } from "./logging";
 
 /* Enabled Scripts */
@@ -89,6 +90,7 @@ export function setRefresh(time) {
     if (time === "off") {
         document.getElementById("refresh-button").innerHTML = "Manually Refresh Now";
         $(".loading-prog").css("width", "0%");
+        loadSystemHealthCheck();
     } else {
         countdown = time;
         countdownTimer = setInterval(function () {
@@ -155,6 +157,7 @@ export function reloadData() {
         }
 
         loadSystemHealthCheck();
+        syncClipbook();
         refreshSync(refreshed, timerSetting);
     });
 }

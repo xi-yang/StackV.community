@@ -26,7 +26,7 @@
 import $ from "jquery";
 import "bootstrap";
 
-import { loadClipbook } from "./clipbook";
+import loadClipbook from "./clipbook";
 
 /* Pages */
 import { loadAdmin } from "./admin/admin";
