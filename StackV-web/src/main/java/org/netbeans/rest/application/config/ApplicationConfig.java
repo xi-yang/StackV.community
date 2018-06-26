@@ -48,6 +48,7 @@ public class ApplicationConfig extends Application {
     private void addRestResourceClasses(Set<Class<?>> resources) {
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.IPAResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.SecurityInterceptor.class);
         resources.add(net.maxgigapop.mrs.rest.api.SenseDiscoveryApi.class);

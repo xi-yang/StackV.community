@@ -55,6 +55,7 @@ public class ApplicationConfig extends Application {
         // CORE NB
         resources.add(net.maxgigapop.mrs.rest.api.ServiceResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.WebResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.IPAResource.class);
         // SENSE NB
         resources.add(net.maxgigapop.mrs.rest.api.SenseServiceApi.class);
         resources.add(net.maxgigapop.mrs.rest.api.SenseDiscoveryApi.class);
