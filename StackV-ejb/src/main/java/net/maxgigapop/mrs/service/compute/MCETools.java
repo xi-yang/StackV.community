@@ -1647,15 +1647,17 @@ public class MCETools {
                 + "?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                 + "?l nml:value ?vlan."
                 + "OPTIONAL {?vlan_port nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end.} "
+                + "FILTER NOT EXISTS { ?vlan_port mrs:type \"shared\". }"
                 + "} UNION {"
                 + "<%s> nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                 + "?l nml:value ?vlan. "
+                + "FILTER NOT EXISTS { <%s> mrs:type \"shared\". }"
                 + "}"
-                + "FILTER not exists {"
+                + "FILTER NOT EXISTS {"
                 + "?subnet nml:hasBidirectionalPort ?vlan_port. "
                 + "?subnet a mrs:SwitchingSubnet. "
                 + "?subnet mrs:type \"shared\". "
-                + "} }", port, port);
+                + "} }", port, port, port);
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             QuerySolution qs = rs.next();

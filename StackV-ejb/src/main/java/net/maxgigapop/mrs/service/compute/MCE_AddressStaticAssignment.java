@@ -132,14 +132,21 @@ public class MCE_AddressStaticAssignment extends MCEBase {
             if (jsonAssignFilter.containsKey("l2path") && jsonAssignFilter.containsKey("terminals")) {
                 JSONArray assignToPath = (JSONArray) jsonAssignFilter.get("l2path");
                 JSONArray assignToTerminals = (JSONArray) jsonAssignFilter.get("terminals");
-                //@@ normalize jsonAddresses (ranges into individual IPs / up to 128 addresses) 
-                List<String> addresses = this.checkoutAddresses(ipAddresses, assignToTerminals.size()); 
+                List<Resource> assignToInterfaces = new ArrayList();
+                for (int i = 0; i < assignToTerminals.size(); i++) {
+                    Resource resAssignToInterface = this.lookupL2PathTerminalInterface(unionSysModel, assignToPath, (String)assignToTerminals.get(i));
+                    if (resAssignToInterface != null) {
+                        assignToInterfaces.add(resAssignToInterface);
+                    }
+                    // skip the terminal interfaces that are unfound or shared / static 
+                }
+                List<String> addresses = this.checkoutAddresses(ipAddresses, assignToInterfaces.size()); 
                 // exception if running out of addresses
                 if (addresses == null) {
                    throw logger.error_throwing(method, String.format("%d addresses are requested but address pool has %d remaining", assignToTerminals.size(), ipAddresses.size()) );
                 }
-                for (int i = 0; i < addresses.size(); i++) {
-                    Resource resAssignToInterface = this.lookupL2PathTerminalInterface(unionSysModel, assignToPath, (String)assignToTerminals.get(i));
+                for (int i = 0; i < assignToInterfaces.size(); i++) {
+                    Resource resAssignToInterface = assignToInterfaces.get(i);
                     String addressUri = resAssignToInterface.getURI()+":"+addressType+"+"+DriverUtil.addressUriEscape(addresses.get(i));
                     Resource resAddress = RdfOwl.createResourceUnverifiable(assignModel, addressUri, Mrs.NetworkAddress); 
                     assignModel.add(assignModel.createStatement(resAddress, Mrs.type, addressType));
@@ -204,13 +211,15 @@ public class MCE_AddressStaticAssignment extends MCEBase {
                     + "} UNION {"
                     + "?terminal nml:hasBidirectionalPort ?vif."
                     + String.format("FILTER (?terminal = <%s> && ?vif = <%s>)", terminalUri, hopUri)
-                    + "} }";
+                    + "} "
+                    + "FILTER NOT EXISTS { ?vif mrs:type \"shared\". ?vif mrs:hasNetworkAddress ?na. } "
+                    + "}";
             ResultSet r = ModelUtil.sparqlQuery(unionSysModel, sparql);
             if (r.hasNext()) {
                 QuerySolution solution = r.nextSolution();
                 return solution.getResource("vif");
             }
         }
-        throw logger.error_throwing(method, String.format("cannot find an interface on terminal '%s' for l2path '%s' ", terminalUri, l2pathHops));
+        return null;
     }
 }
