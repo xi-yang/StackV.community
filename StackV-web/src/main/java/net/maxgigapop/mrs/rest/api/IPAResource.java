@@ -130,6 +130,50 @@ public class IPAResource {
     @EJB
     HandleSystemCall systemCallHandler;
 
+    /**
+     * Creates a new instance of WebResource
+     */
+    public IPAResource() {
+    }
+
+    static {
+        TrustManager[] trustAllCerts = new TrustManager[]{
+            new X509TrustManager() {
+                @Override
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+
+                @Override
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                }
+
+                @Override
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                }
+
+            }
+        };
+
+        SSLContext sc;
+        try {
+            sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+            HostnameVerifier allHostsValid = new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            };
+            // set the  allTrusting verifier
+            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+        } catch (KeyManagementException | NoSuchAlgorithmException ex) {
+
+        }
+    }
+    
     // >FreeIPA-based ACL
     @POST
     @Path("login")
@@ -257,8 +301,10 @@ public class IPAResource {
     public String ipaEndpoint(String postData) {
         try { 
             ipaLogin();
-            return ipaRequest(postData);
-        } catch (UnsupportedEncodingException ex) {
+            String response = ipaRequest(postData);
+            response = removeRPCResponseData(response);
+            return response;
+        } catch (Exception ex) {
             Logger.getLogger(IPAResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
             return null;
         }
@@ -282,13 +328,27 @@ public class IPAResource {
         requestJSON.put("method", method);
 
         JSONArray paramsArray = new JSONArray();
-        if (arguments != null)
-            paramsArray.add(arguments);
-        if (params != null)
-            paramsArray.add(params);
+        if (arguments == null)
+           arguments = new JSONArray();
+
+        if (params == null)
+           params = new JSONObject();
+
+        paramsArray.add(arguments);
+        paramsArray.add(params);
 
         requestJSON.put("params", paramsArray);
         requestJSON.put("id", 0);
         return requestJSON.toJSONString();
     }    
+    /**
+     * Removing general JSON-RPC response information 
+     * to return enclosed data 
+     */
+    private String removeRPCResponseData(String responseString) throws ParseException {
+       JSONObject responseObj;
+       responseObj = (JSONObject) parser.parse(responseString);
+       JSONObject md2DataJSON = (JSONObject) ((JSONObject) responseObj.get("result")).get("result");
+       return md2DataJSON.toJSONString();            
+    }
 }
