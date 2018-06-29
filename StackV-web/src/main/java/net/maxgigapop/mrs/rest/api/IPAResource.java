@@ -322,6 +322,15 @@ public class IPAResource {
          return ipaEndpoint(postData);
     }    
     
+    @GET
+    @Path("driver/available")
+    @Produces("application/json")
+    public String getAvailableDrivers() {
+         String postData;
+         postData = buildIpaRequest("md2_get_available_drivers", null, null );
+         return ipaEndpoint(postData);
+    }    
+    
     private String buildIpaRequest(String method, JSONArray arguments, JSONObject params ) {
         JSONObject requestJSON = new JSONObject();
 
