@@ -1,7 +1,7 @@
 
 #################
 
-### Deployment Instructions 
+### Deployment Instructions
 
 ### cd $STACKV_HOME
 ### mvn clean install -DskipTests  -Pdeploy-nuke
@@ -32,7 +32,7 @@ RUN cd $HOME \
     && chmod -R g+rw ${JBOSS_HOME} \
     && sed -i "s/-Xms64m -Xmx512m/-Xms1024m -Xmx4096m/g" /opt/jboss/wildfly/bin/standalone.conf
 
-  
+
 
 ADD ./StackV-ear/src/main/docker/standalone-full.xml /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
 
@@ -69,10 +69,10 @@ RUN \
 ## make jboss sudoer
 RUN yum install -y sudo wget killall ntp
 RUN echo "jboss ALL=(root) NOPASSWD: /bin/mysqld_safe, /bin/mysql_install_db, /sbin/ntpd" > /etc/sudoers.d/jboss \
-    && chmod 0440 /etc/sudoers.d/jboss 
+    && chmod 0440 /etc/sudoers.d/jboss
 
 
-# Entrypoint script to start mysqld and wildfly 
+# Entrypoint script to start mysqld and wildfly
 ADD ./StackV-ear/src/main/docker/entrypoint.sh /bin/entrypoint.sh
 RUN chown jboss:0 /bin/entrypoint.sh \
     && chmod 700 /bin/entrypoint.sh
@@ -120,7 +120,7 @@ RUN cd ${JBOSS_HOME} \
   <dependencies> \
     <module name="javax.api"/> \
   </dependencies> \
-</module>' >> ./modules/com/mysql/main/module.xml 
+</module>' >> ./modules/com/mysql/main/module.xml
 
 # Expose the ports we're interested in
 EXPOSE 8080 8443 9990 9993

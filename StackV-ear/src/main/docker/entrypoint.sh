@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############
-#?# TODO: Add admin script (/bin/persist-rainsdb.sh) to stop wildfly, modify ./StackV-ejb/src/main/resources/META-INF/persistence.xml 
+#?# TODO: Add admin script (/bin/persist-rainsdb.sh) to stop wildfly, modify ./StackV-ejb/src/main/resources/META-INF/persistence.xml
 #?# 	  to replace 'drop-and-create' with 'none' and then restart wildfly
 ###############
 
@@ -16,16 +16,16 @@ sed -i "s/k152.maxgigapop.net/${KEYCLOAK}/g" /opt/jboss/wildfly/standalone/confi
 # Reconfigure keycloak server in keycloak.json files for StackV-ear-1.0-SNAPSHOT.ear
 jar xf /opt/jboss/wildfly/standalone/deployments/StackV-ear-1.0-SNAPSHOT.ear StackV-web-1.0-SNAPSHOT.war
 jar xf StackV-web-1.0-SNAPSHOT.war WEB-INF/keycloak.json
-jar xf StackV-web-1.0-SNAPSHOT.war data/json/keycloak.json
+jar xf StackV-web-1.0-SNAPSHOT.war resources/keycloak.json
 sed -i "s/k152.maxgigapop.net/${KEYCLOAK}/g" WEB-INF/keycloak.json
 jar uf StackV-web-1.0-SNAPSHOT.war WEB-INF/keycloak.json
-sed -i "s/k152.maxgigapop.net/${KEYCLOAK}/g" data/json/keycloak.json
-jar uf StackV-web-1.0-SNAPSHOT.war data/json/keycloak.json
-jar uf /opt/jboss/wildfly/standalone/deployments/StackV-ear-1.0-SNAPSHOT.ear StackV-web-1.0-SNAPSHOT.war 
-rm -rf StackV-web-1.0-SNAPSHOT.war WEB-INF data
+sed -i "s/k152.maxgigapop.net/${KEYCLOAK}/g" resources/keycloak.json
+jar uf StackV-web-1.0-SNAPSHOT.war resources/keycloak.json
+jar uf /opt/jboss/wildfly/standalone/deployments/StackV-ear-1.0-SNAPSHOT.ear StackV-web-1.0-SNAPSHOT.war
+rm -rf StackV-web-1.0-SNAPSHOT.war WEB-INF resources
 
 # if ${KEYSTORE} exists, configure the keystore for https in standalone-full.xml
-if [ ! -z "${KEYSTORE}" ]; then 
+if [ ! -z "${KEYSTORE}" ]; then
   if [ -f ${KEYSTORE} ]; then
     sed -i "s/\/opt\/jboss\/wildfly.jks/${KEYSTORE//\//\\/}/g" /opt/jboss/wildfly/standalone/configuration/standalone-full.xml
   else
@@ -36,7 +36,7 @@ if [ ! -z "${KEYSTORE}" ]; then
 fi
 
 # if ${TRUSTCERT} exists, append the file to /etc/pki/tls/certs/ca-bundle.crt
-if [ ! -z "${TRUSTCERT}" ]; then 
+if [ ! -z "${TRUSTCERT}" ]; then
   if [ -f ${TRUSTCERT} ]; then
     cat ${TRUSTCERT} >> /etc/pki/tls/certs/ca-bundle.crt
   else
@@ -55,13 +55,13 @@ fi
 
 # Stage and start mysqld
 # if ${PERSISTED} and old DB  exists, call persist.sh
-if [ ! -z "${PERSISTED}" ]; then 
+if [ ! -z "${PERSISTED}" ]; then
   if [ -f /var/lib/mysql/frontend/service.frm ]; then
     /bin/persist.sh
     /bin/sudo /bin/mysqld_safe &
   else
     ## If persisted StackV DB do not exist, re-prepare DBs and use the 'drop-and-create' option!
-    sudo /bin/mysql_install_db --user=mysql --ldata=/var/lib/mysql/ 2>&1 > /dev/null 
+    sudo /bin/mysql_install_db --user=mysql --ldata=/var/lib/mysql/ 2>&1 > /dev/null
     echo "sudo /bin/mysqld_safe &" > /tmp/config && \
     echo "mysqladmin --silent --wait=30 ping || exit 1" >> /tmp/config && \
     echo "mysql -uroot -e 'CREATE USER \"login_view\"@\"localhost\" IDENTIFIED BY \"loginuser\";'" >> /tmp/config && \
@@ -88,5 +88,5 @@ export JBOSS_PIDFILE=/opt/jboss/wildfly.pid
 /opt/jboss/wildfly/bin/standalone.sh -c standalone-full.xml -b 0.0.0.0  &
 
 # maintain main process
-/bin/bash -c "while true; do sleep 1; done" 
+/bin/bash -c "while true; do sleep 1; done"
 

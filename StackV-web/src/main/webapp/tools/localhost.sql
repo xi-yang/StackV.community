@@ -13,8 +13,8 @@ SET time_zone = "+00:00";
 --
 -- Database: `frontend`
 --
-DROP DATABASE `frontend`;
-CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+DROP DATABASE IF EXISTS `frontend`;
+CREATE DATABASE `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `frontend`;
 
 -- --------------------------------------------------------

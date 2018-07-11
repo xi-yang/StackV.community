@@ -37,6 +37,7 @@
 
     <system-properties>
         <property name="kc_url" value="https://k152.maxgigapop.net:8543/auth"/>
+        <property name="frontend_jndi" value="java:jboss/datasources/FrontendDS"/>
     </system-properties>
 
 
@@ -172,10 +173,24 @@
                         <password>root</password>
                     </security>
                 </datasource>
+                <datasource jta="true" jndi-name="java:jboss/datasources/FrontendDS" pool-name="FrontendDS" enabled="true" use-java-context="true" use-ccm="true">
+                    <connection-url>jdbc:mysql://localhost:3306/frontend</connection-url>
+                    <driver>mysql</driver>
+                    <pool>
+                        <min-pool-size>10</min-pool-size>
+                        <max-pool-size>20</max-pool-size>
+                        <prefill>true</prefill>
+                        <use-strict-min>false</use-strict-min>
+                        <flush-strategy>FailingConnectionOnly</flush-strategy>
+                    </pool>
+                    <security>
+                        <user-name>root</user-name>
+                        <password>root</password>
+                    </security>
+                </datasource>
                 <datasource jndi-name="java:jboss/datasources/LoggerDS" pool-name="LoggerDS" enabled="true" use-java-context="true" use-ccm="true">
                     <connection-url>jdbc:mysql://localhost:3306/frontend</connection-url>
                     <driver>mysql</driver>
-                    <transaction-isolation>TRANSACTION_READ_COMMITTED</transaction-isolation>
                     <pool>
                         <prefill>true</prefill>
                         <use-strict-min>false</use-strict-min>
