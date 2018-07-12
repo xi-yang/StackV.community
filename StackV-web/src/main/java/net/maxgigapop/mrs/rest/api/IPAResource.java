@@ -345,6 +345,20 @@ public class IPAResource {
          return ipaEndpoint(postData);
     }    
 
+    /*
+      Takes type as optional query parameter  
+    */
+    @GET
+    @Path("alm/pools")
+    @Produces("application/json")
+    public String getAlmPoolList(@QueryParam("type") String type) {
+         String postData;
+         JSONObject paramsJSON = new JSONObject();
+         paramsJSON.put("pooltype", type);
+         postData = buildIpaRequest("almpool_list", null, paramsJSON );
+         return ipaEndpoint(postData);
+    }    
+
     private String buildIpaRequest(String method, JSONArray arguments, JSONObject params ) {
         JSONObject requestJSON = new JSONObject();
 
