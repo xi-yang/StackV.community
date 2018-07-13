@@ -184,6 +184,9 @@ function loadDriverNavbar() {
 
 function loadDriverPortal() {
     getAllDetails();
+
+    loadMD2Drivers();
+
     updateDrivers(); //explicitly calling the function to load the driver templates
 
     // call the system health check
@@ -426,6 +429,30 @@ function installAWS() {
     divContent.appendChild(secGroupInput);
     divContent.appendChild(seventh);
     divContent.appendChild(eighth);
+
+    $("#install-type input").attr("readonly", true);
+    var apiUrl = baseUrl + '/StackV-web/restapi/md2/driver/default/urn:ogf:network:aws.amazon.com:aws-cloud';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            $("#TOPURI").val(result.topologyURI);
+
+            var meta = JSON.parse(result.statements);
+
+            $("#aws_access_key_id").val();
+            $("#aws_secret_access_key").val();
+            $("#instance").val(meta.defaultInstanceType);
+            $("#image").val(meta.defaultImage);
+            $("#key-pair").val(meta.defaultKeyPair);
+            $("#sec-group").val(meta.defaultSecGroup);
+            $("#region").val(meta.region);
+        }
+    });
 }
 function installOpenstack() {
     var divContent = document.getElementById("install-type");
@@ -488,9 +515,32 @@ function installOpenstack() {
         divContent.appendChild(content[i]);
     }
 
-
     divContent.appendChild(extName);
     divContent.appendChild(ext);
+
+    $("#install-type input").attr("readonly", true);
+    var apiUrl = baseUrl + '/StackV-web/restapi/md2/driver/default/urn:ogf:network:openstack.com:openstack-cloud';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            $("#TOPURI").val(result.topologyURI);
+
+            var meta = JSON.parse(result.statements);
+
+            $("#aws_access_key_id").val();
+            $("#aws_secret_access_key").val();
+            $("#instance").val(meta.defaultInstanceType);
+            $("#image").val(meta.defaultImage);
+            $("#key-pair").val(meta.defaultKeyPair);
+            $("#sec-group").val(meta.defaultSecGroup);
+            $("#region").val(meta.region);
+        }
+    });
 }
 function installStack() {
     var first = document.createElement("p");
@@ -572,6 +622,29 @@ function installGeneric() {
     divContent.appendChild(second);
     divContent.appendChild(third);
     divContent.appendChild(fourth);
+    $("#install-type input").attr("readonly", true);
+    var apiUrl = baseUrl + '/StackV-web/restapi/md2/driver/default/urn:ogf:network:sdn.maxgigapop.net:network';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            $("#TOPURI").val(result.topologyURI);
+
+            var meta = JSON.parse(result.statements);
+
+            $("#aws_access_key_id").val();
+            $("#aws_secret_access_key").val();
+            $("#instance").val(meta.defaultInstanceType);
+            $("#image").val(meta.defaultImage);
+            $("#key-pair").val(meta.defaultKeyPair);
+            $("#sec-group").val(meta.defaultSecGroup);
+            $("#region").val(meta.region);
+        }
+    });
 }
 function clearPanel() {
     $("#info-panel-title").text("Details");
@@ -1239,6 +1312,61 @@ function getAllDetails() {
                 row.appendChild(description);
                 row.appendChild(cell3);
                 table.appendChild(row);
+            }
+
+            if (view === "center") {
+                tweenInstalledPanel.play();
+            }
+        }
+    });
+}
+
+function loadMD2Drivers() {
+    var body = document.getElementById("driver-add-body");
+    var apiUrl = baseUrl + '/StackV-web/restapi/md2/driver/available';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
+        success: function (result) {
+            $('#driver-add-body').empty();
+            result = result.drivers;
+            for (var i = 0; i < result.length; i++) {
+                var row = document.createElement("tr");
+                var drivername = document.createElement("td");
+                var description = document.createElement("td");
+                var cell3 = document.createElement("td");
+                var installButton = document.createElement("button");
+
+                var uuid = result[i];
+                drivername.innerHTML = uuid;
+
+                installButton.innerHTML = "Install";
+                installButton.style.width = "64px";
+                installButton.className = "new-install install install-button button-profile-select btn btn-primary";
+                var onclick = "clearPanel();activateSide();changeNameInst();"
+
+                if (uuid === "urn:ogf:network:aws.amazon.com:aws-cloud") {
+                    onclick += "installAWS();";
+                } else if (uuid === "urn:ogf:network:openstack.com:openstack-cloud") {
+                    onclick += "installOpenstack();";
+                } else if (uuid === "urn:ogf:network:sdn.maxgigapop.net:network") {
+                    onclick += "installGeneric();";
+                }
+
+                $(installButton).attr("onclick", onclick);
+                installButton.id = uuid;
+
+                cell3.appendChild(installButton);
+                cell3.style.width = "170px";
+
+                row.appendChild(drivername);
+                row.appendChild(description);
+                row.appendChild(cell3);
+                body.appendChild(row);
             }
 
             if (view === "center") {

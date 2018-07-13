@@ -389,15 +389,13 @@
                 <valid>string</valid>
             </input>           
             <input>
-                <name>IP Address</name>
+                <name>Address Pool</name>
                 <type>text</type>
-                <valid>cidr</valid>
-            </input>       
-            <input>
-                <name>MAC Address</name>
-                <type>text</type>
-                <valid>mac</valid>
-            </input>               
+                <modal>
+                    <icon>add</icon>
+                    <plugin>alm-pools</plugin>
+                </modal>
+            </input>                   
         </group>
     </stage>
 </intent>
