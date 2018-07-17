@@ -87,6 +87,8 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         if (refVI == null) {
             throw logger.error_throwing(method, "target:DriverSystemDelta has no reference VersionItem");
         }
+        String sslClientCertAlias = driverInstance.getProperty("sslClientCertAlias");
+        String sslKeytorePassword = driverInstance.getProperty("sslKeytorePassword");
         try {
             // compose string body (delta) using JSONObject
             JSONObject deltaJSON = new JSONObject();
@@ -113,7 +115,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             conn.setConnectTimeout(5*1000);
             //conn.setReadTimeout(5*1000);
             conn.setRequestProperty("Content-Encoding", "gzip");
-            String[] response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
+            String[] response;
+            if (sslClientCertAlias == null) {
+                response = DriverUtil.executeHttpMethod(conn, "POST", deltaJSON.toString());
+            } else {
+                response = DriverUtil.executeHttpMethodWithClientCert(conn, "POST", deltaJSON.toString(), sslClientCertAlias, sslKeytorePassword);
+            }
             if (response[1].equals("201")) {
                 aDelta.setStatus("PROPGATED");
             } else if (response[1].equals("409")) {
@@ -161,6 +168,8 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
         if (subsystemBaseUrl == null) {
             throw logger.error_throwing(method, driverInstance +"has no property key=subsystemBaseUrl");
         }
+        String sslClientCertAlias = driverInstance.getProperty("sslClientCertAlias");
+        String sslKeytorePassword = driverInstance.getProperty("sslKeytorePassword");
         // commit through PUT
         try {
             URL url = new URL(String.format("%s/deltas/%s/actions/commit", subsystemBaseUrl, aDelta.getReferenceUUID()));
@@ -172,7 +181,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             }
             conn.setConnectTimeout(5*1000);
             //conn.setReadTimeout(5*1000);
-            String[] response = DriverUtil.executeHttpMethod(conn, "PUT", null);
+                String[] response;
+                if (sslClientCertAlias == null) {
+                    response = DriverUtil.executeHttpMethod(conn, "PUT", null);
+                } else {
+                    response = DriverUtil.executeHttpMethodWithClientCert(conn, "PUT", null, sslClientCertAlias, sslKeytorePassword);
+                }
             if (response[1].equals("200") || response[1].equals("204")) {
                 aDelta.setStatus("COMMITTING");
                 DeltaPersistenceManager.merge(aDelta);
@@ -208,7 +222,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 } else {
                     conn = (HttpURLConnection) url.openConnection();
                 }
-                String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
+                String[] response;
+                if (sslClientCertAlias == null) {
+                    response = DriverUtil.executeHttpMethod(conn, "GET", null);
+                } else {
+                    response = DriverUtil.executeHttpMethodWithClientCert(conn, "GET", null, sslClientCertAlias, sslKeytorePassword);
+                }
                 if (response[1].equals("200")) { // committed successfully
                     JSONObject responseJSON;
                     if (response[0].startsWith("[")) {
@@ -277,6 +296,8 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
             logger.warning(method, "driver instance is initializing");
             return new AsyncResult<>("INIT");
         }
+        String sslClientCertAlias = driverInstance.getProperty("sslClientCertAlias");
+        String sslKeytorePassword = driverInstance.getProperty("sslKeytorePassword");
         // sync on cached DriverInstance object = once per driverInstance to avoid write multiple vi of same version 
         DriverInstance syncOnDriverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(driverInstance.getTopologyUri());
         synchronized (syncOnDriverInstance) {
@@ -304,7 +325,12 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                 conn.setConnectTimeout(5*1000);
                 conn.setReadTimeout(15*1000);
                 conn.addRequestProperty("Content-Encoding", "gzip");
-                String[] response = DriverUtil.executeHttpMethod(conn, "GET", null);
+                String[] response;
+                if (sslClientCertAlias == null) {
+                    response = DriverUtil.executeHttpMethod(conn, "GET", null);
+                } else {
+                    response = DriverUtil.executeHttpMethodWithClientCert(conn, "GET", null, sslClientCertAlias, sslKeytorePassword);
+                }
                 if (response[1].equals("304")) {
                     return new AsyncResult<>("SUCCESS");
                 } else if (response[1].equals("400")) {

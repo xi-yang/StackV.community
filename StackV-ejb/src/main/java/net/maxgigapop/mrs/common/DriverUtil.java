@@ -25,16 +25,33 @@ package net.maxgigapop.mrs.common;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.Socket;
 import java.net.URL;
+import java.security.KeyStore;
+import java.security.Principal;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509KeyManager;
+import javax.net.ssl.X509TrustManager;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 
 /**
  *
@@ -85,8 +102,110 @@ public class DriverUtil {
         String strArray[] = {responseStr.toString(), Integer.toString(responseCode)};
         return strArray;
     }
-    
+
     public static String[] executeHttpMethod(HttpURLConnection conn, String method, String body) throws IOException {
+        return executeHttpMethod(null, null, conn, method, body);
+    }
+    
+    /*
+     * This wrapper class overwrites the default behavior of a X509KeyManager and
+     * always render a specific certificate whose alias matches that provided in the constructor
+     */
+    private static class AliasForcingKeyManager implements X509KeyManager {
+
+        X509KeyManager baseKM = null;
+        String alias = null;
+
+        public AliasForcingKeyManager(X509KeyManager keyManager, String alias) {
+            baseKM = keyManager;
+            this.alias = alias;
+        }
+
+        //Always render the specific alias provided in the constructor
+        public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket) {
+            return alias;
+        }
+
+        public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket) {
+            return baseKM.chooseServerAlias(keyType, issuers, socket);
+        }
+
+        public X509Certificate[] getCertificateChain(String alias) {
+            return baseKM.getCertificateChain(alias);
+        }
+
+        public String[] getClientAliases(String keyType, Principal[] issuers) {
+            return baseKM.getClientAliases(keyType, issuers);
+        }
+
+        public PrivateKey getPrivateKey(String alias) {
+            return baseKM.getPrivateKey(alias);
+        }
+
+        public String[] getServerAliases(String keyType, Principal[] issuers) {
+            return baseKM.getServerAliases(keyType, issuers);
+        }
+    }
+    
+    private static SSLSocketFactory getSSLFactory(File pKeyFile, String pKeyPassword, String certAlias) throws Exception {
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        InputStream keyInput = new FileInputStream(pKeyFile);
+        keyStore.load(keyInput, pKeyPassword.toCharArray());
+        keyInput.close();
+        keyManagerFactory.init(keyStore, pKeyPassword.toCharArray());
+        //Replace the original KeyManagers with the AliasForcingKeyManager
+        KeyManager[] kms = keyManagerFactory.getKeyManagers();
+        for (int i = 0; i < kms.length; i++) {
+            if (kms[i] instanceof X509KeyManager) {
+                kms[i] = new AliasForcingKeyManager((X509KeyManager) kms[i], certAlias);
+            }
+        }
+        //Trust all!
+        TrustManager tms[] = new TrustManager[]{
+            new X509TrustManager() {
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+
+                public void checkClientTrusted(
+                        java.security.cert.X509Certificate[] certs, String authType) {
+                }
+
+                public void checkServerTrusted(
+                        java.security.cert.X509Certificate[] certs, String authType) {
+                }
+            }
+        };
+        SSLContext context = SSLContext.getInstance("TLSv1.1");
+        context.init(kms, tms, null);
+        return context.getSocketFactory();
+    }
+
+    public static String[] executeHttpMethodWithClientCert(HttpURLConnection conn, String method, String body, String clientStoreAlias, String clientStorePass) throws IOException {
+        try {
+            String configDir = System.getProperty("jboss.server.config.dir");
+            File keystoreFile = new File(configDir + "/client.jks");
+            if (!keystoreFile.exists()) {
+                keystoreFile = new File(configDir + "/wildfly.jks");
+            }
+            if (!keystoreFile.exists()) {
+                File dir = new File(configDir);
+                FileFilter fileFilter = new WildcardFileFilter("*.jks");
+                File[] files = dir.listFiles(fileFilter);
+                if (files.length == 0) {
+                    throw new IOException(String.format("No keystore file (wildfly.jks or *.jks) available under %s for SSL client cert.", configDir));
+                }
+                keystoreFile = files[0];
+            }
+            if (clientStorePass == null || clientStorePass.isEmpty()) {
+                clientStorePass = "password";
+            }
+            SSLSocketFactory sslSocketFactory = getSSLFactory(keystoreFile, clientStorePass, clientStoreAlias);
+            ((HttpsURLConnection) conn).setSSLSocketFactory(sslSocketFactory);
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        }
         return executeHttpMethod(null, null, conn, method, body);
     }
     
@@ -94,7 +213,7 @@ public class DriverUtil {
         HttpURLConnection conn;
         if (url.toString().startsWith("https:")) {
             conn = (HttpsURLConnection) url.openConnection();
-            ((HttpsURLConnection)conn).setHostnameVerifier(new SSLSkipSNIHostnameVerifier());
+            ((HttpsURLConnection) conn).setHostnameVerifier(new SSLSkipSNIHostnameVerifier());
         } else {
             conn = (HttpURLConnection) url.openConnection();
         }
