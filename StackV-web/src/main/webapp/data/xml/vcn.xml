@@ -81,6 +81,10 @@
                 <type>text</type>
                 <default>10.0.0.0/16</default>
                 <valid>cidr</valid>
+                <modal>
+                    <icon>add</icon>
+                    <plugin>test</plugin>
+                </modal>
             </input>
         </group>        
     </stage>

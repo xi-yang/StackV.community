@@ -100,6 +100,19 @@ function loadIntent(type) {
     refreshTimer = setInterval(function () {
         keycloak.updateToken(90);
     }, (60000));
+
+    $("#intent-panel").on("click", ".intent-input-modal-button", function (e) {
+        var $input = $(this).prev();
+        $("#intent-modal").attr("data-input", $input.attr("id"));
+        console.log("clicked! " + $(this).attr("data-plugin") + " || " + $input.attr("id"));
+        switch ($(this).attr("data-plugin")) {
+            case "alm-pools":
+                loadIntentModalALM();
+                break;
+        }
+
+        e.preventDefault();
+    });
 }
 
 function renderIntent() {
@@ -175,7 +188,7 @@ function initializeIntent() {
     $(document).on("keyup", "[data-valid]", function () {
         clearTimeout(typingTimer);
         var $input = $(this);
-        typingTimer = setTimeout(function() {
+        typingTimer = setTimeout(function () {
             validateInput($input);
         }, 1000);
     });
@@ -585,7 +598,21 @@ function renderInputs(arr, $parent) {
                 $label.addClass("hidden");
             }
 
-            $label.append($input);
+            if (ele.getElementsByTagName("modal").length > 0) {
+                var $group = $("<div class=\"input-group\">");
+                $group.append($input);
+                var children = ele.getElementsByTagName("modal")[0].children;
+                var $span = $("<span class=\"input-group-addon intent-input-modal-button\" style=\"padding:5px 12px;\">");
+                $span.attr("data-plugin", children[1].innerHTML)
+                var $i = ("<i class=\"fas fa-info\">")
+
+                $span.append($i);
+                $group.append($span);
+                $label.append($group);
+            } else {
+                $label.append($input);
+            }
+
             if ($message) {
                 $label.append($message);
             }
@@ -1947,4 +1974,40 @@ function preloadAHC() {
     $("#vms-openstack_vm_num1-interface_num1-name").val("vtn2-vm1:eth1");
     $("#vms-openstack_vm_num1-interface_num1-type").val("SRIOV");
     $("#vms-openstack_vm_num1-interface_num1-address").val("ipv4+10.10.0.1/24,mac+aa:bb:cc:ff:01:11");
+}
+
+
+/// MODALS ///
+function loadIntentModalALM() {
+    var apiUrl = baseUrl + '/StackV-web/restapi/md2/alm/pools';
+    $.ajax({
+        url: apiUrl,
+        type: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            var $modal = $("#intent-modal");
+            $modal.find(".modal-title").text("Please Select an ALM Pool");
+
+            var $list = $("<div class=\"list-group\" style=\"cursor: pointer;text-align:left;overflow:auto;max-height:50vh;\">");
+            for (var index in result.pools) {
+                var pool = result.pools[index];
+                // Reformat ranges
+                var ranges = pool.range.replace(/-/g, " - ").replace(/,/g, "<br>");
+
+                $list.append("<a class=\"list-group-item list-group-item-action flex-column align-items-start\" data-value=\"" + pool.name + "\"><h4 style=\"display: inline-block;\">" + pool.name + "</h4><p style=\"font-size: 0.8em;\">" + ranges + "</p></a>");
+            }
+            $modal.find(".modal-body").empty().append($list);
+            $modal.find(".modal-footer").empty();
+
+            $list.on("click", "a", function () {
+                console.log($(this).attr("data-value"));
+                $("#" + $modal.attr("data-input")).val($(this).attr("data-value"));
+                $modal.modal('hide');
+            });
+
+            $modal.modal('show');
+        }
+    });
 }

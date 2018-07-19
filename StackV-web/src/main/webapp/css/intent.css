@@ -97,10 +97,13 @@ button:focus {
     padding-bottom: 5px;
 }
 
+#intent-modal {
+    margin-top: 15%;
+}
+
 .intent-stage-div input {
     padding-left: 10px;
     padding-right: 10px;
-    margin-bottom: 10px;
     width: 100%;
 }
 .intent-stage-div input[type="checkbox"] {

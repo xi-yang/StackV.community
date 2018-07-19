@@ -72,6 +72,8 @@ IN THE WORK.
     <xs:element name="message" type="xs:string"/>
     <xs:element name="max" type="xs:string"/>
     <xs:element name="min" type="xs:string"/>
+    <xs:element name="icon" type="xs:string"/>
+    <xs:element name="plugin" type="xs:string"/>
     
     <!--Complex-->
     <xs:element name="intent">
@@ -260,6 +262,15 @@ IN THE WORK.
                 <xs:element ref="location"/>                
                 <xs:element ref="size"/>
                 <xs:element ref="text"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="modal">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="icon"/>                
+                <xs:element ref="plugin"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
