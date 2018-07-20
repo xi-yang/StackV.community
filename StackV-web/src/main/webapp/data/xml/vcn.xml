@@ -396,7 +396,7 @@
                 <name>Address Pool</name>
                 <type>text</type>
                 <modal>
-                    <icon>add</icon>
+                    <icon>info</icon>
                     <plugin>alm-pools</plugin>
                 </modal>
             </input>                   

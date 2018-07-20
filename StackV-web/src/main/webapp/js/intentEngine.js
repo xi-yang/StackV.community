@@ -604,7 +604,7 @@ function renderInputs(arr, $parent) {
                 var children = ele.getElementsByTagName("modal")[0].children;
                 var $span = $("<span class=\"input-group-addon intent-input-modal-button\" style=\"padding:5px 12px;\">");
                 $span.attr("data-plugin", children[1].innerHTML)
-                var $i = ("<i class=\"fas fa-info\">")
+                var $i = ("<i class=\"fas fa-" + children[0].innerHTML + "\">")
 
                 $span.append($i);
                 $group.append($span);
