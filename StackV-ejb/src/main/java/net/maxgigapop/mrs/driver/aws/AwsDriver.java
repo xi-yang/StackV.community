@@ -106,7 +106,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         if (driverInstance == null) {
             throw logger.error_throwing(method, "DriverInstance == null");
         }
-        //driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
+        driverInstance = DriverInstancePersistenceManager.findById(driverInstance.getId());
         String requests = aDelta.getCommand("requests");
         if (requests == null) {
             throw logger.error_throwing(method, "requests == null - something wrong with requests from propagate.");
