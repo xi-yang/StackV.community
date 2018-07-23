@@ -275,9 +275,9 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
                 if (next.equalsIgnoreCase("local")) {
                     next = next; //basically do nothing it is local
                 } else if (next.equalsIgnoreCase("internet")) {
-                    next = resNetwork.toString() + "-igw"; //the network internet gateway
+                    next = resNetwork.toString() + ":igw"; //the network internet gateway
                 } else if (next.equalsIgnoreCase("vpn")) {
-                    next = resNetwork.toString() + "-vpngw"; //the network vpn gateway
+                    next = resNetwork.toString() + ":vpngw"; //the network vpn gateway
                 } else {
                     next = ResourceTool.getResourceUri(topologyUri + ":" ,next); //a radom resource
                 }
@@ -285,7 +285,7 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
                 //in case we want to propagate from a vpn on the main route table
                 route = RdfOwl.createResourceUnverifiable(spaModel, routingTable.toString() + ":route-" + to.replace("/", ""), Mrs.Route);
                 if (from != null && from.equalsIgnoreCase("vpn")) {
-                    from = resNetwork.toString() + "-vpngw"; //the network vpn gateway
+                    from = resNetwork.toString() + ":vpngw"; //the network vpn gateway
                     Resource routeFrom = spaModel.getResource(from);
                     spaModel.add(route, Mrs.routeFrom, routeFrom);
                 }
@@ -392,9 +392,9 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
                     if (next.equalsIgnoreCase("local")) {
                         next = next; //basically do nothing it is local
                     } else if (next.equalsIgnoreCase("internet")) {
-                        next = resNetwork.toString() + "-igw"; //the network internet gateway
+                        next = resNetwork.toString() + ":igw"; //the network internet gateway
                     } else if (next.equalsIgnoreCase("vpn")) {
-                        next = resNetwork.toString() + "-vpngw"; //the network vpn gateway
+                        next = resNetwork.toString() + ":vpngw"; //the network vpn gateway
                     } else {
                         next = ResourceTool.getResourceUri(topologyUri + ":" , next); //a radom resource
                     }
@@ -416,7 +416,7 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
                     //decide id the routeFrom should be a VPN gateway or a subent
 
                     if (from != null && from.equalsIgnoreCase("vpn")) {
-                        from = resNetwork.toString() + "-vpngw"; //the network vpn gateway
+                        from = resNetwork.toString() + ":vpngw"; //the network vpn gateway
                         Resource routeFrom = spaModel.getResource(from);
                         spaModel.add(route, Mrs.routeFrom, routeFrom);
                     } else {
@@ -619,15 +619,41 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
             if (!o.containsKey("type")) {
                 throw logger.error_throwing(method, "JSON gateway does not have key type");
             }
-            String value = (String) o.get("type");
-            if (value.equalsIgnoreCase("internet")) {
-                Resource gateway = RdfOwl.createResource(spaModel, resNetwork.toString() + "-igw", Nml.BidirectionalPort);
+            String type = (String) o.get("type");
+            JSONArray jConnects = (JSONArray) o.get("connects");
+            if (type.equalsIgnoreCase("internet")) {
+                Resource gateway = RdfOwl.createResource(spaModel, resNetwork.toString() + ":igw", Nml.BidirectionalPort);
                 spaModel.add(resNetwork, Nml.hasBidirectionalPort, gateway);
                 spaModel.add(gateway, Mrs.type, "internet-gateway");
-            } else if (value.equalsIgnoreCase("vpn")) {
-                Resource gateway = RdfOwl.createResource(spaModel, resNetwork.toString() + "-vpngw", Nml.BidirectionalPort);
+            } else if (type.equalsIgnoreCase("vpn")) {
+                Resource gateway = RdfOwl.createResource(spaModel, resNetwork.toString() + ":vpngw", Nml.BidirectionalPort);
                 spaModel.add(resNetwork, Nml.hasBidirectionalPort, gateway);
                 spaModel.add(gateway, Mrs.type, "vpn-gateway");
+            } else if (type.equalsIgnoreCase("cloud_vpn") && jConnects != null && !jConnects.isEmpty()) {
+
+                Resource vpn = RdfOwl.createResource(spaModel, resNetwork.toString() + ":vpn", Nml.BidirectionalPort);
+                spaModel.add(resNetwork, Nml.hasBidirectionalPort, vpn);
+                spaModel.add(vpn, Mrs.type, "vpn-connection");
+                spaModel.add(vpn, Nml.isAlias, spaModel.getResource(resNetwork.toString() + ":vpngw"));
+                for (int i = 0; i < jConnects.size(); i++) {
+                    JSONObject jConn = (JSONObject) jConnects.get(i);
+                    Resource vpnTunnel = RdfOwl.createResource(spaModel, resNetwork.toString() + ":vpn:tunnel-" + (i+1), Nml.BidirectionalPort);
+                    Resource cgwAddress = RdfOwl.createResource(spaModel, vpnTunnel.getURI() + ":cgw-address", Mrs.NetworkAddress);
+                    spaModel.add(cgwAddress, Mrs.type, "ipv4-address:customer");
+                    spaModel.add(cgwAddress, Mrs.value, jConn.get("to").toString());
+                    spaModel.add(vpnTunnel, Mrs.hasNetworkAddress, cgwAddress);
+                    Resource cgwRoutes = RdfOwl.createResource(spaModel, vpnTunnel.getURI() + ":cgw-routes", Mrs.NetworkAddress);
+                    spaModel.add(cgwRoutes, Mrs.type, "ipv4-prefix-list:customer");
+                    spaModel.add(cgwRoutes, Mrs.value, jConn.get("via").toString());
+                    spaModel.add(vpnTunnel, Mrs.hasNetworkAddress, cgwRoutes);
+                    spaModel.add(vpn, Nml.hasBidirectionalPort, vpnTunnel);
+                    if (jConn.containsKey("from")) {
+                        Resource cloudAddress = RdfOwl.createResource(spaModel, vpnTunnel.getURI() + ":address", Mrs.NetworkAddress);
+                        spaModel.add(cloudAddress, Mrs.type, "ipv4-address");
+                        spaModel.add(cloudAddress, Mrs.value, jConn.get("from").toString());
+                        spaModel.add(vpnTunnel, Mrs.hasNetworkAddress, cloudAddress);
+                    }
+                }
             }
         }
         return spaModel;
