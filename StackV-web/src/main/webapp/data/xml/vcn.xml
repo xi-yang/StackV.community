@@ -231,6 +231,38 @@
                     </input>
                 </group>
             </group>
+            <group name="IPSec VPN" collapsible="true">
+                <fulfilled>
+                    <name>local_ip</name>
+                </fulfilled>
+                <input>
+                    <name>Local IP</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Local Subnets</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Remote Subnets</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <group factory="true" name="Tunnel">
+                    <input>
+                        <name>Remote IP</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Pre Shared Key</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                </group>
+            </group>
             <group name="Globus Connect" condition="openstack-form" collapsible="true">
                 <fulfilled>
                     <name>username</name>
