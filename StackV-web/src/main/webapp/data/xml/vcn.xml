@@ -410,6 +410,11 @@
                     <type>text</type>
                     <valid>string</valid>
                 </input>
+                <input condition="type::cloud_vpn">
+                    <name>Secret</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
             </group>
         </group>
     </stage>    

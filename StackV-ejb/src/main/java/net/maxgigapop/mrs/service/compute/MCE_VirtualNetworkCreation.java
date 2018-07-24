@@ -630,7 +630,6 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
                 spaModel.add(resNetwork, Nml.hasBidirectionalPort, gateway);
                 spaModel.add(gateway, Mrs.type, "vpn-gateway");
             } else if (type.equalsIgnoreCase("cloud_vpn") && jConnects != null && !jConnects.isEmpty()) {
-
                 Resource vpn = RdfOwl.createResource(spaModel, resNetwork.toString() + ":vpn", Nml.BidirectionalPort);
                 spaModel.add(resNetwork, Nml.hasBidirectionalPort, vpn);
                 spaModel.add(vpn, Mrs.type, "vpn-connection");
