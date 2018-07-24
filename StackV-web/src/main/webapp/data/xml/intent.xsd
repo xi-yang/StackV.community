@@ -73,7 +73,7 @@ IN THE WORK.
     <xs:element name="max" type="xs:string"/>
     <xs:element name="min" type="xs:string"/>
     <xs:element name="icon" type="xs:string"/>
-    <xs:element name="plugin" type="xs:string"/>
+    <xs:element name="args" type="xs:string"/>
     
     <!--Complex-->
     <xs:element name="intent">
@@ -146,6 +146,7 @@ IN THE WORK.
                 <xs:element ref="default" minOccurs="0"/>
                 <xs:element ref="hint" minOccurs="0"/>                                                
                 <xs:element ref="link" minOccurs="0"/>
+                <xs:element ref="modal" minOccurs="0"/>
                 <xs:element ref="options" minOccurs="0"/>
                 <xs:element ref="size" minOccurs="0"/>
                 <xs:element ref="source" minOccurs="0"/>                                
@@ -251,7 +252,7 @@ IN THE WORK.
     <xs:element name="fulfilled">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="has" maxOccurs="unbounded"/>                
+                <xs:element ref="name" maxOccurs="unbounded"/>                
             </xs:sequence>
         </xs:complexType>
     </xs:element>  
@@ -271,6 +272,15 @@ IN THE WORK.
             <xs:sequence>
                 <xs:element ref="icon"/>                
                 <xs:element ref="plugin"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    
+    <xs:element name="plugin">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="name"/>                
+                <xs:element ref="args" minOccurs="0"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>

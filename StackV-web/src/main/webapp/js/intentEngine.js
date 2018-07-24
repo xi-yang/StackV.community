@@ -105,9 +105,10 @@ function loadIntent(type) {
         var $input = $(this).prev();
         $("#intent-modal").attr("data-input", $input.attr("id"));
         console.log("clicked! " + $(this).attr("data-plugin") + " || " + $input.attr("id"));
+        // PLUGIN SWITCH
         switch ($(this).attr("data-plugin")) {
-            case "alm-pools":
-                loadIntentModalALM();
+            case "alm-pools":                
+                loadIntentModalALM($(this).attr("data-plugin-args"));
                 break;
         }
 
@@ -603,7 +604,10 @@ function renderInputs(arr, $parent) {
                 $group.append($input);
                 var children = ele.getElementsByTagName("modal")[0].children;
                 var $span = $("<span class=\"input-group-addon intent-input-modal-button\" style=\"padding:5px 12px;\">");
-                $span.attr("data-plugin", children[1].innerHTML)
+                $span.attr("data-plugin", children[1].children[0].innerHTML);
+                if (children[1].children[1]) {
+                    $span.attr("data-plugin-args", children[1].children[1].innerHTML);
+                }
                 var $i = ("<i class=\"fas fa-" + children[0].innerHTML + "\">")
 
                 $span.append($i);
@@ -1978,7 +1982,7 @@ function preloadAHC() {
 
 
 /// MODALS ///
-function loadIntentModalALM() {
+function loadIntentModalALM(mode) {
     var apiUrl = baseUrl + '/StackV-web/restapi/md2/alm/pools';
     $.ajax({
         url: apiUrl,
@@ -1995,8 +1999,12 @@ function loadIntentModalALM() {
                 var pool = result.pools[index];
                 // Reformat ranges
                 var ranges = pool.range.replace(/-/g, " - ").replace(/,/g, "<br>");
-
-                $list.append("<a class=\"list-group-item list-group-item-action flex-column align-items-start\" data-value=\"" + pool.name + "\"><h4 style=\"display: inline-block;\">" + pool.name + "</h4><p style=\"font-size: 0.8em;\">" + ranges + "</p></a>");
+                
+                if (mode === "ip") {
+                    $list.append("<a class=\"list-group-item list-group-item-action flex-column align-items-start\" data-value=\"" + pool.name + "\"><h4 style=\"display: inline-block;\">" + pool.name + "</h4><p style=\"font-size: 0.8em;\">" + ranges + "</p></a>");
+                } else {
+                    $list.append("<a class=\"list-group-item list-group-item-action flex-column align-items-start\" data-value=\"" + pool.name + "\"><h4 style=\"display: inline-block;\">" + pool.name + "</h4></a>");
+                }
             }
             $modal.find(".modal-body").empty().append($list);
             $modal.find(".modal-footer").empty();
