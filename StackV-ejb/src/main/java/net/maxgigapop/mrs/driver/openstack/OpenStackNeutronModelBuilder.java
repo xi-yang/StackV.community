@@ -575,9 +575,9 @@ public class OpenStackNeutronModelBuilder {
                     //String endpointUri = jUri.get("uri").toString();
                     //provide a default uri if ipsec:uri is empty
                     if (endpointUri == null) endpointUri = VM+":vpn";
-                    Resource strongswan = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
-                    model.add(model.createStatement(VM, Nml.hasService, strongswan));
-                    
+                    Resource ipsec = RdfOwl.createResource(model, endpointUri, Mrs.EndPoint);
+                    model.add(model.createStatement(VM, Nml.hasService, ipsec));
+                    model.add(model.createStatement(ipsec, Mrs.type, "ipsec"));
                     /*
                     Get the following values:
                     local ip            -> "local-ip"
@@ -595,20 +595,21 @@ public class OpenStackNeutronModelBuilder {
                     if (remoteSubnetCIDR == null) remoteSubnetCIDR = "null";
                     
                     //add local ip to model
-                    Resource localIp = RdfOwl.createResource(model, endpointUri+":local-ip", Mrs.NetworkAddress);
-                    model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localIp));
+                    Resource localIp = RdfOwl.createResource(model, endpointUri + ":local-ip", Mrs.NetworkAddress);
                     model.add(model.createStatement(localIp, Mrs.type, "ipv4-address"));
                     model.add(model.createStatement(localIp, Mrs.value, localIPStr));
                     //add local subnet
                     Resource localSubnet = RdfOwl.createResource(model, endpointUri+":local-subnet", Mrs.NetworkAddress);
-                    model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, localSubnet));
                     model.add(model.createStatement(localSubnet, Mrs.type, "ipv4-prefix-list"));
                     model.add(model.createStatement(localSubnet, Mrs.value, localSubnetCIDR));
                     //add remote subnet
                     Resource remoteSubnet = RdfOwl.createResource(model, endpointUri+":remote-subnet", Mrs.NetworkAddress);
-                    model.add(model.createStatement(strongswan, Mrs.hasNetworkAddress, remoteSubnet));
-                    model.add(model.createStatement(remoteSubnet, Mrs.type, "ipv4-prefix-list"));
+                    model.add(model.createStatement(remoteSubnet, Mrs.type, "ipv4-prefix-list:customer"));
                     model.add(model.createStatement(remoteSubnet, Mrs.value, remoteSubnetCIDR));
+
+                    model.add(model.createStatement(ipsec, Mrs.hasNetworkAddress, localIp));
+                    model.add(model.createStatement(ipsec, Mrs.hasNetworkAddress, localSubnet));
+                    model.add(model.createStatement(ipsec, Mrs.hasNetworkAddress, remoteSubnet));
                     
                     //add tunnels
                     int i = 1;
@@ -625,10 +626,10 @@ public class OpenStackNeutronModelBuilder {
                     for (String ip : tunnelIPs) {
                         tunnelStr = endpointUri + ":tunnel" + (++i);
                         Resource tunnel = RdfOwl.createResource(model, tunnelStr, Nml.BidirectionalPort);
-                        model.add(model.createStatement(strongswan, Nml.hasBidirectionalPort, tunnel));
+                        model.add(model.createStatement(ipsec, Nml.hasBidirectionalPort, tunnel));
                         Resource remoteIp = RdfOwl.createResource(model, tunnelStr+":remote-ip", Mrs.NetworkAddress);
                         model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, remoteIp));
-                        model.add(model.createStatement(remoteIp, Mrs.type, "ipv4-address"));
+                        model.add(model.createStatement(remoteIp, Mrs.type, "ipv4-address:customer"));
                         model.add(model.createStatement(remoteIp, Mrs.value, ip));
                         Resource secret = RdfOwl.createResource(model,tunnelStr+":secret", Mrs.NetworkAddress);
                         model.add(model.createStatement(tunnel, Mrs.hasNetworkAddress, secret));

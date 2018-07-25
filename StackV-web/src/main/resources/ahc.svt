@@ -363,6 +363,52 @@
         {{/vms}}
         {{#vms}}
             {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
+            {{#ipsec_vpn}}
+                &lt;{{*VpnTag}}{{VMTag}}:service+ipsec_vpn{{/VpnTag}}&gt;
+                    a   mrs:EndPoint ;
+                    mrs:type "ipsec" ;
+                    mrs:hasNetworkAddress 
+                        &lt;{{VpnTag}}:local_ip&gt; ,
+                        &lt;{{VpnTag}}:local_subnets&gt; ,
+                        &lt;{{VpnTag}}:remote_subnets&gt; .
+                &lt;{{VpnTag}}:local_ip&gt;
+                    a   mrs:NetworkAddress ;
+                    mrs:type "ipv4-address";
+                    mrs:value "{{local_ip}}".
+                &lt;{{VpnTag}}:local_subnets&gt;
+                    a   mrs:NetworkAddress ;
+                    mrs:type "ipv4-prefix-list";
+                    mrs:value "{{local_subnets}}".
+                &lt;{{VpnTag}}:remote_subnets&gt;
+                    a   mrs:NetworkAddress ;
+                    mrs:type "ipv4-prefix-list:customer";
+                    mrs:value "{{remote_subnets}}".
+
+                &lt;{{VMTag}}&gt;  nml:hasService  &lt;{{VpnTag}}&gt;.
+
+                {{#tunnels}}
+                    &lt;{{*TunnelTag}}{{VpnTag}}:tunnel+{{!add @index 1}}{{/TunnelTag}}&gt;
+                         a  nml:BidirectionalPort ;
+                         mrs:hasNetworkAddress
+                            &lt;{{TunnelTag}}:remote-ip&gt; ,
+                            &lt;{{TunnelTag}}:psk&gt; .
+                    &lt;{{TunnelTag}}:remote-ip&gt;
+                        a   mrs:NetworkAddress ;
+                        mrs:type "ipv4-address:customer";
+                        mrs:value "{{remote_ip}}".
+
+                    &lt;{{TunnelTag}}:psk&gt;
+                        a   mrs:NetworkAddress ;
+                        mrs:type "secret";
+                        mrs:value "{{pre_shared_key}}".
+
+                    &lt;{{VpnTag}}&gt;
+                        nml:hasBidirectionalPort &lt;{{TunnelTag}}&gt;.
+                {{/tunnels}}
+            {{/ipsec_vpn}}
+        {{/vms}}
+        {{#vms}}
+            {{?*VMTag}}urn:ogf:network:service+{{@uuid}}:resource+virtual_machines:tag+{{name}}{{/VMTag}}
             {{#globus_connect}}
               {{$if username}}
 	            &lt;{{VMTag}}:service+globus&gt;
