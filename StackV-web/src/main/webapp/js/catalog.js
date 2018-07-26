@@ -638,7 +638,7 @@ function loadModals() {
                                 console.log(errorThrown);
                             }
                         });
-                    }
+                    }   
                 });
 
                 evt.preventDefault();

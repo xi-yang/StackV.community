@@ -51,7 +51,7 @@ public class JNDIFactory {
             if (datasource != null) {
                 result = datasource.getConnection();
             } else {
-                logger.error(method, "Datasource not found.");
+                logger.error(method, "Datasource " + tag + " not found.");
             }
         } catch (SQLException ex) {
             int attempt = 0;
@@ -63,13 +63,13 @@ public class JNDIFactory {
                     if (datasource != null) {
                         result = datasource.getConnection();
                     } else {
-                        logger.error(method, "Datasource not found.");
+                        logger.error(method, "Datasource " + tag + " not found.");
                     }
                 } catch (SQLException ex2) {
                     if (attempt == 10) {
                         throw logger.throwing(method, ex2);
                     } else {
-                        logger.error(method, "Datasource connection failed. Attempt #" + attempt + ".");
+                        logger.error(method, "Datasource " + tag + " connection failed. Attempt #" + attempt + ".");
                     }
                 } catch (InterruptedException | NamingException ex3) {
                     throw logger.throwing(method, ex);
