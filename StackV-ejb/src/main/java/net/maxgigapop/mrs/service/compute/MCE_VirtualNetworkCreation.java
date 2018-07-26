@@ -652,6 +652,12 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
                         spaModel.add(cloudAddress, Mrs.value, jConn.get("from").toString());
                         spaModel.add(vpnTunnel, Mrs.hasNetworkAddress, cloudAddress);
                     }
+                    if (jConn.containsKey("secret")) {
+                        Resource sharedSecret = RdfOwl.createResource(spaModel, vpnTunnel.getURI() + ":secret", Mrs.NetworkAddress);
+                        spaModel.add(sharedSecret, Mrs.type, "secret");
+                        spaModel.add(sharedSecret, Mrs.value, jConn.get("secret").toString());
+                        spaModel.add(vpnTunnel, Mrs.hasNetworkAddress, sharedSecret);
+                    }
                 }
             }
         }
