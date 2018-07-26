@@ -38,6 +38,7 @@ import net.maxgigapop.mrs.bean.DriverSystemDelta;
 import net.maxgigapop.mrs.bean.VersionItem;
 import net.maxgigapop.mrs.bean.persist.DeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.DriverInstancePersistenceManager;
+import net.maxgigapop.mrs.bean.persist.DriverSystemDeltaPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.ModelPersistenceManager;
 import net.maxgigapop.mrs.bean.persist.VersionItemPersistenceManager;
 import net.maxgigapop.mrs.common.ModelUtil;
@@ -79,6 +80,7 @@ public class OpenflowRestconfDriver implements IHandleDriverSystemCall{
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
         logger.cleanup();
         String method = "commitDelta";
+        aDelta = DriverSystemDeltaPersistenceManager.findById(aDelta.getId());
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
