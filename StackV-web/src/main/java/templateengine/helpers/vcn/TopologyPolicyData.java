@@ -86,7 +86,18 @@ public class TopologyPolicyData implements Helper {
                     || ((String) root.get("parent")).contains("amazon")) {
                 network.put("gateways", parser.parse("[{\"type\":\"internet\"},{\"type\":\"vpn\"}]"));
             }
-
+            if (root.containsKey("gateways") && network.containsKey("gateways")) {
+                JSONArray jGws = (JSONArray)root.get("gateways");
+                for (Object gw: jGws) {
+                    JSONObject jGw = (JSONObject)gw;
+                    if (jGw.containsKey("type") && jGw.get("type").equals("Cloud VPN") && jGw.containsKey("connects") ) {
+                        JSONObject jGwParsed = new JSONObject();
+                        jGwParsed.put("type", "cloud_vpn");
+                        jGwParsed.put("connects", (JSONArray)jGw.get("connects"));
+                        ((JSONArray)network.get("gateways")).add(jGwParsed);
+                    }
+                }
+            }
             return network.toString();
         } catch (ParseException ex) {
             Logger.getLogger(TopologyPolicyData.class.getName()).log(Level.SEVERE, null, ex);

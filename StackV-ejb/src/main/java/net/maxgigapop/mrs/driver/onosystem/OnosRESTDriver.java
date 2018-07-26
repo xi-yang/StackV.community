@@ -83,6 +83,7 @@ public class OnosRESTDriver implements IHandleDriverSystemCall{
     public Future<String> commitDelta(DriverSystemDelta aDelta) {
         logger.cleanup();
         String method = "commitDelta";
+        aDelta = DriverSystemDeltaPersistenceManager.findById(aDelta.getId());
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }

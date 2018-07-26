@@ -1123,6 +1123,7 @@ public class OpenStackPush {
                 String remoteSubnet = (String) o.get("remote-subnet");
                 String status = (String) o.get("status");
                 String remoteIp;
+                String psk;
                  //String secret;
                 String newMetadata = "{";
                 newMetadata += "'status':'"+status+"',";
@@ -1132,11 +1133,9 @@ public class OpenStackPush {
                 int i = 1;
                 while (o.containsKey("remote-ip-"+i)) {
                     remoteIp = (String) o.get("remote-ip-"+i);
-                    //secret = (String) o.get("secret-"+i);
+                    psk = (String) o.get("secret-"+i);
                     newMetadata += ",'remote_ip_"+i+"':'"+remoteIp+"'";
-                    //newMetadata += ",'secret_"+i+"':'"+secret+"'";
-                    //the key is added to the metadata but only as a dummy value (PSK_1, PSK_2, etc)
-                    newMetadata += ",'secret_"+i+"':'PSK_"+i+"'";
+                    newMetadata += ",'secret_"+i+"':'"+psk+"'";
                     i++;
                 }
                 newMetadata += "}";
@@ -3004,17 +3003,12 @@ public class OpenStackPush {
         second query because we dont know how many tunnels there will be.
         However, we make sure that the vpn enpoint has at least one in the first query.
         */
-        String query = "SELECT ?vm ?strongswan ?localIp ?localSubnet ?remoteSubnet WHERE {"
-                + "?vm nml:hasService ?strongswan . "
-                + "?strongswan a mrs:EndPoint ; mrs:hasNetworkAddress ?localIpUri , "
-                + "?localSubnetUri , ?remoteSubnetUri ; nml:hasBidirectionalPort ?tunnel . "
-                + "FILTER regex( str(?tunnel), \".*tunnel1.*\") "
-                + "?localIpUri a mrs:NetworkAddress ; mrs:type \"ipv4-address\" ; "
-                + "mrs:value ?localIp . "
-                + "?localSubnetUri a mrs:NetworkAddress ; mrs:type \"ipv4-prefix-list\" ; "
-                + "mrs:value ?localSubnet . FILTER regex( str(?localSubnetUri), \".*local.*\") "
-                + "?remoteSubnetUri a mrs:NetworkAddress ; mrs:type \"ipv4-prefix-list\" ; "
-                + "mrs:value ?remoteSubnet . FILTER regex( str(?remoteSubnetUri), \".*remote.*\") "
+        String query = "SELECT DISTINCT ?vm ?ipsec ?localIp ?localSubnet ?remoteSubnet WHERE {"
+                + "?vm nml:hasService ?ipsec . ?ipsec mrs:type \"ipsec\"; "
+                + " mrs:hasNetworkAddress  ?localIpUri, ?localSubnetUri, ?remoteSubnetUri . "
+                + "?localIpUri a mrs:NetworkAddress ; mrs:type \"ipv4-address\" ; mrs:value ?localIp . "
+                + "?localSubnetUri a mrs:NetworkAddress ; mrs:type \"ipv4-prefix-list\" ; mrs:value ?localSubnet ."
+                + "?remoteSubnetUri a mrs:NetworkAddress ; mrs:type \"ipv4-prefix-list:customer\" ; mrs:value ?remoteSubnet . "
                 + "}";
         
         ResultSet r = executeQuery(query, emptyModel, modelDelta);
@@ -3024,33 +3018,16 @@ public class OpenStackPush {
             String vm = q.get("vm").toString();
             String serverName = ResourceTool.getResourceName(vm, OpenstackPrefix.vm);
             //escape the regex character "+"
-            String strongswan = q.get("strongswan").toString();
-            String strongRegex = strongswan.replaceAll("[+]", "[+]");
+            String ipsecUri = q.get("ipsec").toString();
             String localIp = q.get("localIp").toString();
             String localSubnet = q.get("localSubnet").toString();
             String remoteSubnet = q.get("remoteSubnet").toString();
             
             if (vms.contains(vm)) {
-                logger.warning(method, "Adding a second vpn endpoint to VM "+vm+" may cause unexpected behavior.");
+                logger.warning(method, "Adding a second IPSec VPN endpoint to VM "+vm+" may cause unexpected behavior.");
             } else {
                 vms.add(vm);
             }
-            
-            //Find all the tunnels.  Note that the FILTER in the tunnelQuery
-            //ensures that all tunnels are part of the same ipsec service as the
-            //one found in solution q.
-            String tunnelQuery = "SELECT ?tunnelUri ?remoteIp ?secret WHERE {"
-                    + "?strongswan a mrs:EndPoint ; nml:hasBidirectionalPort "
-                    + "?tunnelUri . FILTER regex( str(?strongswan), \""+ strongRegex +"\" )"
-                    + "?tunnelUri a nml:BidirectionalPort ; mrs:hasNetworkAddress "
-                    + "?remoteUri , ?secretUri . "
-                    + "?remoteUri a mrs:NetworkAddress ; mrs:type \"ipv4-address\" ; "
-                    + "mrs:value ?remoteIp . "
-                    + "?secretUri a mrs:NetworkAddress ; mrs:type \"secret\" ; "
-                    + "mrs:value ?secret . "
-                    + "}";
-            
-            ResultSet tunnelResults = executeQuery(tunnelQuery, emptyModel, modelDelta);
             
             String result;
             result = cidrValidator(localSubnet);
@@ -3067,7 +3044,7 @@ public class OpenStackPush {
             if (!result.isEmpty()) {
                 logger.warning(method, "The local ip is not a valid ip address: "+result);
             }
-            
+        
             if (localSubnet.equals(remoteSubnet)) {
                 logger.warning(method, "The local and remote subnets are identical.");
             }
@@ -3078,28 +3055,33 @@ public class OpenStackPush {
             request.put("request", "VpnEndpointRequest");
             if (creation == true) request.put("status", "create");
             else request.put("status", "delete");
-            request.put("uri", strongswan);
+            request.put("uri", ipsecUri);
             request.put("server name", serverName);
             request.put("local-ip", localIp);
             request.put("local-subnet", localSubnet);
             request.put("remote-subnet", remoteSubnet);
             
+            query = "SELECT DISTINCT  ?remoteIp ?secret WHERE {"
+                + String.format("<%s> nml:hasBidirectionalPort ?tunnel . ", ipsecUri)
+                + "?tunnel mrs:hasNetworkAddress ?remoteIpUri, ?secretUri . "
+                + "?remoteIpUri a mrs:NetworkAddress ; mrs:type \"ipv4-address:customer\" ; mrs:value ?remoteIp . "
+                + "?secretUri a mrs:NetworkAddress ; mrs:type \"secret\" ; mrs:value ?secret . "
+                + "}";
+            ResultSet r2 = executeQuery(query, emptyModel, modelDelta);    
             int i = 1;
-            String tunnelIp;
-            while (tunnelResults.hasNext()) {
-                QuerySolution tunnelSolution = tunnelResults.next();
-                tunnelIp = tunnelSolution.get("remoteIp").toString();
-                result = ipValidator(tunnelIp);
+            while (r2.hasNext()) {
+                QuerySolution q2 = r2.next();
+                String remoteIp = q2.get("remoteIp").toString();
+                result = ipValidator(remoteIp);
                 if (!result.isEmpty()) {
-                    logger.warning(method, "A tunnel ip address is invalid: "+result);
+                    logger.warning(method, "The remote ip is not a valid ip address: " + result);
                 }
-                
-                request.put("remote-ip-"+i, tunnelIp);
-                //request.put("secret-"+i, tunnelSolution.get("secret").toString());
+                request.put("remote-ip-" + i, remoteIp);
+                String secret = q2.get("secret").toString();
+                request.put("secret-" + i, secret);
                 i++;
             }
         }
-        
         logger.trace(method, "requests: "+requests.toString());
         return requests;
     }

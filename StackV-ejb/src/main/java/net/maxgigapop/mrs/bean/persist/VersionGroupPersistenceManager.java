@@ -186,8 +186,8 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                     if (butVG != null && vg.getRefUuid().equals(butVG.getRefUuid())) {
                         continue;
                     }
-                    // delete VG if it is over 1 minute old
-                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 60000L) {
+                    // delete VG if it is over 10 minute old
+                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 600000L) {
                         VersionGroupPersistenceManager.delete(vg);
                         logger.trace("cleanupAndUpdateAll", vg + " deleted (no longer used).");
                         count++;
@@ -205,8 +205,8 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
                 Long vgid = (Long) it.next();
                 VersionGroup vg = VersionGroupPersistenceManager.findById(vgid);
                 if (vg.getVersionItems() == null || vg.getVersionItems().isEmpty()) {
-                    // delete VG if it is over 1 minute old
-                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 60000L) {
+                    // delete VG if it is over 10 minute old
+                    if (currentTime.getTime() - vg.getUpdateTime().getTime() > 600000L) {
                         VersionGroupPersistenceManager.delete(vg);
                         logger.trace("cleanupAndUpdateAll", vg + " deleted (empty VI list).");
                         count++;

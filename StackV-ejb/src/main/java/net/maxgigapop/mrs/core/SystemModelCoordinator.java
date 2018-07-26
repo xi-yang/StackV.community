@@ -103,8 +103,7 @@ public class SystemModelCoordinator {
     }
 
     @Lock(LockType.WRITE)
-    //@Schedule(second = "*/30", minute = "*", hour = "*", persistent = false) // // every 30 seconds
-    @Schedule(second = "0", minute = "*", hour = "*", persistent = false) // every minute, starting at 0th sec
+    @Schedule(second = "0", minute = "*", hour = "*", persistent = false) // every minute, starting at 30th sec
     public void autoUpdate() {
         String method = "autoUpdate";
         logger.trace_start(method);

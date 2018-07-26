@@ -231,6 +231,38 @@
                     </input>
                 </group>
             </group>
+            <group name="IPSec VPN" collapsible="true">
+                <fulfilled>
+                    <name>local_ip</name>
+                </fulfilled>
+                <input>
+                    <name>Local IP</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Local Subnets</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input>
+                    <name>Remote Subnets</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <group factory="true" name="Tunnel">
+                    <input>
+                        <name>Remote IP</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                    <input>
+                        <name>Pre Shared Key</name>
+                        <type>text</type>
+                        <valid>string</valid>
+                    </input>
+                </group>
+            </group>
             <group name="Globus Connect" condition="openstack-form" collapsible="true">
                 <fulfilled>
                     <name>username</name>
@@ -332,14 +364,20 @@
                 <type>select</type>
                 <options>
                     <option condition="aws-form">AWS Direct Connect</option>
+                    <option condition="aws-form">Cloud VPN</option>
                     <option condition="openstack-form">UCS Port Profile</option>                    
                 </options>
                 <valid>select</valid>
             </input>                        
-            <group factory="true" name="Connect" collapsible="true">  
+            <group factory="true" name="Connect" collapsible="true" opened="true">  
                 <bound>
                     <name>gateways-gateway-type</name>
                     <value>AWS Direct Connect</value>
+                    <max>1</max>
+                </bound>
+                <bound>
+                    <name>gateways-gateway-type</name>
+                    <value>Cloud VPN</value>
                     <max>1</max>
                 </bound>
                 <bound>
@@ -359,6 +397,21 @@
                 </input>
                 <input>
                     <name>To</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input condition="type::cloud_vpn">
+                    <name>Via</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input condition="type::cloud_vpn">
+                    <name>From</name>
+                    <type>text</type>
+                    <valid>string</valid>
+                </input>
+                <input condition="type::cloud_vpn">
+                    <name>Secret</name>
                     <type>text</type>
                     <valid>string</valid>
                 </input>

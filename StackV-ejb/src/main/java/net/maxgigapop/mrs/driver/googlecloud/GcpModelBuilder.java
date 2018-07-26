@@ -98,7 +98,7 @@ public class GcpModelBuilder {
                 Resource routingTable = RdfOwl.createResource(model, ResourceTool.getResourceUri("", GcpPrefix.routingTable, name), Mrs.RoutingTable);
                 model.add(model.createStatement(routingService, Mrs.providesRoutingTable, routingTable));
                 //every vpc has one built-in internet gateway
-                Resource igw = RdfOwl.createResource(model, vpc.getURI()+"-igw", Nml.BidirectionalPort);
+                Resource igw = RdfOwl.createResource(model, vpc.getURI()+":igw", Nml.BidirectionalPort);
                 model.add(model.createStatement(igw, Mrs.type, "internet-gateway"));
                 model.add(model.createStatement(vpc, Nml.hasBidirectionalPort, igw));
                 
