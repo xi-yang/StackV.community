@@ -638,7 +638,7 @@ function loadModals() {
                                 console.log(errorThrown);
                             }
                         });
-                    }
+                    }   
                 });
 
                 evt.preventDefault();
@@ -663,7 +663,6 @@ function loadModals() {
                             var manifest = profile;
                             manifest["uuid"] = result;
                             manifest["data"]["uuid"] = result;
-                            manifest["data"]["options"] = manifest["options"];
                             manifest["profileID"] = $(".button-profile-submit").attr('id');
 
                             manifest['proceed'] = "true";
