@@ -70,7 +70,7 @@ public class DriverModelPuller {
         // schedule model pull timer
         ScheduleExpression sexpr = new ScheduleExpression();
         //sexpr.hour("*").minute("*").second("15/30"); // every 30 seconds, starting at 15th
-        sexpr.hour("*").minute("*").second("30/30"); // every minute, starting at 30th sec
+        sexpr.hour("*").minute("*").second("30/30"); // every 30 seconds, starting at 30th sec
         // persistent must be false because the timer is started by the HASingleton service
         timerService.createCalendarTimer(sexpr, new TimerConfig("", false));
     }
