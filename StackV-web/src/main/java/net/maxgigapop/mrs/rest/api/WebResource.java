@@ -409,10 +409,8 @@ public class WebResource {
     @Produces("application/json")
     //@RolesAllowed("F_ACL-R")
     public String ipaLogin() throws UnsupportedEncodingException {
+        JSONObject result = new JSONObject();
         if (ipaUsername != null && ipaPasswd != null) {
-
-            JSONObject result = new JSONObject();
-
             String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
 
             try {
@@ -460,7 +458,8 @@ public class WebResource {
             // return the JSON object as a string
             return result.toJSONString();
         } else {
-            throw logger.error_throwing("ipaLogin()", "IPA username or password not set");
+            logger.error("ipaLogin", "IPA username or password not set");
+            return result.toJSONString();
         }
     }
 
@@ -470,9 +469,8 @@ public class WebResource {
     @Produces("application/json")
     //@RolesAllowed("F_ACL-R")
     public String ipaRequest(String postData) {
-        if (ipaBaseServerUrl != null) {
-
-            JSONObject result = new JSONObject();
+        JSONObject result = new JSONObject();
+        if (ipaBaseServerUrl != null) {            
             try {
                 URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
                 HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
@@ -519,7 +517,8 @@ public class WebResource {
             // return the JSONObject as a string
             return result.toJSONString();
         } else {
-            throw logger.error_throwing("ipaRequest()", "IPA server url not set");
+            logger.error("ipaRequest", "IPA username or password not set");
+            return result.toJSONString();
         }
     }
 
