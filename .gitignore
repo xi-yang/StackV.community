@@ -15,5 +15,5 @@
 /StackV-ejb/target/
 /StackV-web/target/
 /StackV-ear/target/
-## /StackV-web/node/
-## /StackV-web/node_modules/
+/StackV-web/node/
+/StackV-web/node_modules/   
