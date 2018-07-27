@@ -231,7 +231,7 @@
                     </input>
                 </group>
             </group>
-            <group name="IPSec VPN" collapsible="true">
+            <group name="IPSec VPN" condition="openstack-form"  collapsible="true">
                 <fulfilled>
                     <name>local_ip</name>
                 </fulfilled>

@@ -639,11 +639,11 @@ public class MCE_VirtualNetworkCreation extends MCEBase {
                     Resource vpnTunnel = RdfOwl.createResource(spaModel, resNetwork.toString() + ":vpn:tunnel-" + (i+1), Nml.BidirectionalPort);
                     Resource cgwAddress = RdfOwl.createResource(spaModel, vpnTunnel.getURI() + ":cgw-address", Mrs.NetworkAddress);
                     spaModel.add(cgwAddress, Mrs.type, "ipv4-address:customer");
-                    spaModel.add(cgwAddress, Mrs.value, jConn.get("to").toString());
+                    spaModel.add(cgwAddress, Mrs.value, jConn.get("via").toString());
                     spaModel.add(vpnTunnel, Mrs.hasNetworkAddress, cgwAddress);
                     Resource cgwRoutes = RdfOwl.createResource(spaModel, vpnTunnel.getURI() + ":cgw-routes", Mrs.NetworkAddress);
                     spaModel.add(cgwRoutes, Mrs.type, "ipv4-prefix-list:customer");
-                    spaModel.add(cgwRoutes, Mrs.value, jConn.get("via").toString());
+                    spaModel.add(cgwRoutes, Mrs.value, jConn.get("to").toString());
                     spaModel.add(vpnTunnel, Mrs.hasNetworkAddress, cgwRoutes);
                     spaModel.add(vpn, Nml.hasBidirectionalPort, vpnTunnel);
                     if (jConn.containsKey("from")) {
