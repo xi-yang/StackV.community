@@ -24,7 +24,7 @@
 import { keycloak } from "./nexus";
 import { resumeRefresh, pauseRefresh } from "./refresh";
 
-export var openLogDetails = 0;
+export var openLogDetails;
 var cachedStart = 0;
 var justRefreshed = 0;
 var dataTableClass;
@@ -32,6 +32,7 @@ export var dataTable;
 var now = new Date();
 export function loadLoggingDataTable(apiUrl) {
     dataTableClass = "logging";
+    openLogDetails = 0;
     dataTable = $("#loggingData").DataTable({
         "ajax": {
             url: apiUrl,
@@ -55,11 +56,11 @@ export function loadLoggingDataTable(apiUrl) {
                 "defaultContent": "",
                 "width": "20px"
             },
-            {"data": "timestamp", "width": "150px"},
-            {"data": "level", "width": "60px"},
-            {"data": "event"},
-            {"data": "referenceUUID", "width": "275px"},
-            {"data": "message", "visible": false, "searchable": false}
+            { "data": "timestamp", "width": "150px" },
+            { "data": "level", "width": "60px" },
+            { "data": "event" },
+            { "data": "referenceUUID", "width": "275px" },
+            { "data": "message", "visible": false, "searchable": false }
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("row-" + data.level.toLowerCase());
@@ -134,40 +135,42 @@ export function loadLoggingDataTable(apiUrl) {
 
     $("#logging-filter-level").change(function () {
         filterLogs(this);
-    });    
-}
-function formatChild(d) {
-    // `d` is the original data object for the row
-    var retString = "<table cellpadding=\"5\" cellspacing=\"0\" border=\"0\">";
-    if (d.message !== "{}") {
-        retString += "<tr>" +
-        "<td style=\"width:10%\">Message:</td>" +
-        "<td style=\"white-space: normal\">" + d.message + "</td>" +
-        "</tr>";
-    }
-    if (d.exception !== "") {
-        retString += "<tr>" +
-        "<td>Exception:</td>" +
-        "<td><textarea class=\"dataTables-child\">" + d.exception + "</textarea></td>" +
-        "</tr>";
-    }
-    if (d.referenceUUID !== "") {
-        retString += "<tr>" +
-        "<td>UUID:</td>" +
-        "<td>" + d.referenceUUID + "</td>" +
-        "</tr>";
-    }
-    retString += "<tr>" +
-    "<td>Logger:</td>" +
-    "<td>" + d.logger + "</td>" +
-    "</tr>" +
-    "</table>";
+    });
 
-    return retString;
+    function formatChild(d) {
+        // `d` is the original data object for the row
+        var retString = "<table cellpadding=\"5\" cellspacing=\"0\" border=\"0\">";
+        if (d.message !== "{}") {
+            retString += "<tr>" +
+                "<td style=\"width:10%\">Message:</td>" +
+                "<td style=\"white-space: normal\">" + d.message + "</td>" +
+                "</tr>";
+        }
+        if (d.exception !== "") {
+            retString += "<tr>" +
+                "<td>Exception:</td>" +
+                "<td><textarea class=\"dataTables-child\">" + d.exception + "</textarea></td>" +
+                "</tr>";
+        }
+        if (d.referenceUUID !== "") {
+            retString += "<tr>" +
+                "<td>UUID:</td>" +
+                "<td>" + d.referenceUUID + "</td>" +
+                "</tr>";
+        }
+        retString += "<tr>" +
+            "<td>Logger:</td>" +
+            "<td>" + d.logger + "</td>" +
+            "</tr>" +
+            "</table>";
+
+        return retString;
+    }
 }
 
 export function loadInstanceDataTable(apiUrl) {
     dataTableClass = "instance";
+    openLogDetails = 0;
     dataTable = $("#loggingData").DataTable({
         "ajax": {
             url: apiUrl,
@@ -178,10 +181,10 @@ export function loadInstanceDataTable(apiUrl) {
         },
         "buttons": ["csv"],
         "columns": [
-            {"data": "alias"},
-            {"data": "type", width: "110px"},
-            {"data": "referenceUUID", "width": "250px"},
-            {"data": "state", "width": "125px"}
+            { "data": "alias" },
+            { "data": "type", width: "110px" },
+            { "data": "referenceUUID", "width": "250px" },
+            { "data": "state", "width": "125px" }
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("instance-row");
@@ -200,9 +203,45 @@ export function loadInstanceDataTable(apiUrl) {
     });
 
     $("#loggingData tbody").on("click", "tr.instance-row", function () {
-        sessionStorage.setItem("instance-uuid", this.children[2].innerHTML);
+        //sessionStorage.setItem("instance-uuid", this.children[2].innerHTML);
+        //window.document.location = "/StackV-web/portal/details/";
+        var row = dataTable.row($(this));
+        if (row.child.isShown()) {
+            // This row is already open - close it
+            row.child.hide();
+            $(this).removeClass("shown");
+            resumeRefresh();
+        } else {
+            if ($("tr.shown").length > 0) {
+                // Other details open, close first
+                let open = $("tr.shown")[0];
+                dataTable.row($(open)).child.hide();
+                $(open).removeClass("shown");
+            }
+
+            // Open this row
+            row.child(formatChild(row.data())).show();
+            row.child().css("height", "50px");
+            $(this).addClass("shown");
+            pauseRefresh();
+        }
+    });
+
+    $("#loggingData tbody").on("click", ".button-instance-details", function () {
+        sessionStorage.setItem("instance-uuid", $(this).attr("data-uuid"));
         window.document.location = "/StackV-web/portal/details/";
     });
+
+    function formatChild(d) {
+        return "<div style=\"left: 10px;\" class=\"btn-group\" role=\"group\">"
+            + "<button type=\"button\" class=\"hide btn btn-default\">Left</button>"
+            + "<button type=\"button\" class=\"hide btn btn-default\">Middle</button>"
+            + "<button type=\"button\" class=\"hide btn btn-default\">Right</button>"
+            + "<button type=\"button\" class=\"hide btn btn-default\">Left</button>"
+            + "<button type=\"button\" class=\"hide btn btn-default\">Middle</button>"
+            + "<button type=\"button\" class=\"hide btn btn-default\">Right</button>"
+            + "</div><button style=\"float: right;\" type=\"button\" class=\"btn btn-default button-instance-details\" data-uuid=\"" + d.referenceUUID + "\">Full Details</button>";
+    }
 }
 
 export function reloadLogs() {

@@ -42,7 +42,7 @@ $.ajaxSetup({
     }
 });
 
-var tweenInstancePanel = new TweenLite("#instance-panel", .75, {ease: Power2.easeInOut, paused: true, autoAlpha: 1});
+var tweenInstancePanel = new TweenLite("#instance-panel", .75, { ease: Power2.easeInOut, paused: true, autoAlpha: 1 });
 
 var $catModal = $("#catalog-modal");
 var $profModal = $("#profiles-modal");
@@ -183,26 +183,26 @@ var oldProfileName, oldProfileDescription;
 function loadModals() {
     // Initialize
     $catModal.html("<div class=\"catalog-modal-body\">" +
-    "<p class=\"catalog-modal-body-header\">Select a service type:</p>" +
-    "<div id=\"catalog-modal-service-meta\" class=\"list-group\" style=\"cursor: pointer;\"></div>" +
-    "<hr><button class=\"button-catalog-modal-switch btn btn-primary\" data-izimodal-open=\"#profiles-modal\">Load Saved Profile</button>" +
-    "</div>");
+        "<p class=\"catalog-modal-body-header\">Select a service type:</p>" +
+        "<div id=\"catalog-modal-service-meta\" class=\"list-group\" style=\"cursor: pointer;\"></div>" +
+        "<hr><button class=\"button-catalog-modal-switch btn btn-primary\" data-izimodal-open=\"#profiles-modal\">Load Saved Profile</button>" +
+        "</div>");
     $profModal.html("<div class=\"profiles-modal-body\">" +
-    "<p class=\"profiles-modal-body-header\">Select a saved service profile:</p>" +
-    "<div id=\"profiles-modal-service-meta\" class=\"list-group\" style=\"cursor: pointer;\"></div>" +
-    "<hr><button class=\"btn btn-primary\" data-izimodal-open=\"#catalog-modal\">Return to Service Catalog</button><button id=\"button-profile-blank-add\" class=\"btn btn-default hidden\" style=\"margin-left: 10px;\">Add Blank Profile</button><input class=\"form-control\" type=\"text\" id=\"profileBlankName\">" +
-    "</div>");
+        "<p class=\"profiles-modal-body-header\">Select a saved service profile:</p>" +
+        "<div id=\"profiles-modal-service-meta\" class=\"list-group\" style=\"cursor: pointer;\"></div>" +
+        "<hr><button class=\"btn btn-primary\" data-izimodal-open=\"#catalog-modal\">Return to Service Catalog</button><button id=\"button-profile-blank-add\" class=\"btn btn-default hidden\" style=\"margin-left: 10px;\">Add Blank Profile</button><input class=\"form-control\" type=\"text\" id=\"profileBlankName\">" +
+        "</div>");
     $detailsModal.html("<div style=\"height: 80vh;\" class=\"profile-details-modal-body\">" +
-    "<div id=\"profile-details-modal-meta\"><div><div class=\"profile-details-modal-meta-name\"><input class=\"form-control hidden\" id=\"profileEditName\" placeholder=\"New Name\"><p class=\"profile-details-modal-meta-name-text\"></p><button class=\"btn btn-default btn-xs hidden button-profile-meta-edit\"><span class=\"glyphicon glyphicon-pencil\" aria-hidden=\"true\"></span></button></div><div class=\"profile-details-modal-meta-description\"><textarea class=\"form-control hidden\" id=\"profileEditDescription\" placeholder=\"New Description\"></textarea><p class=\"profile-details-modal-meta-description-text\"></p></div><p class=\"profile-details-modal-meta-author\"></p></div><hr>" +
-    "<div style=\"padding-right:10px;\" class=\"panel-group profile-details-modal-meta-sharing hidden\"><div class=\"panel panel-default\"><div class=\"panel-heading\"><h4 class=\"panel-title\"><a data-toggle=\"collapse\" href=\"#sharing-collapse\" class=\"\" aria-expanded=\"true\">Profile Sharing</a></h4></div><div id=\"sharing-collapse\" class=\"panel-collapse collapse in\" aria-expanded=\"true\" style=\"\"><ul class=\"list-group profile-details-modal-meta-sharing-list\"></ul><div class=\"panel-footer\" style=\"height:85px;\"><button class=\"button-profile-license-new btn-sm btn btn-default\">Add New User</button><div><label class=\"profile-details-modal-meta-editable control-label\">Allow Editing<input type=\"checkbox\" style=\"margin-left: 10px;\" id=\"profileEditable\" checked=\"checked\" value=\"on\"></label></div></div></div></div></div>" +
-    "<div style=\"padding-right:10px;\" class=\"panel-group profile-details-modal-meta-saving\"><div class=\"panel panel-default\"><div class=\"panel-heading\"><h4 class=\"panel-title\"><a data-toggle=\"collapse\" href=\"#saving-collapse\" class=\"\" aria-expanded=\"true\">Save As</a></h4></div><div id=\"saving-collapse\" class=\"panel-collapse collapse\" aria-expanded=\"false\" style=\"\"><form class=\"form-horizontal\"><input type=\"text\" class=\"form-control\" id=\"savingProfileName\" placeholder=\"Profile Name\" style=\"/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */\"><input type=\"text\" class=\"form-control\" id=\"savingProfileDescription\" placeholder=\"Profile Description\" style=\"/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */\"></form><div class=\"panel-footer\"><button class=\"button-profile-save-new btn-sm btn btn-default\">Save New Profile</button></div></div></div></div>" +
-    "<div class=\"profile-details-modal-meta-buttons\"><p class=\"hidden read-only-flag\" style=\"color: #ff5f5f;font-size: 1.25em;padding-right: 50px;\">Read Only</p><button style=\"display: none;\" class=\"button-profile-delete btn btn-danger\">Delete</button><button class=\"button-profile-save btn btn-default\">Save</button><input id=\"profile-alias\" placeholder=\"Instance Alias\"><button class=\"button-profile-submit btn btn-default\">Submit</button></div></div>" +
-    "<div id=\"profile-details-modal-text\"><textarea readonly id=\"profile-details-modal-text-area\"></textarea></div>" +
-    "</div>");
+        "<div id=\"profile-details-modal-meta\"><div><div class=\"profile-details-modal-meta-name\"><input class=\"form-control hidden\" id=\"profileEditName\" placeholder=\"New Name\"><p class=\"profile-details-modal-meta-name-text\"></p><button class=\"btn btn-default btn-xs hidden button-profile-meta-edit\"><span class=\"glyphicon glyphicon-pencil\" aria-hidden=\"true\"></span></button></div><div class=\"profile-details-modal-meta-description\"><textarea class=\"form-control hidden\" id=\"profileEditDescription\" placeholder=\"New Description\"></textarea><p class=\"profile-details-modal-meta-description-text\"></p></div><p class=\"profile-details-modal-meta-author\"></p></div><hr>" +
+        "<div style=\"padding-right:10px;\" class=\"panel-group profile-details-modal-meta-sharing hidden\"><div class=\"panel panel-default\"><div class=\"panel-heading\"><h4 class=\"panel-title\"><a data-toggle=\"collapse\" href=\"#sharing-collapse\" class=\"\" aria-expanded=\"true\">Profile Sharing</a></h4></div><div id=\"sharing-collapse\" class=\"panel-collapse collapse in\" aria-expanded=\"true\" style=\"\"><ul class=\"list-group profile-details-modal-meta-sharing-list\"></ul><div class=\"panel-footer\" style=\"height:85px;\"><button class=\"button-profile-license-new btn-sm btn btn-default\">Add New User</button><div><label class=\"profile-details-modal-meta-editable control-label\">Allow Editing<input type=\"checkbox\" style=\"margin-left: 10px;\" id=\"profileEditable\" checked=\"checked\" value=\"on\"></label></div></div></div></div></div>" +
+        "<div style=\"padding-right:10px;\" class=\"panel-group profile-details-modal-meta-saving\"><div class=\"panel panel-default\"><div class=\"panel-heading\"><h4 class=\"panel-title\"><a data-toggle=\"collapse\" href=\"#saving-collapse\" class=\"\" aria-expanded=\"true\">Save As</a></h4></div><div id=\"saving-collapse\" class=\"panel-collapse collapse\" aria-expanded=\"false\" style=\"\"><form class=\"form-horizontal\"><input type=\"text\" class=\"form-control\" id=\"savingProfileName\" placeholder=\"Profile Name\" style=\"/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */\"><input type=\"text\" class=\"form-control\" id=\"savingProfileDescription\" placeholder=\"Profile Description\" style=\"/* margin: auto; *//* width: 90%; *//* margin-top: 5px; *//* margin-bottom: 5px; */\"></form><div class=\"panel-footer\"><button class=\"button-profile-save-new btn-sm btn btn-default\">Save New Profile</button></div></div></div></div>" +
+        "<div class=\"profile-details-modal-meta-buttons\"><p class=\"hidden read-only-flag\" style=\"color: #ff5f5f;font-size: 1.25em;padding-right: 50px;\">Read Only</p><button style=\"display: none;\" class=\"button-profile-delete btn btn-danger\">Delete</button><button class=\"button-profile-save btn btn-default\">Save</button><input id=\"profile-alias\" placeholder=\"Instance Alias\"><button class=\"button-profile-submit btn btn-default\">Submit</button></div></div>" +
+        "<div id=\"profile-details-modal-text\"><textarea readonly id=\"profile-details-modal-text-area\"></textarea></div>" +
+        "</div>");
     $licenseModal.html("<div id=\"profile-license-modal-body\" style=\"margin-bottom: 20px;padding: 15px;\"><form class=\"form-horizontal\"><div class=\"form-group profile-license-modal-username\"><label class=\"col-sm-2 control-label\">Username</label>" +
-    "<div class=\"col-sm-10 profile-license-modal-username-div\"></div></div><div class=\"form-group\"><label for=\"licenseRemaining\" class=\"col-sm-2 control-label\">Licenses</label><div class=\"col-sm-4\"><input type=\"number\" class=\"form-control\" id=\"licenseRemaining\"  style=\"width: 80%;margin-left: 25px;\"></div></div>" +
-    "<div class=\"form-group\"><label for=\"inputPassword\" class=\"col-sm-2 control-label\">Type</label><div class=\"col-sm-10\"><label class=\"radio-inline\" style=\"float: left;margin-left: 25px;\"><input type=\"radio\" name=\"licenseProfileType\" id=\"ticketRadio\" value=\"ticket\" checked=\"\">Tickets</label><label class=\"radio-inline\" style=\"float: left;\"><input type=\"radio\" name=\"licenseProfileType\" id=\"allocationRadio\" value=\"allocation\">Allocations</label></div></div>" +
-    "<div class=\"form-group\"><button class=\"button-license-delete hidden btn btn-warning\" style=\"padding-right: 25;\">Remove</button><button class=\"button-license-update hidden btn btn-warning\" style=\"padding-right: 25;\">Update</button><button class=\"button-license-add hidden btn btn-warning\" style=\"padding-right: 25;\">Submit</button></div></form></div>");
+        "<div class=\"col-sm-10 profile-license-modal-username-div\"></div></div><div class=\"form-group\"><label for=\"licenseRemaining\" class=\"col-sm-2 control-label\">Licenses</label><div class=\"col-sm-4\"><input type=\"number\" class=\"form-control\" id=\"licenseRemaining\"  style=\"width: 80%;margin-left: 25px;\"></div></div>" +
+        "<div class=\"form-group\"><label for=\"inputPassword\" class=\"col-sm-2 control-label\">Type</label><div class=\"col-sm-10\"><label class=\"radio-inline\" style=\"float: left;margin-left: 25px;\"><input type=\"radio\" name=\"licenseProfileType\" id=\"ticketRadio\" value=\"ticket\" checked=\"\">Tickets</label><label class=\"radio-inline\" style=\"float: left;\"><input type=\"radio\" name=\"licenseProfileType\" id=\"allocationRadio\" value=\"allocation\">Allocations</label></div></div>" +
+        "<div class=\"form-group\"><button class=\"button-license-delete hidden btn btn-warning\" style=\"padding-right: 25;\">Remove</button><button class=\"button-license-update hidden btn btn-warning\" style=\"padding-right: 25;\">Update</button><button class=\"button-license-add hidden btn btn-warning\" style=\"padding-right: 25;\">Submit</button></div></form></div>");
 
     $catModal.iziModal(catConfig);
     $profModal.iziModal(profConfig);
@@ -284,7 +284,7 @@ function loadModals() {
                 // Properties
                 var $note = $("<small></small>");
                 if (owner !== keycloak.tokenParsed.preferred_username) {
-                    $note.css({"color": "#777", "padding": "5px"});
+                    $note.css({ "color": "#777", "padding": "5px" });
                     $note.text("created by " + owner + " ");
                     $profile.append($note);
                     if (editable === "0") {
@@ -294,7 +294,7 @@ function loadModals() {
                 }
 
                 var $time = $("<small></small>");
-                $time.css({"float": "right", "text-align": "right", "padding-top": "10px"});
+                $time.css({ "float": "right", "text-align": "right", "padding-top": "10px" });
                 var timeStr = "Created: " + created;
                 if (lastEdited) {
                     timeStr += "<br>Last edited: " + lastEdited;
@@ -356,7 +356,7 @@ function loadModals() {
                         $(".profile-details-modal-meta-description-text").text(result["description"]);
 
                         if (result["owner"] === keycloak.tokenParsed.preferred_username
-                        || result["editable"] === "1") {
+                            || result["editable"] === "1") {
                             $(".profile-details-modal-meta-saving").removeClass("hidden");
                             $textArea.removeAttr("readonly");
                             $(".button-profile-save").removeAttr("disabled");
@@ -384,8 +384,8 @@ function loadModals() {
 
                                 if (license["type"] === "ticket") {
                                     var $opt = $("<li class=\"list-group-item license-" + license["type"] + "\">"
-                                    + "<p style=\"display: inline;\">" + license["username"]
-                                    + "</p><p style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + license["remaining"] + " use(s)</p></li>");
+                                        + "<p style=\"display: inline;\">" + license["username"]
+                                        + "</p><p style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + license["remaining"] + " use(s)</p></li>");
                                     $(".profile-details-modal-meta-sharing-list").append($opt);
                                 } else {
                                     var apiUrl = window.location.origin + "/StackV-web/restapi/app/profile/" + profileID + "/uses/" + license["username"];
@@ -396,8 +396,8 @@ function loadModals() {
                                         contentType: "application/json; charset=utf-8",
                                         success: function (result) {
                                             var $opt = $("<li class=\"list-group-item license-" + license["type"] + "\">"
-                                            + "<p style=\"display: inline;\">" + license["username"]
-                                            + "</p><p id=\"" + license["username"] + "-slots-used\" style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + result + "/" + license["remaining"] + " slot(s)</p></li>");
+                                                + "<p style=\"display: inline;\">" + license["username"]
+                                                + "</p><p id=\"" + license["username"] + "-slots-used\" style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + result + "/" + license["remaining"] + " slot(s)</p></li>");
                                             $(".profile-details-modal-meta-sharing-list").append($opt);
                                         }
                                     });
@@ -635,7 +635,7 @@ function loadModals() {
                 swal("Confirm deletion?", {
                     buttons: {
                         cancel: "Cancel",
-                        delete: {text: "Delete", value: true}
+                        delete: { text: "Delete", value: true }
                     }
                 }).then((value) => {
                     if (value) {
@@ -912,7 +912,7 @@ export function reloadModals() {
                 // Properties
                 var $note = $("<small></small>");
                 if (owner !== keycloak.tokenParsed.preferred_username) {
-                    $note.css({"color": "#777", "padding": "5px"});
+                    $note.css({ "color": "#777", "padding": "5px" });
                     $note.text("created by " + owner + " ");
                     $profile.append($note);
                     if (editable === "0") {
@@ -922,7 +922,7 @@ export function reloadModals() {
                 }
 
                 var $time = $("<small></small>");
-                $time.css({"float": "right", "text-align": "right", "padding-top": "10px"});
+                $time.css({ "float": "right", "text-align": "right", "padding-top": "10px" });
                 var timeStr = "Created: " + created;
                 if (lastEdited) {
                     timeStr += "<br>Last edited: " + lastEdited;
@@ -960,13 +960,13 @@ export function reloadModals() {
 
                         if (license["type"] === "ticket") {
                             let $opt = $("<li class=\"list-group-item license-" + license["type"] + "\">"
-                            + "<p style=\"display: inline;\">" + license["username"]
-                            + "</p><p style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + license["remaining"] + " use(s)</p></li>");
+                                + "<p style=\"display: inline;\">" + license["username"]
+                                + "</p><p style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + license["remaining"] + " use(s)</p></li>");
                             $(".profile-details-modal-meta-sharing-list").append($opt);
                         } else {
                             let $opt = $("<li class=\"list-group-item license-" + license["type"] + "\">"
-                            + "<p style=\"display: inline;\">" + license["username"]
-                            + "</p><p id=\"" + license["username"] + "-slots-used\" style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + "/" + license["remaining"] + " slot(s)</p></li>");
+                                + "<p style=\"display: inline;\">" + license["username"]
+                                + "</p><p id=\"" + license["username"] + "-slots-used\" style=\"display: inline;float: right;color: #777777;font-size: .9em;\" data-remaining=\"" + license["remaining"] + "\">" + "/" + license["remaining"] + " slot(s)</p></li>");
                             $(".profile-details-modal-meta-sharing-list").append($opt);
 
                             var apiUrl = window.location.origin + "/StackV-web/restapi/app/profile/" + profileID + "/uses/" + license["username"];

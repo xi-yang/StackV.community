@@ -108,7 +108,7 @@ export function refreshCountdown() {
 
     var setting = $("#refresh-timer").val();
 
-    var prog = (setting - countdown + .5) / setting;
+    var prog = (setting - countdown + 1) / setting;
     $(".loading-prog").css("width", (prog * 100) + "%");
 }
 export function reloadDataManual() {

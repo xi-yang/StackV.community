@@ -17,3 +17,4 @@
 /StackV-ear/target/
 /StackV-web/node/
 /StackV-web/node_modules/
+/StackV-web/src/main/webapp/js/StackV-main.bundle.js
