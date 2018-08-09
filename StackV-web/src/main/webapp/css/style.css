@@ -38,7 +38,7 @@ black-screen: 3
 
 /*External libraries*/
 @import "animate.min.css";
-@import "font-awesome.min.css";
+@import "https://use.fontawesome.com/releases/v5.1.0/css/all.css";
 @import "https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700";
 
 /* Bootstrap */

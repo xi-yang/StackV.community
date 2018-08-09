@@ -26,7 +26,7 @@ div#driver-template-panel {
     right: -100%;
 }
 #driver-content-panel {
-    bottom: -100%;
+    top: 5%;
     width: 60%;
     height: 80%;
     position: absolute;
