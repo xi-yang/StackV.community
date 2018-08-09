@@ -359,6 +359,17 @@ public class IPAResource {
          return ipaEndpoint(postData);
     }    
 
+    @POST
+    @Path("inject")
+    @Consumes("application/json")
+    @Produces("application/json")
+    public String injectEntry(String entryJson) {
+         JSONObject paramsJSON = new JSONObject();
+         paramsJSON.put("entryjson", entryJson);
+         String postData = buildIpaRequest("md2_add_entry", null, paramsJSON );
+         return ipaEndpoint(postData);        
+    }
+    
     private String buildIpaRequest(String method, JSONArray arguments, JSONObject params ) {
         JSONObject requestJSON = new JSONObject();
 
