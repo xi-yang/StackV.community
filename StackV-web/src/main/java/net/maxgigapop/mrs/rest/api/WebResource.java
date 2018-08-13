@@ -2805,7 +2805,6 @@ public class WebResource {
     @POST
     @Path(value = "/service/{siUUID}")
     @Consumes(value = {"application/json", "application/xml"})
-    @RolesAllowed("Services")
     public String createService(@PathParam(value = "siUUID") final String siUUID, final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
         final String method = "createService";
         try {
@@ -2825,13 +2824,17 @@ public class WebResource {
 
             // Instance Creation
             final String refUUID;
-            try {
-                URL url = new URL(String.format("%s/service/instance", host));
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
-            } catch (IOException ex) {
-                logger.catching("doCreateService", ex);
-                throw ex;
+            if (siUUID == null) {
+                try {
+                    URL url = new URL(String.format("%s/service/instance", host));
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    refUUID = executeHttpMethod(url, connection, "GET", null, token.auth());
+                } catch (IOException ex) {
+                    logger.catching("doCreateService", ex);
+                    throw ex;
+                }
+            } else {
+                refUUID = siUUID;
             }
 
             if (roleSet.contains("F_Services-" + serviceType.toUpperCase())) {
