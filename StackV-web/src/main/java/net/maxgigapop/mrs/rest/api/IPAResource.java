@@ -332,15 +332,17 @@ public class IPAResource {
     }    
     
     /*
+      Takes domain URI  
       Takes path as encoded url string  
     */
     @GET
-    @Path("directory/{path}")
+    @Path("directory/{domainuri}/{path}")
     @Produces("application/json")
-    public String getDataByDirectory(@PathParam("path") String path) {
+    public String getDataByDirectory(@PathParam("domainuri") String domain, @PathParam("path") String path) {
          String postData;
          JSONObject paramsJSON = new JSONObject();
          paramsJSON.put("directory", path);
+         paramsJSON.put("domaintopouri", domain);
          postData = buildIpaRequest("md2_get_data_by_directory", null, paramsJSON );
          return ipaEndpoint(postData);
     }    
