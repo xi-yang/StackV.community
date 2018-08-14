@@ -332,8 +332,8 @@ public class IPAResource {
     }    
     
     /*
-      Takes domain URI  
-      Takes path as encoded url string  
+      Takes domain URI  url encoded string
+      Takes path as url encoded string  
     */
     @GET
     @Path("directory/{domainuri}/{path}")
