@@ -140,9 +140,10 @@ public class ServiceHandler {
             rs.next();
             int instanceID = rs.getInt("service_instance_id");
 
-            prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?, ?)");
+            prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?,?) ON DUPLICATE KEY UPDATE `instanceUUID`=?,`state`=\"INIT\"");
             prep.setInt(1, instanceID);
             prep.setString(2, refUUID);
+            prep.setString(3, refUUID);
             prep.executeUpdate();
 
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
