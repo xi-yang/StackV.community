@@ -121,11 +121,10 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .loading-prog {
-    height: 2px;
+    height: 1px;
     left: 0;
-    bottom: 0;
     background: #5bab5b;
     position: absolute;
     transition: width 1s linear;
-    box-shadow: 0 1px 15px 0 #4ed44e;
+    box-shadow: 0 0 15px 2px #4ed44e;
 }
