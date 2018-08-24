@@ -69,7 +69,6 @@ public class DriverResource {
     @Produces({"application/json"})
     public ArrayList<String> pullAll() {
         String method = "pullAll";
-        logger.trace_start(method);
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet ret = null;
@@ -89,7 +88,6 @@ public class DriverResource {
                     retList.add(ret.getString("topologyUri"));
                 }
             }
-            logger.trace_end(method);
             return retList;
         } catch (SQLException ex) {
             logger.catching(method, ex);
@@ -106,7 +104,6 @@ public class DriverResource {
         ArrayList<String> retList = new ArrayList<>();
         String method = "pull";
         logger.targetid(driverId);
-        logger.trace_start(method);
 
         Connection front_conn = factory.getConnection("rainsdb");
 
@@ -118,7 +115,6 @@ public class DriverResource {
             retList.add(ret.getString("property"));
             retList.add(ret.getString("value"));
         }
-        logger.trace_end(method);
         return retList;
     }
 

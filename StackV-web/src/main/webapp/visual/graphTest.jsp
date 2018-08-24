@@ -55,7 +55,7 @@
         <script src="/StackV-web/js/mousetrap.js"></script>
         <script src="/StackV-web/js/mousetrap-dict.js"></script>
 
-        <script src="/StackV-web/js/nexus.js"></script>
+        <script src="/StackV-web/js/StackV-1.0.0.bundle.js"></script>
         <!---->
 
         <link rel="stylesheet" type="text/css" href="/StackV-web/css/graphTest.css">
@@ -810,9 +810,9 @@
                     <script>
                         function buildServicePanel(userId, token) {
                             var tbody = document.getElementById("servicePanel-body");
-                            var baseUrl = window.location.origin;
+                            var window.location.origin = window.location.origin;
 
-                            var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/instances';
+                            var apiUrl = window.location.origin + '/StackV-web/restapi/app/logging/instances';
                             $.ajax({
                                 url: apiUrl,
                                 type: 'GET',

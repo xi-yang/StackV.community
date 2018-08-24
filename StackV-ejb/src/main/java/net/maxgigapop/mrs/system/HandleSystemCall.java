@@ -193,6 +193,36 @@ public class HandleSystemCall {
         }
     }
 
+    public ModelBase retrieveLatestModelByDriver(String topologyUri) {
+        logger.cleanup();
+        String method = "retrieveLatestModelBase";
+        logger.trace_start(method);
+        DriverInstance driverInstance = DriverInstancePersistenceManager.findByTopologyUri(topologyUri);
+        VersionItem headVI = VersionItemPersistenceManager.getHeadByDriverInstance(driverInstance);
+        if (headVI == null) {
+            return null;
+        }
+        logger.trace_end(method);
+        return headVI.getModelRef();
+    }
+
+    public Map<String, ModelBase> retrieveAllLatestModels() {
+        logger.cleanup();
+        String method = "retrieveAllLatestModels";
+        logger.trace_start(method);
+        Map<String, ModelBase> retMap = new HashMap();
+        for (String topoUri: DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().keySet()) {
+            DriverInstance driverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(topoUri);
+            VersionItem headVI = VersionItemPersistenceManager.getHeadByDriverInstance(driverInstance);
+            if (headVI == null) {
+                continue;
+            }
+            retMap.put(topoUri, headVI.getModelRef());
+        }
+        logger.trace_end(method);
+        return retMap;
+    }
+    
     public OntModel queryModelView(String refUuid, List<ModelUtil.ModelViewFilter> mvfs) {
         logger.cleanup();
         String method = "queryModelView";

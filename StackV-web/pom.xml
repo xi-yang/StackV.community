@@ -3,22 +3,22 @@
   ~ Copyright (c) 2013-2016 University of Maryland
   ~ Author(s): Xi Yang
 
-  ~ Permission is hereby granted, free of charge, to any person obtaining a copy 
-  ~ of this software and/or hardware specification (the “Work”) to deal in the 
-  ~ Work without restriction, including without limitation the rights to use, 
-  ~ copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
-  ~ the Work, and to permit persons to whom the Work is furnished to do so, 
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and/or hardware specification (the “Work”) to deal in the
+  ~ Work without restriction, including without limitation the rights to use,
+  ~ copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+  ~ the Work, and to permit persons to whom the Work is furnished to do so,
   ~ subject to the following conditions:
 
-  ~ The above copyright notice and this permission notice shall be included in 
+  ~ The above copyright notice and this permission notice shall be included in
   ~ all copies or substantial portions of the Work.
 
-~ THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL  
-~ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
-~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
-~ FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS IN 
+~ THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+~ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+~ FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS IN
 ~ THE WORK.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -42,7 +42,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netbeans.hint.license>licenseheader</netbeans.hint.license>
     </properties>
-    
+
     <dependencies>
         <dependency>
             <groupId>org.apache.jena</groupId>
@@ -162,6 +162,11 @@
             <version>3.10.0</version>
         </dependency>
         <dependency>
+            <groupId>com.github.eirslett</groupId>
+            <artifactId>frontend-maven-plugin</artifactId>
+            <version>1.6</version>
+        </dependency>
+        <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-web-api</artifactId>
             <version>7.0</version>
@@ -187,10 +192,10 @@
     <build>
         <resources>
             <resource>
-                <directory>src/main/resources</directory>                
+                <directory>src/main/resources</directory>
             </resource>
         </resources>
-    
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -237,6 +242,55 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.6</version>
+
+                <configuration>
+                    <nodeVersion>v9.8.0</nodeVersion>
+                </configuration>
+
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                    </execution>
+
+                    <execution>
+                        <id>npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>npm pack main</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+
+                    <!--
+                    <execution>
+                        <id>grunt build</id>
+                        <goals>
+                            <goal>grunt</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                    </execution>
+                    -->
+                </executions>
+            </plugin>
+
         </plugins>
-    </build>   
+    </build>
 </project>

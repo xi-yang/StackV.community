@@ -25,6 +25,7 @@ package net.maxgigapop.mrs.rest.api;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import java.io.StringWriter;
+import java.util.Map;
 import java.util.UUID;
 import javax.ejb.EJB;
 import javax.ws.rs.core.Context;
@@ -39,6 +40,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
+import javax.ws.rs.core.Response;
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
@@ -46,6 +48,7 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.rest.api.model.ApiModelViewRequest;
+import org.json.simple.JSONObject;
 
 /**
  * REST Web Service
@@ -213,4 +216,61 @@ public class ModelResource {
         logger.trace_end(method);
         return apiModelBase;
     }
+    
+    @POST
+    @Consumes({"application/json"})
+    @Produces({"application/json"})
+    @Path("/refresh")
+    public Response refreshVersionModels(Map<String,String> requestMap) throws Exception {
+        JSONObject jsonRet = new JSONObject();
+        for (String topoUri: requestMap.keySet()) {
+            String modelUuid = requestMap.get(topoUri); // alternative: time stamp 
+            ModelBase modelBase = systemCallHandler.retrieveLatestModelByDriver(topoUri);
+            if (modelBase == null || modelUuid != null && modelBase.getId().equalsIgnoreCase(modelUuid)) {
+                jsonRet.put(topoUri, null);
+                continue;
+            }
+            JSONObject jsonTopo = new JSONObject();
+            jsonTopo.put("uuid", modelBase.getId());
+            jsonTopo.put("time", modelBase.getCreationTime());
+            jsonTopo.put("ttl", modelBase.getTtlModel());
+            jsonTopo.put("json", ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
+            jsonRet.put(topoUri, jsonTopo);
+        }
+        return Response.status(200).entity(jsonRet).build();
+    }
+    
+    @GET
+    @Consumes({"application/json"})
+    @Produces({"application/json"})
+    @Path("/refresh/{topoURI}")
+    public Response refreshModelAllOrAny(@PathParam("topoURI") String topoURI) throws Exception {
+        JSONObject jsonRet = new JSONObject();
+        if (topoURI.equalsIgnoreCase("all")) {
+            Map<String, ModelBase> topoModelMap = systemCallHandler.retrieveAllLatestModels();
+            for (String aTopoUri: topoModelMap.keySet()) {
+                ModelBase modelBase = topoModelMap.get(aTopoUri);
+                JSONObject jsonTopo = new JSONObject();
+                jsonTopo.put("uuid", modelBase.getId());
+                jsonTopo.put("time", modelBase.getCreationTime());
+                jsonTopo.put("ttl", modelBase.getTtlModel());
+                jsonTopo.put("json", ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
+                jsonRet.put(aTopoUri, jsonTopo);
+            }
+            return Response.status(200).entity(jsonRet).build();
+        } else {
+            ModelBase modelBase = systemCallHandler.retrieveLatestModelByDriver(topoURI);
+            if (modelBase == null) {
+                return Response.status(Response.Status.NOT_FOUND).entity("no model available for topology: "+topoURI).build();
+            }
+            JSONObject jsonTopo = new JSONObject();
+            jsonTopo.put("uuid", modelBase.getId());
+            jsonTopo.put("time", modelBase.getCreationTime());
+            jsonTopo.put("ttl", modelBase.getTtlModel());
+            jsonTopo.put("json", ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
+            jsonRet.put(topoURI, jsonTopo);
+        }
+        return Response.status(200).entity(jsonRet).build();
+    }
+        
 }

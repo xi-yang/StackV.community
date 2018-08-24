@@ -54,7 +54,6 @@ import com.hp.hpl.jena.ontology.OntModel;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
-import com.squareup.okhttp.RequestBody;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
@@ -86,7 +85,6 @@ import javax.ws.rs.QueryParam;
 import net.maxgigapop.mrs.common.AuditService;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
-import net.maxgigapop.mrs.common.IpaAlm;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.common.StackLogger;
@@ -500,7 +498,7 @@ public class WebResource {
                     }
                     ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
                     result = (JSONObject) parser.parse(responseStr.toString());
-                } else { // if the request fails                
+                } else { // if the request fails
                     try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
                         String inputLine;
                         responseStr = new StringBuilder();
@@ -567,7 +565,138 @@ public class WebResource {
         return result.toJSONString();
     }
 
-    // >Drivers    
+    // >Clipbook
+    /**
+     * Gets all clips associated with user.
+     * @param username
+     * @param clipObject
+     * @throws SQLException
+     */
+    @GET
+    @Path("/clipbook/{user}")
+    @Produces("application/json")
+    public JSONArray getClips(@PathParam("user") String username) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+            JSONArray retJSON = new JSONArray();
+
+            prep = front_conn.prepareStatement("SELECT name, clip FROM clipbook WHERE username = ?");
+            prep.setString(1, username);
+            rs = prep.executeQuery();
+
+            while (rs.next()) {
+                JSONObject clipJSON = new JSONObject();
+                clipJSON.put("name", rs.getString("name"));
+                clipJSON.put("clip", rs.getString("clip"));
+                retJSON.add(clipJSON);
+            }
+            return retJSON;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    /**
+     * Gets all clips associated with user.
+     * @param username
+     * @param clipObject
+     * @throws SQLException
+     */
+    @GET
+    @Path("/clipbook/{user}/{name}")
+    @Produces("application/json")
+    public String getClipByName(@PathParam("user") String username, @PathParam("name") String name) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+            prep = front_conn.prepareStatement("SELECT name, clip FROM clipbook WHERE username = ?");
+            prep.setString(1, username);
+            rs = prep.executeQuery();
+
+            while (rs.next()) {
+                return rs.getString("clip");
+            }
+            return null;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    /**
+     * Adds a clip.
+     * @param username
+     * @param clipObject
+     * @throws SQLException
+     */
+    @POST
+    @Path("/clipbook/{user}")
+    @Consumes(value = {"application/json"})
+    public void addClip(@PathParam("user") String username, final String dataInput) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            JSONObject inputJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(dataInput);
+                inputJSON = (JSONObject) obj;
+            } catch (ParseException ex) {
+                logger.catching("addClip", ex);
+            }
+
+            String name = (String) inputJSON.get("name");
+            String clip = (String) inputJSON.get("clip");
+            front_conn = factory.getConnection("frontend");
+
+            // excluding the topuri if the driver type is raw
+            prep = front_conn.prepareStatement("INSERT INTO frontend.clipbook (`username`, `name`, `clip`) VALUES (?, ?, ?)");
+            prep.setString(1, username);
+            prep.setString(2, name);
+            prep.setString(3, clip);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("addClip", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    /**
+     * Adds a clip.
+     * @param username
+     * @param clipObject
+     * @throws SQLException
+     */
+    @DELETE
+    @Path("/clipbook/{user}/{name}")
+    @Consumes(value = {"application/json"})
+    public void deleteClip(@PathParam("user") String username, @PathParam("name") String name) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+
+            // excluding the topuri if the driver type is raw
+            prep = front_conn.prepareStatement("DELETE FROM frontend.clipbook WHERE username = ? AND name = ?");
+            prep.setString(1, username);
+            prep.setString(2, name);            
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("deleteClip", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs);
+        }
+    }
+
+    // >Drivers
     @PUT
     @Path("/driver/install")
     @Consumes("application/json")
@@ -639,12 +768,12 @@ public class WebResource {
 
         return "PLUGIN SUCCEEDED";
     }
-    
+
     /**
      * Adds a new driver profile
      * @param username
      * @param dataInput
-     * @throws SQLException 
+     * @throws SQLException
      */
     @PUT
     @Path("/driver/{user}/add")
@@ -753,8 +882,8 @@ public class WebResource {
             front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement("DELETE FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
-//            prep.setString(1, username);
-//            prep.setString(2, topuri);
+            //            prep.setString(1, username);
+            //            prep.setString(2, topuri);
             prep.executeUpdate();
 
             return "Deleted";
@@ -774,8 +903,8 @@ public class WebResource {
         Connection front_conn = factory.getConnection("frontend");
 
         PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
-//        prep.setString(1, username);
-//        prep.setString(2, topuri);
+        //        prep.setString(1, username);
+        //        prep.setString(2, topuri);
         ResultSet rs = prep.executeQuery();
 
         rs.next();
@@ -1145,7 +1274,7 @@ public class WebResource {
             throw ex;
         }
     }
-    
+
     @GET
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
@@ -1453,7 +1582,7 @@ public class WebResource {
             if (refUUID != null && (level == null || level.equalsIgnoreCase("TRACE"))) {
                 prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
                 prep.setString(1, refUUID);
-            } // Filtering by level alone 
+            } // Filtering by level alone
             else if (refUUID == null && level != null) {
                 switch (level) {
                     case "TRACE":
@@ -1548,7 +1677,7 @@ public class WebResource {
             // Filtering by UUID alone
             if (refUUID != null && (level == null || level.equalsIgnoreCase("TRACE"))) {
                 prepString = prepString + " WHERE referenceUUID = ?";
-            } // Filtering by level alone 
+            } // Filtering by level alone
             else if (refUUID == null && level != null) {
                 switch (level) {
                     case "INFO":
@@ -2771,7 +2900,7 @@ public class WebResource {
         return javax.ws.rs.core.Response.status(javax.ws.rs.core.Response.Status.OK).build();
     }
 
-    // >Services   
+    // >Services
     @GET
     @Path("/service/{siUUID}/status")
     public String checkStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {

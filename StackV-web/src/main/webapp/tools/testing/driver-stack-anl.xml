@@ -9,7 +9,7 @@
             <value>java:module/StackSystemDriver</value>
         </entry>
         <entry>
-            <key>subsystemBaseUrl</key>
+            <key>subsystemwindow.location.origin</key>
             <value>http://140.221.96.35:50100/StackV-web/restapi</value>
         </entry>
     </properties>
