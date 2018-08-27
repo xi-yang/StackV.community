@@ -1,28 +1,28 @@
 "use strict";
 /*
-* Copyright (c) 2013-2018 University of Maryland
-* Created by: Alberto Jimenez
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and/or hardware specification (the “Work”) to deal in the
-* Work without restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Work, and to permit persons to whom the Work is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Work.
-*
-* THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
-* IN THE WORK.
-*/
+ * Copyright (c) 2013-2018 University of Maryland
+ * Created by: Alberto Jimenez
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Work.
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
+ * IN THE WORK.
+ */
 
-/* global XDomainRequest, Power2, TweenLite, Mousetrap, swal, iziToast */
+/* global XDomainRequest, Power2, TweenLite, Mousetrap, iziToast */
 // Tweens
 import { prettyPrintInfo, keycloak } from "./nexus";
 import { initRefresh, reloadData } from "./refresh";
@@ -50,6 +50,11 @@ var $detailsModal = $("#profile-details-modal");
 var $licenseModal = $("#profile-license-modal");
 
 var $alertModal = $("#alert-modal");
+
+/*ReactDOM.render(
+    React.createElement(ButtonPanel, { test: "yes" }, null),
+    document.getElementById("test-id")
+);*/
 
 Mousetrap.bind({
     "shift+left": function () {
@@ -632,29 +637,21 @@ function loadModals() {
 
             // Legacy modal listeners.
             $(".button-profile-delete").on("click", function (evt) {
-                swal("Confirm deletion?", {
-                    buttons: {
-                        cancel: "Cancel",
-                        delete: { text: "Delete", value: true }
-                    }
-                }).then((value) => {
-                    if (value) {
-                        var apiUrl = window.location.origin + "/StackV-web/restapi/app/profile/" + $(".button-profile-save").attr("id");
-                        $.ajax({
-                            url: apiUrl,
-                            type: "DELETE",
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                            },
-                            success: function () {
-                                reloadModals();
-                                $detailsModal.iziModal("close");
-                            },
-                            error: function (textStatus, errorThrown) {
-                                console.log(textStatus);
-                                console.log(errorThrown);
-                            }
-                        });
+                var apiUrl = window.location.origin + "/StackV-web/restapi/app/profile/" + $(".button-profile-save").attr("id");
+                $.ajax({
+                    url: apiUrl,
+                    type: "DELETE",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function () {
+                        $profModal.removeAttr("data-profile-id");
+                        reloadModals();
+                        $detailsModal.iziModal("close");
+                    },
+                    error: function (textStatus, errorThrown) {
+                        console.log(textStatus);
+                        console.log(errorThrown);
                     }
                 });
 
@@ -755,8 +752,6 @@ function loadModals() {
                     });
 
                     evt.preventDefault();
-                } else {
-                    swal("JSON Error", "Data submitted is not a valid JSON! Please correct and try again.", "error");
                 }
             });
 
@@ -795,8 +790,6 @@ function loadModals() {
 
                     $("#info-panel").removeClass("active");
                     evt.preventDefault();
-                } else {
-                    swal("JSON Error", "Data submitted is not a valid JSON! Please correct and try again.", "error");
                 }
             });
         }

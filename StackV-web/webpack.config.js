@@ -14,7 +14,7 @@ module.exports = {
         path: __dirname + "/src/main/webapp/js/"
     },
     resolve: {
-        extensions: [".js"]
+        extensions: [".js", ".jsx"]
     },
     module: {
         rules: [
@@ -26,10 +26,7 @@ module.exports = {
                         loader: "babel-loader",
                         options: {
                             babelrc: false,
-                            presets: [
-                                "@babel/preset-env",
-                                [ "@babel/preset-stage-0", {"decoratorsLegacy": true} ]
-                            ],
+                            presets: ["@babel/preset-env", "@babel/preset-react"],
                             plugins: [
                                 ["@babel/syntax-dynamic-import"],
                                 ["@babel/plugin-proposal-object-rest-spread", { "useBuiltIns": true }],

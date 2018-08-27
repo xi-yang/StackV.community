@@ -11,28 +11,6 @@ eval("module.exports = __webpack_require__(/*! core-js/library/fn/object/get-own
 
 /***/ }),
 
-/***/ "./node_modules/@babel/runtime/helpers/classCallCheck.js":
-/*!***************************************************************!*\
-  !*** ./node_modules/@babel/runtime/helpers/classCallCheck.js ***!
-  \***************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-eval("function _classCallCheck(instance, Constructor) {\n  if (!(instance instanceof Constructor)) {\n    throw new TypeError(\"Cannot call a class as a function\");\n  }\n}\n\nmodule.exports = _classCallCheck;\n\n//# sourceURL=webpack:///./node_modules/@babel/runtime/helpers/classCallCheck.js?");
-
-/***/ }),
-
-/***/ "./node_modules/@babel/runtime/helpers/createClass.js":
-/*!************************************************************!*\
-  !*** ./node_modules/@babel/runtime/helpers/createClass.js ***!
-  \************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-eval("var _Object$defineProperty = __webpack_require__(/*! ../core-js/object/define-property */ \"./node_modules/@babel/runtime/core-js/object/define-property.js\");\n\nfunction _defineProperties(target, props) {\n  for (var i = 0; i < props.length; i++) {\n    var descriptor = props[i];\n    descriptor.enumerable = descriptor.enumerable || false;\n    descriptor.configurable = true;\n    if (\"value\" in descriptor) descriptor.writable = true;\n\n    _Object$defineProperty(target, descriptor.key, descriptor);\n  }\n}\n\nfunction _createClass(Constructor, protoProps, staticProps) {\n  if (protoProps) _defineProperties(Constructor.prototype, protoProps);\n  if (staticProps) _defineProperties(Constructor, staticProps);\n  return Constructor;\n}\n\nmodule.exports = _createClass;\n\n//# sourceURL=webpack:///./node_modules/@babel/runtime/helpers/createClass.js?");
-
-/***/ }),
-
 /***/ "./node_modules/@babel/runtime/helpers/defineProperty.js":
 /*!***************************************************************!*\
   !*** ./node_modules/@babel/runtime/helpers/defineProperty.js ***!

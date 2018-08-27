@@ -24,6 +24,15 @@
 import { keycloak } from "./nexus";
 import { resumeRefresh, pauseRefresh } from "./refresh";
 
+import React from "react";
+import ReactDOM from "react-dom";
+import ButtonPanel from "./buttons";
+
+/*ReactDOM.render(
+    React.createElement(ButtonPanel, { test: "yes" }, null),
+    document.getElementById("test-id")
+);*/
+
 export var openLogDetails;
 var cachedStart = 0;
 var justRefreshed = 0;
@@ -208,12 +217,14 @@ export function loadInstanceDataTable(apiUrl) {
         var row = dataTable.row($(this));
         if (row.child.isShown()) {
             // This row is already open - close it
+            ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
             row.child.hide();
             $(this).removeClass("shown");
             resumeRefresh();
         } else {
             if ($("tr.shown").length > 0) {
                 // Other details open, close first
+                ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
                 let open = $("tr.shown")[0];
                 dataTable.row($(open)).child.hide();
                 $(open).removeClass("shown");
@@ -221,6 +232,14 @@ export function loadInstanceDataTable(apiUrl) {
 
             // Open this row
             row.child(formatChild(row.data())).show();
+
+            ReactDOM.render(
+                React.createElement(ButtonPanel, { uuid: row.data().referenceUUID, state: row.data().state }, null),
+                document.getElementById("button-panel")
+            );
+
+            $("#button-panel").append("<button style=\"float: right\" type=\"button\" class=\"btn btn-default button-instance-details\" data-uuid=" + row.data().referenceUUID + "\"}>Full Details</button>");
+
             row.child().css("height", "50px");
             $(this).addClass("shown");
             pauseRefresh();
@@ -233,14 +252,7 @@ export function loadInstanceDataTable(apiUrl) {
     });
 
     function formatChild(d) {
-        return "<div style=\"left: 10px;\" class=\"btn-group\" role=\"group\">"
-            + "<button type=\"button\" class=\"hide btn btn-default\">Left</button>"
-            + "<button type=\"button\" class=\"hide btn btn-default\">Middle</button>"
-            + "<button type=\"button\" class=\"hide btn btn-default\">Right</button>"
-            + "<button type=\"button\" class=\"hide btn btn-default\">Left</button>"
-            + "<button type=\"button\" class=\"hide btn btn-default\">Middle</button>"
-            + "<button type=\"button\" class=\"hide btn btn-default\">Right</button>"
-            + "</div><button style=\"float: right;\" type=\"button\" class=\"btn btn-default button-instance-details\" data-uuid=\"" + d.referenceUUID + "\">Full Details</button>";
+        return "<div id=\"button-panel\"></div>";
     }
 }
 
