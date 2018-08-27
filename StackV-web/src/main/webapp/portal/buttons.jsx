@@ -4,8 +4,6 @@ import PropTypes from "prop-types";
 class ButtonPanel extends React.Component {
     constructor(props) {
         super(props);
-
-        this.execute = this.execute.bind(this);
     }
 
     moderate() {
