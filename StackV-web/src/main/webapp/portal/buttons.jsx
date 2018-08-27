@@ -45,7 +45,7 @@ class OpButton extends React.Component {
         }
 
         this.state = {
-            display: true,
+            display: false,
             confirmation: confirm
         };
     }
