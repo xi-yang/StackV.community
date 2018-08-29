@@ -70,6 +70,33 @@ public class SenseServiceQuery {
                     }
                 }
             }
+        } else if (query.equalsIgnoreCase("flexible-schedule")) {
+            for (Object obj: options) {
+                Map option = (Map) obj;
+                if (option.containsKey("name")) {
+                    String connName = (String) option.get("name");
+                    JSONArray jsonConns = (JSONArray)jsonRequest.get("connections");
+                    for (Object objConn: jsonConns) {
+                        JSONObject jsonConn = (JSONObject) objConn;
+                        if (jsonConn.get("name").equals(connName)) {
+                            if (jsonConn.containsKey("schedule")) {
+                                jsonConn.remove("schedule");
+                            }
+                            JSONObject jsonSchedule = new JSONObject();
+                            if (option.containsKey("start-after")) {
+                                jsonSchedule.put("start", (String) option.get("start-after"));
+                            }
+                            if (option.containsKey("end-before")) {
+                                jsonSchedule.put("end", (String) option.get("end-before"));
+                            }
+                            if (option.containsKey("duration")) {
+                                jsonSchedule.put("duration", (String) option.get("duration"));
+                            }
+                            jsonConn.put("bandwidth", jsonSchedule);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -116,6 +143,56 @@ public class SenseServiceQuery {
                             if (jsonConn.containsKey("maximum-bandwidth")) {
                                 String bandwidth = (String) jsonConn.get("maximum-bandwidth");
                                 result.put("bandwidth", bandwidth);
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (query.equalsIgnoreCase("flexible-schedule")) {
+            for (Object obj : options) {
+                Map option = (Map) obj;
+                if (option.containsKey("name")) {
+                    String connName = (String) option.get("name");
+                    String tagPattern = "^l2path\\\\\\+.+:" + connName.replace(" ", "_") + "$";
+                    final String jsonTemplate = "{\n"
+                            + "    \"connections\": [\n"
+                            + "        {\n"
+                            + "           \"required\": \"false\",\n"
+                            + "           \"start-time\": \"?start?\",\n"
+                            + "           \"end-time\": \"?end?\",\n"
+                            + String.format("           \"sparql\": \"SELECT DISTINCT ?start ?end WHERE {?bp mrs:tag ?tag. ?bp nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end. FILTER regex(?tag, '%s', 'i') }\"\n", tagPattern)
+                            + "	       }\n"
+                            + "    ]\n"
+                            + "}";
+
+                    String responseStr;
+                    String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+                    final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+                    final TokenHandler token = new TokenHandler(refresh);
+                    URL url = new URL("http://127.0.0.1:8080/StackV-web/restapi/service/manifest");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    String data = String.format("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+                            + "<serviceManifest>\n<serviceUUID/>\n<jsonTemplate>\n%s</jsonTemplate>\n<jsonModel>\n%s</jsonModel>\n</serviceManifest>",
+                            jsonTemplate, ttlModel);
+                    responseStr = executeHttpMethod(url, conn, "POST", data, token.auth());
+                    JSONParser parser = new JSONParser();
+                    JSONObject jo;
+                    jo = (JSONObject) parser.parse(responseStr);
+                    jo = (JSONObject) parser.parse((String) jo.get("jsonTemplate"));
+                    Map result = new LinkedHashMap();
+                    result.put("name", connName);
+                    results.add(result);
+                    if (jo != null && !jo.isEmpty()) {
+                        JSONArray jsonConns = (JSONArray) jo.get("connections");
+                        if (!jsonConns.isEmpty()) {
+                            JSONObject jsonConn = (JSONObject) jsonConns.get(0);
+                            if (jsonConn.containsKey("start-time")) {
+                                String timedate = (String) jsonConn.get("start-time");
+                                result.put("start-time", timedate);
+                            }
+                            if (jsonConn.containsKey("end-time")) {
+                                String timedate = (String) jsonConn.get("end-time");
+                                result.put("end-time", timedate);
                             }
                         }
                     }
