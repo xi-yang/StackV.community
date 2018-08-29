@@ -72,30 +72,30 @@ $(function () {
     });
 
     switch (window.location.pathname) {
-    case "/StackV-web/portal/":
-        page = "catalog";
-        break;
-    case "/StackV-web/portal/admin/":
-        page = "admin";
-        break;
-    case "/StackV-web/portal/acl/":
-        page = "acl";
-        break;
-    case "/StackV-web/portal/driver/":
-        page = "driver";
-        break;
-    case "/StackV-web/portal/details/":
-        page = "details";
-        break;
-    case "/StackV-web/portal/intent/":
-        page = "intent";
-        break;
-    case "/StackV-web/visual/manifest/manifestPortal.jsp":
-        page = "manifest";
-        break;
-    case "/StackV-web/visual/graphTest.jsp":
-    case "/StackV-web/visual/":
-        page = "visualization";
+        case "/StackV-web/portal/":
+            page = "catalog";
+            break;
+        case "/StackV-web/portal/admin/":
+            page = "admin";
+            break;
+        case "/StackV-web/portal/acl/":
+            page = "acl";
+            break;
+        case "/StackV-web/portal/driver/":
+            page = "driver";
+            break;
+        case "/StackV-web/portal/details/":
+            page = "details";
+            break;
+        case "/StackV-web/portal/intent/":
+            page = "intent";
+            break;
+        case "/StackV-web/visual/manifest/manifestPortal.jsp":
+            page = "manifest";
+            break;
+        case "/StackV-web/visual/graphTest.jsp":
+        case "/StackV-web/visual/":
+            page = "visualization";
     }
 
     $(".hide-on-load").addClass("hidden");
@@ -127,44 +127,44 @@ $(function () {
         loadNavbar();
 
         switch (page) {
-        case "catalog":
-            $("li#catalog-tab").addClass("active");
-            loadCatalog();
-            break;
-        case "admin":
-            $("li#admin-tab").addClass("active");
-            loadAdmin();
-            break;
-        case "acl":
-            $("li#acl-tab").addClass("active");
-            loadACLPortal();
-            break;
-        case "driver":
-            $("li#driver-tab").addClass("active");
-            loadDriverPortal();
-            break;
-        case "intent":
-            loadIntent(getURLParameter("intent"));
-            break;
-        case "details":
-            $("li#details-tab").addClass("active");
-            var uuid = sessionStorage.getItem("instance-uuid");
-            if (!uuid) {
-                alert("No Service Instance Selected!");
-                window.location.replace("/StackV-web/");
-            } else {
-                loadDetails();
-            }
-            break;
-        case "manifest":
-            //loadManifest();
-            break;
-        case "visualization":
-            import(/* webpackChunkName: "engine" */ "../visual/engine").then(module => {
-                module.default("#vis-panel");
-                $("#vis-panel").css("opacity", "1");
-            });
-            break;
+            case "catalog":
+                $("li#catalog-tab").addClass("active");
+                loadCatalog();
+                break;
+            case "admin":
+                $("li#admin-tab").addClass("active");
+                loadAdmin();
+                break;
+            case "acl":
+                $("li#acl-tab").addClass("active");
+                loadACLPortal();
+                break;
+            case "driver":
+                $("li#driver-tab").addClass("active");
+                loadDriverPortal();
+                break;
+            case "intent":
+                loadIntent(getURLParameter("intent"));
+                break;
+            case "details":
+                $("li#details-tab").addClass("active");
+                var uuid = sessionStorage.getItem("instance-uuid");
+                if (!uuid) {
+                    alert("No Service Instance Selected!");
+                    window.location.replace("/StackV-web/");
+                } else {
+                    loadDetails();
+                }
+                break;
+            case "manifest":
+                //loadManifest();
+                break;
+            case "visualization":
+                import(/* webpackChunkName: "engine" */ "../visual/engine").then(module => {
+                    module.default("#vis-panel");
+                    $("#vis-panel").css("opacity", "1");
+                });
+                break;
         }
 
         loadClipbook();
@@ -208,24 +208,24 @@ export function loadNavbar() {
         verifyPageRoles();
 
         switch (page) {
-        case "catalog":
-            $("li#catalog-tab").addClass("active");
-            break;
-        case "admin":
-            $("li#admin-tab").addClass("active");
-            break;
-        case "acl":
-            $("li#acl-tab").addClass("active");
-            break;
-        case "driver":
-            $("li#driver-tab").addClass("active");
-            break;
-        case "details":
-            $("li#details-tab").addClass("active");
-            break;
-        case "visualization":
-            $("li#visualization-tab").addClass("active");
-            break;
+            case "catalog":
+                $("li#catalog-tab").addClass("active");
+                break;
+            case "admin":
+                $("li#admin-tab").addClass("active");
+                break;
+            case "acl":
+                $("li#acl-tab").addClass("active");
+                break;
+            case "driver":
+                $("li#driver-tab").addClass("active");
+                break;
+            case "details":
+                $("li#details-tab").addClass("active");
+                break;
+            case "visualization":
+                $("li#visualization-tab").addClass("active");
+                break;
         }
 
         var apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/";
@@ -277,50 +277,50 @@ export function verifyPageRoles() {
         var intent = getURLParameter("intent").toUpperCase();
     }
     switch (page) {
-    case "acl":
-        if (keycloak.tokenParsed.realm_access.roles.indexOf("F_ACL-R") === -1) {
-            window.location.href = "/StackV-web/portal/";
-        }
-        break;
-    case "admin":
-        if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
-            window.location.href = "/StackV-web/portal/";
-        }
-        break;
-    case "details":
-        if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
-            var uuid = sessionStorage.getItem("instance-uuid");
-            var apiUrl = window.location.origin + "/StackV-web/restapi/app/access/instances/" + uuid;
-            $.ajax({
-                url: apiUrl,
-                type: "GET",
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                },
-                success: function (result) {
-                    if (result === "false") {
-                        sessionStorage.removeItem("instance-uuid");
-                        window.location.href = "/StackV-web/portal/";
+        case "acl":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_ACL-R") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "admin":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "details":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
+                var uuid = sessionStorage.getItem("instance-uuid");
+                var apiUrl = window.location.origin + "/StackV-web/restapi/app/access/instances/" + uuid;
+                $.ajax({
+                    url: apiUrl,
+                    type: "GET",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                    },
+                    success: function (result) {
+                        if (result === "false") {
+                            sessionStorage.removeItem("instance-uuid");
+                            window.location.href = "/StackV-web/portal/";
+                        }
                     }
-                }
-            });
-        }
-        break;
-    case "driver":
-        if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Drivers-R") === -1) {
-            window.location.href = "/StackV-web/portal/";
-        }
-        break;
-    case "intent":
-        if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-" + intent) === -1) {
-            window.location.href = "/StackV-web/portal/";
-        }
-        break;
-    case "visualization":
-        if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Visualization-R") === -1) {
-            window.location.href = "/StackV-web/portal/";
-        }
-        break;
+                });
+            }
+            break;
+        case "driver":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Drivers-R") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "intent":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-" + intent) === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
+        case "visualization":
+            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Visualization-R") === -1) {
+                window.location.href = "/StackV-web/portal/";
+            }
+            break;
     }
 }
 

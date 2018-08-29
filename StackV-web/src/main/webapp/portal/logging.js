@@ -33,7 +33,7 @@ import ButtonPanel from "./buttons";
     document.getElementById("test-id")
 );*/
 
-export var openLogDetails;
+var openLogDetails;
 var cachedStart = 0;
 var justRefreshed = 0;
 var dataTableClass;
@@ -234,11 +234,11 @@ export function loadInstanceDataTable(apiUrl) {
             row.child(formatChild(row.data())).show();
 
             ReactDOM.render(
-                React.createElement(ButtonPanel, { uuid: row.data().referenceUUID, state: row.data().state }, null),
+                React.createElement(ButtonPanel, { uuid: row.data().referenceUUID, state: row.data().state, last: row.data().lastState }, null),
                 document.getElementById("button-panel")
             );
 
-            $("#button-panel").append("<button style=\"float: right\" type=\"button\" class=\"btn btn-default button-instance-details\" data-uuid=" + row.data().referenceUUID + "\"}>Full Details</button>");
+            $("#button-panel").append("<button style=\"float: right\" type=\"button\" class=\"btn btn-default button-instance-details\" data-uuid=" + row.data().referenceUUID + ">Full Details</button>");
 
             row.child().css("height", "50px");
             $(this).addClass("shown");

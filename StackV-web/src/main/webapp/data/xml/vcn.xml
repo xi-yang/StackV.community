@@ -300,7 +300,7 @@
             </group>
             <group factory="true" condition="openstack-form" name="Ceph RBD" collapsible="true">
                 <fulfilled>
-                    <has>size</has>
+                    <name>size</name>
                 </fulfilled>
                 
                 <input>
@@ -318,27 +318,27 @@
             </group>            
             <group condition="openstack-form" name="Ceph FS" collapsible="true">
                 <fulfilled>
-                    <has>mount_point</has>
+                    <name>mount_point</name>
                 </fulfilled>
                 <input>
                     <name>Mount Point</name>
                     <type>text</type>
-                    <valid>string</valid>
                     <size>small</size>
+                    <valid>string</valid>
                 </input>
                 <input>
                     <name>CephFS Directory</name>
                     <type>text</type>
                     <default>/</default>
-                    <valid>string</valid>
                     <size>small</size>
+                    <valid>string</valid>                    
                 </input>
                 <input>
                     <name>CephFS Client</name>
                     <type>text</type>
                     <default>admin</default>
-                    <valid>string</valid>
                     <size>small</size>
+                    <valid>string</valid>                    
                 </input>
             </group>            
             <group name="NFS" condition="openstack-form" collapsible="true">
@@ -444,13 +444,25 @@
             <input>
                 <name>IP Address</name>
                 <type>text</type>
-                <valid>cidr</valid>
+                <modal>
+                    <icon>info</icon>
+                    <plugin>
+                        <name>alm-pools</name>
+                        <args>ip</args>
+                    </plugin>
+                </modal>
             </input>       
             <input>
                 <name>MAC Address</name>
                 <type>text</type>
-                <valid>mac</valid>
-            </input>               
+                <modal>
+                    <icon>info</icon>
+                    <plugin>
+                        <name>alm-pools</name>
+                        <args>mac</args>
+                    </plugin>
+                </modal>
+            </input>            
         </group>
     </stage>
 </intent>

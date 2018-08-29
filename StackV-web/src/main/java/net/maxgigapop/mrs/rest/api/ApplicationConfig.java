@@ -60,6 +60,7 @@ public class ApplicationConfig extends Application {
         resources.add(net.maxgigapop.mrs.rest.api.SenseServiceApi.class);
         resources.add(net.maxgigapop.mrs.rest.api.ServiceResource.class);
         // Helpers
+        resources.add(net.maxgigapop.mrs.rest.api.IPAResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.WebResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);
         resources.add(net.maxgigapop.mrs.rest.api.exception.IOExceptionMapper.class);

@@ -1,6 +1,5 @@
-"use strict";
 /*
- * Copyright (c) 2013-2018 University of Maryland
+ * Copyright (c) 2013-2017 University of Maryland
  * Created by: Alberto Jimenez
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -78,16 +77,16 @@ export function loadIntent(type) {
             parseSchemaIntoManifest(intent);
             if (getURLParameter("preload")) {
                 switch (type) {
-                case "dnc":
-                    preloadDNC();
-                    break;
-                case "hybridcloud":
-                    preloadAHC();
-                    break;
-                case "vcn":
-                    preloadAWSVCN();
-                    //preloadOPSVCN();
-                    break;
+                    case "dnc":
+                        preloadDNC();
+                        break;
+                    case "hybridcloud":
+                        preloadAHC();
+                        break;
+                    case "vcn":
+                        preloadAWSVCN();
+                        //preloadOPSVCN();
+                        break;
                 }
             }
             if (getURLParameter("fullTest")) {
@@ -102,6 +101,20 @@ export function loadIntent(type) {
     var refreshTimer = setInterval(function () {
         keycloak.updateToken(90);
     }, (60000));
+
+    $("#intent-panel").on("click", ".intent-input-modal-button", function (e) {
+        var $input = $(this).prev();
+        $("#intent-modal").attr("data-input", $input.attr("id"));
+        console.log("clicked! " + $(this).attr("data-plugin") + " || " + $input.attr("id"));
+        // PLUGIN SWITCH
+        switch ($(this).attr("data-plugin")) {
+            case "alm-pools":
+                loadIntentModalALM($(this).attr("data-plugin-args"));
+                break;
+        }
+
+        e.preventDefault();
+    });
 }
 
 function renderIntent() {
@@ -114,7 +127,7 @@ function renderIntent() {
 
 function initializeIntent() {
     var panel = $("#intent-panel-body");
-    gsap["intent"] = new TweenLite("#intent-panel", 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
+    gsap["intent"] = new TweenLite("#intent-panel", 0.5, { ease: Power2.easeInOut, paused: true, opacity: "1", display: "block" });
     // Initialize meta sidebar
     var meta = intent.children[0];
     initMeta(meta);
@@ -130,8 +143,8 @@ function initializeIntent() {
         // Initialize stage panel
         var stage = stages[i];
         var id = constructID(stage);
-        var $div = $("<div>", {class: "intent-stage-div", id: id});
-        var $prog = $("<li>", {id: "prog-" + id});
+        var $div = $("<div>", { class: "intent-stage-div", id: id });
+        var $prog = $("<li>", { id: "prog-" + id });
         if (stage.getAttribute("condition")) {
             $div.addClass("conditional");
             $div.attr("data-condition", stage.getAttribute("condition"));
@@ -152,7 +165,7 @@ function initializeIntent() {
         panel.append($div);
         stages[id] = $div;
         var $currentStageDiv = $div;
-        gsap[id] = new TweenLite("#" + id, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
+        gsap[id] = new TweenLite("#" + id, 0.5, { ease: Power2.easeInOut, paused: true, opacity: "1", display: "block" });
 
         if (i === 1) {
             $activeStage = $div;
@@ -177,7 +190,7 @@ function initializeIntent() {
     $(document).on("keyup", "[data-valid]", function () {
         clearTimeout(typingTimer);
         var $input = $(this);
-        typingTimer = setTimeout(function() {
+        typingTimer = setTimeout(function () {
             validateInput($input);
         }, 1000);
     });
@@ -200,14 +213,14 @@ function initMeta(meta) {
     var $blockDiv = $("<div>").attr("id", "intent-panel-meta-block");
     var blocks = meta.getElementsByTagName("block");
     for (var i = 0; i < blocks.length; i++) {
-        var $div = $("<div>").css("margin-bottom","20px");
+        var $div = $("<div>").css("margin-bottom", "20px");
         var block = blocks[i];
         var tag = block.children[0].innerHTML;
         var str = block.children[1].innerHTML;
         var condition = block.getAttribute("condition");
 
         var $label = $("<label>").text(str);
-        var $input = $("<input>", {type: "number", name: "block-" + tag, value: 1, min: 0});
+        var $input = $("<input>", { type: "number", name: "block-" + tag, value: 1, min: 0 });
         $input.attr("data-block", tag);
         $input.change(function () {
             var eles = $(".block-" + $(this).data("block"));
@@ -300,7 +313,7 @@ function renderInputs(arr, $parent) {
             var str = name.charAt(0).toUpperCase() + name.slice(1);
             var eleID = constructID(ele);
 
-            var $div = $("<div>", {class: "intent-group-div", id: eleID});
+            var $div = $("<div>", { class: "intent-group-div", id: eleID });
             $parent.append($div);
             var $name = $("<div class=\"group-header col-sm-12\"><div class=\"group-name\">" + str + "</div></div>");
             $div.append($name);
@@ -402,8 +415,8 @@ function renderInputs(arr, $parent) {
             let hidden = ele.getAttribute("hidden");
             let required = ele.getAttribute("required");
 
-            var $label = $("<label>").text(ele.children[0].innerHTML);
-            var $input = $("<input>", {type: type, class: "intent-input", id: name});
+            let $label = $("<label>").text(ele.children[0].innerHTML);
+            let $input = $("<input>", { type: type, class: "intent-input", id: name });
 
             if (ele.getElementsByTagName("hint").length > 0) {
                 $label.text($label.text() + " " + ele.getElementsByTagName("hint")[0].innerHTML);
@@ -411,15 +424,15 @@ function renderInputs(arr, $parent) {
 
             var $message = null;
             switch (type) {
-            case "button":
-                $input.removeClass("intent-input");
-                $input.click(function (e) {
-                    nextStage(true);
+                case "button":
+                    $input.removeClass("intent-input");
+                    $input.click(function (e) {
+                        nextStage(true);
 
-                    e.preventDefault();
-                });
-                $input.val("Select");
-                break;
+                        e.preventDefault();
+                    });
+                    $input.val("Select");
+                    break;
             }
 
             if (ele.children[0].innerHTML.toLowerCase() === "name" && ele.parentElement.tagName === "group") {
@@ -437,17 +450,17 @@ function renderInputs(arr, $parent) {
             // Handle potential element modifiers
             if (ele.getElementsByTagName("size").length > 0) {
                 switch (ele.getElementsByTagName("size")[0].innerHTML) {
-                case "small":
-                    $label.addClass("col-sm-4");
-                    break;
-                case "large":
-                    $label.addClass("col-sm-8");
-                    break;
-                case "xlarge":
-                    $label.addClass("col-sm-12");
-                    break;
-                default:
-                    $label.addClass("col-sm-6");
+                    case "small":
+                        $label.addClass("col-sm-4");
+                        break;
+                    case "large":
+                        $label.addClass("col-sm-8");
+                        break;
+                    case "xlarge":
+                        $label.addClass("col-sm-12");
+                        break;
+                    default:
+                        $label.addClass("col-sm-6");
                 }
             } else {
                 $label.addClass("col-sm-6");
@@ -474,13 +487,13 @@ function renderInputs(arr, $parent) {
 
             // Handle multiple choice sourcing
             if (ele.getElementsByTagName("source").length > 0) {
-                $input = $("<select>", {id: name, class: "intent-input"});
+                $input = $("<select>", { id: name, class: "intent-input" });
                 var selectName = name;
                 var source = ele.getElementsByTagName("source")[0];
 
                 var apiURL = window.location.origin +
-                        "/StackV-web/restapi" +
-                        source.children[0].innerHTML;
+                    "/StackV-web/restapi" +
+                    source.children[0].innerHTML;
                 $.ajax({
                     url: apiURL,
                     type: "GET",
@@ -514,18 +527,18 @@ function renderInputs(arr, $parent) {
                     }
                 });
             } else if (ele.getElementsByTagName("link").length > 0) {
-                $input = $("<select>", {id: name, class: "intent-input"});
+                $input = $("<select>", { id: name, class: "intent-input" });
                 let selectName = name;
                 var link = ele.getElementsByTagName("link")[0].innerHTML;
                 $input.attr("data-link", link);
-                var $default = $("<option>", {selected: true}).text("");
+                var $default = $("<option>", { selected: true }).text("");
                 $input.append($default);
                 var nameVal = ele.getElementsByTagName("link")[0].getAttribute("nameVal");
                 if (nameVal) {
                     $input.addClass("nameVal");
                 }
             } else if (ele.getElementsByTagName("options").length > 0) {
-                $input = $("<select>", {id: name, class: "intent-input"});
+                $input = $("<select>", { id: name, class: "intent-input" });
                 let selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
                 if (!ele.getAttribute("required")) {
@@ -537,7 +550,7 @@ function renderInputs(arr, $parent) {
                 for (let j = 0; j < options.length; j++) {
                     var $option;
                     if (options[j].getAttribute("condition") !== null) {
-                        $option = $("<option>", {disabled: true});
+                        $option = $("<option>", { disabled: true });
                         $option.attr("data-condition-select", options[j].getAttribute("condition"));
                     } else {
                         $option = $("<option>");
@@ -563,14 +576,14 @@ function renderInputs(arr, $parent) {
             }
             if (trigger) {
                 switch (type) {
-                case "text":
-                    break;
-                case "button":
-                    $label.attr("data-trigger", trigger);
-                    $label.click(function () {
-                        addOption($(this).data("trigger"));
-                    });
-                    break;
+                    case "text":
+                        break;
+                    case "button":
+                        $label.attr("data-trigger", trigger);
+                        $label.click(function () {
+                            addOption($(this).data("trigger"));
+                        });
+                        break;
                 }
             }
             if (condition) {
@@ -587,7 +600,24 @@ function renderInputs(arr, $parent) {
                 $label.addClass("hidden");
             }
 
-            $label.append($input);
+            if (ele.getElementsByTagName("modal").length > 0) {
+                var $group = $("<div class=\"input-group\">");
+                $group.append($input);
+                var children = ele.getElementsByTagName("modal")[0].children;
+                var $span = $("<span class=\"input-group-addon intent-input-modal-button\" style=\"padding:5px 12px;\">");
+                $span.attr("data-plugin", children[1].children[0].innerHTML);
+                if (children[1].children[1]) {
+                    $span.attr("data-plugin-args", children[1].children[1].innerHTML);
+                }
+                var $i = ("<i class=\"fas fa-" + children[0].innerHTML + "\">");
+
+                $span.append($i);
+                $group.append($span);
+                $label.append($group);
+            } else {
+                $label.append($input);
+            }
+
             if ($message) {
                 $label.append($message);
             }
@@ -614,7 +644,7 @@ function factorizeRendering() {
         let name = head.children[0].innerText.split(" #")[0];
         let key = id.replace(new RegExp("\\_num\\d*", "gm"), "");
         if (factories[key]["block"] === undefined) {
-            var $button = $("<button>", {class: "intent-button-factory", text: "Add " + name});
+            var $button = $("<button>", { class: "intent-button-factory", text: "Add " + name });
             $button.attr("data-factory", key);
             $button.attr("data-target", fact.parentElement.id);
             if ($(fact).data("bound")) {
@@ -826,7 +856,7 @@ function collapseGroups() {
     $(".collapsing").each(function () {
         var $div = $(this);
         var collapseStr = "collapse-" + $div.attr("id");
-        var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});
+        var $collapseDiv = $("<div>", { class: "collapse in", id: collapseStr });
         var $toggle = $("<a>").attr("data-toggle", "collapse")
             .attr("data-target", "#" + collapseStr)
             .addClass("group-collapse-toggle");
@@ -845,7 +875,7 @@ function collapseGroups() {
     $(".collapsed").each(function () {
         var $div = $(this);
         var collapseStr = "collapse-" + $div.attr("id");
-        var $collapseDiv = $("<div>", {class: "collapse", id: collapseStr});
+        var $collapseDiv = $("<div>", { class: "collapse", id: collapseStr });
         var $toggle = $("<a>").attr("data-toggle", "collapse")
             .attr("data-target", "#" + collapseStr)
             .addClass("group-collapse-toggle collapsed");
@@ -871,7 +901,7 @@ function collapseDiv($name, $div) {
         .attr("data-target", "#" + collapseStr)
         .addClass("group-collapse-toggle");
 
-    var $collapseDiv = $("<div>", {class: "collapse in", id: collapseStr});
+    var $collapseDiv = $("<div>", { class: "collapse in", id: collapseStr });
 
     $name.append($toggle);
 
@@ -1032,7 +1062,7 @@ function buildClone(key, target, $factoryBtn) {
     var cloneID = $clone.attr("id");
 
     // Replace control buttons
-    var $button = $("<button>", {class: "intent-button-remove close"});
+    var $button = $("<button>", { class: "intent-button-remove close" });
     $button.attr("aria-label", "Close");
     $button.html("<span aria-hidden=\"true\">&times;</span>");
     $button.click(function () {
@@ -1057,7 +1087,7 @@ function buildClone(key, target, $factoryBtn) {
         $target.append($clone);
     }
 
-    gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {ease: Power2.easeInOut, paused: true, opacity: "1", display: "block"});
+    gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, { ease: Power2.easeInOut, paused: true, opacity: "1", display: "block" });
     gsap[cloneID].play();
 
     // Reset listeners
@@ -1116,7 +1146,7 @@ function refreshLinks() {
         var currSelection = $input.val();
         $input.children().remove();
         var link = $input.data("link");
-        var $default = $("<option>", {selected: true}).text("");
+        var $default = $("<option>", { selected: true }).text("");
         $input.append($default);
 
         var targetArr = $(".block-" + link);
@@ -1707,7 +1737,7 @@ function initializeInputs() {
             }
         }
         if (constEle) {
-            var $message = $("<div>", {class: "intent-input-message"});
+            var $message = $("<div>", { class: "intent-input-message" });
             if (constEle.getElementsByTagName("message").length > 0) {
                 $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
             }
@@ -1781,16 +1811,16 @@ function parseTestManifest() {
         var tag = this.tagName;
         var id = $(this).attr("id");
         switch (tag) {
-        case "INPUT":
-            $(this).val(id);
-            break;
-        case "SELECT":
-            if ($(this).children("option[value!=\"\"][value]").size() > 0) {
-                $(this).val($(this).children("option[value!=\"\"][value]").first().val());
-            } else {
-                $(this).append($("<option>").val(id));
-            }
-            break;
+            case "INPUT":
+                $(this).val(id);
+                break;
+            case "SELECT":
+                if ($(this).children("option[value!=\"\"][value]").size() > 0) {
+                    $(this).val($(this).children("option[value!=\"\"][value]").first().val());
+                } else {
+                    $(this).append($("<option>").val(id));
+                }
+                break;
         }
     });
 
@@ -1947,4 +1977,43 @@ function preloadAHC() {
     $("#vms-openstack_vm_num1-interface_num1-name").val("vtn2-vm1:eth1");
     $("#vms-openstack_vm_num1-interface_num1-type").val("SRIOV");
     $("#vms-openstack_vm_num1-interface_num1-address").val("ipv4+10.10.0.1/24,mac+aa:bb:cc:ff:01:11");
+}
+
+/// MODALS ///
+function loadIntentModalALM(mode) {
+    var apiUrl = window.location.origin + "/StackV-web/restapi/md2/alm/pools";
+    $.ajax({
+        url: apiUrl,
+        type: "GET",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            var $modal = $("#intent-modal");
+            $modal.find(".modal-title").text("Please Select an ALM Pool");
+
+            var $list = $("<div class=\"list-group\" style=\"cursor: pointer;text-align:left;overflow:auto;max-height:50vh;\">");
+            for (var index in result.pools) {
+                var pool = result.pools[index];
+                // Reformat ranges
+                var ranges = pool.range.replace(/-/g, " - ").replace(/,/g, "<br>");
+
+                if (mode === "ip") {
+                    $list.append("<a class=\"list-group-item list-group-item-action flex-column align-items-start\" data-value=\"" + pool.name + "\"><h4 style=\"display: inline-block;\">" + pool.name + "</h4><p style=\"font-size: 0.8em;\">" + ranges + "</p></a>");
+                } else {
+                    $list.append("<a class=\"list-group-item list-group-item-action flex-column align-items-start\" data-value=\"" + pool.name + "\"><h4 style=\"display: inline-block;\">" + pool.name + "</h4></a>");
+                }
+            }
+            $modal.find(".modal-body").empty().append($list);
+            $modal.find(".modal-footer").empty();
+
+            $list.on("click", "a", function () {
+                console.log($(this).attr("data-value"));
+                $("#" + $modal.attr("data-input")).val($(this).attr("data-value"));
+                $modal.modal("hide");
+            });
+
+            $modal.modal("show");
+        }
+    });
 }
