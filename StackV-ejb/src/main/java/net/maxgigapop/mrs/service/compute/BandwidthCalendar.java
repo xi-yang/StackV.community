@@ -427,30 +427,38 @@ public class BandwidthCalendar {
     
     //$$ normalize bandwidth unit internally
     private static BandwidthCalendar getHopBandwidthCalendar(Model model, MCETools.Path path, Resource hop) throws BandwidthCalendarException {
-        String sparql = "SELECT ?capacity ?unit ?subport ?start ?end WHERE {"
+        String sparql = "SELECT ?capacity ?unit WHERE {"
                 + String.format("<%s> a nml:BidirectionalPort; nml:hasService ?bwSvc .  ", hop.getURI())
-                + String.format("<%s> nml:hasBidirectionalPort ?subport. ", hop.getURI())
                 + "?bwSvc a mrs:BandwidthService. "
                 + "?bwSvc mrs:reservableCapacity ?capacity. "
-                + "?subport nml:hasService ?subBwSvc. "
-                + "?subBwSvc a mrs:BandwidthService. "
                 + "OPTIONAL { ?bwSvc mrs:unit ?unit }"
-                + "OPTIONAL { ?subBwSvc nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end. } "
                 + "}";
         ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
         BandwidthCalendar bwCal = null;
+        if (rs.hasNext()) {
+            QuerySolution solution = rs.next();
+            long bw = Long.parseLong(solution.getLiteral("capacity").getString());
+            String unit = solution.contains("unit") ? solution.getLiteral("unit").getString() : "bps";
+            bw = MCETools.normalizeBandwidth(bw, unit);
+            bwCal = new BandwidthCalendar(bw);
+        }
+        if (bwCal == null) {
+            return null;
+        }
+
+        sparql = "SELECT ?subport ?start ?end WHERE {"
+                + String.format("<%s> nml:hasBidirectionalPort ?subport. ", hop.getURI())
+                + "?subport nml:hasService ?subBwSvc. "
+                + "?subBwSvc a mrs:BandwidthService. "
+                + "OPTIONAL { ?subBwSvc nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end. } "
+                + "}";
+        rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             QuerySolution solution = rs.next();
             Resource resSubport = solution.getResource("subport");
             MCETools.BandwidthProfile subBwProfile = MCETools.getHopBandwidthPorfile(model, resSubport);
             if (subBwProfile == null || subBwProfile.reservableCapacity == null) {
                 continue;
-            }
-            if (bwCal == null) {
-                long bw = Long.parseLong(solution.getLiteral("capacity").getString());
-                String unit = solution.contains("unit") ? solution.getLiteral("unit").getString() : "bps";
-                bw = MCETools.normalizeBandwidth(bw, unit);
-                bwCal = new BandwidthCalendar(bw);
             }
             long start = new Date().getTime()/1000L;
             long end = infinite;
