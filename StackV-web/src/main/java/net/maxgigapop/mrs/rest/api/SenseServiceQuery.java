@@ -79,10 +79,13 @@ public class SenseServiceQuery {
                     for (Object objConn: jsonConns) {
                         JSONObject jsonConn = (JSONObject) objConn;
                         if (jsonConn.get("name").equals(connName)) {
+                            JSONObject jsonSchedule;
                             if (jsonConn.containsKey("schedule")) {
-                                jsonConn.remove("schedule");
+                                jsonSchedule = (JSONObject) jsonConn.get("schedule");
+                            } else {
+                                jsonSchedule = new JSONObject();
+                                jsonConn.put("schedule", jsonSchedule);
                             }
-                            JSONObject jsonSchedule = new JSONObject();
                             if (option.containsKey("start-after")) {
                                 jsonSchedule.put("start", (String) option.get("start-after"));
                             }
@@ -92,7 +95,6 @@ public class SenseServiceQuery {
                             if (option.containsKey("duration")) {
                                 jsonSchedule.put("duration", (String) option.get("duration"));
                             }
-                            jsonConn.put("bandwidth", jsonSchedule);
                         }
                     }
                 }
@@ -188,10 +190,16 @@ public class SenseServiceQuery {
                             JSONObject jsonConn = (JSONObject) jsonConns.get(0);
                             if (jsonConn.containsKey("start-time")) {
                                 String timedate = (String) jsonConn.get("start-time");
+                                if (timedate.contains("^^")) {
+                                    timedate = timedate.split("^")[0];
+                                }
                                 result.put("start-time", timedate);
                             }
                             if (jsonConn.containsKey("end-time")) {
                                 String timedate = (String) jsonConn.get("end-time");
+                                if (timedate.contains("^^")) {
+                                    timedate = timedate.split("^")[0];
+                                }
                                 result.put("end-time", timedate);
                             }
                         }
