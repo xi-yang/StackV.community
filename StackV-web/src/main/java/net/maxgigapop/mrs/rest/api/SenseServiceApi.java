@@ -73,7 +73,7 @@ public class SenseServiceApi {
         @ApiResponse(code = 409, message = "Resource conflict", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDPost(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID,@Valid ServiceIntentRequest body) {
-    if (!body.getServiceType().equalsIgnoreCase("Multi-Path P2P VLAN")) { //@TBD
+        if (!body.getServiceType().equalsIgnoreCase("Multi-Path P2P VLAN") || !body.getServiceType().equalsIgnoreCase("Multi-Point VLAN Bridge")) {
             return Response.status(Response.Status.BAD_REQUEST).encoding("Unknown service type: " + body.getServiceType()).build();
         }
         JSONObject jsonReq = new JSONObject();
@@ -83,7 +83,7 @@ public class SenseServiceApi {
         jsonReq.put("data", jsonData);
         jsonReq.put("synchronous", "true");
         jsonReq.put("proceed", "false");
-        jsonData.put("type", "Multi-Path P2P VLAN");
+        jsonData.put("type", body.getServiceType());
         JSONArray jsonConns = new JSONArray();
         jsonData.put("connections", jsonConns);
         for (ServiceIntentRequestConnections conn: body.getConnections()) {
@@ -96,6 +96,19 @@ public class SenseServiceApi {
                 jsonBw.put("qos_class", conn.getBandwidth().getQosClass());
                 jsonBw.put("capacity", conn.getBandwidth().getCapacity());
                 jsonBw.put("unit", conn.getBandwidth().getUnit());
+            }
+            if (conn.getSchedule()!= null) {
+                JSONObject jsonSchedule = new JSONObject();
+                jsonConn.put("schedule", jsonSchedule);
+                if (jsonSchedule.containsKey("start") && jsonSchedule.get("start") != null) {
+                    jsonSchedule.put("start", conn.getSchedule().getStart());
+                }
+                if (jsonSchedule.containsKey("end") && jsonSchedule.get("end") != null) {
+                    jsonSchedule.put("end", conn.getSchedule().getEnd());
+                }
+                if (jsonSchedule.containsKey("duration") && jsonSchedule.get("duration") != null) {
+                    jsonSchedule.put("duration", conn.getSchedule().getDuration());
+                }
             }
             JSONArray jsonTerminals = new JSONArray();
             jsonConn.put("terminals", jsonTerminals);
