@@ -1537,7 +1537,7 @@ public class WebResource {
     @Path("/logging/{level}")
     @Produces("application/json")
     public void setLogLevel(@PathParam("level") String level) {
-        if (verifyUserRole("admin")) {
+        if (verifyUserRole("A_Admin")) {
             switch (level) {
                 case "TRACE":
                     Configurator.setLevel(WebResource.class.getName(), Level.TRACE);
@@ -2716,7 +2716,7 @@ public class WebResource {
             }
             String inputDataString = inputData.toJSONString();
 
-            int authorized = (verifyUserRole("admin")) ? 1 : 0;
+            int authorized = (verifyUserRole("A_Admin")) ? 1 : 0;
             prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
                     + "(owner, name, wizard_json, description, editable, authorized) VALUES (?, ?, ?, ?, ?, ?)");
             prep.setString(1, username);
