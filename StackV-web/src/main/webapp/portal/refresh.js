@@ -23,7 +23,7 @@
 */
 import { keycloak, page } from "./nexus";
 import { syncClipbook } from "./clipbook";
-import { openLogDetails, dataTable, reloadLogs } from "./logging";
+import { dataTable, reloadLogs } from "./logging";
 
 /* Enabled Scripts */
 import { reloadModals } from "./catalog";
@@ -114,7 +114,6 @@ export function refreshCountdown() {
 export function reloadDataManual() {
     var timer = $("#refresh-timer");
     if (timer.attr("disabled")) {
-        openLogDetails = 0;
         $("tr.shown").each(function () {
             var row = dataTable.row(this);
             row.child.hide();
@@ -139,21 +138,21 @@ export function reloadData() {
     }).success(function (refreshed) {
         let timerSetting = $("#refresh-timer").val();
         switch (page) {
-        case "catalog":
-            setTimeout(function () {
-                reloadLogs();
-                reloadModals();
-            }, 500);
-            break;
-        case "admin":
-            setTimeout(function () {
-                reloadLogs();
-            }, 500);
-            break;
+            case "catalog":
+                setTimeout(function () {
+                    reloadLogs();
+                    reloadModals();
+                }, 500);
+                break;
+            case "admin":
+                setTimeout(function () {
+                    reloadLogs();
+                }, 500);
+                break;
 
-        case "visualization":
-            fetchNewData();
-            break;
+            case "visualization":
+                fetchNewData();
+                break;
         }
 
         loadSystemHealthCheck();
