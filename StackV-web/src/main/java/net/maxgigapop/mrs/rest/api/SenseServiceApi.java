@@ -73,7 +73,7 @@ public class SenseServiceApi {
         @ApiResponse(code = 409, message = "Resource conflict", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDPost(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID,@Valid ServiceIntentRequest body) {
-        if (!body.getServiceType().equalsIgnoreCase("Multi-Path P2P VLAN") || !body.getServiceType().equalsIgnoreCase("Multi-Point VLAN Bridge")) {
+        if (!body.getServiceType().equalsIgnoreCase("Multi-Path P2P VLAN") && !body.getServiceType().equalsIgnoreCase("Multi-Point VLAN Bridge")) {
             return Response.status(Response.Status.BAD_REQUEST).encoding("Unknown service type: " + body.getServiceType()).build();
         }
         JSONObject jsonReq = new JSONObject();
@@ -100,13 +100,13 @@ public class SenseServiceApi {
             if (conn.getSchedule()!= null) {
                 JSONObject jsonSchedule = new JSONObject();
                 jsonConn.put("schedule", jsonSchedule);
-                if (jsonSchedule.containsKey("start") && jsonSchedule.get("start") != null) {
+                if (conn.getSchedule().getStart() != null) {
                     jsonSchedule.put("start", conn.getSchedule().getStart());
                 }
-                if (jsonSchedule.containsKey("end") && jsonSchedule.get("end") != null) {
+                if (conn.getSchedule().getEnd() != null) {
                     jsonSchedule.put("end", conn.getSchedule().getEnd());
                 }
-                if (jsonSchedule.containsKey("duration") && jsonSchedule.get("duration") != null) {
+                if (conn.getSchedule().getDuration() != null) {
                     jsonSchedule.put("duration", conn.getSchedule().getDuration());
                 }
             }
