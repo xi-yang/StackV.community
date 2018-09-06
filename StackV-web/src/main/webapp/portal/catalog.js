@@ -72,59 +72,59 @@ Mousetrap.bind({
 });
 function toggleModal(modalName) {
     switch (modalName) {
-    case "catalog":
-        // Toggle catalog modal
-        switch ($catModal.iziModal("getState")) {
-        case "opened":
-            $catModal.iziModal("close");
-            break;
-        case "closed":
-            switch ($profModal.iziModal("getState")) {
-            case "closed":
-                $catModal.iziModal("open");
-                break;
-            case "opened":
-                $profModal.iziModal("prev");
-                break;
+        case "catalog":
+            // Toggle catalog modal
+            switch ($catModal.iziModal("getState")) {
+                case "opened":
+                    $catModal.iziModal("close");
+                    break;
+                case "closed":
+                    switch ($profModal.iziModal("getState")) {
+                        case "closed":
+                            $catModal.iziModal("open");
+                            break;
+                        case "opened":
+                            $profModal.iziModal("prev");
+                            break;
+                    }
+                    break;
+                case "opening":
+                case "closing":
+                    break;
+                default:
+                    switch ($profModal.iziModal("getState")) {
+                        case "closed":
+                            $profModal.iziModal("open");
+                            break;
+                        case "opened":
+                            $profModal.iziModal("close");
+                            break;
+                    }
+                    break;
             }
             break;
-        case "opening":
-        case "closing":
-            break;
-        default:
-            switch ($profModal.iziModal("getState")) {
-            case "closed":
-                $profModal.iziModal("open");
-                break;
-            case "opened":
-                $profModal.iziModal("close");
-                break;
+        case "profile":
+            // Toggle profile modal
+            switch ($catModal.iziModal("getState")) {
+                case "opened":
+                    $catModal.iziModal("next");
+                    break;
+                case "opening":
+                case "closing":
+                    break;
+                case "closed":
+                default:
+                    switch ($profModal.iziModal("getState")) {
+                        case "closed":
+                            $profModal.iziModal("open");
+                            break;
+                        case "opened":
+                            $profModal.iziModal("close");
+                            break;
+                    }
+                    break;
             }
             break;
-        }
-        break;
-    case "profile":
-        // Toggle profile modal
-        switch ($catModal.iziModal("getState")) {
-        case "opened":
-            $catModal.iziModal("next");
-            break;
-        case "opening":
-        case "closing":
-            break;
-        case "closed":
-        default:
-            switch ($profModal.iziModal("getState")) {
-            case "closed":
-                $profModal.iziModal("open");
-                break;
-            case "opened":
-                $profModal.iziModal("close");
-                break;
-            }
-            break;
-        }
-        break;
     }
 }
 
