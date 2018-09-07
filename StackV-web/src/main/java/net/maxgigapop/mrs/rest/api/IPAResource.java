@@ -237,7 +237,6 @@ public class IPAResource {
     }    
     
     @POST
-    @Path("/request")
     @Consumes("application/json")
     @Produces("application/json")
     //@RolesAllowed("F_ACL-R")
@@ -296,6 +295,7 @@ public class IPAResource {
     }    
     
     @POST
+    @Path("/request")
     @Consumes("application/json")
     @Produces("application/json")
     public String ipaEndpoint(String postData) {
@@ -398,7 +398,15 @@ public class IPAResource {
     private String removeRPCResponseData(String responseString) throws ParseException {
        JSONObject responseObj;
        responseObj = (JSONObject) parser.parse(responseString);
-       JSONObject md2DataJSON = (JSONObject) ((JSONObject) responseObj.get("result")).get("result");
-       return md2DataJSON.toJSONString();            
+       
+       JSONObject md2DataJSON = (JSONObject) responseObj.get("result");      
+       if (md2DataJSON != null) {
+         while (md2DataJSON.get("result") != null) {
+            md2DataJSON = (JSONObject) md2DataJSON.get("result");      
+         }
+         return md2DataJSON.toJSONString();
+       } else {
+         return responseObj.toJSONString(); 
+       }
     }
 }
