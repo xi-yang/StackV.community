@@ -28,6 +28,7 @@ import { dataTable, reloadLogs } from "./logging";
 /* Enabled Scripts */
 import { reloadModals } from "./catalog";
 import { fetchNewData } from "../visual/engine";
+import { updateData } from "./details/details";
 /* */
 
 var refreshTimer;
@@ -152,6 +153,13 @@ export function reloadData() {
 
             case "visualization":
                 fetchNewData();
+                break;
+
+            case "details":
+                updateData();
+                setTimeout(function () {
+                    reloadLogs();
+                }, 500);
                 break;
         }
 

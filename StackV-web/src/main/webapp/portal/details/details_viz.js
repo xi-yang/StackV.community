@@ -16,7 +16,7 @@ var modelMap = {}; // stores models in <visualization div, model> format
 var outputApiMap = {};
 var outputApi;
 
-export function details_viz() {
+function details_viz() {
     $(function () {
         $("#dialog_policyAction").dialog({
             autoOpen: false
@@ -38,134 +38,134 @@ export function details_viz() {
         });
 
     });
-    require(["../../js/stackv/topology/model",
-        "../../js/stackv/topology/layout",
-        "../../js/stackv/topology/render",
-        "../../js/d3",
-        "../../js/stackv/utils",
-        "../../js/stackv/topology/DropDownTree",
-        "../../js/stackv/topology/ContextMenu"],
-    function (m, l, r, d3_, utils_, tree, c) {
-        var token = sessionStorage.getItem("token");
+    require(["local/stackv/topology/model",
+        "local/stackv/topology/layout",
+        "local/stackv/topology/render",
+        "local/d3",
+        "local/stackv/utils",
+        "local/stackv/topology/DropDownTree",
+        "local/stackv/topology/ContextMenu"],
+        function (m, l, r, d3_, utils_, tree, c) {
+            var token = sessionStorage.getItem("token");
 
-        $.ajax({
-            crossDomain: true,
-            type: "GET",
-            url: "/StackV-web/restapi/service/ready",
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + token);
-            },
+            $.ajax({
+                crossDomain: true,
+                type: "GET",
+                url: "/StackV-web/restapi/service/ready",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + token);
+                },
 
-            dataType: "text",
+                dataType: "text",
 
-            success: function (data, textStatus, jqXHR) {
-                if (data === "true") {
-                    //                                //alert(textStatus);
-                    layout = l;
-                    render = r;
-                    d3 = d3_;
-                    utils = utils_;
-                    map_ = utils.map_;
-                    bsShowFadingMessage = utils.bsShowFadingMessage;
-                    positionDisplayPanel = utils.positionDisplayPanel;
+                success: function (data, textStatus, jqXHR) {
+                    if (data === "true") {
+                        //                                //alert(textStatus);
+                        layout = l;
+                        render = r;
+                        d3 = d3_;
+                        utils = utils_;
+                        map_ = utils.map_;
+                        bsShowFadingMessage = utils.bsShowFadingMessage;
+                        positionDisplayPanel = utils.positionDisplayPanel;
 
-                    // possibly pass in map here later for all possible dialogs
-                    ContextMenu = c;
-                    DropDownTree = tree;
+                        // possibly pass in map here later for all possible dialogs
+                        ContextMenu = c;
+                        DropDownTree = tree;
 
-                    ModelConstructor = m;
-                    model = new ModelConstructor();
-                    model.init(1, renderModels, null, "default");
+                        ModelConstructor = m;
+                        model = new ModelConstructor();
+                        model.init(1, renderModels, null, "default");
 
-                    functionMap["ModelBrowser"] = function (o, m, e) {
-                        positionDisplayPanel(m + "_displayPanel", e);
-                        var browser = document.querySelector("#" + m + "_displayPanel");
-                        $(".displayPanel").removeClass("displayPanel-active");
-                        browser.classList.add("displayPanel-active");
-                        render.API.selectElement(o, outputApiMap[m]);
+                        functionMap["ModelBrowser"] = function (o, m, e) {
+                            positionDisplayPanel(m + "_displayPanel", e);
+                            var browser = document.querySelector("#" + m + "_displayPanel");
+                            $(".displayPanel").removeClass("displayPanel-active");
+                            browser.classList.add("displayPanel-active");
+                            render.API.selectElement(o, outputApiMap[m]);
 
-                    };
+                        };
 
-                    contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
-                    contextMenu.init();
-                    //
-                    console.log("after model.");
-                } else {
-                    displayError("Backend not Ready", d3, "va_viz", -80);
+                        contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
+                        contextMenu.init();
+                        //
+                        console.log("after model.");
+                    } else {
+                        displayError("Backend not Ready", d3, "va_viz", -80);
+                        disableButtons("va");
+                        displayError("Backend not Ready", d3, "ur_viz", -80);
+                        disableButtons("ur");
+                        displayError("Backend not Ready", d3, "ua_viz", -80);
+                        disableButtons("ua");
+                        displayError("Backend not Ready", d3, "vr_viz", -80);
+                        disableButtons("vr");
+
+                        displayError("Backend not Ready", d3, "serva_viz", -80);
+                        disableButtons("serva");
+                        displayError("Backend not Ready", d3, "servr_viz", -80);
+                        disableButtons("servr");
+                        displayError("Backend not Ready", d3, "sysa_viz", -80);
+                        disableButtons("sysa");
+                        displayError("Backend not Ready", d3, "sysr_viz", -80);
+                        disableButtons("sysr");
+                    }
+                },
+
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("Debugging: timeout at start..");
+                    // displayError("Visualization Unavailable", d3_);
+                    //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                    displayError("Unavailable", d3, "va_viz");
                     disableButtons("va");
-                    displayError("Backend not Ready", d3, "ur_viz", -80);
+                    displayError("Unavailable", d3, "ur_viz");
                     disableButtons("ur");
-                    displayError("Backend not Ready", d3, "ua_viz", -80);
+                    displayError("Unavailable", d3, "ua_viz");
                     disableButtons("ua");
-                    displayError("Backend not Ready", d3, "vr_viz", -80);
+                    displayError("Unavailable", d3, "vr_viz");
                     disableButtons("vr");
 
-                    displayError("Backend not Ready", d3, "serva_viz", -80);
+                    displayError("Unavailable", d3, "serva_viz");
                     disableButtons("serva");
-                    displayError("Backend not Ready", d3, "servr_viz", -80);
+                    displayError("Unavailable", d3, "servr_viz");
                     disableButtons("servr");
-                    displayError("Backend not Ready", d3, "sysa_viz", -80);
+                    displayError("Unavailable", d3, "sysa_viz");
                     disableButtons("sysa");
-                    displayError("Backend not Ready", d3, "sysr_viz", -80);
+                    displayError("Unavailable", d3, "sysr_viz");
                     disableButtons("sysr");
                 }
-            },
+            });
+            $(".displayPanelCloser").on("click", function () {
+                $(".displayPanel").removeClass("displayPanel-active");
 
-            error: function (jqXHR, textStatus, errorThrown) {
-                console.log("Debugging: timeout at start..");
-                // displayError("Visualization Unavailable", d3_);
-                //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
-                displayError("Unavailable", d3, "va_viz");
-                disableButtons("va");
-                displayError("Unavailable", d3, "ur_viz");
-                disableButtons("ur");
-                displayError("Unavailable", d3, "ua_viz");
-                disableButtons("ua");
-                displayError("Unavailable", d3, "vr_viz");
-                disableButtons("vr");
+            });
 
-                displayError("Unavailable", d3, "serva_viz");
-                disableButtons("serva");
-                displayError("Unavailable", d3, "servr_viz");
-                disableButtons("servr");
-                displayError("Unavailable", d3, "sysa_viz");
-                disableButtons("sysa");
-                displayError("Unavailable", d3, "sysr_viz");
-                disableButtons("sysr");
-            }
-        });
-        $(".displayPanelCloser").on("click", function () {
-            $(".displayPanel").removeClass("displayPanel-active");
+            //                            document.getElementById("displayPanelCloser").onclick = function() {
+            //                              // $("#displayPanel").removeClass( "displayPanel-active");
+            //                                $(".displayPanel").removeClass("displayPanel-active");
+            //
+            //                            };
 
         });
-
-        //                            document.getElementById("displayPanelCloser").onclick = function() {
-        //                              // $("#displayPanel").removeClass( "displayPanel-active");
-        //                                $(".displayPanel").removeClass("displayPanel-active");
-        //
-        //                            };
-
-    });
 }
 
 function make_display_panel(div_id, prefix) {
     var display_panel = "<div class=\"displayPanel\" id=\"" + prefix + "_displayPanel\"> " +
-            "<div class=\"displayPanelBar\">" +
-            "<div class=\"displayPanelCloserBar\"> " +
-            "<i id=\"displayPanelCloser\" class=\"fa fa-times displayPanelCloser\" aria-hidden=\"true\"></i>" +
-            "</div>" +
-            "</div>" +
-            "<div class=\"displayPanel-contents\">" +
-            "<div class=\"displayName\" id=\"" + prefix + "_displayName\"></div>" +
-            "   <div class=\"treeMenu-container\" id=\"" + prefix + "_treeMenu\"></div>    " +
-            "</div>" +
-            "<div class=\"displayPanel-actions-container\">" +
-            "<div class=\"displayPanel-actions\">" +
-            "  <button id=\"" + prefix + "_backButton\">Back</button>" +
-            "   <button id=\"" + prefix + "_forwardButton\">Forward</button>" +
-            "</div>" +
-            " </div>" +
-            "  </div>  ";
+        "<div class=\"displayPanelBar\">" +
+        "<div class=\"displayPanelCloserBar\"> " +
+        "<i id=\"displayPanelCloser\" class=\"fa fa-times displayPanelCloser\" aria-hidden=\"true\"></i>" +
+        "</div>" +
+        "</div>" +
+        "<div class=\"displayPanel-contents\">" +
+        "<div class=\"displayName\" id=\"" + prefix + "_displayName\"></div>" +
+        "   <div class=\"treeMenu-container\" id=\"" + prefix + "_treeMenu\"></div>    " +
+        "</div>" +
+        "<div class=\"displayPanel-actions-container\">" +
+        "<div class=\"displayPanel-actions\">" +
+        "  <button id=\"" + prefix + "_backButton\">Back</button>" +
+        "   <button id=\"" + prefix + "_forwardButton\">Forward</button>" +
+        "</div>" +
+        " </div>" +
+        "  </div>  ";
     var div = document.getElementById(div_id);
     div.insertAdjacentHTML("beforeend", display_panel);
     //$("#" + div_id).append(display_panel);
@@ -174,34 +174,34 @@ function make_display_panel(div_id, prefix) {
 
 function make_viz(div_id, prefix) {
     var viz = "<div id=\"" + prefix + "_viz_div\" class=\"hidden details_viz_div\">" +
-            "<div class=\"hover_div\" id=\"hoverdiv_" + prefix + "_viz\"></div>" +
-            "<svg class =\"details_viz\" id= \"" + prefix + "_viz\"> " +
-            "<defs>" +
-            "  <marker id=\"marker_arrow_" + prefix + "_viz\" markerWidth=\"10\" markerHeight=\"10\" refx=\"15\" refy=\"3\" orient=\"auto\" markerUnits=\"strokeWidth\">" +
-            "      <path d=\"M0,0 L0,6 L9,3 z\" fill=\"black\" />" +
-            "  </marker>" +
-            "</defs>" +
-            "<g id=\"transform_" + prefix + "_viz\"> " +
-            "<g id=\"topology_" + prefix + "_viz\"/> " +
-            "<g id=\"edge1_" + prefix + "_viz\"/> " +
-            "<g id=\"anchor_" + prefix + "_viz\"/> " +
-            "<g id=\"node_" + prefix + "_viz\"/> " +
-            "<g id=\"dialogBox_" + prefix + "_viz\"/> " +
-            "<g id=\"volumeDialogBox_" + prefix + "_viz\"/> " +
-            "<g id=\"switchPopup_" + prefix + "_viz\"/> " +
-            "<g id=\"parentPort_" + prefix + "_viz\"/> " +
-            "<g id=\"edge2_" + prefix + "_viz\" />" +
-            "<g id=\"port_" + prefix + "_viz\"/>" +
-            "<g id=\"volume_" + prefix + "_viz\"/></g>" +
-            "</svg>";
+        "<div class=\"hover_div\" id=\"hoverdiv_" + prefix + "_viz\"></div>" +
+        "<svg class =\"details_viz\" id= \"" + prefix + "_viz\"> " +
+        "<defs>" +
+        "  <marker id=\"marker_arrow_" + prefix + "_viz\" markerWidth=\"10\" markerHeight=\"10\" refx=\"15\" refy=\"3\" orient=\"auto\" markerUnits=\"strokeWidth\">" +
+        "      <path d=\"M0,0 L0,6 L9,3 z\" fill=\"black\" />" +
+        "  </marker>" +
+        "</defs>" +
+        "<g id=\"transform_" + prefix + "_viz\"> " +
+        "<g id=\"topology_" + prefix + "_viz\"/> " +
+        "<g id=\"edge1_" + prefix + "_viz\"/> " +
+        "<g id=\"anchor_" + prefix + "_viz\"/> " +
+        "<g id=\"node_" + prefix + "_viz\"/> " +
+        "<g id=\"dialogBox_" + prefix + "_viz\"/> " +
+        "<g id=\"volumeDialogBox_" + prefix + "_viz\"/> " +
+        "<g id=\"switchPopup_" + prefix + "_viz\"/> " +
+        "<g id=\"parentPort_" + prefix + "_viz\"/> " +
+        "<g id=\"edge2_" + prefix + "_viz\" />" +
+        "<g id=\"port_" + prefix + "_viz\"/>" +
+        "<g id=\"volume_" + prefix + "_viz\"/></g>" +
+        "</svg>";
 
     if (prefix === "va") {
         viz += "<button class=\"details-viz-button btn btn-default\" id=\"manifest_button\" onclick=\"showManifest()\">Display Manifest</button>";
     }
 
     viz += "<button class=\"details-viz-button btn btn-default details-viz-recenter-button\" id=\"" + prefix + "_viz_recenter_button\">Recenter</button>" +
-            "<button  class=\"details-viz-button btn btn-default\" id=\"" + prefix + "_viz_toggle_model\">View Text Model</button>" +
-            "</div>";
+        "<button  class=\"details-viz-button btn btn-default\" id=\"" + prefix + "_viz_toggle_model\">View Text Model</button>" +
+        "</div>";
 
     $("#" + div_id).append(viz);
 }
@@ -279,7 +279,7 @@ function drawGraph(outputApi, model2) {
         outputApi.setZoom(.8);
         render.doRender(outputApi, model2, false, modelMap, outputApiMap);
     }
-//                animStart(30);
+    //                animStart(30);
 }
 function displayError(error, d3_obj, viz_id, offset) {
     if (viz_id.includes("serv") || viz_id.includes("sys")) {
@@ -356,8 +356,8 @@ function createTextToggle(prefix, textModel) {
     }
 
     var textModelDiv = "<div id=\"" + prefix + "_text_div\" class=\"hide details-viz-text-model\"> <pre class=\"details-viz-pre\" style=\"width: " + width +
-            "px; height: " + height + ";overflow:scroll;\"> " + textModel
-            + "</pre></div>";
+        "px; height: " + height + ";overflow:scroll;\"> " + textModel
+        + "</pre></div>";
     viz_svg.after(textModelDiv);
 
     button.click(function (evt) {
@@ -715,37 +715,37 @@ function outputApi_(renderAPI, contextMenu, svg) {
             return;
         }
         switch (n.getType()) {
-        case "Subnet":
-            var forms = document.getElementsByName("subnets");
-            if (forms.length === 0) {
-                break;
-            }
-            if (forms.length > 1) {
-                console.log("More than 1 subnets forms");
-                break;
-            }
-            var form = forms[0];
-            var subnetStrs = [];
-            var toToggle = n.getNameBrief();
-            var add = true;
-            //If the form is already empty, we would add an extranous empty line
-            if (form.value.trim() !== "") {
-                map_(form.value.split("\n"), function (subnetStr) {
-                    if (subnetStr.trim() === toToggle) {
-                        add = false;
-                    } else {
-                        subnetStrs.push(subnetStr);
-                    }
+            case "Subnet":
+                var forms = document.getElementsByName("subnets");
+                if (forms.length === 0) {
+                    break;
+                }
+                if (forms.length > 1) {
+                    console.log("More than 1 subnets forms");
+                    break;
+                }
+                var form = forms[0];
+                var subnetStrs = [];
+                var toToggle = n.getNameBrief();
+                var add = true;
+                //If the form is already empty, we would add an extranous empty line
+                if (form.value.trim() !== "") {
+                    map_(form.value.split("\n"), function (subnetStr) {
+                        if (subnetStr.trim() === toToggle) {
+                            add = false;
+                        } else {
+                            subnetStrs.push(subnetStr);
+                        }
 
-                });
-            }
-            if (add) {
-                subnetStrs.push(toToggle);
-            }
-            form.value = subnetStrs.join("\n");
-            break;
-        default:
-            console.log("Unhandled type in formSelect: " + n.getType());
+                    });
+                }
+                if (add) {
+                    subnetStrs.push(toToggle);
+                }
+                form.value = subnetStrs.join("\n");
+                break;
+            default:
+                console.log("Unhandled type in formSelect: " + n.getType());
         }
     };
 
@@ -780,7 +780,7 @@ function outputApi_(renderAPI, contextMenu, svg) {
         }
     });
 
-    $(".displayPanel").draggable({handle: ".displayPanelBar"});
+    $(".displayPanel").draggable({ handle: ".displayPanelBar" });
 }
 
 
@@ -844,7 +844,7 @@ function buildTree(root, level, visited, model) {
     for (var i = 0; i < misc.length; i++) {
         if (!containsElement(visited, (misc[i]))) {
             if (misc[i].relationship_to[root.getName()] === "exportTo" ||
-                    misc[i].relationship_to[root.getName()] === "importFrom") {
+                misc[i].relationship_to[root.getName()] === "importFrom") {
 
                 if (misc[i].getType().includes("Policy")) {
                     misc[i].level = level;

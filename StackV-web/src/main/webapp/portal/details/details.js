@@ -20,19 +20,28 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
-/* global XDomainRequest, TweenLite, Power2, Mousetrap */
+/* global XDomainRequest, TweenLite, Power2, Mousetrap, details_viz */
 import { keycloak } from "../nexus";
 import { loadLoggingDataTable, reloadLogs } from "../logging";
-import { resumeRefresh, setRefresh, pauseRefresh, refreshSync } from "../refresh";
-//import { details_viz } from "./details_viz";
+import { resumeRefresh, initRefresh, pauseRefresh, refreshSync } from "../refresh";
+
+import React from "react";
+import ReactDOM from "react-dom";
+import ButtonPanel from "./buttons";
 
 // Tweens
-var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
-    paused: true, top: "0px", opacity: "1", display: "block"});
-var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut,
-    paused: true, left: "0px", opacity: "1", display: "block"});
-var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut,
-    paused: true, right: "0px", opacity: "1", display: "block"});
+var tweenDetailsPanel = new TweenLite("#details-panel", 1, {
+    ease: Power2.easeInOut,
+    paused: true, top: "0px", opacity: "1", display: "block"
+});
+var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {
+    ease: Power2.easeInOut,
+    paused: true, left: "0px", opacity: "1", display: "block"
+});
+var tweenVisualPanel = new TweenLite("#visual-panel", 1, {
+    ease: Power2.easeInOut,
+    paused: true, right: "0px", opacity: "1", display: "block"
+});
 
 var view = "center";
 var $intentModal = $("#details-intent-modal");
@@ -119,64 +128,64 @@ Mousetrap.bind({
 });
 function viewShift(dir) {
     switch (view) {
-    case "left":
-        if (dir === "right") {
-            newView("details");
-        }
-        break;
-    case "center":
-        switch (dir) {
         case "left":
-            newView("logging");
+            if (dir === "right") {
+                newView("details");
+            }
+            break;
+        case "center":
+            switch (dir) {
+                case "left":
+                    newView("logging");
+                    break;
+                case "right":
+                    newView("visual");
+                    break;
+            }
+            view = dir;
             break;
         case "right":
-            newView("visual");
+            if (dir === "left") {
+                newView("details");
+            }
             break;
-        }
-        view = dir;
-        break;
-    case "right":
-        if (dir === "left") {
-            newView("details");
-        }
-        break;
     }
 }
 function newView(panel) {
     resetView();
     switch (panel) {
-    case "logging":
-        tweenLoggingPanel.play();
-        $("#logging-tab").addClass("active");
-        view = "left";
-        break;
-    case "details":
-        tweenDetailsPanel.play();
-        $("#sub-details-tab").addClass("active");
-        view = "center";
-        break;
-    case "visual":
-        tweenVisualPanel.play();
-        $("#visual-tab").addClass("active");
-        view = "right";
-        break;
+        case "logging":
+            tweenLoggingPanel.play();
+            $("#logging-tab").addClass("active");
+            view = "left";
+            break;
+        case "details":
+            tweenDetailsPanel.play();
+            $("#sub-details-tab").addClass("active");
+            view = "center";
+            break;
+        case "visual":
+            tweenVisualPanel.play();
+            $("#visual-tab").addClass("active");
+            view = "right";
+            break;
     }
 }
 function resetView() {
     switch (view) {
-    case "left":
-        $("#sub-nav .active").removeClass("active");
-        tweenLoggingPanel.reverse();
-        break;
-    case "center":
-        $("#sub-nav .active").removeClass("active");
-        tweenDetailsPanel.reverse();
-        break;
-    case "right":
-        closeVisTabs();
-        $("#sub-nav .active").removeClass("active");
-        tweenVisualPanel.reverse();
-        break;
+        case "left":
+            $("#sub-nav .active").removeClass("active");
+            tweenLoggingPanel.reverse();
+            break;
+        case "center":
+            $("#sub-nav .active").removeClass("active");
+            tweenDetailsPanel.reverse();
+            break;
+        case "right":
+            closeVisTabs();
+            $("#sub-nav .active").removeClass("active");
+            tweenVisualPanel.reverse();
+            break;
     }
 }
 
@@ -184,22 +193,18 @@ function resetView() {
 
 export function loadDetails() {
     $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
-        setRefresh($("#refresh-timer").val());
+        initRefresh($("#refresh-timer").val());
         switch (view) {
-        case "left":
-            $("#logging-tab").addClass("active");
-            break;
-        case "center":
-            $("#sub-details-tab").addClass("active");
-            break;
-        case "right":
-            $("#visual-tab").addClass("active");
-            break;
+            case "left":
+                $("#logging-tab").addClass("active");
+                break;
+            case "center":
+                $("#sub-details-tab").addClass("active");
+                break;
+            case "right":
+                $("#visual-tab").addClass("active");
+                break;
         }
-
-
-
-
 
         $("#logging-tab").click(function () {
             resetView();
@@ -290,7 +295,7 @@ function buildDeltaTable(type) {
     var cell = document.createElement("td");
     cell.colSpan = "3";
     cell.innerHTML = "<button  class=\"details-model-toggle btn btn-default\" onclick=\"toggleTextModel('."
-            + type.toLowerCase() + "-delta-table', '#delta-" + type + "');\">Toggle Text Model</button>";
+        + type.toLowerCase() + "-delta-table', '#delta-" + type + "');\">Toggle Text Model</button>";
     row.appendChild(cell);
     tbody.appendChild(row);
 
@@ -301,7 +306,7 @@ function buildDeltaTable(type) {
 }
 
 function loadVisualization() {
-    //details_viz();
+    details_viz();
     if (!(subState === "INIT" || (subState === "FAILED" && lastState === "INIT"))) {
         $("#details-viz").load("/StackV-web/details_viz.html", function () {
             document.getElementById("visual-panel").innerHTML = "";
@@ -375,129 +380,129 @@ function loadVisualization() {
 
                 let a;
                 switch (viz_type) {
-                case "System Addition":
-                    table.id = "sd_System_Addition";
+                    case "System Addition":
+                        table.id = "sd_System_Addition";
 
-                    a = buildHeaderLink("sd_System_Addition_Link", "Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_System_Addition_Viz";
+                        a = buildHeaderLink("sd_System_Addition_Link", "Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_System_Addition_Viz";
 
-                    vizRow.appendChild(additionCell);
+                        vizRow.appendChild(additionCell);
 
-                    if (!$("#sysa_viz_div").hasClass("emptyViz")) {
-                        var sysa_viz_div = document.getElementById("sysa_viz_div");
-                        additionCell.appendChild(sysa_viz_div);
-                        sysa_viz_div.classList.remove("hidden");
-                    }
-                    break;
-                case "System Reduction":
-                    table.id = "sd_System_Reduction";
+                        if (!$("#sysa_viz_div").hasClass("emptyViz")) {
+                            var sysa_viz_div = document.getElementById("sysa_viz_div");
+                            additionCell.appendChild(sysa_viz_div);
+                            sysa_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                    case "System Reduction":
+                        table.id = "sd_System_Reduction";
 
-                    a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_System_Reduction_Viz";
+                        a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_System_Reduction_Viz";
 
-                    vizRow.appendChild(reductionCell);
+                        vizRow.appendChild(reductionCell);
 
-                    if (!$("#sysr_viz_div").hasClass("emptyViz")) {
-                        //  $(".system-delta-table").removeClass("hide");
-                        var sysr_viz_div = document.getElementById("sysr_viz_div");
-                        reductionCell.appendChild(sysr_viz_div);
-                        sysr_viz_div.classList.remove("hidden");
-                    }
+                        if (!$("#sysr_viz_div").hasClass("emptyViz")) {
+                            //  $(".system-delta-table").removeClass("hide");
+                            var sysr_viz_div = document.getElementById("sysr_viz_div");
+                            reductionCell.appendChild(sysr_viz_div);
+                            sysr_viz_div.classList.remove("hidden");
+                        }
 
-                    break;
-                case "Service Addition":
-                    table.id = "sd_Service_Addition";
+                        break;
+                    case "Service Addition":
+                        table.id = "sd_Service_Addition";
 
-                    a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Service_Addition_Viz";
+                        a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Service_Addition_Viz";
 
-                    vizRow.appendChild(additionCell);
+                        vizRow.appendChild(additionCell);
 
-                    if (!$("#serva_viz_div").hasClass("emptyViz")) {
-                        // $(".service-delta-table").removeClass("hide");
-                        var serva_viz_div = document.getElementById("serva_viz_div");
-                        additionCell.appendChild(serva_viz_div);
-                        serva_viz_div.classList.remove("hidden");
-                    }
+                        if (!$("#serva_viz_div").hasClass("emptyViz")) {
+                            // $(".service-delta-table").removeClass("hide");
+                            var serva_viz_div = document.getElementById("serva_viz_div");
+                            additionCell.appendChild(serva_viz_div);
+                            serva_viz_div.classList.remove("hidden");
+                        }
 
-                    break;
-                case "Service Reduction":
-                    table.id = "sd_Service_Reduction";
+                        break;
+                    case "Service Reduction":
+                        table.id = "sd_Service_Reduction";
 
-                    a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Service_Addition_Viz";
+                        a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Service_Addition_Viz";
 
-                    vizRow.appendChild(reductionCell);
+                        vizRow.appendChild(reductionCell);
 
-                    if (!$("#servr_viz_div").hasClass("emptyViz")) {
-                        var servr_viz_div = document.getElementById("servr_viz_div");
-                        reductionCell.appendChild(servr_viz_div);
-                        servr_viz_div.classList.remove("hidden");
-                    }
-                    break;
-                case "Verification Addition":
-                    a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Unverified_Addition_Viz";
+                        if (!$("#servr_viz_div").hasClass("emptyViz")) {
+                            var servr_viz_div = document.getElementById("servr_viz_div");
+                            reductionCell.appendChild(servr_viz_div);
+                            servr_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                    case "Verification Addition":
+                        a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Unverified_Addition_Viz";
 
-                    vizRow.appendChild(additionCell);
+                        vizRow.appendChild(additionCell);
 
-                    a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Verified_Addition_Viz";
+                        a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Verified_Addition_Viz";
 
-                    vizRow.appendChild(reductionCell);
+                        vizRow.appendChild(reductionCell);
 
 
-                    if (!$("#va_viz_div").hasClass("emptyViz") || !$("#ua_viz_div").hasClass("emptyViz")) {
-                        var va_viz_div = document.getElementById("va_viz_div");
-                        var ua_viz_div = document.getElementById("ua_viz_div");
+                        if (!$("#va_viz_div").hasClass("emptyViz") || !$("#ua_viz_div").hasClass("emptyViz")) {
+                            var va_viz_div = document.getElementById("va_viz_div");
+                            var ua_viz_div = document.getElementById("ua_viz_div");
 
-                        additionCell.appendChild(ua_viz_div);
-                        reductionCell.appendChild(va_viz_div);
+                            additionCell.appendChild(ua_viz_div);
+                            reductionCell.appendChild(va_viz_div);
 
-                        ua_viz_div.classList.remove("hidden");
-                        va_viz_div.classList.remove("hidden");
+                            ua_viz_div.classList.remove("hidden");
+                            va_viz_div.classList.remove("hidden");
 
-                    }
+                        }
 
-                    break;
-                case "Verification Reduction":
-                    a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Unverified_Reduction_Viz";
+                        break;
+                    case "Verification Reduction":
+                        a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Unverified_Reduction_Viz";
 
-                    vizRow.appendChild(additionCell);
+                        vizRow.appendChild(additionCell);
 
-                    a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Verified_Reduction_Viz";
+                        a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Verified_Reduction_Viz";
 
-                    vizRow.appendChild(reductionCell);
+                        vizRow.appendChild(reductionCell);
 
-                    if (!$("#vr_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {
-                        var ur_viz_div = document.getElementById("ur_viz_div");
-                        var vr_viz_div = document.getElementById("vr_viz_div");
+                        if (!$("#vr_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {
+                            var ur_viz_div = document.getElementById("ur_viz_div");
+                            var vr_viz_div = document.getElementById("vr_viz_div");
 
-                        additionCell.appendChild(ur_viz_div);
-                        reductionCell.appendChild(vr_viz_div);
+                            additionCell.appendChild(ur_viz_div);
+                            reductionCell.appendChild(vr_viz_div);
 
-                        ur_viz_div.classList.remove("hidden");
-                        vr_viz_div.classList.remove("hidden");
-                    }
-                    break;
+                            ur_viz_div.classList.remove("hidden");
+                            vr_viz_div.classList.remove("hidden");
+                        }
+                        break;
                 }
                 if (viz_type.includes("Verification")) {
                     headerRow.appendChild(additionHeader);
@@ -670,15 +675,15 @@ function reloadData() {
         var timerSetting = $("#refresh-timer").val();
         if (timerSetting > 15) {
             switch (view) {
-            case "left":
-                /*tweenLoggingPanel.reverse();*/
-                break;
-            case "center":
-                tweenDetailsPanel.reverse();
-                break;
-            case "right":
-                tweenVisualPanel.reverse();
-                break;
+                case "left":
+                    /*tweenLoggingPanel.reverse();*/
+                    break;
+                case "center":
+                    tweenDetailsPanel.reverse();
+                    break;
+                case "right":
+                    tweenVisualPanel.reverse();
+                    break;
             }
             setTimeout(function () {
                 reloadLogs();
@@ -708,10 +713,10 @@ function startDetailsEngine(uuid) {
     attachListeners();
 
     updateData();
-    renderDetails();
+    renderDetails(uuid);
 }
 
-function renderDetails() {
+function renderDetails(uuid) {
     if (subState === "FAILED") {
         if (lastState !== null) {
             $subState.html(subState + " (after " + lastState + ")");
@@ -738,7 +743,7 @@ function renderDetails() {
     $instruction.html(instruction);
 
     // Buttons
-    $(".instance-command").addClass("hide");
+    /*$(".instance-command").addClass("hide");
     for (let i in buttons) {
         var button = buttons[i];
         if (button === "verify" && verificationHasDrone) {
@@ -750,14 +755,14 @@ function renderDetails() {
         } else {
             $("#" + button).removeClass("hide");
         }
-    }
+    }*/
 
-    //loadVisualization();
+    loadVisualization();
 }
 
 // --------------------
 
-function updateData() {
+export function updateData() {
     // Frontend superstate and metadata
     let apiUrl = window.location.origin + "/StackV-web/restapi/app/details/" + refUUID + "/instance";
     $.ajax({
@@ -778,6 +783,7 @@ function updateData() {
             $("#instance-alias").html(alias);
             $("#instance-uuid").html(refUUID);
             $("#instance-owner").html(owner);
+            $("#instance-superstate").html(superState);
             $("#instance-creation-time").html(creation);
 
             if (intent.length === 0) {
@@ -840,6 +846,11 @@ function updateData() {
             });
         }
     });
+
+    ReactDOM.render(
+        React.createElement(ButtonPanel, { uuid: refUUID, state: superState + " - " + subState, last: lastState, verify: verificationHasDrone }, null),
+        document.getElementById("button-panel")
+    );
 
     $.ajax({
         type: "GET",
@@ -944,15 +955,15 @@ function executeCommand(command) {
         }
     });
     switch (command) {
-    case "delete":
-    case "force_delete":
-        break;
-    default:
-        setTimeout(function () {
-            $(".instance-command").attr("disabled", false);
-            resumeRefresh();
-            reloadData();
-        }, 3000);
-        break;
+        case "delete":
+        case "force_delete":
+            break;
+        default:
+            setTimeout(function () {
+                $(".instance-command").attr("disabled", false);
+                resumeRefresh();
+                reloadData();
+            }, 3000);
+            break;
     }
 }
