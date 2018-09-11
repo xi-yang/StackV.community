@@ -84,36 +84,52 @@
             </div>
         </div>
         <div id="installed-panel">
-            <div id="driver-template-panel">
-                <div id="saved-tab" class="tab-pane fadeIn">
+            <div class="tab-content" id="installed-content">
+                <div id="template-tab" class="tab-pane fadeIn active">
                     <table class="management-table">
                         <thead>
                             <tr>
-                                <th>Driver Template Name</th>
-                                <th>Driver Template Description</th>
+                                <th>Driver ID</th>
+                                <th>Driver Type</th>
                                 <th></th>
                             </tr>
                         </thead>
-                        <tbody id="saved-table">
-
+                        <tbody id="installed-body">
+                            <script></script>
                         </tbody>
                     </table>
                 </div>
             </div>
+        </div>
+
+        <div id="driver-template-panel">
+            <div id="saved-tab" class="tab-pane fadeIn">
+                <table class="management-table">
+                    <thead>
+                        <tr>
+                            <th>Driver Template Name</th>
+                            <th>Driver Template Description</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="saved-table">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
 
-            <div id="driver-content-panel" class="hidden">
-                <div class="modal-content" style="overflow: auto;max-height: 100%;">
-                    <div class="modal-header">
-                        <h3 id="info-panel-title"></h3>
-                    </div>
-                    <div class="modal-body " style="background-color:#FFFFFF">
-                        <div class="tab-content" style="background-color:#FFFFFF">
-                            <div id="info-panel-body" class="tab-pane fadeIn" style="display:block;background-color:#FFFFFF">
-                                <div id="install-content" class="tab-pane fadeIn" style="background-color:#FFFFFF">
-                                    <div id='install-type' style="background-color:#FFFFFF">
-                                    </div>
-                                    <div id='install-type-right' style="background-color:#FFFFFF"></div>
+        <div id="driver-content-panel" class="hidden">
+            <div class="modal-content" style="overflow: auto;max-height: 100%;">
+                <div class="modal-header">
+                    <h3 id="info-panel-title"></h3>
+                </div>
+                <div class="modal-body " style="background-color:#FFFFFF">
+                    <div class="tab-content" style="background-color:#FFFFFF">
+                        <div id="info-panel-body" class="tab-pane fadeIn" style="display:block;background-color:#FFFFFF">
+                            <div id="install-content" class="tab-pane fadeIn" style="background-color:#FFFFFF">
+                                <div id='install-type' style="background-color:#FFFFFF">
                                 </div>
                                 <div id='install-type-right' style="background-color:#FFFFFF"></div>
                             </div>
@@ -173,4 +189,5 @@
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
     <script src="/StackV-web/js/bundles/StackV-main.bundle.js"></script>
 </body>
+
 </html>
