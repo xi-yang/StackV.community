@@ -26,7 +26,7 @@ import { resumeRefresh, pauseRefresh } from "./refresh";
 
 import React from "react";
 import ReactDOM from "react-dom";
-import ButtonPanel from "./buttons";
+import ButtonPanel from "./details/buttons";
 
 /*ReactDOM.render(
     React.createElement(ButtonPanel, { test: "yes" }, null),
