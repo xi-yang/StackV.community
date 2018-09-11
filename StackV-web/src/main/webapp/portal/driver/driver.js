@@ -24,7 +24,7 @@
 /* global XDomainRequest, TweenLite, Power2, Mousetrap, swal */
 import { keycloak } from "../nexus";
 import { loadLogs } from "../logging";
-import { setRefresh, refreshSync } from "../refresh";
+import { initRefresh, refreshSync } from "../refresh";
 
 var tweenInstalledPanel = new TweenLite("#installed-panel", 1, { ease: Power2.easeInOut, paused: true, top: "0px" });
 var tweenAddPanel = new TweenLite("#driver-add-panel", 1, { ease: Power2.easeInOut, paused: true, left: "0px" });
@@ -150,7 +150,7 @@ export function loadDriverPortal() {
     });
 
     $("#sub-nav").load("/StackV-web/nav/driver_navbar.html", function () {
-        setRefresh($("#refresh-timer").val());
+        initRefresh($("#refresh-timer").val());
         switch (view) {
             case "left":
                 $("#driver-add-tab").addClass("active");
@@ -193,7 +193,7 @@ export function loadDriverPortal() {
         clearPanel();
         activateSide();
 
-        switch ($(this).id()) {
+        switch ($(this).attr("id")) {
             case "button-install-aws":
                 installAWS();
                 changeNameInst();
@@ -1267,7 +1267,7 @@ function getAllDetails() {
                 row.appendChild(drivername);
                 row.appendChild(description);
                 row.appendChild(cell3);
-                //table.appendChild(row);
+                table.appendChild(row);
             }
 
             if (view === "center") {

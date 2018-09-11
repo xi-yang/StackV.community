@@ -812,6 +812,7 @@ export function updateData() {
         },
         success: function (result) {
             subState = result;
+            $subState.html(subState);
         }
     });
 
