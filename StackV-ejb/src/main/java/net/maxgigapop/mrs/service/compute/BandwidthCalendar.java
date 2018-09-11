@@ -374,8 +374,8 @@ public class BandwidthCalendar {
         long duration = end - start; 
         long deadline = duration; // offset from start
         BandwidthSchedule schedule;
-        if (options.containsKey("product-mbytes")) {
-            String strProductMbytes = (String)options.get("product-mbytes");
+        if (options.containsKey("tbp-mbytes")) {
+            String strProductMbytes = (String)options.get("tbp-mbytes");
             Long timeBandwidthProductBits = Long.getLong(strProductMbytes)*8000000;
             List<BandwidthSchedule> boxedSchedules = pathAvailBwCal.getTimeBandwidthProductSchedules(timeBandwidthProductBits, start, deadline);
             if (options.containsKey("use-highest-bandwidth") && ((String)options.get("use-highest-bandwidth")).equalsIgnoreCase("true")) {

@@ -108,6 +108,15 @@ public class SenseServiceQuery {
                     for (Object objConn: jsonConns) {
                         JSONObject jsonConn = (JSONObject) objConn;
                         if (jsonConn.get("name").equals(connName)) {
+                            // flexible bandwidth
+                            if (jsonConn.containsKey("bandwidth")) {
+                                jsonConn.remove("bandwidth");
+                            }
+                            JSONObject jsonBwProfile = new JSONObject();
+                            jsonBwProfile.put("qos_class", "anyAvailable");
+                            jsonBwProfile.put("capacity", "1");
+                            jsonConn.put("bandwidth", jsonBwProfile);
+                            // flexible schedule
                             JSONObject jsonSchedule;
                             if (jsonConn.containsKey("schedule")) {
                                 jsonSchedule = (JSONObject) jsonConn.get("schedule");
@@ -121,11 +130,11 @@ public class SenseServiceQuery {
                             if (option.containsKey("end-before")) {
                                 jsonSchedule.put("end", (String) option.get("end-before"));
                             }
-                            if (option.containsKey("product-mbytes")) {
+                            if (option.containsKey("tbp-mbytes")) {
                                 if (!jsonSchedule.containsKey("options")) {
                                     jsonSchedule.put("options", new JSONObject());
                                 }
-                                ((JSONObject) jsonSchedule.get("options")).put("product-mbytes", (String) option.get("product-mbytes"));
+                                ((JSONObject) jsonSchedule.get("options")).put("tbp-mbytes", (String) option.get("tbp-mbytes"));
                                 if (option.containsKey("bandwidth-mbps >=")) {
                                     ((JSONObject) jsonSchedule.get("options")).put("bandwidth-mbps >=", (String) option.get("bandwidth-mbps >="));
                                 }
