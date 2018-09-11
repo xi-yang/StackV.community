@@ -23,7 +23,7 @@ div#driver-add-panel {
     text-align: left;
 }
 div#driver-template-panel {
-    right: 0%;
+    right: -100%;
 }
 #driver-content-panel {
     top: 5%;
