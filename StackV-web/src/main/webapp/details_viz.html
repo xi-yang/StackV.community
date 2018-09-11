@@ -28,28 +28,29 @@
     .hover_div {
         position: fixed;
         visibility: hidden;
-        background-color: rgba(255,255,255,.85);
+        background-color: rgba(255, 255, 255, .85);
         color: #404040;
         border: 1px solid #999;
         padding: 7px;
-        /* stop unintentional highlighting */ 
+        /* stop unintentional highlighting */
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
 
     }
+
     .hover_div::selection {
         background: none;
 
-    } 
-
-    .details_viz {
-        width:100%;
-        height:100%;
     }
 
-    .inactive_details_viz td{
+    .details_viz {
+        width: 100%;
+        height: 100%;
+    }
+
+    .inactive_details_viz td {
         border-top: 0px;
         background-color: #777;
     }
@@ -57,6 +58,7 @@
     .inactive_details_viz th {
         color: #ccc;
     }
+
     /****/
 
     /*#tagDialogBar {
@@ -75,40 +77,53 @@
       margin-top:10px;
     }*/
     .displayPanel {
-        text-align:center;
-        background-color:#EDEDED;
-        width:25%;
+        text-align: center;
+        background-color: #EDEDED;
+        width: 25%;
         /*  height:30%;*/
-        display:none;
-        position:fixed;
+        display: none;
+        position: fixed;
         top: 30%;
         left: 30%;
         margin-top: -50px;
         margin-left: -50px;
         border: 1px inset #B5B1B1;
-        z-index:9999;
+        z-index: 9999;
     }
 
-    .displayPanel.displayPanel-active {display:block;}
+    .displayPanel.displayPanel-active {
+        display: block;
+    }
+
     .urnLink {
-        color:blue;
-        cursor:pointer;
+        color: blue;
+        cursor: pointer;
         overflow: auto;
         word-wrap: break-word;
     }
+
     .clicked {
-        color:red;
+        color: red;
         text-decoration: underline;
     }
-    .urnLink:hover { }
-    .urnLink:visited {color:purple }
 
-    .panelElementProperty{font-weight:bold;}
-    .dropDownArrow {cursor:pointer;}
+    .urnLink:hover {}
 
-    .treeMenu{
+    .urnLink:visited {
+        color: purple
+    }
 
-        margin-left:15px;
+    .panelElementProperty {
+        font-weight: bold;
+    }
+
+    .dropDownArrow {
+        cursor: pointer;
+    }
+
+    .treeMenu {
+
+        margin-left: 15px;
         text-align: left;
         /*                min-height:150px;
                         max-height:250px;
@@ -116,14 +131,16 @@
                         overflow: -moz-scrollbars-vertical;
                         clear:both;*/
     }
+
     .treeMenu-container {
-        min-height:150px;
-        max-height:250px;
-        overflow-y:scroll;
+        min-height: 150px;
+        max-height: 250px;
+        overflow-y: scroll;
         overflow: -moz-scrollbars-vertical;
-        clear:both;
+        clear: both;
         /* webkit scrollbar stuff */
     }
+
     .displayName {
         text-align: center;
         visibility: visible;
@@ -144,31 +161,36 @@
     }
 
     .displayPanelBar {
-        width:100%;
-        cursor:default;
-    }
-    .displayPanelCloser{
-        color:grey;
-        cursor:pointer;
+        width: 100%;
+        cursor: default;
     }
 
-    .displayPanelCloserBar{
-        padding-left:95%;
+    .displayPanelCloser {
+        color: grey;
+        cursor: pointer;
+    }
+
+    .displayPanelCloserBar {
+        padding-left: 95%;
         border-bottom: black 1px solid;
     }
-    .displayPanel-contents{
+
+    .displayPanel-contents {
         padding-right: 3%;
     }
-    .details-viz-button{
-        float:right;
+
+    .details-viz-button {
+        float: right;
     }
+
     #definition_svg {
         height: 0;
         position: absolute;
         width: 0;
     }
-    .jSonDialog{
-        text-align:left;
+
+    .jSonDialog {
+        text-align: left;
     }
 
     svg text {
@@ -177,20 +199,24 @@
         -ms-user-select: none;
         user-select: none;
     }
+
     svg text::selection {
         background: none;
     }
-    #serva_viz, #sysa_viz {
+
+    #serva_viz,
+    #sysa_viz {
         height: 25vh;
     }
+
     .viz-cell {
         padding: 0 !important;
     }
+
     /*     .details_viz_div text {
           font: 13px bold sans-serif; stroke-linejoin: round;
           text-anchor: middle; fill: gray; stroke: black;
         }*/
-
 </style>
 
 <script src="/StackV-web/js/details_viz.js"></script>
@@ -219,17 +245,10 @@
     onload();
 </script>
 <!-- CONTEXT MENU -->
-<nav id="context-menu" class="context-menu">
-    <ul class="context-menu__items">
-        <li class="context-menu__item">
-            <a href="#" class="context-menu__link" data-action="ModelBrowser"><i class="fa  fa-sitemap"></i>View Model Browser</a>
-        </li>
-    </ul>
-</nav>
 
 <div id="dialog_policyAction" title="Policy Action">
 </div>
-<div id="dialog_policyData" title="Policy Data" >
+<div id="dialog_policyData" title="Policy Data">
 </div>
 
 <!--          <div id="displayPanel">
@@ -252,118 +271,108 @@
            </div>       -->
 
 <!-- DEFINITION SVG -->
-<svg id="definition_svg" visibility = "hidden" >
-<defs>
-<filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
-    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
-    <feMorphology operator="dilate" radius="1"/>
-    <feColorMatrix result="a" type="matrix"
-                   values="0 0 0 0 .7
+<svg id="definition_svg" visibility="hidden">
+    <defs>
+        <filter id="outline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+            <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+            <feMorphology operator="dilate" radius="1" />
+            <feColorMatrix result="a" type="matrix" values="0 0 0 0 .7
                    0 0 0 0 1
                    0 0 0 0 0
                    0 0 0 1 0" />
-    <feComposite operator="out" in="a" in2="SourceGraphic"/>
-</filter>
-<filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
-    <feFlood flood-color="#66ff66" result="base" />
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-    <feColorMatrix result="mask" in="bigger" type="matrix"
-                   values="0 0 0 0 0
+            <feComposite operator="out" in="a" in2="SourceGraphic" />
+        </filter>
+        <filter id="serviceHighlightOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+            <feFlood flood-color="#66ff66" result="base" />
+            <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1" />
+            <feColorMatrix result="mask" in="bigger" type="matrix" values="0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 1 0" />
-    <feComposite result="drop" in="base" in2="mask" operator="in" />
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
-    <feFlood flood-color="#B3F131" result="base" />
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-    <feColorMatrix result="mask" in="bigger" type="matrix"
-                   values="0 0 0 0 0
+            <feComposite result="drop" in="base" in2="mask" operator="in" />
+            <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+        </filter>
+        <filter id="spaDependOnOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+            <feFlood flood-color="#B3F131" result="base" />
+            <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1" />
+            <feColorMatrix result="mask" in="bigger" type="matrix" values="0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 1 0" />
-    <feComposite result="drop" in="base" in2="mask" operator="in" />
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
-    <feFlood flood-color="#23ABA6" result="base" />
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-    <feColorMatrix result="mask" in="bigger" type="matrix"
-                   values="0 0 0 0 0
+            <feComposite result="drop" in="base" in2="mask" operator="in" />
+            <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+        </filter>
+        <filter id="spaExportToOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+            <feFlood flood-color="#23ABA6" result="base" />
+            <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1" />
+            <feColorMatrix result="mask" in="bigger" type="matrix" values="0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 1 0" />
-    <feComposite result="drop" in="base" in2="mask" operator="in" />
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%" >
-    <feFlood flood-color="#FD3338" result="base" />
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-    <feColorMatrix result="mask" in="bigger" type="matrix"
-                   values="0 0 0 0 0
+            <feComposite result="drop" in="base" in2="mask" operator="in" />
+            <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+        </filter>
+        <filter id="spaImportFromOutline" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+            <feFlood flood-color="#FD3338" result="base" />
+            <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1" />
+            <feColorMatrix result="mask" in="bigger" type="matrix" values="0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 1 0" />
-    <feComposite result="drop" in="base" in2="mask" operator="in" />
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
-    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
-    <feMorphology operator="dilate" radius="1"/>
-    <feColorMatrix result="a" type="matrix"
-                   values="0 0 0 0 0
+            <feComposite result="drop" in="base" in2="mask" operator="in" />
+            <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+        </filter>
+        <filter id="subnetHighlight" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+            <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+            <feMorphology operator="dilate" radius="1" />
+            <feColorMatrix result="a" type="matrix" values="0 0 0 0 0
                    0 0 0 0 .8
                    0 0 0 0 .3
                    0 0 0 1 0" />
-    <feComposite operator="out" in="a" in2="SourceGraphic"/>
-</filter>
-<filter id="spaImportFromOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" >
-    <feFlood flood-color="#FD3338" result="base" />
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-    <feColorMatrix result="mask" in="bigger" type="matrix"
-                   values="0 0 0 0 0
+            <feComposite operator="out" in="a" in2="SourceGraphic" />
+        </filter>
+        <filter id="spaImportFromOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+            <feFlood flood-color="#FD3338" result="base" />
+            <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1" />
+            <feColorMatrix result="mask" in="bigger" type="matrix" values="0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 1 0" />
-    <feComposite result="drop" in="base" in2="mask" operator="in" />
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="spaExportToOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" >
-    <feFlood flood-color="#23ABA6" result="base" />
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-    <feColorMatrix result="mask" in="bigger" type="matrix"
-                   values="0 0 0 0 0
+            <feComposite result="drop" in="base" in2="mask" operator="in" />
+            <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+        </filter>
+        <filter id="spaExportToOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+            <feFlood flood-color="#23ABA6" result="base" />
+            <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1" />
+            <feColorMatrix result="mask" in="bigger" type="matrix" values="0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 1 0" />
-    <feComposite result="drop" in="base" in2="mask" operator="in" />
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="spaDependOnOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%" >
-    <feFlood flood-color="#B3F131" result="base" />
-    <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1"/>
-    <feColorMatrix result="mask" in="bigger" type="matrix"
-                   values="0 0 0 0 0
+            <feComposite result="drop" in="base" in2="mask" operator="in" />
+            <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+        </filter>
+        <filter id="spaDependOnOutlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+            <feFlood flood-color="#B3F131" result="base" />
+            <feMorphology result="bigger" in="SourceGraphic" operator="dilate" radius="1" />
+            <feColorMatrix result="mask" in="bigger" type="matrix" values="0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 0 0
                    0 0 0 1 0" />
-    <feComposite result="drop" in="base" in2="mask" operator="in" />
-    <feBlend in="SourceGraphic" in2="drop" mode="normal" />
-</filter>
-<filter id="outlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
-    <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
-    <feMorphology operator="dilate" radius="1"/>
-    <feColorMatrix result="a" type="matrix"
-                   values="0 0 0 0 .7
+            <feComposite result="drop" in="base" in2="mask" operator="in" />
+            <feBlend in="SourceGraphic" in2="drop" mode="normal" />
+        </filter>
+        <filter id="outlineFF" width="2000000%" height="2000000%" x="-500%" y="-500%">
+            <!--https://msdn.microsoft.com/en-us/library/hh773213(v=vs.85).aspx-->
+            <feMorphology operator="dilate" radius="1" />
+            <feColorMatrix result="a" type="matrix" values="0 0 0 0 .7
                    0 0 0 0 1
                    0 0 0 0 0
                    0 0 0 1 0" />
-    <feComposite operator="out" in="a" in2="SourceGraphic"/>
-</filter>
+            <feComposite operator="out" in="a" in2="SourceGraphic" />
+        </filter>
 
-<filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
-    <feColorMatrix type="saturate" values=".2"/>
-</filter>
-</defs>
+        <filter id="ghost" width="2000000%" height="2000000%" x="-1000000%" y="-1000000%">
+            <feColorMatrix type="saturate" values=".2" />
+        </filter>
+    </defs>
 </svg>
