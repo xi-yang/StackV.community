@@ -182,18 +182,17 @@ class OpButton extends React.Component {
                             window.document.location = "/StackV-web/portal/";
                         }, 200);
                     }
-                } else {
-                    setTimeout(function () {
-                        resumeRefresh();
-                        reloadData();
-                    }, 200);
                 }
+                setTimeout(function () {
+                    reloadData();
+                    resumeRefresh();
+                }, 100);
             },
             error: function () {
                 setTimeout(function () {
-                    resumeRefresh();
                     reloadData();
-                }, 200);
+                    resumeRefresh();
+                }, 100);
             }
         });
     }

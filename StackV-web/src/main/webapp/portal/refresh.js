@@ -34,6 +34,7 @@ import { updateData } from "./details/details";
 var refreshTimer;
 var countdown;
 var countdownTimer;
+var paused = false;
 
 export function initRefresh(time) {
     $("body").on("change", "#sub-nav #refresh-timer", function () { timerChange(this); });
@@ -65,8 +66,8 @@ export function refreshSync(refreshed, time) {
     }
 }
 export function pauseRefresh() {
-    clearInterval(refreshTimer);
     clearInterval(countdownTimer);
+    clearInterval(refreshTimer);
     document.getElementById("refresh-button").innerHTML = "Paused";
     $("#refresh-timer").attr("disabled", true);
 }
@@ -147,35 +148,31 @@ export function reloadData() {
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        let timerSetting = $("#refresh-timer").val();
-        switch (page) {
-            case "catalog":
-                setTimeout(function () {
+        if ($("#refresh-timer").attr("disabled") !== "true") {
+            let timerSetting = $("#refresh-timer").val();
+            switch (page) {
+                case "catalog":
                     reloadLogs();
                     reloadModals();
-                }, 500);
-                break;
-            case "admin":
-                setTimeout(function () {
+                    break;
+                case "admin":
                     reloadLogs();
-                }, 500);
-                break;
+                    break;
 
-            case "visualization":
-                fetchNewData();
-                break;
+                case "visualization":
+                    fetchNewData();
+                    break;
 
-            case "details":
-                updateData();
-                setTimeout(function () {
+                case "details":
+                    updateData();
                     reloadLogs();
-                }, 500);
-                break;
+                    break;
+            }
+
+            loadSystemHealthCheck();
+            //syncClipbook();
+            refreshSync(refreshed, timerSetting);
         }
-
-        loadSystemHealthCheck();
-        //syncClipbook();
-        refreshSync(refreshed, timerSetting);
     });
 }
 
