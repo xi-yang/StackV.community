@@ -55,7 +55,11 @@ export function refreshSync(refreshed, time) {
     }
     if (manual === false) {
         countdown = time;
-        $("#refresh-button").html("Refresh in " + countdown + " seconds");
+        if (countdown === "1") {
+            $("#refresh-button").html("Live Data");
+        } else {
+            $("#refresh-button").html("Refresh in " + countdown + " seconds");
+        }
     } else {
         $("#refresh-button").html("Manually Refresh Now");
     }
@@ -92,6 +96,12 @@ export function setRefresh(time) {
         document.getElementById("refresh-button").innerHTML = "Manually Refresh Now";
         $(".loading-prog").css("width", "0%");
         loadSystemHealthCheck();
+    } else if (time === "1") {
+        $("#refresh-button").html("Live Data");
+        $(".loading-prog").css("width", "100%");
+        refreshTimer = setInterval(function () {
+            reloadData();
+        }, 1000);
     } else {
         countdown = time;
         countdownTimer = setInterval(function () {
@@ -164,7 +174,7 @@ export function reloadData() {
         }
 
         loadSystemHealthCheck();
-        syncClipbook();
+        //syncClipbook();
         refreshSync(refreshed, timerSetting);
     });
 }

@@ -717,31 +717,6 @@ function startDetailsEngine(uuid) {
 }
 
 function renderDetails(uuid) {
-    if (subState === "FAILED") {
-        if (lastState !== null) {
-            $subState.html(subState + " (after " + lastState + ")");
-        } else {
-            $subState.html(subState + " (Fatal error)");
-        }
-    } else {
-        $subState.html(subState);
-    }
-    $superState.html(superState);
-
-    // Instructions
-    var instructionRegEx = /{{(\S*)}}/g.exec(instruction);
-    if (instructionRegEx) {
-        for (let i = 1; i < instructionRegEx.length; i++) {
-            var str = instructionRegEx[i];
-            var result = eval(instructionRegEx[i]);
-            instruction = instruction.replace("{{" + str + "}}", result);
-        }
-    }
-    if (verificationHasDrone && verificationElapsed) {
-        instruction += " (Verification elapsed time: " + verificationElapsed + ")";
-    }
-    $instruction.html(instruction);
-
     // Buttons
     /*$(".instance-command").addClass("hide");
     for (let i in buttons) {
@@ -812,7 +787,6 @@ export function updateData() {
         },
         success: function (result) {
             subState = result;
-            $subState.html(subState);
         }
     });
 
@@ -898,6 +872,30 @@ export function updateData() {
                     buttons = lastRes["buttons"];
                 }
             }
+
+            // Rendering
+            var instructionRegEx = /{{(\S*)}}/g.exec(instruction);
+            if (instructionRegEx) {
+                for (let i = 1; i < instructionRegEx.length; i++) {
+                    var str = instructionRegEx[i];
+                    var result = eval(instructionRegEx[i]);
+                    instruction = instruction.replace("{{" + str + "}}", result);
+                }
+            }
+            if (verificationHasDrone && verificationElapsed) {
+                instruction += " (Verification elapsed time: " + verificationElapsed + ")";
+            }
+            $instruction.html(instruction);
+            if (subState === "FAILED") {
+                if (lastState !== null) {
+                    $subState.html(subState + " (after " + lastState + ")");
+                } else {
+                    $subState.html(subState + " (Fatal error)");
+                }
+            } else {
+                $subState.html(subState);
+            }
+            $superState.html(superState);
         }
     });
 }
