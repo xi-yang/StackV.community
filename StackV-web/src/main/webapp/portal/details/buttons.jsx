@@ -3,8 +3,7 @@ import PropTypes from "prop-types";
 import isEqual from "lodash.isequal";
 
 import { keycloak, page } from "../nexus";
-import { resumeRefresh } from "../refresh";
-import { reloadLogs } from "../logging";
+import { resumeRefresh, reloadData } from "../refresh";
 
 class ButtonPanel extends React.Component {
     constructor(props) {
@@ -181,12 +180,19 @@ class OpButton extends React.Component {
                         setTimeout(function () {
                             sessionStorage.removeItem("instance-uuid");
                             window.document.location = "/StackV-web/portal/";
-                        }, 250);
-                    } else {
-                        resumeRefresh();
-                        reloadLogs();
+                        }, 200);
                     }
                 }
+                setTimeout(function () {
+                    reloadData();
+                    resumeRefresh();
+                }, 100);
+            },
+            error: function () {
+                setTimeout(function () {
+                    reloadData();
+                    resumeRefresh();
+                }, 100);
             }
         });
     }
