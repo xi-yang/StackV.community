@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import isEqual from "lodash.isequal";
 
 import { keycloak, page } from "../nexus";
-import { resumeRefresh, reloadData } from "../refresh";
+import { resumeRefresh, reloadData, startLoading, stopLoading } from "../refresh";
 
 class ButtonPanel extends React.Component {
     constructor(props) {
@@ -175,23 +175,30 @@ class OpButton extends React.Component {
                 xhr.setRequestHeader("Refresh", keycloak.refreshToken);
             },
             success: function () {
-                if (command === "delete" || command === "force_delete") {
-                    if (page === "details") {
+                switch (command) {
+                    case "delete":
+                    case "force_delete":
                         setTimeout(function () {
                             sessionStorage.removeItem("instance-uuid");
                             window.document.location = "/StackV-web/portal/";
                         }, 200);
-                    }
+                        break;
+                    case "verify":
+                        startLoading();
+                        setTimeout(function () {
+                            reloadData();
+                            stopLoading();
+                        }, 2000);
+                        break;
+                    default:
+                        setTimeout(function () {
+                            reloadData();
+                        }, 100);
                 }
-                setTimeout(function () {
-                    reloadData();
-                    resumeRefresh();
-                }, 100);
             },
             error: function () {
                 setTimeout(function () {
                     reloadData();
-                    resumeRefresh();
                 }, 100);
             }
         });
