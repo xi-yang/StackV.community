@@ -98,7 +98,7 @@ pre.expanded{
     overflow-x: auto;
 }
 
-.button-confirm-delete, .button-confirm-close {
+.button-confirm-op, .button-confirm-close {
     width: 50%;
     border-radius: 0;
 }
