@@ -176,6 +176,13 @@ export function reloadData() {
     });
 }
 
+export function startLoading() {
+    console.log("Loading start!");
+}
+export function stopLoading() {
+    console.log("Loading stop!");
+}
+
 /* */
 
 /*
