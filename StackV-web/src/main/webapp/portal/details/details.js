@@ -46,7 +46,6 @@ var tweenVisualPanel = new TweenLite("#visual-panel", 1, {
 var view = "center";
 var $intentModal = $("#details-intent-modal");
 var $loadingModal = $("#loading-modal");
-var $confirmModal = $("#confirm-modal");
 
 var intentConfig = {
     width: 750
@@ -69,22 +68,6 @@ var loadingConfig = {
     },
     onClosing: function () {
         $("#main-pane").removeClass("blurred");
-    }
-};
-var confirmConfig = {
-    title: "Confirm Deletion",
-    subtitle: "Please confirm deletion of service instance. For termination of service, use Cancel instead of Delete.",
-    headerColor: "#BD5B5B",
-    top: 300,
-    timeout: 5000,
-    timeoutProgressbar: true,
-    transitionIn: "fadeInDown",
-    transitionOut: "fadeOutDown",
-    pauseOnHover: true,
-    onClosing: function () {
-        $(".instance-command").attr("disabled", false);
-        resumeRefresh();
-        reloadData();
     }
 };
 
@@ -227,12 +210,6 @@ export function loadDetails() {
     });
 
     $loadingModal.iziModal(loadingConfig);
-
-    $confirmModal.html("</button><button class=\"button-confirm-delete btn btn-danger\">Delete</button><button class=\"button-confirm-close btn btn-primary\" data-izimodal-close=\"\">Close</button>");
-    $confirmModal.iziModal(confirmConfig);
-    $(".button-confirm-delete").click(function () {
-        executeCommand($(this).data("mode"));
-    });
 
     var uuid = sessionStorage.getItem("instance-uuid");
     startDetailsEngine(uuid);
@@ -710,38 +687,12 @@ function reloadData() {
 /* Details Engine */
 function startDetailsEngine(uuid) {
     refUUID = uuid;
-    attachListeners();
 
     updateData();
     renderDetails(uuid);
 }
 
 function renderDetails(uuid) {
-    if (subState === "FAILED") {
-        if (lastState !== null) {
-            $subState.html(subState + " (after " + lastState + ")");
-        } else {
-            $subState.html(subState + " (Fatal error)");
-        }
-    } else {
-        $subState.html(subState);
-    }
-    $superState.html(superState);
-
-    // Instructions
-    var instructionRegEx = /{{(\S*)}}/g.exec(instruction);
-    if (instructionRegEx) {
-        for (let i = 1; i < instructionRegEx.length; i++) {
-            var str = instructionRegEx[i];
-            var result = eval(instructionRegEx[i]);
-            instruction = instruction.replace("{{" + str + "}}", result);
-        }
-    }
-    if (verificationHasDrone && verificationElapsed) {
-        instruction += " (Verification elapsed time: " + verificationElapsed + ")";
-    }
-    $instruction.html(instruction);
-
     // Buttons
     /*$(".instance-command").addClass("hide");
     for (let i in buttons) {
@@ -812,7 +763,6 @@ export function updateData() {
         },
         success: function (result) {
             subState = result;
-            $subState.html(subState);
         }
     });
 
@@ -898,73 +848,30 @@ export function updateData() {
                     buttons = lastRes["buttons"];
                 }
             }
-        }
-    });
-}
 
-function attachListeners() {
-    $(document).on("click", ".instance-command", function () {
-        $(".instance-command").attr("disabled", true);
-        pauseRefresh();
-
-        var command = this.id;
-        var $button = $(this);
-        var mode = $(this).data("mode");
-        var apiUrl = window.location.origin + "/StackV-web/restapi/service/" + refUUID + "/status";
-        $.ajax({
-            url: apiUrl,
-            async: false,
-            type: "GET",
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-            },
-            success: function (result) {
-                if (subState !== result) {
-                    $(".instance-command").attr("disabled", false);
-                    resumeRefresh();
-                    reloadData();
-                } else {
-                    if ((command === "delete") || (command === "force_delete")) {
-                        $(".button-confirm-delete").attr("data-mode", command);
-                        $confirmModal.iziModal("open");
-                    } else {
-                        $loadingModal.iziModal("open");
-                        executeCommand(command);
-                    }
+            // Rendering
+            var instructionRegEx = /{{(\S*)}}/g.exec(instruction);
+            if (instructionRegEx) {
+                for (let i = 1; i < instructionRegEx.length; i++) {
+                    var str = instructionRegEx[i];
+                    var result = eval(instructionRegEx[i]);
+                    instruction = instruction.replace("{{" + str + "}}", result);
                 }
             }
-        });
-    });
-}
-function executeCommand(command) {
-    var apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + refUUID + "/" + command;
-    $.ajax({
-        url: apiUrl,
-        type: "PUT",
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        success: function () {
-            if (command === "delete" || command === "force_delete") {
-                setTimeout(function () {
-                    sessionStorage.removeItem("instance-uuid");
-                    window.document.location = "/StackV-web/portal/";
-                }, 250);
+            if (verificationHasDrone && verificationElapsed) {
+                instruction += " (Verification elapsed time: " + verificationElapsed + ")";
             }
+            $instruction.html(instruction);
+            if (subState === "FAILED") {
+                if (lastState !== null) {
+                    $subState.html(subState + " (after " + lastState + ")");
+                } else {
+                    $subState.html(subState + " (Fatal error)");
+                }
+            } else {
+                $subState.html(subState);
+            }
+            $superState.html(superState);
         }
     });
-    switch (command) {
-        case "delete":
-        case "force_delete":
-            break;
-        default:
-            setTimeout(function () {
-                $(".instance-command").attr("disabled", false);
-                resumeRefresh();
-                reloadData();
-            }, 3000);
-            break;
-    }
 }

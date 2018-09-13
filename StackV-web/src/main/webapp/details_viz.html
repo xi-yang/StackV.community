@@ -219,7 +219,7 @@
         }*/
 </style>
 
-<script src="/StackV-web/js/details_viz.js"></script>
+<script src="/StackV-web/portal/details/details_viz.js"></script>
 
 <!-- MAIN PANEL -->
 <div id="pane">
@@ -241,10 +241,16 @@
     make_display_panel("pane", "serva_viz");
     make_display_panel("pane", "servr_viz");
     make_display_panel("pane", "sysr_viz");
-
-    onload();
 </script>
 <!-- CONTEXT MENU -->
+<nav id="context-menu" class="context-menu">
+    <ul class="context-menu__items">
+        <li class="context-menu__item">
+            <a href="#" class="context-menu__link" data-action="ModelBrowser"><i class="fa  fa-sitemap"></i>View Model
+                Browser</a>
+        </li>
+    </ul>
+</nav>
 
 <div id="dialog_policyAction" title="Policy Action">
 </div>

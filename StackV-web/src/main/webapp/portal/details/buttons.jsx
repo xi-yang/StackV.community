@@ -3,8 +3,24 @@ import PropTypes from "prop-types";
 import isEqual from "lodash.isequal";
 
 import { keycloak, page } from "../nexus";
-import { resumeRefresh } from "../refresh";
-import { reloadLogs } from "../logging";
+import { resumeRefresh, reloadData, startLoading, stopLoading } from "../refresh";
+
+var confirmConfig = {
+    title: "Confirm Operation",
+    subtitle: "Please confirm operation. For deconstruction of service, use Cancel instead of Delete.",
+    headerColor: "#BD5B5B",
+    top: 300,
+    timeout: 5000,
+    timeoutProgressbar: true,
+    transitionIn: "fadeInDown",
+    transitionOut: "fadeOutDown",
+    pauseOnHover: true
+};
+var $confirmModal = $("#modal-button-confirm").iziModal(confirmConfig);
+$confirmModal.iziModal("setContent", "<button class=\"button-confirm-close btn btn-primary\" data-izimodal-close=\"\">Close</button><button class=\"button-confirm-op btn btn-danger\">Confirm</button>");
+$(".button-confirm-close").click(function () {
+    $("#modal-button-confirm").iziModal("close");
+});
 
 class ButtonPanel extends React.Component {
     constructor(props) {
@@ -12,6 +28,13 @@ class ButtonPanel extends React.Component {
 
         this.state = {};
         this.moderateState = this.moderateState.bind(this);
+        this.sendRequest = this.sendRequest.bind(this);
+
+        let sendRequest = this.sendRequest;
+        $(".button-confirm-op").click(function () {
+            sendRequest($(this).data("mode"));
+            $("#modal-button-confirm").iziModal("close");
+        });
     }
 
     componentDidMount() {
@@ -110,18 +133,62 @@ class ButtonPanel extends React.Component {
         this.setState(newOps);
     }
 
+    sendRequest(command) {
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + this.props.uuid + "/" + command;
+        $.ajax({
+            url: apiUrl,
+            type: "PUT",
+            beforeSend: function beforeSend(xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+            },
+            success: function () {
+                switch (command) {
+                    case "delete":
+                    case "force_delete":
+                        if (page === "details") {
+                            setTimeout(function () {
+                                sessionStorage.removeItem("instance-uuid");
+                                window.document.location = "/StackV-web/portal/";
+                            }, 100);
+                        } else {
+                            resumeRefresh();
+                            reloadData();
+                        }
+                        break;
+                    case "verify":
+                        startLoading();
+                        setTimeout(function () {
+                            reloadData();
+                            stopLoading();
+                        }, 2000);
+                        break;
+                    default:
+                        setTimeout(function () {
+                            reloadData();
+                        }, 100);
+                }
+            },
+            error: function () {
+                setTimeout(function () {
+                    reloadData();
+                }, 100);
+            }
+        });
+    }
+
     render() {
         return <div style={{ left: "10px" }} className="btn-group" role="group">
-            <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} />
-            <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} />
-            <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} />
-            <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} />
-            <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} />
-            <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} />
-            <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} />
-            <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} />
-            <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} />
-            <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} />
+            <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} sendRequest={this.sendRequest} />
+            <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} sendRequest={this.sendRequest} />
+            <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} sendRequest={this.sendRequest} />
+            <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} sendRequest={this.sendRequest} />
+            <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} sendRequest={this.sendRequest} />
+            <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} sendRequest={this.sendRequest} />
+            <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} sendRequest={this.sendRequest} />
+            <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} sendRequest={this.sendRequest} />
+            <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} sendRequest={this.sendRequest} />
+            <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} sendRequest={this.sendRequest} />
         </div>;
     }
 }
@@ -140,55 +207,23 @@ class OpButton extends React.Component {
         switch (props.operation) {
             case "Cancel":
             case "Delete":
-                init.confirmation = false;
+                init.confirmation = true;
         }
 
         this.state = init;
 
         this.execute = this.execute.bind(this);
-        this.sendRequest = this.sendRequest.bind(this);
     }
 
     execute() {
-        if (this.state.confirmation === undefined) {
+        if (!this.state.confirmation) {
             // No confirmation required
-            this.sendRequest();
-        } else if (this.state.confirmation === false) {
-            let button = this;
-            // Confirmation required but not given; manipulate button
-            setTimeout(function () {
-                button.setState({ confirmation: false });
-            }, 5000);
-            this.setState({ confirmation: true });
+            let command = this.props.operation.toLowerCase().replace(" ", "_");
+            this.props.sendRequest(command);
         } else {
-            // Confirmation given
-            this.sendRequest();
+            $("#modal-button-confirm").iziModal("open");
+            $(".button-confirm-op").attr("data-mode", this.props.operation.toLowerCase().replace(" ", "_"));
         }
-    }
-    sendRequest() {
-        let command = this.props.operation.toLowerCase().replace(" ", "_");
-        let apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + this.props.uuid + "/" + command;
-        $.ajax({
-            url: apiUrl,
-            type: "PUT",
-            beforeSend: function beforeSend(xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-            },
-            success: function () {
-                if (command === "delete" || command === "force_delete") {
-                    if (page === "details") {
-                        setTimeout(function () {
-                            sessionStorage.removeItem("instance-uuid");
-                            window.document.location = "/StackV-web/portal/";
-                        }, 250);
-                    } else {
-                        resumeRefresh();
-                        reloadLogs();
-                    }
-                }
-            }
-        });
     }
 
     render() {
