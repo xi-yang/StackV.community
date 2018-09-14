@@ -28,6 +28,7 @@ import { resumeRefresh, initRefresh, pauseRefresh, refreshSync } from "../refres
 import React from "react";
 import ReactDOM from "react-dom";
 import ButtonPanel from "./buttons";
+import InstructionPanel from "./instructions";
 
 // Tweens
 var tweenDetailsPanel = new TweenLite("#details-panel", 1, {
@@ -799,8 +800,17 @@ export function updateData() {
     });
 
     ReactDOM.render(
-        React.createElement(ButtonPanel, { uuid: refUUID, state: superState + " - " + subState, last: lastState, verify: verificationHasDrone }, null),
+        React.createElement(ButtonPanel, {
+            uuid: refUUID, super: superState, sub: subState, last: lastState, isVerifying: verificationHasDrone
+        }, null),
         document.getElementById("button-panel")
+    );
+
+    ReactDOM.render(
+        React.createElement(InstructionPanel, {
+            uuid: refUUID, super: superState, sub: subState, verificationResult: verificationResult, verificationHasDrone: verificationHasDrone, verificationElapsed: verificationElapsed
+        }, null),
+        document.getElementById("instruction-block")
     );
 
     $.ajax({
@@ -861,7 +871,7 @@ export function updateData() {
             if (verificationHasDrone && verificationElapsed) {
                 instruction += " (Verification elapsed time: " + verificationElapsed + ")";
             }
-            $instruction.html(instruction);
+            //$instruction.html(instruction);
             if (subState === "FAILED") {
                 if (lastState !== null) {
                     $subState.html(subState + " (after " + lastState + ")");

@@ -114,6 +114,9 @@ define(["local/stackv/utils"], function (utils) {
         var clickCoordsY;
 
         var menu = document.querySelector("#context-menu");
+        if (!menu) {
+            return;
+        }
         var menuItems = menu.querySelectorAll(".context-menu__item");
         var menuState = 0;
         var menuWidth;
