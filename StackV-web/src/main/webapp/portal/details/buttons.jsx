@@ -1,6 +1,5 @@
 import React from "react";
 import PropTypes from "prop-types";
-import isEqual from "lodash.isequal";
 
 import { keycloak, page } from "../nexus";
 import { resumeRefresh, reloadData, startLoading, stopLoading } from "../refresh";
@@ -41,24 +40,16 @@ class ButtonPanel extends React.Component {
         this.moderateState();
     }
     componentDidUpdate(prevProps) {
-        if (!isEqual(this.props, prevProps)) {
+        if (!(this.props.super === prevProps.super && this.props.sub === prevProps.sub &&
+            this.props.last === prevProps.last && this.props.isVerifying === prevProps.isVerifying)) {
             this.moderateState();
         }
     }
 
     moderateState() {
-        let superState, subState;
-        if (this.props.state === undefined) {
-            superState = "";
-            subState = "";
-        } else {
-            superState = this.props.state.split("-")[0].trim();
-            subState = this.props.state.split("-")[1].trim();
-        }
-
         let modList;
         // Substate moderation
-        switch (subState) {
+        switch (this.props.sub) {
             default:
             case "INIT":
             case "COMPILED":
@@ -97,7 +88,7 @@ class ButtonPanel extends React.Component {
         }
 
         // Superstate moderation
-        switch (superState) {
+        switch (this.props.super) {
             case "CANCEL":
                 if (modList.indexOf("cancel") > -1) {
                     modList.splice(modList.indexOf("cancel"), 1);
@@ -107,7 +98,7 @@ class ButtonPanel extends React.Component {
         }
 
         // Verification moderation
-        if (this.props.verify) {
+        if (this.props.isVerifying) {
             if (modList.indexOf("verify") > -1) {
                 modList.splice(modList.indexOf("verify"), 1);
                 modList.push("unverify");
@@ -194,9 +185,10 @@ class ButtonPanel extends React.Component {
 }
 ButtonPanel.propTypes = {
     uuid: PropTypes.string.isRequired,
-    state: PropTypes.string.isRequired,
+    super: PropTypes.string.isRequired,
+    sub: PropTypes.string.isRequired,
     last: PropTypes.string.isRequired,
-    verify: PropTypes.bool
+    isVerifying: PropTypes.bool
 };
 
 class OpButton extends React.Component {
