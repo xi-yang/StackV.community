@@ -21,57 +21,47 @@
  * IN THE WORK.
  !-->
 <!DOCTYPE html>
-<html >    
-    <head>   
-        <meta charset="UTF-8">
-        <title>Manifest Portal</title>
-        <link rel="stylesheet" href="/StackV-web/css/style.css">        
-        <style>
-            .manifest-list{
-                padding-left: 1.5em;
-            }
-        </style>
-    </head>
+<html>
 
-    <body>
-        <!-- MAIN PANEL -->
-        <div id="main-pane">
-            <table class="management-table">
-                <thead>
-                    <tr>
-                        <th colspan="2"> Manifest Portal </th>
-                    </tr>
-                </thead>
-                <tbody id="manifest_table_body"></tbody>
-            </table>
-        </div>
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <title>Manifest Portal</title>
+    <link rel="stylesheet" href="/StackV-web/css/style.css">
+    <style>
+        .manifest-list {
+            padding-left: 1.5em;
+        }
+    </style>
+</head>
 
-    <!-- CORE JS PACKAGE-->
+<body>
+    <!-- MAIN PANEL -->
+    <div id="main-pane">
+        <table class="management-table">
+            <thead>
+                <tr>
+                    <th colspan="2"> Manifest Portal </th>
+                </tr>
+            </thead>
+            <tbody id="manifest_table_body"></tbody>
+        </table>
+    </div>
+</body>
+
+<<!-- CORE JS PACKAGE-->
     <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/js/iziModal.min.js"></script>
+    <script src="/StackV-web/js/iziToast.min.js"></script>
 
-    <script src="https://code.jquery.com/jquery-2.2.4.min.js"
-            integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
-            crossorigin="anonymous">
-    </script>   
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
-            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
-            crossorigin="anonymous">
-    </script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"
-            integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30="
-            crossorigin="anonymous">
-    </script>
-
-    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>                
-
+    <script src="/StackV-web/js/jquery-ui.min.js"></script>
     <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
     <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-    <script src="/StackV-web/js/mousetrap.js"></script>
-    <script src="/StackV-web/js/mousetrap-dict.js"></script>
+    <!-- -->
 
-    <script src="/StackV-web/js/StackV-1.0.0.bundle.js"></script>
+    <script src="/StackV-web/js/bundles/StackV-main.bundle.js"></script>
     <!---->
 
     <script src="/StackV-web/js/manifest.js"></script>
+
 </html>

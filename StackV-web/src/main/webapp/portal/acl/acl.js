@@ -28,79 +28,71 @@ import * as ipa from "./ipa";
 // ipa.js must be loaded in order to access the IPA ACL functions
 
 // Tweens
-var tweenRolePanel = new TweenLite("#acl-role-panel", .5, {ease: Power2.easeInOut, paused: true, right: "5%"});
-var tweenRoleRolesPanel = new TweenLite("#acl-role-role-div", .5, {ease: Power2.easeInOut, paused: true, bottom: "55%"});
-var tweenInstancePanel = new TweenLite("#acl-instance-panel", .5, {ease: Power2.easeInOut, paused: true, left: "5%"});
-var tweenInstanceACLPanel = new TweenLite("#acl-instance-acl", .5, {ease: Power2.easeInOut, paused: true, bottom: "0"});
+var tweenRolePanel = new TweenLite("#acl-role-panel", .5, { ease: Power2.easeInOut, paused: true, right: "5%" });
+var tweenRoleRolesPanel = new TweenLite("#acl-role-role-div", .5, { ease: Power2.easeInOut, paused: true, bottom: "55%" });
+var tweenInstancePanel = new TweenLite("#acl-instance-panel", .5, { ease: Power2.easeInOut, paused: true, left: "5%" });
+var tweenInstanceACLPanel = new TweenLite("#acl-instance-acl", .5, { ease: Power2.easeInOut, paused: true, bottom: "0" });
 
-var tweenHideUserPanel = new TweenLite("#acl-role-user-div", .5, {ease: Power2.easInOut, paused: true, left: "-100%"});
+var tweenHideUserPanel = new TweenLite("#acl-role-user-div", .5, { ease: Power2.easInOut, paused: true, left: "-100%" });
 
 var view = "center";
 
-Mousetrap.bind({
-    "shift+left": function () {
-        window.location.href = "/StackV-web/portal/driver/";
-    },
-    "left": function () {
-        viewShift("left");
-    },
-    "right": function () {
-        viewShift("right");
-    }
-});
-
 function viewShift(dir) {
     switch (view) {
-    case "left":
-        if (dir === "right") {
-            newView("instances");
-        }
-        break;
-    case "center":
-        if (dir === "left") {
-            newView("roles");
-        }
-        break;
+        case "left":
+            if (dir === "right") {
+                newView("instances");
+            }
+            break;
+        case "center":
+            if (dir === "left") {
+                newView("roles");
+            }
+            break;
     }
 }
 function resetView() {
     switch (view) {
-    case "left":
-        $("#sub-nav .active").removeClass("active");
-        tweenRolePanel.reverse();
-        break;
-    case "center":
-        $("#sub-nav .active").removeClass("active");
-        tweenInstancePanel.reverse();
-        break;
+        case "left":
+            $("#sub-nav .active").removeClass("active");
+            tweenRolePanel.reverse();
+            break;
+        case "center":
+            $("#sub-nav .active").removeClass("active");
+            tweenInstancePanel.reverse();
+            break;
     }
 }
 function newView(panel) {
     resetView();
     switch (panel) {
-    case "roles":
-        tweenRolePanel.play();
-        $("#roles-tab").addClass("active");
-        view = "left";
-        break;
-    case "instances":
-        tweenInstancePanel.play();
-        $("#instances-tab").addClass("active");
-        view = "center";
-        break;
+        case "roles":
+            tweenRolePanel.play();
+            $("#roles-tab").addClass("active");
+            view = "left";
+            break;
+        case "instances":
+            tweenInstancePanel.play();
+            $("#instances-tab").addClass("active");
+            view = "center";
+            break;
     }
 }
 
 // ACL Load
 export function loadACLPortal() {
+    Mousetrap.bind("shift+left", function () { window.location.href = "/StackV-web/portal/driver/"; });
+    Mousetrap.bind("left", function () { viewShift("left"); });
+    Mousetrap.bind("right", function () { viewShift("right"); });
+
     $("#sub-nav").load("/StackV-web/nav/acl_navbar.html", function () {
         switch (view) {
-        case "left":
-            $("#roles-tab").addClass("active");
-            break;
-        case "center":
-            $("#instances-tab").addClass("active");
-            break;
+            case "left":
+                $("#roles-tab").addClass("active");
+                break;
+            case "center":
+                $("#instances-tab").addClass("active");
+                break;
         }
 
         $("#roles-tab").click(function () {
@@ -283,8 +275,8 @@ function subloadRoleACLUserRoles() {
                         cell1_1.innerHTML = role.name + " (delegated from " + role.from + ")";
                     } else {
                         cell1_1.innerHTML = role.name + "<button data-roleid=\""
-                                + role.id + "\" data-rolename=\"" + role.name
-                                + "\" class=\"button-role-delete btn btn-default pull-right\">Remove</button>";
+                            + role.id + "\" data-rolename=\"" + role.name
+                            + "\" class=\"button-role-delete btn btn-default pull-right\">Remove</button>";
                     }
 
                     row.appendChild(cell1_1);

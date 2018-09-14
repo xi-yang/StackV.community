@@ -22,8 +22,9 @@
  * IN THE WORK.
  */
 
-/* global XDomainRequest, Power2, TweenLite, Mousetrap, iziToast */
-// Tweens
+/* global XDomainRequest, Power2, TweenLite, iziToast */
+import Mousetrap from "mousetrap";
+
 import { prettyPrintInfo, keycloak } from "./nexus";
 import { initRefresh, reloadData } from "./refresh";
 import { loadInstanceDataTable } from "./logging";
@@ -56,20 +57,6 @@ var $alertModal = $("#alert-modal");
     document.getElementById("test-id")
 );*/
 
-Mousetrap.bind({
-    "shift+left": function () {
-        window.location.href = "/StackV-web/orch/graphTest.jsp";
-    },
-    "shift+right": function () {
-        window.location.href = "/StackV-web/portal/details/";
-    },
-    "space": function () {
-        toggleModal("catalog");
-    },
-    "shift+space": function () {
-        toggleModal("profile");
-    }
-});
 function toggleModal(modalName) {
     switch (modalName) {
         case "catalog":
@@ -129,6 +116,11 @@ function toggleModal(modalName) {
 }
 
 export function loadCatalog() {
+    Mousetrap.bind("shift+left", function () { window.location.href = "/StackV-web/orch/graphTest.jsp"; });
+    Mousetrap.bind("shift+right", function () { window.location.href = "/StackV-web/portal/details/"; });
+    Mousetrap.bind("space", function () { toggleModal("catalog"); });
+    Mousetrap.bind("shift+space", function () { toggleModal("profile"); });
+
     $("#sub-nav").load("/StackV-web/nav/catalog_navbar.html", function () {
         initRefresh($("#refresh-timer").val());
     });

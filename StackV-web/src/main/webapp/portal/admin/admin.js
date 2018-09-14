@@ -26,74 +26,69 @@ import { initRefresh } from "../refresh";
 import { keycloak } from "../nexus";
 import { loadLogs, loadLoggingDataTable, reloadLogs } from "../logging";
 
-var tweenAdminPanel = new TweenLite("#admin-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px", opacity: "1", display: "block"});
-var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px", opacity: "1", display: "block"});
+var tweenAdminPanel = new TweenLite("#admin-panel", 1, { ease: Power2.easeInOut, paused: true, top: "0px", opacity: "1", display: "block" });
+var tweenLoggingPanel = new TweenLite("#logging-panel", 1, { ease: Power2.easeInOut, paused: true, left: "0px", opacity: "1", display: "block" });
 
 var view = "center";
 var dataTable = null;
 
-Mousetrap.bind({
-    "left": function () {
-        viewShift("left");
-    },
-    "right": function () {
-        viewShift("right");
-    }
-});
 function viewShift(dir) {
     switch (view) {
-    case "left":
-        if (dir === "right") {
-            newView("admin");
-        }
-        break;
-    case "center":
-        if (dir === "left") {
-            newView("logging");
-            view = dir;
-        }
-        break;
+        case "left":
+            if (dir === "right") {
+                newView("admin");
+            }
+            break;
+        case "center":
+            if (dir === "left") {
+                newView("logging");
+                view = dir;
+            }
+            break;
     }
 }
 
 function resetView() {
     switch (view) {
-    case "left":
-        $("#sub-nav .active").removeClass("active");
-        tweenLoggingPanel.reverse();
-        break;
-    case "center":
-        $("#sub-nav .active").removeClass("active");
-        tweenAdminPanel.reverse();
-        break;
+        case "left":
+            $("#sub-nav .active").removeClass("active");
+            tweenLoggingPanel.reverse();
+            break;
+        case "center":
+            $("#sub-nav .active").removeClass("active");
+            tweenAdminPanel.reverse();
+            break;
     }
 }
 function newView(panel) {
     resetView();
     switch (panel) {
-    case "logging":
-        tweenLoggingPanel.play();
-        $("#logging-tab").addClass("active");
-        view = "left";
-        break;
-    case "admin":
-        tweenAdminPanel.play();
-        $("#sub-admin-tab").addClass("active");
-        view = "center";
-        break;
+        case "logging":
+            tweenLoggingPanel.play();
+            $("#logging-tab").addClass("active");
+            view = "left";
+            break;
+        case "admin":
+            tweenAdminPanel.play();
+            $("#sub-admin-tab").addClass("active");
+            view = "center";
+            break;
     }
 }
 
 export function loadAdmin() {
+    Mousetrap.bind("left", function () { viewShift("left"); });
+    Mousetrap.bind("right", function () { viewShift("right"); });
+
     $("#sub-nav").load("/StackV-web/nav/admin_navbar.html", function () {
         initRefresh($("#refresh-timer").val());
         switch (view) {
-        case "left":
-            $("#logging-tab").addClass("active");
-            break;
-        case "center":
-            $("#sub-admin-tab").addClass("active");
-            break;
+            case "left":
+                $("#logging-tab").addClass("active");
+                break;
+            case "center":
+                $("#sub-admin-tab").addClass("active");
+                break;
         }
 
         $("#logging-tab").click(function () {
@@ -141,7 +136,7 @@ function executeRequest() {
     var url_request = $("#API-request").val();
     var url = $("#URL").val();
     //var apiUrl = window.location.origin + '/StackV-web/restapi/app/'+"option" + document.getElementById("URL").value;
-    var apiUrl = window.location.origin + "/StackV-web/restapi"+ url;
+    var apiUrl = window.location.origin + "/StackV-web/restapi" + url;
     var type = url_request;
 
     var input = $("#api_result").val();
@@ -200,7 +195,7 @@ function executeRequest() {
             },
             success: function (result) {
                 if (type === "POST") {
-                    $("#api_result").val(result);    
+                    $("#api_result").val(result);
                 } else {
                     $("#api_result").val("Success");
                 }
@@ -224,7 +219,7 @@ function executeRequest() {
                 $("#api_result").val("failure");
             }
         });
-    } else if(type === "DELETE"){
+    } else if (type === "DELETE") {
         $.ajax({
             url: apiUrl,
             type: type,
