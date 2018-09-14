@@ -25,7 +25,7 @@ import Mousetrap from "mousetrap";
 
 import { keycloak } from "../nexus";
 import { loadLoggingDataTable, reloadLogs } from "../logging";
-import { resumeRefresh, initRefresh, pauseRefresh, refreshSync } from "../refresh";
+import { resumeRefresh, initRefresh, pauseRefresh, refreshSync, setRefresh } from "../refresh";
 
 import React from "react";
 import ReactDOM from "react-dom";
@@ -137,7 +137,7 @@ function newView(panel) {
             view = "center";
             break;
         case "visual":
-            pauseRefresh();
+            setRefresh("15");
             tweenVisualPanel.play();
             $("#visual-tab").addClass("active");
             view = "right";
@@ -155,7 +155,7 @@ function resetView() {
             tweenDetailsPanel.reverse();
             break;
         case "right":
-            closeVisTabs();
+            setRefresh("1");
             resumeRefresh();
             $("#sub-nav .active").removeClass("active");
             tweenVisualPanel.reverse();
