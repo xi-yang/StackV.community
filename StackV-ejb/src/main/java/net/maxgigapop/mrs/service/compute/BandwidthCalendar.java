@@ -603,35 +603,46 @@ public class BandwidthCalendar {
             }
             // starting from trialStart, go through all time marks of trialSchedules and determine the box size including its left and right
             int numSegs = trialSchedules.size();
-            Map<Long, Long> timeBandwidthMap = new HashMap();
-            timeBandwidthMap.put(continuousStart, trialSchedules.get(0).getBandwidth());
-            timeBandwidthMap.put(continuousEnd, trialSchedules.get(numSegs-1).getBandwidth());
-            // add all right-boxed bandwidth
-            for (int x = 1; x < numSegs; x++) {
-                BandwidthSchedule bsx = trialSchedules.get(x);
-                int y = x-1;
-                for (; y >= 0; y--) {
-                    BandwidthSchedule bsy = trialSchedules.get(y);
-                    if (bsy.getBandwidth() < bsx.getBandwidth()) {
-                        break;
-                    }
-                }
-                int z = x+1; 
-                for (; z < numSegs; z++) {
-                    BandwidthSchedule bsz = trialSchedules.get(z);
-                    if (bsz.getBandwidth() < bsx.getBandwidth()) {
-                        break;
-                    }
-                }
-                // now we got the box btween y+1 and z-1
-                BandwidthSchedule bsyplus = trialSchedules.get(y+1);
-                BandwidthSchedule bszminus = trialSchedules.get(z-1);
-                long boxStart = bsyplus.getStartTime() < continuousStart ? continuousStart : bsyplus.getStartTime();
-                long boxEnd = bszminus.getEndTime() > continuousEnd ? continuousEnd : bszminus.getEndTime();
+            //Map<Long, Long> timeBandwidthMap = new HashMap();
+            //timeBandwidthMap.put(continuousStart, trialSchedules.get(0).getBandwidth());
+            //timeBandwidthMap.put(continuousEnd, trialSchedules.get(numSegs-1).getBandwidth());
+            if (numSegs == 1) {
+                BandwidthSchedule bsx = trialSchedules.get(0);
+                long boxStart = bsx.getStartTime() < continuousStart ? continuousStart : bsx.getStartTime();
+                long boxEnd = bsx.getEndTime() > continuousEnd ? continuousEnd : bsx.getEndTime();
                 long boxBw = bsx.getBandwidth();
                 if (boxBw * (boxEnd - boxStart) > tbp) {
                     BandwidthSchedule boxSchedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
                     retScheduleList.add(boxSchedule);
+                }
+            } else {
+                // add all right-boxed bandwidth
+                for (int x = 1; x < numSegs; x++) {
+                    BandwidthSchedule bsx = trialSchedules.get(x);
+                    int y = x - 1;
+                    for (; y >= 0; y--) {
+                        BandwidthSchedule bsy = trialSchedules.get(y);
+                        if (bsy.getBandwidth() < bsx.getBandwidth()) {
+                            break;
+                        }
+                    }
+                    int z = x + 1;
+                    for (; z < numSegs; z++) {
+                        BandwidthSchedule bsz = trialSchedules.get(z);
+                        if (bsz.getBandwidth() < bsx.getBandwidth()) {
+                            break;
+                        }
+                    }
+                    // now we got the box btween y+1 and z-1
+                    BandwidthSchedule bsyplus = trialSchedules.get(y + 1);
+                    BandwidthSchedule bszminus = trialSchedules.get(z - 1);
+                    long boxStart = bsyplus.getStartTime() < continuousStart ? continuousStart : bsyplus.getStartTime();
+                    long boxEnd = bszminus.getEndTime() > continuousEnd ? continuousEnd : bszminus.getEndTime();
+                    long boxBw = bsx.getBandwidth();
+                    if (boxBw * (boxEnd - boxStart) > tbp) {
+                        BandwidthSchedule boxSchedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
+                        retScheduleList.add(boxSchedule);
+                    }
                 }
             }
         }
