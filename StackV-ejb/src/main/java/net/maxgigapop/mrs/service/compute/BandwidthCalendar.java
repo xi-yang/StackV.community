@@ -299,14 +299,14 @@ public class BandwidthCalendar {
         }
     }
     
-    public BandwidthCalendar residual() {
+    public BandwidthCalendar residual(long start, long end) {
         BandwidthCalendar residual = new BandwidthCalendar(this.capacity);
         if (schedules.isEmpty()) {
             residual.schedules.add(new BandwidthSchedule(new Date().getTime()/1000L, infinite, this.capacity));
             return residual;
         }
         ListIterator<BandwidthSchedule> it = schedules.listIterator();
-        long lastEnd = 0;
+        long lastEnd = start;
         while (it.hasNext()) {
             BandwidthSchedule schedule = it.next();
             if (lastEnd > 0 && lastEnd < schedule.startTime) {
@@ -315,7 +315,13 @@ public class BandwidthCalendar {
             }
             BandwidthSchedule residualSchedule = schedule.clone();
             residualSchedule.setBandwidth(capacity - schedule.getBandwidth());
-            residual.schedules.add(residualSchedule);
+            if (residualSchedule.getBandwidth() > 0) {
+                residual.schedules.add(residualSchedule);
+            }
+            if (!it.hasNext() && schedule.getEndTime() < end) {
+                BandwidthSchedule residualScheduleTail = new BandwidthSchedule(schedule.getEndTime(), infinite, this.capacity);
+                residual.schedules.add(residualScheduleTail);
+            }
         }
         return residual;
     }
@@ -376,7 +382,7 @@ public class BandwidthCalendar {
         BandwidthSchedule schedule;
         if (options.containsKey("tbp-mbytes")) {
             String strProductMbytes = (String)options.get("tbp-mbytes");
-            Long timeBandwidthProductBits = Long.getLong(strProductMbytes)*8000000;
+            Long timeBandwidthProductBits = Long.parseLong(strProductMbytes)*8000000;
             List<BandwidthSchedule> boxedSchedules = pathAvailBwCal.getTimeBandwidthProductSchedules(timeBandwidthProductBits, start, deadline);
             if (options.containsKey("use-highest-bandwidth") && ((String)options.get("use-highest-bandwidth")).equalsIgnoreCase("true")) {
                 // find the maximum bandwidth schedule in boxedSchedules (adjust size)
@@ -414,7 +420,7 @@ public class BandwidthCalendar {
                 schedule = new BandwidthSchedule(boxStart, boxEnd, timeBandwidthProductBits / scheduleWidth);
             } else if (options.containsKey("bandwidth-mbps <=") && options.get("bandwidth-mbps <=") != null) {
                 String strBwMbps = (String)options.get("bandwidth-mbps <=");
-                Long maxBwBps = Long.getLong(strBwMbps)*1000000;                
+                Long maxBwBps = Long.parseLong(strBwMbps)*1000000;                
                 Long minBwBpsLeast = timeBandwidthProductBits / (end-start);
                 if (maxBwBps < minBwBpsLeast) {
                     maxBwBps = minBwBpsLeast;
@@ -422,7 +428,7 @@ public class BandwidthCalendar {
                 Long minBwBps = minBwBpsLeast;
                 if (options.containsKey("bandwidth-mbps >=") && options.get("bandwidth-mbps >=") != null) {
                     strBwMbps = (String)options.get("bandwidth-mbps >=");
-                     minBwBps = Long.getLong(strBwMbps)*1000000;
+                     minBwBps = Long.parseLong(strBwMbps)*1000000;
                     if (minBwBps < minBwBpsLeast) {
                         minBwBps = minBwBpsLeast;
                     }
@@ -510,7 +516,7 @@ public class BandwidthCalendar {
 
     // deadline is a offset value to be relative to startTime (consistent 'now')
     public BandwidthSchedule makeSchedule(long bw, long start, long duration, long deadline, boolean add) {
-        BandwidthCalendar residual = this.residual();
+        BandwidthCalendar residual = this.residual(start, start+deadline);
         ListIterator<BandwidthSchedule> it = residual.getSchedules().listIterator();
         // remove all segments without required bandwidth
         while (it.hasNext()) {
@@ -564,7 +570,7 @@ public class BandwidthCalendar {
         } else {
             deadline = infinite;
         }
-        BandwidthCalendar residual = this.residual();
+        BandwidthCalendar residual = this.residual(start, deadline);
         ListIterator<BandwidthSchedule> it = residual.getSchedules().listIterator();
         while (it.hasNext()) {
             BandwidthSchedule residualSchedule = it.next();
@@ -578,6 +584,7 @@ public class BandwidthCalendar {
         long continuousStart = start;
         long continuousEnd = start;
         List<BandwidthSchedule> trialSchedules = new ArrayList();
+        it = residual.getSchedules().listIterator();
         while (it.hasNext()) {
             BandwidthSchedule goodSchedule = it.next();
             trialSchedules.add(goodSchedule);
