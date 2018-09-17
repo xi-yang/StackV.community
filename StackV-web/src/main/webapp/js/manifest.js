@@ -2,10 +2,10 @@
 
 function loadManifest() {
     var uuid = location.search.split("?uuid=")[1];
-    var apiUrl = window.location.origin + '/StackV-web/restapi/app/details/' + uuid + '/instance';
+    var apiUrl = window.location.origin + "/StackV-web/restapi/app/details/" + uuid + "/instance";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -60,8 +60,8 @@ function subloadManifest(templateURL) {
                 },
 
                 headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/xml'
+                    "Accept": "application/json",
+                    "Content-Type": "application/xml"
                 },
                 success: function (data, textStatus, jqXHR) {
                     var manifest = JSON.parse(data.jsonTemplate);
@@ -88,12 +88,13 @@ function parseMap(map, container, container_type, base) {
     for (var key in map) {
         var string = "";
         if (container_type === "table") {
+            var new_container;
             if (map.constructor !== Array) {
                 string = $("<tr><td>" + key + "</td></tr>");
                 container.append(string);
-                var new_container = string;
+                new_container = string;
             } else {
-                var new_container = container;
+                new_container = container;
             }
             var isMap = Object.keys(map[key]).length > 0;
             var isString = (typeof map[key]) === "string";
@@ -155,7 +156,7 @@ function parseMap(map, container, container_type, base) {
                     }
                 }
             } else {
-                if ($.trim(map[key]) !== '') {
+                if ($.trim(map[key]) !== "") {
 
                     var n3 = $("<ul class=\"manifest-list\"></ul>");
 

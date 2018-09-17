@@ -139,6 +139,7 @@ function newView(panel) {
         case "visual":
             $("#refresh-timer").val("15");
             timerChange($("#refresh-timer")[0]);
+            updateData();
             tweenVisualPanel.play();
             $("#visual-tab").addClass("active");
             view = "right";
@@ -814,6 +815,7 @@ export function updateData() {
             $superState.html(superState);
         }
     });
-
-    loadVisualization();
+    if ($("#refresh-timer").val() !== "1") {
+        loadVisualization();
+    }
 }
