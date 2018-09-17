@@ -359,6 +359,19 @@ public class MCETools {
                             verified = false;
                         } else {
                             candidatePath.setBandwithScedule(schedule);
+                            if (candidatePath.getBandwithProfile() != null) {
+                                //if (candidatePath.getBandwithProfile().maximumCapacity != null) {
+                                //    candidatePath.getBandwithProfile().maximumCapacity = schedule.getBandwidth();
+                                //}
+                                if (candidatePath.getBandwithProfile().availableCapacity != null) {
+                                    candidatePath.getBandwithProfile().availableCapacity = schedule.getBandwidth();
+                                }
+                                if (candidatePath.getBandwithProfile().reservableCapacity != null) {
+                                    candidatePath.getBandwithProfile().reservableCapacity = schedule.getBandwidth();
+                                }
+                                candidatePath.getBandwithProfile().unit = "bps";
+                                //@TODO: warning for granularity mismatch <= schedule.getBandwidth() % candidatePath.getBandwithProfile().granularity != 0
+                            }
                         }
                     } catch (BandwidthCalendar.BandwidthCalendarException ex) {
                         logger.trace("computeFeasibleL2KSP", candidatePath.getConnectionId() + " -- " + ex.getMessage());

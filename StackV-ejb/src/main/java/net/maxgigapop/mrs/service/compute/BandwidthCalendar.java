@@ -23,6 +23,7 @@ import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.DateTimeUtil;
 import net.maxgigapop.mrs.common.ModelUtil;
 import org.json.simple.JSONObject;
+import java.lang.Math;
 
 /**
  *
@@ -313,6 +314,7 @@ public class BandwidthCalendar {
                 BandwidthSchedule residualScheduleGap = new BandwidthSchedule(lastEnd, schedule.startTime, this.capacity);
                 residual.schedules.add(residualScheduleGap);
             }
+            lastEnd = schedule.getEndTime();
             BandwidthSchedule residualSchedule = schedule.clone();
             residualSchedule.setBandwidth(capacity - schedule.getBandwidth());
             if (residualSchedule.getBandwidth() > 0) {
@@ -384,6 +386,7 @@ public class BandwidthCalendar {
             String strProductMbytes = (String)options.get("tbp-mbytes");
             Long timeBandwidthProductBits = Long.parseLong(strProductMbytes)*8000000;
             List<BandwidthSchedule> boxedSchedules = pathAvailBwCal.getTimeBandwidthProductSchedules(timeBandwidthProductBits, start, deadline);
+            //@TODO: handle cases with granularity > 1
             if (options.containsKey("use-highest-bandwidth") && ((String)options.get("use-highest-bandwidth")).equalsIgnoreCase("true")) {
                 // find the maximum bandwidth schedule in boxedSchedules (adjust size)
                 long boxBw = 0;
@@ -399,7 +402,7 @@ public class BandwidthCalendar {
                     return null;
                 }
                 long boxStart = selectedSchedule.getStartTime();
-                long boxEnd = timeBandwidthProductBits / boxBw + boxStart;
+                long boxEnd = (long)Math.ceil((double)timeBandwidthProductBits / boxBw) + boxStart;
                 schedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
             } else if (options.containsKey("use-lowest-bandwidth") && ((String)options.get("use-lowest-bandwidth")).equalsIgnoreCase("true")) {
                 // find widest schedule in boxedSchedules (adjust size)
@@ -417,29 +420,38 @@ public class BandwidthCalendar {
                 }
                 long boxStart = selectedSchedule.getStartTime();
                 long boxEnd = selectedSchedule.getEndTime();
-                schedule = new BandwidthSchedule(boxStart, boxEnd, timeBandwidthProductBits / scheduleWidth);
+                schedule = new BandwidthSchedule(boxStart, boxEnd, (long)Math.ceil((double)timeBandwidthProductBits / scheduleWidth));
             } else if (options.containsKey("bandwidth-mbps <=") && options.get("bandwidth-mbps <=") != null) {
                 String strBwMbps = (String)options.get("bandwidth-mbps <=");
                 Long maxBwBps = Long.parseLong(strBwMbps)*1000000;                
-                Long minBwBpsLeast = timeBandwidthProductBits / (end-start);
+                Long minBwBpsLeast = (long)Math.ceil((double)timeBandwidthProductBits / (end-start));
                 if (maxBwBps < minBwBpsLeast) {
                     maxBwBps = minBwBpsLeast;
                 }
                 Long minBwBps = minBwBpsLeast;
                 if (options.containsKey("bandwidth-mbps >=") && options.get("bandwidth-mbps >=") != null) {
                     strBwMbps = (String)options.get("bandwidth-mbps >=");
-                     minBwBps = Long.parseLong(strBwMbps)*1000000;
+                    minBwBps = Long.parseLong(strBwMbps)*1000000;
                     if (minBwBps < minBwBpsLeast) {
                         minBwBps = minBwBpsLeast;
                     }
                 }
                 schedule = null;
                 for (BandwidthSchedule boxedSchedule: boxedSchedules) {
+                    if (boxedSchedule.getBandwidth() < minBwBps) {
+                        continue;
+                    }
                     // find a schedule in boxedSchedules with bandwidth between these maximum and minimum (adjust size)
-                    if (boxedSchedule.getBandwidth() <= maxBwBps && boxedSchedule.getBandwidth() >= minBwBps) {
+                    if (boxedSchedule.getBandwidth() <= maxBwBps) {
                         long boxBw = boxedSchedule.getBandwidth();
                         long boxStart = boxedSchedule.getStartTime();
-                        long boxEnd = timeBandwidthProductBits / boxBw + boxStart;
+                        long boxEnd = (long)Math.ceil((double)timeBandwidthProductBits / boxBw + boxStart);
+                        schedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
+                        break;
+                    } else if (maxBwBps * (boxedSchedule.getEndTime()- boxedSchedule.getStartTime()) >= timeBandwidthProductBits) {
+                        long boxBw = maxBwBps;
+                        long boxStart = boxedSchedule.getStartTime();
+                        long boxEnd = (long)Math.ceil((double)timeBandwidthProductBits / boxBw + boxStart);
                         schedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
                         break;
                     }
