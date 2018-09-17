@@ -62,6 +62,4 @@
     <script src="/StackV-web/js/bundles/StackV-main.bundle.js"></script>
     <!---->
 
-    <script src="/StackV-web/js/manifest.js"></script>
-
 </html>

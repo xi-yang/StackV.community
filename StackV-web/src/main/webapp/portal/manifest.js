@@ -1,6 +1,6 @@
-/* global window.location.origin, keycloak */
+import { keycloak } from "./nexus";
 
-function loadManifest() {
+export function loadManifest() {
     var uuid = location.search.split("?uuid=")[1];
     var apiUrl = window.location.origin + "/StackV-web/restapi/app/details/" + uuid + "/instance";
     $.ajax({
@@ -87,6 +87,7 @@ function subloadManifest(templateURL) {
 function parseMap(map, container, container_type, base) {
     for (var key in map) {
         var string = "";
+        let isMap, isString;
         if (container_type === "table") {
             var new_container;
             if (map.constructor !== Array) {
@@ -96,12 +97,13 @@ function parseMap(map, container, container_type, base) {
             } else {
                 new_container = container;
             }
-            var isMap = Object.keys(map[key]).length > 0;
-            var isString = (typeof map[key]) === "string";
+            isMap = Object.keys(map[key]).length > 0;
+            isString = (typeof map[key]) === "string";
+            let n1, n3;
             if ((map[key].constructor === Array) && !isString) {
-                var n1 = $("<td></td>");
+                n1 = $("<td></td>");
                 new_container.append(n1);
-                var n3 = $("<ul class=\"manifest-list\" style=\"padding-left:.5em;\"></ul>");
+                n3 = $("<ul class=\"manifest-list\" style=\"padding-left:.5em;\"></ul>");
                 n1.append(n3);
                 for (var i in map[key]) {
                     if ((typeof map[key]) === "string") {
@@ -113,9 +115,9 @@ function parseMap(map, container, container_type, base) {
                     }
                 }
             } else if (isMap && !isString) {
-                var n1 = $("<td></td>");
+                n1 = $("<td></td>");
                 new_container.append(n1);
-                var n3 = $("<ul class=\"manifest-list\" style=\"padding-left:0;\"></ul>");
+                n3 = $("<ul class=\"manifest-list\" style=\"padding-left:0;\"></ul>");
                 n1.append(n3);
                 parseMap(map[key], n3, "list", base);
             } else {
@@ -123,26 +125,28 @@ function parseMap(map, container, container_type, base) {
                 new_container.append(string);
             }
         } else if (container_type === "list") {
-            var isMap = Object.keys(map[key]).length > 0;
-            var isString = (typeof map[key]) === "string";
+            isMap = Object.keys(map[key]).length > 0;
+            isString = (typeof map[key]) === "string";
+            let n3;
             if ((map[key].constructor === Array || isMap) && !isString) {
-                var n3 = $("<ul class=\"manifest-list\"></ul>");
+                n3 = $("<ul class=\"manifest-list\"></ul>");
+                let item;
                 if (map[key].constructor === Array) {
-                    var item = $("<li><b>" + key + "</b></li>");
+                    item = $("<li><b>" + key + "</b></li>");
                     n3.append(item);
                     container.append(n3);
                 } else {
                     if ($.trim(key).length !== 1) { // hack will replace 
-                        var item = $("<li><b>" + key + "</b></li>");
+                        item = $("<li><b>" + key + "</b></li>");
                         n3.append(item);
                         container.append(n3);
                     } else {
-                        var item = $("<li></li>");
+                        item = $("<li></li>");
                         item.append(n3);
                         container.append(item);
                     }
                 }
-                for (var i in map[key]) {
+                for (let i in map[key]) {
                     if ((typeof map[key][i]) === "string") {// && ($.trim(map[key[i]]) !== '')) {
                         string += "<li><b> " + i + "</b>: " + map[key][i] + "</li>";
                         n3.append(string);
