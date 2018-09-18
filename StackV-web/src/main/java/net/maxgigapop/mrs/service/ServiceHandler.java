@@ -162,7 +162,7 @@ public class ServiceHandler {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -188,7 +188,7 @@ public class ServiceHandler {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -268,7 +268,7 @@ public class ServiceHandler {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
             if (lastState != null) {
                 updateLastState(lastState, refUUID);
             }
@@ -306,7 +306,7 @@ public class ServiceHandler {
         prep.setString(1, refUuid);
         prep.executeUpdate();
 
-        commonsClose(front_conn, prep, null);
+        commonsClose(front_conn, prep, null, logger);
 
         URL url = new URL(String.format("%s/app/acl/ipa/servicepolicies/%s", HOST, refUuid));
         HttpURLConnection delete = (HttpURLConnection) url.openConnection();
@@ -475,7 +475,7 @@ public class ServiceHandler {
             logger.catching("setSuperState", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -574,7 +574,7 @@ public class ServiceHandler {
             logger.catching("updateLastState", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 }

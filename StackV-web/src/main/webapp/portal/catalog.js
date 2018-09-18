@@ -831,103 +831,107 @@ export function reloadModals() {
     }
 
     // Load service metadata.
-    catCount = 0, profCount = 0;
+    if ($("#profiles-modal").iziModal("getState") === "opened") {
+        catCount = 0;
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/panel/editor";
+        $.ajax({
+            url: apiUrl,
+            type: "GET",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            success: function (result) {
+                $("#catalog-modal-service-meta").empty();
+                for (let i = 0; i < result.length; i++) {
+                    var meta = result[i];
 
-    var apiUrl = window.location.origin + "/StackV-web/restapi/app/panel/editor";
-    $.ajax({
-        url: apiUrl,
-        type: "GET",
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            $("#catalog-modal-service-meta").empty();
-            for (let i = 0; i < result.length; i++) {
-                var meta = result[i];
+                    var name = meta[0];
+                    var desc = meta[1];
+                    var tag = meta[2];
 
-                var name = meta[0];
-                var desc = meta[1];
-                var tag = meta[2];
+                    var $service = $("<a></a>");
+                    $service.addClass("list-group-item list-group-item-action flex-column align-items-start");
+                    $service.attr("data-tag", tag);
 
-                var $service = $("<a></a>");
-                $service.addClass("list-group-item list-group-item-action flex-column align-items-start");
-                $service.attr("data-tag", tag);
+                    $service.append("<h4 style=\"display: inline-block;\">" + name + "</h4>");
+                    if (desc) {
+                        $service.append("<p>" + desc + "</p>");
+                    }
 
-                $service.append("<h4 style=\"display: inline-block;\">" + name + "</h4>");
-                if (desc) {
-                    $service.append("<p>" + desc + "</p>");
+                    $("#catalog-modal-service-meta").append($service);
+                    catCount++;
                 }
-
-                $("#catalog-modal-service-meta").append($service);
-                catCount++;
             }
-        }
-    });
+        });
+    }
 
     // Load service profiles.
-    apiUrl = window.location.origin + "/StackV-web/restapi/app/panel/wizard";
-    $.ajax({
-        url: apiUrl,
-        type: "GET",
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-        },
-        success: function (result) {
-            $("#profiles-modal-service-meta").empty();
-            for (let i = 0; i < result.length; i++) {
-                var profile = result[i];
+    if ($("#profiles-modal").iziModal("getState") === "opened") {
+        profCount = 0;
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/panel/wizard";
+        $.ajax({
+            url: apiUrl,
+            type: "GET",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            },
+            success: function (result) {
+                $("#profiles-modal-service-meta").empty();
+                for (let i = 0; i < result.length; i++) {
+                    var profile = result[i];
 
-                var name = profile[0];
-                var desc = profile[1];
-                var id = profile[2];
-                var owner = profile[3];
-                var editable = profile[4];
-                var created = profile[5].split(".")[0];
-                var lastEdited = profile[6];
-                if (lastEdited) {
-                    lastEdited = lastEdited.split(".")[0];
-                }
-
-                var $profile = $("<a></a>");
-                $profile.addClass("list-group-item list-group-item-action flex-column align-items-start");
-                $profile.attr("data-id", id);
-
-                $profile.append("<h4 style=\"display: inline-block;\">" + name + "</h4>");
-
-                // Properties
-                var $note = $("<small></small>");
-                if (owner !== keycloak.tokenParsed.preferred_username) {
-                    $note.css({ "color": "#777", "padding": "5px" });
-                    $note.text("created by " + owner + " ");
-                    $profile.append($note);
-                    if (editable === "0") {
-                        $profile.css("box-shadow", "inset 0px 0px 2px 0px #ff5f5f");
-                        $note.text($note.text() + "(Read only)");
+                    var name = profile[0];
+                    var desc = profile[1];
+                    var id = profile[2];
+                    var owner = profile[3];
+                    var editable = profile[4];
+                    var created = profile[5].split(".")[0];
+                    var lastEdited = profile[6];
+                    if (lastEdited) {
+                        lastEdited = lastEdited.split(".")[0];
                     }
-                }
 
-                var $time = $("<small></small>");
-                $time.css({ "float": "right", "text-align": "right", "padding-top": "10px" });
-                var timeStr = "Created: " + created;
-                if (lastEdited) {
-                    timeStr += "<br>Last edited: " + lastEdited;
-                }
-                $time.html(timeStr);
-                $profile.append($time);
+                    var $profile = $("<a></a>");
+                    $profile.addClass("list-group-item list-group-item-action flex-column align-items-start");
+                    $profile.attr("data-id", id);
 
-                if (desc) {
-                    $profile.append("<p>" + desc + "</p>");
-                }
-                // ***
+                    $profile.append("<h4 style=\"display: inline-block;\">" + name + "</h4>");
 
-                $("#profiles-modal-service-meta").append($profile);
-                profCount++;
+                    // Properties
+                    var $note = $("<small></small>");
+                    if (owner !== keycloak.tokenParsed.preferred_username) {
+                        $note.css({ "color": "#777", "padding": "5px" });
+                        $note.text("created by " + owner + " ");
+                        $profile.append($note);
+                        if (editable === "0") {
+                            $profile.css("box-shadow", "inset 0px 0px 2px 0px #ff5f5f");
+                            $note.text($note.text() + "(Read only)");
+                        }
+                    }
+
+                    var $time = $("<small></small>");
+                    $time.css({ "float": "right", "text-align": "right", "padding-top": "10px" });
+                    var timeStr = "Created: " + created;
+                    if (lastEdited) {
+                        timeStr += "<br>Last edited: " + lastEdited;
+                    }
+                    $time.html(timeStr);
+                    $profile.append($time);
+
+                    if (desc) {
+                        $profile.append("<p>" + desc + "</p>");
+                    }
+                    // ***
+
+                    $("#profiles-modal-service-meta").append($profile);
+                    profCount++;
+                }
             }
-        }
-    });
+        });
+    }
 
     // Reload open profile
-    if ($profModal.data("profile-id")) {
+    if ($("#profile-details-modal").iziModal("getState") === "opened") {
         var profileID = $profModal.data("profile-id");
         let apiUrl = window.location.origin + "/StackV-web/restapi/app/profile/" + profileID;
         $.ajax({

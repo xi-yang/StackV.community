@@ -26,12 +26,13 @@ class ButtonPanel extends React.Component {
         super(props);
 
         this.state = {};
+
         this.moderateState = this.moderateState.bind(this);
         this.sendRequest = this.sendRequest.bind(this);
 
         let sendRequest = this.sendRequest;
         $(".button-confirm-op").click(function () {
-            sendRequest($(this).data("mode"));
+            sendRequest($(this).data("uuid"), $(this).data("mode"));
             $("#modal-button-confirm").iziModal("close");
         });
     }
@@ -44,6 +45,9 @@ class ButtonPanel extends React.Component {
             this.props.last === prevProps.last && this.props.isVerifying === prevProps.isVerifying)) {
             this.moderateState();
         }
+    }
+    componentWillUnmount() {
+        $(".button-confirm-op").off("click");
     }
 
     moderateState() {
@@ -124,8 +128,8 @@ class ButtonPanel extends React.Component {
         this.setState(newOps);
     }
 
-    sendRequest(command) {
-        let apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + this.props.uuid + "/" + command;
+    sendRequest(uuid, command) {
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + uuid + "/" + command;
         $.ajax({
             url: apiUrl,
             type: "PUT",
@@ -211,10 +215,11 @@ class OpButton extends React.Component {
         if (!this.state.confirmation) {
             // No confirmation required
             let command = this.props.operation.toLowerCase().replace(" ", "_");
-            this.props.sendRequest(command);
+            this.props.sendRequest(this.props.uuid, command);
         } else {
             $("#modal-button-confirm").iziModal("open");
             $(".button-confirm-op").attr("data-mode", this.props.operation.toLowerCase().replace(" ", "_"));
+            $(".button-confirm-op").attr("data-uuid", this.props.uuid);
         }
     }
 

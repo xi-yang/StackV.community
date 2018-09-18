@@ -164,7 +164,7 @@ public class ServiceEngine {
             } catch (SQLException ex) {
                 logger.catching(method, ex);
             } finally {
-                commonsClose(front_conn, prep, rs);
+                commonsClose(front_conn, prep, rs, logger);
             }
         }
     }
@@ -203,7 +203,7 @@ public class ServiceEngine {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            WebResource.commonsClose(front_conn, prep, rs);
+            WebResource.commonsClose(front_conn, prep, rs, logger);
         }
 
         logger.end(method);
@@ -231,7 +231,7 @@ public class ServiceEngine {
             logger.catching("cacheSystemDelta", ex);
             throw ex;
         } finally {
-            WebResource.commonsClose(front_conn, prep, rs);
+            WebResource.commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -319,7 +319,7 @@ public class ServiceEngine {
         } catch (SQLException ex) {
             logger.catching("getCachedSystemDelta", ex);
         } finally {
-            WebResource.commonsClose(front_conn, prep, rs);
+            WebResource.commonsClose(front_conn, prep, rs, logger);
         }
         return null;
     }

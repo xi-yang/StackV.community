@@ -251,3 +251,9 @@ div#catalog-tab-content {
     border: 1px solid red;
     color: red;
 }
+
+
+.button-confirm-op, .button-confirm-close {
+    width: 50%;
+    border-radius: 0;
+}
