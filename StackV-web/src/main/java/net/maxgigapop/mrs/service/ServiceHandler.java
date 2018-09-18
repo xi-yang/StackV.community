@@ -162,6 +162,7 @@ public class ServiceHandler {
             logger.catching(method, ex);
             throw ex;
         } finally {
+            logger.trace(method, "Connection closing!");
             commonsClose(front_conn, prep, rs, logger);
         }
     }

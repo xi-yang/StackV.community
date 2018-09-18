@@ -152,19 +152,23 @@ public class ServiceEngine {
             throw ex;
         } finally {
             logger.trace_start("updateLastState", lastState);
+            Connection front_conn2 = null; 
+            PreparedStatement prep2 = null;
             try {
-                front_conn = factory.getConnection("frontend");
+                front_conn2 = factory.getConnection("frontend");
 
-                prep = front_conn.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
-                prep.setString(1, lastState);
-                prep.setString(2, refUUID);
-                prep.executeUpdate();
+                prep2 = front_conn2.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
+                prep2.setString(1, lastState);
+                prep2.setString(2, refUUID);
+                prep2.executeUpdate();
 
                 logger.trace_end("updateLastState");
             } catch (SQLException ex) {
                 logger.catching(method, ex);
             } finally {
+                logger.trace(method, "Connection closing!");
                 commonsClose(front_conn, prep, rs, logger);
+                commonsClose(front_conn2, prep2, null, logger);
             }
         }
     }

@@ -2388,7 +2388,6 @@ public class WebResource {
     @GET
     @Path("/profile/{wizardID}")
     @Produces("application/json")
-    @RolesAllowed("F_Profiles-R")
     public String getProfile(@PathParam("wizardID") int wizardID) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -3273,17 +3272,11 @@ public class WebResource {
 
     public static void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs, StackLogger logger) {        
         try {
-            if (rs != null) {
-                DbUtils.close(rs);
-            }
-            if (prep != null) {
-                DbUtils.close(prep);
-            }
-            if (front_conn != null) {
-                DbUtils.close(front_conn);
-            }
+            DbUtils.close(rs);
+            DbUtils.close(prep);
+            DbUtils.close(front_conn);
         } catch (SQLException ex) {
-            logger.error("commonsClose", "Error closing connection");
+            logger.catching("commonsClose", ex);
         }
     }
 

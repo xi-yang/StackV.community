@@ -24,6 +24,7 @@
     "lodash.isequal": "^4.5.0",
     "lz-string": "^1.4.4",
     "mousetrap": "^1.6.2",
+    "mysql": "^2.16.0",
     "prop-types": "^15.6.2",
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
