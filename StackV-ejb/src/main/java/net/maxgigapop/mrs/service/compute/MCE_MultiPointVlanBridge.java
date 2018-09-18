@@ -223,11 +223,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         BandwidthProfile reqBandwithProfile = null;
         if (jsonConnReq.containsKey("bandwidth")) {
             JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
-            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.getLong(jsonBw.get("maximum").toString()) : null;
-            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
+            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
             reqBandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
-            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
-            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null; //default = 1
+            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
             reqBandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class") != null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
             reqBandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
         }
@@ -369,11 +369,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         BandwidthProfile reqBandwithProfile = null;
         if (jsonConnReq.containsKey("bandwidth")) {
             JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
-            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.getLong(jsonBw.get("maximum").toString()) : null;
-            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
+            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
             reqBandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
-            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
-            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null; //default = 1
+            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
             reqBandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class") != null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
             reqBandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
         }

@@ -910,6 +910,7 @@ public class MCETools {
                 return false;
             } 
             if (bwpfAvailable.granularity != null && bwpfAvailable.granularity > 0 
+                    && bwpfRequest.reservableCapacity != 1
                     && bwpfRequest.reservableCapacity % bwpfAvailable.granularity != 0) {
                 return false;
             } 
