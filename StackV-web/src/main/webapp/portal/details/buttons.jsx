@@ -15,11 +15,6 @@ var confirmConfig = {
     transitionOut: "fadeOutDown",
     pauseOnHover: true
 };
-var $confirmModal = $("#modal-button-confirm").iziModal(confirmConfig);
-$confirmModal.iziModal("setContent", "<button class=\"button-confirm-close btn btn-primary\" data-izimodal-close=\"\">Close</button><button class=\"button-confirm-op btn btn-danger\">Confirm</button>");
-$(".button-confirm-close").click(function () {
-    $("#modal-button-confirm").iziModal("close");
-});
 
 class ButtonPanel extends React.Component {
     constructor(props) {
@@ -28,13 +23,6 @@ class ButtonPanel extends React.Component {
         this.state = {};
 
         this.moderateState = this.moderateState.bind(this);
-        this.sendRequest = this.sendRequest.bind(this);
-
-        let sendRequest = this.sendRequest;
-        $(".button-confirm-op").click(function () {
-            sendRequest($(this).data("uuid"), $(this).data("mode"));
-            $("#modal-button-confirm").iziModal("close");
-        });
     }
 
     componentDidMount() {
@@ -128,8 +116,64 @@ class ButtonPanel extends React.Component {
         this.setState(newOps);
     }
 
-    sendRequest(uuid, command) {
-        let apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + uuid + "/" + command;
+    render() {
+        return <div style={{ left: "10px" }} className="btn-group" role="group">
+            <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} />
+            <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} />
+            <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} />
+            <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} />
+            <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} />
+            <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} />
+            <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} />
+            <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} />
+            <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} />
+            <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} />
+        </div>;
+    }
+}
+ButtonPanel.propTypes = {
+    uuid: PropTypes.string.isRequired,
+    super: PropTypes.string.isRequired,
+    sub: PropTypes.string.isRequired,
+    last: PropTypes.string.isRequired,
+    isVerifying: PropTypes.bool
+};
+
+class OpButton extends React.Component {
+    constructor(props) {
+        super(props);
+
+        let init = {};
+        switch (props.operation) {
+            case "Cancel":
+            case "Delete":
+                init.confirmation = true;
+        }
+
+        this.state = init;
+        this.sendRequest = this.sendRequest.bind(this);
+
+        let sendRequest = this.sendRequest;
+        $(".button-confirm-op").click(function () {
+            sendRequest($(this).data("uuid"), $(this).data("mode"));
+            $("#modal-button-confirm").iziModal("close");
+        });
+        this.execute = this.execute.bind(this);
+    }
+
+    execute() {
+        let command = this.props.operation.toLowerCase().replace(" ", "_");
+        if (!this.state.confirmation) {
+            // No confirmation required            
+            this.sendRequest(this.props.uuid, command);
+        } else {
+            $("#modal-button-" + command).iziModal("open");
+        }
+    }
+
+    sendRequest() {
+        let command = this.props.operation.toLowerCase().replace(" ", "_");
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + this.props.uuid + "/" + command;
         $.ajax({
             url: apiUrl,
             type: "PUT",
@@ -173,57 +217,20 @@ class ButtonPanel extends React.Component {
     }
 
     render() {
-        return <div style={{ left: "10px" }} className="btn-group" role="group">
-            <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} sendRequest={this.sendRequest} />
-            <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} sendRequest={this.sendRequest} />
-            <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} sendRequest={this.sendRequest} />
-            <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} sendRequest={this.sendRequest} />
-            <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} sendRequest={this.sendRequest} />
-            <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} sendRequest={this.sendRequest} />
-            <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} sendRequest={this.sendRequest} />
-            <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} sendRequest={this.sendRequest} />
-            <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} sendRequest={this.sendRequest} />
-            <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} sendRequest={this.sendRequest} />
-        </div>;
-    }
-}
-ButtonPanel.propTypes = {
-    uuid: PropTypes.string.isRequired,
-    super: PropTypes.string.isRequired,
-    sub: PropTypes.string.isRequired,
-    last: PropTypes.string.isRequired,
-    isVerifying: PropTypes.bool
-};
-
-class OpButton extends React.Component {
-    constructor(props) {
-        super(props);
-
-        let init = {};
-        switch (props.operation) {
-            case "Cancel":
-            case "Delete":
-                init.confirmation = true;
+        let command = this.props.operation.toLowerCase().replace(" ", "_");
+        if (this.state.confirmation) {
+            let butt = this;
+            var $confirmModal = $("#modal-button-" + command).iziModal(confirmConfig);
+            $confirmModal.iziModal("setContent", "<button class=\"button-confirm button-confirm-" + command + "-close btn btn-primary\" data-izimodal-close=\"\">Close</button><button class=\"button-confirm button-confirm-" + command + "-op btn btn-danger\">Confirm</button>");
+            $(".button-confirm-" + command + "-close").click(function () {
+                $("#modal-button-" + command).iziModal("close");
+            });
+            $(".button-confirm-" + command + "-op").click(function () {
+                butt.sendRequest();
+                $("#modal-button-" + command).iziModal("close");
+            });
         }
 
-        this.state = init;
-
-        this.execute = this.execute.bind(this);
-    }
-
-    execute() {
-        if (!this.state.confirmation) {
-            // No confirmation required
-            let command = this.props.operation.toLowerCase().replace(" ", "_");
-            this.props.sendRequest(this.props.uuid, command);
-        } else {
-            $("#modal-button-confirm").iziModal("open");
-            $(".button-confirm-op").attr("data-mode", this.props.operation.toLowerCase().replace(" ", "_"));
-            $(".button-confirm-op").attr("data-uuid", this.props.uuid);
-        }
-    }
-
-    render() {
         let classes;
         if (this.state.confirmation === undefined || this.state.confirmation === false) {
             classes = "btn btn-default";
@@ -234,11 +241,11 @@ class OpButton extends React.Component {
         if (!this.props.visible) {
             return null;
         } else if (this.props.label) {
-            return <button className={classes} id={"op-" + this.props.operation.toLowerCase()} onClick={this.execute}>
+            return <button className={classes} id={"op-" + command} onClick={this.execute}>
                 {this.props.label}
             </button>;
         } else {
-            return <button className={classes} id={"op-" + this.props.operation.toLowerCase()} onClick={this.execute}>
+            return <button className={classes} id={"op-" + command} onClick={this.execute}>
                 {this.props.operation}
             </button>;
         }

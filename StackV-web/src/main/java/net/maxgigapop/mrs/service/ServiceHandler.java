@@ -194,9 +194,6 @@ public class ServiceHandler {
 
     // OPERATION METHODS
     public void operate(String action) throws SQLException, IOException, InterruptedException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         String method = "operate:" + action;
 
         logger.refuuid(refUUID);
@@ -268,7 +265,6 @@ public class ServiceHandler {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs, logger);
             if (lastState != null) {
                 updateLastState(lastState, refUUID);
             }

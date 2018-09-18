@@ -131,7 +131,7 @@ pre.expanded{
     overflow-x: auto;
 }
 
-.button-confirm-op, .button-confirm-close {
+.button-confirm {
     width: 50%;
     border-radius: 0;
 }
