@@ -87,8 +87,8 @@ public class AuditService {
         } catch (SQLException ex) {
             logger.catching(method, ex);
         } finally {
-            commonsClose(frontConn, prep, rs);     
-            commonsClose(backConn, prep, rs);     
+            commonsClose(frontConn, prep, rs, logger);     
+            commonsClose(backConn, prep, rs, logger);     
         }
     }
 }

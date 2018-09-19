@@ -93,7 +93,7 @@ public class VerificationDrone implements Runnable {
                 logger.status("run", "Verification attempted to start, but already started");
         }
 
-        WebResource.commonsClose(conn, prep, rs);
+        WebResource.commonsClose(conn, prep, rs, logger);
         executor.shutdown();
     }
 
@@ -333,7 +333,7 @@ public class VerificationDrone implements Runnable {
             } catch (SQLException ex) {
                 logger.catching(method, ex);
             } finally {
-                WebResource.commonsClose(conn, prep, rs);
+                WebResource.commonsClose(conn, prep, rs, logger);
             }
         }
     }

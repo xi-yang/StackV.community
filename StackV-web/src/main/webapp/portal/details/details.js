@@ -20,14 +20,17 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
-/* global XDomainRequest, TweenLite, Power2, Mousetrap, details_viz */
+/* global XDomainRequest, TweenLite, Power2, details_viz */
+import Mousetrap from "mousetrap";
+
 import { keycloak } from "../nexus";
 import { loadLoggingDataTable, reloadLogs } from "../logging";
-import { resumeRefresh, initRefresh, pauseRefresh, refreshSync } from "../refresh";
+import { resumeRefresh, initRefresh, pauseRefresh, refreshSync, setRefresh, timerChange } from "../refresh";
 
 import React from "react";
 import ReactDOM from "react-dom";
 import ButtonPanel from "./buttons";
+import InstructionPanel from "./instructions";
 
 // Tweens
 var tweenDetailsPanel = new TweenLite("#details-panel", 1, {
@@ -95,20 +98,6 @@ var verificationTime;
 var verificationAddition;
 var verificationReduction;
 
-Mousetrap.bind({
-    "shift+left": function () {
-        window.location.href = "/StackV-web/portal/";
-    },
-    "shift+right": function () {
-        window.location.href = "/StackV-web/portal/driver/";
-    },
-    "left": function () {
-        viewShift("left");
-    },
-    "right": function () {
-        viewShift("right");
-    }
-});
 function viewShift(dir) {
     switch (view) {
         case "left":
@@ -148,6 +137,9 @@ function newView(panel) {
             view = "center";
             break;
         case "visual":
+            $("#refresh-timer").val("15");
+            timerChange($("#refresh-timer")[0]);
+            updateData();
             tweenVisualPanel.play();
             $("#visual-tab").addClass("active");
             view = "right";
@@ -165,7 +157,8 @@ function resetView() {
             tweenDetailsPanel.reverse();
             break;
         case "right":
-            closeVisTabs();
+            $("#refresh-timer").val("1");
+            timerChange($("#refresh-timer")[0]);
             $("#sub-nav .active").removeClass("active");
             tweenVisualPanel.reverse();
             break;
@@ -175,6 +168,11 @@ function resetView() {
 /* DETAILS */
 
 export function loadDetails() {
+    Mousetrap.bind("shift+left", function () { window.location.href = "/StackV-web/portal/"; });
+    Mousetrap.bind("shift+right", function () { window.location.href = "/StackV-web/portal/driver/"; });
+    Mousetrap.bind("left", function () { viewShift("left"); });
+    Mousetrap.bind("right", function () { viewShift("right"); });
+
     $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
         initRefresh($("#refresh-timer").val());
         switch (view) {
@@ -212,7 +210,8 @@ export function loadDetails() {
     $loadingModal.iziModal(loadingConfig);
 
     var uuid = sessionStorage.getItem("instance-uuid");
-    startDetailsEngine(uuid);
+    refUUID = uuid;
+    updateData();
 
     var apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?refUUID=" + uuid;
     loadLoggingDataTable(apiUrl);
@@ -644,73 +643,6 @@ function toggleTextModel(viz_table, text_table) {
     }
 }
 
-/* REFRESH */
-function reloadData() {
-    keycloak.updateToken(90).error(function () {
-        console.log("Error updating token!");
-    }).success(function (refreshed) {
-        var timerSetting = $("#refresh-timer").val();
-        if (timerSetting > 15) {
-            switch (view) {
-                case "left":
-                    /*tweenLoggingPanel.reverse();*/
-                    break;
-                case "center":
-                    tweenDetailsPanel.reverse();
-                    break;
-                case "right":
-                    tweenVisualPanel.reverse();
-                    break;
-            }
-            setTimeout(function () {
-                reloadLogs();
-                updateData();
-                renderDetails();
-                $(".delta-table-header").click(function () {
-                    $("#body-" + this.id).toggleClass("hide");
-                });
-                refreshSync(refreshed, timerSetting);
-            }, 250);
-        } else {
-            reloadLogs();
-            updateData();
-            renderDetails();
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-            refreshSync(refreshed, timerSetting);
-        }
-    });
-}
-
-
-/* Details Engine */
-function startDetailsEngine(uuid) {
-    refUUID = uuid;
-
-    updateData();
-    renderDetails(uuid);
-}
-
-function renderDetails(uuid) {
-    // Buttons
-    /*$(".instance-command").addClass("hide");
-    for (let i in buttons) {
-        var button = buttons[i];
-        if (button === "verify" && verificationHasDrone) {
-            $("#unverify").removeClass("hide");
-        } else if (button === "cancel" && superState === "CANCEL") {
-            $("#reinstate").removeClass("hide");
-        } else if (button === "force_cancel" && superState === "CANCEL") {
-            $("#force_reinstate").removeClass("hide");
-        } else {
-            $("#" + button).removeClass("hide");
-        }
-    }*/
-
-    loadVisualization();
-}
-
 // --------------------
 
 export function updateData() {
@@ -799,8 +731,17 @@ export function updateData() {
     });
 
     ReactDOM.render(
-        React.createElement(ButtonPanel, { uuid: refUUID, state: superState + " - " + subState, last: lastState, verify: verificationHasDrone }, null),
+        React.createElement(ButtonPanel, {
+            uuid: refUUID, super: superState, sub: subState, last: lastState, isVerifying: verificationHasDrone
+        }, null),
         document.getElementById("button-panel")
+    );
+
+    ReactDOM.render(
+        React.createElement(InstructionPanel, {
+            uuid: refUUID, super: superState, sub: subState, verificationResult: verificationResult, verificationHasDrone: verificationHasDrone, verificationElapsed: verificationElapsed
+        }, null),
+        document.getElementById("instruction-block")
     );
 
     $.ajax({
@@ -861,7 +802,7 @@ export function updateData() {
             if (verificationHasDrone && verificationElapsed) {
                 instruction += " (Verification elapsed time: " + verificationElapsed + ")";
             }
-            $instruction.html(instruction);
+            //$instruction.html(instruction);
             if (subState === "FAILED") {
                 if (lastState !== null) {
                     $subState.html(subState + " (after " + lastState + ")");
@@ -874,4 +815,7 @@ export function updateData() {
             $superState.html(superState);
         }
     });
+    if ($("#refresh-timer").val() !== "1") {
+        loadVisualization();
+    }
 }

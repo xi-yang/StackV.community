@@ -45,107 +45,107 @@ function details_viz() {
         "local/stackv/utils",
         "local/stackv/topology/DropDownTree",
         "local/stackv/topology/ContextMenu"],
-        function (m, l, r, d3_, utils_, tree, c) {
-            var token = sessionStorage.getItem("token");
+    function (m, l, r, d3_, utils_, tree, c) {
+        var token = sessionStorage.getItem("token");
 
-            $.ajax({
-                crossDomain: true,
-                type: "GET",
-                url: "/StackV-web/restapi/service/ready",
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + token);
-                },
+        $.ajax({
+            crossDomain: true,
+            type: "GET",
+            url: "/StackV-web/restapi/service/ready",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + token);
+            },
 
-                dataType: "text",
+            dataType: "text",
 
-                success: function (data, textStatus, jqXHR) {
-                    if (data === "true") {
-                        //                                //alert(textStatus);
-                        layout = l;
-                        render = r;
-                        d3 = d3_;
-                        utils = utils_;
-                        map_ = utils.map_;
-                        bsShowFadingMessage = utils.bsShowFadingMessage;
-                        positionDisplayPanel = utils.positionDisplayPanel;
+            success: function (data, textStatus, jqXHR) {
+                if (data === "true") {
+                    //                                //alert(textStatus);
+                    layout = l;
+                    render = r;
+                    d3 = d3_;
+                    utils = utils_;
+                    map_ = utils.map_;
+                    bsShowFadingMessage = utils.bsShowFadingMessage;
+                    positionDisplayPanel = utils.positionDisplayPanel;
 
-                        // possibly pass in map here later for all possible dialogs
-                        ContextMenu = c;
-                        DropDownTree = tree;
+                    // possibly pass in map here later for all possible dialogs
+                    ContextMenu = c;
+                    DropDownTree = tree;
 
-                        ModelConstructor = m;
-                        model = new ModelConstructor();
-                        model.init(1, renderModels, null, "default");
+                    ModelConstructor = m;
+                    model = new ModelConstructor();
+                    model.init(1, renderModels, null, "default");
 
-                        functionMap["ModelBrowser"] = function (o, m, e) {
-                            positionDisplayPanel(m + "_displayPanel", e);
-                            var browser = document.querySelector("#" + m + "_displayPanel");
-                            $(".displayPanel").removeClass("displayPanel-active");
-                            browser.classList.add("displayPanel-active");
-                            render.API.selectElement(o, outputApiMap[m]);
+                    functionMap["ModelBrowser"] = function (o, m, e) {
+                        positionDisplayPanel(m + "_displayPanel", e);
+                        var browser = document.querySelector("#" + m + "_displayPanel");
+                        $(".displayPanel").removeClass("displayPanel-active");
+                        browser.classList.add("displayPanel-active");
+                        render.API.selectElement(o, outputApiMap[m]);
 
-                        };
+                    };
 
-                        contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
-                        contextMenu.init();
-                        //
-                        console.log("after model.");
-                    } else {
-                        displayError("Backend not Ready", d3, "va_viz", -80);
-                        disableButtons("va");
-                        displayError("Backend not Ready", d3, "ur_viz", -80);
-                        disableButtons("ur");
-                        displayError("Backend not Ready", d3, "ua_viz", -80);
-                        disableButtons("ua");
-                        displayError("Backend not Ready", d3, "vr_viz", -80);
-                        disableButtons("vr");
-
-                        displayError("Backend not Ready", d3, "serva_viz", -80);
-                        disableButtons("serva");
-                        displayError("Backend not Ready", d3, "servr_viz", -80);
-                        disableButtons("servr");
-                        displayError("Backend not Ready", d3, "sysa_viz", -80);
-                        disableButtons("sysa");
-                        displayError("Backend not Ready", d3, "sysr_viz", -80);
-                        disableButtons("sysr");
-                    }
-                },
-
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("Debugging: timeout at start..");
-                    // displayError("Visualization Unavailable", d3_);
-                    //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
-                    displayError("Unavailable", d3, "va_viz");
+                    contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
+                    contextMenu.init();
+                    //
+                    console.log("after model.");
+                } else {
+                    displayError("Backend not Ready", d3, "va_viz", -80);
                     disableButtons("va");
-                    displayError("Unavailable", d3, "ur_viz");
+                    displayError("Backend not Ready", d3, "ur_viz", -80);
                     disableButtons("ur");
-                    displayError("Unavailable", d3, "ua_viz");
+                    displayError("Backend not Ready", d3, "ua_viz", -80);
                     disableButtons("ua");
-                    displayError("Unavailable", d3, "vr_viz");
+                    displayError("Backend not Ready", d3, "vr_viz", -80);
                     disableButtons("vr");
 
-                    displayError("Unavailable", d3, "serva_viz");
+                    displayError("Backend not Ready", d3, "serva_viz", -80);
                     disableButtons("serva");
-                    displayError("Unavailable", d3, "servr_viz");
+                    displayError("Backend not Ready", d3, "servr_viz", -80);
                     disableButtons("servr");
-                    displayError("Unavailable", d3, "sysa_viz");
+                    displayError("Backend not Ready", d3, "sysa_viz", -80);
                     disableButtons("sysa");
-                    displayError("Unavailable", d3, "sysr_viz");
+                    displayError("Backend not Ready", d3, "sysr_viz", -80);
                     disableButtons("sysr");
                 }
-            });
-            $(".displayPanelCloser").on("click", function () {
-                $(".displayPanel").removeClass("displayPanel-active");
+            },
 
-            });
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log("Debugging: timeout at start..");
+                // displayError("Visualization Unavailable", d3_);
+                //alert("textStatus: " + textStatus + " errorThrown: " + errorThrown);
+                displayError("Unavailable", d3, "va_viz");
+                disableButtons("va");
+                displayError("Unavailable", d3, "ur_viz");
+                disableButtons("ur");
+                displayError("Unavailable", d3, "ua_viz");
+                disableButtons("ua");
+                displayError("Unavailable", d3, "vr_viz");
+                disableButtons("vr");
 
-            //                            document.getElementById("displayPanelCloser").onclick = function() {
-            //                              // $("#displayPanel").removeClass( "displayPanel-active");
-            //                                $(".displayPanel").removeClass("displayPanel-active");
-            //
-            //                            };
+                displayError("Unavailable", d3, "serva_viz");
+                disableButtons("serva");
+                displayError("Unavailable", d3, "servr_viz");
+                disableButtons("servr");
+                displayError("Unavailable", d3, "sysa_viz");
+                disableButtons("sysa");
+                displayError("Unavailable", d3, "sysr_viz");
+                disableButtons("sysr");
+            }
+        });
+        $(".displayPanelCloser").on("click", function () {
+            $(".displayPanel").removeClass("displayPanel-active");
 
         });
+
+        //                            document.getElementById("displayPanelCloser").onclick = function() {
+        //                              // $("#displayPanel").removeClass( "displayPanel-active");
+        //                                $(".displayPanel").removeClass("displayPanel-active");
+        //
+        //                            };
+
+    });
 }
 
 function make_display_panel(div_id, prefix) {
@@ -355,8 +355,7 @@ function createTextToggle(prefix, textModel) {
         height = "25vh";
     }
 
-    var textModelDiv = "<div id=\"" + prefix + "_text_div\" class=\"hide details-viz-text-model\"> <pre class=\"details-viz-pre\" style=\"width: " + width +
-        "px; height: " + height + ";overflow:scroll;\"> " + textModel
+    var textModelDiv = "<div id=\"" + prefix + "_text_div\" class=\"hide details-viz-text-model\"> <pre class=\"details-viz-pre\" style=\"height: " + height + ";\"> " + textModel
         + "</pre></div>";
     viz_svg.after(textModelDiv);
 
@@ -414,7 +413,7 @@ function renderModels() {
                     });
                     createTextToggle("serva", data.serviceModelAddition);
                 } else {
-                    displayError("Empty", d3, "serva_viz");
+                    displayError("", d3, "serva_viz");
                     disableButtons("serva");
                 }
 
@@ -433,7 +432,7 @@ function renderModels() {
                     });
                     createTextToggle("servr", data.serviceModelReduction);
                 } else {
-                    displayError("Empty", d3, "servr_viz");
+                    displayError("", d3, "servr_viz");
                     disableButtons("servr");
                 }
 
@@ -451,7 +450,7 @@ function renderModels() {
                     });
                     createTextToggle("sysa", data.systemModelAddition);
                 } else {
-                    displayError("Empty", d3, "sysa_viz");
+                    displayError("", d3, "sysa_viz");
                     disableButtons("sysa");
                 }
 
@@ -469,7 +468,7 @@ function renderModels() {
                     });
                     createTextToggle("sysr", data.systemModelReduction);
                 } else {
-                    displayError("Empty", d3, "sysr_viz");
+                    displayError("", d3, "sysr_viz");
                     disableButtons("sysr");
                 }
             }
@@ -514,7 +513,7 @@ function renderModels() {
                 });
                 createTextToggle("va", data.verified_addition);
             } else {
-                displayError("Empty", d3, "va_viz");
+                displayError("", d3, "va_viz");
                 disableButtons("va");
             }
 
@@ -532,7 +531,7 @@ function renderModels() {
                 });
                 createTextToggle("vr", data.verified_reduction);
             } else {
-                displayError("Empty", d3, "vr_viz");
+                displayError("", d3, "vr_viz");
                 disableButtons("vr");
             }
 
@@ -550,7 +549,7 @@ function renderModels() {
                 });
                 createTextToggle("ua", data.unverified_addition);
             } else {
-                displayError("Empty", d3, "ua_viz");
+                displayError("", d3, "ua_viz");
                 disableButtons("ua");
             }
 
@@ -568,7 +567,7 @@ function renderModels() {
                 });
                 createTextToggle("ur", data.unverified_reduction);
             } else {
-                displayError("Empty", d3, "ur_viz");
+                displayError("", d3, "ur_viz");
                 disableButtons("ur");
             }
         },

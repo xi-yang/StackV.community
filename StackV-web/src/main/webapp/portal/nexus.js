@@ -35,6 +35,7 @@ import { loadCatalog } from "./catalog";
 import { loadDetails } from "./details/details";
 import { loadDriverPortal } from "./driver/driver";
 import { loadIntent } from "./intent/intentEngine";
+import { loadManifest } from "./manifest";
 /* */
 
 export var page;
@@ -157,7 +158,7 @@ $(function () {
                 }
                 break;
             case "manifest":
-                //loadManifest();
+                loadManifest();
                 break;
             case "visualization":
                 import(/* webpackChunkName: "engine" */ "../visual/engine").then(module => {
