@@ -106,6 +106,21 @@ public class MCETools {
             this.reservableCapacity = reservableCapacity;
             this.individualCapacity = reservableCapacity;
         }
+        
+        public MCETools.BandwidthProfile clone() {
+            MCETools.BandwidthProfile clone = new MCETools.BandwidthProfile(this.maximumCapacity);
+            clone.type = this.type;
+            clone.unit = this.unit;
+            clone.granularity = this.granularity;
+            clone.priority = this.priority;
+            clone.maximumCapacity = this.maximumCapacity;
+            clone.availableCapacity = this.availableCapacity;
+            clone.reservableCapacity = this.reservableCapacity;
+            clone.individualCapacity = this.individualCapacity;
+            clone.minimumCapacity = this.minimumCapacity;
+            clone.usedCapacity = this.usedCapacity;
+            return clone;
+        }
     }
     
     public static class Path extends com.hp.hpl.jena.ontology.OntTools.Path {
@@ -165,14 +180,20 @@ public class MCETools {
             this.bandwithScedule = bandwithScedule;
         }
 
-        
-
         public String getConnectionId() {
             return connectionId;
         }
 
         public void setConnectionId(String connectionId) {
             this.connectionId = connectionId;
+        }
+        
+        public MCETools.Path clone() {
+            MCETools.Path clone = new MCETools.Path();
+            clone.addAll(this);
+            clone.setBandwithProfile(this.bandwithProfile.clone());
+            clone.setBandwithScedule(this.bandwithScedule.clone());
+            return clone;
         }
     }
 
@@ -354,8 +375,9 @@ public class MCETools {
                         jsonScheduleOptions.put("sliding-duration", DateTimeUtil.getBandwidthScheduleSeconds(duration));
                     }
                     try {
-                        BandwidthCalendar.BandwidthSchedule schedule = BandwidthCalendar.makePathBandwidthSchedule(transformedModel, candidatePath, jsonScheduleOptions);
+                        BandwidthCalendar.BandwidthSchedule schedule = BandwidthCalendar.makePathBandwidthSchedule(transformedModel, candidatePath, jsonScheduleOptions, null);
                         if (schedule == null) {
+                            logger.trace("computeFeasibleL2KSP", candidatePath.getConnectionId() + " -- failed to find a schedule");
                             verified = false;
                         } else {
                             candidatePath.setBandwithScedule(schedule);

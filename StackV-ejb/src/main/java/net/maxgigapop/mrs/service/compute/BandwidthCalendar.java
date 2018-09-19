@@ -160,7 +160,21 @@ public class BandwidthCalendar {
         }
         return retSchedules;
     }
-            
+    
+    public boolean hasSchedule(long start, long end, long bw) {
+        ListIterator<BandwidthSchedule> it = schedules.listIterator();
+        while (it.hasNext()) {
+            BandwidthSchedule schedule = it.next();
+            if (schedule.getStartTime() >= end || schedule.getEndTime() <= start) {
+                continue;
+            }
+            if (bw > this.capacity - schedule.getBandwidth()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void _addSchedule(long start, long end, long bw) throws BandwidthCalendarException {
         if (bw > this.capacity) {
             throw new BandwidthCalendarException(String.format("add bandwidth:%d -> over capacity:%d", bw, this.capacity));
@@ -246,8 +260,6 @@ public class BandwidthCalendar {
         }
     }
 
-    //@TODO: reduceSchedule
-
     public void combineSchedule(long start, long end, long bw) throws BandwidthCalendarException {
         List<BandwidthSchedule> overlappedSchedules = lookupSchedulesBetween(start, end);
         if (overlappedSchedules == null || overlappedSchedules.isEmpty()) {
@@ -328,34 +340,16 @@ public class BandwidthCalendar {
         return residual;
     }
     
-    
-    public BandwidthCalendar clone() {
-        BandwidthCalendar clone = new BandwidthCalendar(this.capacity);
-        ListIterator<BandwidthSchedule> it = schedules.listIterator();
-        while (it.hasNext()) {
-            clone.schedules.add(it.next());
-        }
-        return clone;
-    }
-    
-    public String toString() {
-        String ret = "BandwidthCalendar:{";
-        ListIterator<BandwidthSchedule> it = schedules.listIterator();
-        while (it.hasNext()) {
-            ret += it.next().toString();
-            if (it.hasNext()) {
-                ret += " - ";
-            }
-        }
-        return ret + "}";
-    }
-    
-    public static BandwidthSchedule makePathBandwidthSchedule(Model model, MCETools.Path path, JSONObject options) throws BandwidthCalendarException {
+    public static BandwidthSchedule makePathBandwidthSchedule(Model model, MCETools.Path path, JSONObject options, BandwidthSchedule suggestedSchedule) throws BandwidthCalendarException {
         BandwidthCalendar pathAvailBwCal = null;
         Iterator<Statement> itS = path.iterator();
         while (itS.hasNext()) {
             Statement link = itS.next();
             BandwidthCalendar hopBwCal = getHopBandwidthCalendar(model, path, link.getSubject().asResource()); 
+            //checking suggestedSchedule
+            if (suggestedSchedule != null && hopBwCal != null && !hopBwCal.hasSchedule(suggestedSchedule.getStartTime(), suggestedSchedule.getEndTime(), suggestedSchedule.getBandwidth())) {
+                return null;
+            }
             if (pathAvailBwCal == null && hopBwCal != null) {
                 pathAvailBwCal = hopBwCal.clone();
             } else if (hopBwCal != null) {
@@ -370,8 +364,15 @@ public class BandwidthCalendar {
                 }
             }
         }
+        if (suggestedSchedule != null) {
+            return suggestedSchedule;
+        }
         if (pathAvailBwCal == null) {
             return null;
+        }
+        long granularity = 1L;
+        if (path.getBandwithProfile() != null && path.getBandwithProfile().granularity != null) {
+            granularity = path.getBandwithProfile().granularity;
         }
         // find schedule 'path.bandwithScedule' with 'pathAvailBwCal' based on 'options'
         // scenario 1: fixed [start - end] or (start:duration) w/o options
@@ -389,6 +390,7 @@ public class BandwidthCalendar {
             //@TODO: handle cases with granularity > 1
             if (options.containsKey("use-highest-bandwidth") && ((String)options.get("use-highest-bandwidth")).equalsIgnoreCase("true")) {
                 // find the maximum bandwidth schedule in boxedSchedules (adjust size)
+                // assume the maximum (residual) bandwidth is always multiple of the granularity
                 long boxBw = 0;
                 BandwidthSchedule selectedSchedule = null;
                 for (BandwidthSchedule boxedSchedule: boxedSchedules) {
@@ -420,7 +422,13 @@ public class BandwidthCalendar {
                 }
                 long boxStart = selectedSchedule.getStartTime();
                 long boxEnd = selectedSchedule.getEndTime();
-                schedule = new BandwidthSchedule(boxStart, boxEnd, (long)Math.ceil((double)timeBandwidthProductBits / scheduleWidth));
+                long boxBw =  (long)Math.ceil((double)timeBandwidthProductBits / scheduleWidth);
+                // granularity alignment
+                if (boxBw % granularity != 0) {
+                    boxBw = (boxBw/granularity + 1) *  granularity;
+                    boxEnd = (long)Math.ceil((double)timeBandwidthProductBits / boxBw) + boxStart;
+                }
+                schedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
             } else if (options.containsKey("bandwidth-mbps <=") && options.get("bandwidth-mbps <=") != null) {
                 String strBwMbps = (String)options.get("bandwidth-mbps <=");
                 Long maxBwBps = Long.parseLong(strBwMbps)*1000000;                
@@ -436,6 +444,13 @@ public class BandwidthCalendar {
                         minBwBps = minBwBpsLeast;
                     }
                 }
+                // granularity alignment
+                if (maxBwBps % granularity != 0) {
+                    maxBwBps = (maxBwBps/granularity) *  granularity;
+                }
+                if (maxBwBps < minBwBps) {
+                    return null;
+                }
                 schedule = null;
                 for (BandwidthSchedule boxedSchedule: boxedSchedules) {
                     if (boxedSchedule.getBandwidth() < minBwBps) {
@@ -445,7 +460,11 @@ public class BandwidthCalendar {
                     if (boxedSchedule.getBandwidth() <= maxBwBps) {
                         long boxBw = boxedSchedule.getBandwidth();
                         long boxStart = boxedSchedule.getStartTime();
-                        long boxEnd = (long)Math.ceil((double)timeBandwidthProductBits / boxBw + boxStart);
+                        // granularity alignment
+                        if (boxBw % granularity != 0) {
+                            boxBw = (boxBw / granularity + 1) * granularity;
+                        }
+                        long boxEnd = (long) Math.ceil((double) timeBandwidthProductBits / boxBw + boxStart);
                         schedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
                         break;
                     } else if (maxBwBps * (boxedSchedule.getEndTime()- boxedSchedule.getStartTime()) >= timeBandwidthProductBits) {
@@ -661,4 +680,26 @@ public class BandwidthCalendar {
         return retScheduleList;
     }
 
+    
+    public BandwidthCalendar clone() {
+        BandwidthCalendar clone = new BandwidthCalendar(this.capacity);
+        ListIterator<BandwidthSchedule> it = schedules.listIterator();
+        while (it.hasNext()) {
+            clone.schedules.add(it.next());
+        }
+        return clone;
+    }
+    
+    public String toString() {
+        String ret = "BandwidthCalendar:{";
+        ListIterator<BandwidthSchedule> it = schedules.listIterator();
+        while (it.hasNext()) {
+            ret += it.next().toString();
+            if (it.hasNext()) {
+                ret += " - ";
+            }
+        }
+        return ret + "}";
+    }
+    
 }

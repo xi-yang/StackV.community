@@ -47,5 +47,6 @@ public class Sd {
     
     public static final String URI_SvcDef_L2P2pEs = "http://services.ogf.org/nsi/2018/06/descriptions/l2-p2p-es";
     public static final String URI_SvcDef_L2MpEs = "http://services.ogf.org/nsi/2018/06/descriptions/l2-mp-es";
+    //public static final String URI_SvcDef_L2MpEs = "http://services.ogf.org/nsi/2013/12/descriptions/EVTS.A-GOLE";
 
 }
