@@ -8,15 +8,15 @@ div#admin-panel {
     display: none;
 }
 
-#logging-header-div {
-    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
-    box-shadow: inset 0 1px 0 #a2b1c3;
-    color: #fff;
-    padding: 10px 15px;
-    position: relative;
-    text-shadow: 0 1px 0 #000;
-    outline: 1px solid black;
-    height: 40px;
+div#logging-panel {
+    left: -150%;
+    text-align: left;
+    padding: 30px 7% 30px 7%;
+    height: calc(100% - 52px);
+    width: 100%;
+    position: absolute;
+    overflow-y: hidden;
+    opacity: 0;
 }
 
 #API-header-div {
@@ -51,7 +51,6 @@ div#admin-panel {
 }
 
 #filter-search-input {
-    width: 200px;
     display: inline;
     margin-left: 20px;
     padding-right: 25px;
@@ -66,6 +65,17 @@ div#admin-panel {
     font-size: 14px;
     cursor: pointer;
     color: #ccc;
+}
+
+#logging-header-div {
+    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
+    box-shadow: inset 0 1px 0 #a2b1c3;
+    color: #fff;
+    padding: 10px 15px;
+    position: relative;
+    text-shadow: 0 1px 0 #000;
+    outline: 1px solid black;
+    height: 40px;
 }
 
 #logging-body-div {
@@ -106,11 +116,11 @@ div#admin-panel {
 */
 
 td.details-control {
-    background: url('../img/dataTables/details_open.png') no-repeat center center;
+    background: url('../../img/dataTables/details_open.png') no-repeat center center;
     cursor: pointer;
 }
 tr.shown td.details-control {
-    background: url('../img/dataTables/details_close.png') no-repeat center center;
+    background: url('../../img/dataTables/details_close.png') no-repeat center center;
 }
 
 #api_result {

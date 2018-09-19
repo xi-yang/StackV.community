@@ -34,24 +34,6 @@ var tweenDriverOverflowDetailsPanel = new TweenLite("#driver-overflow-details-pa
 var tweenBlackScreen = new TweenLite("#black-screen", .5, { ease: Power2.easeInOut, paused: true, autoAlpha: "1" });
 var view = "center";
 
-
-Mousetrap.bind({
-    "shift+left": function () {
-        window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
-    },
-    "shift+right": function () {
-        window.location.href = "/StackV-web/portal/acl/";
-    },
-    "left": function () {
-        viewShift("left");
-    },
-    "right": function () {
-        viewShift("right");
-    },
-    "escape": function () {
-        closeContentPanel();
-    }
-});
 function viewShift(dir) {
     switch (view) {
         case "left":
@@ -141,6 +123,12 @@ function closeContentPanel() {
 }
 
 export function loadDriverPortal() {
+    Mousetrap.bind("shift+left", function () { window.location.href = "/StackV-web/ops/details/templateDetails.jsp"; });
+    Mousetrap.bind("shift+right", function () { window.location.href = "/StackV-web/portal/acl/"; });
+    Mousetrap.bind("left", function () { viewShift("left"); });
+    Mousetrap.bind("right", function () { viewShift("right"); });
+    Mousetrap.bind("escape", function () { closeContentPanel(); });
+
     $(".checkbox-level").change(function () {
         if ($(this).is(":checked")) {
             $("#log-div").removeClass("hide-" + this.name);

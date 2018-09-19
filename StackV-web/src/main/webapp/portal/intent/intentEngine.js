@@ -41,17 +41,6 @@ var simpleManifest = false;
 
 var typingTimer = null;
 
-Mousetrap.bind({
-    "left": function () {
-        if ($activeStage)
-            prevStage();
-    },
-    "right": function () {
-        if ($activeStage)
-            nextStage();
-    }
-});
-
 var $errorModal = $("#error-modal").iziModal({
     title: "Input Error",
     subtitle: "There are invalid inputs. Please review and correct!",
@@ -66,6 +55,9 @@ var $errorModal = $("#error-modal").iziModal({
 });
 
 export function loadIntent(type) {
+    Mousetrap.bind("left", function () { if ($activeStage) prevStage(); });
+    Mousetrap.bind("right", function () { if ($activeStage) nextStage(); });
+
     intentType = type;
     $.ajax({
         type: "GET",

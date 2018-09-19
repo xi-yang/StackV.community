@@ -162,7 +162,8 @@ public class ServiceHandler {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            logger.trace(method, "Connection closing!");
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -175,34 +176,31 @@ public class ServiceHandler {
             front_conn = factory.getConnection("frontend");
             prep = front_conn.prepareStatement("SELECT * FROM service_instance WHERE referenceUUID = ?");
             prep.setString(1, refUUID);
-            ResultSet rs1 = prep.executeQuery();
-            if (rs1.next()) {
-                owner = rs1.getString("username");
-                alias = rs1.getString("alias_name");
-                superState = SuperState.valueOf(rs1.getString("super_state"));
-                type = rs1.getString("type");
-                lastState = rs1.getString("last_state");
-                intent = rs1.getString("intent");
+            rs = prep.executeQuery();
+            if (rs.next()) {
+                owner = rs.getString("username");
+                alias = rs.getString("alias_name");
+                superState = SuperState.valueOf(rs.getString("super_state"));
+                type = rs.getString("type");
+                lastState = rs.getString("last_state");
+                intent = rs.getString("intent");
             }
         } catch (SQLException ex) {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
     // OPERATION METHODS
     public void operate(String action) throws SQLException, IOException, InterruptedException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         String method = "operate:" + action;
 
         logger.refuuid(refUUID);
         logger.start(method);
-        updateLastState("INIT", refUUID);
-        VerificationHandler verify = new VerificationHandler(refUUID, token, 30, 10, false);
+        updateLastState("INIT", refUUID);  
+        VerificationHandler verify = null;
         try {
             switch (action) {
                 case "cancel":
@@ -242,9 +240,11 @@ public class ServiceHandler {
                     break;
 
                 case "verify":
+                    verify = new VerificationHandler(refUUID, token, 30, 10, false);
                     verify.startVerification();
                     break;
                 case "unverify":
+                    verify = new VerificationHandler(refUUID, token, 30, 10, false);
                     verify.stopVerification();
                     break;
 
@@ -264,11 +264,12 @@ public class ServiceHandler {
 
             logger.end(method);
         } catch (IOException | SQLException | InterruptedException | EJBException ex) {
-            verify.stopVerification();
+            if (verify != null) {
+                verify.stopVerification();
+            }
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
             if (lastState != null) {
                 updateLastState(lastState, refUUID);
             }
@@ -306,7 +307,7 @@ public class ServiceHandler {
         prep.setString(1, refUuid);
         prep.executeUpdate();
 
-        commonsClose(front_conn, prep, null);
+        commonsClose(front_conn, prep, null, logger);
 
         URL url = new URL(String.format("%s/app/acl/ipa/servicepolicies/%s", HOST, refUuid));
         HttpURLConnection delete = (HttpURLConnection) url.openConnection();
@@ -475,7 +476,7 @@ public class ServiceHandler {
             logger.catching("setSuperState", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -574,7 +575,7 @@ public class ServiceHandler {
             logger.catching("updateLastState", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 }
