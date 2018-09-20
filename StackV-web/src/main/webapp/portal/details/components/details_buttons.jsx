@@ -1,8 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-import { keycloak, page } from "../nexus";
-import { resumeRefresh, reloadData, startLoading, stopLoading } from "../refresh";
+import { keycloak, page } from "../../nexus";
+import { resumeRefresh, reloadData, startLoading, stopLoading } from "../../refresh";
 
 var confirmConfig = {
     title: "Confirm Operation",

@@ -19,6 +19,7 @@
     "bootstrap": "^3.3.7",
     "clean-webpack-plugin": "^0.1.19",
     "d3": "^5.4.0",
+    "emotion": "^9.2.10",
     "immutable": "^3.8.2",
     "jquery": "^3.3.1",
     "lodash": "^4.17.10",
@@ -29,6 +30,7 @@
     "prop-types": "^15.6.2",
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
+    "react-spinners": "^0.4.5",
     "stackv-visualization": "git+https://git@github.com/DickyT/stackv-visualization.git"
   },
   "devDependencies": {

@@ -35,6 +35,7 @@ module.exports = {
                                 ["@babel/transform-runtime"],
                                 ["transform-class-properties"],
                                 ["@babel/plugin-proposal-class-properties", { "loose": false }],
+                                ["emotion"]
                             ]
                         }
                     }

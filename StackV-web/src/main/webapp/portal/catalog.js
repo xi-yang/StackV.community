@@ -27,7 +27,7 @@ import Mousetrap from "mousetrap";
 
 import { prettyPrintInfo, keycloak } from "./nexus";
 import { initRefresh, reloadData } from "./refresh";
-import { loadInstanceDataTable } from "./logging";
+import { loadInstanceDataTable } from "./logging/logging";
 
 $.ajaxSetup({
     cache: false,

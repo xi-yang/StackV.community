@@ -21,12 +21,12 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
 * IN THE WORK.
 */
-import { keycloak } from "./nexus";
-import { resumeRefresh, pauseRefresh } from "./refresh";
+import { keycloak } from "../nexus";
+import { resumeRefresh, pauseRefresh } from "../refresh";
 
 import React from "react";
 import ReactDOM from "react-dom";
-import ButtonPanel from "./details/details_buttons";
+import ButtonPanel from "../details/components/details_buttons";
 
 /*ReactDOM.render(
     React.createElement(ButtonPanel, { test: "yes" }, null),
@@ -133,18 +133,6 @@ export function loadLoggingDataTable(apiUrl) {
     setInterval(function () {
         drawLoggingCurrentTime();
     }, (1000));
-
-    var level = sessionStorage.getItem("logging-level");
-    if (level !== null) {
-        $("#logging-filter-level").val(level);
-    } else {
-        sessionStorage.setItem("logging-level", "INFO");
-        $("#logging-filter-level").val("INFO");
-    }
-
-    $("#logging-filter-level").change(function () {
-        filterLogs(this);
-    });
 
     function formatChild(d) {
         // `d` is the original data object for the row

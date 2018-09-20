@@ -23,12 +23,11 @@
 */
 import { keycloak, page } from "./nexus";
 import { syncClipbook } from "./clipbook";
-import { dataTable, reloadLogs } from "./logging";
+import { dataTable, reloadLogs } from "./logging/logging";
 
 /* Enabled Scripts */
 import { reloadModals } from "./catalog";
 import { fetchNewData } from "../visual/engine";
-import { updateData } from "./details/details";
 /* */
 
 var refreshTimer;
@@ -164,7 +163,6 @@ export function reloadData() {
                     break;
 
                 case "details":
-                    updateData();
                     reloadLogs();
                     break;
             }

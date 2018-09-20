@@ -1,28 +1,35 @@
-div#details-panel, div#visual-panel {
+
+div#details-panel, div#visual-panel, div#logging-panel {
     padding: 30px 7% 30px 7%;
     height: calc(100% - 52px);
     width: 100%;
     position: absolute;
-    overflow-y: hidden;
-    opacity: 0;
-    display: none;
+    transition: .5s;
 }
-div#details-panel {
-    top: -100%;
-    left: 0;
+div#details-panel, div#visual-panel {
+    overflow-y: hidden;
 }
 div#logging-panel {
-    left: -150%;
     text-align: left;
-    padding: 30px 7% 30px 7%;
-    height: calc(100% - 52px);
-    width: 100%;
-    position: absolute;
-    overflow-y: hidden;
-    opacity: 0;    
 }
-div#visual-panel {
-    right: -100%;
+
+div.top {
+    left: 0;
+    top: 0;
+    z-index: 10;
+}
+div.middle {
+    left: 10px;
+    top: 10px;
+    z-index: 5;    
+}
+div.bottom {
+    left: 20px;
+    top: 20px;
+    z-index: 0;    
+}
+div.middle, div.bottom {
+    filter: blur(3px) grayscale(100%) brightness(30%);        
 }
 
 .details-table, .verification-table {

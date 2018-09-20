@@ -1,21 +1,40 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-class LoggingPanel extends React.PureComponent {
+import { loadLoggingDataTable, reloadLogs, filterLogs } from "../logging/logging";
+
+class LoggingPanel extends React.Component {
     constructor(props) {
         super(props);
+
+        this.state = {
+            level: "INFO"
+        };
+    }
+    shouldComponentUpdate(nextProps, nextState) {
+        if (this.props.active === false && nextProps.active === false) { return false; }
+        return true;
+    }
+    componentDidMount() {
+        var apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?refUUID=" + this.props.uuid;
+        loadLoggingDataTable(apiUrl);
+        reloadLogs();
+    }
+
+    newLevel(sel) {
+        filterLogs(sel);
     }
 
     render() {
-        return <div id="logging-panel">
+        return <div className={this.props.active ? "top" : "bottom"} id="logging-panel">
             <div id="logging-header-div">
                 Logs - Current time:
                 <p id="log-time"></p>
                 <div style={{ float: "right" }}>
                     <label htmlFor="logging-filter-level" style={{ fontWeight: "normal", marginLeft: "15px" }}>Logging Level</label>
-                    <select id="logging-filter-level">
+                    <select id="logging-filter-level" value={this.state.level} onChange={this.newLevel}>
                         <option value="TRACE">TRACE</option>
-                        <option defaultValue="INFO">INFO</option>
+                        <option value="INFO">INFO</option>
                         <option value="WARN">WARN</option>
                         <option value="ERROR">ERROR</option>
                     </select>
@@ -47,6 +66,7 @@ class LoggingPanel extends React.PureComponent {
     }
 }
 LoggingPanel.propTypes = {
+    active: PropTypes.bool.isRequired,
     uuid: PropTypes.string
 };
 export default LoggingPanel;

@@ -1,22 +1,35 @@
 import React from "react";
 import PropTypes from "prop-types";
+import { is } from "immutable";
 
 import ButtonPanel from "./details_buttons";
 import InstructionPanel from "./details_instructions";
 
-class DetailsPanel extends React.PureComponent {
+class DetailsPanel extends React.Component {
     constructor(props) {
         super(props);
     }
+    shouldComponentUpdate(nextProps, nextState) {
+        if (this.props.active === false && nextProps.active === false) { return false; }
+
+        return !(this.props.uuid === nextProps.uuid && this.props.active === nextProps.active
+            && is(this.props.meta, nextProps.meta)
+            && is(this.props.state, nextProps.state)
+            && is(this.props.verify, nextProps.verify));
+    }
+
+    viewIntent() {
+        $("#details-intent-modal").iziModal("open");
+    }
 
     render() {
-        return <div id="details-panel">
+        return <div className={this.props.active ? "top" : "bottom"} id="details-panel">
             <table id="instance-details-table" className="management-table">
                 <thead>
                     <tr>
                         <th>Instance Details</th>
                         <th>
-                            <button className="btn btn-default" id="button-view-intent" style={{ float: "right" }}>View Service Definition</button>
+                            <button className="btn btn-default" id="button-view-intent" onClick={this.viewIntent} style={{ float: "right" }}>View Service Definition</button>
                         </th>
                     </tr>
                 </thead>
@@ -27,7 +40,7 @@ class DetailsPanel extends React.PureComponent {
                     </tr>
                     <tr>
                         <td>Reference UUID</td>
-                        <td id="instance-uuid">{this.props.meta.get("uuid")}</td>
+                        <td id="instance-uuid">{this.props.uuid}</td>
                     </tr>
                     <tr>
                         <td>Owner</td>
@@ -49,13 +62,13 @@ class DetailsPanel extends React.PureComponent {
                     </tr>
                     <tr className="instruction-row">
                         <td colSpan="2">
-                            <InstructionPanel uuid={this.props.meta.get("uuid")} super={this.props.state.get("super")} sub={this.props.state.get("sub")} verificationResult={this.props.verify.get("result")}
+                            <InstructionPanel uuid={this.props.uuid} super={this.props.state.get("super")} sub={this.props.state.get("sub")} verificationResult={this.props.verify.get("result")}
                                 verificationHasDrone={this.props.verify.get("drone")} verificationElapsed={this.props.verify.get("elapsed")}></InstructionPanel>
                         </td>
                     </tr>
                     <tr className="button-row">
                         <td colSpan="2">
-                            <ButtonPanel uuid={this.props.meta.get("uuid")} super={this.props.state.get("super")} sub={this.props.state.get("sub")} last={this.props.state.get("last")} isVerifying={this.props.verify.get("drone")}></ButtonPanel>
+                            <ButtonPanel uuid={this.props.uuid} super={this.props.state.get("super")} sub={this.props.state.get("sub")} last={this.props.state.get("last")} isVerifying={this.props.verify.get("drone")}></ButtonPanel>
                         </td>
                     </tr>
                 </tbody>
@@ -64,6 +77,8 @@ class DetailsPanel extends React.PureComponent {
     }
 }
 DetailsPanel.propTypes = {
+    active: PropTypes.bool.isRequired,
+    uuid: PropTypes.string.isRequired,
     meta: PropTypes.object.isRequired,
     state: PropTypes.object.isRequired,
     verify: PropTypes.object.isRequired,

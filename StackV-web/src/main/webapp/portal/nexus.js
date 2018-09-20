@@ -25,14 +25,17 @@
 // Service JavaScript Library
 import $ from "jquery";
 import "bootstrap";
+import React from "react";
+import ReactDOM from "react-dom";
 
 import loadClipbook from "./clipbook";
 
 /* Pages */
+import Details from "./details/details";
+
 import { loadAdmin } from "./admin/admin";
 import { loadACLPortal } from "./acl/acl";
 import { loadCatalog } from "./catalog";
-import { loadDetails } from "./details/details";
 import { loadDriverPortal } from "./driver/driver";
 import { loadIntent } from "./intent/intentEngine";
 import { loadManifest } from "./manifest";
@@ -154,7 +157,10 @@ $(function () {
                     alert("No Service Instance Selected!");
                     window.location.replace("/StackV-web/");
                 } else {
-                    loadDetails();
+                    ReactDOM.render(
+                        React.createElement(Details, { uuid: uuid }, null),
+                        document.getElementById("main-pane")
+                    );
                 }
                 break;
             case "manifest":
