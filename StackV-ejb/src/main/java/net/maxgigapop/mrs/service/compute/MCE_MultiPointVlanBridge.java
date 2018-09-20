@@ -48,6 +48,7 @@ import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
 import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.common.DateTimeUtil;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.Nml;
@@ -60,6 +61,7 @@ import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_ac
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_flow;
 import static net.maxgigapop.mrs.driver.opendaylight.OpenflowModelBuilder.URI_match;
 import net.maxgigapop.mrs.service.compute.MCETools.BandwidthProfile;
+import static net.maxgigapop.mrs.service.compute.MCETools.normalizeBandwidthPorfile;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -223,11 +225,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         BandwidthProfile reqBandwithProfile = null;
         if (jsonConnReq.containsKey("bandwidth")) {
             JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
-            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.getLong(jsonBw.get("maximum").toString()) : null;
-            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
+            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
             reqBandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
-            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
-            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null; //default = 1
+            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
             reqBandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class") != null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
             reqBandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
         }
@@ -281,6 +283,84 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             bridgePathModel.add(bridgeHop);
             bridgePath.add(bridgeHop);
             bridgePath.setOntModel(bridgePathModel);
+            // check and make schedule
+            //@TODO: Make this block a common method (combine with simlar block in MCETools)
+            if (jsonConnReq.containsKey("schedule")) {
+                MCETools.Path candidatePath = mpvbPath.clone();
+                candidatePath.addAll(bridgePath);
+                JSONObject jsonSchedule = (JSONObject) jsonConnReq.get("schedule");
+                candidatePath.bandwithScedule = new BandwidthCalendar.BandwidthSchedule();
+                String startTime = jsonSchedule.containsKey("start") ? jsonSchedule.get("start").toString() : "now";
+                String endTime = jsonSchedule.containsKey("end") ? jsonSchedule.get("end").toString() : null;
+                String duration = jsonSchedule.containsKey("duration") ? jsonSchedule.get("duration").toString() : null;
+                if (endTime == null && duration == null) {
+                    throw logger.error_throwing(method, "malformed schedule: " + jsonSchedule.toJSONString());
+                }
+                try {
+                    candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
+                } catch (Exception ex) {
+                    throw logger.throwing(method, "malformed schedule startTme", ex);
+                }
+                if (endTime != null) {
+                    if (endTime.startsWith("+")) {
+                        try {
+                            candidatePath.bandwithScedule.setEndTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(endTime));
+                        } catch (Exception ex) {
+                            throw logger.throwing(method, "malformed schedule endTime", ex);
+                        }
+                    } else {
+                        try {
+                            candidatePath.bandwithScedule.setEndTime(DateTimeUtil.getBandwidthScheduleSeconds(endTime));
+                        } catch (Exception ex) {
+                            throw logger.throwing(method, "malformed schedule endTime", ex);
+                        }
+                    }
+                } else {
+                    try {
+                        candidatePath.bandwithScedule.setEndTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(duration));
+                    } catch (Exception ex) {
+                        throw logger.throwing(method, "malformed schedule duration", ex);
+                    }
+                }
+                if (candidatePath.bandwithProfile == null || candidatePath.bandwithProfile.reservableCapacity == null) {
+                    throw logger.error_throwing(method, "input schedule without bandwidth.");
+                }
+                candidatePath.bandwithScedule.setBandwidth(normalizeBandwidthPorfile(candidatePath.bandwithProfile).reservableCapacity);
+                JSONObject jsonScheduleOptions = jsonSchedule.containsKey("options") ? (JSONObject) jsonSchedule.get("options") : new JSONObject();
+                // sliding window
+                if (endTime != null && duration != null) { 
+                    try {
+                        jsonScheduleOptions.put("sliding-duration", DateTimeUtil.getBandwidthScheduleSeconds(duration));
+                    } catch (Exception ex) {
+                        throw logger.throwing(method, "malformed schedule duration", ex);
+                    }
+                }
+                try {
+                    BandwidthCalendar.BandwidthSchedule schedule = BandwidthCalendar.makePathBandwidthSchedule(transformedModel, candidatePath, jsonScheduleOptions, mpvbPath.getBandwithScedule());
+                    if (schedule == null) {
+                        throw logger.error_throwing(method, "BandwidthCalendar.makePathBandwidthSchedule for " + candidatePath.getConnectionId());
+                    } else {
+                        mpvbPath.setBandwithScedule(schedule);
+                        if (mpvbPath.getBandwithProfile() != null) {
+                            //if (candidatePath.getBandwithProfile().maximumCapacity != null) {
+                            //    candidatePath.getBandwithProfile().maximumCapacity = schedule.getBandwidth();
+                            //}
+                            if (mpvbPath.getBandwithProfile().availableCapacity != null) {
+                                mpvbPath.getBandwithProfile().availableCapacity = schedule.getBandwidth();
+                            }
+                            if (mpvbPath.getBandwithProfile().reservableCapacity != null) {
+                                mpvbPath.getBandwithProfile().reservableCapacity = schedule.getBandwidth();
+                            }
+                            mpvbPath.getBandwithProfile().unit = "bps";
+                            //@TODO: warning for granularity mismatch <= schedule.getBandwidth() % candidatePath.getBandwithProfile().granularity != 0
+                        }
+                    }
+                } catch (BandwidthCalendar.BandwidthCalendarException ex) {
+                    logger.trace("computeFeasibleL2KSP", candidatePath.getConnectionId() + " -- " + ex.getMessage());
+                        throw logger.throwing(method, "BandwidthCalendar.makePathBandwidthSchedule for " + candidatePath.getConnectionId() , ex);
+                }
+            }
+            // create model statement
             String vlanPortUrn = terminalX.toString() + ":vlanport+" + vlanXreq;
             Resource resVlanPort = RdfOwl.createResource(bridgePathModel, vlanPortUrn, Nml.BidirectionalPort);
             String vlanLabelUrn = vlanPortUrn + ":label+" + vlanXreq;
@@ -322,6 +402,84 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     if (verified && jsonConnReq.containsKey("bandwidth")) {
                         bridgePath.bandwithProfile = reqBandwithProfile;
                         verified = MCETools.verifyPathBandwidthProfile(transformedModel, bridgePath);
+                    }
+                    // check&make schedule
+                    //@TODO: combine this block into common method
+                    if (verified && jsonConnReq.containsKey("schedule")) {
+                        MCETools.Path candidatePath = mpvbPath.clone();
+                        candidatePath.addAll(bridgePath);
+                        JSONObject jsonSchedule = (JSONObject) jsonConnReq.get("schedule");
+                        candidatePath.bandwithScedule = new BandwidthCalendar.BandwidthSchedule();
+                        String startTime = jsonSchedule.containsKey("start") ? jsonSchedule.get("start").toString() : "now";
+                        String endTime = jsonSchedule.containsKey("end") ? jsonSchedule.get("end").toString() : null;
+                        String duration = jsonSchedule.containsKey("duration") ? jsonSchedule.get("duration").toString() : null;
+                        if (endTime == null && duration == null) {
+                            throw logger.error_throwing(method, "malformed schedule: " + jsonSchedule.toJSONString());
+                        }
+                        try {
+                            candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
+                        } catch (Exception ex) {
+                            throw logger.throwing(method, "malformed schedule startTme", ex);
+                        }
+                        if (endTime != null) {
+                            if (endTime.startsWith("+")) {
+                                try {
+                                    candidatePath.bandwithScedule.setEndTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(endTime));
+                                } catch (Exception ex) {
+                                    throw logger.throwing(method, "malformed schedule endTime", ex);
+                                }
+                            } else {
+                                try {
+                                    candidatePath.bandwithScedule.setEndTime(DateTimeUtil.getBandwidthScheduleSeconds(endTime));
+                                } catch (Exception ex) {
+                                    throw logger.throwing(method, "malformed schedule endTime", ex);
+                                }
+                            }
+                        } else {
+                            try {
+                                candidatePath.bandwithScedule.setEndTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(duration));
+                            } catch (Exception ex) {
+                                throw logger.throwing(method, "malformed schedule duration", ex);
+                            }
+                        }
+                        if (candidatePath.bandwithProfile == null || candidatePath.bandwithProfile.reservableCapacity == null) {
+                            throw logger.error_throwing(method, "input schedule without bandwidth.");
+                        }
+                        candidatePath.bandwithScedule.setBandwidth(normalizeBandwidthPorfile(candidatePath.bandwithProfile).reservableCapacity);
+                        JSONObject jsonScheduleOptions = jsonSchedule.containsKey("options") ? (JSONObject) jsonSchedule.get("options") : new JSONObject();
+                        // sliding window
+                        if (endTime != null && duration != null) {
+                            try {
+                                jsonScheduleOptions.put("sliding-duration", DateTimeUtil.getBandwidthScheduleSeconds(duration));
+                            } catch (Exception ex) {
+                                throw logger.throwing(method, "malformed schedule duration", ex);
+                            }
+                        }
+                        try {
+                            BandwidthCalendar.BandwidthSchedule schedule = BandwidthCalendar.makePathBandwidthSchedule(transformedModel, candidatePath, jsonScheduleOptions, mpvbPath.getBandwithScedule());
+                            if (schedule == null) {
+                                logger.trace(method, candidatePath.getConnectionId() + " -- failed to find a schedule");
+                                verified = false;
+                            } else {
+                                mpvbPath.setBandwithScedule(schedule);
+                                if (mpvbPath.getBandwithProfile() != null) {
+                                    //if (candidatePath.getBandwithProfile().maximumCapacity != null) {
+                                    //    candidatePath.getBandwithProfile().maximumCapacity = schedule.getBandwidth();
+                                    //}
+                                    if (mpvbPath.getBandwithProfile().availableCapacity != null) {
+                                        mpvbPath.getBandwithProfile().availableCapacity = schedule.getBandwidth();
+                                    }
+                                    if (mpvbPath.getBandwithProfile().reservableCapacity != null) {
+                                        mpvbPath.getBandwithProfile().reservableCapacity = schedule.getBandwidth();
+                                    }
+                                    mpvbPath.getBandwithProfile().unit = "bps";
+                                    //@TODO: warning for granularity mismatch <= schedule.getBandwidth() % candidatePath.getBandwithProfile().granularity != 0
+                                }
+                            }
+                        } catch (BandwidthCalendar.BandwidthCalendarException ex) {
+                            logger.trace(method, candidatePath.getConnectionId() + " -- " + ex.getMessage());
+                            verified = false;
+                        }
                     }
                     if (verified) {
                         // connect bridge path into MPVB bridging subnet
@@ -369,11 +527,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
         BandwidthProfile reqBandwithProfile = null;
         if (jsonConnReq.containsKey("bandwidth")) {
             JSONObject jsonBw = (JSONObject) jsonConnReq.get("bandwidth");
-            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.getLong(jsonBw.get("maximum").toString()) : null;
-            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.getLong(jsonBw.get("reservable").toString()) : null;
+            Long maximum = (jsonBw.containsKey("maximum") && jsonBw.get("maximum") != null) ? Long.parseLong(jsonBw.get("maximum").toString()) : null;
+            Long reservable = (jsonBw.containsKey("reservable") && jsonBw.get("reservable") != null) ? Long.parseLong(jsonBw.get("reservable").toString()) : null;
             reqBandwithProfile = new MCETools.BandwidthProfile(maximum, reservable);
-            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.getLong(jsonBw.get("available").toString()) : null; //default = 1
-            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.getLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
+            reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null; //default = 1
+            reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
             reqBandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class") != null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
             reqBandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
         }
