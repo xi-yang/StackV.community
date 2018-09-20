@@ -29,8 +29,12 @@ import { resumeRefresh, initRefresh, pauseRefresh, refreshSync, setRefresh, time
 
 import React from "react";
 import ReactDOM from "react-dom";
-import ButtonPanel from "./buttons";
-import InstructionPanel from "./instructions";
+import { Map } from "immutable";
+
+import ButtonPanel from "./details_buttons";
+import InstructionPanel from "./details_instructions";
+import DetailsPanel from "./details_panel";
+import LoggingPanel from "../logging_panel";
 
 // Tweens
 var tweenDetailsPanel = new TweenLite("#details-panel", 1, {
@@ -172,6 +176,11 @@ export function loadDetails() {
     Mousetrap.bind("shift+right", function () { window.location.href = "/StackV-web/portal/driver/"; });
     Mousetrap.bind("left", function () { viewShift("left"); });
     Mousetrap.bind("right", function () { viewShift("right"); });
+
+    ReactDOM.render(
+        React.createElement(LoggingPanel, null),
+        document.getElementById("logging-panel")
+    );
 
     $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
         initRefresh($("#refresh-timer").val());
@@ -647,6 +656,7 @@ function toggleTextModel(viz_table, text_table) {
 
 export function updateData() {
     // Frontend superstate and metadata
+    var alias, creation, owner;
     let apiUrl = window.location.origin + "/StackV-web/restapi/app/details/" + refUUID + "/instance";
     $.ajax({
         url: apiUrl,
@@ -656,9 +666,9 @@ export function updateData() {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (instance) {
-            var alias = instance[1];
-            var creation = instance[2];
-            var owner = instance[3];
+            alias = instance[1];
+            creation = instance[2];
+            owner = instance[3];
             superState = instance[4];
             lastState = instance[5];
             intent = instance[6];
@@ -730,20 +740,6 @@ export function updateData() {
         }
     });
 
-    ReactDOM.render(
-        React.createElement(ButtonPanel, {
-            uuid: refUUID, super: superState, sub: subState, last: lastState, isVerifying: verificationHasDrone
-        }, null),
-        document.getElementById("button-panel")
-    );
-
-    ReactDOM.render(
-        React.createElement(InstructionPanel, {
-            uuid: refUUID, super: superState, sub: subState, verificationResult: verificationResult, verificationHasDrone: verificationHasDrone, verificationElapsed: verificationElapsed
-        }, null),
-        document.getElementById("instruction-block")
-    );
-
     $.ajax({
         type: "GET",
         async: false,
@@ -791,28 +787,14 @@ export function updateData() {
             }
 
             // Rendering
-            var instructionRegEx = /{{(\S*)}}/g.exec(instruction);
-            if (instructionRegEx) {
-                for (let i = 1; i < instructionRegEx.length; i++) {
-                    var str = instructionRegEx[i];
-                    var result = eval(instructionRegEx[i]);
-                    instruction = instruction.replace("{{" + str + "}}", result);
-                }
-            }
-            if (verificationHasDrone && verificationElapsed) {
-                instruction += " (Verification elapsed time: " + verificationElapsed + ")";
-            }
-            //$instruction.html(instruction);
-            if (subState === "FAILED") {
-                if (lastState !== null) {
-                    $subState.html(subState + " (after " + lastState + ")");
-                } else {
-                    $subState.html(subState + " (Fatal error)");
-                }
-            } else {
-                $subState.html(subState);
-            }
-            $superState.html(superState);
+            let meta = Map({ alias: alias, uuid: refUUID, owner: owner, creation: creation });
+            let state = Map({ super: superState, sub: subState, last: lastState });
+            let verify = Map({ result: verificationResult, drone: verificationHasDrone, elapsed: verificationElapsed });
+
+            ReactDOM.render(
+                React.createElement(DetailsPanel, { meta: meta, state: state, verify: verify }, null),
+                document.getElementById("details-panel")
+            );
         }
     });
     if ($("#refresh-timer").val() !== "1") {
