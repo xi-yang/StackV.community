@@ -1,7 +1,25 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (c) 2013-2018 University of Maryland
+ * Created by: SaiArvind Ganganapalle 2017
+ * Modified by: SaiArvind Ganganapalle 2017-2018
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and/or hardware specification (the “Work”) to deal in the 
+ * Work without restriction, including without limitation the rights to use, 
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+ * the Work, and to permit persons to whom the Work is furnished to do so, 
+ * subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Work.
+
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ * IN THE WORK.
  */
 package net.maxgigapop.mrs.common;
 
@@ -21,7 +39,10 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 /**
- *
+ * This class provides the methods to lease addresses (IPs or MACs)
+ * from the IPA ALM plugin. In addition, for every leased address, an EAS 
+ * task will be created in order to release the address when the service 
+ * instance is deleted.
  * @author saiarvind
  */
 public class IpaAlm {
@@ -231,9 +252,10 @@ public class IpaAlm {
      * @param specificAddr
      * @return 
      */
-    public String leaseAddr(String clientId, String poolName, String poolType, String specificAddr) {
+    public String leaseAddr(String clientId, String poolName, String poolType, String specificAddr, String topUri) {
         // return null if an address cannot be leased
         String addr = null;
+        String dn = null;
         
         // pass the parameters and run the request
         JSONObject leaseResponseJSON = createLease(clientId, poolName, poolType, specificAddr);
@@ -246,6 +268,11 @@ public class IpaAlm {
             if (resultJSON.get("value").equals("successfully lease!")) {
                 // get the inner result object
                 JSONObject innerResultJSON = (JSONObject) resultJSON.get("result");
+                
+                // get the dn needed for creating the EAS task
+                dn = (String) innerResultJSON.get("dn");
+                
+                System.out.println("IPA ALM dn: " + dn);
                 
                 // get the almstatments array
                 JSONArray almstmtsArr = (JSONArray) innerResultJSON.get("almstatements");
@@ -261,7 +288,14 @@ public class IpaAlm {
             }
         }
         
-        return addr;
+        boolean easTaskCreated = createEasTask(dn, topUri);
+        if (addr != null && addr.length() > 0 && easTaskCreated) {
+            return addr;
+        } else {
+            return null;
+        }
+        
+        // return addr;
     }
     
     /**
@@ -305,5 +339,49 @@ public class IpaAlm {
         }
         
         return leased;
+    }
+    
+    private boolean createEasTask(String dn, String topUri) {
+        String cn = topUri + "_alm_address";
+        JSONObject createEasTaskResponseJSON = createEasTaskJSON(dn,cn);
+        
+         // parse the JSON response for the address
+        // if there is no error
+        if (createEasTaskResponseJSON.get("error") == null && createEasTaskResponseJSON.get("result") != null) {
+            JSONObject resultJSON = (JSONObject) createEasTaskResponseJSON.get("result");
+            JSONObject innerResultJSON = (JSONObject) resultJSON.get("result");
+            if (innerResultJSON.get("value").equals(cn)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private JSONObject createEasTaskJSON(String dn, String cn) {
+        JSONObject leaseJSON = new JSONObject();
+        leaseJSON.put("id", 0);
+        leaseJSON.put("method", "easTask_add");
+        
+        JSONArray paramsArr = new JSONArray();
+        paramsArr.add(new JSONArray());
+        
+        JSONObject paramsArrArgs = new JSONObject();
+        paramsArrArgs.put("cn", cn);
+        paramsArrArgs.put("eastasktype", "alm-lease");
+        paramsArrArgs.put("eastaskaction", "delete");
+        paramsArrArgs.put("eastaskstatus", "INIT");
+        paramsArrArgs.put("eastasktriggers", "delete-trigger");
+        paramsArrArgs.put("eastasklockedby", "lockedby");
+        paramsArrArgs.put("eastasklockexpires", "1");
+        paramsArrArgs.put("eastaskresourcerefdn", dn);
+        paramsArrArgs.put("eastaskoptions", "none");
+        
+       
+        paramsArr.add(paramsArrArgs);
+        
+        leaseJSON.put("params", paramsArr);
+        
+        return runIpaRequest(leaseJSON);
     }
 }
