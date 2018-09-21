@@ -3,6 +3,7 @@
  * Created by: Zan Wang 2015
  * Modified by: Xi Yang 2015-2016
  * Modified by: Adam Smith 2017
+ * Modified by: SaiArvind Ganganapalle 2017-2018
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -2682,16 +2683,16 @@ public class OpenStackPush {
                     if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
                         // explicit mention of "any"
                         // query the IPA ALM manager for an address                          
-                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, null);
+                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, null, topologyUri);
                     } else {
                         // get the specifed address                        
-                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, addrInfo[1]);                        
+                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, addrInfo[1], topologyUri);                        
                     }                    
                 } else {
                     // the queried information should look like this format: pool+pool_name
                     String[] poolInfo = queryIp.split("\\+");                  
                     // query the IPA ALM manager for an address  
-                    ip = ipaAlm.leaseAddr(clientName, poolInfo[1], ipPoolType, null);
+                    ip = ipaAlm.leaseAddr(clientName, poolInfo[1], ipPoolType, null, topologyUri);
                 }                            
             }
             
@@ -2721,16 +2722,16 @@ public class OpenStackPush {
                     if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
                         // explicit mention of "any"
                         // query the IPA ALM manager for a mac address
-                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, null);
+                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, null, topologyUri);
                     } else {
                         // get the specifed address                        
-                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, addrInfo[1]);                        
+                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, addrInfo[1], topologyUri);                        
                     }                    
                 } else {
                     // the queried information should look like this format: pool+pool_name
                     String[] poolInfo = queryIp.split("\\+");
                     // query the IPA ALM manager for an address
-                    mac = ipaAlm.leaseAddr(clientName, poolInfo[1], macPoolType, null);
+                    mac = ipaAlm.leaseAddr(clientName, poolInfo[1], macPoolType, null, topologyUri);
                 }
             }
             
