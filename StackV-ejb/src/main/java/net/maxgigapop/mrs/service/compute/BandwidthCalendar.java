@@ -13,14 +13,17 @@ import com.hp.hpl.jena.rdf.model.Statement;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.maxgigapop.mrs.common.DateTimeUtil;
 import net.maxgigapop.mrs.common.ModelUtil;
 import org.json.simple.JSONObject;
+import java.lang.Math;
 
 /**
  *
@@ -157,7 +160,21 @@ public class BandwidthCalendar {
         }
         return retSchedules;
     }
-            
+    
+    public boolean hasSchedule(long start, long end, long bw) {
+        ListIterator<BandwidthSchedule> it = schedules.listIterator();
+        while (it.hasNext()) {
+            BandwidthSchedule schedule = it.next();
+            if (schedule.getStartTime() >= end || schedule.getEndTime() <= start) {
+                continue;
+            }
+            if (bw > this.capacity - schedule.getBandwidth()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void _addSchedule(long start, long end, long bw) throws BandwidthCalendarException {
         if (bw > this.capacity) {
             throw new BandwidthCalendarException(String.format("add bandwidth:%d -> over capacity:%d", bw, this.capacity));
@@ -243,8 +260,6 @@ public class BandwidthCalendar {
         }
     }
 
-    //@TODO: reduceSchedule
-
     public void combineSchedule(long start, long end, long bw) throws BandwidthCalendarException {
         List<BandwidthSchedule> overlappedSchedules = lookupSchedulesBetween(start, end);
         if (overlappedSchedules == null || overlappedSchedules.isEmpty()) {
@@ -297,9 +312,242 @@ public class BandwidthCalendar {
         }
     }
     
+    public BandwidthCalendar residual(long start, long end) {
+        BandwidthCalendar residual = new BandwidthCalendar(this.capacity);
+        if (schedules.isEmpty()) {
+            residual.schedules.add(new BandwidthSchedule(new Date().getTime()/1000L, infinite, this.capacity));
+            return residual;
+        }
+        ListIterator<BandwidthSchedule> it = schedules.listIterator();
+        long lastEnd = start;
+        while (it.hasNext()) {
+            BandwidthSchedule schedule = it.next();
+            if (lastEnd > 0 && lastEnd < schedule.startTime) {
+                BandwidthSchedule residualScheduleGap = new BandwidthSchedule(lastEnd, schedule.startTime, this.capacity);
+                residual.schedules.add(residualScheduleGap);
+            }
+            lastEnd = schedule.getEndTime();
+            BandwidthSchedule residualSchedule = schedule.clone();
+            residualSchedule.setBandwidth(capacity - schedule.getBandwidth());
+            if (residualSchedule.getBandwidth() > 0) {
+                residual.schedules.add(residualSchedule);
+            }
+            if (!it.hasNext() && schedule.getEndTime() < end) {
+                BandwidthSchedule residualScheduleTail = new BandwidthSchedule(schedule.getEndTime(), infinite, this.capacity);
+                residual.schedules.add(residualScheduleTail);
+            }
+        }
+        return residual;
+    }
+    
+    public static BandwidthSchedule makePathBandwidthSchedule(Model model, MCETools.Path path, JSONObject options, BandwidthSchedule suggestedSchedule) throws BandwidthCalendarException {
+        BandwidthCalendar pathAvailBwCal = null;
+        Iterator<Statement> itS = path.iterator();
+        while (itS.hasNext()) {
+            Statement link = itS.next();
+            BandwidthCalendar hopBwCal = getHopBandwidthCalendar(model, path, link.getSubject().asResource()); 
+            //checking suggestedSchedule
+            if (suggestedSchedule != null && hopBwCal != null && !hopBwCal.hasSchedule(suggestedSchedule.getStartTime(), suggestedSchedule.getEndTime(), suggestedSchedule.getBandwidth())) {
+                return null;
+            }
+            if (pathAvailBwCal == null && hopBwCal != null) {
+                pathAvailBwCal = hopBwCal.clone();
+            } else if (hopBwCal != null) {
+                pathAvailBwCal.combineCalendar(hopBwCal);
+            }
+            if (!itS.hasNext()) {
+                hopBwCal = getHopBandwidthCalendar(model, path, link.getObject().asResource());
+                if (pathAvailBwCal == null && hopBwCal != null) {
+                    pathAvailBwCal = hopBwCal.clone();
+                } else if (hopBwCal != null) {
+                    pathAvailBwCal.combineCalendar(hopBwCal);
+                }
+            }
+        }
+        if (suggestedSchedule != null) {
+            return suggestedSchedule;
+        }
+        if (pathAvailBwCal == null) {
+            return null;
+        }
+        long granularity = 1L;
+        if (path.getBandwithProfile() != null && path.getBandwithProfile().granularity != null) {
+            granularity = path.getBandwithProfile().granularity;
+        }
+        // find schedule 'path.bandwithScedule' with 'pathAvailBwCal' based on 'options'
+        // scenario 1: fixed [start - end] or (start:duration) w/o options
+        // scenario 2: slinding [start - end > duration) w/ options
+        // scenario 3: time-bandwidth-product w/ options
+        long start = path.getBandwithScedule().getStartTime();
+        long end = path.getBandwithScedule().getEndTime();
+        long duration = end - start; 
+        long deadline = duration; // offset from start
+        BandwidthSchedule schedule;
+        if (options.containsKey("tbp-mbytes")) {
+            String strProductMbytes = (String)options.get("tbp-mbytes");
+            Long timeBandwidthProductBits = Long.parseLong(strProductMbytes)*8000000;
+            List<BandwidthSchedule> boxedSchedules = pathAvailBwCal.getTimeBandwidthProductSchedules(timeBandwidthProductBits, start, deadline);
+            //@TODO: handle cases with granularity > 1
+            if (options.containsKey("use-highest-bandwidth") && ((String)options.get("use-highest-bandwidth")).equalsIgnoreCase("true")) {
+                // find the maximum bandwidth schedule in boxedSchedules (adjust size)
+                // assume the maximum (residual) bandwidth is always multiple of the granularity
+                long boxBw = 0;
+                BandwidthSchedule selectedSchedule = null;
+                for (BandwidthSchedule boxedSchedule: boxedSchedules) {
+                    // find a schedule in boxedSchedules with bandwidth between these maximum and minimum (adjust size)
+                    if (boxedSchedule.getBandwidth() > boxBw) {
+                        boxBw = boxedSchedule.getBandwidth();
+                        selectedSchedule = boxedSchedule;
+                    }
+                }
+                if (selectedSchedule == null) {
+                    return null;
+                }
+                long boxStart = selectedSchedule.getStartTime();
+                long boxEnd = (long)Math.ceil((double)timeBandwidthProductBits / boxBw) + boxStart;
+                schedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
+            } else if (options.containsKey("use-lowest-bandwidth") && ((String)options.get("use-lowest-bandwidth")).equalsIgnoreCase("true")) {
+                // find widest schedule in boxedSchedules (adjust size)
+                long scheduleWidth = 0;
+                BandwidthSchedule selectedSchedule = null;
+                for (BandwidthSchedule boxedSchedule: boxedSchedules) {
+                    // find a schedule in boxedSchedules with bandwidth between these maximum and minimum (adjust size)
+                    if (boxedSchedule.getEndTime() - boxedSchedule.getStartTime() > scheduleWidth) {
+                        scheduleWidth = boxedSchedule.getEndTime() - boxedSchedule.getStartTime();
+                        selectedSchedule = boxedSchedule;
+                    }
+                }
+                if (selectedSchedule == null) {
+                    return null;
+                }
+                long boxStart = selectedSchedule.getStartTime();
+                long boxEnd = selectedSchedule.getEndTime();
+                long boxBw =  (long)Math.ceil((double)timeBandwidthProductBits / scheduleWidth);
+                // granularity alignment
+                if (boxBw % granularity != 0) {
+                    boxBw = (boxBw/granularity + 1) *  granularity;
+                    boxEnd = (long)Math.ceil((double)timeBandwidthProductBits / boxBw) + boxStart;
+                }
+                schedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
+            } else if (options.containsKey("bandwidth-mbps <=") && options.get("bandwidth-mbps <=") != null) {
+                String strBwMbps = (String)options.get("bandwidth-mbps <=");
+                Long maxBwBps = Long.parseLong(strBwMbps)*1000000;                
+                Long minBwBpsLeast = (long)Math.ceil((double)timeBandwidthProductBits / (end-start));
+                if (maxBwBps < minBwBpsLeast) {
+                    maxBwBps = minBwBpsLeast;
+                }
+                Long minBwBps = minBwBpsLeast;
+                if (options.containsKey("bandwidth-mbps >=") && options.get("bandwidth-mbps >=") != null) {
+                    strBwMbps = (String)options.get("bandwidth-mbps >=");
+                    minBwBps = Long.parseLong(strBwMbps)*1000000;
+                    if (minBwBps < minBwBpsLeast) {
+                        minBwBps = minBwBpsLeast;
+                    }
+                }
+                // granularity alignment
+                if (maxBwBps % granularity != 0) {
+                    maxBwBps = (maxBwBps/granularity) *  granularity;
+                }
+                if (maxBwBps < minBwBps) {
+                    return null;
+                }
+                schedule = null;
+                for (BandwidthSchedule boxedSchedule: boxedSchedules) {
+                    if (boxedSchedule.getBandwidth() < minBwBps) {
+                        continue;
+                    }
+                    // find a schedule in boxedSchedules with bandwidth between these maximum and minimum (adjust size)
+                    if (boxedSchedule.getBandwidth() <= maxBwBps) {
+                        long boxBw = boxedSchedule.getBandwidth();
+                        long boxStart = boxedSchedule.getStartTime();
+                        // granularity alignment
+                        if (boxBw % granularity != 0) {
+                            boxBw = (boxBw / granularity + 1) * granularity;
+                        }
+                        long boxEnd = (long) Math.ceil((double) timeBandwidthProductBits / boxBw + boxStart);
+                        schedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
+                        break;
+                    } else if (maxBwBps * (boxedSchedule.getEndTime()- boxedSchedule.getStartTime()) >= timeBandwidthProductBits) {
+                        long boxBw = maxBwBps;
+                        long boxStart = boxedSchedule.getStartTime();
+                        long boxEnd = (long)Math.ceil((double)timeBandwidthProductBits / boxBw + boxStart);
+                        schedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
+                        break;
+                    }
+                }
+            } else {
+                return null;
+            }
+        } else {
+            if (options.containsKey("sliding-duration")) {
+                duration = (long)options.get("sliding-duration");
+            } 
+            schedule = pathAvailBwCal.makeSchedule(path.getBandwithScedule().getBandwidth(), start, duration, deadline, false);
+        }
+        // scenarios: extra options / queries
+        return schedule;    
+    }
+    
+    //$$ normalize bandwidth unit internally
+    private static BandwidthCalendar getHopBandwidthCalendar(Model model, MCETools.Path path, Resource hop) throws BandwidthCalendarException {
+        String sparql = "SELECT ?capacity ?unit WHERE {"
+                + String.format("<%s> a nml:BidirectionalPort; nml:hasService ?bwSvc .  ", hop.getURI())
+                + "?bwSvc a mrs:BandwidthService. "
+                + "?bwSvc mrs:reservableCapacity ?capacity. "
+                + "OPTIONAL { ?bwSvc mrs:unit ?unit }"
+                + "}";
+        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
+        BandwidthCalendar bwCal = null;
+        if (rs.hasNext()) {
+            QuerySolution solution = rs.next();
+            long bw = Long.parseLong(solution.getLiteral("capacity").getString());
+            String unit = solution.contains("unit") ? solution.getLiteral("unit").getString() : "bps";
+            bw = MCETools.normalizeBandwidth(bw, unit);
+            bwCal = new BandwidthCalendar(bw);
+        }
+        if (bwCal == null) {
+            return null;
+        }
+
+        sparql = "SELECT ?subport ?start ?end WHERE {"
+                + String.format("<%s> nml:hasBidirectionalPort ?subport. ", hop.getURI())
+                + "?subport nml:hasService ?subBwSvc. "
+                + "?subBwSvc a mrs:BandwidthService. "
+                + "OPTIONAL { ?subBwSvc nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end. } "
+                + "}";
+        rs = ModelUtil.sparqlQuery(model, sparql);
+        while (rs.hasNext()) {
+            QuerySolution solution = rs.next();
+            Resource resSubport = solution.getResource("subport");
+            MCETools.BandwidthProfile subBwProfile = MCETools.getHopBandwidthPorfile(model, resSubport);
+            if (subBwProfile == null || subBwProfile.reservableCapacity == null) {
+                continue;
+            }
+            long start = new Date().getTime()/1000L;
+            long end = infinite;
+            if (solution.contains("start")) {
+                try {
+                    start = DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("start").getString());
+                } catch (Exception ex) {
+                    throw new BandwidthCalendarException("cannot parse schedule start time: " + solution.getLiteral("start").getString());
+                } 
+            }
+            if (solution.contains("end")) {
+                try {
+                    end= DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("end").getString());
+                } catch (Exception ex) {
+                    throw new BandwidthCalendarException("cannot parse schedule end time: " + solution.getLiteral("end").getString());
+                }
+            }
+            bwCal.addSchedule(start, end, subBwProfile.reservableCapacity);
+        }
+        return bwCal;
+    }
+    
+
     // deadline is a offset value to be relative to startTime (consistent 'now')
     public BandwidthSchedule makeSchedule(long bw, long start, long duration, long deadline, boolean add) {
-        BandwidthCalendar residual = this.residual();
+        BandwidthCalendar residual = this.residual(start, start+deadline);
         ListIterator<BandwidthSchedule> it = residual.getSchedules().listIterator();
         // remove all segments without required bandwidth
         while (it.hasNext()) {
@@ -345,26 +593,93 @@ public class BandwidthCalendar {
         return retSchedule;
     }
 
-    public BandwidthCalendar residual() {
-        BandwidthCalendar residual = new BandwidthCalendar(this.capacity);
-        if (schedules.isEmpty()) {
-            residual.schedules.add(new BandwidthSchedule(new Date().getTime()/1000L, infinite, this.capacity));
-            return residual;
+    // deadline is a offset value to be relative to startTime (consistent 'now')
+    public List<BandwidthSchedule> getTimeBandwidthProductSchedules(long tbp, long start, long deadline) {
+        List<BandwidthSchedule> retScheduleList = new ArrayList();
+        if (deadline > 0) {
+            deadline += start;
+        } else {
+            deadline = infinite;
         }
-        ListIterator<BandwidthSchedule> it = schedules.listIterator();
-        long lastEnd = 0;
+        BandwidthCalendar residual = this.residual(start, deadline);
+        ListIterator<BandwidthSchedule> it = residual.getSchedules().listIterator();
         while (it.hasNext()) {
-            BandwidthSchedule schedule = it.next();
-            if (lastEnd > 0 && lastEnd < schedule.startTime) {
-                BandwidthSchedule residualScheduleGap = new BandwidthSchedule(lastEnd, schedule.startTime, this.capacity);
-                residual.schedules.add(residualScheduleGap);
+            BandwidthSchedule residualSchedule = it.next();
+            if (residualSchedule.getEndTime() <= start) {
+                it.remove();
             }
-            BandwidthSchedule residualSchedule = schedule.clone();
-            residualSchedule.setBandwidth(capacity - schedule.getBandwidth());
-            residual.schedules.add(residualSchedule);
+            if (residualSchedule.getStartTime() >= deadline) {
+                it.remove();
+            }
         }
-        return residual;
+        long continuousStart = start;
+        long continuousEnd = start;
+        List<BandwidthSchedule> trialSchedules = new ArrayList();
+        it = residual.getSchedules().listIterator();
+        while (it.hasNext()) {
+            BandwidthSchedule goodSchedule = it.next();
+            trialSchedules.add(goodSchedule);
+            if (continuousStart == start  && continuousEnd == start && goodSchedule.getStartTime() > start) {
+                // align continuousStart to first time slot
+                continuousStart = goodSchedule.getStartTime();
+            }
+            if (continuousEnd != start && continuousEnd != goodSchedule.getStartTime()) {
+                // reset continuousStart if gap
+                continuousStart = goodSchedule.getStartTime();
+                trialSchedules.clear();
+            }
+            continuousEnd = goodSchedule.getEndTime();
+            if (continuousEnd > deadline){
+                continuousEnd = deadline;
+            }
+            // starting from trialStart, go through all time marks of trialSchedules and determine the box size including its left and right
+            int numSegs = trialSchedules.size();
+            //Map<Long, Long> timeBandwidthMap = new HashMap();
+            //timeBandwidthMap.put(continuousStart, trialSchedules.get(0).getBandwidth());
+            //timeBandwidthMap.put(continuousEnd, trialSchedules.get(numSegs-1).getBandwidth());
+            if (numSegs == 1) {
+                BandwidthSchedule bsx = trialSchedules.get(0);
+                long boxStart = bsx.getStartTime() < continuousStart ? continuousStart : bsx.getStartTime();
+                long boxEnd = bsx.getEndTime() > continuousEnd ? continuousEnd : bsx.getEndTime();
+                long boxBw = bsx.getBandwidth();
+                if (boxBw * (boxEnd - boxStart) > tbp) {
+                    BandwidthSchedule boxSchedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
+                    retScheduleList.add(boxSchedule);
+                }
+            } else {
+                // add all right-boxed bandwidth
+                for (int x = 1; x < numSegs; x++) {
+                    BandwidthSchedule bsx = trialSchedules.get(x);
+                    int y = x - 1;
+                    for (; y >= 0; y--) {
+                        BandwidthSchedule bsy = trialSchedules.get(y);
+                        if (bsy.getBandwidth() < bsx.getBandwidth()) {
+                            break;
+                        }
+                    }
+                    int z = x + 1;
+                    for (; z < numSegs; z++) {
+                        BandwidthSchedule bsz = trialSchedules.get(z);
+                        if (bsz.getBandwidth() < bsx.getBandwidth()) {
+                            break;
+                        }
+                    }
+                    // now we got the box btween y+1 and z-1
+                    BandwidthSchedule bsyplus = trialSchedules.get(y + 1);
+                    BandwidthSchedule bszminus = trialSchedules.get(z - 1);
+                    long boxStart = bsyplus.getStartTime() < continuousStart ? continuousStart : bsyplus.getStartTime();
+                    long boxEnd = bszminus.getEndTime() > continuousEnd ? continuousEnd : bszminus.getEndTime();
+                    long boxBw = bsx.getBandwidth();
+                    if (boxBw * (boxEnd - boxStart) > tbp) {
+                        BandwidthSchedule boxSchedule = new BandwidthSchedule(boxStart, boxEnd, boxBw);
+                        retScheduleList.add(boxSchedule);
+                    }
+                }
+            }
+        }
+        return retScheduleList;
     }
+
     
     public BandwidthCalendar clone() {
         BandwidthCalendar clone = new BandwidthCalendar(this.capacity);
@@ -387,89 +702,4 @@ public class BandwidthCalendar {
         return ret + "}";
     }
     
-    public static BandwidthSchedule makePathBandwidthSchedule(Model model, MCETools.Path path, JSONObject options) throws BandwidthCalendarException {
-        BandwidthCalendar pathAvailBwCal = null;
-        Iterator<Statement> itS = path.iterator();
-        while (itS.hasNext()) {
-            Statement link = itS.next();
-            BandwidthCalendar hopBwCal = getHopBandwidthCalendar(model, path, link.getSubject().asResource()); 
-            if (pathAvailBwCal == null && hopBwCal != null) {
-                pathAvailBwCal = hopBwCal.clone();
-            } else if (hopBwCal != null) {
-                pathAvailBwCal.combineCalendar(hopBwCal);
-            }
-            if (!itS.hasNext()) {
-                hopBwCal = getHopBandwidthCalendar(model, path, link.getObject().asResource());
-                if (pathAvailBwCal == null && hopBwCal != null) {
-                    pathAvailBwCal = hopBwCal.clone();
-                } else if (hopBwCal != null) {
-                    pathAvailBwCal.combineCalendar(hopBwCal);
-                }
-            }
-        }
-        if (pathAvailBwCal == null) {
-            return null;
-        }
-        // find schedule 'path.bandwithScedule' with 'pathAvailBwCal' based on 'options'
-        // scenario 1: fixed [start - end] or (start:duration) w/o options
-        // scenario 2: slinding [start - end > duration) w/ options
-        long start = path.getBandwithScedule().getStartTime();
-        long end = path.getBandwithScedule().getEndTime();
-        long duration = end - start;
-        long deadline = duration; // offset
-        if (options.containsKey("sliding-duration")) {
-            duration = (long)options.get("sliding-duration");
-        } 
-        BandwidthSchedule schedule = pathAvailBwCal.makeSchedule(path.getBandwithScedule().getBandwidth(), start, duration, deadline, false);
-        // scenarios: extra options / queries
-        return schedule;    
-    }
-    
-    //$$ normalize bandwidth unit internally
-    private static BandwidthCalendar getHopBandwidthCalendar(Model model, MCETools.Path path, Resource hop) throws BandwidthCalendarException {
-        String sparql = "SELECT ?capacity ?unit ?subport ?start ?end WHERE {"
-                + String.format("<%s> a nml:BidirectionalPort; nml:hasService ?bwSvc .  ", hop.getURI())
-                + String.format("<%s> nml:hasBidirectionalPort ?subport. ", hop.getURI())
-                + "?bwSvc a mrs:BandwidthService. "
-                + "?bwSvc mrs:reservableCapacity ?capacity. "
-                + "?subport nml:hasService ?subBwSvc. "
-                + "?subBwSvc a mrs:BandwidthService. "
-                + "OPTIONAL { ?bwSvc mrs:unit ?unit }"
-                + "OPTIONAL { ?subBwSvc nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end. } "
-                + "}";
-        ResultSet rs = ModelUtil.sparqlQuery(model, sparql);
-        BandwidthCalendar bwCal = null;
-        while (rs.hasNext()) {
-            QuerySolution solution = rs.next();
-            Resource resSubport = solution.getResource("subport");
-            MCETools.BandwidthProfile subBwProfile = MCETools.getHopBandwidthPorfile(model, resSubport);
-            if (subBwProfile == null || subBwProfile.reservableCapacity == null) {
-                continue;
-            }
-            if (bwCal == null) {
-                long bw = Long.parseLong(solution.getLiteral("capacity").getString());
-                String unit = solution.contains("unit") ? solution.getLiteral("unit").getString() : "bps";
-                bw = MCETools.normalizeBandwidth(bw, unit);
-                bwCal = new BandwidthCalendar(bw);
-            }
-            long start = new Date().getTime()/1000L;
-            long end = infinite;
-            if (solution.contains("start")) {
-                try {
-                    start = DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("start").getString());
-                } catch (Exception ex) {
-                    throw new BandwidthCalendarException("cannot parse schedule start time: " + solution.getLiteral("start").getString());
-                } 
-            }
-            if (solution.contains("end")) {
-                try {
-                    end= DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("end").getString());
-                } catch (Exception ex) {
-                    throw new BandwidthCalendarException("cannot parse schedule end time: " + solution.getLiteral("end").getString());
-                }
-            }
-            bwCal.addSchedule(start, end, subBwProfile.reservableCapacity);
-        }
-        return bwCal;
-    }
 }

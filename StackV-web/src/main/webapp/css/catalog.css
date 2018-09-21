@@ -47,7 +47,6 @@ div#refresh-panel {
     display: inline;
     vertical-align: text-top;
     color: #ffffff;
-    float: right;
     margin-right: 10px;
     margin-left: 10px;
 }
@@ -98,7 +97,6 @@ tr.instance-row {
 
 #profileBlankName {
     display: inline;
-    width: 40%;
     transform: scaleX(0);
     opacity: 0;
     transition: opacity 1s, transform 1s;
@@ -250,4 +248,10 @@ div#catalog-tab-content {
 #profile-alias.invalid {
     border: 1px solid red;
     color: red;
+}
+
+
+.button-confirm, .button-confirm {
+    width: 50%;
+    border-radius: 0;
 }

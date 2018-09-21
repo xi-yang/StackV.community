@@ -67,6 +67,4 @@ black-screen: 3
 @import "clipboard.css";
 @import "ops.css";
 @import "acl.css";
-@import "details.css";
-@import "admin.css";
 @import "intent.css";

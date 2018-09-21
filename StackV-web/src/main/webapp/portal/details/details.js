@@ -20,24 +20,35 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
-/* global XDomainRequest, TweenLite, Power2, Mousetrap */
+/* global XDomainRequest, TweenLite, Power2, details_viz */
+import Mousetrap from "mousetrap";
+
 import { keycloak } from "../nexus";
 import { loadLoggingDataTable, reloadLogs } from "../logging";
-import { resumeRefresh, setRefresh, pauseRefresh, refreshSync } from "../refresh";
-//import { details_viz } from "./details_viz";
+import { resumeRefresh, initRefresh, pauseRefresh, refreshSync, setRefresh, timerChange } from "../refresh";
+
+import React from "react";
+import ReactDOM from "react-dom";
+import ButtonPanel from "./buttons";
+import InstructionPanel from "./instructions";
 
 // Tweens
-var tweenDetailsPanel = new TweenLite("#details-panel", 1, {ease: Power2.easeInOut,
-    paused: true, top: "0px", opacity: "1", display: "block"});
-var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {ease: Power2.easeInOut,
-    paused: true, left: "0px", opacity: "1", display: "block"});
-var tweenVisualPanel = new TweenLite("#visual-panel", 1, {ease: Power2.easeInOut,
-    paused: true, right: "0px", opacity: "1", display: "block"});
+var tweenDetailsPanel = new TweenLite("#details-panel", 1, {
+    ease: Power2.easeInOut,
+    paused: true, top: "0px", opacity: "1", display: "block"
+});
+var tweenLoggingPanel = new TweenLite("#logging-panel", 1, {
+    ease: Power2.easeInOut,
+    paused: true, left: "0px", opacity: "1", display: "block"
+});
+var tweenVisualPanel = new TweenLite("#visual-panel", 1, {
+    ease: Power2.easeInOut,
+    paused: true, right: "0px", opacity: "1", display: "block"
+});
 
 var view = "center";
 var $intentModal = $("#details-intent-modal");
 var $loadingModal = $("#loading-modal");
-var $confirmModal = $("#confirm-modal");
 
 var intentConfig = {
     width: 750
@@ -60,22 +71,6 @@ var loadingConfig = {
     },
     onClosing: function () {
         $("#main-pane").removeClass("blurred");
-    }
-};
-var confirmConfig = {
-    title: "Confirm Deletion",
-    subtitle: "Please confirm deletion of service instance. For termination of service, use Cancel instead of Delete.",
-    headerColor: "#BD5B5B",
-    top: 300,
-    timeout: 5000,
-    timeoutProgressbar: true,
-    transitionIn: "fadeInDown",
-    transitionOut: "fadeOutDown",
-    pauseOnHover: true,
-    onClosing: function () {
-        $(".instance-command").attr("disabled", false);
-        resumeRefresh();
-        reloadData();
     }
 };
 
@@ -103,103 +98,94 @@ var verificationTime;
 var verificationAddition;
 var verificationReduction;
 
-Mousetrap.bind({
-    "shift+left": function () {
-        window.location.href = "/StackV-web/portal/";
-    },
-    "shift+right": function () {
-        window.location.href = "/StackV-web/portal/driver/";
-    },
-    "left": function () {
-        viewShift("left");
-    },
-    "right": function () {
-        viewShift("right");
-    }
-});
 function viewShift(dir) {
     switch (view) {
-    case "left":
-        if (dir === "right") {
-            newView("details");
-        }
-        break;
-    case "center":
-        switch (dir) {
         case "left":
-            newView("logging");
+            if (dir === "right") {
+                newView("details");
+            }
+            break;
+        case "center":
+            switch (dir) {
+                case "left":
+                    newView("logging");
+                    break;
+                case "right":
+                    newView("visual");
+                    break;
+            }
+            view = dir;
             break;
         case "right":
-            newView("visual");
+            if (dir === "left") {
+                newView("details");
+            }
             break;
-        }
-        view = dir;
-        break;
-    case "right":
-        if (dir === "left") {
-            newView("details");
-        }
-        break;
     }
 }
 function newView(panel) {
     resetView();
     switch (panel) {
-    case "logging":
-        tweenLoggingPanel.play();
-        $("#logging-tab").addClass("active");
-        view = "left";
-        break;
-    case "details":
-        tweenDetailsPanel.play();
-        $("#sub-details-tab").addClass("active");
-        view = "center";
-        break;
-    case "visual":
-        tweenVisualPanel.play();
-        $("#visual-tab").addClass("active");
-        view = "right";
-        break;
+        case "logging":
+            tweenLoggingPanel.play();
+            $("#logging-tab").addClass("active");
+            view = "left";
+            break;
+        case "details":
+            tweenDetailsPanel.play();
+            $("#sub-details-tab").addClass("active");
+            view = "center";
+            break;
+        case "visual":
+            $("#refresh-timer").val("15");
+            timerChange($("#refresh-timer")[0]);
+            updateData();
+            tweenVisualPanel.play();
+            $("#visual-tab").addClass("active");
+            view = "right";
+            break;
     }
 }
 function resetView() {
     switch (view) {
-    case "left":
-        $("#sub-nav .active").removeClass("active");
-        tweenLoggingPanel.reverse();
-        break;
-    case "center":
-        $("#sub-nav .active").removeClass("active");
-        tweenDetailsPanel.reverse();
-        break;
-    case "right":
-        closeVisTabs();
-        $("#sub-nav .active").removeClass("active");
-        tweenVisualPanel.reverse();
-        break;
+        case "left":
+            $("#sub-nav .active").removeClass("active");
+            tweenLoggingPanel.reverse();
+            break;
+        case "center":
+            $("#sub-nav .active").removeClass("active");
+            tweenDetailsPanel.reverse();
+            break;
+        case "right":
+            $("#refresh-timer").val("1");
+            timerChange($("#refresh-timer")[0]);
+            $("#sub-nav .active").removeClass("active");
+            tweenVisualPanel.reverse();
+            break;
     }
 }
 
 /* DETAILS */
 
 export function loadDetails() {
+    Mousetrap.bind("shift+left", function () { window.location.href = "/StackV-web/portal/"; });
+    Mousetrap.bind("shift+right", function () { window.location.href = "/StackV-web/portal/driver/"; });
+    Mousetrap.bind("left", function () { viewShift("left"); });
+    Mousetrap.bind("right", function () { viewShift("right"); });
+
     $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
-        setRefresh($("#refresh-timer").val());
+        initRefresh($("#refresh-timer").val());
         switch (view) {
-        case "left":
-            $("#logging-tab").addClass("active");
-            break;
-        case "center":
-            $("#sub-details-tab").addClass("active");
-            break;
-        case "right":
-            $("#visual-tab").addClass("active");
-            break;
+            case "left":
+                $("#logging-tab").addClass("active");
+                break;
+            case "center":
+                $("#sub-details-tab").addClass("active");
+                break;
+            case "right":
+                $("#visual-tab").addClass("active");
+                break;
         }
-
-
-
-
 
         $("#logging-tab").click(function () {
             resetView();
@@ -223,14 +209,9 @@ export function loadDetails() {
 
     $loadingModal.iziModal(loadingConfig);
 
-    $confirmModal.html("</button><button class=\"button-confirm-delete btn btn-danger\">Delete</button><button class=\"button-confirm-close btn btn-primary\" data-izimodal-close=\"\">Close</button>");
-    $confirmModal.iziModal(confirmConfig);
-    $(".button-confirm-delete").click(function () {
-        executeCommand($(this).data("mode"));
-    });
-
     var uuid = sessionStorage.getItem("instance-uuid");
-    startDetailsEngine(uuid);
+    refUUID = uuid;
+    updateData();
 
     var apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?refUUID=" + uuid;
     loadLoggingDataTable(apiUrl);
@@ -290,7 +271,7 @@ function buildDeltaTable(type) {
     var cell = document.createElement("td");
     cell.colSpan = "3";
     cell.innerHTML = "<button  class=\"details-model-toggle btn btn-default\" onclick=\"toggleTextModel('."
-            + type.toLowerCase() + "-delta-table', '#delta-" + type + "');\">Toggle Text Model</button>";
+        + type.toLowerCase() + "-delta-table', '#delta-" + type + "');\">Toggle Text Model</button>";
     row.appendChild(cell);
     tbody.appendChild(row);
 
@@ -301,7 +282,7 @@ function buildDeltaTable(type) {
 }
 
 function loadVisualization() {
-    //details_viz();
+    details_viz();
     if (!(subState === "INIT" || (subState === "FAILED" && lastState === "INIT"))) {
         $("#details-viz").load("/StackV-web/details_viz.html", function () {
             document.getElementById("visual-panel").innerHTML = "";
@@ -375,129 +356,129 @@ function loadVisualization() {
 
                 let a;
                 switch (viz_type) {
-                case "System Addition":
-                    table.id = "sd_System_Addition";
+                    case "System Addition":
+                        table.id = "sd_System_Addition";
 
-                    a = buildHeaderLink("sd_System_Addition_Link", "Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_System_Addition_Viz";
+                        a = buildHeaderLink("sd_System_Addition_Link", "Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_System_Addition_Viz";
 
-                    vizRow.appendChild(additionCell);
+                        vizRow.appendChild(additionCell);
 
-                    if (!$("#sysa_viz_div").hasClass("emptyViz")) {
-                        var sysa_viz_div = document.getElementById("sysa_viz_div");
-                        additionCell.appendChild(sysa_viz_div);
-                        sysa_viz_div.classList.remove("hidden");
-                    }
-                    break;
-                case "System Reduction":
-                    table.id = "sd_System_Reduction";
+                        if (!$("#sysa_viz_div").hasClass("emptyViz")) {
+                            var sysa_viz_div = document.getElementById("sysa_viz_div");
+                            additionCell.appendChild(sysa_viz_div);
+                            sysa_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                    case "System Reduction":
+                        table.id = "sd_System_Reduction";
 
-                    a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_System_Reduction_Viz";
+                        a = buildHeaderLink("sd_System_Reduction_Link", "Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_System_Reduction_Viz";
 
-                    vizRow.appendChild(reductionCell);
+                        vizRow.appendChild(reductionCell);
 
-                    if (!$("#sysr_viz_div").hasClass("emptyViz")) {
-                        //  $(".system-delta-table").removeClass("hide");
-                        var sysr_viz_div = document.getElementById("sysr_viz_div");
-                        reductionCell.appendChild(sysr_viz_div);
-                        sysr_viz_div.classList.remove("hidden");
-                    }
+                        if (!$("#sysr_viz_div").hasClass("emptyViz")) {
+                            //  $(".system-delta-table").removeClass("hide");
+                            var sysr_viz_div = document.getElementById("sysr_viz_div");
+                            reductionCell.appendChild(sysr_viz_div);
+                            sysr_viz_div.classList.remove("hidden");
+                        }
 
-                    break;
-                case "Service Addition":
-                    table.id = "sd_Service_Addition";
+                        break;
+                    case "Service Addition":
+                        table.id = "sd_Service_Addition";
 
-                    a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Service_Addition_Viz";
+                        a = buildHeaderLink("sd_Service_Addition_Link", "Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Service_Addition_Viz";
 
-                    vizRow.appendChild(additionCell);
+                        vizRow.appendChild(additionCell);
 
-                    if (!$("#serva_viz_div").hasClass("emptyViz")) {
-                        // $(".service-delta-table").removeClass("hide");
-                        var serva_viz_div = document.getElementById("serva_viz_div");
-                        additionCell.appendChild(serva_viz_div);
-                        serva_viz_div.classList.remove("hidden");
-                    }
+                        if (!$("#serva_viz_div").hasClass("emptyViz")) {
+                            // $(".service-delta-table").removeClass("hide");
+                            var serva_viz_div = document.getElementById("serva_viz_div");
+                            additionCell.appendChild(serva_viz_div);
+                            serva_viz_div.classList.remove("hidden");
+                        }
 
-                    break;
-                case "Service Reduction":
-                    table.id = "sd_Service_Reduction";
+                        break;
+                    case "Service Reduction":
+                        table.id = "sd_Service_Reduction";
 
-                    a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Service_Addition_Viz";
+                        a = buildHeaderLink("sd_Service_Reduction_Link", "Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Service_Addition_Viz";
 
-                    vizRow.appendChild(reductionCell);
+                        vizRow.appendChild(reductionCell);
 
-                    if (!$("#servr_viz_div").hasClass("emptyViz")) {
-                        var servr_viz_div = document.getElementById("servr_viz_div");
-                        reductionCell.appendChild(servr_viz_div);
-                        servr_viz_div.classList.remove("hidden");
-                    }
-                    break;
-                case "Verification Addition":
-                    a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Unverified_Addition_Viz";
+                        if (!$("#servr_viz_div").hasClass("emptyViz")) {
+                            var servr_viz_div = document.getElementById("servr_viz_div");
+                            reductionCell.appendChild(servr_viz_div);
+                            servr_viz_div.classList.remove("hidden");
+                        }
+                        break;
+                    case "Verification Addition":
+                        a = buildHeaderLink("sd_Unverified_Addition_Link", "Unverified Addition");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Unverified_Addition_Viz";
 
-                    vizRow.appendChild(additionCell);
+                        vizRow.appendChild(additionCell);
 
-                    a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Verified_Addition_Viz";
+                        a = buildHeaderLink("sd_Verified_Addition_Link", "Verified Addition");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Verified_Addition_Viz";
 
-                    vizRow.appendChild(reductionCell);
+                        vizRow.appendChild(reductionCell);
 
 
-                    if (!$("#va_viz_div").hasClass("emptyViz") || !$("#ua_viz_div").hasClass("emptyViz")) {
-                        var va_viz_div = document.getElementById("va_viz_div");
-                        var ua_viz_div = document.getElementById("ua_viz_div");
+                        if (!$("#va_viz_div").hasClass("emptyViz") || !$("#ua_viz_div").hasClass("emptyViz")) {
+                            var va_viz_div = document.getElementById("va_viz_div");
+                            var ua_viz_div = document.getElementById("ua_viz_div");
 
-                        additionCell.appendChild(ua_viz_div);
-                        reductionCell.appendChild(va_viz_div);
+                            additionCell.appendChild(ua_viz_div);
+                            reductionCell.appendChild(va_viz_div);
 
-                        ua_viz_div.classList.remove("hidden");
-                        va_viz_div.classList.remove("hidden");
+                            ua_viz_div.classList.remove("hidden");
+                            va_viz_div.classList.remove("hidden");
 
-                    }
+                        }
 
-                    break;
-                case "Verification Reduction":
-                    a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
-                    additionHeader.appendChild(a);
-                    additionCell.classList.add("viz-cell");
-                    additionCell.id = "sd_Unverified_Reduction_Viz";
+                        break;
+                    case "Verification Reduction":
+                        a = buildHeaderLink("sd_Unverified_Reduction_Link", "Unverified Reduction");
+                        additionHeader.appendChild(a);
+                        additionCell.classList.add("viz-cell");
+                        additionCell.id = "sd_Unverified_Reduction_Viz";
 
-                    vizRow.appendChild(additionCell);
+                        vizRow.appendChild(additionCell);
 
-                    a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
-                    reductionHeader.appendChild(a);
-                    reductionCell.classList.add("viz-cell");
-                    reductionCell.id = "sd_Verified_Reduction_Viz";
+                        a = buildHeaderLink("sd_Verified_Reduction_Link", "Verified Reduction");
+                        reductionHeader.appendChild(a);
+                        reductionCell.classList.add("viz-cell");
+                        reductionCell.id = "sd_Verified_Reduction_Viz";
 
-                    vizRow.appendChild(reductionCell);
+                        vizRow.appendChild(reductionCell);
 
-                    if (!$("#vr_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {
-                        var ur_viz_div = document.getElementById("ur_viz_div");
-                        var vr_viz_div = document.getElementById("vr_viz_div");
+                        if (!$("#vr_viz_div").hasClass("emptyViz") || !$("#ur_viz_div").hasClass("emptyViz")) {
+                            var ur_viz_div = document.getElementById("ur_viz_div");
+                            var vr_viz_div = document.getElementById("vr_viz_div");
 
-                        additionCell.appendChild(ur_viz_div);
-                        reductionCell.appendChild(vr_viz_div);
+                            additionCell.appendChild(ur_viz_div);
+                            reductionCell.appendChild(vr_viz_div);
 
-                        ur_viz_div.classList.remove("hidden");
-                        vr_viz_div.classList.remove("hidden");
-                    }
-                    break;
+                            ur_viz_div.classList.remove("hidden");
+                            vr_viz_div.classList.remove("hidden");
+                        }
+                        break;
                 }
                 if (viz_type.includes("Verification")) {
                     headerRow.appendChild(additionHeader);
@@ -662,102 +643,9 @@ function toggleTextModel(viz_table, text_table) {
     }
 }
 
-/* REFRESH */
-function reloadData() {
-    keycloak.updateToken(90).error(function () {
-        console.log("Error updating token!");
-    }).success(function (refreshed) {
-        var timerSetting = $("#refresh-timer").val();
-        if (timerSetting > 15) {
-            switch (view) {
-            case "left":
-                /*tweenLoggingPanel.reverse();*/
-                break;
-            case "center":
-                tweenDetailsPanel.reverse();
-                break;
-            case "right":
-                tweenVisualPanel.reverse();
-                break;
-            }
-            setTimeout(function () {
-                reloadLogs();
-                updateData();
-                renderDetails();
-                $(".delta-table-header").click(function () {
-                    $("#body-" + this.id).toggleClass("hide");
-                });
-                refreshSync(refreshed, timerSetting);
-            }, 250);
-        } else {
-            reloadLogs();
-            updateData();
-            renderDetails();
-            $(".delta-table-header").click(function () {
-                $("#body-" + this.id).toggleClass("hide");
-            });
-            refreshSync(refreshed, timerSetting);
-        }
-    });
-}
-
-
-/* Details Engine */
-function startDetailsEngine(uuid) {
-    refUUID = uuid;
-    attachListeners();
-
-    updateData();
-    renderDetails();
-}
-
-function renderDetails() {
-    if (subState === "FAILED") {
-        if (lastState !== null) {
-            $subState.html(subState + " (after " + lastState + ")");
-        } else {
-            $subState.html(subState + " (Fatal error)");
-        }
-    } else {
-        $subState.html(subState);
-    }
-    $superState.html(superState);
-
-    // Instructions
-    var instructionRegEx = /{{(\S*)}}/g.exec(instruction);
-    if (instructionRegEx) {
-        for (let i = 1; i < instructionRegEx.length; i++) {
-            var str = instructionRegEx[i];
-            var result = eval(instructionRegEx[i]);
-            instruction = instruction.replace("{{" + str + "}}", result);
-        }
-    }
-    if (verificationHasDrone && verificationElapsed) {
-        instruction += " (Verification elapsed time: " + verificationElapsed + ")";
-    }
-    $instruction.html(instruction);
-
-    // Buttons
-    $(".instance-command").addClass("hide");
-    for (let i in buttons) {
-        var button = buttons[i];
-        if (button === "verify" && verificationHasDrone) {
-            $("#unverify").removeClass("hide");
-        } else if (button === "cancel" && superState === "CANCEL") {
-            $("#reinstate").removeClass("hide");
-        } else if (button === "force_cancel" && superState === "CANCEL") {
-            $("#force_reinstate").removeClass("hide");
-        } else {
-            $("#" + button).removeClass("hide");
-        }
-    }
-
-    //loadVisualization();
-}
-
 // --------------------
 
-function updateData() {
+export function updateData() {
     // Frontend superstate and metadata
     let apiUrl = window.location.origin + "/StackV-web/restapi/app/details/" + refUUID + "/instance";
     $.ajax({
@@ -778,6 +666,7 @@ function updateData() {
             $("#instance-alias").html(alias);
             $("#instance-uuid").html(refUUID);
             $("#instance-owner").html(owner);
+            $("#instance-superstate").html(superState);
             $("#instance-creation-time").html(creation);
 
             if (intent.length === 0) {
@@ -841,6 +730,20 @@ function updateData() {
         }
     });
 
+    ReactDOM.render(
+        React.createElement(ButtonPanel, {
+            uuid: refUUID, super: superState, sub: subState, last: lastState, isVerifying: verificationHasDrone
+        }, null),
+        document.getElementById("button-panel")
+    );
+
+    ReactDOM.render(
+        React.createElement(InstructionPanel, {
+            uuid: refUUID, super: superState, sub: subState, verificationResult: verificationResult, verificationHasDrone: verificationHasDrone, verificationElapsed: verificationElapsed
+        }, null),
+        document.getElementById("instruction-block")
+    );
+
     $.ajax({
         type: "GET",
         async: false,
@@ -886,73 +789,33 @@ function updateData() {
                     buttons = lastRes["buttons"];
                 }
             }
-        }
-    });
-}
 
-function attachListeners() {
-    $(document).on("click", ".instance-command", function () {
-        $(".instance-command").attr("disabled", true);
-        pauseRefresh();
-
-        var command = this.id;
-        var $button = $(this);
-        var mode = $(this).data("mode");
-        var apiUrl = window.location.origin + "/StackV-web/restapi/service/" + refUUID + "/status";
-        $.ajax({
-            url: apiUrl,
-            async: false,
-            type: "GET",
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-            },
-            success: function (result) {
-                if (subState !== result) {
-                    $(".instance-command").attr("disabled", false);
-                    resumeRefresh();
-                    reloadData();
-                } else {
-                    if ((command === "delete") || (command === "force_delete")) {
-                        $(".button-confirm-delete").attr("data-mode", command);
-                        $confirmModal.iziModal("open");
-                    } else {
-                        $loadingModal.iziModal("open");
-                        executeCommand(command);
-                    }
+            // Rendering
+            var instructionRegEx = /{{(\S*)}}/g.exec(instruction);
+            if (instructionRegEx) {
+                for (let i = 1; i < instructionRegEx.length; i++) {
+                    var str = instructionRegEx[i];
+                    var result = eval(instructionRegEx[i]);
+                    instruction = instruction.replace("{{" + str + "}}", result);
                 }
             }
-        });
-    });
-}
-function executeCommand(command) {
-    var apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + refUUID + "/" + command;
-    $.ajax({
-        url: apiUrl,
-        type: "PUT",
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-        },
-        success: function () {
-            if (command === "delete" || command === "force_delete") {
-                setTimeout(function () {
-                    sessionStorage.removeItem("instance-uuid");
-                    window.document.location = "/StackV-web/portal/";
-                }, 250);
+            if (verificationHasDrone && verificationElapsed) {
+                instruction += " (Verification elapsed time: " + verificationElapsed + ")";
             }
+            //$instruction.html(instruction);
+            if (subState === "FAILED") {
+                if (lastState !== null) {
+                    $subState.html(subState + " (after " + lastState + ")");
+                } else {
+                    $subState.html(subState + " (Fatal error)");
+                }
+            } else {
+                $subState.html(subState);
+            }
+            $superState.html(superState);
         }
     });
-    switch (command) {
-    case "delete":
-    case "force_delete":
-        break;
-    default:
-        setTimeout(function () {
-            $(".instance-command").attr("disabled", false);
-            resumeRefresh();
-            reloadData();
-        }, 3000);
-        break;
+    if ($("#refresh-timer").val() !== "1") {
+        loadVisualization();
     }
 }

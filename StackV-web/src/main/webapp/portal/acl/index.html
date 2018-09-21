@@ -1,139 +1,144 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>ACL Management</title>
 
-        <link rel="stylesheet" href="/StackV-web/css/style.css">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <title>ACL Management</title>
 
-    <body>
-        <!-- NAV BAR -->
-        <div id="nav">
+    <link rel="stylesheet" href="/StackV-web/css/style.css">
+</head>
+
+<body>
+    <!-- NAV BAR -->
+    <div id="nav">
+    </div>
+    <div id="sub-nav">
+    </div>
+    <!-- TAG PANEL -->
+    <div id="tag-panel">
+    </div>
+    <!-- MAIN PANEL -->
+    <div class="sub-main" id="main-pane">
+        <div class="acl-panel" id="acl-role-panel">
+            <input type="hidden" id="acl-user">
+            <div id="acl-role-user-div">
+                <table class="management-table" id="acl-user-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-body">
+                    </tbody>
+                </table>
+            </div>
+            <div id="acl-role-role-div" class="closed">
+                <table class="management-table" id="acl-role-table">
+                    <thead>
+                        <tr>
+                            <th>Roles<button type="button" class="acl-user-close close" aria-hidden="true">&times;</button></th>
+                        </tr>
+                    </thead>
+                    <tbody id="role-body">
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th>
+                                <select id="acl-role-select"><option selected disabled>Choose a role</option></select>
+                                <button class="btn-default" id="acl-role-add">Add</button>
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
         </div>
-        <div id="sub-nav">
-        </div>
-        <!-- TAG PANEL -->
-        <div id="tag-panel">
-        </div>
-        <!-- MAIN PANEL -->
-        <div class="sub-main" id="main-pane">
-            <div class="acl-panel" id="acl-role-panel">
-                <input type="hidden" id="acl-user">
-                <div id="acl-role-user-div">
-                    <table class="management-table" id="acl-user-table">
+        <div class="acl-panel" id="acl-instance-panel">
+            <input type="hidden" id="acl-instance">
+            <table class="management-table flexy" id="acl-instance-table">
+                <thead>
+                    <tr>
+                        <th>Instance Alias</th>
+                        <th>Service Type</th>
+                        <th>Instance UUID</th>
+                    </tr>
+                </thead>
+                <tbody id="instance-body">
+                </tbody>
+            </table>
+            <div id="acl-instance-acl">
+                <div id="acl-instance-acl-existing">
+                    <table class="management-table">
+                        <colgroup>
+                            -
+                            <col span="1" style="width: 35%;" /> +
+                            <col span="1" style="width: 25%;" />
+                            <col span="1" style="width: 20%;" />
+                            <col span="1" style="width: 10%;" /> +
+                            <col span="1" style="width: 10%;" /> +
+                            <col span="1" style="width: 10%;" />
+                        </colgroup>
                         <thead>
                             <tr>
                                 <th>Username</th>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                +
+                                <th>Login Access</th>
+                                +
+                                <th>Sudo Access</th>
+                                <th><button type="button" class="acl-instance-close close" aria-hidden="true">&times;</button></th>
                             </tr>
                         </thead>
-                        <tbody id="user-body">
+                        <tbody id="acl-body">
                         </tbody>
                     </table>
                 </div>
-                <div id="acl-role-role-div" class="closed">
-                    <table class="management-table" id="acl-role-table">
+                <div id="acl-instance-acl-new">
+                    <table class="management-table">
+                        <colgroup>
+                            <col span="1" style="width: 35%;" />
+                            <col span="1" style="width: 35%;" />
+                            <col span="1" style="width: 20%;" />
+                            <col span="1" style="width: 10%;" />
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th>Roles<button type="button" class="acl-user-close close" aria-hidden="true">&times;</button></th>
+                                <th>Username</th>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th></th>
                             </tr>
                         </thead>
-                        <tbody id="role-body">
+                        <tbody id="users-body">
                         </tbody>
-                        <tfoot>
-                            <tr>
-                                <th>
-                                    <select id="acl-role-select"><option selected disabled>Choose a role</option></select>
-                                    <button class="btn-default" id="acl-role-add">Add</button>
-                                </th>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
-
             </div>
-            <div class="acl-panel" id="acl-instance-panel">
-                <input type="hidden" id="acl-instance">
-                <table class="management-table flexy" id="acl-instance-table">
-                    <thead>
-                        <tr>
-                            <th>Instance Alias</th>
-                            <th>Service Type</th>
-                            <th>Instance UUID</th>
-                        </tr>
-                    </thead>
-                    <tbody id="instance-body">
-                    </tbody>
-                </table>
-                <div id="acl-instance-acl">
-                    <div id="acl-instance-acl-existing">
-                        <table class="management-table">
-                            <colgroup>
--                                <col span="1" style="width: 35%;"/>
-+                                <col span="1" style="width: 25%;"/>
-                                 <col span="1" style="width: 20%;"/>
-                                 <col span="1" style="width: 10%;"/>
-+                                <col span="1" style="width: 10%;"/>
-+                                <col span="1" style="width: 10%;"/>
-                             </colgroup>
-                             <thead>
-                                 <tr>
-                                     <th>Username</th>
-                                     <th>Full Name</th>
-                                     <th>Email</th>
-+                                    <th>Login Access</th>
-+                                    <th>Sudo Access</th>
-                                     <th><button type="button" class="acl-instance-close close" aria-hidden="true">&times;</button></th>
-                                 </tr>
-                             </thead>
-                            <tbody id="acl-body">
-                            </tbody>
-                        </table>
-                    </div>
-                    <div id="acl-instance-acl-new">
-                        <table class="management-table">
-                            <colgroup>
-                                <col span="1" style="width: 35%;"/>
-                                <col span="1" style="width: 35%;"/>
-                                <col span="1" style="width: 20%;"/>
-                                <col span="1" style="width: 10%;"/>
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th>Username</th>
-                                    <th>Full Name</th>
-                                    <th>Email</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-body">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div id="loading-panel"></div>
         </div>
+        <div id="loading-panel"></div>
+    </div>
 
-        <!-- CORE JS PACKAGE-->
-        <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
-        <script src="https://code.jquery.com/jquery-2.2.4.min.js" crossorigin="anonymous"></script>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/js/iziModal.min.js"></script>
-        <script src="/StackV-web/js/iziToast.min.js"></script>
+    <!-- CORE JS PACKAGE-->
+    <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/js/iziModal.min.js"></script>
+    <script src="/StackV-web/js/iziToast.min.js"></script>
 
-        <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
-        <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-        <script src="/StackV-web/js/mousetrap.js"></script>
-        <script src="/StackV-web/js/mousetrap-dict.js"></script>
-        <!-- -->
+    <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
+    <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
+    <script src="/StackV-web/js/mousetrap.js"></script>
+    <script src="/StackV-web/js/mousetrap-dict.js"></script>
+    <!-- -->
 
-        <!-- DATATABLES -->
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/pdfmake.min.js"></script>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/vfs_fonts.js"></script>
-        <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.js"></script>
-        <!---->
+    <!-- DATATABLES -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/pdfmake.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.32/vfs_fonts.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.js"></script>
+    <!---->
 
-        <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script> 
-        <script src="/StackV-web/js/StackV-main.bundle.js"></script>
-    </body>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="/StackV-web/js/bundles/StackV-main.bundle.js"></script>
+</body>
+
 </html>

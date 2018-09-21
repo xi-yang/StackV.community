@@ -252,7 +252,7 @@ public class WebResource {
             logger.catching("addACLEntry", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -298,7 +298,7 @@ public class WebResource {
             logger.catching("removeACLEntry", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -351,7 +351,7 @@ public class WebResource {
                 logger.catching("getACLwithInfo", ex);
                 throw ex;
             } finally {
-                commonsClose(front_conn, prep, rs);
+                commonsClose(front_conn, prep, rs, logger);
             }
 
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -595,7 +595,7 @@ public class WebResource {
             }
             return retJSON;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -623,7 +623,7 @@ public class WebResource {
             }
             return null;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -663,7 +663,7 @@ public class WebResource {
             logger.catching("addClip", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -692,7 +692,7 @@ public class WebResource {
             logger.catching("deleteClip", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -751,7 +751,7 @@ public class WebResource {
 
         String xmldata = JSONtoxml(JSONdata, rs.getString("drivertype"));
 
-        commonsClose(front_conn, prep, rs);
+        commonsClose(front_conn, prep, rs, logger);
 
         try {
             URL url = new URL(String.format("%s/driver", host));
@@ -827,7 +827,7 @@ public class WebResource {
             logger.catching("addDriver", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -865,7 +865,7 @@ public class WebResource {
             logger.catching("editDriverProfile", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
 
         return "Saved edits successfully.";
@@ -891,7 +891,7 @@ public class WebResource {
             logger.catching("deleteDriverProfile", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -914,7 +914,7 @@ public class WebResource {
         JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
         JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
 
-        commonsClose(front_conn, prep, rs);
+        commonsClose(front_conn, prep, rs, logger);
 
         return JSONdata;
     }
@@ -949,7 +949,7 @@ public class WebResource {
             logger.catching("getDriver", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1380,7 +1380,7 @@ public class WebResource {
             logger.catching("getLabels", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1439,7 +1439,7 @@ public class WebResource {
             logger.catching("label", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1481,7 +1481,7 @@ public class WebResource {
             logger.catching("deleteLabel", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1521,7 +1521,7 @@ public class WebResource {
             logger.catching("clearLabels", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1650,7 +1650,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1775,7 +1775,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1845,7 +1845,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1892,7 +1892,7 @@ public class WebResource {
         } catch (SQLException ex) {
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
         if (serviceType != null) {
             if (serviceType.equals("Virtual Cloud Network")) {
@@ -1999,7 +1999,7 @@ public class WebResource {
             logger.catching("loadWizard", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2048,7 +2048,7 @@ public class WebResource {
             logger.catching("loadObjectACL", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2080,7 +2080,7 @@ public class WebResource {
             logger.catching("loadObjectACL", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2116,7 +2116,7 @@ public class WebResource {
             logger.catching("loadInstanceDetails", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2154,7 +2154,7 @@ public class WebResource {
             logger.catching("loadInstanceVerification", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2207,7 +2207,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
         return "-1";
     }
@@ -2236,7 +2236,7 @@ public class WebResource {
             logger.catching("loadInstanceACL", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2271,7 +2271,7 @@ public class WebResource {
             logger.catching("getVerificationResults", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2324,7 +2324,7 @@ public class WebResource {
             logger.catching("getVerificationResultsUnion", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2357,7 +2357,7 @@ public class WebResource {
             logger.catching("getDeltaBacked", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2388,7 +2388,6 @@ public class WebResource {
     @GET
     @Path("/profile/{wizardID}")
     @Produces("application/json")
-    @RolesAllowed("F_Profiles-R")
     public String getProfile(@PathParam("wizardID") int wizardID) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -2431,7 +2430,7 @@ public class WebResource {
             logger.catching("getProfile", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2483,7 +2482,7 @@ public class WebResource {
             logger.catching("editProfile", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2528,7 +2527,7 @@ public class WebResource {
             logger.catching("editProfile", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2575,7 +2574,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2629,7 +2628,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2671,7 +2670,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
         return null;
     }
@@ -2752,7 +2751,7 @@ public class WebResource {
             logger.catching("newProfile", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2791,7 +2790,7 @@ public class WebResource {
             logger.catching("deleteProfile", ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2895,7 +2894,7 @@ public class WebResource {
         } catch (ParseException ex) {
             logger.catching(method, ex);
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
         return javax.ws.rs.core.Response.status(javax.ws.rs.core.Response.Status.OK).build();
     }
@@ -3067,7 +3066,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -3271,19 +3270,13 @@ public class WebResource {
         return roleSet.contains(role);
     }
 
-    public static void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs) {
+    public static void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs, StackLogger logger) {        
         try {
-            if (rs != null) {
-                DbUtils.close(rs);
-            }
-            if (prep != null) {
-                DbUtils.close(prep);
-            }
-            if (front_conn != null) {
-                DbUtils.close(front_conn);
-            }
+            DbUtils.close(rs);
+            DbUtils.close(prep);
+            DbUtils.close(front_conn);
         } catch (SQLException ex) {
-
+            logger.catching("commonsClose", ex);
         }
     }
 
@@ -3364,7 +3357,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -3409,7 +3402,7 @@ public class WebResource {
             logger.catching(method, ex);
             throw ex;
         } finally {
-            commonsClose(front_conn, prep, rs);
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 }

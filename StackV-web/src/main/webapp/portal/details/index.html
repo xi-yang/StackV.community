@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>Service Details</title>
 
     <link rel="stylesheet" href="/StackV-web/css/style.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.css"/>
+    <link rel="stylesheet" href="details.css">
 </head>
 
 <body>
@@ -27,7 +28,8 @@
                     <tr>
                         <th>Instance Details</th>
                         <th>
-                            <button class="btn btn-default" id="button-view-intent" style="float: right;">View Service Definition</button>
+                            <button class="btn btn-default" id="button-view-intent" style="float: right;">View Service
+                                Definition</button>
                         </th>
                     </tr>
                 </thead>
@@ -54,18 +56,27 @@
                     </tr>
                     <tr>
                         <td>Operation Status</td>
-                        <td><p style="display: inline;" id="instance-substate"></p><small id="instance-laststate"></small></td>
+                        <td>
+                            <p style="display: inline;" id="instance-substate"></p><small id="instance-laststate"></small>
+                        </td>
                     </tr>
                     <tr class="instruction-row">
-                        <td colspan="2"><div id="instruction-block"></div></td>
+                        <td colspan="2">
+                            <div id="instruction-block"></div>
+                        </td>
                     </tr>
                     <tr class="button-row">
                         <td colspan="2">
+                            <div id="button-panel"></div>
                             <div class="service-instance-panel-" id="button-block" style="float:right;">
                                 <button class="btn btn-default hide super-operation instance-command" id="reinstate">Reinstate</button>
-                                <button class="btn btn-default hide super-operation instance-command" id="force_reinstate">Force Reinstate</button>
+                                <button class="btn btn-default hide super-operation instance-command" id="force_reinstate">Force
+                                    Reinstate
+                                </button>
                                 <button class="btn btn-default hide super-operation instance-command" id="cancel">Cancel</button>
-                                <button class="btn btn-default hide super-operation instance-command" id="force_cancel">Force Cancel</button>
+                                <button class="btn btn-default hide super-operation instance-command" id="force_cancel">Force
+                                    Cancel
+                                </button>
                                 <button class="btn btn-default hide instance-command" id="force_retry">Force Retry</button>
                                 <button class="btn btn-default hide instance-command" id="modify">Modify</button>
                                 <button class="btn btn-default hide instance-command" id="force_modify">Force Modify</button>
@@ -82,7 +93,8 @@
         </div>
         <div id="logging-panel">
             <div id="logging-header-div">
-                Logs - Current time: <p id="log-time"></p>
+                Logs - Current time:
+                <p id="log-time"></p>
                 <div style="float:right;">
                     <label for="logging-filter-level" style="font-weight: normal;margin-left: 15px;">Logging Level</label>
                     <select id="logging-filter-level">
@@ -120,16 +132,10 @@
 
         <div id="loading-panel"></div>
     </div>
-    <div id="details-viz" ></div>
+    <div id="details-viz"></div>
 
     <!-- Profile Details Modal -->
     <div id="details-intent-modal" data-iziModal-title="Intent"></div>
-
-    <!-- Loading Modal -->
-    <div id="loading-modal"></div>
-
-    <!-- Confirmation Modal -->
-    <div id="confirm-modal"></div>
 
     <!-- CORE JS PACKAGE-->
     <script src="https://k152.maxgigapop.net:8543/auth/js/keycloak.js"></script>
@@ -137,10 +143,9 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/js/iziModal.min.js"></script>
     <script src="/StackV-web/js/iziToast.min.js"></script>
 
+    <script src="/StackV-web/js/jquery-ui.min.js"></script>
     <script src="/StackV-web/js/greensock/TweenLite.min.js"></script>
     <script src="/StackV-web/js/greensock/plugins/CSSPlugin.min.js"></script>
-    <script src="/StackV-web/js/mousetrap.js"></script>
-    <script src="/StackV-web/js/mousetrap-dict.js"></script>
     <!-- -->
 
     <!-- DATATABLES -->
@@ -150,30 +155,32 @@
     <!---->
 
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-    <script src="/StackV-web/js/StackV-main.bundle.js"></script>
+    <script src="/StackV-web/portal/details/details_viz.js"></script>
+    <script src="/StackV-web/js/bundles/StackV-main.bundle.js"></script>
 
     <script>
-    //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
-    dojoConfig = {
-        has: {
-            "dojo-firebug": true,
-            "dojo-debug-messages": true
-        },
-        async: true,
-        parseOnLoad: true,
-        packages: [
-            {
-                name: "d3",
-                location: "//d3js.org/",
-                main: "d3.v3"
+        //Based off http://dojotoolkit.org/documentation/tutorials/1.10/dojo_config/ recommendations
+        dojoConfig = {
+            has: {
+                "dojo-firebug": true,
+                "dojo-debug-messages": true
             },
-            {
-                name: "local",
-                location: "/StackV-web/js/"
-            }
-        ]
-    };    
+            async: true,
+            parseOnLoad: true,
+            packages: [
+                {
+                    name: "d3",
+                    location: "//d3js.org/",
+                    main: "d3.v3"
+                },
+                {
+                    name: "local",
+                    location: "/StackV-web/js"
+                }
+            ]
+        };    
     </script>
     <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
 </body>
+
 </html>

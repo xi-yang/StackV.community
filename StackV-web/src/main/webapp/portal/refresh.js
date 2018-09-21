@@ -28,11 +28,13 @@ import { dataTable, reloadLogs } from "./logging";
 /* Enabled Scripts */
 import { reloadModals } from "./catalog";
 import { fetchNewData } from "../visual/engine";
+import { updateData } from "./details/details";
 /* */
 
 var refreshTimer;
 var countdown;
 var countdownTimer;
+var paused = false;
 
 export function initRefresh(time) {
     $("body").on("change", "#sub-nav #refresh-timer", function () { timerChange(this); });
@@ -54,14 +56,18 @@ export function refreshSync(refreshed, time) {
     }
     if (manual === false) {
         countdown = time;
-        $("#refresh-button").html("Refresh in " + countdown + " seconds");
+        if (countdown === "1") {
+            $("#refresh-button").html("Live Data");
+        } else {
+            $("#refresh-button").html("Refresh in " + countdown + " seconds");
+        }
     } else {
         $("#refresh-button").html("Manually Refresh Now");
     }
 }
 export function pauseRefresh() {
-    clearInterval(refreshTimer);
     clearInterval(countdownTimer);
+    clearInterval(refreshTimer);
     document.getElementById("refresh-button").innerHTML = "Paused";
     $("#refresh-timer").attr("disabled", true);
 }
@@ -91,6 +97,12 @@ export function setRefresh(time) {
         document.getElementById("refresh-button").innerHTML = "Manually Refresh Now";
         $(".loading-prog").css("width", "0%");
         loadSystemHealthCheck();
+    } else if (time === "1") {
+        $("#refresh-button").html("Live Data");
+        $(".loading-prog").css("width", "100%");
+        refreshTimer = setInterval(function () {
+            reloadData();
+        }, 1000);
     } else {
         countdown = time;
         countdownTimer = setInterval(function () {
@@ -136,29 +148,39 @@ export function reloadData() {
     keycloak.updateToken(90).error(function () {
         console.log("Error updating token!");
     }).success(function (refreshed) {
-        let timerSetting = $("#refresh-timer").val();
-        switch (page) {
-            case "catalog":
-                setTimeout(function () {
+        if ($("#refresh-timer").attr("disabled") !== "true") {
+            let timerSetting = $("#refresh-timer").val();
+            switch (page) {
+                case "catalog":
                     reloadLogs();
                     reloadModals();
-                }, 500);
-                break;
-            case "admin":
-                setTimeout(function () {
+                    break;
+                case "admin":
                     reloadLogs();
-                }, 500);
-                break;
+                    break;
 
-            case "visualization":
-                fetchNewData();
-                break;
+                case "visualization":
+                    fetchNewData();
+                    break;
+
+                case "details":
+                    updateData();
+                    reloadLogs();
+                    break;
+            }
+
+            loadSystemHealthCheck();
+            //syncClipbook();
+            refreshSync(refreshed, timerSetting);
         }
-
-        loadSystemHealthCheck();
-        syncClipbook();
-        refreshSync(refreshed, timerSetting);
     });
+}
+
+export function startLoading() {
+    console.log("Loading start!");
+}
+export function stopLoading() {
+    console.log("Loading stop!");
 }
 
 /* */

@@ -93,7 +93,7 @@ public class DriverResource {
             logger.catching(method, ex);
             return null;
         } finally {
-            commonsClose(front_conn, prep, ret);
+            commonsClose(front_conn, prep, ret, logger);
         }
     }
 

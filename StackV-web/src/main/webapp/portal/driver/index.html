@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html >
+<html>
+
 <head>
     <meta charset="UTF-8">
     <title>Driver Management</title>
@@ -21,8 +22,8 @@
     <div class="sub-main" id="main-pane">
 
         <div id="info-panel" class="">
-            <div id="info-fields" style ="float: top;"></div>
-            <div id="info-option" style ="float: bottom;"></div>
+            <div id="info-fields" style="float: top;"></div>
+            <div id="info-option" style="float: bottom;"></div>
         </div>
 
         <div id="driver-add-panel">
@@ -53,14 +54,14 @@
                         <tr>
                             <td>OpenStack Driver</td>
                             <td>OpenStack Cloud Services</td>
-                            <td  style="width: 180px;">
+                            <td style="width: 180px;">
                                 <button id="button-install-openstack" class='install install-button button-profile-select btn btn-primary'>Install</button>
                             </td>
                         </tr>
                         <tr>
                             <td>Stack Driver</td>
                             <td>Stack Over Sub-level StackV in Hierarchical Deployment</td>
-                            <td  style="width: 180px;">
+                            <td style="width: 180px;">
                                 <button id="button-install-stack" class='install install-button button-profile-select btn btn-primary'>Install</button>
                             </td>
                         </tr>
@@ -74,7 +75,7 @@
                         <tr>
                             <td>Raw Driver</td>
                             <td>Take Raw XML to Plug in "Any" Type of Driver Instance</td>
-                            <td  style="width: 180px;">
+                            <td style="width: 180px;">
                                 <button id="button-install-raw" class='install install-button button-profile-select btn btn-primary'>Install</button>
                             </td>
                         </tr>
@@ -85,7 +86,7 @@
         <div id="installed-panel">
             <div class="tab-content" id="installed-content">
                 <div id="template-tab" class="tab-pane fadeIn active">
-                    <table  class="management-table">
+                    <table class="management-table">
                         <thead>
                             <tr>
                                 <th>Driver ID</th>
@@ -93,65 +94,7 @@
                                 <th></th>
                             </tr>
                         </thead>
-                        <tbody id="driver-add-body">
-                            <tr>
-                                <td>AWS Driver</td>
-                                <td>Amazon AWS Cloud Services</td>
-                                <td style="width: 180px;">
-                                    <button  onclick='clearPanel(); activateSide(); installAWS();  changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Generic REST Driver</td>
-                                <td>Generic REST API for Compatible Model Driven Services</td>
-                                <td style="width: 180px;">
-                                    <button onclick='clearPanel(); activateSide(); installGeneric(); changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>OpenStack Driver</td>
-                                <td>OpenStack Cloud Services</td>
-                                <td  style="width: 180px;">
-                                    <button  onclick='clearPanel(); activateSide(); installOpenstack();  changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Stack Driver</td>
-                                <td>Stack Over Sub-level StackV in Hierarchical Deployment</td>
-                                <td  style="width: 180px;">
-                                    <button  onclick='clearPanel(); activateSide(); installStack();  changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
-                                </td>
-                            </tr> 
-                            <tr>
-                                <td>Stub Driver</td>
-                                <td>A Dump Driver Instance with Pre-loaded Fixed Model</td>
-                                <td style="width: 180px;">
-                                    <button  onclick='clearPanel(); activateSide(); installStub(); changeNameInst();' class='install install-button button-profile-select btn btn-primary'>Install</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Raw Driver</td>
-                                <td>Take Raw XML to Plug in "Any" Type of Driver Instance</td>
-                                <td  style="width: 180px;">
-                                    <button onclick='clearPanel(); activateSide(); installRaw();  changeNameInstRaw();' class='install install-button button-profile-select btn btn-primary'>Install</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div id="installed-panel">
-                <div class="tab-content" id="installed-content">
-                    <div id="template-tab" class="tab-pane fadeIn active">
-                        <table  class="management-table">
-                            <thead>
-                                <tr>
-                                    <th>Driver ID</th>
-                                    <th>Driver Type</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="installed-body">
+                        <tbody id="installed-body">
                             <script></script>
                         </tbody>
                     </table>
@@ -177,18 +120,16 @@
         </div>
 
 
-            <div id="driver-content-panel" class="hidden">
-                <div class="modal-content" style="overflow: auto;max-height: 100%;">
-                    <div class="modal-header">
-                        <h3 id="info-panel-title"></h3>
-                    </div>
-                    <div class ="modal-body " style="background-color:#FFFFFF">
-                        <div class="tab-content" style="background-color:#FFFFFF">                                    
-                            <div id="info-panel-body" class="tab-pane fadeIn" style="display:block;background-color:#FFFFFF">
-                                <div id="install-content" class="tab-pane fadeIn" style="background-color:#FFFFFF">
-                                    <div id='install-type' style="background-color:#FFFFFF">
-                                    </div>
-                                    <div id='install-type-right' style="background-color:#FFFFFF"></div>
+        <div id="driver-content-panel" class="hidden">
+            <div class="modal-content" style="overflow: auto;max-height: 100%;">
+                <div class="modal-header">
+                    <h3 id="info-panel-title"></h3>
+                </div>
+                <div class="modal-body " style="background-color:#FFFFFF">
+                    <div class="tab-content" style="background-color:#FFFFFF">
+                        <div id="info-panel-body" class="tab-pane fadeIn" style="display:block;background-color:#FFFFFF">
+                            <div id="install-content" class="tab-pane fadeIn" style="background-color:#FFFFFF">
+                                <div id='install-type' style="background-color:#FFFFFF">
                                 </div>
                                 <div id='install-type-right' style="background-color:#FFFFFF"></div>
                             </div>
@@ -246,6 +187,7 @@
     <!---->
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-    <script src="/StackV-web/js/StackV-main.bundle.js"></script>
+    <script src="/StackV-web/js/bundles/StackV-main.bundle.js"></script>
 </body>
+
 </html>

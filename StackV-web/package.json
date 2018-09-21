@@ -15,14 +15,20 @@
   "dependencies": {
     "@babel/preset-react": "^7.0.0-rc.3",
     "babel-loader": "^8.0.0-beta.2",
+    "babel-plugin-dynamic-import-webpack": "^1.0.2",
     "bootstrap": "^3.3.7",
+    "clean-webpack-plugin": "^0.1.19",
     "d3": "^5.4.0",
     "jquery": "^3.3.1",
     "lodash": "^4.17.10",
+    "lodash.isequal": "^4.5.0",
     "lz-string": "^1.4.4",
+    "mousetrap": "^1.6.2",
+    "mysql": "^2.16.0",
     "prop-types": "^15.6.2",
     "react": "^16.4.2",
-    "react-dom": "^16.4.2"
+    "react-dom": "^16.4.2",
+    "stackv-visualization": "git+https://git@github.com/DickyT/stackv-visualization.git"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0-beta.49",
@@ -35,6 +41,7 @@
     "@babel/runtime": "7.0.0-beta.49",
     "@types/d3": "^5.0.0",
     "@types/node": "^10.3.1",
+    "babel-plugin-transform-class-properties": "^6.24.1",
     "fast-css-loader": "^1.0.2",
     "fast-sass-loader": "^1.4.5",
     "node-sass": "^4.9.0",

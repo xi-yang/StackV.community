@@ -18,7 +18,7 @@ public class DNCPolicyData implements Helper {
             JSONObject conn = (JSONObject) connObj;
             String connName = ((String)conn.get("name")).replace(" ", "_");
             JSONObject retConn = new JSONObject();
-            
+
             JSONObject retTerm = new JSONObject();
             for (Object termObj : (JSONArray) conn.get("terminals")) {
                 JSONObject term = (JSONObject) termObj;
@@ -27,7 +27,7 @@ public class DNCPolicyData implements Helper {
                 retTerm.put(term.get("uri"), retVlan);
             }
             retConn.put("terminals", retTerm);
-            
+
             JSONObject retBand = new JSONObject();
             JSONObject band = (JSONObject) conn.get("bandwidth");
             retBand.put("maximum", band.get("capacity"));
@@ -36,7 +36,7 @@ public class DNCPolicyData implements Helper {
             retBand.put("unit", "mbps");
             retBand.put("qos_class", band.get("qos_class"));
             retConn.put("bandwidth", retBand);
-             
+
             JSONObject schedule = (JSONObject) conn.get("schedule");
             if (conn.containsKey("schedule")) {
                 JSONObject retSchedule = new JSONObject();
@@ -47,12 +47,15 @@ public class DNCPolicyData implements Helper {
                 if (schedule.containsKey("duration")) {
                     retSchedule.put("duration", schedule.get("duration"));
                 }
+                if (schedule.containsKey("options")) {
+                    retSchedule.put("options", schedule.get("options"));
+                }
                 retConn.put("schedule", retSchedule);
             }
 
             retJSON.put(connName, retConn);
         }
-        
+
         return retJSON.toJSONString();
     }
 }

@@ -1,0 +1,137 @@
+div#details-panel, div#visual-panel {
+    padding: 30px 7% 30px 7%;
+    height: calc(100% - 52px);
+    width: 100%;
+    position: absolute;
+    overflow-y: hidden;
+    opacity: 0;
+    display: none;
+}
+div#details-panel {
+    top: -100%;
+    left: 0;
+}
+div#logging-panel {
+    left: -150%;
+    text-align: left;
+    padding: 30px 7% 30px 7%;
+    height: calc(100% - 52px);
+    width: 100%;
+    position: absolute;
+    overflow-y: hidden;
+    opacity: 0;    
+}
+div#visual-panel {
+    right: -100%;
+}
+
+.details-table, .verification-table {
+    margin-bottom: 20px;
+}
+
+#service-delta-table, #system-delta-table {
+    /*top: -100%;*/
+    position: relative;
+}
+
+tr.instruction-row {
+    vertical-align: top;
+    height: 80px;
+    font-size: 1.2em;
+}
+tr.button-row {
+    height: 51px;
+}
+
+#details-intent-modal-text {
+    width: 95%;
+    margin: 10px;
+    height: 80vh;
+}
+
+#logging-header-div {
+    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
+    box-shadow: inset 0 1px 0 #a2b1c3;
+    color: #fff;
+    padding: 10px 15px;
+    position: relative;
+    text-shadow: 0 1px 0 #000;
+    outline: 1px solid black;
+    height: 40px;
+}
+
+#logging-body-div {
+    padding: 15px;
+    background: white;
+}
+
+#log-div {
+    background: white;
+    padding: 10px 20px;
+    box-shadow: 0px 5px 10px 2px rgba(0, 0, 0, 0.35);
+    height: 100%;
+    overflow-y: scroll;
+    width: 100%;
+}
+
+#log-time {
+    display: inline; 
+    font-weight: bold;
+}
+#logging-filter-level {
+    font-weight: bold;
+}
+
+/* 
+    Visualization tab styling 
+*/
+a.viz-hdr{
+    color:inherit;
+    text-decoration: none;
+}
+
+#table-tab{
+    transition: all 1000ms;    
+}
+.viz-table {
+    width:100%;
+    height:25%;   
+    transition: all 1000ms;   
+}
+
+.viz-cell {
+    width : 50%;
+    height:100%;
+}
+
+.viz-tab-content {
+    height: 90%;
+    margin-bottom: 10px;    
+}
+
+.expanded-viz-div {
+    height:93%;
+    margin-top: 10px;
+}
+
+pre.expanded{
+    width: inherit;
+    height: inherit;
+    white-space: pre-wrap; 
+}
+
+.details-viz-pre{
+    white-space: pre-wrap; 
+}
+
+
+#stack-nav ul {
+    width: 100%;
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
+.button-confirm {
+    width: 50%;
+    border-radius: 0;
+}

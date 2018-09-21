@@ -35,10 +35,12 @@ import { loadCatalog } from "./catalog";
 import { loadDetails } from "./details/details";
 import { loadDriverPortal } from "./driver/driver";
 import { loadIntent } from "./intent/intentEngine";
+import { loadManifest } from "./manifest";
 /* */
 
 export var page;
-export var keycloak = Keycloak({
+export var keycloak = Keycloak("/StackV-web/resources/keycloak.json");
+/*export var keycloak = Keycloak({
     "realm": "StackV",
     "realm-public-key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAukpMOpeNbu+lfAdcKJRk00Fxln6lvA3RGoEv+BE/cjbbjvg6Rsr1p94XFKuHifx3Kmngtd00XEnyDxg5ODHFrtXi+z1DYbx4m3ajkZSVaWXwkOqnPPC327PHvTgd2Tf475lW0yR01iZMDLyjjERbkps3guiqB6gnMSiuqtEBFSekCXCtkxYrFl8RFFAVfzAW5lRXvySO50gQHGUvV/FevtpgNU6HS3sIa9uitSd+WgqCotZW6u9C3FygnuKt8VNqvNv7MP7hVt0rlMo/yP1OgYB0jBpHf1tvwYMFvz6kEauk1HfbYZCvTT1Yr7AHM5i8NZzwGeK444QAyLrBhT2oNQIDAQAB",
     "auth-server-url": "https://k152.maxgigapop.net:8543/auth",
@@ -48,7 +50,7 @@ export var keycloak = Keycloak({
         "secret": "ae53fbea-8812-4c13-918f-0065a1550b7c"
     },
     "use-resource-role-mappings": true
-});
+});*/
 var loggedIn;
 
 var fieldCounter = 0;
@@ -157,7 +159,7 @@ $(function () {
                 }
                 break;
             case "manifest":
-                //loadManifest();
+                loadManifest();
                 break;
             case "visualization":
                 import(/* webpackChunkName: "engine" */ "../visual/engine").then(module => {

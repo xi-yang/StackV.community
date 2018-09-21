@@ -26,7 +26,7 @@ import { resumeRefresh, pauseRefresh } from "./refresh";
 
 import React from "react";
 import ReactDOM from "react-dom";
-import ButtonPanel from "./buttons";
+import ButtonPanel from "./details/buttons";
 
 /*ReactDOM.render(
     React.createElement(ButtonPanel, { test: "yes" }, null),
@@ -39,6 +39,7 @@ var justRefreshed = 0;
 var dataTableClass;
 export var dataTable;
 var now = new Date();
+$.fn.dataTable.ext.errMode = "throw";
 export function loadLoggingDataTable(apiUrl) {
     dataTableClass = "logging";
     openLogDetails = 0;
@@ -193,7 +194,16 @@ export function loadInstanceDataTable(apiUrl) {
             { "data": "alias" },
             { "data": "type", width: "110px" },
             { "data": "referenceUUID", "width": "250px" },
-            { "data": "state", "width": "125px" }
+            {
+                "data": function (row, type, val, meta) {
+                    if (row.state.indexOf("FAILED") > -1) {
+                        return row.state + "<br>(after " + row.lastState + ")";
+                    } else {
+                        return row.state;
+                    }
+
+                }, "width": "150px",
+            }
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("instance-row");
@@ -233,8 +243,11 @@ export function loadInstanceDataTable(apiUrl) {
             // Open this row
             row.child(formatChild(row.data())).show();
 
+            let superState = row.data().state.split("-")[0].trim();
+            let subState = row.data().state.split("-")[1].trim();
+
             ReactDOM.render(
-                React.createElement(ButtonPanel, { uuid: row.data().referenceUUID, state: row.data().state, last: row.data().lastState }, null),
+                React.createElement(ButtonPanel, { uuid: row.data().referenceUUID, super: superState, sub: subState, last: row.data().lastState }, null),
                 document.getElementById("button-panel")
             );
 

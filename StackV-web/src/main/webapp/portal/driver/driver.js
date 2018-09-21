@@ -22,99 +22,81 @@
 */
 
 /* global XDomainRequest, TweenLite, Power2, Mousetrap, swal */
-import { keycloak} from "../nexus";
+import { keycloak } from "../nexus";
 import { loadLogs } from "../logging";
-import { setRefresh, refreshSync } from "../refresh";
+import { initRefresh, refreshSync } from "../refresh";
 
-var tweenInstalledPanel = new TweenLite("#installed-panel", 1, {ease: Power2.easeInOut, paused: true, top: "0px"});
-var tweenAddPanel = new TweenLite("#driver-add-panel", 1, {ease: Power2.easeInOut, paused: true, left: "0px"});
-var tweenTemplatePanel = new TweenLite("#driver-template-panel", 1, {ease: Power2.easeInOut, paused: true, right: "0px"});
-var tweenContentPanel = new TweenLite("#driver-content-panel", 1, {ease: Power2.easeInOut, paused: true, bottom: "10%"});
-var tweenDriverOverflowDetailsPanel = new TweenLite("#driver-overflow-details-panel", 1, {ease: Power2.easeInOut, paused: true, bottom: "10%"});
-var tweenBlackScreen = new TweenLite("#black-screen", .5, {ease: Power2.easeInOut, paused: true, autoAlpha: "1"});
+var tweenInstalledPanel = new TweenLite("#installed-panel", 1, { ease: Power2.easeInOut, paused: true, top: "0px" });
+var tweenAddPanel = new TweenLite("#driver-add-panel", 1, { ease: Power2.easeInOut, paused: true, left: "0px" });
+var tweenTemplatePanel = new TweenLite("#driver-template-panel", 1, { ease: Power2.easeInOut, paused: true, right: "0px" });
+var tweenContentPanel = new TweenLite("#driver-content-panel", 1, { ease: Power2.easeInOut, paused: true, bottom: "10%" });
+var tweenDriverOverflowDetailsPanel = new TweenLite("#driver-overflow-details-panel", 1, { ease: Power2.easeInOut, paused: true, bottom: "10%" });
+var tweenBlackScreen = new TweenLite("#black-screen", .5, { ease: Power2.easeInOut, paused: true, autoAlpha: "1" });
 var view = "center";
 
-
-Mousetrap.bind({
-    "shift+left": function () {
-        window.location.href = "/StackV-web/ops/details/templateDetails.jsp";
-    },
-    "shift+right": function () {
-        window.location.href = "/StackV-web/portal/acl/";
-    },
-    "left": function () {
-        viewShift("left");
-    },
-    "right": function () {
-        viewShift("right");
-    },
-    "escape": function () {
-        closeContentPanel();
-    }
-});
 function viewShift(dir) {
     switch (view) {
-    case "left":
-        if (dir === "right") {
-            newView("installed");
-        }
-        break;
-    case "center":
-        switch (dir) {
         case "left":
-            newView("add");
+            if (dir === "right") {
+                newView("installed");
+            }
+            break;
+        case "center":
+            switch (dir) {
+                case "left":
+                    newView("add");
+                    break;
+                case "right":
+                    newView("template");
+                    break;
+            }
+            view = dir;
             break;
         case "right":
-            newView("template");
+            if (dir === "left") {
+                newView("installed");
+            }
             break;
-        }
-        view = dir;
-        break;
-    case "right":
-        if (dir === "left") {
-            newView("installed");
-        }
-        break;
     }
 }
 function newView(panel) {
     resetView();
     switch (panel) {
-    case "add":
-        tweenAddPanel.play();
-        $("#driver-add-tab").addClass("active");
-        view = "left";
-        break;
-    case "installed":
-        tweenInstalledPanel.play();
-        $("#installed-tab").addClass("active");
-        view = "center";
-        break;
-    case "template":
-        tweenTemplatePanel.play();
-        $("#driver-template-tab").addClass("active");
-        view = "right";
-        break;
+        case "add":
+            tweenAddPanel.play();
+            $("#driver-add-tab").addClass("active");
+            view = "left";
+            break;
+        case "installed":
+            tweenInstalledPanel.play();
+            $("#installed-tab").addClass("active");
+            view = "center";
+            break;
+        case "template":
+            tweenTemplatePanel.play();
+            $("#driver-template-tab").addClass("active");
+            view = "right";
+            break;
     }
 }
 function resetView() {
     switch (view) {
-    case "left":
-        $("#sub-nav .active").removeClass("active");
-        if ($("#driver-content-panel").hasClass("open")) {
-            tweenContentPanel.reverse();
-            tweenBlackScreen.reverse();
-        }
-        tweenAddPanel.reverse();
-        break;
-    case "center":
-        $("#sub-nav .active").removeClass("active");
-        tweenInstalledPanel.reverse();
-        break;
-    case "right":
-        $("#sub-nav .active").removeClass("active");
-        tweenTemplatePanel.reverse();
-        break;
+        case "left":
+            $("#sub-nav .active").removeClass("active");
+            if ($("#driver-content-panel").hasClass("open")) {
+                tweenContentPanel.reverse();
+                tweenBlackScreen.reverse();
+            }
+            tweenAddPanel.reverse();
+            break;
+        case "center":
+            $("#sub-nav .active").removeClass("active");
+            tweenInstalledPanel.reverse();
+            break;
+        case "right":
+            $("#sub-nav .active").removeClass("active");
+            tweenTemplatePanel.reverse();
+            break;
     }
 }
 
@@ -141,6 +123,12 @@ function closeContentPanel() {
 }
 
 export function loadDriverPortal() {
+    Mousetrap.bind("shift+left", function () { window.location.href = "/StackV-web/ops/details/templateDetails.jsp"; });
+    Mousetrap.bind("shift+right", function () { window.location.href = "/StackV-web/portal/acl/"; });
+    Mousetrap.bind("left", function () { viewShift("left"); });
+    Mousetrap.bind("right", function () { viewShift("right"); });
+    Mousetrap.bind("escape", function () { closeContentPanel(); });
+
     $(".checkbox-level").change(function () {
         if ($(this).is(":checked")) {
             $("#log-div").removeClass("hide-" + this.name);
@@ -150,17 +138,17 @@ export function loadDriverPortal() {
     });
 
     $("#sub-nav").load("/StackV-web/nav/driver_navbar.html", function () {
-        setRefresh($("#refresh-timer").val());
+        initRefresh($("#refresh-timer").val());
         switch (view) {
-        case "left":
-            $("#driver-add-tab").addClass("active");
-            break;
-        case "center":
-            $("#installed-tab").addClass("active");
-            break;
-        case "right":
-            $("#driver-template-tab").addClass("active");
-            break;
+            case "left":
+                $("#driver-add-tab").addClass("active");
+                break;
+            case "center":
+                $("#installed-tab").addClass("active");
+                break;
+            case "right":
+                $("#driver-template-tab").addClass("active");
+                break;
         }
 
         $("#driver-add-tab").click(function () {
@@ -193,31 +181,31 @@ export function loadDriverPortal() {
         clearPanel();
         activateSide();
 
-        switch($(this).id()) {
-        case "button-install-aws":
-            installAWS();
-            changeNameInst();
-            break;
-        case "button-install-generic":
-            installGeneric();
-            changeNameInst();
-            break;
-        case "button-install-openstack":
-            installOpenstack();
-            changeNameInst();
-            break;
-        case "button-install-stack":
-            installStack();
-            changeNameInst();
-            break;
-        case "button-install-stub":
-            installStub();
-            changeNameInst();
-            break;
-        case "button-install-raw":
-            installRaw();
-            changeNameInstRaw();
-            break;
+        switch ($(this).attr("id")) {
+            case "button-install-aws":
+                installAWS();
+                changeNameInst();
+                break;
+            case "button-install-generic":
+                installGeneric();
+                changeNameInst();
+                break;
+            case "button-install-openstack":
+                installOpenstack();
+                changeNameInst();
+                break;
+            case "button-install-stack":
+                installStack();
+                changeNameInst();
+                break;
+            case "button-install-stub":
+                installStub();
+                changeNameInst();
+                break;
+            case "button-install-raw":
+                installRaw();
+                changeNameInstRaw();
+                break;
         }
 
     });
@@ -737,8 +725,8 @@ function addDriver() {
 
     for (let temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
-        temp !== document.getElementById("drivername")
-        && temp.value !== "") {
+            temp !== document.getElementById("drivername")
+            && temp.value !== "") {
             tempData[temp.id] = temp.value;
         }
     }
@@ -750,7 +738,7 @@ function addDriver() {
 
     jsonData.push(tempData);
 
-    var settings = JSON.stringify({jsonData});
+    var settings = JSON.stringify({ jsonData });
 
     var sentData = JSON.stringify({
         username: userId,
@@ -1075,7 +1063,7 @@ function saveEditedDriverProfile(oldtopuri) {
     }
     jsonData.push(tempData);
 
-    var dataColumn = JSON.stringify({jsonData});
+    var dataColumn = JSON.stringify({ jsonData });
     var sendData = JSON.stringify({
         username: userId,
         topuri: newtopuri,
@@ -1655,8 +1643,8 @@ function installDriver() {
 
     for (let temp of document.getElementsByTagName("input")) {
         if (temp !== document.getElementById("description") &&
-        temp !== document.getElementById("drivername")
-        && temp.value !== "") {
+            temp !== document.getElementById("drivername")
+            && temp.value !== "") {
             tempData[temp.id] = temp.value;
         }
     }
@@ -1666,15 +1654,15 @@ function installDriver() {
     }
     for (let temp of document.getElementsByTagName("select")) {
         if (temp !== document.getElementById("select-logging-level")
-        && temp !== document.getElementById("refresh-timer")
-        && temp.value !== "")
+            && temp !== document.getElementById("refresh-timer")
+            && temp.value !== "")
             tempData[temp.id] = temp.value;
     }
 
     tempData["driverType"] = type;
     jsonData.push(tempData);
 
-    var settings = JSON.stringify({jsonData});
+    var settings = JSON.stringify({ jsonData });
 
     $.ajax({
         url: apiUrl,
@@ -1828,7 +1816,7 @@ function loadSystemHealthCheck() {
                         title: "System Health Check",
                         height: 100,
                         width: 250,
-                        classes: {"ui-dialog": "ui-corner-all health-dialog-pass"},
+                        classes: { "ui-dialog": "ui-corner-all health-dialog-pass" },
                         modal: false
                     });
                 } else {
@@ -1845,7 +1833,7 @@ function loadSystemHealthCheck() {
                         title: "System Health Check",
                         height: 100,
                         width: 250,
-                        classes: {"ui-dialog": "ui-corner-all health-dialog-fail"},
+                        classes: { "ui-dialog": "ui-corner-all health-dialog-fail" },
                         modal: false
                     });
                 }
