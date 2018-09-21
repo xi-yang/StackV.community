@@ -39,6 +39,7 @@ var justRefreshed = 0;
 var dataTableClass;
 export var dataTable;
 var now = new Date();
+$.fn.dataTable.ext.errMode = "throw";
 export function loadLoggingDataTable(apiUrl) {
     dataTableClass = "logging";
     openLogDetails = 0;
