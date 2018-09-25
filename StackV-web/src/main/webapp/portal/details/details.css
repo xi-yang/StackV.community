@@ -1,7 +1,8 @@
 
 div#details-panel, div#visual-panel, div#logging-panel {
     padding: 30px 7% 30px 7%;
-    height: calc(100% - 52px);
+    margin-top: 20px;
+    height: calc(100% - 40px);
     width: 100%;
     position: absolute;
     transition: .5s;
@@ -141,4 +142,22 @@ pre.expanded{
 .button-confirm {
     width: 50%;
     border-radius: 0;
+}
+
+.page {
+    height: inherit;
+    width: inherit;
+    transition: filter .5s;
+}
+.page.loading {
+    filter: brightness(20%) opacity(.8) blur(2px);
+}
+
+
+td.details-control {
+    background: url('../../img/dataTables/details_open.png') no-repeat center center;
+    cursor: pointer;
+}
+tr.shown td.details-control {
+    background: url('../../img/dataTables/details_close.png') no-repeat center center;
 }

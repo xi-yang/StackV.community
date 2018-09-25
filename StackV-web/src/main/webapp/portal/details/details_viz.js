@@ -16,7 +16,7 @@ var modelMap = {}; // stores models in <visualization div, model> format
 var outputApiMap = {};
 var outputApi;
 
-function details_viz() {
+function details_viz(token) {
     $(function () {
         $("#dialog_policyAction").dialog({
             autoOpen: false
@@ -46,8 +46,6 @@ function details_viz() {
         "local/stackv/topology/DropDownTree",
         "local/stackv/topology/ContextMenu"],
     function (m, l, r, d3_, utils_, tree, c) {
-        var token = sessionStorage.getItem("token");
-
         $.ajax({
             crossDomain: true,
             type: "GET",

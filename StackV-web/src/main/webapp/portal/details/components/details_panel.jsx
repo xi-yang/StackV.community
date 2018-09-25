@@ -27,10 +27,7 @@ class DetailsPanel extends React.Component {
             <table id="instance-details-table" className="management-table">
                 <thead>
                     <tr>
-                        <th>Instance Details</th>
-                        <th>
-                            <button className="btn btn-default" id="button-view-intent" onClick={this.viewIntent} style={{ float: "right" }}>View Service Definition</button>
-                        </th>
+                        <th colSpan="2">Instance Details<button className="btn btn-default" id="button-view-intent" onClick={this.viewIntent} style={{ float: "right" }}>View Service Definition</button></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -68,7 +65,7 @@ class DetailsPanel extends React.Component {
                     </tr>
                     <tr className="button-row">
                         <td colSpan="2">
-                            <ButtonPanel uuid={this.props.uuid} super={this.props.state.get("super")} sub={this.props.state.get("sub")} last={this.props.state.get("last")} isVerifying={this.props.verify.get("drone")}></ButtonPanel>
+                            <ButtonPanel uuid={this.props.uuid} super={this.props.state.get("super")} sub={this.props.state.get("sub")} last={this.props.state.get("last")} isVerifying={this.props.verify.get("drone")} load={this.props.load}></ButtonPanel>
                         </td>
                     </tr>
                 </tbody>

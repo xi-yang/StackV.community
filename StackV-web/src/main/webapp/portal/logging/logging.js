@@ -38,6 +38,7 @@ var cachedStart = 0;
 var justRefreshed = 0;
 var dataTableClass;
 export var dataTable;
+$.fn.dataTable.ext.errMode = "throw";
 var now = new Date();
 export function loadLoggingDataTable(apiUrl) {
     dataTableClass = "logging";

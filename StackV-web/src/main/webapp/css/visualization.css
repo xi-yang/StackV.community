@@ -35,7 +35,7 @@
 body > svg {
     border: 1px solid hotpink;
 }
-svg {
+#detailssvg {
     border: 1px solid #ccc;
     pointer-events: auto;
     background: #f9f9f9;

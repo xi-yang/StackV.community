@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 
 import { keycloak, page } from "../../nexus";
-import { resumeRefresh, reloadData, startLoading, stopLoading } from "../../refresh";
+import { resumeRefresh, reloadData } from "../../refresh";
 
 var confirmConfig = {
     title: "Confirm Operation",
@@ -118,16 +118,16 @@ class ButtonPanel extends React.Component {
 
     render() {
         return <div style={{ left: "10px" }} className="btn-group" role="group">
-            <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} />
-            <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} />
-            <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} />
-            <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} />
-            <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} />
-            <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} />
-            <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} />
-            <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} />
-            <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} />
-            <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} />
+            <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} load={this.props.load} />
+            <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} load={this.props.load} />
+            <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} load={this.props.load} />
+            <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} load={this.props.load} />
+            <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} load={this.props.load} />
+            <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} load={this.props.load} />
+            <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} load={this.props.load} />
+            <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} load={this.props.load} />
+            <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} load={this.props.load} />
+            <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} load={this.props.load} />
         </div>;
     }
 }
@@ -173,6 +173,7 @@ class OpButton extends React.Component {
 
     sendRequest() {
         let command = this.props.operation.toLowerCase().replace(" ", "_");
+        let button = this;
         let apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + this.props.uuid + "/" + command;
         $.ajax({
             url: apiUrl,
@@ -196,16 +197,18 @@ class OpButton extends React.Component {
                         }
                         break;
                     case "verify":
-                        startLoading();
-                        setTimeout(function () {
+                        if (page === "details") {
+                            button.props.load(5);
+                        } else {
+                            resumeRefresh();
                             reloadData();
-                            stopLoading();
-                        }, 2000);
+                        }
                         break;
                     default:
+                        button.props.load(.5);
                         setTimeout(function () {
                             reloadData();
-                        }, 100);
+                        }, 300);
                 }
             },
             error: function () {

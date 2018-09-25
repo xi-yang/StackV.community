@@ -1,15 +1,18 @@
-/* global XDomainRequest, TweenLite, Power2, details_viz */
+/* global details_viz */
 import React from "react";
 import PropTypes from "prop-types";
 import { Map } from "immutable";
 import Mousetrap from "mousetrap";
 import { css } from "emotion";
-import { ClipLoader } from "react-spinners";
+import { RotateLoader } from "react-spinners";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-import { keycloak, page } from "../nexus";
+import "./details.css";
+
 import { resumeRefresh, initRefresh, pauseRefresh, refreshSync, setRefresh, timerChange } from "../refresh";
 
 import DetailsPanel from "./components/details_panel";
+import DetailsDots from "./components/details_dots";
 import LoggingPanel from "../logging/logging_panel";
 import VisualizationPanel from "./components/visualization_panel";
 
@@ -20,7 +23,10 @@ var intentConfig = {
 
 const override = css`
     display: block;
+    position: absolute;
     margin: auto;
+    left: 50%;
+    top: 30%;
     z-index: 100;
 `;
 
@@ -29,6 +35,8 @@ class Details extends React.Component {
         super(props);
 
         this.viewShift = this.viewShift.bind(this);
+        this.load = this.load.bind(this);
+
         let page = this;
         Mousetrap.bind("shift+left", function () { window.location.href = "/StackV-web/portal/"; });
         Mousetrap.bind("shift+right", function () { window.location.href = "/StackV-web/portal/driver/"; });
@@ -50,15 +58,28 @@ class Details extends React.Component {
     componentDidMount() {
         let page = this;
         let dataInterval = setInterval(function () {
-            page.setState(page.fetchData());
-        }, (page.state.refreshInterval === "live" ? 1000 : 1000 * page.state.refreshInterval));
-        this.setState({ intervalRef: dataInterval });
-
+            if (!(page.state.loading || page.state.refreshInterval === "paused")) {
+                page.setState(page.fetchData());
+            }
+        }, (page.state.refreshInterval === "live" ? 500 : 1000 * page.state.refreshInterval));
 
         page.loadVisualization();
         let visInterval = setInterval(function () {
             page.loadVisualization();
         }, (10000));
+        this.setState({ dataIntervalRef: dataInterval, visIntervalRef: visInterval });
+    }
+    componentWillUnmount() {
+        clearInterval(this.state.dataIntervalRef);
+        clearInterval(this.state.visIntervalRef);
+    }
+
+    load(seconds) {
+        let page = this;
+        this.setState({ loading: true });
+        setTimeout(function () {
+            page.setState({ loading: false });
+        }, seconds * 1000);
     }
 
     render() {
@@ -74,23 +95,32 @@ class Details extends React.Component {
                 modView = [false, false, true];
                 break;
         }
-        return <div className="page page-details">
-            <ClipLoader
+        let pageClasses = "page page-details";
+        if (this.state.loading) {
+            pageClasses = "page page-details loading";
+        }
+        return <div style={{ width: "100%", height: "100%" }}>
+            <RotateLoader
                 className={override}
                 sizeUnit={"px"}
-                size={150}
+                size={15}
                 color={"#7ED321"}
                 loading={this.state.loading}
             />
+            <div className={pageClasses}>
+                <DetailsDots view={this.state.view}></DetailsDots>
 
-            <LoggingPanel active={modView[0]} uuid={this.props.uuid}></LoggingPanel>
-            <DetailsPanel active={modView[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)} verify={Map(this.state.verify)}></DetailsPanel>
-            <VisualizationPanel active={modView[2]} verify={Map(this.state.verify)}></VisualizationPanel>
+                <LoggingPanel active={modView[0]} uuid={this.props.uuid}></LoggingPanel>
+                <DetailsPanel active={modView[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)} verify={Map(this.state.verify)} load={this.load}></DetailsPanel>
+                <VisualizationPanel active={modView[2]} verify={Map(this.state.verify)}></VisualizationPanel>
+                <div id="details-viz"></div>
+            </div>
         </div>;
     }
 
     fetchData() {
         // Build 
+        let page = this;
         let meta = {}, state = {}, verify = {};
 
         // Frontend superstate and metadata
@@ -100,7 +130,8 @@ class Details extends React.Component {
             async: false,
             type: "GET",
             beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
             },
             success: function (instance) {
                 meta.alias = instance[1];
@@ -131,8 +162,8 @@ class Details extends React.Component {
             async: false,
             type: "GET",
             beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
             },
             success: function (result) {
                 state.sub = result;
@@ -146,7 +177,8 @@ class Details extends React.Component {
             async: false,
             type: "GET",
             beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
             },
             success: function (verification) {
                 verify.state = verification[0];
@@ -162,7 +194,8 @@ class Details extends React.Component {
                     async: false,
                     type: "GET",
                     beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+                        xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                        xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                     },
                     success: function (retCode) {
                         verify.drone = (retCode === "1");
@@ -252,12 +285,12 @@ class Details extends React.Component {
             });
         });
 
-        $intentModal.html("<textarea readonly id=\"details-intent-modal-text\"></textarea>");
         $intentModal.iziModal(intentConfig);
+        $intentModal.iziModal("setContent", "<textarea readonly id=\"details-intent-modal-text\"></textarea>");
     }
 
     loadVisualization() {
-        details_viz();
+        details_viz(this.props.keycloak.token);
         let page = this;
         if (!(page.state.state.sub === "INIT" || (page.state.state.sub === "FAILED" && page.state.state.last === "INIT"))) {
             $("#details-viz").load("/StackV-web/details_viz.html", function () {
@@ -596,6 +629,7 @@ class Details extends React.Component {
     }
 }
 Details.propTypes = {
+    keycloak: PropTypes.object.isRequired,
     uuid: PropTypes.string.isRequired,
 };
 export default Details;

@@ -32,6 +32,7 @@ import loadClipbook from "./clipbook";
 
 /* Pages */
 import Details from "./details/details";
+import Portal from "./new/portal";
 
 import { loadAdmin } from "./admin/admin";
 import { loadACLPortal } from "./acl/acl";
@@ -127,6 +128,10 @@ $(function () {
     });
     keycloak.onAuthSuccess = function () {
         window.keycloak = keycloak;
+        if (window.location.pathname === "/StackV-web/portal/new/") {
+            ReactDOM.render(React.createElement(Portal, null), document.getElementById("root"));
+            return;
+        }
 
         loadNavbar();
 

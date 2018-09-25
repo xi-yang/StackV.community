@@ -5,7 +5,7 @@ module.exports = {
     mode: "production",
     entry: {
         babel: "@babel/polyfill",
-        "StackV-main": __dirname + "/src/main/webapp/portal/nexus.js",
+        "StackV-main": __dirname + "/src/main/webapp/portal/nexus.js"
     },
     output: {
         filename: "[name].bundle.js",
@@ -18,6 +18,16 @@ module.exports = {
     },
     module: {
         rules: [
+            { test: /\.css$/, loader: "style-loader!css-loader" },
+            {
+                test: /\.(jpg|png)$/,
+                use: {
+                    loader: "url-loader",
+                    options: {
+                        limit: 25000,
+                    },
+                },
+            },
             {
                 test: /\.jsx?$/,
                 exclude: {
