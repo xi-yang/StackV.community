@@ -272,8 +272,6 @@ public class IpaAlm {
                 // get the dn needed for creating the EAS task
                 dn = (String) innerResultJSON.get("dn");
                 
-                System.out.println("IPA ALM dn: " + dn);
-                
                 // get the almstatments array
                 JSONArray almstmtsArr = (JSONArray) innerResultJSON.get("almstatements");
                 Iterator<String> iterator = almstmtsArr.iterator();
@@ -288,14 +286,27 @@ public class IpaAlm {
             }
         }
         
+        // create the EAS Task
         boolean easTaskCreated = createEasTask(dn, topUri);
-        if (addr != null && addr.length() > 0 && easTaskCreated) {
-            return addr;
-        } else {
-            return null;
-        }
         
-        // return addr;
+        // if address was leased successfully and the the task was created
+        // then return the address
+        if (addr != null && addr.length() > 0 && easTaskCreated) {
+            logger.warning("leaseAddr", "***address leased: " + addr);
+            return addr;
+        } else if (addr != null && addr.length() > 0 && !easTaskCreated) {
+            // if the address was leased succesfully but the task creation failed
+            // then release (revoke) the address and return LEASE_FAILED
+            revokeLeasedAddr(clientId, poolName, poolType, addr);
+            logger.warning("leaseAddr", "***LEASING FAILED DUE TO TASK CREATION FAILURE***: " + easTaskCreated);
+            return "LEASE_FAILED";
+            // NOTE: do not have to check if the address leasing failed and
+            // the eas task created succeeded since sucessful leasing is 
+            // a prerequiste for task creation
+        } else {
+            logger.warning("leaseAddr", "***LEASING FAILED***");
+            return "LEASE_FAILED";
+        }
     }
     
     /**
@@ -342,7 +353,7 @@ public class IpaAlm {
     }
     
     private boolean createEasTask(String dn, String topUri) {
-        String cn = topUri + "_alm_address";
+        String cn = topUri + "_alm-address";
         JSONObject createEasTaskResponseJSON = createEasTaskJSON(dn,cn);
         
          // parse the JSON response for the address
@@ -351,10 +362,12 @@ public class IpaAlm {
             JSONObject resultJSON = (JSONObject) createEasTaskResponseJSON.get("result");
             JSONObject innerResultJSON = (JSONObject) resultJSON.get("result");
             if (innerResultJSON.get("value").equals(cn)) {
+                logger.trace("creatEasTask", "EAS Task creation success");
                 return true;
             }
         }
         
+        logger.warning("createEasTask", "EAS Task creation failed. Response object: " + createEasTaskResponseJSON.toJSONString());
         return false;
     }
     
@@ -362,7 +375,7 @@ public class IpaAlm {
         JSONObject leaseJSON = new JSONObject();
         leaseJSON.put("id", 0);
         leaseJSON.put("method", "easTask_add");
-        
+                      
         JSONArray paramsArr = new JSONArray();
         paramsArr.add(new JSONArray());
         
@@ -371,11 +384,21 @@ public class IpaAlm {
         paramsArrArgs.put("eastasktype", "alm-lease");
         paramsArrArgs.put("eastaskaction", "delete");
         paramsArrArgs.put("eastaskstatus", "INIT");
-        paramsArrArgs.put("eastasktriggers", "delete-trigger");
-        paramsArrArgs.put("eastasklockedby", "lockedby");
-        paramsArrArgs.put("eastasklockexpires", "1");
+        
+        JSONArray easTaskTriggers = new JSONArray();
+        JSONObject trigger = new JSONObject();        
+        trigger.put("type", "ldap-query");
+        trigger.put("dn", "cn=TBD,cn=TBD,cn=TBD,cn=orchestrators,cn=stackv,dc=TBD,dc=TBD,dc=TBD");      
+        trigger.put("exists", false);
+        easTaskTriggers.add(trigger);
+        
+        paramsArrArgs.put("eastasktriggers", easTaskTriggers.toJSONString());
+        paramsArrArgs.put("eastasklockedby", "lockedByTransaction");
+        paramsArrArgs.put("eastasklockexpires", "150000000");
         paramsArrArgs.put("eastaskresourcerefdn", dn);
-        paramsArrArgs.put("eastaskoptions", "none");
+        JSONObject taskOptions = new JSONObject();
+        taskOptions.put("DispatchGroup", "group");
+        paramsArrArgs.put("eastaskoptions", taskOptions.toJSONString());
         
        
         paramsArr.add(paramsArrArgs);

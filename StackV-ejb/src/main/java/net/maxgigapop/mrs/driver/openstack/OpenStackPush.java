@@ -2741,10 +2741,13 @@ public class OpenStackPush {
             o.put("server name", serverName);
             o.put("port profile", portProfile);
             o.put("vnic name", vnicName);
-            if (ip != null) {
+            
+            // have to check for not only null but also if the leasing 
+            // did not actually return an address
+            if (ip != null && !ip.equals("LEASE_FAILED")) {
                 o.put("ip address", ip);
             }
-            if (mac != null) {
+            if (mac != null && !mac.equals("LEASE_FAILED")) {
                 o.put("mac address", mac);
             }
             if (routingSvc != null) {
@@ -2774,35 +2777,7 @@ public class OpenStackPush {
         
         if (creation == true) {
             JO.put("request", "AttachSriovRequest");
-        } else {
-            
-            /*
-            // cleanup the address
-            // revoke the leaseaddr if the address has been leased
-            if (ip != null || mac != null) {              
-                boolean isIpLeased = ipaAlm.checkIfAddrLeased(poolName, ip);
-                boolean isMacLeased = ipaAlm.checkIfAddrLeased(poolName, mac);
-                
-                if (isIpLeased) {
-                    boolean addrReleased = ipaAlm.revokeLeasedAddr(clientName, poolName, ipPoolType, ip);
-                    if (addrReleased) {                        
-                        logger.trace(method, "IPA leased address revoked succesfully");
-                    } else {                        
-                        logger.error(method, "IPA leased address not revoked", Severity.ERROR);
-                    }
-                }
-                
-                if (isMacLeased) {
-                    boolean addrReleased = ipaAlm.revokeLeasedAddr(clientName, poolName, macPoolType, mac);
-                    if (addrReleased) {                        
-                        logger.trace(method, "IPA leased address revoked succesfully");
-                    } else {                        
-                        logger.error(method, "IPA leased address not revoked", Severity.ERROR);
-                    }
-                }
-                
-            }
-            */
+        } else {         
             JO.put("request", "DetachSriovRequest");
         }
         requests.add(JO);
