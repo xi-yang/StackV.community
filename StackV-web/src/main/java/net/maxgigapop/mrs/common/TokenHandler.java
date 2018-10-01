@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016 University of Maryland
+ * Copyright (c) 2013-2018 University of Maryland
  * Created by: Alberto Jimenez
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
@@ -29,6 +29,13 @@ import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.ResponseBody;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.security.cert.CertificateException;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -47,7 +54,7 @@ public class TokenHandler {
     private String auth = "Basic " + kc_encode;
     private String durl = kc_url + "/realms/" + kc_realm + "/protocol/openid-connect/token";
 
-    private final OkHttpClient client = new OkHttpClient();
+    private final OkHttpClient client;
     private static final MediaType URL = MediaType.parse("application/x-www-form-urlencoded; charset=utf-8");
     private String requestData;
 
@@ -66,9 +73,10 @@ public class TokenHandler {
             auth = "Basic " + kc_encode;
         }
         refreshToken = refresh;
-
         requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
-        refreshTokenSub(0);
+        
+        client = getClient();
+        refreshTokenSub(0);        
     }
 
     public TokenHandler(String refresh, String realm, String encode) {
@@ -80,8 +88,9 @@ public class TokenHandler {
         kc_encode = encode;
         auth = "Basic " + kc_encode;
         durl = kc_url + "/realms/" + kc_realm + "/protocol/openid-connect/token";
-
         requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
+        
+        client = getClient();
         refreshTokenSub(0);
     }
 
@@ -132,6 +141,47 @@ public class TokenHandler {
             } catch (InterruptedException ex1) {
                 logger.catching(method, ex1);
             }
+        }
+    }
+
+    private OkHttpClient getClient() {
+        try {
+            // Create a trust manager that does not validate certificate chains
+            final TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    @Override
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                    }
+
+                    @Override
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                    }
+
+                    @Override
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                        return null;
+                    }
+                }
+            };
+
+            // Install the all-trusting trust manager
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            // Create an ssl socket factory with our all-trusting manager
+            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+            OkHttpClient okHttpClient = new OkHttpClient();
+            okHttpClient.setSslSocketFactory(sslSocketFactory);
+            okHttpClient.setHostnameVerifier(new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            });
+
+            return okHttpClient;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }
