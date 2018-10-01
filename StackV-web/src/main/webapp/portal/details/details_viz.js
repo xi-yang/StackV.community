@@ -73,7 +73,7 @@ function details_viz(token) {
 
                     ModelConstructor = m;
                     model = new ModelConstructor();
-                    model.init(1, renderModels, null, "default");
+                    model.init(1, renderModels, null, "default", token);
 
                     functionMap["ModelBrowser"] = function (o, m, e) {
                         positionDisplayPanel(m + "_displayPanel", e);
@@ -375,9 +375,7 @@ function disableButtons(prefix) {
     $("#" + prefix + "_viz_toggle_model").attr("disabled", "disabled");
 }
 
-function renderModels() {
-    var UUID = sessionStorage.getItem("instance-uuid");
-    var token = sessionStorage.getItem("token");
+function renderModels(UUID, token) {
     $.ajax({
         crossDomain: true,
         type: "GET",

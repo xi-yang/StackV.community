@@ -23,7 +23,7 @@
 
 /* global XDomainRequest, TweenLite, Power2, Mousetrap, swal */
 import { keycloak } from "../nexus";
-import { loadLogs } from "../logging/logging";
+import { loadLogs } from "../datatables/logging";
 import { initRefresh, refreshSync } from "../refresh";
 
 var tweenInstalledPanel = new TweenLite("#installed-panel", 1, { ease: Power2.easeInOut, paused: true, top: "0px" });

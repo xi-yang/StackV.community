@@ -11,6 +11,9 @@ const override = css`
     top: 0;
     z-index: 50;
     color: white;
+    background: #333;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 1px 10px 0px black;
 `;
 const dots = css`
     background: none;
@@ -19,7 +22,7 @@ const dots = css`
     margin: 5px;
 `;
 const text = css`
-    transition: 1s;
+    transition: .4s;
     vertical-align: super;
     margin-right: 5px;
 `;

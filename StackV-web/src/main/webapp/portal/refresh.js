@@ -23,7 +23,7 @@
 */
 import { keycloak, page } from "./nexus";
 import { syncClipbook } from "./clipbook";
-import { dataTable, reloadLogs } from "./logging/logging";
+import { dataTable, reloadLogs } from "./datatables/logging";
 
 /* Enabled Scripts */
 import { reloadModals } from "./catalog";

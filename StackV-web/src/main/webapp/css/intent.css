@@ -400,7 +400,7 @@ ol li a {
     content: '';
     height: 16px;
     width: 16px;
-    background: url(../img/cd-custom-separator.svg) no-repeat center center;
+    background: black no-repeat center center;
     vertical-align: middle;
 }
 .cd-breadcrumb.custom-icons li > *::before,
@@ -412,7 +412,7 @@ ol li a {
     width: 20px;
     margin-right: .4em;
     margin-top: -2px;
-    background: url(../img/cd-custom-icons-01.svg) no-repeat 0 0;
+    background: black no-repeat 0 0;
     vertical-align: middle;
 }
 .cd-breadcrumb.custom-icons li:not(.current):nth-of-type(2) > *::before,

@@ -1,8 +1,11 @@
-/* global Keycloak */
 import React from "react";
 import PropTypes from "prop-types";
 import Keycloak from "keycloak-js";
+import iziToast from "izitoast";
 
+import "./global.css";
+
+import Catalog from "../catalog/catalog";
 import Details from "../details/details";
 import Navbar from "./navbar";
 
@@ -11,6 +14,18 @@ import { fas } from "@fortawesome/free-solid-svg-icons";
 import { far } from "@fortawesome/free-regular-svg-icons";
 
 library.add(far, fas);
+
+const detailsErrorToast = {
+    theme: "dark",
+    icon: "fas fa-exclamation",
+    title: "Details Unavailable",
+    message: "No service instance selected!",
+    position: "topRight",
+    progressBarColor: "red",
+    pauseOnHover: true,
+    timeout: 7000,
+    displayMode: "once"
+};
 
 class Portal extends React.Component {
     constructor(props) {
@@ -25,7 +40,7 @@ class Portal extends React.Component {
         this.state = {
             keycloak: keycloak,
             keycloakIntervalRef: keycloakIntervalRef,
-            page: "details"
+            page: "catalog"
         };
 
         this.loadPage = this.loadPage.bind(this);
@@ -60,15 +75,29 @@ class Portal extends React.Component {
 
     loadPage() {
         switch (this.state.page) {
+            case "catalog":
+                return <Catalog keycloak={this.state.keycloak} switchPage={this.switchPage} />;
             case "details":
-                return <Details uuid="02979818-7a29-4467-a94a-22e866793119" keycloak={this.state.keycloak}></Details>;
+                return <Details keycloak={this.state.keycloak} uuid={this.state.uuid} />;
             default:
                 return <div></div>;
         }
     }
 
-    switchPage(page) {
-        this.setState({ page: page });
+    switchPage(page, param) {
+        switch (page) {
+            case "details":
+                if (param && param.uuid) {
+                    this.setState({ page: "details", uuid: param.uuid });
+                } else if (this.state.uuid) {
+                    this.setState({ page: "details", uuid: this.state.uuid });
+                } else {
+                    iziToast.show(detailsErrorToast);
+                }
+                break;
+            default:
+                this.setState({ page: page });
+        }
     }
 
     render() {

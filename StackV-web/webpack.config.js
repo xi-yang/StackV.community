@@ -20,7 +20,7 @@ module.exports = {
         rules: [
             { test: /\.css$/, loader: "style-loader!css-loader" },
             {
-                test: /\.(jpg|png)$/,
+                test: /\.(jpg|png|svg)$/,
                 use: {
                     loader: "url-loader",
                     options: {

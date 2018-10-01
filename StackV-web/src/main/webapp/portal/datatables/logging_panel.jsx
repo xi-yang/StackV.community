@@ -1,7 +1,9 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-import { loadLoggingDataTable, reloadLogs, filterLogs } from "../logging/logging";
+import "./logging.css";
+
+import { loadLoggingDataTable, reloadLogs, filterLogs } from "../datatables/logging";
 
 class LoggingPanel extends React.Component {
     constructor(props) {

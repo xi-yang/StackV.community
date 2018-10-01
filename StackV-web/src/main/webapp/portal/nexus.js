@@ -163,7 +163,7 @@ $(function () {
                     window.location.replace("/StackV-web/");
                 } else {
                     ReactDOM.render(
-                        React.createElement(Details, { uuid: uuid }, null),
+                        React.createElement(Details, { uuid: uuid, keycloak: keycloak }, null),
                         document.getElementById("main-pane")
                     );
                 }

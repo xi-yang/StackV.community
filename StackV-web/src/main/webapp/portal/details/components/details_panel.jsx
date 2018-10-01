@@ -65,7 +65,8 @@ class DetailsPanel extends React.Component {
                     </tr>
                     <tr className="button-row">
                         <td colSpan="2">
-                            <ButtonPanel uuid={this.props.uuid} super={this.props.state.get("super")} sub={this.props.state.get("sub")} last={this.props.state.get("last")} isVerifying={this.props.verify.get("drone")} load={this.props.load}></ButtonPanel>
+                            <ButtonPanel uuid={this.props.uuid} super={this.props.state.get("super")} sub={this.props.state.get("sub")} last={this.props.state.get("last")}
+                                isVerifying={this.props.verify.get("drone")} load={this.props.load} keycloak={this.props.keycloak} page="details" />
                         </td>
                     </tr>
                 </tbody>
@@ -79,5 +80,6 @@ DetailsPanel.propTypes = {
     meta: PropTypes.object.isRequired,
     state: PropTypes.object.isRequired,
     verify: PropTypes.object.isRequired,
+    keycloak: PropTypes.object.isRequired,
 };
 export default DetailsPanel;

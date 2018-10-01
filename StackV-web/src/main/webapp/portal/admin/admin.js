@@ -24,7 +24,7 @@
 // Tweens
 import { initRefresh } from "../refresh";
 import { keycloak } from "../nexus";
-import { loadLogs, loadLoggingDataTable, reloadLogs } from "../logging/logging";
+import { loadLogs, loadLoggingDataTable, reloadLogs } from "../datatables/logging";
 
 var tweenAdminPanel = new TweenLite("#admin-panel", 1, { ease: Power2.easeInOut, paused: true, top: "0px", opacity: "1", display: "block" });
 var tweenLoggingPanel = new TweenLite("#logging-panel", 1, { ease: Power2.easeInOut, paused: true, left: "0px", opacity: "1", display: "block" });

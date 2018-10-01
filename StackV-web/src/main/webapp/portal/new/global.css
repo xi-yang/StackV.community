@@ -1,0 +1,152 @@
+/* Fonts */
+@import "https://use.fontawesome.com/releases/v5.3.1/css/all.css";
+@import "https://fonts.googleapis.com/css?family=Roboto:400,100,400italic,700italic,700";
+
+/* Bootstrap */
+@import "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
+@import "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css";
+
+/* Jquery */
+@import "https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css";
+
+/* DataTables */
+@import "https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.css";
+
+/* Misc Frameworks */
+@import "../../css/sweetalert.css";
+@import "../../css/iziToast.min.css";
+@import "https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/css/iziModal.min.css";
+@import "../../css/noty.css";
+
+/*Internal styles*/
+@import "../../css/navigation.css";
+@import "../../css/visualization.css";
+@import "../../css/driver.css";
+@import "../../css/usr.css";
+@import "../../css/ops.css";
+@import "../../css/acl.css";
+@import "../../css/intent.css";
+
+
+/*Miscellaenous global styles*/
+.hide {
+    opacity: 0;
+    display: none;
+}
+.blurred {
+    filter: blur(7px) !important;
+}
+
+html {
+    height: 100%;
+}
+
+a {
+    color: white;
+    text-decoration:none;
+}
+
+#nav {
+    z-index: 99;
+    height: 52px;
+}
+#select-logging-level {
+    margin: 15px 5px;
+}
+
+a.hover {
+    color: #B20000;
+}
+
+.opaque {
+    opacity: 0;
+}
+
+body {
+    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/StackV-web/img/background.png');
+    background-attachment: fixed;
+    font-family: 'Roboto', sans-serif;
+    text-align: center;
+    margin: 0px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+}
+
+.error {
+    font-family: "Roboto";
+    font-size: 14px;
+    color: #364454;
+}
+
+/*Looks like just a class to fade item out*/
+.fade-hide {
+    display: none;
+
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+/*Form elements styling*/
+select {
+    color: #000;
+}
+
+/*Black Screen styles*/
+div#black-screen {
+    position: absolute;
+    height: calc(100% - 52px);
+    width: 100%;
+    top: 52px;
+    z-index: 5;
+    background-color: rgba(0,0,0,0.4);
+    visibility: hidden;
+    opacity: 0;
+}
+
+/*Main Pane Styles */
+div#main-pane {
+    position: absolute;    
+    height: calc(100% - 52px);
+    width: 100%;
+    overflow-x: hidden;
+    top: 52px;
+
+    -webkit-transition: all 400ms ease-in-out;
+    transition: all 400ms ease-in-out;
+    transition: .5s filter linear;
+}
+div.sub-main#main-pane {
+    height: calc(100% - 104px);
+    top: 104px;
+}
+
+#sub-nav {
+    z-index: 98;
+    height: 52px;
+    overflow: hidden;
+}
+#sub-nav nav {
+    border-radius: 0;
+}
+#sub-nav #refresh-timer {
+    margin: 15px 0px 15px 5px;
+}
+#sub-nav #refresh-button {
+    margin: 11px 0px 11px 5px;
+    color: white;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    opacity: 1;
+}
+
+.loading-prog {
+    height: 1px;
+    left: 0;
+    background: #5bab5b;
+    position: absolute;
+    transition: width 1s linear;
+    box-shadow: 0 0 15px 2px #4ed44e;
+}

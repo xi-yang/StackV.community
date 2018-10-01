@@ -27,7 +27,7 @@ import Mousetrap from "mousetrap";
 
 import { prettyPrintInfo, keycloak } from "./nexus";
 import { initRefresh, reloadData } from "./refresh";
-import { loadInstanceDataTable } from "./logging/logging";
+import { loadInstanceDataTable } from "./datatables/logging";
 
 $.ajaxSetup({
     cache: false,
@@ -49,7 +49,6 @@ var $catModal = $("#catalog-modal");
 var $profModal = $("#profiles-modal");
 var $detailsModal = $("#profile-details-modal");
 var $licenseModal = $("#profile-license-modal");
-
 var $alertModal = $("#alert-modal");
 
 /*ReactDOM.render(

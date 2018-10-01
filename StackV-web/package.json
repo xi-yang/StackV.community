@@ -28,6 +28,8 @@
     "file-loader": "^2.0.0",
     "i": "^0.3.6",
     "immutable": "^3.8.2",
+    "izimodal": "^1.5.1",
+    "izitoast": "^1.4.0",
     "jquery": "^3.3.1",
     "keycloak-js": "^4.4.0",
     "lodash": "^4.17.10",

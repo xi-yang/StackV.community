@@ -13,7 +13,7 @@ import { resumeRefresh, initRefresh, pauseRefresh, refreshSync, setRefresh, time
 
 import DetailsPanel from "./components/details_panel";
 import DetailsDots from "./components/details_dots";
-import LoggingPanel from "../logging/logging_panel";
+import LoggingPanel from "../datatables/logging_panel";
 import VisualizationPanel from "./components/visualization_panel";
 
 var $intentModal = $("#details-intent-modal");
@@ -111,7 +111,8 @@ class Details extends React.Component {
                 <DetailsDots view={this.state.view}></DetailsDots>
 
                 <LoggingPanel active={modView[0]} uuid={this.props.uuid}></LoggingPanel>
-                <DetailsPanel active={modView[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)} verify={Map(this.state.verify)} load={this.load}></DetailsPanel>
+                <DetailsPanel active={modView[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
+                    verify={Map(this.state.verify)} load={this.load} keycloak={this.props.keycloak} />
                 <VisualizationPanel active={modView[2]} verify={Map(this.state.verify)}></VisualizationPanel>
                 <div id="details-viz"></div>
             </div>
@@ -250,39 +251,6 @@ class Details extends React.Component {
         let page = this;
         $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
             initRefresh($("#refresh-timer").val());
-            switch (page.state.view) {
-                case "logging":
-                    $("#logging-tab").addClass("active");
-                    break;
-                case "details":
-                    $("#sub-details-tab").addClass("active");
-                    break;
-                case "visual":
-                    $("#visual-tab").addClass("active");
-                    break;
-            }
-
-            $("#logging-tab").click(function () {
-                $("#logging-tab").addClass("active");
-                $("#sub-details-tab").removeClass("active");
-                $("#visual-tab").removeClass("active");
-
-                page.setState({ view: "logging" });
-            });
-            $("#sub-details-tab").click(function () {
-                $("#logging-tab").removeClass("active");
-                $("#sub-details-tab").addClass("active");
-                $("#visual-tab").removeClass("active");
-
-                page.setState({ view: "details" });
-            });
-            $("#visual-tab").click(function () {
-                $("#logging-tab").removeClass("active");
-                $("#sub-details-tab").removeClass("active");
-                $("#visual-tab").addClass("active");
-
-                page.setState({ view: "visual" });
-            });
         });
 
         $intentModal.iziModal(intentConfig);

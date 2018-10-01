@@ -64,7 +64,6 @@ black-screen: 3
 @import "catalog.css";
 @import "driver.css";
 @import "usr.css";
-@import "clipboard.css";
 @import "ops.css";
 @import "acl.css";
 @import "intent.css";

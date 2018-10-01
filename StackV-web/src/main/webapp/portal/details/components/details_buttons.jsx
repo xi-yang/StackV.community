@@ -1,9 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-import { keycloak, page } from "../../nexus";
-import { resumeRefresh, reloadData } from "../../refresh";
-
 var confirmConfig = {
     title: "Confirm Operation",
     subtitle: "Please confirm operation. For deconstruction of service, use Cancel instead of Delete.",
@@ -22,6 +19,7 @@ class ButtonPanel extends React.Component {
 
         this.state = {};
 
+        this.sendRequest = this.sendRequest.bind(this);
         this.moderateState = this.moderateState.bind(this);
     }
 
@@ -118,17 +116,62 @@ class ButtonPanel extends React.Component {
 
     render() {
         return <div style={{ left: "10px" }} className="btn-group" role="group">
-            <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} load={this.props.load} />
-            <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} load={this.props.load} />
-            <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} load={this.props.load} />
-            <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} load={this.props.load} />
-            <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} load={this.props.load} />
-            <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} load={this.props.load} />
-            <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} load={this.props.load} />
-            <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} load={this.props.load} />
-            <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} load={this.props.load} />
-            <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} load={this.props.load} />
+            <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} send={this.sendRequest} />
+            <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} send={this.sendRequest} />
+            <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} send={this.sendRequest} />
+            <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} send={this.sendRequest} />
+            <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} send={this.sendRequest} />
+            <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} send={this.sendRequest} />
+            <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} send={this.sendRequest} />
+            <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} send={this.sendRequest} />
+            <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} send={this.sendRequest} />
+            <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} send={this.sendRequest} />
         </div>;
+    }
+
+    sendRequest(command) {
+        let panel = this;
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + this.props.uuid + "/" + command;
+        $.ajax({
+            url: apiUrl,
+            type: "PUT",
+            beforeSend: function beforeSend(xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + panel.props.keycloak.token);
+                xhr.setRequestHeader("Refresh", panel.props.keycloak.refreshToken);
+            },
+            success: function () {
+                switch (command) {
+                    case "delete":
+                    case "force_delete":
+                        if (panel.props.page === "details") {
+                            setTimeout(function () {
+                                sessionStorage.removeItem("instance-uuid");
+                                window.document.location = "/StackV-web/portal/";
+                            }, 100);
+                        } else {
+                            if (panel.props.resume) { panel.props.resume(); }
+                        }
+                        break;
+                    case "verify":
+                        if (panel.props.page === "details") {
+                            panel.props.load(5);
+                        } else {
+                            if (panel.props.resume) { panel.props.resume(); }
+                        }
+                        break;
+                    default:
+                        panel.props.load(.5);
+                        setTimeout(function () {
+                            panel.props.reload();
+                        }, 300);
+                }
+            },
+            error: function () {
+                setTimeout(function () {
+                    panel.props.reload();
+                }, 100);
+            }
+        });
     }
 }
 ButtonPanel.propTypes = {
@@ -136,7 +179,10 @@ ButtonPanel.propTypes = {
     super: PropTypes.string.isRequired,
     sub: PropTypes.string.isRequired,
     last: PropTypes.string.isRequired,
-    isVerifying: PropTypes.bool
+    keycloak: PropTypes.object.isRequired,
+    page: PropTypes.string.isRequired,
+    isVerifying: PropTypes.bool,
+    resume: PropTypes.func,
 };
 
 class OpButton extends React.Component {
@@ -151,11 +197,9 @@ class OpButton extends React.Component {
         }
 
         this.state = init;
-        this.sendRequest = this.sendRequest.bind(this);
-
-        let sendRequest = this.sendRequest;
+        let button = this;
         $(".button-confirm-op").click(function () {
-            sendRequest($(this).data("uuid"), $(this).data("mode"));
+            button.props.send($(this).data("mode"));
             $("#modal-button-confirm").iziModal("close");
         });
         this.execute = this.execute.bind(this);
@@ -165,71 +209,23 @@ class OpButton extends React.Component {
         let command = this.props.operation.toLowerCase().replace(" ", "_");
         if (!this.state.confirmation) {
             // No confirmation required            
-            this.sendRequest(this.props.uuid, command);
+            this.props.send(command);
         } else {
             $("#modal-button-" + command).iziModal("open");
         }
     }
 
-    sendRequest() {
-        let command = this.props.operation.toLowerCase().replace(" ", "_");
-        let button = this;
-        let apiUrl = window.location.origin + "/StackV-web/restapi/app/service/" + this.props.uuid + "/" + command;
-        $.ajax({
-            url: apiUrl,
-            type: "PUT",
-            beforeSend: function beforeSend(xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-            },
-            success: function () {
-                switch (command) {
-                    case "delete":
-                    case "force_delete":
-                        if (page === "details") {
-                            setTimeout(function () {
-                                sessionStorage.removeItem("instance-uuid");
-                                window.document.location = "/StackV-web/portal/";
-                            }, 100);
-                        } else {
-                            resumeRefresh();
-                            reloadData();
-                        }
-                        break;
-                    case "verify":
-                        if (page === "details") {
-                            button.props.load(5);
-                        } else {
-                            resumeRefresh();
-                            reloadData();
-                        }
-                        break;
-                    default:
-                        button.props.load(.5);
-                        setTimeout(function () {
-                            reloadData();
-                        }, 300);
-                }
-            },
-            error: function () {
-                setTimeout(function () {
-                    reloadData();
-                }, 100);
-            }
-        });
-    }
-
     render() {
         let command = this.props.operation.toLowerCase().replace(" ", "_");
         if (this.state.confirmation) {
-            let butt = this;
+            let button = this;
             var $confirmModal = $("#modal-button-" + command).iziModal(confirmConfig);
             $confirmModal.iziModal("setContent", "<button class=\"button-confirm button-confirm-" + command + "-close btn btn-primary\" data-izimodal-close=\"\">Close</button><button class=\"button-confirm button-confirm-" + command + "-op btn btn-danger\">Confirm</button>");
             $(".button-confirm-" + command + "-close").click(function () {
                 $("#modal-button-" + command).iziModal("close");
             });
             $(".button-confirm-" + command + "-op").click(function () {
-                butt.sendRequest();
+                button.props.send(command);
                 $("#modal-button-" + command).iziModal("close");
             });
         }
@@ -256,8 +252,8 @@ class OpButton extends React.Component {
 }
 OpButton.propTypes = {
     operation: PropTypes.string.isRequired,
+    send: PropTypes.func.isRequired,
     label: PropTypes.string,
-    uuid: PropTypes.string.isRequired,
     visible: PropTypes.bool
 };
 export default ButtonPanel;
