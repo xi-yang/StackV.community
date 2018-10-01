@@ -25,6 +25,7 @@
     "css-loader": "^1.0.0",
     "d3": "^5.4.0",
     "emotion": "^9.2.10",
+    "eslint-plugin-emotion": "^9.2.6",
     "file-loader": "^2.0.0",
     "i": "^0.3.6",
     "immutable": "^3.8.2",

@@ -2,9 +2,15 @@ import React from "react";
 import PropTypes from "prop-types";
 import { cx, css } from "emotion";
 
-const stack_nav = css`a {
-    pointer-events: none;
-}`;
+const stack_nav = css`
+    a {
+        pointer-events: none;
+    }
+    ul li:hover {
+        background-color: #000;
+        color: rgb(51,51,51);
+    }
+`;
 
 class Navbar extends React.Component {
     constructor(props) {
