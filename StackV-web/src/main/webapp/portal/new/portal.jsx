@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import Keycloak from "keycloak-js";
 import iziToast from "izitoast";
+import Mousetrap from "mousetrap";
 
 import "./global.css";
 
@@ -45,7 +46,10 @@ class Portal extends React.Component {
 
         this.loadPage = this.loadPage.bind(this);
         this.switchPage = this.switchPage.bind(this);
+        this.viewShift = this.viewShift.bind(this);
 
+        Mousetrap.bind("shift+left", () => { this.viewShift("left"); });
+        Mousetrap.bind("shift+right", () => { this.viewShift("right"); });
     }
     componentDidMount() {
         /*const keycloak = Keycloak("/StackV-web/resources/keycloak.json");
@@ -72,18 +76,6 @@ class Portal extends React.Component {
         return true;
     }
 
-
-    loadPage() {
-        switch (this.state.page) {
-            case "catalog":
-                return <Catalog keycloak={this.state.keycloak} switchPage={this.switchPage} />;
-            case "details":
-                return <Details keycloak={this.state.keycloak} uuid={this.state.uuid} />;
-            default:
-                return <div></div>;
-        }
-    }
-
     switchPage(page, param) {
         switch (page) {
             case "details":
@@ -107,6 +99,41 @@ class Portal extends React.Component {
                 {this.loadPage()}
             </div>
         </div>;
+    }
+
+    /* */
+    loadPage() {
+        switch (this.state.page) {
+            case "catalog":
+                return <Catalog keycloak={this.state.keycloak} switchPage={this.switchPage} />;
+            case "details":
+                return <Details keycloak={this.state.keycloak} uuid={this.state.uuid} />;
+            default:
+                return <div></div>;
+        }
+    }
+    viewShift(dir) {
+        switch (dir) {
+            case "left":
+                switch (this.state.page) {
+                    case "catalog":
+                        this.switch("visualization");
+                        break;
+                    case "details":
+                        this.switchPage("catalog");
+                        break;
+                }
+                break;
+            case "right":
+                switch (this.state.page) {
+                    case "catalog":
+                        this.switchPage("details");
+                        break;
+                    case "details":
+                        this.switchPage("driver");
+                        break;
+                }
+        }
     }
 }
 export default Portal;

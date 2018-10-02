@@ -38,8 +38,6 @@ class Details extends React.Component {
         this.load = this.load.bind(this);
 
         let page = this;
-        Mousetrap.bind("shift+left", function () { window.location.href = "/StackV-web/portal/"; });
-        Mousetrap.bind("shift+right", function () { window.location.href = "/StackV-web/portal/driver/"; });
         Mousetrap.bind("left", function () { page.viewShift("left"); });
         Mousetrap.bind("right", function () { page.viewShift("right"); });
 

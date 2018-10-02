@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
+import ReactInterval from "react-interval";
 
 import iziModal from "izimodal";
 $.fn.iziModal = iziModal;
@@ -62,8 +63,6 @@ class Catalog extends React.Component {
         super(props);
 
         let page = this;
-        Mousetrap.bind("shift+left", function () { window.location.href = "/StackV-web/portal/"; });
-        Mousetrap.bind("shift+right", function () { window.location.href = "/StackV-web/portal/driver/"; });
         Mousetrap.bind("space", function () { page.toggleModal("catalog"); });
         Mousetrap.bind("shift+space", function () { page.toggleModal("profile"); });
 
@@ -72,25 +71,26 @@ class Catalog extends React.Component {
         this.initModals();
 
         this.state = {
-            refreshInterval: "live",
+            refreshTimer: 500,
+            refreshEnabled: false,
             loading: false
         };
+
+        this.loadData = this.loadData.bind(this);
     }
     componentDidMount() {
-        let page = this;
-        let dataInterval = setInterval(function () {
-            if (!(page.state.loading || page.state.refreshInterval === "paused")) {
-                page.reloadModals();
-            }
-        }, (page.state.refreshInterval === "live" ? 500 : 1000 * page.state.refreshInterval));
-        this.setState({ dataIntervalRef: dataInterval });
+        this.setState({ refreshEnabled: true });
     }
-    componentWillUnmount() {
-        clearInterval(this.state.dataIntervalRef);
+    loadData() {
+        if (!this.state.loading) {
+            this.reloadModals();
+        }
     }
 
     render() {
         return <div id="instance-panel">
+            <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.loadData} />
+
             <div id="instance-header">
                 <b>Service Instances</b>
                 <button className="button-service-create btn btn-primary" onClick={() => this.toggleModal("catalog")}>Create New</button>
@@ -266,7 +266,7 @@ class Catalog extends React.Component {
         }
 
         // Reload open profile
-        if (page.state.openProfile) {
+        if ($("#profile-details-modal").iziModal("getState") === "opened") {
             var profileID = page.state.openProfile;
             let apiUrl = window.location.origin + "/StackV-web/restapi/app/profile/" + profileID;
             $.ajax({
@@ -319,6 +319,7 @@ class Catalog extends React.Component {
     }
 
     initModals() {
+        let page = this;
         // Initialize
         $catModal.iziModal(catConfig);
         $profModal.iziModal(profConfig);
@@ -348,8 +349,7 @@ class Catalog extends React.Component {
             "<div class=\"form-group\"><label for=\"inputPassword\" class=\"col-sm-2 control-label\">Type</label><div class=\"col-sm-10\"><label class=\"radio-inline\" style=\"float: left;margin-left: 25px;\"><input type=\"radio\" name=\"licenseProfileType\" id=\"ticketRadio\" value=\"ticket\" checked=\"\">Tickets</label><label class=\"radio-inline\" style=\"float: left;\"><input type=\"radio\" name=\"licenseProfileType\" id=\"allocationRadio\" value=\"allocation\">Allocations</label></div></div>" +
             "<div class=\"form-group\"><button class=\"button-license-delete hidden btn btn-warning\" style=\"padding-right: 25;\">Remove</button><button class=\"button-license-update hidden btn btn-warning\" style=\"padding-right: 25;\">Update</button><button class=\"button-license-add hidden btn btn-warning\" style=\"padding-right: 25;\">Submit</button></div></form></div>");
 
-        // Load service metadata.
-        let page = this;
+        // Load service metadata.        
         var apiUrl = window.location.origin + "/StackV-web/restapi/app/panel/editor";
         $.ajax({
             url: apiUrl,

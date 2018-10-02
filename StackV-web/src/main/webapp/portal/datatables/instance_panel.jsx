@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import PropTypes from "prop-types";
+import ReactInterval from "react-interval";
 
 import "./logging.css";
 import ButtonPanel from "../details/components/details_buttons";
@@ -10,39 +11,37 @@ class InstancePanel extends React.Component {
         super(props);
 
         this.state = {
-            refreshInterval: "live",
+            refreshTimer: 500,
+            refreshEnabled: false,
             apiUrl: window.location.origin + "/StackV-web/restapi/app/logging/instances"
         };
 
         this.initTable = this.initTable.bind(this);
-        this.initRefresh = this.initRefresh.bind(this);
+        this.loadData = this.loadData.bind(this);
     }
     componentDidMount() {
         this.initTable();
     }
-    initRefresh() {
-        this.state.dataTable.ajax.reload(null, false);
-
-        let page = this;
-        let dataInterval = setInterval(function () {
-            if (!(page.state.loading || page.state.refreshInterval === "paused")) {
-                page.state.dataTable.ajax.reload(null, false);
-            }
-        }, (page.state.refreshInterval === "live" ? 1000 : 1000 * page.state.refreshInterval));
-        this.setState({ dataIntervalRef: dataInterval });
+    loadData() {
+        if (!this.state.loading) {
+            this.state.dataTable.ajax.reload(null, false);
+        }
     }
 
     render() {
-        return <table id="loggingData" className="table table-striped table-bordered display" cellSpacing="0" width="100%">
-            <thead>
-                <tr>
-                    <th>Alias</th>
-                    <th>Type</th>
-                    <th>Reference UUID</th>
-                    <th>State</th>
-                </tr>
-            </thead>
-        </table>;
+        return <div>
+            <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.loadData} />
+            <table id="loggingData" className="table table-striped table-bordered display" cellSpacing="0" width="100%">
+                <thead>
+                    <tr>
+                        <th>Alias</th>
+                        <th>Type</th>
+                        <th>Reference UUID</th>
+                        <th>State</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>;
     }
 
     initTable() {
@@ -96,9 +95,9 @@ class InstancePanel extends React.Component {
                 ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
                 row.child.hide();
                 $(this).removeClass("shown");
-                panel.setState({ refreshInterval: "live" });
+                panel.setState({ refreshEnabled: true });
             } else {
-                panel.setState({ refreshInterval: "paused" });
+                panel.setState({ refreshEnabled: false });
                 if ($("tr.shown").length > 0) {
                     // Other details open, close first
                     ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
@@ -116,7 +115,7 @@ class InstancePanel extends React.Component {
                 ReactDOM.render(
                     React.createElement(ButtonPanel, {
                         uuid: row.data().referenceUUID, super: superState, sub: subState, last: row.data().lastState,
-                        keycloak: panel.props.keycloak, page: "catalog", resume: () => { panel.setState({ refreshInterval: "live" }); }
+                        keycloak: panel.props.keycloak, page: "catalog", resume: () => { panel.setState({ refreshEnabled: true }); }
                     }, null),
                     document.getElementById("button-panel")
                 );
@@ -136,7 +135,7 @@ class InstancePanel extends React.Component {
             return "<div id=\"button-panel\"></div>";
         }
 
-        panel.setState({ dataTable: dataTable }, panel.initRefresh);
+        panel.setState({ dataTable: dataTable }, () => { panel.setState({ refreshEnabled: true }); });
     }
 }
 InstancePanel.propTypes = {
