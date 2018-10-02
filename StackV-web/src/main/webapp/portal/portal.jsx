@@ -6,13 +6,14 @@ import Mousetrap from "mousetrap";
 
 import "./global.css";
 
-import Catalog from "../catalog/catalog";
-import Details from "../details/details";
+import Catalog from "./catalog/catalog";
+import Details from "./details/details";
 import Navbar from "./navbar";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 import { far } from "@fortawesome/free-regular-svg-icons";
+import Visualization from "./visual/visualization";
 
 library.add(far, fas);
 
@@ -41,6 +42,7 @@ class Portal extends React.Component {
         this.state = {
             keycloak: keycloak,
             keycloakIntervalRef: keycloakIntervalRef,
+            visualMode: "new",
             page: "catalog"
         };
 
@@ -87,6 +89,13 @@ class Portal extends React.Component {
                     iziToast.show(detailsErrorToast);
                 }
                 break;
+            case "visualization":
+                if (param.shiftKey) {
+                    this.setState({ page: "visualization" });
+                } else {
+                    window.location.replace("/StackV-web/portal/visual/graphTest.jsp");
+                }
+                break;
             default:
                 this.setState({ page: page });
         }
@@ -108,6 +117,8 @@ class Portal extends React.Component {
                 return <Catalog keycloak={this.state.keycloak} switchPage={this.switchPage} />;
             case "details":
                 return <Details keycloak={this.state.keycloak} uuid={this.state.uuid} />;
+            case "visualization":
+                return <Visualization visualMode={this.state.visualMode} keycloak={this.state.keycloak} />;
             default:
                 return <div></div>;
         }
@@ -116,8 +127,10 @@ class Portal extends React.Component {
         switch (dir) {
             case "left":
                 switch (this.state.page) {
+                    case "visualization":
+                        break;
                     case "catalog":
-                        this.switch("visualization");
+                        this.switchPage("visualization");
                         break;
                     case "details":
                         this.switchPage("catalog");
@@ -126,6 +139,9 @@ class Portal extends React.Component {
                 break;
             case "right":
                 switch (this.state.page) {
+                    case "visualization":
+                        this.switchPage("catalog");
+                        break;
                     case "catalog":
                         this.switchPage("details");
                         break;

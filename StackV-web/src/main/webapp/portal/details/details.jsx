@@ -5,11 +5,8 @@ import { Map } from "immutable";
 import Mousetrap from "mousetrap";
 import { css } from "emotion";
 import { RotateLoader } from "react-spinners";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import "./details.css";
-
-import { resumeRefresh, initRefresh, pauseRefresh, refreshSync, setRefresh, timerChange } from "../refresh";
 
 import DetailsPanel from "./components/details_panel";
 import DetailsDots from "./components/details_dots";
@@ -70,6 +67,11 @@ class Details extends React.Component {
     componentWillUnmount() {
         clearInterval(this.state.dataIntervalRef);
         clearInterval(this.state.visIntervalRef);
+    }
+
+    init() {
+        $intentModal.iziModal(intentConfig);
+        $intentModal.iziModal("setContent", "<textarea readonly id=\"details-intent-modal-text\"></textarea>");
     }
 
     load(seconds) {
@@ -243,16 +245,6 @@ class Details extends React.Component {
                 }
                 break;
         }
-    }
-
-    init() {
-        let page = this;
-        $("#sub-nav").load("/StackV-web/nav/details_navbar.html", function () {
-            initRefresh($("#refresh-timer").val());
-        });
-
-        $intentModal.iziModal(intentConfig);
-        $intentModal.iziModal("setContent", "<textarea readonly id=\"details-intent-modal-text\"></textarea>");
     }
 
     loadVisualization() {
@@ -564,8 +556,6 @@ class Details extends React.Component {
                             text_model_pre.width("inherit");
                             text_model_pre.addClass("expanded");
                             text_model_pre.height(viz.height() * 2);
-
-                            pauseRefresh();
                         } else {
                             if ($("#instance-details-table").hasClass("hide") && !$(".viz-hdr.expanded").not(this).length) {
                                 $("#instance-details-table").removeClass("hide");
@@ -584,8 +574,6 @@ class Details extends React.Component {
                             text_model_pre.removeClass("expanded");
                             text_model_pre.width("initial");
                             text_model_pre.height(text_model_pre_height / 2.5);
-
-                            resumeRefresh();
                         }
 
                     });
@@ -599,85 +587,3 @@ Details.propTypes = {
     uuid: PropTypes.string.isRequired,
 };
 export default Details;
-
-// =================== //
-
-function buildDeltaTable(type) {
-    var panel = document.getElementById("details-panel");
-
-    var table = document.createElement("table");
-    table.className = "management-table details-table " + type.toLowerCase() + "-delta-table";
-    table.id = type.toLowerCase() + "-delta-table";
-
-    var thead = document.createElement("thead");
-    thead.className = "delta-table-header";
-    var row = document.createElement("tr");
-    var head = document.createElement("th");
-    head.innerHTML = type + " Delta";
-    row.appendChild(head);
-
-    head = document.createElement("th");
-    head.innerHTML = "Verified";
-    row.appendChild(head);
-
-    head = document.createElement("th");
-    head.innerHTML = "Unverified";
-    row.appendChild(head);
-
-    row.appendChild(head);
-
-    thead.appendChild(row);
-    table.appendChild(thead);
-
-    var tbody = document.createElement("tbody");
-    tbody.className = "delta-table-body";
-    //tbody.id = "acl-body";
-
-    row = document.createElement("tr");
-    var prefix = type.substring(0, 4).toLowerCase();
-    var add = document.createElement("td");
-    row.appendChild(add);
-
-    add = document.createElement("td");
-    add.id = prefix + "-add";
-    row.appendChild(add);
-
-    var red = document.createElement("td");
-    red.id = prefix + "-red";
-    row.appendChild(red);
-
-    tbody.appendChild(row);
-    row = document.createElement("tr");
-    var cell = document.createElement("td");
-    cell.colSpan = "3";
-    cell.innerHTML = "<button  class=\"details-model-toggle btn btn-default\" onclick=\"toggleTextModel('."
-        + type.toLowerCase() + "-delta-table', '#delta-" + type + "');\">Toggle Text Model</button>";
-    row.appendChild(cell);
-    tbody.appendChild(row);
-
-    table.appendChild(tbody);
-
-    panel.appendChild(table);
-
-}
-
-function closeVisTabs() {
-    $(".viz-hdr.expanded").click();
-}
-
-function toggleTextModel(viz_table, text_table) {
-    if (!$(viz_table.toLowerCase()).length) {
-        alert("Visualization not found");
-    } else if (!$(text_table).length) {
-        alert("Text model not found");
-    } else {
-        $(viz_table.toLowerCase()).toggleClass("hide");
-        // delta-Service, service verification etc must always display before
-        // everything else.
-        if (text_table.toLowerCase().indexOf("service") > 0) {
-            $(text_table).insertAfter("#instance-details-table");
-        }
-        $(text_table).toggleClass("hide");
-
-    }
-}

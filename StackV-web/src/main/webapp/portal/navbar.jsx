@@ -33,7 +33,7 @@ class Navbar extends React.Component {
         return <nav className={cx(stack_nav, "navbar", "navbar-inverse")}>
             <div className="container-fluid">
                 <ul className="nav navbar-nav navbar-left" style={{ width: "100%" }}>
-                    <li className={this.props.page === "visualization" ? "active" : ""} id="visualization-tab" onClick={(e) => this.props.switchPage("visualization")}><a>Visualization</a></li>
+                    <li className={this.props.page === "visualization" ? "active" : ""} id="visualization-tab" onClick={(e) => this.props.switchPage("visualization", e)}><a>Visualization</a></li>
                     <li className={this.props.page === "catalog" ? "active" : ""} id="catalog-tab" onClick={(e) => this.props.switchPage("catalog")}><a>Catalog</a></li>
                     <li className={this.props.page === "details" ? "active" : ""} id="details-tab" onClick={(e) => this.props.switchPage("details")}><a>Details</a></li>
                     <li className={this.props.page === "driver" ? "active" : ""} id="driver-tab" onClick={(e) => this.props.switchPage("driver")}><a>Drivers</a></li>

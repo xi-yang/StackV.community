@@ -13,15 +13,12 @@
 @import "https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.css";
 
 /* Misc Frameworks */
-@import "../../css/sweetalert.css";
-@import "../../css/iziToast.min.css";
+@import "../css/iziToast.min.css";
 @import "https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/css/iziModal.min.css";
-@import "../../css/noty.css";
 
 /*Internal styles*/
-@import "../../css/visualization.css";
-@import "../../css/driver.css";
-@import "../../css/acl.css";
+@import "../css/driver.css";
+@import "../css/acl.css";
 
 /* */
 div#service-title {
