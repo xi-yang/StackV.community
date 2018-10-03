@@ -2706,7 +2706,7 @@ public class OpenStackPush {
             ResultSet almMacResultSet = executeQuery(query, emptyModel, modelDelta);
             //String almMac = null;
             if (almMacResultSet.hasNext()) {                                
-                String queryIp = almIpResultSet.next().get("mac").toString();
+                String queryIp = almMacResultSet.next().get("mac").toString();
                 
                 if (queryIp.contains(":")) {
                     // if the queried information has a colon indicating the a potential specified_address
