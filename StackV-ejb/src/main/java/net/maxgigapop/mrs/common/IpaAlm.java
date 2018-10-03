@@ -353,7 +353,12 @@ public class IpaAlm {
     }
     
     private boolean createEasTask(String dn, String topUri) {
-        String cn = topUri + "_alm-address";
+        if (dn == null) {
+            logger.warning("createEasTask", "Null reference DN");
+            return false;
+        }
+        String addrCn = dn.split(",")[0];
+        String cn = addrCn.replace("cn=", "_alm-release-");
         JSONObject createEasTaskResponseJSON = createEasTaskJSON(dn,cn);
         
          // parse the JSON response for the address
