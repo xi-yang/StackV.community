@@ -73,6 +73,8 @@ $(function () {
             initTagPanel();
         }
 
+        window.token = keycloak.token;
+
         setInterval(function () {
             keycloak.updateToken(70);
         }, (60000));
@@ -105,55 +107,6 @@ $(function () {
 
     clearCounters();
 });
-
-function loadNavbar() {
-    $("#nav").load("/StackV-web/nav/navbar.html", function () {
-        verifyPageRoles();
-
-        if (window.location.pathname === "/StackV-web/portal/") {
-            $("li#catalog-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/portal/admin/") {
-            $("li#admin-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/portal/acl/") {
-            $("li#acl-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/portal/driver/") {
-            $("li#driver-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/portal/details/") {
-            $("li#details-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/orch/graphTest.jsp") {
-            $("li#visualization-tab").addClass("active");
-        }
-
-        var apiUrl = baseUrl + "/StackV-web/restapi/app/logging/";
-        $.ajax({
-            url: apiUrl,
-            type: "GET",
-            dataType: "text",
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            },
-            success: function (result) {
-                $("#select-logging-level").val(result);
-            },
-            error: function (error, status, thrown) {
-                console.log(error);
-                console.log(status);
-                console.log(thrown);
-            }
-        });
-
-        $("#logout-button").click(function (evt) {
-            keycloak.logout();
-
-            evt.preventDefault();
-        });
-        $("#account-button").click(function (evt) {
-            keycloak.accountManagement();
-
-            evt.preventDefault();
-        });
-    });
-}
 
 function verifyPageRoles() {
     if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") <= -1) {

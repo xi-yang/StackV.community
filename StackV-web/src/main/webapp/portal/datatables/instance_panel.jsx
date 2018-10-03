@@ -23,7 +23,7 @@ class InstancePanel extends React.Component {
         this.initTable();
     }
     loadData() {
-        if (!this.state.loading) {
+        if ($("tr.shown").length === 0) {
             this.state.dataTable.ajax.reload(null, false);
         }
     }

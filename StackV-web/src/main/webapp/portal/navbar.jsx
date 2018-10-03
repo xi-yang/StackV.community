@@ -3,6 +3,8 @@ import PropTypes from "prop-types";
 import { cx, css } from "emotion";
 
 const stack_nav = css`
+    border-radius: 0 0 20px 20px !important;
+
     a {
         pointer-events: none;
     }
@@ -16,35 +18,34 @@ class Navbar extends React.Component {
     constructor(props) {
         super(props);
 
-        this.state = {};
-
-        this.logout = this.logout.bind(this);
-        this.manageAccount = this.manageAccount.bind(this);
-    }
-
-    logout() {
-        this.props.keycloak.logout();
-    }
-    manageAccount() {
-        this.props.keycloak.accountManagement();
+        this.verifyRoles = this.verifyRoles.bind(this);
+        this.state = this.verifyRoles();
     }
 
     render() {
         return <nav className={cx(stack_nav, "navbar", "navbar-inverse")}>
             <div className="container-fluid">
-                <ul className="nav navbar-nav navbar-left" style={{ width: "100%" }}>
-                    <li className={this.props.page === "visualization" ? "active" : ""} id="visualization-tab" onClick={(e) => this.props.switchPage("visualization", e)}><a>Visualization</a></li>
-                    <li className={this.props.page === "catalog" ? "active" : ""} id="catalog-tab" onClick={(e) => this.props.switchPage("catalog")}><a>Catalog</a></li>
-                    <li className={this.props.page === "details" ? "active" : ""} id="details-tab" onClick={(e) => this.props.switchPage("details")}><a>Details</a></li>
-                    <li className={this.props.page === "driver" ? "active" : ""} id="driver-tab" onClick={(e) => this.props.switchPage("driver")}><a>Drivers</a></li>
-                    <li className={this.props.page === "acl" ? "active" : ""} id="acl-tab" onClick={(e) => this.props.switchPage("acl")}><a>ACL</a></li>
-
-                    <li className="pull-right" id="logout-button" onClick={this.logout}><a href="#">Logout</a></li>
-                    <li className="pull-right" id="account-button" onClick={this.manageAccount}><a href="#">Account</a></li>
-                    <li id="admin-tab" className={this.props.page === "admin" ? "active pull-right nav-admin" : "pull-right nav-admin"} onClick={(e) => this.props.switchPage("admin", e)}> <a>Admin</a></li>
-                </ul>
+                <NavElements {...this.state} {...this.props} />
             </div>
         </nav>;
+    }
+
+    verifyRoles() {
+        let roles = this.props.keycloak.tokenParsed.realm_access.roles;
+        if (roles.indexOf("A_Admin") <= -1) {
+            $(".nav-admin").hide();
+        }
+
+        let navSet = ["visualization", "catalog", "details", "drivers"];
+
+        if (!roles.includes("F_Drivers-R")) {
+            navSet.splice(navSet.indexOf("drivers"), 1);
+        }
+        if (!roles.includes("F_Visualization-R")) {
+            navSet.splice(navSet.indexOf("visualization"), 1);
+        }
+
+        return { navSet: navSet };
     }
 }
 Navbar.propTypes = {
@@ -53,3 +54,23 @@ Navbar.propTypes = {
     switchPage: PropTypes.func.isRequired
 };
 export default Navbar;
+
+function NavElements(props) {
+    const listItems = props.navSet.map((d) =>
+        <li key={d} className={props.page === d ? "active" : ""} id={d + "-tab"} onClick={(e) => props.switchPage(d, e)}><a>{d[0].toUpperCase() + d.substr(1)}</a></li>
+    );
+
+    function logout() {
+        props.keycloak.logout();
+    }
+    function manageAccount() {
+        props.keycloak.accountManagement();
+    }
+
+    return <ul className="nav navbar-nav navbar-left" style={{ width: "100%" }}>
+        {listItems}
+        <li className="pull-right" id="logout-button" onClick={logout}><a href="#">Logout</a></li>
+        <li className="pull-right" id="account-button" onClick={manageAccount}><a href="#">Account</a></li>
+        <li id="admin-tab" className={props.page === "admin" ? "active pull-right nav-admin" : "pull-right nav-admin"} onClick={(e) => props.switchPage("admin", e)}> <a>Admin</a></li>
+    </ul>;
+}

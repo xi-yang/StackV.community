@@ -1,19 +1,18 @@
 import React from "react";
-import PropTypes from "prop-types";
-import Keycloak from "keycloak-js";
+//import Keycloak from "keycloak-js";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
 
 import "./global.css";
 
+import Navbar from "./navbar";
+import Visualization from "./visual/visualization";
 import Catalog from "./catalog/catalog";
 import Details from "./details/details";
-import Navbar from "./navbar";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 import { far } from "@fortawesome/free-regular-svg-icons";
-import Visualization from "./visual/visualization";
 
 library.add(far, fas);
 
@@ -25,8 +24,19 @@ const detailsErrorToast = {
     position: "topRight",
     progressBarColor: "red",
     pauseOnHover: true,
-    timeout: 7000,
-    displayMode: "once"
+    timeout: 5000,
+    displayMode: "replace"
+};
+const accessDeniedToast = {
+    theme: "dark",
+    icon: "fas fa-ban",
+    title: "Access Denied",
+    message: "You do not have access to this resource.",
+    position: "topRight",
+    progressBarColor: "red",
+    pauseOnHover: true,
+    timeout: 3000,
+    displayMode: "replace"
 };
 
 class Portal extends React.Component {
@@ -34,7 +44,7 @@ class Portal extends React.Component {
         super(props);
         let keycloak = window.keycloak;
 
-        this.verifyPageRoles = this.verifyPageRoles.bind(this);
+        this.verifyPageAccess = this.verifyPageAccess.bind(this);
         let keycloakIntervalRef = setInterval(() => {
             keycloak.updateToken(45);
         }, 20000);
@@ -74,30 +84,65 @@ class Portal extends React.Component {
         clearInterval(this.state.keycloakIntervalRef);
     }
 
-    verifyPageRoles() {
-        return true;
+    verifyPageAccess(newPage, param) {
+        let portal = this;
+        let roles = this.state.keycloak.tokenParsed.realm_access.roles;
+
+        switch (newPage) {
+            case "admin":
+                return roles.indexOf("A_Admin") > -1;
+            case "details":
+                if (roles.indexOf("A_Admin") === -1 && (param && param.uuid)) {
+                    let apiUrl = window.location.origin + "/StackV-web/restapi/app/access/instances/" + param.uuid;
+                    $.ajax({
+                        url: apiUrl,
+                        async: false,
+                        type: "GET",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + portal.state.keycloak.token);
+                        },
+                        success: function (result) {
+                            return result;
+                        },
+                        error: function (err) {
+                            return false;
+                        }
+                    });
+                }
+                else { return true; }
+                break;
+            case "driver":
+                return roles.indexOf("F_Drivers-R") > -1;
+            case "visualization":
+                return roles.indexOf("F_Visualization-R") > -1;
+            default: return true;
+        }
     }
 
     switchPage(page, param) {
-        switch (page) {
-            case "details":
-                if (param && param.uuid) {
-                    this.setState({ page: "details", uuid: param.uuid });
-                } else if (this.state.uuid) {
-                    this.setState({ page: "details", uuid: this.state.uuid });
-                } else {
-                    iziToast.show(detailsErrorToast);
-                }
-                break;
-            case "visualization":
-                if (param.shiftKey) {
-                    this.setState({ page: "visualization" });
-                } else {
-                    window.location.replace("/StackV-web/portal/visual/graphTest.jsp");
-                }
-                break;
-            default:
-                this.setState({ page: page });
+        if (this.verifyPageAccess(page, param)) {
+            switch (page) {
+                case "details":
+                    if (param && param.uuid) {
+                        this.setState({ page: "details", uuid: param.uuid });
+                    } else if (this.state.uuid) {
+                        this.setState({ page: "details", uuid: this.state.uuid });
+                    } else {
+                        iziToast.show(detailsErrorToast);
+                    }
+                    break;
+                case "visualization":
+                    if (param.shiftKey) {
+                        this.setState({ page: "visualization" });
+                    } else {
+                        window.location.replace("/StackV-web/portal/visual/graphTest.jsp");
+                    }
+                    break;
+                default:
+                    this.setState({ page: page });
+            }
+        } else {
+            iziToast.show(accessDeniedToast);
         }
     }
 

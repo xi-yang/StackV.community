@@ -9,9 +9,6 @@
 /* Jquery */
 @import "https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css";
 
-/* DataTables */
-@import "https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/b-html5-1.5.1/fc-3.2.4/r-2.2.1/sc-1.4.4/sl-1.2.5/datatables.min.css";
-
 /* Misc Frameworks */
 @import "../css/iziToast.min.css";
 @import "https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/css/iziModal.min.css";
@@ -478,6 +475,11 @@ a {
 #nav {
     z-index: 99;
     height: 52px;
+}
+#stack-nav ul {
+    width: 100%;
+    white-space: nowrap;
+    overflow-x: auto;
 }
 #select-logging-level {
     margin: 15px 5px;

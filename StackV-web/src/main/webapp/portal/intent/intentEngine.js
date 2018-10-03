@@ -60,6 +60,10 @@ export function loadIntent(type) {
 
     intentType = type;
     $.ajax({
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
         type: "GET",
         url: "/StackV-web/data/xml/" + type + ".xml",
         dataType: "xml",

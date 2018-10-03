@@ -132,13 +132,6 @@ pre.expanded{
     white-space: pre-wrap; 
 }
 
-
-#stack-nav ul {
-    width: 100%;
-    white-space: nowrap;
-    overflow-x: auto;
-}
-
 .button-confirm {
     width: 50%;
     border-radius: 0;

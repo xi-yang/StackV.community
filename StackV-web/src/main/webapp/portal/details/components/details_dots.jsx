@@ -34,15 +34,15 @@ class DetailsDots extends React.Component {
 
     render() {
         return <div className={override}>
-            <div>
+            <div onClick={() => { this.props.setView("logging"); }}>
                 <FontAwesomeIcon className={dots} icon={this.props.view === "logging" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
                 <span className={text} style={this.props.view === "logging" ? {} : { fontSize: 0 }}>Logging</span>
             </div>
-            <div>
+            <div onClick={() => { this.props.setView("details"); }}>
                 <FontAwesomeIcon className={dots} icon={this.props.view === "details" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
                 <span className={text} style={this.props.view === "details" ? {} : { fontSize: 0 }}>Details</span>
             </div>
-            <div>
+            <div onClick={() => { this.props.setView("visual"); }}>
                 <FontAwesomeIcon className={dots} icon={this.props.view === "visual" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
                 <span className={text} style={this.props.view === "visual" ? {} : { fontSize: 0 }}>Visualization</span>
             </div>
@@ -50,6 +50,7 @@ class DetailsDots extends React.Component {
     }
 }
 DetailsDots.propTypes = {
-    view: PropTypes.string.isRequired
+    view: PropTypes.string.isRequired,
+    setView: PropTypes.func.isRequired,
 };
 export default DetailsDots;

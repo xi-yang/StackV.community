@@ -30,6 +30,7 @@ import ReactDOM from "react-dom";
 
 /* Pages */
 import Portal from "./portal";
+import { loadIntent } from "./intent/intentEngine";
 /* */
 
 export var page;
@@ -83,83 +84,11 @@ $(function () {
         window.keycloak = keycloak;
         if (window.location.pathname === "/StackV-web/portal/") {
             ReactDOM.render(React.createElement(Portal, null), document.getElementById("root"));
+        } else if (window.location.pathname === "/StackV-web/portal/intent/") {
+            loadIntent(getURLParameter("intent"));
         }
     };
-    keycloak.onTokenExpire = function () {
-        keycloak.updateToken(20).success(function () {
-            sessionStorage.setItem("username", keycloak.tokenParsed.preferred_username);
-            sessionStorage.setItem("subject", keycloak.tokenParsed.sub);
-            sessionStorage.setItem("token", keycloak.token);
-            sessionStorage.setItem("refresh", keycloak.refreshToken);
-        }).error(function () {
-        });
-    };
 });
-
-export function verifyPageRoles() {
-    if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") <= -1) {
-        $(".nav-admin").hide();
-    }
-    if (!keycloak.tokenParsed.realm_access.roles.includes("F_Drivers-R")) {
-        $("#driver-tab").hide();
-    }
-    if (!keycloak.tokenParsed.realm_access.roles.includes("F_ACL-R")) {
-        $("#acl-tab").hide();
-    }
-    if (!keycloak.tokenParsed.realm_access.roles.includes("F_Visualization-R")) {
-        $("#visualization-tab").hide();
-    }
-
-    if (getURLParameter("intent")) {
-        var intent = getURLParameter("intent").toUpperCase();
-    }
-    switch (page) {
-        case "acl":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_ACL-R") === -1) {
-                window.location.href = "/StackV-web/portal/";
-            }
-            break;
-        case "admin":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
-                window.location.href = "/StackV-web/portal/";
-            }
-            break;
-        case "details":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
-                var uuid = sessionStorage.getItem("instance-uuid");
-                var apiUrl = window.location.origin + "/StackV-web/restapi/app/access/instances/" + uuid;
-                $.ajax({
-                    url: apiUrl,
-                    type: "GET",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                    },
-                    success: function (result) {
-                        if (result === "false") {
-                            sessionStorage.removeItem("instance-uuid");
-                            window.location.href = "/StackV-web/portal/";
-                        }
-                    }
-                });
-            }
-            break;
-        case "driver":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Drivers-R") === -1) {
-                window.location.href = "/StackV-web/portal/";
-            }
-            break;
-        case "intent":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Services-" + intent) === -1) {
-                window.location.href = "/StackV-web/portal/";
-            }
-            break;
-        case "visualization":
-            if (keycloak.tokenParsed.realm_access.roles.indexOf("F_Visualization-R") === -1) {
-                window.location.href = "/StackV-web/portal/";
-            }
-            break;
-    }
-}
 
 /* UTILITY */
 export function prettyPrintInfo() {

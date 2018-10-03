@@ -5,6 +5,7 @@ import { Map } from "immutable";
 import Mousetrap from "mousetrap";
 import { css } from "emotion";
 import { RotateLoader } from "react-spinners";
+import ReactInterval from "react-interval";
 
 import "./details.css";
 
@@ -42,30 +43,25 @@ class Details extends React.Component {
         this.init();
 
         this.fetchData = this.fetchData.bind(this);
+        this.setView = this.setView.bind(this);
         this.state = this.fetchData();
         this.state.view = "details";
 
-        this.state.refreshInterval = "live";
+        this.state.refreshTimer = 500;
+        this.state.refreshEnabled = false;
         this.state.loading = false;
 
         this.loadVisualization = this.loadVisualization.bind(this);
     }
     componentDidMount() {
         let page = this;
-        let dataInterval = setInterval(function () {
-            if (!(page.state.loading || page.state.refreshInterval === "paused")) {
-                page.setState(page.fetchData());
-            }
-        }, (page.state.refreshInterval === "live" ? 500 : 1000 * page.state.refreshInterval));
-
         page.loadVisualization();
         let visInterval = setInterval(function () {
             page.loadVisualization();
         }, (10000));
-        this.setState({ dataIntervalRef: dataInterval, visIntervalRef: visInterval });
+        this.setState({ visIntervalRef: visInterval });
     }
     componentWillUnmount() {
-        clearInterval(this.state.dataIntervalRef);
         clearInterval(this.state.visIntervalRef);
     }
 
@@ -73,13 +69,15 @@ class Details extends React.Component {
         $intentModal.iziModal(intentConfig);
         $intentModal.iziModal("setContent", "<textarea readonly id=\"details-intent-modal-text\"></textarea>");
     }
-
     load(seconds) {
         let page = this;
         this.setState({ loading: true });
         setTimeout(function () {
             page.setState({ loading: false });
         }, seconds * 1000);
+    }
+    setView(panel) {
+        this.setState({ view: panel });
     }
 
     render() {
@@ -100,6 +98,7 @@ class Details extends React.Component {
             pageClasses = "page page-details loading";
         }
         return <div style={{ width: "100%", height: "100%" }}>
+            <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.fetchData} />
             <RotateLoader
                 className={override}
                 sizeUnit={"px"}
@@ -108,9 +107,9 @@ class Details extends React.Component {
                 loading={this.state.loading}
             />
             <div className={pageClasses}>
-                <DetailsDots view={this.state.view}></DetailsDots>
+                <DetailsDots view={this.state.view} setView={this.setView}></DetailsDots>
 
-                <LoggingPanel active={modView[0]} uuid={this.props.uuid}></LoggingPanel>
+                <LoggingPanel active={modView[0]} keycloak={this.props.keycloak} uuid={this.props.uuid}></LoggingPanel>
                 <DetailsPanel active={modView[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
                     verify={Map(this.state.verify)} load={this.load} keycloak={this.props.keycloak} />
                 <VisualizationPanel active={modView[2]} verify={Map(this.state.verify)}></VisualizationPanel>
