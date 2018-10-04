@@ -1664,7 +1664,12 @@ public class MCETools {
                     + "?vlan_port nml:hasLabel ?l. "
                     + "?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                     + "?l nml:value ?range."
-                    + "}}", port, port);
+                    + "} UNION {"
+                    + "<%s> mrs:type \"shared\". "
+                    + "<%s> nml:hasLabel ?l. "
+                    + "?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+                    + "?l nml:value ?range."
+                    + "}}", port, port, port);
             rs = ModelUtil.sparqlQuery(model, sparql);
             while (rs.hasNext()) {
                 TagSet vlanRangeAdd = new TagSet(rs.next().getLiteral("range").toString());
