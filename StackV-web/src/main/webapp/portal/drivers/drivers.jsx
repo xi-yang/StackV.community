@@ -3,7 +3,6 @@ import PropTypes from "prop-types";
 import iziToast from "izitoast";
 import ReactInterval from "react-interval";
 import { Set } from "immutable";
-import { Formik } from "formik";
 
 import iziModal from "izimodal";
 $.fn.iziModal = iziModal;
@@ -14,6 +13,7 @@ var driverConfig = {
     width: 750,
 };
 
+import DriverEditor from "./components/editor";
 import "./drivers.css";
 
 class Drivers extends React.Component {
@@ -25,7 +25,6 @@ class Drivers extends React.Component {
             refreshEnabled: true,
             loading: false,
             data: [],
-            openDriver: {}
         };
 
         this.initModals = this.initModals.bind(this);
@@ -117,7 +116,7 @@ class Drivers extends React.Component {
                     </p>
                     <hr />
                     <div className="driver-modal-body-content">
-                        <XMLEditor profile={this.state.openDriver} />
+                        {this.state.openDriver ? <DriverEditor driver={this.state.openDriver} /> : null}
                     </div>
                     <hr />
                     <button className="button-driver-modal-submit btn btn-primary" >Submit</button>
@@ -154,32 +153,3 @@ function DriverElements(props) {
     );
     return <tbody>{listItems}</tbody>;
 }
-
-class XMLEditor extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            advanced: true,
-            xml: ""
-        };
-        this.handleChange = this.handleChange.bind(this);
-    }
-    handleChange(e) {
-        this.setState({ xml: e.target.value });
-    }
-
-    render() {
-        if (this.props.profile) {
-            if (this.state.advanced) {
-                return <textarea value={this.state.xml} onChange={this.handleChange}></textarea>;
-            } else {
-                return null;
-            }
-        }
-        return null;
-    }
-}
-XMLEditor.propTypes = {
-    profile: PropTypes.object.isRequired,
-};
