@@ -1,43 +1,84 @@
 import React from "react";
 import PropTypes from "prop-types";
 import convert from "xml-js";
-import { Formik, Field, Form } from "formik";
 
-class DriverEditor extends React.Component {
+import iziModal from "izimodal";
+$.fn.iziModal = iziModal;
+
+import awsSchema from "../xml/aws.xml";
+
+var driverConfig = {
+    title: "Driver Wizard",
+    icon: "fas fa-home",
+    width: 750,
+};
+
+class DriverModal extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
             advanced: false,
         };
+
+        this.parseInputs = this.parseInputs.bind(this);
     }
+    componentDidMount() {
+        $("#driver-modal").iziModal(driverConfig);
+    }
+    componentWillUnmount() {
+        $("#driver-modal").iziModal("destroy");
+    }
+    /*componentDidUpdate(prevProps) {
+        if (prevProps.opened !== this.props.opened) {
+            if (this.props.opened) {
+                $("#driver-modal").iziModal("open");
+            } else {
+                $("#driver-modal").iziModal("close");
+            }
+        }
+    }*/
 
     render() {
+        let modalContent;
         if (this.state.advanced) {
-            return <div>{this.props.driver.xml}</div>;
+            modalContent = (<textarea></textarea>);
         } else {
-            let schema = JSON.parse(convert.xml2json(this.props.driver.xml, { compact: true, spaces: 4 }));
-
-            let formElements = schema.driverInstance.properties.entry.map((entry) => <Field key={entry.key._text} type={entry.key._text} name={entry.key._text} />);
-            return <Formik
-                //initialValues={user /** { email, social } */}
-                onSubmit={(values, actions) => {
-
-                }}
-                render={({ errors, touched, isSubmitting }) => (
-                    <Form>
-                        {formElements}
-                        {status && status.msg && <div>{status.msg}</div>}
-                        <button type="submit" disabled={true}>
-                            Submit
-                        </button>
-                    </Form>
-                )}
-            />;
+            modalContent = this.parseInputs();
         }
+
+        return <div id="driver-modal">
+            <div className="driver-modal-body">
+                <p className="driver-modal-body-header">Select a service type:
+                    <select id="driver-modal-body-select">
+                        <option></option>
+                        <option value="java:module/AwsDriver">AWS</option>
+                        <option value="java:module/GenericRESTDriver">Generic</option>
+                    </select>
+                </p>
+                <hr />
+                <div className="driver-modal-body-content">
+                    {modalContent}
+                </div>
+                <hr />
+                <button className="button-driver-modal-submit btn btn-primary" >Submit</button>
+            </div>
+        </div>;
+    }
+
+    parseInputs() {
+        let entries;
+        entries = awsSchema.driverInstance.properties[0].entry;
+        //let schema = JSON.parse(convert.xml2json(this.props.xml, { compact: true, spaces: 4 }));
+        return entries.map((entry) => <label key={entry.key[0]}>{entry.key[0]}<input name="test" placeholder="Test" /></label>);
     }
 }
-DriverEditor.propTypes = {
-    driver: PropTypes.object.isRequired,
+DriverModal.propTypes = {
+    opened: PropTypes.bool,
+    id: PropTypes.string,
+    status: PropTypes.string,
+    type: PropTypes.string,
+    urn: PropTypes.string,
+    xml: PropTypes.string,
 };
-export default DriverEditor;
+export default DriverModal;

@@ -38,3 +38,15 @@
     margin-left: 10px;
     font-size: 0.8em;
 }
+
+.driver-modal-body-content {
+    max-height: 50%;
+    overflow-y: auto;
+}
+
+.driver-modal-body-content label {
+    display: block;
+}
+.driver-modal-body-content label input {
+    margin-left: 5px;
+}

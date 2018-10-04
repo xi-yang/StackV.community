@@ -1,0 +1,13 @@
+<driverInstance>
+	<properties>
+		<entry><key>topologyUri</key></entry>
+		<entry><key>driverEjbPath</key></entry>
+		<entry><key>aws_access_key_id</key></entry>
+		<entry><key>aws_secret_access_key</key></entry>
+		<entry><key>region</key></entry>
+		<entry><key>defaultInstanceType</key></entry>
+		<entry><key>defaultImage</key></entry>
+		<entry><key>defaultKeyPair</key></entry>
+		<entry><key>defaultSecGroup</key></entry>
+	</properties>
+</driverInstance>

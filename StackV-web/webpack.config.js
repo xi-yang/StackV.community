@@ -18,6 +18,7 @@ module.exports = {
     },
     module: {
         rules: [
+            { test: /\.xml$/, loader: "xml-loader" },
             { test: /\.css$/, loader: "style-loader!css-loader" },
             {
                 test: /\.(jpg|png|svg)$/,

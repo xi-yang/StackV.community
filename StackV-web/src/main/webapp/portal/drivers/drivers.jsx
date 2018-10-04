@@ -4,16 +4,7 @@ import iziToast from "izitoast";
 import ReactInterval from "react-interval";
 import { Set } from "immutable";
 
-import iziModal from "izimodal";
-$.fn.iziModal = iziModal;
-
-var driverConfig = {
-    title: "Driver Wizard",
-    icon: "fas fa-home",
-    width: 750,
-};
-
-import DriverEditor from "./components/editor";
+import DriverModal from "./components/editor";
 import "./drivers.css";
 
 class Drivers extends React.Component {
@@ -27,19 +18,12 @@ class Drivers extends React.Component {
             data: [],
         };
 
-        this.initModals = this.initModals.bind(this);
-        this.clearModals = this.clearModals.bind(this);
-
         this.openDriver = this.openDriver.bind(this);
         this.loadData = this.loadData.bind(this);
     }
     componentDidMount() {
-        this.initModals();
         this.loadData();
         this.setState({ refreshEnabled: true });
-    }
-    componentWillUnmount() {
-        this.clearModals();
     }
     loadData() {
         let page = this;
@@ -100,43 +84,15 @@ class Drivers extends React.Component {
                         <tfoot>
                             <tr>
                                 <th colSpan="3">
-                                    <div id="drivers-table-footer" style={{ cursor: "pointer" }}><i className="fas fa-plus-circle" style={{ marginRight: "10px" }} />Add New Driver</div>
+                                    <div id="drivers-table-footer" style={{ cursor: "pointer" }} onClick={() => this.openDriver(null)}><i className="fas fa-plus-circle" style={{ marginRight: "10px" }} />Add New Driver</div>
                                 </th>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
             </div>
-            <div id="driver-modal">
-                <div className="driver-modal-body">
-                    <p className="driver-modal-body-header">Select a service type:
-                        <select id="driver-modal-body-select">
-                            <option></option><option>AWS</option><option>OpenStack</option>
-                        </select>
-                    </p>
-                    <hr />
-                    <div className="driver-modal-body-content">
-                        {this.state.openDriver ? <DriverEditor driver={this.state.openDriver} /> : null}
-                    </div>
-                    <hr />
-                    <button className="button-driver-modal-submit btn btn-primary" >Submit</button>
-                </div>
-            </div>
+            <DriverModal {...this.state.openDriver} />
         </div>;
-    }
-
-    clearModals() {
-        $("#driver-modal").iziModal("destroy");
-    }
-    initModals() {
-        let page = this;
-        // Initialize
-        $("#driver-modal").iziModal(driverConfig);
-        /*$driverModal.iziModal("setContent", "<div class=\"driver-modal-body\">" +
-            "<p class=\"driver-modal-body-header\">Select a service type:<select id=\"driver-modal-body-select\">" +
-            "<option></option><option>AWS</option><option>OpenStack</option></select></p>" +
-            "<hr><button class=\"button-driver-modal-submit btn btn-primary\" >Submit</button>" +
-            "</div>");*/
     }
 }
 Drivers.propTypes = {
