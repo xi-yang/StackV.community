@@ -31,6 +31,42 @@ div#service-specific {
     margin: 5% auto;
     width: 80%;
 }
+
+
+/* stack styles */
+div.stack-panel {
+    margin: auto;
+    padding: 50px 30px 0px 30px;
+    max-height: calc(90% - 42px);
+    width: calc(100% - 75);
+    max-width: 1000px;
+    text-align: left;
+}
+div.stack-header {
+    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
+    box-shadow: inset 0 1px 0 #a2b1c3;
+    color: #fff;
+    padding: 10px 15px;
+    position: relative;
+    text-shadow: 0 1px 0 #000;
+    outline: 1px solid black;
+    height: 40px;
+}
+div.stack-body {
+    padding: 20px;
+    outline: 1px solid #ccc;
+    background: white;
+}
+
+.page {
+    height: inherit;
+    width: inherit;
+    transition: filter .5s;
+}
+.page.loading {
+    filter: brightness(20%) opacity(.8) blur(2px);
+}
+
 /*This class is also referenced in pages in the /usr/ folder!*/
 div.form-result {
     background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#ddd, #aaa);

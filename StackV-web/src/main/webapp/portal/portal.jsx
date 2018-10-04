@@ -9,6 +9,7 @@ import Navbar from "./navbar";
 import Visualization from "./visual/visualization";
 import Catalog from "./catalog/catalog";
 import Details from "./details/details";
+import Drivers from "./drivers/drivers";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { fas } from "@fortawesome/free-solid-svg-icons";
@@ -158,12 +159,14 @@ class Portal extends React.Component {
     /* */
     loadPage() {
         switch (this.state.page) {
+            case "visualization":
+                return <Visualization visualMode={this.state.visualMode} keycloak={this.state.keycloak} />;
             case "catalog":
                 return <Catalog keycloak={this.state.keycloak} switchPage={this.switchPage} />;
             case "details":
                 return <Details keycloak={this.state.keycloak} uuid={this.state.uuid} />;
-            case "visualization":
-                return <Visualization visualMode={this.state.visualMode} keycloak={this.state.keycloak} />;
+            case "drivers":
+                return <Drivers keycloak={this.state.keycloak} />;
             default:
                 return <div></div>;
         }

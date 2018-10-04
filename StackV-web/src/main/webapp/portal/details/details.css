@@ -137,16 +137,6 @@ pre.expanded{
     border-radius: 0;
 }
 
-.page {
-    height: inherit;
-    width: inherit;
-    transition: filter .5s;
-}
-.page.loading {
-    filter: brightness(20%) opacity(.8) blur(2px);
-}
-
-
 td.details-control {
     background: url('../../img/dataTables/details_open.png') no-repeat center center;
     cursor: pointer;

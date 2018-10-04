@@ -51,29 +51,6 @@ div#refresh-panel {
     margin-left: 10px;
 }
 
-div#instance-panel {
-    margin: auto;
-    padding: 30px 30px 0px 30px;
-    max-height: calc(90% - 42px);
-    width: calc(100% - 75);
-    max-width: 1000px;
-    text-align: left;
-}
-div#instance-header {
-    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
-    box-shadow: inset 0 1px 0 #a2b1c3;
-    color: #fff;
-    padding: 10px 15px;
-    position: relative;
-    text-shadow: 0 1px 0 #000;
-    outline: 1px solid black;
-    height: 40px;
-}
-div#instance-body {
-    padding: 20px;
-    outline: 1px solid #ccc;
-    background: white;
-}
 tr.instance-row {
     cursor: pointer;
 }

@@ -68,7 +68,6 @@ class Catalog extends React.Component {
 
         this.initModals = this.initModals.bind(this);
         this.reloadModals = this.reloadModals.bind(this);
-        this.initModals();
 
         this.state = {
             refreshTimer: 500,
@@ -79,7 +78,11 @@ class Catalog extends React.Component {
         this.loadData = this.loadData.bind(this);
     }
     componentDidMount() {
+        this.initModals();
         this.setState({ refreshEnabled: true });
+    }
+    componentWillUnmount() {
+        this.destroyModals();
     }
     loadData() {
         if (!this.state.loading) {
@@ -88,14 +91,14 @@ class Catalog extends React.Component {
     }
 
     render() {
-        return <div id="instance-panel">
+        return <div className="stack-panel" id="instance-panel">
             <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.loadData} />
 
-            <div id="instance-header">
+            <div className="stack-header" id="instance-header">
                 <b>Service Instances</b>
                 <button className="button-service-create btn btn-primary" onClick={() => this.toggleModal("catalog")}>Create New</button>
             </div>
-            <div id="instance-body">
+            <div className="stack-body" id="instance-body">
                 <InstancePanel keycloak={this.props.keycloak} switchPage={this.props.switchPage} />
             </div>
         </div>;
@@ -318,6 +321,13 @@ class Catalog extends React.Component {
         }
     }
 
+    destroyModals() {
+        $catModal.iziModal("destroy");
+        $profModal.iziModal("destroy");
+        $alertModal.iziModal("destroy");
+        $detailsModal.iziModal("destroy");
+        $licenseModal.iziModal("destroy");
+    }
     initModals() {
         let page = this;
         // Initialize

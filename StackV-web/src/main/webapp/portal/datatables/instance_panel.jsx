@@ -105,6 +105,7 @@ class InstancePanel extends React.Component {
                     dataTable.row($(open)).child.hide();
                     $(open).removeClass("shown");
                 }
+                $(this).addClass("shown");
 
                 // Open this row
                 row.child(formatChild(row.data())).show();
@@ -123,7 +124,6 @@ class InstancePanel extends React.Component {
                 $("#button-panel").append("<button style=\"float: right\" type=\"button\" class=\"btn btn-default button-instance-details\" data-uuid=" + row.data().referenceUUID + ">Full Details</button>");
 
                 row.child().css("height", "50px");
-                $(this).addClass("shown");
             }
         });
 

@@ -39,9 +39,6 @@ class Details extends React.Component {
         Mousetrap.bind("left", function () { page.viewShift("left"); });
         Mousetrap.bind("right", function () { page.viewShift("right"); });
 
-        this.init = this.init.bind(this);
-        this.init();
-
         this.fetchData = this.fetchData.bind(this);
         this.setView = this.setView.bind(this);
         this.state = this.fetchData();
@@ -60,15 +57,15 @@ class Details extends React.Component {
             page.loadVisualization();
         }, (10000));
         this.setState({ visIntervalRef: visInterval });
-    }
-    componentWillUnmount() {
-        clearInterval(this.state.visIntervalRef);
-    }
 
-    init() {
         $intentModal.iziModal(intentConfig);
         $intentModal.iziModal("setContent", "<textarea readonly id=\"details-intent-modal-text\"></textarea>");
     }
+    componentWillUnmount() {
+        $intentModal.iziModal("destroy");
+        clearInterval(this.state.visIntervalRef);
+    }
+
     load(seconds) {
         let page = this;
         this.setState({ loading: true });
