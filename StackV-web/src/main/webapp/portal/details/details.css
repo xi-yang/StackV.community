@@ -1,3 +1,12 @@
+
+td.details-control {
+    background: url('../../img/dataTables/details_open.png') no-repeat center center;
+    cursor: pointer;
+}
+tr.shown td.details-control {
+    background: url('../../img/dataTables/details_close.png') no-repeat center center;
+}
+
 div#details-panel, div#visual-panel {
     padding: 30px 7% 30px 7%;
     height: calc(100% - 52px);
