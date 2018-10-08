@@ -169,6 +169,10 @@ $(function () {
                 break;
         }
 
+        if ($("#tag-panel").length) {
+            initTagPanel();
+        }
+
         loadClipbook();
 
         setInterval(function () {
@@ -535,4 +539,16 @@ export function enableLoading() {
 
 export function disableLoading() {
     $("#main-pane").removeClass("loading");
+}
+
+
+import { loadLabels } from "../js/stackv/label";
+function initTagPanel() {
+    if ($.trim($("#tag-panel").html()) !== "") {
+        loadLabels();
+    } else {
+        $("#tag-panel").load("/StackV-web/tagPanel.jsp", function () {
+            loadLabels();
+        });
+    }
 }

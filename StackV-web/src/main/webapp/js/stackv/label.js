@@ -1,5 +1,5 @@
 /* global XDomainRequest, baseUrl, keycloak */
-function loadLabels() {
+export function loadLabels() {
     $("#tagPanel-tab").click(function (evt) {
         $("#tagPanel").toggleClass("closed");
 
@@ -97,21 +97,21 @@ function loadLabels() {
                 return;
 
 
-            var textField = document.createElement('textarea');
+            var textField = document.createElement("textarea");
             textField.innerText = data;
             document.body.appendChild(textField);
             textField.select();
-            document.execCommand('copy');
+            document.execCommand("copy");
             $(textField).remove();
 
-            $("#tagPanel").popover({content: "Data copied to clipboard", placement: "top", trigger: "manual"});
+            $("#tagPanel").popover({ content: "Data copied to clipboard", placement: "top", trigger: "manual" });
             $("#tagPanel").popover("show");
             setTimeout(
-                    function () {
-                        $("#tagPanel").popover('hide');
-                        $("#tagPanel").popover('destroy');
-                    },
-                    1000);
+                function () {
+                    $("#tagPanel").popover("hide");
+                    $("#tagPanel").popover("destroy");
+                },
+                1000);
         };
         tagList.appendChild(tag);
     };
@@ -128,26 +128,26 @@ function loadLabels() {
             },
 
             success: function (data, textStatus, jqXHR) {
-                $("#tagPanel").popover({content: "Tag Deleted", placement: "top", trigger: "manual"});
+                $("#tagPanel").popover({ content: "Tag Deleted", placement: "top", trigger: "manual" });
                 $("#tagPanel").popover("show");
                 setTimeout(
-                        function () {
-                            $("#tagPanel").popover('hide');
-                            $("#tagPanel").popover('destroy');
-                        },
-                        1000);
+                    function () {
+                        $("#tagPanel").popover("hide");
+                        $("#tagPanel").popover("destroy");
+                    },
+                    1000);
                 list.removeChild(htmlElement);
             },
 
             error: function (jqXHR, textStatus, errorThrown) {
-                $("#tagPanel").popover({content: "Error deleting tag.", placement: "top", trigger: "manual"});
+                $("#tagPanel").popover({ content: "Error deleting tag.", placement: "top", trigger: "manual" });
                 $("#tagPanel").popover("show");
                 setTimeout(
-                        function () {
-                            $("#tagPanel").popover('hide');
-                            $("#tagPanel").popover('destroy');
-                        },
-                        1000);
+                    function () {
+                        $("#tagPanel").popover("hide");
+                        $("#tagPanel").popover("destroy");
+                    },
+                    1000);
 
                 //alert(errorThrown + "\n"+textStatus);
                 //alert("Error deleting tag.");
@@ -167,26 +167,26 @@ function loadLabels() {
             },
 
             success: function (data, textStatus, jqXHR) {
-                $("#tagPanel").popover({content: "Tags Cleared", placement: "top", trigger: "manual"});
+                $("#tagPanel").popover({ content: "Tags Cleared", placement: "top", trigger: "manual" });
                 $("#tagPanel").popover("show");
                 setTimeout(
-                        function () {
-                            $("#tagPanel").popover('hide');
-                            $("#tagPanel").popover('destroy');
-                        },
-                        1000);
+                    function () {
+                        $("#tagPanel").popover("hide");
+                        $("#tagPanel").popover("destroy");
+                    },
+                    1000);
                 $("#labelList1").empty();
             },
 
             error: function (jqXHR, textStatus, errorThrown) {
-                $("#tagPanel").popover({content: "Error clearing tags.", placement: "top", trigger: "manual"});
+                $("#tagPanel").popover({ content: "Error clearing tags.", placement: "top", trigger: "manual" });
                 $("#tagPanel").popover("show");
                 setTimeout(
-                        function () {
-                            $("#tagPanel").popover('hide');
-                            $("#tagPanel").popover('destroy');
-                        },
-                        1000);
+                    function () {
+                        $("#tagPanel").popover("hide");
+                        $("#tagPanel").popover("destroy");
+                    },
+                    1000);
 
                 //alert(errorThrown + "\n"+textStatus);
                 //alert("Error deleting tag.");
