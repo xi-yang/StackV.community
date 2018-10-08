@@ -28,6 +28,12 @@ class DriverModal extends React.Component {
             || (this.state.type !== nextState.type)
             || (this.state.advanced !== nextState.advanced);
     }
+    componentDidMount() {
+        let modal = this;
+        $("#driver-modal").on("hidden.bs.modal", function (e) {
+            modal.props.reset();
+        });
+    }
 
     render() {
         let modalContent;
@@ -68,37 +74,42 @@ class DriverModal extends React.Component {
 
     parseInputs() {
         let entries = [];
-        let type, profile;
+        let type;
         if (this.props.type) {
             // Opened profile
             type = this.props.type;
             $("#driver-modal-body-select").val(type);
-            profile = JSON.parse(convert.xml2json(this.props.xml, { compact: true, spaces: 4 }));
+            entries = JSON.parse(convert.xml2json(this.props.xml, { compact: true, spaces: 4 })).driverInstance.properties.entry;
         } else {
             // New profile
             type = this.state.type;
-            $("#driver-modal-body-select").val(null);
+            switch (type) {
+                case "java:module/AwsDriver":
+                    entries = awsSchema.driverInstance.properties[0].entry;
+                    break;
+                case "java:module/GenericRESTDriver":
+                    entries = genericSchema.driverInstance.properties[0].entry;
+                    break;
+            }
         }
-        switch (type) {
-            case "java:module/AwsDriver":
-                entries = awsSchema.driverInstance.properties[0].entry;
-                break;
-            case "java:module/GenericRESTDriver":
-                entries = genericSchema.driverInstance.properties[0].entry;
-                break;
-        }
-
 
         return entries.map((entry) => {
-            let formatted;
-            if (entry.key[0].indexOf("_") > -1) {
-                formatted = entry.key[0].replace(/_(\w)/g, function (v) { return v[1].toUpperCase(); }).replace(/([A-Z])/g, " $1");
+            let formatted, key, value;
+            if (Object.prototype.toString.call(entry.key) === "[object Object]") {
+                key = entry.key._text;
+                value = entry.value._text;
             } else {
-                formatted = entry.key[0].replace(/([A-Z])/g, " $1");
+                key = entry.key[0];
+            }
+
+            if (key.indexOf("_") > -1) {
+                formatted = key.replace(/_(\w)/g, function (v) { return v[1].toUpperCase(); }).replace(/([A-Z])/g, " $1");
+            } else {
+                formatted = key.replace(/([A-Z])/g, " $1");
             }
             formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
 
-            return (<label key={entry.key[0]}>{formatted}<input className="form-control" name={entry.key[0]} /></label>);
+            return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={value} /></label>);
         });
     }
 
@@ -113,5 +124,6 @@ DriverModal.propTypes = {
     type: PropTypes.string,
     urn: PropTypes.string,
     xml: PropTypes.string,
+    reset: PropTypes.func.isRequired
 };
 export default DriverModal;

@@ -29,7 +29,8 @@
     text-align: left;
 }
 .driver-modal-body-header {
-    font-size: 1.25em;
+    font-size: 1.15em;
+    font-weight: bold;
     vertical-align: top;
     padding-right: 40px;
     padding-bottom: 10px;
@@ -48,4 +49,7 @@
     display: inline-grid;
     width: 50%;
     padding: 5px;
+}
+.driver-modal-body-select {
+    margin-left: 5px;
 }

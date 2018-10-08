@@ -19,11 +19,15 @@ class Drivers extends React.Component {
         };
 
         this.openDriver = this.openDriver.bind(this);
+        this.resetDriverModal = this.resetDriverModal.bind(this);
         this.loadData = this.loadData.bind(this);
     }
     componentDidMount() {
         this.loadData();
         this.setState({ refreshEnabled: true });
+    }
+    shouldComponentUpdate() {
+        return true;
     }
 
     loadData() {
@@ -58,6 +62,11 @@ class Drivers extends React.Component {
     openDriver(urn) {
         this.setState({ openDriver: this.state.data.find(x => x.urn === urn) });
         $("#driver-modal").modal("show");
+        $("#driver-modal-body-select").val(null);
+    }
+
+    resetDriverModal() {
+        this.setState({ openDriver: undefined });
     }
 
     render() {
@@ -92,7 +101,7 @@ class Drivers extends React.Component {
                     </table>
                 </div>
             </div>
-            <DriverModal {...this.state.openDriver} />
+            <DriverModal {...this.state.openDriver} reset={this.resetDriverModal} />
         </div>;
     }
 }
