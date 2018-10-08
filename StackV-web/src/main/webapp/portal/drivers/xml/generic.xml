@@ -1,0 +1,6 @@
+<driverInstance>
+	<properties>
+		<entry><key>topologyUri</key></entry>
+		<entry><key>subsystemBaseUrl</key></entry>
+	</properties>
+</driverInstance>

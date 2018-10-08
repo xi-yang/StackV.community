@@ -2,6 +2,7 @@ import React from "react";
 //import Keycloak from "keycloak-js";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
+import "bootstrap";
 
 import "./global.css";
 

@@ -25,6 +25,7 @@ class Drivers extends React.Component {
         this.loadData();
         this.setState({ refreshEnabled: true });
     }
+
     loadData() {
         let page = this;
         let apiUrl = window.location.origin + "/StackV-web/restapi/driver/";
@@ -56,7 +57,7 @@ class Drivers extends React.Component {
 
     openDriver(urn) {
         this.setState({ openDriver: this.state.data.find(x => x.urn === urn) });
-        $("#driver-modal").iziModal("open");
+        $("#driver-modal").modal("show");
     }
 
     render() {
