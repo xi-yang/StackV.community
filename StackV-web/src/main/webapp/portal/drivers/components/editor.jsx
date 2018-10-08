@@ -70,7 +70,10 @@ class DriverModal extends React.Component {
         let entries;
         entries = awsSchema.driverInstance.properties[0].entry;
         //let schema = JSON.parse(convert.xml2json(this.props.xml, { compact: true, spaces: 4 }));
-        return entries.map((entry) => <label key={entry.key[0]}>{entry.key[0]}<input name="test" placeholder="Test" /></label>);
+        return entries.map((entry) => {
+            let formatted = "Hey";
+            return (<label key={entry.key[0]}>{formatted}<input className="form-control" name={entry.key[0]} /></label>);
+        });
     }
 }
 DriverModal.propTypes = {
