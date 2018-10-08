@@ -6,7 +6,7 @@ import { resumeRefresh, reloadData, startLoading, stopLoading } from "../refresh
 
 var confirmConfig = {
     title: "Confirm Operation",
-    subtitle: "Please confirm operation. For deconstruction of service, use Cancel instead of Delete.",
+    subtitle: "Please confirm operation.",
     headerColor: "#BD5B5B",
     top: 300,
     timeout: 5000,
@@ -167,6 +167,12 @@ class OpButton extends React.Component {
             // No confirmation required            
             this.sendRequest(this.props.uuid, command);
         } else {
+            if (command === "cancel") {
+                $("#modal-button-" + command).iziModal("setSubtitle", "Please confirm operation. Cancel will destruct service and deallocate resources.");
+            } else if (command === "delete") {
+                $("#modal-button-" + command).iziModal("setSubtitle", "Please confirm operation. For deconstruction of service, use Cancel instead of Delete.");
+            }
+
             $("#modal-button-" + command).iziModal("open");
         }
     }
