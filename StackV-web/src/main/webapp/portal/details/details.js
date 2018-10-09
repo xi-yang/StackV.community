@@ -51,7 +51,13 @@ var $intentModal = $("#details-intent-modal");
 var $loadingModal = $("#loading-modal");
 
 var intentConfig = {
-    width: 750
+    width: 750,
+    onOpening: function () {
+        pauseRefresh();
+    },
+    onClosed: function () {
+        resumeRefresh();
+    }
 };
 var loadingConfig = {
     title: "Loading",
@@ -204,6 +210,7 @@ export function loadDetails() {
     $intentModal.html("<textarea readonly id=\"details-intent-modal-text\"></textarea>");
     $intentModal.iziModal(intentConfig);
     $("#button-view-intent").click(function () {
+        pauseRefresh();
         $intentModal.iziModal("open");
     });
 
@@ -646,6 +653,10 @@ function toggleTextModel(viz_table, text_table) {
 // --------------------
 
 export function updateData() {
+    if ($intentModal.iziModal("getState") === "opened") {
+        pauseRefresh();
+        return;
+    }
     // Frontend superstate and metadata
     let apiUrl = window.location.origin + "/StackV-web/restapi/app/details/" + refUUID + "/instance";
     $.ajax({

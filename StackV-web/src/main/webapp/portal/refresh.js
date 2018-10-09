@@ -43,33 +43,35 @@ export function initRefresh(time) {
 }
 
 export function refreshSync(refreshed, time) {
-    if (refreshed) {
-        sessionStorage.setItem("token", keycloak.token);
-        sessionStorage.setItem("refresh", keycloak.refreshToken);
-    }
-    var manual = false;
-    if (typeof time === "undefined") {
-        time = countdown;
-    }
-    if (document.getElementById("refresh-button").innerHTML === "Manually Refresh Now") {
-        manual = true;
-    }
-    if (manual === false) {
-        countdown = time;
-        if (countdown === "1") {
-            $("#refresh-button").html("Live Data");
-        } else {
-            $("#refresh-button").html("Refresh in " + countdown + " seconds");
+    if (document.getElementById("refresh-button").innerHTML !== "Paused") {
+        if (refreshed) {
+            sessionStorage.setItem("token", keycloak.token);
+            sessionStorage.setItem("refresh", keycloak.refreshToken);
         }
-    } else {
-        $("#refresh-button").html("Manually Refresh Now");
+        var manual = false;
+        if (typeof time === "undefined") {
+            time = countdown;
+        }
+        if (document.getElementById("refresh-button").innerHTML === "Manually Refresh Now") {
+            manual = true;
+        }
+        if (manual === false) {
+            countdown = time;
+            if (countdown === "1") {
+                $("#refresh-button").html("Live Data");
+            } else {
+                $("#refresh-button").html("Refresh in " + countdown + " seconds");
+            }
+        } else {
+            $("#refresh-button").html("Manually Refresh Now");
+        }
     }
 }
 export function pauseRefresh() {
-    clearInterval(countdownTimer);
-    clearInterval(refreshTimer);
     document.getElementById("refresh-button").innerHTML = "Paused";
     $("#refresh-timer").attr("disabled", true);
+    clearInterval(countdownTimer);
+    clearInterval(refreshTimer);
 }
 export function resumeRefresh() {
     var timer = $("#refresh-timer");
