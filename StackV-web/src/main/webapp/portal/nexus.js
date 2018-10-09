@@ -26,8 +26,6 @@
 import $ from "jquery";
 import "bootstrap";
 
-import loadClipbook from "./clipbook";
-
 /* Pages */
 import { loadAdmin } from "./admin/admin";
 import { loadACLPortal } from "./acl/acl";
@@ -172,8 +170,6 @@ $(function () {
         if ($("#tag-panel").length) {
             initTagPanel();
         }
-
-        loadClipbook();
 
         setInterval(function () {
             keycloak.updateToken(70);
