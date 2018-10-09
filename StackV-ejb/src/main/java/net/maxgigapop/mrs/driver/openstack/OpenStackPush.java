@@ -44,7 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import net.maxgigapop.mrs.common.IpaAlm;
+import net.maxgigapop.mrs.common.Alm;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
@@ -2574,7 +2574,7 @@ public class OpenStackPush {
         String method = "sriovRequests";
         
         
-        IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!"); // replace with keycloak creds that are gotten dynamically
+        Alm ipaAlm = new Alm(); // create a new ALM instance
         String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;        
         String ipPoolType = "ipv4";
         String macPoolType = "mac";

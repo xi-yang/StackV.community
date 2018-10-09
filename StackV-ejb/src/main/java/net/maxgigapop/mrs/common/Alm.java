@@ -23,16 +23,7 @@
  */
 package net.maxgigapop.mrs.common;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -45,65 +36,22 @@ import org.json.simple.parser.ParseException;
  * instance is deleted.
  * @author saiarvind
  */
-public class IpaAlm {
-    public static final StackLogger logger = new StackLogger(IpaAlm.class.getName(), "IpaAlm");
+public class Alm {
+    public static final StackLogger logger = new StackLogger(Alm.class.getName(), "Alm");
     
     JSONParser parser = new JSONParser();
     
-    KcTokenHandler kcTokenHandler = new KcTokenHandler();
+    IPATool ipaTool;          
     
-    // using HTTP not HTTPS due to SSL cert checking
-    String ipaRestBaseUrl = "http://localhost:8080/StackV-web/restapi/app/acl/ipa/request";
-    
-    // NEED THE KEYCLOAK AUTHORIZATION TOKEN IN THE HEADERS
-    String kcToken;
     
     /**
-     * 
-     * @param username - KeyCloak username
-     * @param passwd - KeyCloak password
+     * Assign a new IPATool instance and immediately login
      */
-    public IpaAlm(String username, String passwd) {
-        kcToken = kcTokenHandler.setAndGetToken(username, passwd);
-        ipaLogin();
+    public Alm() {
+        ipaTool = new IPATool();
     }
     
    
-    private boolean ipaLogin() {        
-        boolean loggedIn = false;
-        // using HTTP not HTTPS due to SSL cert checking
-        String ipaLoginUrl = "http://localhost:8080/StackV-web/restapi/app/acl/ipa/login";
-        try {
-            URL ipaurl = new URL(ipaLoginUrl);
-            //HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
-            HttpURLConnection conn = (HttpURLConnection) ipaurl.openConnection();
-            conn.setRequestProperty("Authorization", "bearer " + kcToken);
-            conn.setRequestMethod("POST");
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-            conn.connect();                       
-            
-            // if the request is successful
-            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {  
-                loggedIn = true;
-            } else { // if the request fails
-                String errorStream = "";
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                    String inputLine;                    
-                    while ((inputLine = in.readLine()) != null) {
-                        errorStream += inputLine;
-                    }
-                }
-            }
-            
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(IpaAlm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(IpaAlm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        
-        return loggedIn;
-    }
     
     /**
      * Posts the given JSON object to the IPA server and returns the JSON response
@@ -112,55 +60,19 @@ public class IpaAlm {
      */
     private JSONObject runIpaRequest(JSONObject ipaJSON) {
         JSONObject resultJSON = new JSONObject();
-        
-        try {
-            URL ipaurl = new URL(ipaRestBaseUrl);
-            // HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
-            HttpURLConnection conn = (HttpURLConnection) ipaurl.openConnection();
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("Authorization", "bearer " + kcToken);
-            conn.setRequestMethod("POST");
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-            conn.connect();   
-            
-            DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));                    
-            wr.writeBytes(ipaJSON.toJSONString());
-            wr.flush();
-            conn.connect();
-            
-            StringBuilder responseStr;
-            // if the request is successful
-            if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {               
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                    String inputLine;
-                    responseStr = new StringBuilder();
-                    while ((inputLine = in.readLine()) != null) {
-                        responseStr.append(inputLine);
-                    }
-                }
-                resultJSON = (JSONObject) parser.parse(responseStr.toString());
-                
-            } else { // if the request fails
-                String errorStream = "";
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                    String inputLine;                    
-                    while ((inputLine = in.readLine()) != null) {
-                        errorStream += inputLine;
-                    }
-                    resultJSON = (JSONObject) parser.parse(errorStream);
-                } catch (ParseException ex) {
-                    Logger.getLogger(IpaAlm.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-            
-        } catch (MalformedURLException ex) {
-            Logger.getLogger(IpaAlm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IOException | ParseException ex) {
-            Logger.getLogger(IpaAlm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        if (ipaTool == null) {
+            ipaTool = new IPATool();
         }
         
+        String response = ipaTool.ipaEndpoint(ipaJSON.toJSONString());
+        
+        try {
+            resultJSON = (JSONObject) parser.parse(response);
+        } catch (ParseException ex) {            
+            logger.error("runIpaRequest", "IPA Request failed. Exception: " + ex);
+            resultJSON.put("error", true);
+        }
+               
         return resultJSON;
     }
     
@@ -292,19 +204,19 @@ public class IpaAlm {
         // if address was leased successfully and the the task was created
         // then return the address
         if (addr != null && addr.length() > 0 && easTaskCreated) {
-            logger.warning("leaseAddr", "***address leased: " + addr);
+            logger.trace("leaseAddr", "ALM Address leased: " + addr);
             return addr;
         } else if (addr != null && addr.length() > 0 && !easTaskCreated) {
             // if the address was leased succesfully but the task creation failed
             // then release (revoke) the address and return LEASE_FAILED
             revokeLeasedAddr(clientId, poolName, poolType, addr);
-            logger.warning("leaseAddr", "***LEASING FAILED DUE TO TASK CREATION FAILURE***: " + easTaskCreated);
+            logger.warning("leaseAddr", "ALM Address Leasing Failed Due to EAS TASK CREATION FAILURE: " + easTaskCreated);
             return "LEASE_FAILED";
             // NOTE: do not have to check if the address leasing failed and
             // the eas task created succeeded since sucessful leasing is 
             // a prerequiste for task creation
         } else {
-            logger.warning("leaseAddr", "***LEASING FAILED***");
+            logger.warning("leaseAddr", "ALM Address Leasing Failed");
             return "LEASE_FAILED";
         }
     }
@@ -359,7 +271,7 @@ public class IpaAlm {
         }
         String addrCn = dn.split(",")[0];
         String cn = addrCn.replace("cn=", "_alm-release-");
-        JSONObject createEasTaskResponseJSON = createEasTaskJSON(dn,cn);
+        JSONObject createEasTaskResponseJSON = createAndRunEasTaskJSON(dn,cn);
         
          // parse the JSON response for the address
         // if there is no error
@@ -367,7 +279,7 @@ public class IpaAlm {
             JSONObject resultJSON = (JSONObject) createEasTaskResponseJSON.get("result");
             JSONObject innerResultJSON = (JSONObject) resultJSON.get("result");
             if (innerResultJSON.get("value").equals(cn)) {
-                logger.trace("creatEasTask", "EAS Task creation success");
+                logger.trace("createEasTask", "EAS Task creation success");
                 return true;
             }
         }
@@ -376,7 +288,7 @@ public class IpaAlm {
         return false;
     }
     
-    private JSONObject createEasTaskJSON(String dn, String cn) {
+    private JSONObject createAndRunEasTaskJSON(String dn, String cn) {
         JSONObject leaseJSON = new JSONObject();
         leaseJSON.put("id", 0);
         leaseJSON.put("method", "easTask_add");
