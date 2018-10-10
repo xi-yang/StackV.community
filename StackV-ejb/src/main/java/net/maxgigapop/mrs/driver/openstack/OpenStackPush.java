@@ -3,6 +3,7 @@
  * Created by: Zan Wang 2015
  * Modified by: Xi Yang 2015-2016
  * Modified by: Adam Smith 2017
+ * Modified by: SaiArvind Ganganapalle 2017-2018
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -43,7 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import net.maxgigapop.mrs.common.IpaAlm;
+import net.maxgigapop.mrs.common.Alm;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.Mrs;
 import net.maxgigapop.mrs.common.ResourceTool;
@@ -2573,7 +2574,7 @@ public class OpenStackPush {
         String method = "sriovRequests";
         
         
-        IpaAlm ipaAlm = new IpaAlm("xyang", "MAX123!"); // replace with keycloak creds that are gotten dynamically
+        Alm ipaAlm = new Alm(); // create a new ALM instance
         String clientName = "topology+" + topologyUri + ":user+" + adminUsername + ":tenant+" + adminTenant;        
         String ipPoolType = "ipv4";
         String macPoolType = "mac";
@@ -2682,16 +2683,16 @@ public class OpenStackPush {
                     if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
                         // explicit mention of "any"
                         // query the IPA ALM manager for an address                          
-                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, null);
+                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, null, topologyUri);
                     } else {
                         // get the specifed address                        
-                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, addrInfo[1]);                        
+                        ip = ipaAlm.leaseAddr(clientName, poolName, ipPoolType, addrInfo[1], topologyUri);                        
                     }                    
                 } else {
                     // the queried information should look like this format: pool+pool_name
                     String[] poolInfo = queryIp.split("\\+");                  
                     // query the IPA ALM manager for an address  
-                    ip = ipaAlm.leaseAddr(clientName, poolInfo[1], ipPoolType, null);
+                    ip = ipaAlm.leaseAddr(clientName, poolInfo[1], ipPoolType, null, topologyUri);
                 }                            
             }
             
@@ -2705,7 +2706,7 @@ public class OpenStackPush {
             ResultSet almMacResultSet = executeQuery(query, emptyModel, modelDelta);
             //String almMac = null;
             if (almMacResultSet.hasNext()) {                                
-                String queryIp = almIpResultSet.next().get("mac").toString();
+                String queryIp = almMacResultSet.next().get("mac").toString();
                 
                 if (queryIp.contains(":")) {
                     // if the queried information has a colon indicating the a potential specified_address
@@ -2721,16 +2722,16 @@ public class OpenStackPush {
                     if (addrInfo[0].equals("suggest") && addrInfo[1].equals("any")) {
                         // explicit mention of "any"
                         // query the IPA ALM manager for a mac address
-                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, null);
+                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, null, topologyUri);
                     } else {
                         // get the specifed address                        
-                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, addrInfo[1]);                        
+                        mac = ipaAlm.leaseAddr(clientName, poolName, macPoolType, addrInfo[1], topologyUri);                        
                     }                    
                 } else {
                     // the queried information should look like this format: pool+pool_name
                     String[] poolInfo = queryIp.split("\\+");
                     // query the IPA ALM manager for an address
-                    mac = ipaAlm.leaseAddr(clientName, poolInfo[1], macPoolType, null);
+                    mac = ipaAlm.leaseAddr(clientName, poolInfo[1], macPoolType, null, topologyUri);
                 }
             }
             
@@ -2740,10 +2741,13 @@ public class OpenStackPush {
             o.put("server name", serverName);
             o.put("port profile", portProfile);
             o.put("vnic name", vnicName);
-            if (ip != null) {
+            
+            // have to check for not only null but also if the leasing 
+            // did not actually return an address
+            if (ip != null && !ip.equals("LEASE_FAILED")) {
                 o.put("ip address", ip);
             }
-            if (mac != null) {
+            if (mac != null && !mac.equals("LEASE_FAILED")) {
                 o.put("mac address", mac);
             }
             if (routingSvc != null) {
@@ -2773,35 +2777,7 @@ public class OpenStackPush {
         
         if (creation == true) {
             JO.put("request", "AttachSriovRequest");
-        } else {
-            
-            /*
-            // cleanup the address
-            // revoke the leaseaddr if the address has been leased
-            if (ip != null || mac != null) {              
-                boolean isIpLeased = ipaAlm.checkIfAddrLeased(poolName, ip);
-                boolean isMacLeased = ipaAlm.checkIfAddrLeased(poolName, mac);
-                
-                if (isIpLeased) {
-                    boolean addrReleased = ipaAlm.revokeLeasedAddr(clientName, poolName, ipPoolType, ip);
-                    if (addrReleased) {                        
-                        logger.trace(method, "IPA leased address revoked succesfully");
-                    } else {                        
-                        logger.error(method, "IPA leased address not revoked", Severity.ERROR);
-                    }
-                }
-                
-                if (isMacLeased) {
-                    boolean addrReleased = ipaAlm.revokeLeasedAddr(clientName, poolName, macPoolType, mac);
-                    if (addrReleased) {                        
-                        logger.trace(method, "IPA leased address revoked succesfully");
-                    } else {                        
-                        logger.error(method, "IPA leased address not revoked", Severity.ERROR);
-                    }
-                }
-                
-            }
-            */
+        } else {         
             JO.put("request", "DetachSriovRequest");
         }
         requests.add(JO);
