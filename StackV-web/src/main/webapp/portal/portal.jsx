@@ -55,12 +55,17 @@ class Portal extends React.Component {
             keycloak: keycloak,
             keycloakIntervalRef: keycloakIntervalRef,
             visualMode: "new",
-            page: "catalog"
+            page: "catalog",
+            refreshTimer: 500,
+            refreshEnabled: true,
+            refreshLoading: false
         };
 
         this.loadPage = this.loadPage.bind(this);
         this.switchPage = this.switchPage.bind(this);
         this.viewShift = this.viewShift.bind(this);
+        this.pauseRefresh = this.pauseRefresh.bind(this);
+        this.resumeRefresh = this.resumeRefresh.bind(this);
 
         Mousetrap.bind("shift+left", () => { this.viewShift("left"); });
         Mousetrap.bind("shift+right", () => { this.viewShift("right"); });
@@ -96,6 +101,7 @@ class Portal extends React.Component {
             case "details":
                 if (roles.indexOf("A_Admin") === -1 && (param && param.uuid)) {
                     let apiUrl = window.location.origin + "/StackV-web/restapi/app/access/instances/" + param.uuid;
+                    let res;
                     $.ajax({
                         url: apiUrl,
                         async: false,
@@ -104,15 +110,16 @@ class Portal extends React.Component {
                             xhr.setRequestHeader("Authorization", "bearer " + portal.state.keycloak.token);
                         },
                         success: function (result) {
-                            return result;
+                            res = result;
                         },
                         error: function (err) {
                             return false;
                         }
                     });
+
+                    return res;
                 }
                 else { return true; }
-                break;
             case "driver":
                 return roles.indexOf("F_Drivers-R") > -1;
             case "visualization":
@@ -150,7 +157,7 @@ class Portal extends React.Component {
 
     render() {
         return <div>
-            <Navbar page={this.state.page} keycloak={this.state.keycloak} switchPage={this.switchPage}></Navbar>
+            <Navbar {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh}></Navbar>
             <div id="main-pane">
                 {this.loadPage()}
             </div>
@@ -158,12 +165,18 @@ class Portal extends React.Component {
     }
 
     /* */
+    pauseRefresh() {
+        this.setState({ refreshEnabled: false });
+    }
+    resumeRefresh() {
+        this.setState({ refreshEnabled: true });
+    }
     loadPage() {
         switch (this.state.page) {
             case "visualization":
                 return <Visualization visualMode={this.state.visualMode} keycloak={this.state.keycloak} />;
             case "catalog":
-                return <Catalog keycloak={this.state.keycloak} switchPage={this.switchPage} />;
+                return <Catalog {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "details":
                 return <Details keycloak={this.state.keycloak} uuid={this.state.uuid} />;
             case "drivers":

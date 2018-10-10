@@ -129,16 +129,6 @@ define(["local/stackv/utils"], function (utils) {
         var windowHeight;
 
         /**
-     * Initialise our application's code.
-     */
-        this.init = function () {
-            //contextListener();
-            clickListener();
-            keyupListener();
-            resizeListener();
-        };
-
-        /**
      * Listens for contextmenu events.
      * so instead of just worrying about e, we pass in e and our data object
      * this data object is passed into menu item listener 
@@ -363,7 +353,9 @@ define(["local/stackv/utils"], function (utils) {
 
             toggleMenuOff();
         }
-
+        clickListener();
+        keyupListener();
+        resizeListener();
     }
     return ContextMenu;
 });

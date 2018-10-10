@@ -11,8 +11,6 @@ class InstancePanel extends React.Component {
         super(props);
 
         this.state = {
-            refreshTimer: 500,
-            refreshEnabled: false,
             apiUrl: window.location.origin + "/StackV-web/restapi/app/logging/instances"
         };
 
@@ -23,14 +21,14 @@ class InstancePanel extends React.Component {
         this.initTable();
     }
     loadData() {
-        if ($("tr.shown").length === 0) {
+        if (this.props.refreshEnabled && $("tr.shown").length === 0) {
             this.state.dataTable.ajax.reload(null, false);
         }
     }
 
     render() {
         return <div>
-            <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
             <table id="loggingData" className="table table-striped table-bordered display" cellSpacing="0" width="100%">
                 <thead>
                     <tr>
@@ -87,6 +85,7 @@ class InstancePanel extends React.Component {
         });
 
         $("#loggingData tbody").on("click", "tr.instance-row", function () {
+
             //sessionStorage.setItem("instance-uuid", this.children[2].innerHTML);
             //window.document.location = "/StackV-web/portal/details/";
             var row = dataTable.row($(this));
@@ -95,9 +94,9 @@ class InstancePanel extends React.Component {
                 ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
                 row.child.hide();
                 $(this).removeClass("shown");
-                panel.setState({ refreshEnabled: true });
+                panel.props.resumeRefresh();
             } else {
-                panel.setState({ refreshEnabled: false });
+                panel.props.pauseRefresh();
                 if ($("tr.shown").length > 0) {
                     // Other details open, close first
                     ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
@@ -116,7 +115,7 @@ class InstancePanel extends React.Component {
                 ReactDOM.render(
                     React.createElement(ButtonPanel, {
                         uuid: row.data().referenceUUID, super: superState, sub: subState, last: row.data().lastState,
-                        keycloak: panel.props.keycloak, page: "catalog", resume: () => { panel.setState({ refreshEnabled: true }); }
+                        keycloak: panel.props.keycloak, page: "catalog", resume: () => { panel.props.resumeRefresh(); }
                     }, null),
                     document.getElementById("button-panel")
                 );

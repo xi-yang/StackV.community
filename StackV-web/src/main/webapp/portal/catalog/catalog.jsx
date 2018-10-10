@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
 import ReactInterval from "react-interval";
+import { css } from "emotion";
 
 import iziModal from "izimodal";
 $.fn.iziModal = iziModal;
@@ -69,12 +70,6 @@ class Catalog extends React.Component {
         this.initModals = this.initModals.bind(this);
         this.reloadModals = this.reloadModals.bind(this);
 
-        this.state = {
-            refreshTimer: 500,
-            refreshEnabled: false,
-            loading: false
-        };
-
         this.loadData = this.loadData.bind(this);
     }
     componentDidMount() {
@@ -85,21 +80,22 @@ class Catalog extends React.Component {
         this.destroyModals();
     }
     loadData() {
-        if (!this.state.loading) {
+        if (!this.props.refreshLoading) {
             this.reloadModals();
         }
     }
 
     render() {
         return <div className="stack-panel" id="instance-panel">
-            <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
 
             <div className="stack-header" id="instance-header">
                 <b>Service Instances</b>
+
                 <button className="button-service-create btn btn-primary" onClick={() => this.toggleModal("catalog")}>Create New</button>
             </div>
             <div className="stack-body" id="instance-body">
-                <InstancePanel keycloak={this.props.keycloak} switchPage={this.props.switchPage} />
+                <InstancePanel {...this.props} />
             </div>
         </div>;
     }
@@ -1004,6 +1000,9 @@ class Catalog extends React.Component {
 }
 Catalog.propTypes = {
     keycloak: PropTypes.object.isRequired,
-    switchPage: PropTypes.func.isRequired
+    switchPage: PropTypes.func.isRequired,
+    refreshTimer: PropTypes.number.isRequired,
+    refreshEnabled: PropTypes.bool.isRequired,
+    refreshLoading: PropTypes.bool.isRequired,
 };
 export default Catalog;

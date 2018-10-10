@@ -85,7 +85,6 @@ function details_viz(token) {
                     };
 
                     contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
-                    contextMenu.init();
                     //
                     console.log("after model.");
                 } else {
