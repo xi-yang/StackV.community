@@ -122,7 +122,7 @@ public class SenseServiceApi {
                 }
             }
         }
-        if (jsonReq.containsKey("ip_ranges")) {
+        if (body.getIpRanges() != null && !body.getIpRanges().isEmpty()) {
             JSONArray jsonIpRanges = new JSONArray();
             jsonData.put("ip_ranges", jsonIpRanges);
             for (ServiceIntentRequestIpRanges ipRange: body.getIpRanges()) {
