@@ -12,7 +12,8 @@
 						{
 							"Port Name": "?terminal?",
 							"Vlan Tag": "?terminal_vlan?",
-							"sparql": "SELECT ?terminal ?terminal_vlan WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. }",
+							"IP Address": "?terminal_ip?",
+							"sparql": "SELECT ?terminal ?terminal_vlan WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. OPTIONAL { ?terminal mrs:hasNetworkAddress ?terminal_na.?terminal_na mrs:type \"ipv4-address\".  ?terminal_na mrs:value ?terminal_ip. }  }",
 							"required": "true"
 						}
 					],

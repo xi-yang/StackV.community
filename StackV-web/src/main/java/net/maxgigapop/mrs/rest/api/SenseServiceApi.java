@@ -21,6 +21,7 @@ import javax.ws.rs.core.Context;
 import net.maxgigapop.mrs.common.TokenHandler;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestConnections;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestIpRanges;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestQueries;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentResponseQueries;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceTerminationPoint;
@@ -119,6 +120,16 @@ public class SenseServiceApi {
                 if (stp.getType() == null || stp.getType().isEmpty() || stp.getType().equals("ethernet/vlan")) {
                     jsonTerminal.put("vlan_tag", stp.getLabel());
                 }
+            }
+        }
+        if (jsonReq.containsKey("ip_ranges")) {
+            JSONArray jsonIpRanges = new JSONArray();
+            jsonData.put("ip_ranges", jsonIpRanges);
+            for (ServiceIntentRequestIpRanges ipRange: body.getIpRanges()) {
+                JSONObject jsonIpRange = new JSONObject();
+                jsonIpRange.put("start", ipRange.getStart());
+                jsonIpRange.put("end", ipRange.getEnd());
+                jsonIpRanges.add(jsonIpRange);
             }
         }
         SenseServiceQuery.preQueries(jsonData, body.getQueries());

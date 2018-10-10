@@ -3,6 +3,7 @@ package net.maxgigapop.mrs.rest.api.model.sense;
 import java.util.ArrayList;
 import java.util.List;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestConnections;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestIpRanges;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestQueries;
 import javax.validation.constraints.*;
 import javax.validation.Valid;
@@ -17,6 +18,7 @@ public class ServiceIntentRequest   {
   
   private @Valid String serviceType = null;
   private @Valid String serviceAlias = null;
+  private @Valid List<ServiceIntentRequestIpRanges> ipRanges = new ArrayList<ServiceIntentRequestIpRanges>();
   private @Valid List<ServiceIntentRequestConnections> connections = new ArrayList<ServiceIntentRequestConnections>();
   private @Valid List<ServiceIntentRequestQueries> queries = new ArrayList<ServiceIntentRequestQueries>();
 
@@ -53,6 +55,23 @@ public class ServiceIntentRequest   {
   }
   public void setServiceAlias(String serviceAlias) {
     this.serviceAlias = serviceAlias;
+  }
+
+  /**
+   **/
+  public ServiceIntentRequest ipRanges(List<ServiceIntentRequestIpRanges> ipRanges) {
+    this.ipRanges = ipRanges;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "")
+  @JsonProperty("ip_ranges")
+  public List<ServiceIntentRequestIpRanges> getIpRanges() {
+    return ipRanges;
+  }
+  public void setIpRanges(List<ServiceIntentRequestIpRanges> ipRanges) {
+    this.ipRanges = ipRanges;
   }
 
   /**
@@ -102,13 +121,14 @@ public class ServiceIntentRequest   {
     ServiceIntentRequest serviceIntentRequest = (ServiceIntentRequest) o;
     return Objects.equals(serviceType, serviceIntentRequest.serviceType) &&
         Objects.equals(serviceAlias, serviceIntentRequest.serviceAlias) &&
+        Objects.equals(ipRanges, serviceIntentRequest.ipRanges) &&
         Objects.equals(connections, serviceIntentRequest.connections) &&
         Objects.equals(queries, serviceIntentRequest.queries);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(serviceType, serviceAlias, connections, queries);
+    return Objects.hash(serviceType, serviceAlias, ipRanges, connections, queries);
   }
 
   @Override
@@ -118,6 +138,7 @@ public class ServiceIntentRequest   {
     
     sb.append("    serviceType: ").append(toIndentedString(serviceType)).append("\n");
     sb.append("    serviceAlias: ").append(toIndentedString(serviceAlias)).append("\n");
+    sb.append("    ipRanges: ").append(toIndentedString(ipRanges)).append("\n");
     sb.append("    connections: ").append(toIndentedString(connections)).append("\n");
     sb.append("    queries: ").append(toIndentedString(queries)).append("\n");
     sb.append("}");
