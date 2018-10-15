@@ -16,10 +16,20 @@ class LoaderBubble extends React.Component {
     constructor(props) {
         super(props);
 
+        this.state = {};
+
+        this.popover = this.popover.bind(this);
         this.getStatus = this.getStatus.bind(this);
+        this.moderatePopover = this.moderatePopover.bind(this);
     }
     componentDidMount() {
-
+        $("#loader-bubble").popover({
+            content: this.state.content,
+            html: true,
+            placement: "bottom",
+            title: "Reload Settings",
+            trigger: "focus"
+        });
     }
 
     getStatus() {
@@ -34,18 +44,13 @@ class LoaderBubble extends React.Component {
     }
 
     popover(e) {
-        $("#loader-bubble").popover({
-            title: "Reload Settings",
-            html: "<div style=\"color:red;\">TestDiv</div>",
-            placement: "bottom"
-        });
-        $("#loader-bubble").popover("show");
-
-        e.preventDefault();
+        $("#loader-bubble").popover("toggle");
+        this.moderatePopover();
     }
 
     render() {
         let status = this.getStatus();
+        this.moderatePopover();
         switch (status) {
             case "live":
                 return <FontAwesomeIcon className={live} id="loader-bubble" icon={faCog} size="lg" spin onClick={(e) => this.popover(e)} />;
@@ -53,6 +58,14 @@ class LoaderBubble extends React.Component {
                 return <FontAwesomeIcon className={paused} id="loader-bubble" icon={faCog} size="lg" />;
         }
 
+    }
+
+    moderatePopover() {
+        if (this.props.refreshEnabled) {
+            $(".popover-content").html("<div>REFRESH ON</div>");
+        } else {
+            $(".popover-content").html("<div>REFRESH OFF</div>");
+        }
     }
 }
 LoaderBubble.propTypes = {

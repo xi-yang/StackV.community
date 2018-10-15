@@ -14,22 +14,22 @@ div#logging-panel {
     text-align: left;
 }
 
-div.top {
+.page .top {
     left: 0;
     top: 0;
     z-index: 10;
 }
-div.middle {
+.page .middle {
     left: 10px;
     top: 10px;
     z-index: 5;    
 }
-div.bottom {
+.page .bottom {
     left: 20px;
     top: 20px;
     z-index: 0;    
 }
-div.middle, div.bottom {
+.page .middle, .page .bottom {
     filter: blur(3px) grayscale(100%) brightness(30%);        
 }
 
