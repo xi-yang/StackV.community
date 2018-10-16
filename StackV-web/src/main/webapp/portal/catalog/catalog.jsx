@@ -74,15 +74,13 @@ class Catalog extends React.Component {
     }
     componentDidMount() {
         this.initModals();
-        this.setState({ refreshEnabled: true });
+        this.props.resumeRefresh();
     }
     componentWillUnmount() {
         this.destroyModals();
     }
     loadData() {
-        if (!this.props.refreshLoading) {
-            this.reloadModals();
-        }
+        this.reloadModals();
     }
 
     render() {
@@ -1003,6 +1001,5 @@ Catalog.propTypes = {
     switchPage: PropTypes.func.isRequired,
     refreshTimer: PropTypes.number.isRequired,
     refreshEnabled: PropTypes.bool.isRequired,
-    refreshLoading: PropTypes.bool.isRequired,
 };
 export default Catalog;

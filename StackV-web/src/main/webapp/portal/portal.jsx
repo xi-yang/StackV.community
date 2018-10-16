@@ -57,8 +57,7 @@ class Portal extends React.Component {
             visualMode: "new",
             page: "catalog",
             refreshTimer: 500,
-            refreshEnabled: true,
-            refreshLoading: false
+            refreshEnabled: false,
         };
 
         this.loadPage = this.loadPage.bind(this);
@@ -66,6 +65,7 @@ class Portal extends React.Component {
         this.viewShift = this.viewShift.bind(this);
         this.pauseRefresh = this.pauseRefresh.bind(this);
         this.resumeRefresh = this.resumeRefresh.bind(this);
+        this.setRefresh = this.setRefresh.bind(this);
 
         Mousetrap.bind("shift+left", () => { this.viewShift("left"); });
         Mousetrap.bind("shift+right", () => { this.viewShift("right"); });
@@ -133,22 +133,22 @@ class Portal extends React.Component {
             switch (page) {
                 case "details":
                     if (param && param.uuid) {
-                        this.setState({ page: "details", uuid: param.uuid });
+                        this.setState({ page: "details", uuid: param.uuid, refreshEnabled: false });
                     } else if (this.state.uuid) {
-                        this.setState({ page: "details", uuid: this.state.uuid });
+                        this.setState({ page: "details", uuid: this.state.uuid, refreshEnabled: false });
                     } else {
                         iziToast.show(detailsErrorToast);
                     }
                     break;
                 case "visualization":
                     if (param.shiftKey) {
-                        this.setState({ page: "visualization" });
+                        this.setState({ page: "visualization", refreshEnabled: false });
                     } else {
                         window.location.replace("/StackV-web/portal/visual/graphTest.jsp");
                     }
                     break;
                 default:
-                    this.setState({ page: page });
+                    this.setState({ page: page, refreshEnabled: false });
             }
         } else {
             iziToast.show(accessDeniedToast);
@@ -157,7 +157,7 @@ class Portal extends React.Component {
 
     render() {
         return <div>
-            <Navbar {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh}></Navbar>
+            <Navbar {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} setRefresh={this.setRefresh} ></Navbar>
             <div id="main-pane">
                 {this.loadPage()}
             </div>
@@ -171,6 +171,9 @@ class Portal extends React.Component {
     resumeRefresh() {
         this.setState({ refreshEnabled: true });
     }
+    setRefresh(time) {
+        this.setState({ refreshTimer: parseInt(time) });
+    }
     loadPage() {
         switch (this.state.page) {
             case "visualization":
@@ -178,7 +181,7 @@ class Portal extends React.Component {
             case "catalog":
                 return <Catalog {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "details":
-                return <Details keycloak={this.state.keycloak} uuid={this.state.uuid} />;
+                return <Details {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "drivers":
                 return <Drivers keycloak={this.state.keycloak} />;
             default:

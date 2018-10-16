@@ -20,6 +20,9 @@ class InstancePanel extends React.Component {
     componentDidMount() {
         this.initTable();
     }
+    componentWillUnmount() {
+        ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
+    }
     loadData() {
         if (this.props.refreshEnabled && $("tr.shown").length === 0) {
             this.state.dataTable.ajax.reload(null, false);
@@ -28,7 +31,7 @@ class InstancePanel extends React.Component {
 
     render() {
         return <div>
-            <ReactInterval timeout={this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={this.props.refreshTimer < 1000 ? 1000 : this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
             <table id="loggingData" className="table table-striped table-bordered display" cellSpacing="0" width="100%">
                 <thead>
                     <tr>
@@ -85,7 +88,7 @@ class InstancePanel extends React.Component {
         });
 
         $("#loggingData tbody").on("click", "tr.instance-row", function () {
-
+            panel.props.pauseRefresh();
             //sessionStorage.setItem("instance-uuid", this.children[2].innerHTML);
             //window.document.location = "/StackV-web/portal/details/";
             var row = dataTable.row($(this));
@@ -96,7 +99,6 @@ class InstancePanel extends React.Component {
                 $(this).removeClass("shown");
                 panel.props.resumeRefresh();
             } else {
-                panel.props.pauseRefresh();
                 if ($("tr.shown").length > 0) {
                     // Other details open, close first
                     ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));

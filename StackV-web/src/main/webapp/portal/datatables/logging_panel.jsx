@@ -64,7 +64,7 @@ class LoggingPanel extends React.Component {
 
     render() {
         return <div className={this.props.active ? "top" : "bottom"} id="logging-panel">
-            <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={this.state.refreshTimer < 1000 ? 1000 : this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.loadData} />
             <div id="logging-header-div">
                 Instance Logs
                 <div style={{ float: "right" }}>

@@ -12,6 +12,11 @@ const paused = css`
     color: #e2e210;    
 `;
 
+const divStyle = css`
+    margin-right: 5px;
+    display: inline;
+`;
+
 class LoaderBubble extends React.Component {
     constructor(props) {
         super(props);
@@ -24,17 +29,31 @@ class LoaderBubble extends React.Component {
     }
     componentDidMount() {
         $("#loader-bubble").popover({
-            content: this.state.content,
+            content: "<div><div class=" + divStyle + ">Data Refresh: </div><div class=\"btn-group\" role=\"group\">" +
+                "<button type=\"button\" id=\"loader-bubble-enabled-off\" class=\"btn btn-default\">Paused</button>" +
+                "<button type=\"button\" id=\"loader-bubble-enabled-on\" class=\"btn btn-default\">Active</button></div></div>" +
+                "<div><div class=" + divStyle + ">Refresh Interval (in ms): </div><div class=\"btn-group\" role=\"group\">" +
+                "<input style=\"width: 75px;margin-top: 10px;\" type=\"number\" id=\"loader-bubble-timer\" class=\"form-control\"/></div></div>",
             html: true,
             placement: "bottom",
             title: "Reload Settings",
             trigger: "focus"
         });
+
+        $(document).on("click", "#loader-bubble-enabled-off", () => {
+            this.props.pauseRefresh();
+        });
+        $(document).on("click", "#loader-bubble-enabled-on", () => {
+            this.props.resumeRefresh();
+        });
+        $(document).on("change", "#loader-bubble-timer", () => {
+            this.props.setRefresh($("#loader-bubble-timer").val());
+        });
     }
 
     getStatus() {
         // Reload is live
-        if (!this.props.refreshLoading && this.props.refreshEnabled) {
+        if (this.props.refreshEnabled) {
             return "live";
         }
         // Reload is paused
@@ -62,15 +81,22 @@ class LoaderBubble extends React.Component {
 
     moderatePopover() {
         if (this.props.refreshEnabled) {
-            $(".popover-content").html("<div>REFRESH ON</div>");
+            $("#loader-bubble-enabled-off").addClass("btn-default");
+            $("#loader-bubble-enabled-off").removeClass("btn-primary");
+            $("#loader-bubble-enabled-on").removeClass("btn-default");
+            $("#loader-bubble-enabled-on").addClass("btn-primary");
         } else {
-            $(".popover-content").html("<div>REFRESH OFF</div>");
+            $("#loader-bubble-enabled-on").addClass("btn-default");
+            $("#loader-bubble-enabled-on").removeClass("btn-primary");
+            $("#loader-bubble-enabled-off").removeClass("btn-default");
+            $("#loader-bubble-enabled-off").addClass("btn-primary");
         }
+
+        $("#loader-bubble-timer").val(this.props.refreshTimer);
     }
 }
 LoaderBubble.propTypes = {
     refreshTimer: PropTypes.number.isRequired,
     refreshEnabled: PropTypes.bool.isRequired,
-    refreshLoading: PropTypes.bool.isRequired,
 };
 export default LoaderBubble;

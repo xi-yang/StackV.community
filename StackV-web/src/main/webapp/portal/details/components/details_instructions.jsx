@@ -75,12 +75,4 @@ class InstructionPanel extends React.Component {
         return <div>{res}</div>;
     }
 }
-InstructionPanel.propTypes = {
-    uuid: PropTypes.string.isRequired,
-    super: PropTypes.string.isRequired,
-    sub: PropTypes.string.isRequired,
-    verificationHasDrone: PropTypes.bool.isRequired,
-    verificationResult: PropTypes.string,
-    verificationElapsed: PropTypes.string
-};
 export default InstructionPanel;

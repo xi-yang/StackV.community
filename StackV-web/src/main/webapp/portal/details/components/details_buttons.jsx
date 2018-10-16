@@ -161,29 +161,11 @@ class ButtonPanel extends React.Component {
                         break;
                     default:
                         panel.props.load(.5);
-                        setTimeout(function () {
-                            panel.props.reload();
-                        }, 300);
                 }
-            },
-            error: function () {
-                setTimeout(function () {
-                    panel.props.reload();
-                }, 100);
             }
         });
     }
 }
-ButtonPanel.propTypes = {
-    uuid: PropTypes.string.isRequired,
-    super: PropTypes.string.isRequired,
-    sub: PropTypes.string.isRequired,
-    last: PropTypes.string.isRequired,
-    keycloak: PropTypes.object.isRequired,
-    page: PropTypes.string.isRequired,
-    isVerifying: PropTypes.bool,
-    resume: PropTypes.func,
-};
 
 class OpButton extends React.Component {
     constructor(props) {
@@ -250,10 +232,4 @@ class OpButton extends React.Component {
         }
     }
 }
-OpButton.propTypes = {
-    operation: PropTypes.string.isRequired,
-    send: PropTypes.func.isRequired,
-    label: PropTypes.string,
-    visible: PropTypes.bool
-};
 export default ButtonPanel;

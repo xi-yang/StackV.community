@@ -41,18 +41,21 @@ class Details extends React.Component {
 
         this.fetchData = this.fetchData.bind(this);
         this.setView = this.setView.bind(this);
-        this.state = this.fetchData();
-        this.state.view = "details";
-
-        this.state.refreshTimer = 500;
-        this.state.refreshEnabled = false;
-        this.state.loading = false;
+        this.state = {
+            view: "details",
+            loading: false,
+            meta: {},
+            state: {},
+            verify: {},
+        };
 
         this.loadVisualization = this.loadVisualization.bind(this);
     }
     componentDidMount() {
+        this.fetchData();
+        this.loadVisualization();
+
         let page = this;
-        page.loadVisualization();
         let visInterval = setInterval(function () {
             page.loadVisualization();
         }, (10000));
@@ -62,7 +65,7 @@ class Details extends React.Component {
         $intentModal.iziModal("setContent", "<textarea readonly id=\"details-intent-modal-text\"></textarea>");
 
         let intent = this.state.meta.intent;
-        if (intent.length === 0) {
+        if (!intent || (intent && intent.length === 0)) {
             $("#button-view-intent").hide();
         } else {
             $("#button-view-intent").show();
@@ -73,6 +76,8 @@ class Details extends React.Component {
             var pretty = JSON.stringify(obj, undefined, 4);
             document.getElementById("details-intent-modal-text").value = pretty;
         }
+
+        this.props.resumeRefresh();
     }
     componentWillUnmount() {
         $intentModal.iziModal("destroy");
@@ -108,7 +113,7 @@ class Details extends React.Component {
             pageClasses = "page page-details loading";
         }
         return <div style={{ width: "100%", height: "100%" }}>
-            <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.fetchData} />
+            <ReactInterval timeout={this.props.refreshTimer} enabled={(this.props.refreshEnabled && !this.state.loading)} callback={this.fetchData} />
             <RotateLoader
                 className={override}
                 sizeUnit={"px"}
@@ -202,7 +207,7 @@ class Details extends React.Component {
             }
         });
 
-        return { meta: meta, state: state, verify: verify };
+        this.setState({ meta: meta, state: state, verify: verify });
     }
 
 
