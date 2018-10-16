@@ -236,7 +236,7 @@ define(["local/stackv/utils"], function (utils) {
      * Turns the custom context menu on.
      */
         function toggleMenuOn() {
-            if (menuState !== 1) {
+            if (!$("#context-menu").hasClass("context-menu--active")) {
                 menuState = 1;
                 var deleteItem = $("#context-menu").find("[data-action=\"Delete\"]").closest("li");
 
@@ -247,7 +247,7 @@ define(["local/stackv/utils"], function (utils) {
                         deleteItem.removeClass("hide");
                     }
                 }
-                menu.classList.add(contextMenuActive);
+                $("#context-menu").addClass("context-menu--active");
             }
         }
 
@@ -255,9 +255,9 @@ define(["local/stackv/utils"], function (utils) {
      * Turns the custom context menu off.
      */
         function toggleMenuOff() {
-            if (menuState !== 0) {
+            if ($("#context-menu").hasClass("context-menu--active")) {
                 menuState = 0;
-                menu.classList.remove(contextMenuActive);
+                $("#context-menu").removeClass("context-menu--active");
             }
         }
 
