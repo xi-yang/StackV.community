@@ -184,6 +184,7 @@ define(["local/stackv/utils"], function (utils) {
             d3.event.preventDefault();
             toggleMenuOn();
             positionMenu(d3.event);
+            $("#context-menu").css({ "left": (d3.event.x - 120) + "px", "top": (d3.event.y) + "px" });
         };
 
         this.panelElemContextListener = function (e, o) {
@@ -191,6 +192,7 @@ define(["local/stackv/utils"], function (utils) {
             e.preventDefault();
             toggleMenuOn();
             positionMenu(e);
+            $("#context-menu").css({ "left": (e.x - 120) + "px", "top": (e.y) + "px" });
         };
 
         /**
