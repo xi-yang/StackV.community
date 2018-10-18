@@ -177,7 +177,7 @@ public class DriverUtil {
                 }
             }
         };
-        SSLContext context = SSLContext.getInstance("TLSv1.1");
+        SSLContext context = SSLContext.getInstance("TLS");
         context.init(kms, tms, null);
         return context.getSocketFactory();
     }
