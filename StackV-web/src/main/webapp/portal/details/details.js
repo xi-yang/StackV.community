@@ -133,6 +133,10 @@ function newView(panel) {
     resetView();
     switch (panel) {
         case "logging":
+            $("#refresh-timer").val("5");
+            timerChange($("#refresh-timer")[0]);
+            updateData();
+
             tweenLoggingPanel.play();
             $("#logging-tab").addClass("active");
             view = "left";
@@ -146,6 +150,7 @@ function newView(panel) {
             $("#refresh-timer").val("15");
             timerChange($("#refresh-timer")[0]);
             updateData();
+
             tweenVisualPanel.play();
             $("#visual-tab").addClass("active");
             view = "right";
