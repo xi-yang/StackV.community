@@ -3,6 +3,7 @@ import React from "react";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
 import "bootstrap";
+import ReactInterval from "react-interval";
 
 import "./global.css";
 
@@ -66,6 +67,7 @@ class Portal extends React.Component {
         this.pauseRefresh = this.pauseRefresh.bind(this);
         this.resumeRefresh = this.resumeRefresh.bind(this);
         this.setRefresh = this.setRefresh.bind(this);
+        this.healthCheck = this.healthCheck.bind(this);
 
         Mousetrap.bind("shift+left", () => { this.viewShift("left"); });
         Mousetrap.bind("shift+right", () => { this.viewShift("right"); });
@@ -155,8 +157,28 @@ class Portal extends React.Component {
         }
     }
 
+    healthCheck() {
+        let portal = this;
+        var apiUrl = window.location.origin + "/StackV-web/restapi/service/ready";
+        $.ajax({
+            url: apiUrl,
+            type: "GET",
+            dataType: "json",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + portal.state.keycloak.token);
+            },
+            success: function (result) {
+                portal.setState({ "systemHealth": result });
+            },
+            error: function (err) {
+                console.log("Error in system health check: " + JSON.stringify(err));
+            }
+        });
+    }
+
     render() {
         return <div>
+            <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.healthCheck} />
             <Navbar {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} setRefresh={this.setRefresh} ></Navbar>
             <div id="main-pane">
                 {this.loadPage()}

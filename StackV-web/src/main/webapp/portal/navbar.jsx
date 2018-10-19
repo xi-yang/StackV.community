@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { cx, css } from "emotion";
 
+import HealthBubble from "./health_bubble";
 import LoaderBubble from "./loader_bubble";
 
 const stack_nav = css`
@@ -76,6 +77,7 @@ function NavElements(props) {
     }
 
     return <ul className="nav navbar-nav navbar-left" style={{ width: "100%" }}>
+        <HealthBubble {...props} />
         {listItems}
         <li className="pull-right" id="logout-button" onClick={logout}><a href="#">Logout</a></li>
         <li className="pull-right" id="account-button" onClick={manageAccount}><a href="#">Account</a></li>
