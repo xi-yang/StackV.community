@@ -11,9 +11,17 @@
 
 #drivers-table-div td {
     border-left: 1px solid rgba(221, 221, 221, 0.7);
+    vertical-align: middle;
 }
 #drivers-table-div td:first-child {
     border-left: none;
+}
+
+tr.backend {
+    background: #ccc;
+}
+tr.backend:hover {
+    background: #bbb !important;
 }
 
 #drivers-table-footer {

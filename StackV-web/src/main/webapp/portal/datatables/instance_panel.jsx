@@ -21,7 +21,7 @@ class InstancePanel extends React.Component {
         this.initTable();
     }
     componentWillUnmount() {
-        ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
+        //ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
     }
     loadData() {
         if (this.props.refreshEnabled && $("tr.shown").length === 0) {

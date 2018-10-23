@@ -8,11 +8,6 @@ class LoggingPanel extends React.Component {
     constructor(props) {
         super(props);
 
-        this.state = {
-            refreshTimer: 1000,
-            refreshEnabled: false,
-        };
-
         if (sessionStorage.getItem("LoggingPanel_level")) {
             this.state.level = sessionStorage.getItem("LoggingPanel_level");
         } else {
@@ -64,7 +59,7 @@ class LoggingPanel extends React.Component {
 
     render() {
         return <div className={this.props.active ? "top" : "bottom"} id="logging-panel">
-            <ReactInterval timeout={this.state.refreshTimer < 1000 ? 1000 : this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
             <div id="logging-header-div">
                 Instance Logs
                 <div style={{ float: "right" }}>
@@ -184,10 +179,10 @@ class LoggingPanel extends React.Component {
                 row.child.hide();
                 tr.removeClass("shown");
                 if ($("tr.shown").length === 0 && dataTable.scroller.page().start === 0) {
-                    panel.setState({ refreshEnabled: true });
+                    panel.props.resumeRefresh();
                 }
             } else {
-                panel.setState({ refreshEnabled: false });
+                panel.props.pauseRefresh();
                 // Open this row
                 row.child(formatChild(row.data())).show();
                 tr.addClass("shown");
@@ -196,9 +191,9 @@ class LoggingPanel extends React.Component {
 
         $("div.dataTables_scrollBody").scroll(function () {
             if (dataTable.scroller.page().start === 0 && $("tr.shown").length === 0) {
-                panel.setState({ refreshEnabled: true });
+                panel.props.resumeRefresh();
             } else {
-                panel.setState({ refreshEnabled: false });
+                panel.props.pauseRefresh();
             }
         });
 
@@ -232,7 +227,7 @@ class LoggingPanel extends React.Component {
             return retString;
         }
 
-        panel.setState({ dataTable: dataTable }, () => { this.filterLogs(); panel.setState({ refreshEnabled: true }); });
+        panel.setState({ dataTable: dataTable }, () => { this.filterLogs(); panel.props.resumeRefresh(); });
     }
 }
 LoggingPanel.propTypes = {

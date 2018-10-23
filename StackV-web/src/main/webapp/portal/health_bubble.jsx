@@ -21,6 +21,11 @@ const healthStyle = css`
     float: left;
     color: white;
 `;
+const textStyle = css`
+    bottom: 5px;
+    display: inline;
+    position: relative;
+`;
 
 class HealthBubble extends React.Component {
     constructor(props) {
@@ -41,7 +46,7 @@ class HealthBubble extends React.Component {
             icon = faStopCircle;
         }
 
-        return <li className={liStyle}><div className={healthStyle}>System Health: <FontAwesomeIcon className={style} id="health-bubble" icon={icon} size="2x" /></div></li>;
+        return <li className={liStyle}><div className={healthStyle}><div className={textStyle}>System Health: </div><FontAwesomeIcon className={style} id="health-bubble" icon={icon} size="2x" /></div></li>;
     }
 }
 export default HealthBubble;

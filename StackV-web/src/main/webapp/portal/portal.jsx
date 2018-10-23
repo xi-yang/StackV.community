@@ -205,7 +205,7 @@ class Portal extends React.Component {
             case "details":
                 return <Details {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "drivers":
-                return <Drivers keycloak={this.state.keycloak} />;
+                return <Drivers {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             default:
                 return <div></div>;
         }

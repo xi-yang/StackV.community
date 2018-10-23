@@ -124,9 +124,9 @@ class Details extends React.Component {
             <div className={pageClasses}>
                 <DetailsDots view={this.state.view} setView={this.setView}></DetailsDots>
 
-                <LoggingPanel active={modView[0]} keycloak={this.props.keycloak} uuid={this.props.uuid}></LoggingPanel>
+                <LoggingPanel {...this.props} active={modView[0]}></LoggingPanel>
                 <DetailsPanel active={modView[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
-                    verify={Map(this.state.verify)} load={this.load} keycloak={this.props.keycloak} />
+                    verify={Map(this.state.verify)} load={this.load} {...this.props} />
                 <VisualizationPanel active={modView[2]} verify={Map(this.state.verify)}></VisualizationPanel>
                 <div id="details-viz"></div>
             </div>

@@ -7,13 +7,23 @@ import { Set } from "immutable";
 import DriverModal from "./components/editor";
 import "./drivers.css";
 
+const unavailableToast = {
+    theme: "dark",
+    icon: "fas fa-exclamation",
+    title: "Driver unavailable",
+    message: "This driver was installed manually, and cannot be edited.",
+    position: "topRight",
+    progressBarColor: "red",
+    pauseOnHover: true,
+    timeout: 4000,
+    displayMode: "replace"
+};
+
 class Drivers extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            refreshTimer: 1000,
-            refreshEnabled: true,
             loading: false,
             data: [],
         };
@@ -21,10 +31,12 @@ class Drivers extends React.Component {
         this.openDriver = this.openDriver.bind(this);
         this.resetDriverModal = this.resetDriverModal.bind(this);
         this.loadData = this.loadData.bind(this);
+        this.plugDriver = this.plugDriver.bind(this);
+        this.unplugDriver = this.unplugDriver.bind(this);
     }
     componentDidMount() {
         this.loadData();
-        this.setState({ refreshEnabled: true });
+        this.props.resumeRefresh();
     }
     shouldComponentUpdate() {
         return true;
@@ -32,7 +44,8 @@ class Drivers extends React.Component {
 
     loadData() {
         let page = this;
-        let apiUrl = window.location.origin + "/StackV-web/restapi/driver/";
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
+        let mapped = [];
         $.ajax({
             url: apiUrl,
             type: "GET",
@@ -41,16 +54,16 @@ class Drivers extends React.Component {
                 xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
             },
             success: function (result) {
-                //fill installed table
                 let data = [];
-                for (let i = 0; i < result.length; i += 3) {
+                //Frontend
+                for (let driver of result) {
                     let ret = {};
-                    ret.id = result[i];
-                    ret.urn = result[i + 2];
-                    ret.type = result[i + 1];
-                    ret.xml = "<driverInstance><properties><entry><key>topologyUri</key><value>urn:ogf:network:aws.amazon.com:aws-cloud</value></entry><entry><key>driverEjbPath</key><value>java:module/AwsDriver</value></entry><entry><key>aws_access_key_id</key><value>AKIAJZL23XWIXC6KFHEA</value></entry><entry><key>aws_secret_access_key</key><value>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</value></entry><entry><key>region</key><value>us-east-1</value></entry><entry><key>defaultInstanceType</key><value>m4.large</value></entry><entry><key>defaultImage</key><value>ami-146e2a7c</value></entry><entry><key>defaultKeyPair</key><value>driver_key</value></entry><entry><key>defaultSecGroup</key><value>geni</value></entry></properties></driverInstance>";
-                    ret.status = "Plugged";
+                    ret.urn = driver[0];
+                    ret.type = driver[1];
+                    ret.xml = driver[2];
+                    ret.status = driver[3];
 
+                    mapped.push(ret.urn);
                     data.push(ret);
                 }
 
@@ -59,10 +72,75 @@ class Drivers extends React.Component {
         });
     }
 
-    openDriver(urn) {
-        this.setState({ openDriver: this.state.data.find(x => x.urn === urn) });
-        $("#driver-modal").modal("show");
-        $("#driver-modal-body-select").val(null);
+    openDriver(urn, e) {
+        if (e.target.tagName !== "BUTTON" || urn === null) {
+            if ($(e.target.parentElement).hasClass("backend")) {
+                iziToast.show(unavailableToast);
+            } else {
+                this.setState({ openDriver: this.state.data.find(x => x.urn === urn) });
+                $("#driver-modal").modal("show");
+                $("#driver-modal-body-select").val(null);
+            }
+        }
+    }
+
+    plugDriver(urn, status, e) {
+        let page = this;
+        let $row = $(e.target).parents("tr");
+        if (status !== "Plugged") {
+            let apiURL = window.location.origin + "/StackV-web/restapi/driver/";
+            $.ajax({
+                url: apiURL,
+                type: "POST",
+                contentType: "application/xml",
+                data: page.state.data.find(x => x.urn === urn).xml,
+                dataType: "xml",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                    xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+                },
+                success: function (result) {
+                    $row.addClass("loading");
+                    page.props.resumeRefresh();
+                },
+                error: function (err) {
+                    $row.addClass("loading");
+                    page.props.resumeRefresh();
+                }
+            });
+        }
+    }
+    unplugDriver(urn, status, e) {
+        let page = this;
+        let $row = $(e.target).parents("tr");
+        if (status === "Plugged" && !$(e.target).hasClass("btn-danger")) {
+            // Confirmation button
+            e.persist();
+            let cacheText = $(e.target).text();
+            let cacheClass = e.target.className;
+
+            e.target.className = "btn btn-danger";
+            $(e.target).text("Confirm Unplug");
+        } else {
+            // Unplug driver
+            $row.addClass("loading");
+            let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + urn;
+            $.ajax({
+                url: apiURL,
+                type: "DELETE",
+                datatype: "json",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                    xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+                },
+                success: function (result) {
+                    $row.addClass("loading");
+                },
+                error: function (err) {
+                    $row.addClass("loading");
+                }
+            });
+        }
     }
 
     resetDriverModal() {
@@ -75,7 +153,7 @@ class Drivers extends React.Component {
             pageClasses = "stack-panel page page-details loading";
         }
         return <div className={pageClasses}>
-            <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
 
             <div className="stack-header">
                 <b>System Drivers</b>
@@ -85,16 +163,16 @@ class Drivers extends React.Component {
                     <table className="table table-hover">
                         <thead>
                             <tr>
-                                <th>Driver ID</th>
+                                <th>Driver URN</th>
                                 <th>Type</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <DriverElements data={Set(this.state.data)} func={this.openDriver} />
+                        <DriverElements data={Set(this.state.data)} open={this.openDriver} plug={this.plugDriver} unplug={this.unplugDriver} confirm={this.confirm} />
                         <tfoot>
                             <tr>
                                 <th colSpan="3">
-                                    <div id="drivers-table-footer" style={{ cursor: "pointer" }} onClick={() => this.openDriver(null)}><i className="fas fa-plus-circle" style={{ marginRight: "10px" }} />Add New Driver</div>
+                                    <div id="drivers-table-footer" style={{ cursor: "pointer" }} onClick={(e) => this.openDriver(null, e)}><i className="fas fa-plus-circle" style={{ marginRight: "10px" }} />Add New Driver</div>
                                 </th>
                             </tr>
                         </tfoot>
@@ -111,10 +189,19 @@ Drivers.propTypes = {
 export default Drivers;
 
 function DriverElements(props) {
-    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? "success" : undefined} onClick={() => props.func(d.urn)}>
+    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.xml !== "<driverInstance><properties></properties></driverInstance>" ? (d.status === "Plugged" ? "success" : undefined) : "backend"} onClick={(e) => props.open(d.urn, e)}>
         <td>{d.urn}</td>
         <td>{d.type}</td>
-        <td>{d.status}</td>
+        <td>
+            {d.xml !== "<driverInstance><properties></properties></driverInstance>" ? (
+                <div className="btn-group" role="group">
+                    <button type="button" className={d.status === "Plugged" ? "btn btn-default" : "btn btn-primary"} onClick={(e) => props.unplug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Unplug" : "Unplugged"}</button>
+                    <button type="button" className={d.status === "Plugged" ? "btn btn-primary" : "btn btn-default"} onClick={(e) => props.plug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Plugged" : "Plug"}</button>
+                </div>
+            ) : (
+                <button type="button" className="btn btn-default" onClick={(e) => props.unplug(d.urn, d.status, e)}>Unplug (Manually Installed)</button>
+            )}
+        </td>
     </tr>
     );
     return <tbody>{listItems}</tbody>;

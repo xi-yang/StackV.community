@@ -72,9 +72,9 @@ class LoaderBubble extends React.Component {
         this.moderatePopover();
         switch (status) {
             case "live":
-                return <FontAwesomeIcon className={live} id="loader-bubble" icon={faCog} size="lg" spin onClick={(e) => this.popover(e)} />;
+                return <FontAwesomeIcon className={live} id="loader-bubble" icon={faCog} size="lg" onClick={(e) => this.popover(e)} spin />;
             case "paused":
-                return <FontAwesomeIcon className={paused} id="loader-bubble" icon={faCog} size="lg" />;
+                return <FontAwesomeIcon className={paused} id="loader-bubble" icon={faCog} size="lg" onClick={(e) => this.popover(e)} />;
         }
 
     }

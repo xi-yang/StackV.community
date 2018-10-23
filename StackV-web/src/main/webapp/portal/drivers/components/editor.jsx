@@ -20,8 +20,10 @@ class DriverModal extends React.Component {
             advanced: false,
         };
 
-        this.parseInputs = this.parseInputs.bind(this);
+        this.parseInputFields = this.parseInputFields.bind(this);
         this.changeType = this.changeType.bind(this);
+        this.save = this.save.bind(this);
+        this.saveAs = this.saveAs.bind(this);
     }
     shouldComponentUpdate(nextProps, nextState) {
         return (this.props.xml !== nextProps.xml)
@@ -35,12 +37,35 @@ class DriverModal extends React.Component {
         });
     }
 
+    save() {
+        let schema;
+        let type;
+        if (this.props.type) {
+            type = this.props.type;
+        } else {
+            this.state.type;
+        }
+        switch (type) {
+            case "java:module/AwsDriver":
+                schema = awsSchema;
+                break;
+            case "java:module/GenericRESTDriver":
+                schema = genericSchema;
+                break;
+        }
+
+        console.log(schema);
+    }
+    saveAs() {
+
+    }
+
     render() {
         let modalContent;
         if (this.state.advanced) {
             modalContent = (<textarea></textarea>);
         } else {
-            modalContent = this.parseInputs();
+            modalContent = this.parseInputFields();
         }
 
         return <div className="modal fade" id="driver-modal">
@@ -64,15 +89,18 @@ class DriverModal extends React.Component {
                         </div>
                     </div>
                     <div className="modal-footer">
-                        <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
-                        <button type="button" className="btn btn-primary">Save changes</button>
+                        <div className="btn-group" role="group">
+                            <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
+                            <button type="button" className="btn btn-primary" id="button-editor-save" onClick={this.save} disabled={this.props.status === "Plugged" ? true : undefined}>Save</button>
+                            <button type="button" className="btn btn-primary" id="button-editor-save-as" onClick={this.saveAs}>Save as New</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>;
     }
 
-    parseInputs() {
+    parseInputFields() {
         let entries = [];
         let type;
         if (this.props.type) {
@@ -93,24 +121,49 @@ class DriverModal extends React.Component {
             }
         }
 
-        return entries.map((entry) => {
-            let formatted, key, value;
-            if (Object.prototype.toString.call(entry.key) === "[object Object]") {
-                key = entry.key._text;
-                value = entry.value._text;
-            } else {
-                key = entry.key[0];
-            }
+        if (entries) {
+            if (this.props.status === "Plugged") {
+                return entries.map((entry) => {
+                    let formatted, key, value;
+                    if (Object.prototype.toString.call(entry.key) === "[object Object]") {
+                        key = entry.key._text;
+                        value = entry.value._text;
+                    } else {
+                        key = entry.key[0];
+                    }
 
-            if (key.indexOf("_") > -1) {
-                formatted = key.replace(/_(\w)/g, function (v) { return v[1].toUpperCase(); }).replace(/([A-Z])/g, " $1");
-            } else {
-                formatted = key.replace(/([A-Z])/g, " $1");
-            }
-            formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+                    if (key.indexOf("_") > -1) {
+                        formatted = key.replace(/_(\w)/g, function (v) { return v[1].toUpperCase(); }).replace(/([A-Z])/g, " $1");
+                    } else {
+                        formatted = key.replace(/([A-Z])/g, " $1");
+                    }
+                    formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
 
-            return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={value} /></label>);
-        });
+                    return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={value} readOnly /></label>);
+                });
+            } else {
+                return entries.map((entry) => {
+                    let formatted, key, value;
+                    if (Object.prototype.toString.call(entry.key) === "[object Object]") {
+                        key = entry.key._text;
+                        value = entry.value._text;
+                    } else {
+                        key = entry.key[0];
+                    }
+
+                    if (key.indexOf("_") > -1) {
+                        formatted = key.replace(/_(\w)/g, function (v) { return v[1].toUpperCase(); }).replace(/([A-Z])/g, " $1");
+                    } else {
+                        formatted = key.replace(/([A-Z])/g, " $1");
+                    }
+                    formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+                    return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={value} /></label>);
+                });
+            }
+        } else {
+            return <div></div>;
+        }
     }
 
     changeType(e) {

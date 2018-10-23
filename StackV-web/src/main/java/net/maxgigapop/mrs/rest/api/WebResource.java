@@ -468,7 +468,7 @@ public class WebResource {
     //@RolesAllowed("F_ACL-R")
     public String ipaRequest(String postData) {
         JSONObject result = new JSONObject();
-        if (ipaBaseServerUrl != null) {            
+        if (ipaBaseServerUrl != null) {
             try {
                 URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
                 HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
@@ -686,7 +686,7 @@ public class WebResource {
             // excluding the topuri if the driver type is raw
             prep = front_conn.prepareStatement("DELETE FROM frontend.clipbook WHERE username = ? AND name = ?");
             prep.setString(1, username);
-            prep.setString(2, name);            
+            prep.setString(2, name);
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("deleteClip", ex);
@@ -703,7 +703,6 @@ public class WebResource {
     @Produces("text/plain")
     @RolesAllowed("F_Drivers-X")
     public String installDriver(final String dataInput) throws SQLException, IOException, ParseException {
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
 
@@ -726,6 +725,73 @@ public class WebResource {
         }
 
         return "PLUGIN SUCCEEDED";
+    }
+
+    @GET
+    @Path("/drivers")
+    @Produces("application/json")
+    @RolesAllowed("F_Drivers-R")
+    public ArrayList<ArrayList<String>> getDrivers() throws SQLException, IOException, ParseException {
+        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
+        final TokenHandler token = new TokenHandler(refresh);
+        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+
+            prep = front_conn.prepareStatement("SELECT * FROM driver");
+            ResultSet ret = prep.executeQuery();
+            String resStr;
+            try {
+                URL url = new URL(String.format("%s/driver", host));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                resStr = executeHttpMethod(url, connection, "GET", null, token.auth());
+            } catch (IOException ex) {
+                logger.catching("installDriver", ex);
+                throw ex;
+            }
+
+            JSONArray resJSON = (JSONArray) parser.parse(resStr);
+            ArrayList<String> mapped = new ArrayList<String>();
+            while (ret.next()) {
+                ArrayList<String> list = new ArrayList<>();
+                String status = "Unplugged";
+                String urn = ret.getString("urn");
+                list.add(urn);
+                list.add(ret.getString("type"));
+                list.add(ret.getString("xml"));
+
+                for (int i = 0; i < resJSON.size(); i += 3) {                    
+                    if (((String) resJSON.get(i + 2)).equals(urn)) {
+                        status = "Plugged";
+                        mapped.add(urn);
+                    }
+                }
+                list.add(status);
+                retList.add(list);
+            }
+            for (int i = 0; i < resJSON.size(); i += 3) {
+                if (!mapped.contains((String) resJSON.get(i + 2))) {
+                    ArrayList<String> list = new ArrayList<>();
+                    list.add((String) resJSON.get(i + 2));
+                    list.add((String) resJSON.get(i + 1));
+                    list.add("<driverInstance><properties></properties></driverInstance>");
+                    list.add("Plugged");
+                    
+                    retList.add(list);
+                }                
+            }
+
+            return retList;
+        } catch (SQLException ex) {
+            logger.catching("getDrivers", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs, logger);
+        }
     }
 
     @PUT
@@ -3270,7 +3336,7 @@ public class WebResource {
         return roleSet.contains(role);
     }
 
-    public static void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs, StackLogger logger) {        
+    public static void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs, StackLogger logger) {
         try {
             DbUtils.close(rs);
             DbUtils.close(prep);

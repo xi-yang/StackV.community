@@ -1,6 +1,9 @@
 <driverInstance>
 	<properties>
-		<entry><key>topologyUri</key><value></value></entry>
+		<entry>
+			<key>topologyUri</key>
+			<value></value>
+		</entry>
 		<entry><key>aws_access_key_id</key><value></value></entry>
 		<entry><key>aws_secret_access_key</key><value></value></entry>
 		<entry><key>region</key><value></value></entry>
@@ -9,4 +12,5 @@
 		<entry><key>defaultKeyPair</key><value></value></entry>
 		<entry><key>defaultSecGroup</key><value></value></entry>
 	</properties>
+	
 </driverInstance>
