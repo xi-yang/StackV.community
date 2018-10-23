@@ -3,26 +3,34 @@
 <serviceUUID></serviceUUID>
 <jsonTemplate>
 {
-	"Switching Cross-Connects (Subnet VLANs)": [
-		{
-			"Switching Subnets": [
-				{
-					"Subnet Name": "?subnet?",
-					"Switching Ports": [
-						{
-							"Port Name": "?terminal?",
-							"Vlan Tag": "?terminal_vlan?",
-							"IP Address": "?terminal_ip?",
-							"sparql": "SELECT ?terminal ?terminal_vlan WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. OPTIONAL { ?terminal mrs:hasNetworkAddress ?terminal_na.?terminal_na mrs:type \"ipv4-address\".  ?terminal_na mrs:value ?terminal_ip. }  }",
-							"required": "true"
-						}
-					],
-					"sparql": "SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. }",
-					"required": "true"
-				}
-			],
-		}
-	]
+  "Switching Cross-Connects (Subnet VLANs)": [
+    {
+      "Switching Subnets": [
+        {
+          "Subnet Name": "?subnet?",
+          "Switching Ports": [
+            {
+              "Port Name": "?terminal?",
+              "Vlan Tag": "?terminal_vlan?",
+              "sparql": "SELECT ?terminal ?terminal_vlan  WHERE { ?subnet nml:hasBidirectionalPort ?terminal. ?terminal nml:hasLabel ?vlan. ?vlan nml:value ?terminal_vlan. }",
+              "required": "true",
+              "Host Port": [
+               {
+                 "Port Name": "?host_port?",
+                 "Vlan Port": "?peer_port?",
+                 "IP Address": "?ipv4?",
+                  "sparql": "SELECT ?peer_port ?host_port ?ipv4 WHERE { ?terminal nml:isAlias ?peer_port. ?host_port nml:hasBidirectionalPort ?peer_port. ?peer_port mrs:hasNetworkAddress  ?ipv4na. ?ipv4na mrs:type \"ipv4-address\". ?ipv4na mrs:value ?ipv4. }",
+                  "required": "false"
+               }
+              ]
+            }
+          ],
+          "sparql": "SELECT ?subnet WHERE { ?subnet a mrs:SwitchingSubnet. }",
+          "required": "true"
+        }
+      ],
+    }
+  ]
 }
 </jsonTemplate>
 </serviceManifest>
