@@ -179,7 +179,7 @@ class Drivers extends React.Component {
                     </table>
                 </div>
             </div>
-            <DriverModal {...this.state.openDriver} reset={this.resetDriverModal} />
+            <DriverModal {...this.state.openDriver} reset={this.resetDriverModal} {...this.props} />
         </div>;
     }
 }

@@ -4,6 +4,10 @@
 			<key>topologyUri</key>
 			<value></value>
 		</entry>
+		<entry>
+			<key>driverEjbPath</key>
+			<value>java:module/AwsDriver</value>
+		</entry>	
 		<entry><key>aws_access_key_id</key><value></value></entry>
 		<entry><key>aws_secret_access_key</key><value></value></entry>
 		<entry><key>region</key><value></value></entry>

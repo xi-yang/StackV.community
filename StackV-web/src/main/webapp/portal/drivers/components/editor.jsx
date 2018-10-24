@@ -23,7 +23,7 @@ class DriverModal extends React.Component {
         this.parseInputFields = this.parseInputFields.bind(this);
         this.changeType = this.changeType.bind(this);
         this.save = this.save.bind(this);
-        this.saveAs = this.saveAs.bind(this);
+        this.delete = this.delete.bind(this);
     }
     shouldComponentUpdate(nextProps, nextState) {
         return (this.props.xml !== nextProps.xml)
@@ -34,30 +34,74 @@ class DriverModal extends React.Component {
         let modal = this;
         $("#driver-modal").on("hidden.bs.modal", function (e) {
             modal.props.reset();
+            $("#button-editor-save").text("Save");
+            $("#button-editor-save")[0].className = "btn btn-primary";
         });
     }
 
     save() {
+        let page = this;
         let schema;
         let type;
+
+        // Retrieve schema
         if (this.props.type) {
             type = this.props.type;
         } else {
-            this.state.type;
+            type = this.state.type;
         }
         switch (type) {
             case "java:module/AwsDriver":
-                schema = awsSchema;
+                schema = JSON.parse(JSON.stringify(awsSchema));
                 break;
             case "java:module/GenericRESTDriver":
-                schema = genericSchema;
+                schema = JSON.parse(JSON.stringify(genericSchema));
                 break;
         }
 
-        console.log(schema);
-    }
-    saveAs() {
+        // Map input values to schema
+        let entries = schema.driverInstance.properties[0].entry;
+        for (let input of $(".driver-modal-body-content input")) {
+            let obj = entries.find(x => x.key[0] === input.name);
+            if (obj) { obj.value[0] = input.value; }
+        }
 
+        let xml = convert.json2xml(schema, { compact: true, spaces: 4 });
+        console.log(xml);
+
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
+        let data = { urn: entries.find(x => x.key[0] === "topologyUri").value[0], type: type, xml: xml };
+        $.ajax({
+            url: apiUrl,
+            type: "PUT",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+            },
+            success: function (result) {
+                $("#driver-modal").modal("hide");
+            }
+        });
+    }
+    delete() {
+        let page = this;
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
+        let data = { urn: $("input[name=\"topologyUri\"]").val() };
+        $.ajax({
+            url: apiUrl,
+            type: "DELETE",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+            },
+            success: function (result) {
+                $("#driver-modal").modal("hide");
+            }
+        });
     }
 
     render() {
@@ -89,10 +133,10 @@ class DriverModal extends React.Component {
                         </div>
                     </div>
                     <div className="modal-footer">
+                        <small style={{ marginRight: "7px", color: "#777" }}>To save as a new driver, change the Topology URN.</small>
                         <div className="btn-group" role="group">
-                            <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
-                            <button type="button" className="btn btn-primary" id="button-editor-save" onClick={this.save} disabled={this.props.status === "Plugged" ? true : undefined}>Save</button>
-                            <button type="button" className="btn btn-primary" id="button-editor-save-as" onClick={this.saveAs}>Save as New</button>
+                            <button type="button" className="btn btn-primary" id="button-editor-save" onClick={this.save}>Save</button>
+                            <button type="button" className="btn btn-danger" id="button-editor-delete" disabled={this.props.status === "Plugged" ? true : undefined} onClick={this.delete}>Delete</button>
                         </div>
                     </div>
                 </div>
@@ -101,68 +145,82 @@ class DriverModal extends React.Component {
     }
 
     parseInputFields() {
-        let entries = [];
+        let entries, savedEntries;
         let type;
         if (this.props.type) {
             // Opened profile
             type = this.props.type;
             $("#driver-modal-body-select").val(type);
-            entries = JSON.parse(convert.xml2json(this.props.xml, { compact: true, spaces: 4 })).driverInstance.properties.entry;
+            savedEntries = JSON.parse(convert.xml2json(this.props.xml, { compact: true, spaces: 4 })).driverInstance.properties.entry;
         } else {
             // New profile
             type = this.state.type;
-            switch (type) {
-                case "java:module/AwsDriver":
-                    entries = awsSchema.driverInstance.properties[0].entry;
-                    break;
-                case "java:module/GenericRESTDriver":
-                    entries = genericSchema.driverInstance.properties[0].entry;
-                    break;
-            }
+        }
+        switch (type) {
+            case "java:module/AwsDriver":
+                entries = awsSchema.driverInstance.properties[0].entry;
+                break;
+            case "java:module/GenericRESTDriver":
+                entries = genericSchema.driverInstance.properties[0].entry;
+                break;
         }
 
         if (entries) {
-            if (this.props.status === "Plugged") {
-                return entries.map((entry) => {
-                    let formatted, key, value;
-                    if (Object.prototype.toString.call(entry.key) === "[object Object]") {
-                        key = entry.key._text;
-                        value = entry.value._text;
-                    } else {
-                        key = entry.key[0];
-                    }
-
-                    if (key.indexOf("_") > -1) {
-                        formatted = key.replace(/_(\w)/g, function (v) { return v[1].toUpperCase(); }).replace(/([A-Z])/g, " $1");
-                    } else {
-                        formatted = key.replace(/([A-Z])/g, " $1");
-                    }
-                    formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
-
-                    return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={value} readOnly /></label>);
-                });
-            } else {
-                return entries.map((entry) => {
-                    let formatted, key, value;
-                    if (Object.prototype.toString.call(entry.key) === "[object Object]") {
-                        key = entry.key._text;
-                        value = entry.value._text;
-                    } else {
-                        key = entry.key[0];
-                    }
-
-                    if (key.indexOf("_") > -1) {
-                        formatted = key.replace(/_(\w)/g, function (v) { return v[1].toUpperCase(); }).replace(/([A-Z])/g, " $1");
-                    } else {
-                        formatted = key.replace(/([A-Z])/g, " $1");
-                    }
-                    formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
-
-                    return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={value} /></label>);
-                });
-            }
+            return entries.map(this.editCallback.bind(null, savedEntries, this.props.status === "Plugged"));
         } else {
             return <div></div>;
+        }
+    }
+
+
+
+    editCallback(saved, plugged, entry) {
+        let formatted, key, value, savedValue;
+        if (Object.prototype.toString.call(entry.key) === "[object Object]") {
+            key = entry.key._text;
+            value = entry.value._text;
+        } else {
+            key = entry.key[0];
+            value = entry.value[0];
+        }
+        if (saved) {
+            let save = saved.find(x => x.key._text === key);
+            savedValue = save ? save.value._text : undefined;
+        }
+
+        if (key.indexOf("_") > -1) {
+            formatted = key.replace(/_(\w)/g, function (v) { return v[1].toUpperCase(); }).replace(/([A-Z])/g, " $1");
+        } else {
+            formatted = key.replace(/([A-Z])/g, " $1");
+        }
+        formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+        switch (key) {
+            case "topologyUri":
+                return (<label key={key}>Topology URN<input className="form-control" name={key} data-original={savedValue} defaultValue={savedValue} onChange={(e) => urnChange(e)} /><br /></label>);
+            case "driverEjbPath":
+                return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={value} readOnly /></label>);
+            default:
+                return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={savedValue} readOnly={plugged ? true : undefined} /></label>);
+        }
+
+        function urnChange(e) {
+            let changed = e.target.dataset.original !== e.target.value;
+            let save = $("#button-editor-save").text() === "Save";
+
+            if (changed) {
+                // Save as
+                if (save) {
+                    $("#button-editor-save").text("Save As");
+                    $("#button-editor-save")[0].className = "btn btn-success";
+                }
+            } else {
+                // Original
+                if (!save) {
+                    $("#button-editor-save").text("Save");
+                    $("#button-editor-save")[0].className = "btn btn-primary";
+                }
+            }
         }
     }
 

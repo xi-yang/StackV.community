@@ -697,36 +697,6 @@ public class WebResource {
     }
 
     // >Drivers
-    @PUT
-    @Path("/driver/install")
-    @Consumes("application/json")
-    @Produces("text/plain")
-    @RolesAllowed("F_Drivers-X")
-    public String installDriver(final String dataInput) throws SQLException, IOException, ParseException {
-        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
-
-        Object obj = parser.parse(dataInput);
-        JSONObject JSONtemp = (JSONObject) obj;
-        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
-        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-        String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("driverType"));
-        try {
-            URL url = new URL(String.format("%s/driver", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = executeHttpMethod(url, connection, "POST", xmldata, token.auth());
-            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
-            {
-                return "PLUGIN FAILED: Driver Resource did not return successfull";
-            }
-        } catch (IOException ex) {
-            logger.catching("installDriver", ex);
-            throw ex;
-        }
-
-        return "PLUGIN SUCCEEDED";
-    }
-
     @GET
     @Path("/drivers")
     @Produces("application/json")
@@ -764,7 +734,7 @@ public class WebResource {
                 list.add(ret.getString("type"));
                 list.add(ret.getString("xml"));
 
-                for (int i = 0; i < resJSON.size(); i += 3) {                    
+                for (int i = 0; i < resJSON.size(); i += 3) {
                     if (((String) resJSON.get(i + 2)).equals(urn)) {
                         status = "Plugged";
                         mapped.add(urn);
@@ -780,9 +750,9 @@ public class WebResource {
                     list.add((String) resJSON.get(i + 1));
                     list.add("<driverInstance><properties></properties></driverInstance>");
                     list.add("Plugged");
-                    
+
                     retList.add(list);
-                }                
+                }
             }
 
             return retList;
@@ -794,58 +764,16 @@ public class WebResource {
         }
     }
 
-    @PUT
-    @Path("/driver/{user}/install/{topuri}")
-    @Produces("text/plain")
-    @RolesAllowed("F_Drivers-X")
-    public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, IOException, ParseException {
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
-
-        Connection front_conn = factory.getConnection("frontend");
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
-        ResultSet rs = prep.executeQuery();
-
-        rs.next();
-        Object obj = parser.parse(rs.getString("data"));
-        JSONObject JSONtemp = (JSONObject) obj;
-        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
-        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
-        String xmldata = JSONtoxml(JSONdata, rs.getString("drivertype"));
-
-        commonsClose(front_conn, prep, rs, logger);
-
-        try {
-            URL url = new URL(String.format("%s/driver", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = executeHttpMethod(url, connection, "POST", xmldata, auth);
-            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
-            {
-                return "PLUGIN FAILED: Driver Resource Failed";
-            }
-        } catch (IOException ex) {
-            logger.catching("installDriverProfile", ex);
-            throw ex;
-        }
-
-        return "PLUGIN SUCCEEDED";
-    }
-
     /**
-     * Adds a new driver profile
-     * @param username
+     * Adds a new driver
      * @param dataInput
      * @throws SQLException
      */
     @PUT
-    @Path("/driver/{user}/add")
+    @Path("/drivers/")
     @Consumes(value = {"application/json"})
     @RolesAllowed("F_Drivers-W")
-    public void addDriver(@PathParam("user") String username, final String dataInput) throws SQLException {
+    public void addDriver(final String dataInput) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -859,38 +787,56 @@ public class WebResource {
                 logger.catching("addDriver", ex);
             }
 
-            String user = (String) inputJSON.get("username");
-            String drivername = (String) inputJSON.get("drivername");
-            String desc = (String) inputJSON.get("driverDescription");
-            String data = (String) inputJSON.get("data");
-            String uri = (String) inputJSON.get("topuri");
-            String drivertype = (String) inputJSON.get("drivertype");
+            String urn = (String) inputJSON.get("urn");
+            String type = (String) inputJSON.get("type");
+            String xml = (String) inputJSON.get("xml");
 
             front_conn = factory.getConnection("frontend");
-
-            if (drivertype.equals("raw")) {
-                // excluding the topuri if the driver type is raw
-                prep = front_conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
-                prep.setString(1, user);
-                prep.setString(2, drivername);
-                prep.setString(3, drivertype);
-                prep.setString(4, "");
-                prep.setString(5, desc);
-                prep.setString(6, data);
-                prep.executeUpdate();
-            } else {
-                prep = front_conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
-                prep.setString(1, user);
-                prep.setString(2, drivername);
-                prep.setString(3, drivertype);
-                prep.setString(4, uri);
-                prep.setString(5, desc);
-                prep.setString(6, data);
-                prep.executeUpdate();
-
-            }
+            prep = front_conn.prepareStatement("INSERT INTO frontend.driver VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `type` = ?,`xml` = ?");
+            prep.setString(1, urn);
+            prep.setString(2, type);
+            prep.setString(3, xml);
+            prep.setString(4, type);
+            prep.setString(5, xml);
+            prep.executeUpdate();          
         } catch (SQLException ex) {
             logger.catching("addDriver", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs, logger);
+        }
+    }
+    /**
+     * Deletes a driver
+     * @param dataInput
+     * @throws SQLException
+     */
+    @DELETE
+    @Path("/drivers/")
+    @Consumes(value = {"application/json"})
+    @RolesAllowed("F_Drivers-W")
+    public void deleteDriver(final String dataInput) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            JSONObject inputJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(dataInput);
+                inputJSON = (JSONObject) obj;
+
+            } catch (ParseException ex) {
+                logger.catching("addDriver", ex);
+            }
+
+            String urn = (String) inputJSON.get("urn");
+            
+            front_conn = factory.getConnection("frontend");
+            prep = front_conn.prepareStatement("DELETE FROM frontend.driver WHERE `urn` = ?");
+            prep.setString(1, urn);            
+            prep.executeUpdate();          
+        } catch (SQLException ex) {
+            logger.catching("deleteDriver", ex);
             throw ex;
         } finally {
             commonsClose(front_conn, prep, rs, logger);
