@@ -1289,6 +1289,7 @@ public class MCETools {
 
         // special handling for shared port with VLAN capable subports
         // find a in-range sub port and use that to temporarily replace currentHop
+        boolean isVlanPortShared = false;
         if (resVlanPort == null && model.contains(currentHop, Mrs.type, "shared")) {
             sparql = String.format("SELECT ?subPort ?label WHERE {"
                     + "<%s> nml:hasBidirectionalPort ?subPort. ?subPort nml:hasLabel ?label. ?label nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
@@ -1298,6 +1299,7 @@ public class MCETools {
                 QuerySolution solution = rs.next();
                 resVlanPort = solution.getResource("subPort");
                 resVlanPortLabel = solution.getResource("label");
+                isVlanPortShared = true;
             }
         }
         
@@ -1308,6 +1310,7 @@ public class MCETools {
             vlanSubnetModel.add(vlanSubnetModel.createStatement(currentHop, Nml.hasBidirectionalPort, resVlanPort));
         } else { // use existig VLAN port
             vlanPortUrn = resVlanPort.toString();
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Mrs.type, "unverifiable"));
         }
         // create lifetime if scheduled reservation
         Resource resVlanLifetime = null;
@@ -1315,6 +1318,8 @@ public class MCETools {
         // create vlan label for either new or existing VLAN port
         if (resVlanPortLabel == null) {
             resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn + ":label+"+suggestedVlan, Nml.Label);
+        } else { // use existig VLAN port label
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Mrs.type, "unverifiable"));
         }
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
@@ -1371,7 +1376,7 @@ public class MCETools {
         }
 
         // add BandwidthService to vlan port if applicable
-        if (bwProfile != null && bwProfile.type != null && !bwProfile.type.equalsIgnoreCase("bestEffort")) {
+        if (bwProfile != null && bwProfile.type != null && !bwProfile.type.equalsIgnoreCase("bestEffort") && !isVlanPortShared) {
             String vlanBwServiceUrn = vlanPortUrn + ":service+bw";
             Resource resVlanBwService = RdfOwl.createResource(vlanSubnetModel, vlanBwServiceUrn, Mrs.BandwidthService);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasService, resVlanBwService));
