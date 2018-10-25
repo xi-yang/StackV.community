@@ -38,9 +38,6 @@ class Drivers extends React.Component {
         this.loadData();
         this.props.resumeRefresh();
     }
-    shouldComponentUpdate() {
-        return true;
-    }
 
     loadData() {
         let page = this;

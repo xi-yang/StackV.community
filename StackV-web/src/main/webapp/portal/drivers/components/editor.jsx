@@ -2,14 +2,13 @@ import React from "react";
 import PropTypes from "prop-types";
 import convert from "xml-js";
 
-import awsSchema from "../xml/aws.xml";
-import genericSchema from "../xml/generic.xml";
-
+import schemaXML from "../data/schemas.xml";
 var driverConfig = {
     title: "Driver Wizard",
     icon: "fas fa-home",
     width: 750,
 };
+var schemas = schemaXML.catalog.driverInstance;
 
 class DriverModal extends React.Component {
     constructor(props) {
@@ -24,11 +23,6 @@ class DriverModal extends React.Component {
         this.changeType = this.changeType.bind(this);
         this.save = this.save.bind(this);
         this.delete = this.delete.bind(this);
-    }
-    shouldComponentUpdate(nextProps, nextState) {
-        return (this.props.xml !== nextProps.xml)
-            || (this.state.type !== nextState.type)
-            || (this.state.advanced !== nextState.advanced);
     }
     componentDidMount() {
         let modal = this;
@@ -50,14 +44,7 @@ class DriverModal extends React.Component {
         } else {
             type = this.state.type;
         }
-        switch (type) {
-            case "java:module/AwsDriver":
-                schema = JSON.parse(JSON.stringify(awsSchema));
-                break;
-            case "java:module/GenericRESTDriver":
-                schema = JSON.parse(JSON.stringify(genericSchema));
-                break;
-        }
+        schema = JSON.parse(JSON.stringify(getSchema(type)));
 
         // Map input values to schema
         let entries = schema.driverInstance.properties[0].entry;
@@ -121,10 +108,9 @@ class DriverModal extends React.Component {
                     </div>
                     <div className="modal-body">
                         <p className="driver-modal-body-header">Select a service type:
-                            <select id="driver-modal-body-select" onChange={(e) => this.changeType(e)}>
-                                <option></option>
-                                <option value="java:module/AwsDriver">AWS</option>
-                                <option value="java:module/GenericRESTDriver">Generic</option>
+                            <select id="driver-modal-body-select" value={this.props.type ? this.props.type : this.state.type} onChange={(e) => this.changeType(e)}>
+                                <option ></option>
+                                <OptionElements />
                             </select>
                         </p>
                         <hr />
@@ -145,7 +131,7 @@ class DriverModal extends React.Component {
     }
 
     parseInputFields() {
-        let entries, savedEntries;
+        let savedEntries;
         let type;
         if (this.props.type) {
             // Opened profile
@@ -156,16 +142,10 @@ class DriverModal extends React.Component {
             // New profile
             type = this.state.type;
         }
-        switch (type) {
-            case "java:module/AwsDriver":
-                entries = awsSchema.driverInstance.properties[0].entry;
-                break;
-            case "java:module/GenericRESTDriver":
-                entries = genericSchema.driverInstance.properties[0].entry;
-                break;
-        }
 
-        if (entries) {
+        let schema = getSchema(type);
+        if (schema.driverInstance) {
+            let entries = schema.driverInstance.properties[0].entry;
             return entries.map(this.editCallback.bind(null, savedEntries, this.props.status === "Plugged"));
         } else {
             return <div></div>;
@@ -197,9 +177,9 @@ class DriverModal extends React.Component {
 
         switch (key) {
             case "topologyUri":
-                return (<label key={key}>Topology URN<input className="form-control" name={key} data-original={savedValue} defaultValue={savedValue} onChange={(e) => urnChange(e)} /><br /></label>);
+                return (<label style={{ width: "100%" }} key={key}>Topology URN<input className="form-control" name={key} data-original={savedValue} defaultValue={savedValue} onChange={(e) => urnChange(e)} /><br /></label>);
             case "driverEjbPath":
-                return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={value} readOnly /></label>);
+                return (<label key={key}>{formatted}<input className="form-control" name={key} value={value} readOnly /></label>);
             default:
                 return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={savedValue} readOnly={plugged ? true : undefined} /></label>);
         }
@@ -238,3 +218,12 @@ DriverModal.propTypes = {
     reset: PropTypes.func.isRequired
 };
 export default DriverModal;
+
+function OptionElements() {
+    return schemas.map((d) => <option key={d.meta[0].name[0]} value={d.properties[0].entry.find(x => x.key[0] === "driverEjbPath").value[0]}>{d.meta[0].name[0]}</option>);
+}
+
+// ----- //
+function getSchema(type) {
+    return { driverInstance: schemas.find(x => x.properties[0].entry.find(y => y.key[0] === "driverEjbPath" && y.value[0] === type)) };
+}

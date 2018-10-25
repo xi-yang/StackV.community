@@ -1,0 +1,42 @@
+<catalog>
+    <driverInstance>
+        <meta>
+            <name>AWS</name>
+        </meta>
+        <properties>
+            <entry>
+                <key>topologyUri</key>
+                <value></value>
+            </entry>
+            <entry>
+                <key>driverEjbPath</key>
+                <value>java:module/AwsDriver</value>
+            </entry>	
+
+            <entry><key>aws_access_key_id</key><value></value></entry>
+            <entry><key>aws_secret_access_key</key><value></value></entry>
+            <entry><key>region</key><value></value></entry>
+            <entry><key>defaultInstanceType</key><value></value></entry>
+            <entry><key>defaultImage</key><value></value></entry>
+            <entry><key>defaultKeyPair</key><value></value></entry>
+            <entry><key>defaultSecGroup</key><value></value></entry>
+        </properties>	
+    </driverInstance>
+    <driverInstance>
+        <meta>
+            <name>Generic</name>
+        </meta>
+        <properties>
+            <entry>
+                <key>topologyUri</key>
+                <value></value>
+            </entry>
+            <entry>
+                <key>driverEjbPath</key>
+                <value>java:module/GenericRESTDriver</value>
+            </entry>	
+            
+            <entry><key>subsystemBaseUrl</key><value></value></entry>
+        </properties>
+    </driverInstance>
+</catalog>
