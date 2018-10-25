@@ -2,8 +2,8 @@ import React from "react";
 import PropTypes from "prop-types";
 import { cx, css } from "emotion";
 
-import HealthBubble from "./health_bubble";
-import LoaderBubble from "./loader_bubble";
+import HealthBubble from "./components/health_bubble";
+import LoaderBubble from "./components/loader_bubble";
 
 const stack_nav = css`
     border-radius: 0 0 20px 20px !important;

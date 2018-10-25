@@ -7,7 +7,7 @@ import ReactInterval from "react-interval";
 
 import "./global.css";
 
-import Navbar from "./navbar";
+import Navbar from "./nav/navbar";
 import Visualization from "./visual/visualization";
 import Catalog from "./catalog/catalog";
 import Details from "./details/details";

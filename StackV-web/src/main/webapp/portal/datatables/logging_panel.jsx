@@ -9,9 +9,9 @@ class LoggingPanel extends React.Component {
         super(props);
 
         if (sessionStorage.getItem("LoggingPanel_level")) {
-            this.state.level = sessionStorage.getItem("LoggingPanel_level");
+            this.state = { level: sessionStorage.getItem("LoggingPanel_level") };
         } else {
-            this.state.level = "INFO";
+            this.state = { level: "INFO" };
         }
 
         this.loadData = this.loadData.bind(this);

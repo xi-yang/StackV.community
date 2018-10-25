@@ -13,10 +13,6 @@
 @import "../css/iziToast.min.css";
 @import "https://cdnjs.cloudflare.com/ajax/libs/izimodal/1.5.1/css/iziModal.min.css";
 
-/*Internal styles*/
-@import "../css/driver.css";
-@import "../css/acl.css";
-
 /* */
 div#service-title {
     font-weight: bold;
