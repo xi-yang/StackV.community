@@ -1311,6 +1311,9 @@ public class MCETools {
         } else { // use existig VLAN port
             vlanPortUrn = resVlanPort.toString();
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Mrs.type, "unverifiable"));
+            // To accommodate path hops pairup/isAlias logic
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, RdfOwl.type, Nml.BidirectionalPort));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(currentHop, Nml.hasBidirectionalPort, resVlanPort));
         }
         // create lifetime if scheduled reservation
         Resource resVlanLifetime = null;
