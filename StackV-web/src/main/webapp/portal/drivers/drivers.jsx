@@ -134,6 +134,24 @@ class Drivers extends React.Component {
                     $row.addClass("loading");
                 },
                 error: function (err) {
+                    /* The format of result in case of an error looks like this:
+                    * {"readyState":4,
+                    * "responseText":"[507afdf3-11a7-4d9e-b97b-4aa604e2c722, 776f8022-2a84-403f-9255-4d9dbd30753b]",
+                    * "status":409,"statusText":"Conflict"}
+                    * The above is JS object. What we need are the UUIDs in the "responseText". However, the responsetext array is not formatted
+                    * properly for JavaScript - its elements should be quoted as it mixes numbers and characters. So a string replace is needed
+                    * in order to replace [ with [", ] with "], and commas with "," */
+
+                    err = {
+                        "readyState": 4,
+                        "responseText": "[507afdf3-11a7-4d9e-b97b-4aa604e2c722, 776f8022-2a84-403f-9255-4d9dbd30753b]",
+                        "status": 409, "statusText": "Conflict"
+                    };
+
+                    console.log("unplug error: " + JSON.stringify(err));
+                    console.log("unplug error status: " + JSON.stringify(err["status"]));
+                    console.log("unplug error statusText: " + JSON.stringify(err["statusText"]));
+
                     $row.addClass("loading");
                 }
             });

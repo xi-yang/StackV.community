@@ -129,6 +129,16 @@ define(["local/stackv/utils"], function (utils) {
         var windowHeight;
 
         /**
+     * Initialise our application's code.
+     */
+        this.init = function () {
+            //contextListener();
+            clickListener();
+            keyupListener();
+            resizeListener();
+        };
+
+        /**
      * Listens for contextmenu events.
      * so instead of just worrying about e, we pass in e and our data object
      * this data object is passed into menu item listener 
@@ -174,6 +184,7 @@ define(["local/stackv/utils"], function (utils) {
             d3.event.preventDefault();
             toggleMenuOn();
             positionMenu(d3.event);
+            $("#context-menu").css({ "left": (d3.event.x - 120) + "px", "top": (d3.event.y) + "px" });
         };
 
         this.panelElemContextListener = function (e, o) {
@@ -181,6 +192,7 @@ define(["local/stackv/utils"], function (utils) {
             e.preventDefault();
             toggleMenuOn();
             positionMenu(e);
+            $("#context-menu").css({ "left": (e.x - 120) + "px", "top": (e.y) + "px" });
         };
 
         /**
@@ -226,7 +238,7 @@ define(["local/stackv/utils"], function (utils) {
      * Turns the custom context menu on.
      */
         function toggleMenuOn() {
-            if (menuState !== 1) {
+            if (!$("#context-menu").hasClass("context-menu--active")) {
                 menuState = 1;
                 var deleteItem = $("#context-menu").find("[data-action=\"Delete\"]").closest("li");
 
@@ -237,7 +249,7 @@ define(["local/stackv/utils"], function (utils) {
                         deleteItem.removeClass("hide");
                     }
                 }
-                menu.classList.add(contextMenuActive);
+                $("#context-menu").addClass("context-menu--active");
             }
         }
 
@@ -245,9 +257,9 @@ define(["local/stackv/utils"], function (utils) {
      * Turns the custom context menu off.
      */
         function toggleMenuOff() {
-            if (menuState !== 0) {
+            if ($("#context-menu").hasClass("context-menu--active")) {
                 menuState = 0;
-                menu.classList.remove(contextMenuActive);
+                $("#context-menu").removeClass("context-menu--active");
             }
         }
 
@@ -353,9 +365,7 @@ define(["local/stackv/utils"], function (utils) {
 
             toggleMenuOff();
         }
-        clickListener();
-        keyupListener();
-        resizeListener();
+
     }
     return ContextMenu;
 });
