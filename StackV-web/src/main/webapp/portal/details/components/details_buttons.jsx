@@ -59,7 +59,7 @@ class ButtonPanel extends React.Component {
             case "FAILED":
                 switch (this.props.last) {
                     case "INIT":
-                        modList = ["verify", "delete"];
+                        modList = ["verify", "delete", "force_retry"];
                         break;
                     case "COMPILED":
                     case "PROPAGATED":
@@ -84,6 +84,10 @@ class ButtonPanel extends React.Component {
                     modList.splice(modList.indexOf("cancel"), 1);
                     modList.push("reinstate");
                 }
+                if (modList.indexOf("force_cancel") > -1) {
+                    modList.splice(modList.indexOf("force_cancel"), 1);
+                    modList.push("force_reinstate");
+                }
                 break;
         }
 
@@ -100,6 +104,7 @@ class ButtonPanel extends React.Component {
             cancel: false,
             force_cancel: false,
             reinstate: false,
+            force_reinstate: false,
             modify: false,
             verify: false,
             unverify: false,
@@ -119,6 +124,7 @@ class ButtonPanel extends React.Component {
             <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} send={this.sendRequest} />
             <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} send={this.sendRequest} />
             <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} send={this.sendRequest} />
+            <OpButton operation="Force Reinstate" uuid={this.props.uuid} visible={this.state.force_reinstatel} send={this.sendRequest} />
             <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} send={this.sendRequest} />
             <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} send={this.sendRequest} />
             <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} send={this.sendRequest} />
@@ -174,6 +180,9 @@ class OpButton extends React.Component {
         let init = {};
         switch (props.operation) {
             case "Cancel":
+            case "Force Cancel":
+            case "Reinstate":
+            case "Force Reinstate":
             case "Delete":
                 init.confirmation = true;
         }
