@@ -209,7 +209,7 @@ public class ServiceHandler {
                     break;
                 case "force_cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
-                    forceCancelInstance(refUUID, token);
+                    forceRevertInstance(refUUID, token);
                     break;
 
                 case "release":
@@ -227,7 +227,7 @@ public class ServiceHandler {
                     break;
                 case "force_reinstate":
                     setSuperState(refUUID, SuperState.REINSTATE);
-                    forceCancelInstance(refUUID, token);
+                    forceRevertInstance(refUUID, token);
                     break;
 
                 case "force_retry":
@@ -370,7 +370,7 @@ public class ServiceHandler {
         }
     }
 
-    private int forceCancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+    private int forceRevertInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         lastState = "INIT";
         forceRevert(refUuid, token.auth());
         forcePropagate(refUuid, token.auth());
