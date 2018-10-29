@@ -1,23 +1,23 @@
 /*
  * Copyright (c) 2013-2017 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 package net.maxgigapop.mrs.service;
@@ -88,7 +88,7 @@ public class ServiceHandler {
             intent = (String) inputJSON.get("intent");
 
             Object obj = parser.parse(intent);
-            JSONObject intentJSON = (JSONObject) obj;            
+            JSONObject intentJSON = (JSONObject) obj;
             intentJSON.remove("proceed");
             intentJSON.remove("profileID");
             intentJSON.remove("host");
@@ -199,7 +199,7 @@ public class ServiceHandler {
 
         logger.refuuid(refUUID);
         logger.start(method);
-        updateLastState("INIT", refUUID);  
+        updateLastState("INIT", refUUID);
         int errorCode = 0;
         VerificationHandler verify = null;
         try {
@@ -214,7 +214,7 @@ public class ServiceHandler {
                 case "force_cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
                     //@TODO: this should return special errorCode upon revert error
-                    forceCancelInstance(refUUID, token);
+                    forceRevertInstance(refUUID, token);
                     break;
 
                 case "release":
@@ -240,7 +240,7 @@ public class ServiceHandler {
                 case "force_reinstate":
                     setSuperState(refUUID, SuperState.REINSTATE);
                      //@TODO: this should return special errorCode upon revert error
-                   forceCancelInstance(refUUID, token);
+                    forceRevertInstance(refUUID, token);
                     break;
 
                 case "force_retry":
@@ -255,7 +255,7 @@ public class ServiceHandler {
                 case "reset":
                     resetInstance(refUUID, token);
                     break;
-                    
+
                 case "verify":
                     verify = new VerificationHandler(refUUID, token, 30, 10, false);
                     verify.startVerification();
@@ -271,7 +271,7 @@ public class ServiceHandler {
                     break;
                 case "commit":
                     ServiceEngine.commitInstance(refUUID, token.auth());
-                    break;               
+                    break;
                 case "revert":
                     ServiceEngine.revertInstance(refUUID, token.auth());
                     break;
@@ -387,7 +387,7 @@ public class ServiceHandler {
         }
     }
 
-    private int forceCancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+    private int forceRevertInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         forceRevert(refUuid, token.auth());
         lastState = "INIT";
         forcePropagate(refUuid, token.auth());
@@ -441,7 +441,7 @@ public class ServiceHandler {
 
         return 0;
     }
-    
+
 
     private int forceReleaseInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         forceRevert(refUuid, token.auth());
@@ -452,7 +452,7 @@ public class ServiceHandler {
     }
 
 
-    
+
     private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
@@ -475,8 +475,8 @@ public class ServiceHandler {
             Thread.sleep(5000);
         }
     }
-    
-    
+
+
     private boolean resetInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         URL url = new URL(String.format("%s/service/%s/reset_committed", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
