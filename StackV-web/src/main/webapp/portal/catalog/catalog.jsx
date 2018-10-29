@@ -842,7 +842,7 @@ class Catalog extends React.Component {
                             }
                         });
                         // reload top table and hide modal
-                        page.reloadData();
+                        page.loadData();
                         $detailsModal.iziModal("close");
                         evt.preventDefault();
                     } else {
@@ -876,7 +876,7 @@ class Catalog extends React.Component {
                                 xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                             },
                             success: function () {
-                                page.reloadData();
+                                page.loadData();
                                 $detailsModal.iziModal("close");
                             },
                             error: function (textStatus, errorThrown) {

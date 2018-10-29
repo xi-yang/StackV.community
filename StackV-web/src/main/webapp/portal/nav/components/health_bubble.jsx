@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { cx, css } from "emotion";
 
-import { faStopCircle, faPlayCircle, faPauseCircle } from "@fortawesome/free-solid-svg-icons";
+import { faPowerOff, faToggleOff, faToggleOn } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const pass = css`
@@ -34,16 +34,17 @@ class HealthBubble extends React.Component {
         this.state = {};
     }
     componentDidMount() {
+
     }
 
     render() {
         let style, icon;
         if (this.props.systemHealth) {
             style = pass;
-            icon = faPlayCircle;
+            icon = faToggleOn;
         } else {
             style = fail;
-            icon = faStopCircle;
+            icon = faToggleOff;
         }
 
         return <li className={liStyle}><div className={healthStyle}><div className={textStyle}>System Health: </div><FontAwesomeIcon className={style} id="health-bubble" icon={icon} size="2x" /></div></li>;
