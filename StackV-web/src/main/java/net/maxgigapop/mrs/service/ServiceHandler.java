@@ -200,34 +200,47 @@ public class ServiceHandler {
         logger.refuuid(refUUID);
         logger.start(method);
         updateLastState("INIT", refUUID);  
+        int errorCode = 0;
         VerificationHandler verify = null;
         try {
             switch (action) {
                 case "cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
-                    cancelInstance(refUUID, token);
+                    errorCode = cancelInstance(refUUID, token);
+                    if (errorCode == 2) { // failed to revert
+                        setSuperState(refUUID, SuperState.CREATE);
+                    }
                     break;
                 case "force_cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
+                    //@TODO: this should return special errorCode upon revert error
                     forceCancelInstance(refUUID, token);
                     break;
 
                 case "release":
                     setSuperState(refUUID, SuperState.CANCEL);
-                    releaseInstance(refUUID, token);
+                    errorCode = releaseInstance(refUUID, token);
+                    if (errorCode == 2) { // failed to revert
+                        setSuperState(refUUID, SuperState.CREATE);
+                    }
                     break;
                 case "force_release":
                     setSuperState(refUUID, SuperState.CANCEL);
+                    //@TODO: this should return special errorCode upon revert error
                     forceReleaseInstance(refUUID, token);
                     break;
 
                 case "reinstate":
                     setSuperState(refUUID, SuperState.REINSTATE);
-                    cancelInstance(refUUID, token);
+                    errorCode = cancelInstance(refUUID, token);
+                    if (errorCode == 2) { // failed to revert
+                        setSuperState(refUUID, SuperState.CANCEL);
+                    }
                     break;
                 case "force_reinstate":
                     setSuperState(refUUID, SuperState.REINSTATE);
-                    forceCancelInstance(refUUID, token);
+                     //@TODO: this should return special errorCode upon revert error
+                   forceCancelInstance(refUUID, token);
                     break;
 
                 case "force_retry":
@@ -239,6 +252,10 @@ public class ServiceHandler {
                     deleteInstance(refUUID, token);
                     break;
 
+                case "reset":
+                    resetInstance(refUUID, token);
+                    break;
+                    
                 case "verify":
                     verify = new VerificationHandler(refUUID, token, 30, 10, false);
                     verify.startVerification();
@@ -338,22 +355,22 @@ public class ServiceHandler {
         }
 
         result = revert(refUuid, token.auth());
-        lastState = "INIT";
         if (!result) {
             return 2;
         }
+        lastState = "INIT";
 
         result = propagate(refUuid, token.auth());
-        lastState = "PROPAGATED";
         if (!result) {
             return 3;
         }
+        lastState = "PROPAGATED";
 
         result = commit(refUuid, token.auth());
-        lastState = "COMMITTING";
         if (!result) {
             return 4;
         }
+        lastState = "COMMITTING";
 
         while (true) {
             instanceState = status();
@@ -371,8 +388,8 @@ public class ServiceHandler {
     }
 
     private int forceCancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
-        lastState = "INIT";
         forceRevert(refUuid, token.auth());
+        lastState = "INIT";
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
@@ -411,24 +428,24 @@ public class ServiceHandler {
         }
 
         result = revert(refUuid, token.auth());
-        lastState = "INIT";
         if (!result) {
             return 2;
         }
+        lastState = "INIT";
 
         result = propagate(refUuid, token.auth());
-        lastState = "PROPAGATED";
         if (!result) {
             return 3;
         }
+        lastState = "PROPAGATED";
 
         return 0;
     }
     
 
     private int forceReleaseInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
-        lastState = "INIT";
         forceRevert(refUuid, token.auth());
+        lastState = "INIT";
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
         return 0;
@@ -458,6 +475,17 @@ public class ServiceHandler {
             Thread.sleep(5000);
         }
     }
+    
+    
+    private boolean resetInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+        URL url = new URL(String.format("%s/service/%s/reset_committed", HOST, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = executeHttpMethod(url, propagate, "PUT", null, token.auth());
+        setSuperState(refUUID, SuperState.CREATE);
+        //lastState = "FAILED";
+        return result.equalsIgnoreCase("COMMITTED");
+    }
+
 
     // Utility Methods ---------------------------------------------------------
     private void setSuperState(String refUuid, SuperState superState) throws SQLException {

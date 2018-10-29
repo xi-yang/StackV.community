@@ -723,9 +723,11 @@ public class HandleServiceCall {
         if (serviceInstance == null) {
             throw logger.error_throwing(method, "cannot find ref:ServiceInstance");
         }
-        if (!serviceInstance.getStatus().equals(ServiceInstancePersistenceManager.findById(serviceInstance.getId()).getStatus())) {
+        ServiceInstance persistedInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
+        if (!serviceInstance.getStatus().equals(persistedInstance.getStatus())) {
             ServiceInstancePersistenceManager.merge(serviceInstance);
         }
+        serviceInstance = persistedInstance;
         if (!serviceInstance.getStatus().equals("COMMITTING")) {
             logger.trace_end(method, serviceInstance.getStatus());
             return serviceInstance.getStatus();
@@ -1172,6 +1174,7 @@ public class HandleServiceCall {
         serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         ServiceDelta theDelta = null;
+        // find the first serviceDelta with compiled systemDelta for "creation". if asked to reset into 'INIT', we may also get an uncompiled serviceDelta for "creation"
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getSystemDelta() != null && serviceDelta.getSystemDelta().getModelAddition() != null && serviceDelta.getSystemDelta().getModelReduction() == null) {
