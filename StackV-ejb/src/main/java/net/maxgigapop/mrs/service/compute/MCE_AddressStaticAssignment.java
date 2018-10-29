@@ -212,7 +212,8 @@ public class MCE_AddressStaticAssignment extends MCEBase {
                     + "?terminal nml:hasBidirectionalPort ?vif."
                     + String.format("FILTER (?terminal = <%s> && ?vif = <%s>)", terminalUri, hopUri)
                     + "} "
-                    + "FILTER NOT EXISTS { ?vif mrs:type \"shared\". ?vif mrs:hasNetworkAddress ?na. } "
+                    + "FILTER (NOT EXISTS { ?port mrs:type \"shared\". ?vif mrs:hasNetworkAddress ?na. ?na mrs:type \"ipv4-address\"}"
+                    + " && NOT EXISTS { ?vif mrs:type \"shared\". ?vif mrs:hasNetworkAddress ?na. ?na mrs:type \"ipv4-address\"}) "
                     + "}";
             ResultSet r = ModelUtil.sparqlQuery(unionSysModel, sparql);
             if (r.hasNext()) {

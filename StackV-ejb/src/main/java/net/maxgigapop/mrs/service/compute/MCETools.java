@@ -1256,12 +1256,13 @@ public class MCETools {
             return vlanSubnetModel;
         }
         
+        Resource resVlanPort = null;
+        Resource resVlanPortLabel = null;
         // special handling for non-VLAN port with VLAN capable subports
         // find a in-range sub port and use that to temporarily replace currentHop
         sparql = String.format("SELECT ?range WHERE {"
                 + "<%s> nml:hasLabelGroup ?lg. ?lg nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. ?lg nml:values ?range."
                 + "}", currentHop);
-        Resource subPort = null;
         rs = ModelUtil.sparqlQuery(model, sparql);
         if (!rs.hasNext()) {
             sparql = String.format("SELECT ?sub_port ?range WHERE {"
@@ -1277,32 +1278,52 @@ public class MCETools {
                     throw logger.throwing(method, ex);
                 }
                 if (vlanSubRange.hasTag(suggestedVlan)) {
-                    subPort = solution.getResource("sub_port");
-                    currentHop = subPort;
+                    resVlanPort = solution.getResource("sub_port");
                     break;
                 }
             }
-            if (subPort == null) {
+            if (resVlanPort == null) {
                 return null;
             }
         }
 
+        // special handling for shared port with VLAN capable subports
+        // find a in-range sub port and use that to temporarily replace currentHop
+        boolean isVlanPortShared = false;
+        if (resVlanPort == null && model.contains(currentHop, Mrs.type, "shared")) {
+            sparql = String.format("SELECT ?subPort ?label WHERE {"
+                    + "<%s> nml:hasBidirectionalPort ?subPort. ?subPort nml:hasLabel ?label. ?label nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
+                    + "?label nml:value \"%d\". }", currentHop, suggestedVlan);
+            rs = ModelUtil.sparqlQuery(model, sparql);
+            if (rs.hasNext()) {
+                QuerySolution solution = rs.next();
+                resVlanPort = solution.getResource("subPort");
+                resVlanPortLabel = solution.getResource("label");
+                isVlanPortShared = true;
+            }
+        }
+        
         String vlanPortUrn;
-        Resource resVlanPort;
-        if (subPort == null) { // create new VLAN port 
+        if (resVlanPort == null) { // create new VLAN port 
             vlanPortUrn = currentHop.toString() + ":vlanport+" + suggestedVlan;
             resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(currentHop, Nml.hasBidirectionalPort, resVlanPort));
         } else { // use existig VLAN port
-            vlanPortUrn = currentHop.toString();
-            resVlanPort = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn, Nml.BidirectionalPort);
+            vlanPortUrn = resVlanPort.toString();
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Mrs.type, "unverifiable"));
+            // To accommodate path hops pairup/isAlias logic
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, RdfOwl.type, Nml.BidirectionalPort));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(currentHop, Nml.hasBidirectionalPort, resVlanPort));
         }
         // create lifetime if scheduled reservation
         Resource resVlanLifetime = null;
 
         // create vlan label for either new or existing VLAN port
-        String vlanLabelUrn = vlanPortUrn + ":label+"+suggestedVlan;
-        Resource resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanLabelUrn, Nml.Label);
+        if (resVlanPortLabel == null) {
+            resVlanPortLabel = RdfOwl.createResource(vlanSubnetModel, vlanPortUrn + ":label+"+suggestedVlan, Nml.Label);
+        } else { // use existig VLAN port label
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Mrs.type, "unverifiable"));
+        }
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasLabel, resVlanPortLabel));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.labeltype, RdfOwl.labelTypeVLAN));
         vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPortLabel, Nml.value, suggestedVlan.toString()));
@@ -1358,7 +1379,7 @@ public class MCETools {
         }
 
         // add BandwidthService to vlan port if applicable
-        if (bwProfile != null && bwProfile.type != null && !bwProfile.type.equalsIgnoreCase("bestEffort")) {
+        if (bwProfile != null && bwProfile.type != null && !bwProfile.type.equalsIgnoreCase("bestEffort") && !isVlanPortShared) {
             String vlanBwServiceUrn = vlanPortUrn + ":service+bw";
             Resource resVlanBwService = RdfOwl.createResource(vlanSubnetModel, vlanBwServiceUrn, Mrs.BandwidthService);
             vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.hasService, resVlanBwService));
@@ -1651,6 +1672,7 @@ public class MCETools {
         if (rs.hasNext()) {
             vlanRange = new TagSet(rs.next().getLiteral("range").toString());
         } else {
+            //$TODO: support the special case: Ethernet port has no labelGroup and but have shared VLAN ports 
             sparql = String.format("SELECT ?range WHERE {{"
                     + "<%s> nml:hasBidirectionalPort ?vlan_port. "
                     + "?vlan_port nml:hasLabelGroup ?lg. "
@@ -1688,7 +1710,7 @@ public class MCETools {
                 + "?vlan_port nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                 + "?l nml:value ?vlan."
                 + "OPTIONAL {?vlan_port nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end.} "
-                + "FILTER NOT EXISTS { ?vlan_port mrs:type \"shared\". }"
+                + "FILTER (NOT EXISTS {<%s> mrs:type \"shared\".} && NOT EXISTS {?vlan_port mrs:type \"shared\".})"
                 + "} UNION {"
                 + "<%s> nml:hasLabel ?l. ?l nml:labeltype <http://schemas.ogf.org/nml/2012/10/ethernet#vlan>. "
                 + "?l nml:value ?vlan. "
@@ -1698,12 +1720,17 @@ public class MCETools {
                 + "?subnet nml:hasBidirectionalPort ?vlan_port. "
                 + "?subnet a mrs:SwitchingSubnet. "
                 + "?subnet mrs:type \"shared\". "
-                + "} }", port, port, port);
+                + "} }", port, port, port, port);
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
             QuerySolution qs = rs.next();
             String vlanStr = qs.getLiteral("?vlan").toString();
-            Integer vlan = Integer.valueOf(vlanStr);
+            Integer vlan;
+            try {
+                vlan = Integer.valueOf(vlanStr);
+            } catch (java.lang.NumberFormatException ex) {
+                continue;
+            }
             if (qs.contains("start") && schedule != null) {
                 try {
                     long start = DateTimeUtil.getBandwidthScheduleSeconds(qs.getLiteral("start").getString());
