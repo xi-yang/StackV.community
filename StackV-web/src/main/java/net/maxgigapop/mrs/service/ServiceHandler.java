@@ -199,7 +199,8 @@ public class ServiceHandler {
 
         logger.refuuid(refUUID);
         logger.start(method);
-        updateLastState("INIT", refUUID);
+        //@TODO: evaluate the below comment-out
+        //updateLastState("INIT", refUUID);
         int errorCode = 0;
         VerificationHandler verify = null;
         try {
@@ -353,12 +354,13 @@ public class ServiceHandler {
         if (!instanceState.equalsIgnoreCase("READY")) {
             return 1;
         }
+        lastState = "INIT";
 
         result = revert(refUuid, token.auth());
         if (!result) {
             return 2;
         }
-        lastState = "INIT";
+        lastState = "COMPILED";
 
         result = propagate(refUuid, token.auth());
         if (!result) {
@@ -388,8 +390,9 @@ public class ServiceHandler {
     }
 
     private int forceRevertInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
-        forceRevert(refUuid, token.auth());
         lastState = "INIT";
+        forceRevert(refUuid, token.auth());
+        lastState = "COMPILED";
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
@@ -426,12 +429,13 @@ public class ServiceHandler {
         if (!instanceState.equalsIgnoreCase("READY")) {
             return 1;
         }
+        lastState = "INIT";
 
         result = revert(refUuid, token.auth());
         if (!result) {
             return 2;
         }
-        lastState = "INIT";
+        lastState = "COMPILED";
 
         result = propagate(refUuid, token.auth());
         if (!result) {
@@ -454,6 +458,7 @@ public class ServiceHandler {
 
 
     private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
+        lastState = "INIT";
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());

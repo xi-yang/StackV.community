@@ -61,7 +61,7 @@ class ButtonPanel extends React.Component {
             case "FAILED":
                 switch (this.props.last) {
                     case "INIT":
-                        modList = ["verify", "delete", "force_retry"];
+                        modList = ["verify", "delete"];
                         break;
                     case "COMPILED":
                     case "PROPAGATED":
