@@ -87,7 +87,7 @@ class ButtonPanel extends React.Component {
                     modList.push("reinstate");
                 }
                 if (modList.indexOf("force_cancel") > -1) {
-                    modList.splice(modList.indexOf("cancel"), 1);
+                    modList.splice(modList.indexOf("force_cancel"), 1);
                     modList.push("force_reinstate");
                 }
                 break;
@@ -152,6 +152,9 @@ class OpButton extends React.Component {
         let init = {};
         switch (props.operation) {
             case "Cancel":
+            case "Force Cancel":
+            case "Reinstate":
+            case "Force Reinstate":
             case "Delete":
                 init.confirmation = true;
         }
