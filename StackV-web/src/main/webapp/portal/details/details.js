@@ -831,7 +831,7 @@ export function updateData() {
             $superState.html(superState);
         }
     });
-    if ($("#refresh-timer").val() !== "1") {
+    if ($("#visual-tab").hasClass("active")) {
         loadVisualization();
     }
 }
