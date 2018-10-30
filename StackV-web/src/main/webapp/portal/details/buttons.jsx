@@ -86,6 +86,10 @@ class ButtonPanel extends React.Component {
                     modList.splice(modList.indexOf("cancel"), 1);
                     modList.push("reinstate");
                 }
+                if (modList.indexOf("force_cancel") > -1) {
+                    modList.splice(modList.indexOf("force_cancel"), 1);
+                    modList.push("force_reinstate");
+                }
                 break;
         }
 
@@ -102,6 +106,7 @@ class ButtonPanel extends React.Component {
             cancel: false,
             force_cancel: false,
             reinstate: false,
+            force_reinstate: false,
             modify: false,
             verify: false,
             unverify: false,
@@ -121,6 +126,7 @@ class ButtonPanel extends React.Component {
             <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} />
             <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} />
             <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} />
+            <OpButton operation="Force Reinstate" uuid={this.props.uuid} visible={this.state.force_reinstate} />
             <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} />
             <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} />
             <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} />
@@ -146,6 +152,9 @@ class OpButton extends React.Component {
         let init = {};
         switch (props.operation) {
             case "Cancel":
+            case "Force Cancel":
+            case "Reinstate":
+            case "Force Reinstate":
             case "Delete":
                 init.confirmation = true;
         }
