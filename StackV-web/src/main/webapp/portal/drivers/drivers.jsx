@@ -4,7 +4,7 @@ import iziToast from "izitoast";
 import ReactInterval from "react-interval";
 import { Set } from "immutable";
 
-import DriverModal from "./components/editor";
+import DriverModal from "./components/driver_modal";
 import "./drivers.css";
 
 const unavailableToast = {
@@ -214,8 +214,8 @@ function DriverElements(props) {
                     <button type="button" className={d.status === "Plugged" ? "btn btn-primary" : "btn btn-default"} onClick={(e) => props.plug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Plugged" : "Plug"}</button>
                 </div>
             ) : (
-                <button type="button" className="btn btn-default" onClick={(e) => props.unplug(d.urn, d.status, e)}>Unplug (Manually Installed)</button>
-            )}
+                    <button type="button" className="btn btn-default" onClick={(e) => props.unplug(d.urn, d.status, e)}>Unplug (Manually Installed)</button>
+                )}
         </td>
     </tr>
     );

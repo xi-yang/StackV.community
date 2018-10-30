@@ -99,7 +99,7 @@ class DriverModal extends React.Component {
             modalContent = this.parseInputFields();
         }
 
-        return <div className="modal fade" id="driver-modal">
+        return <div className="modal fade" id="driver-modal" style={{ top: "7%" }}>
             <div className="modal-dialog" role="document">
                 <div className="modal-content">
                     <div className="modal-header">

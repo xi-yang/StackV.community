@@ -695,6 +695,71 @@ public class WebResource {
             commonsClose(front_conn, prep, rs, logger);
         }
     }
+    
+    // >Data
+    /**
+     * @api {get} /app/keycloak/users Get Users
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of existing users.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} users users JSON
+     * @apiSuccess {JSONArray} users.user user JSON
+     * @apiSuccess {String} users.user.username username
+     * @apiSuccess {String} users.user.name full name
+     * @apiSuccess {String} users.user.email email
+     * @apiSuccess {String} users.user.time timestamp of user creation
+     * @apiSuccess {String} users.user.subject user ID
+     * @apiSuccessExample {json} Example Response:
+     * [["admin","",null,"1475506393070","1d183570-2798-4d69-80c3-490f926596ff"],["username","","email","1475506797561","1323ff3d-49f3-46ad-8313-53fd4c711ec6"]]
+     */
+    @GET
+    @Path("/data/users")
+    @Produces("application/json")
+    public String getUsers() throws IOException, ParseException {
+        try {
+            JSONObject retJSON = new JSONObject();
+            JSONArray retArr = new JSONArray();
+            
+            String method = "getUsers";
+            logger.trace_start(method);
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray userArr = (JSONArray) obj;
+            for (Object user : userArr) {
+                JSONObject userJSON = (JSONObject) user;
+                retArr.add(userJSON);
+            }
+            logger.trace_end(method);
+            retJSON.put("data", retArr);
+            return retJSON.toJSONString();
+        } catch (IOException | ParseException ex) {
+            logger.catching("getUsers", ex);
+            throw ex;
+        }
+    }
 
     // >Drivers
     @GET
@@ -965,84 +1030,7 @@ public class WebResource {
         }
     }
 
-    // >Keycloak
-    /**
-     * @api {get} /app/keycloak/users Get Users
-     * @apiVersion 1.0.0
-     * @apiDescription Get a list of existing users.
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} users users JSON
-     * @apiSuccess {JSONArray} users.user user JSON
-     * @apiSuccess {String} users.user.username username
-     * @apiSuccess {String} users.user.name full name
-     * @apiSuccess {String} users.user.email email
-     * @apiSuccess {String} users.user.time timestamp of user creation
-     * @apiSuccess {String} users.user.subject user ID
-     * @apiSuccessExample {json} Example Response:
-     * [["admin","",null,"1475506393070","1d183570-2798-4d69-80c3-490f926596ff"],["username","","email","1475506797561","1323ff3d-49f3-46ad-8313-53fd4c711ec6"]]
-     */
-    @GET
-    @Path("/keycloak/users")
-    @Produces("application/json")
-    @RolesAllowed("F_Keycloak-R")
-    public ArrayList<ArrayList<String>> getUsers() throws IOException, ParseException {
-        try {
-            String method = "getUsers";
-            logger.trace_start(method);
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/users");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray userArr = (JSONArray) obj;
-            for (Object user : userArr) {
-                JSONObject userJSON = (JSONObject) user;
-                String subject = (String) userJSON.get("id");
-                String username = (String) userJSON.get("username");
-
-                ArrayList<String> userList = new ArrayList<>();
-                userList.add(username);
-
-                if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
-                    userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
-                } else {
-                    userList.add("");
-                }
-
-                userList.add((String) userJSON.get("email"));
-                userList.add(Long.toString((Long) userJSON.get("createdTimestamp")));
-                userList.add(subject);
-                retList.add(userList);
-            }
-            logger.trace_end(method);
-            return retList;
-        } catch (IOException | ParseException ex) {
-            logger.catching("getUsers", ex);
-            throw ex;
-        }
-    }
-
+    // >Keycloak    
     /*Andrew's Draft for new post method for adding additional roles to groups*/
     @POST
     @Path("/keycloak/groups/{group}")

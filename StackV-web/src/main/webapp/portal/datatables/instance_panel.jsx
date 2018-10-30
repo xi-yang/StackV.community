@@ -122,7 +122,7 @@ class InstancePanel extends React.Component {
                     document.getElementById("button-panel")
                 );
 
-                $("#button-panel").append("<button style=\"float: right\" type=\"button\" class=\"btn btn-default button-instance-details\" data-uuid=" + row.data().referenceUUID + ">Full Details</button>");
+                $("#button-panel").append("<button style=\"float:right;margin-top:5px;\" type=\"button\" class=\"btn btn-default button-instance-details\" data-uuid=" + row.data().referenceUUID + ">Full Details</button>");
 
                 row.child().css("height", "50px");
             }

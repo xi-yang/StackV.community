@@ -1,6 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 
+import AccessModal from "./access_modal";
+
 var confirmConfig = {
     title: "Confirm Operation",
     subtitle: "Please confirm operation.",
@@ -120,18 +122,22 @@ class ButtonPanel extends React.Component {
     }
 
     render() {
-        return <div style={{ left: "10px" }} className="btn-group" role="group">
-            <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} send={this.sendRequest} />
-            <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} send={this.sendRequest} />
-            <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} send={this.sendRequest} />
-            <OpButton operation="Force Reinstate" uuid={this.props.uuid} visible={this.state.force_reinstatel} send={this.sendRequest} />
-            <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} send={this.sendRequest} />
-            <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} send={this.sendRequest} />
-            <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} send={this.sendRequest} />
-            <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} send={this.sendRequest} />
-            <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} send={this.sendRequest} />
-            <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} send={this.sendRequest} />
-            <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} send={this.sendRequest} />
+        return <div>
+            <div style={{ left: "10px" }} className="btn-group" role="group">
+                <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} send={this.sendRequest} />
+                <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} send={this.sendRequest} />
+                <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} send={this.sendRequest} />
+                <OpButton operation="Force Reinstate" uuid={this.props.uuid} visible={this.state.force_reinstatel} send={this.sendRequest} />
+                <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} send={this.sendRequest} />
+                <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} send={this.sendRequest} />
+                <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} send={this.sendRequest} />
+                <OpButton operation="Force Retry" uuid={this.props.uuid} visible={this.state.force_retry} send={this.sendRequest} />
+                <OpButton operation="Propagate" uuid={this.props.uuid} visible={this.state.propagate} send={this.sendRequest} />
+                <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} send={this.sendRequest} />
+                <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} send={this.sendRequest} />
+            </div>
+            <button className="btn btn-success pull-right" id="button-instance-access" onClick={() => { $("#access-modal").modal("show"); }}>Manage Access</button>
+            <AccessModal {...this.props} />
         </div>;
     }
 
@@ -207,7 +213,7 @@ class OpButton extends React.Component {
             } else if (command === "delete") {
                 $("#modal-button-" + command).iziModal("setSubtitle", "Please confirm operation. For deconstruction of service, use Cancel instead of Delete.");
             }
-            
+
             $("#modal-button-" + command).iziModal("open");
         }
     }
