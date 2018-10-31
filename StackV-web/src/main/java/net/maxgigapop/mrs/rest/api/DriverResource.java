@@ -34,6 +34,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -101,13 +102,23 @@ public class DriverResource {
     @Produces({"application/json"})
     @Path("/{driverId}")
     public ArrayList<String> pull(@PathParam("driverId") String driverId) throws SQLException {
-        ArrayList<String> retList = new ArrayList<>();
         String method = "pull";
+        ArrayList<String> retList = new ArrayList<>();
         logger.targetid(driverId);
 
         Connection front_conn = factory.getConnection("rainsdb");
-
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ?");
+        PreparedStatement prep;
+        if (driverId.startsWith("urn")) {
+            prep = front_conn.prepareStatement("SELECT id FROM driver_instance WHERE topologyUri = ?");
+            prep.setString(1, driverId);
+            ResultSet ret = prep.executeQuery();
+            if (ret.next()) {
+                driverId = ret.getString("id");
+            } else {
+                return retList;
+            }
+        }
+        prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ?");
         prep.setString(1, driverId);
         ResultSet ret = prep.executeQuery();
 
@@ -118,10 +129,55 @@ public class DriverResource {
         return retList;
     }
 
+
+    @GET
+    @Produces({"application/json"})
+    @Path("/{driverId}/{property}")
+    public String pullProperty(@PathParam("driverId") String driverId, @PathParam("property") String property) throws SQLException {
+        String method = "pullProperty";
+        logger.targetid(driverId);
+
+        Connection front_conn = factory.getConnection("rainsdb");
+        PreparedStatement prep;
+        if (driverId.startsWith("urn")) {
+            prep = front_conn.prepareStatement("SELECT id FROM driver_instance WHERE topologyUri = ?");
+            prep.setString(1, driverId);
+            ResultSet ret = prep.executeQuery();
+            if (ret.next()) {
+                driverId = ret.getString("id");
+            } else {
+                return null;
+            }
+        }
+        prep = front_conn.prepareStatement("SELECT value FROM driver_instance_property WHERE driverInstanceId = ? AND property = ?");
+        prep.setString(1, driverId);
+        prep.setString(2, property);
+        ResultSet ret = prep.executeQuery();
+
+        if (ret.next()) {
+            return ret.getString("value");
+        }
+        return null;
+    }
+
+
+    @PUT
+    @Produces({"application/json"})
+    @Path("/{driverId}/{property}/{value}")
+    public void setProperty(@PathParam("driverId") String driverId, @PathParam("property") String property, @PathParam("value") String value) {
+        String method = "putProperty";
+        logger.targetid(driverId);
+
+        try {
+            systemCallHandler.setDriverInstanceProperty(driverId, property, value);
+        } catch (Exception e) {
+            throw logger.throwing(method, e);
+        }
+    }
+    
     @DELETE
     @Path("/{topoUri}")
-    public Response unplug(@PathParam("topoUri") String topoUri
-    ) {
+    public Response unplug(@PathParam("topoUri") String topoUri) {
         String method = "unplug";
         logger.targetid(topoUri);
         logger.trace_start(method);
@@ -140,8 +196,7 @@ public class DriverResource {
 
     @POST
     @Consumes({"application/xml", "application/json"})
-    public String plug(ApiDriverInstance di
-    ) {
+    public String plug(ApiDriverInstance di) {
         String method = "plug";
         try {
             logger.targetid(di.getTopologyUri());

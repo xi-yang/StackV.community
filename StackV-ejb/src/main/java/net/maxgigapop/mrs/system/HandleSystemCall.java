@@ -685,4 +685,21 @@ public class HandleSystemCall {
     public Map<String, DriverInstance> retrieveAllDriverInstanceMap() {
         return DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
     }
+
+    public void setDriverInstanceProperty(String diId, String property, String value) {
+        logger.cleanup();
+        String method = "setDriverInstanceProperty";
+        logger.start(method);
+        DriverInstance di;
+        if (diId.startsWith("urn")) {
+            di = DriverInstancePersistenceManager.findByTopologyUri(diId);
+        } else {
+            di = DriverInstancePersistenceManager.findById(Long.parseLong(diId));
+        }
+        if (di == null) {
+            throw logger.error_throwing(method, String.format("canot find DriverInstance with ID='%d'.", diId));
+        }
+        di.getProperties().put(property, value);
+        DriverInstancePersistenceManager.merge(di);
+    }
 }
