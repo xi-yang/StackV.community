@@ -30,7 +30,7 @@ RUN cd $HOME \
     && rm wildfly-$WILDFLY_VERSION.tar.gz \
     && chown -R jboss:jboss ${JBOSS_HOME} \
     && chmod -R g+rw ${JBOSS_HOME} \
-    && sed -i "s/-Xms64m -Xmx512m/-Xms1024m -Xmx4096m/g" /opt/jboss/wildfly/bin/standalone.conf
+    && sed -i "s/-Xms64m -Xmx512m/-Xms1024m -Xmx4096m -Djsse.enableSNIExtension=false/g" /opt/jboss/wildfly/bin/standalone.conf
 
 
 
