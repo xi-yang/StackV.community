@@ -127,12 +127,17 @@ public class SystemModelCoordinator {
             return;
         }
         for (DriverInstance di : ditMap.values()) {
-                if (di.getHeadVersionItem() == null) {
-                    systemVersionGroup = null;
-                    logger.warning(method, di + "has null headVersionItem");
-                    logger.trace_end(method);
-                    return;
-                }
+            String strDisabled = di.getProperty("disabled");
+            boolean diDiasbled = false;
+            if (strDisabled != null) {
+                diDiasbled = Boolean.parseBoolean(strDisabled);
+            }
+            if (!diDiasbled && di.getHeadVersionItem() == null) {
+                systemVersionGroup = null;
+                logger.warning(method, di + "has null headVersionItem");
+                logger.trace_end(method);
+                return;
+            }
         }
         if (this.systemVersionGroup == null) {
             this.systemVersionGroup = systemCallHandler.createHeadVersionGroup(UUID.randomUUID().toString());
