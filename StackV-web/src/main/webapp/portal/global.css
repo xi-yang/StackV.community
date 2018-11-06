@@ -40,8 +40,7 @@ div.stack-panel {
     margin: auto;
     padding: 50px 30px 0px 30px;
     max-height: calc(90% - 42px);
-    width: calc(100% - 75);
-    max-width: 1000px;
+    max-width: 80%;
     text-align: left;
 }
 div.stack-header {

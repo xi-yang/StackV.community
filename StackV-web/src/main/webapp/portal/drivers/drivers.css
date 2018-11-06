@@ -61,3 +61,16 @@ tr.backend:hover {
 .driver-modal-body-select {
     margin-left: 5px;
 }
+
+.driver-health-icon {
+    margin-right: 5px;    
+}
+.pass {
+    color: #206721;
+}
+.warn {
+    color: #a55f1f;
+}
+.fail {
+    color: #bf3632;
+}

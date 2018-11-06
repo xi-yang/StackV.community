@@ -31,8 +31,12 @@ class Drivers extends React.Component {
         this.openDriver = this.openDriver.bind(this);
         this.resetDriverModal = this.resetDriverModal.bind(this);
         this.loadData = this.loadData.bind(this);
+
         this.plugDriver = this.plugDriver.bind(this);
         this.unplugDriver = this.unplugDriver.bind(this);
+
+        this.enableDriver = this.enableDriver.bind(this);
+        this.disableDriver = this.disableDriver.bind(this);
     }
     componentDidMount() {
         this.loadData();
@@ -42,7 +46,6 @@ class Drivers extends React.Component {
     loadData() {
         let page = this;
         let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
-        let mapped = [];
         $.ajax({
             url: apiUrl,
             type: "GET",
@@ -51,20 +54,12 @@ class Drivers extends React.Component {
                 xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
             },
             success: function (result) {
-                let data = [];
-                //Frontend
                 for (let driver of result) {
-                    let ret = {};
-                    ret.urn = driver[0];
-                    ret.type = driver[1];
-                    ret.xml = driver[2];
-                    ret.status = driver[3];
-
-                    mapped.push(ret.urn);
-                    data.push(ret);
+                    driver.disabled = (driver.disabled == "true");
+                    driver.errors = parseInt(driver.errors);
                 }
 
-                page.setState({ data: data });
+                page.setState({ data: result });
             }
         });
     }
@@ -97,11 +92,9 @@ class Drivers extends React.Component {
                     xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                 },
                 success: function (result) {
-                    $row.addClass("loading");
                     page.props.resumeRefresh();
                 },
                 error: function (err) {
-                    $row.addClass("loading");
                     page.props.resumeRefresh();
                 }
             });
@@ -116,11 +109,10 @@ class Drivers extends React.Component {
             let cacheText = $(e.target).text();
             let cacheClass = e.target.className;
 
-            e.target.className = "btn btn-danger";
+            e.target.className = "btn btn-sm btn-danger";
             $(e.target).text("Confirm Unplug");
         } else {
             // Unplug driver
-            $row.addClass("loading");
             let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + urn;
             $.ajax({
                 url: apiURL,
@@ -129,9 +121,6 @@ class Drivers extends React.Component {
                 beforeSend: function (xhr) {
                     xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
                     xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
-                },
-                success: function (result) {
-                    $row.addClass("loading");
                 },
                 error: function (err) {
                     /* The format of result in case of an error looks like this:
@@ -151,8 +140,42 @@ class Drivers extends React.Component {
                     console.log("unplug error: " + JSON.stringify(err));
                     console.log("unplug error status: " + JSON.stringify(err["status"]));
                     console.log("unplug error statusText: " + JSON.stringify(err["statusText"]));
+                }
+            });
+        }
+    }
 
-                    $row.addClass("loading");
+    enableDriver(urn) {
+        let page = this;
+        let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + urn + "/disabled/false";
+        $.ajax({
+            url: apiURL,
+            type: "PUT",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+            }
+        });
+    }
+    disableDriver(urn, disabled, e) {
+        let page = this;
+        if (!disabled && !$(e.target).hasClass("btn-danger")) {
+            // Confirmation button
+            e.persist();
+            let cacheText = $(e.target).text();
+            let cacheClass = e.target.className;
+
+            e.target.className = "btn btn-sm btn-danger";
+            $(e.target).text("Confirm Disable");
+        } else {
+            // Disable driver
+            let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + urn + "/disabled/true";
+            $.ajax({
+                url: apiURL,
+                type: "PUT",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                    xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                 }
             });
         }
@@ -183,7 +206,7 @@ class Drivers extends React.Component {
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <DriverElements data={Set(this.state.data)} open={this.openDriver} plug={this.plugDriver} unplug={this.unplugDriver} confirm={this.confirm} />
+                        <DriverElements data={Set(this.state.data)} open={this.openDriver} plug={this.plugDriver} unplug={this.unplugDriver} enable={this.enableDriver} disable={this.disableDriver} confirm={this.confirm} />
                         <tfoot>
                             <tr>
                                 <th colSpan="3">
@@ -204,18 +227,27 @@ Drivers.propTypes = {
 export default Drivers;
 
 function DriverElements(props) {
-    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.xml !== "<driverInstance><properties></properties></driverInstance>" ? (d.status === "Plugged" ? "success" : undefined) : "backend"} onClick={(e) => props.open(d.urn, e)}>
-        <td>{d.urn}</td>
+
+
+    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? (d.errors > 5 || d.disabled ? "warning" : "success") : undefined} onClick={(e) => props.open(d.urn, e)}>
+        <td>
+            <i className={d.status === "Plugged" ? (d.errors === 0 ? "fas fa-lg driver-health-icon fa-check-circle pass" : (d.errors < 5 ? "fas fa-lg driver-health-icon fa-exclamation-triangle warn" : "fas fa-lg driver-health-icon fa-exclamation-circle fail")) : undefined}></i>
+            {d.urn}
+        </td>
         <td>{d.type}</td>
         <td>
             {d.xml !== "<driverInstance><properties></properties></driverInstance>" ? (
-                <div className="btn-group" role="group">
-                    <button type="button" className={d.status === "Plugged" ? "btn btn-default" : "btn btn-primary"} onClick={(e) => props.unplug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Unplug" : "Unplugged"}</button>
-                    <button type="button" className={d.status === "Plugged" ? "btn btn-primary" : "btn btn-default"} onClick={(e) => props.plug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Plugged" : "Plug"}</button>
+                <div className="btn-group pull-right" role="group">
+                    <button type="button" className={d.status === "Plugged" ? "btn btn-sm btn-default" : "btn btn-sm btn-primary"} onClick={(e) => props.unplug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Unplug" : "Unplugged"}</button>
+                    <button type="button" className={d.status === "Plugged" ? "btn btn-sm btn-primary" : "btn btn-sm btn-default"} onClick={(e) => props.plug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Plugged" : "Plug"}</button>
                 </div>
-            ) : (
-                    <button type="button" className="btn btn-default" onClick={(e) => props.unplug(d.urn, d.status, e)}>Unplug (Manually Installed)</button>
-                )}
+            ) : (<button type="button" className="btn btn-sm btn-default" onClick={(e) => props.unplug(d.urn, d.status, e)}>Unplug (Manually Installed)</button>)}
+            {d.status === "Plugged" &&
+                <div className="btn-group pull-right" role="group" style={{ marginRight: "5px" }}>
+                    <button type="button" className={d.disabled ? "btn btn-sm btn-danger" : "btn btn-sm btn-default"} onClick={(e) => props.disable(d.urn, d.disabled, e)}>{d.disabled ? "Disabled" : "Disable"}</button>
+                    <button type="button" className={d.disabled ? "btn btn-sm btn-default" : "btn btn-sm btn-success"} onClick={(e) => props.enable(d.urn)}>{d.disabled ? "Enable" : "Enabled"}</button>
+                </div>
+            }
         </td>
     </tr>
     );

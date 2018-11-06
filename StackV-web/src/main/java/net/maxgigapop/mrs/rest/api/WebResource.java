@@ -209,7 +209,6 @@ public class WebResource {
      * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
      */
     // >Access
-    
     /**
      * Gives a user access to specified instance.
      * @param uuid
@@ -223,7 +222,7 @@ public class WebResource {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        try {            
+        try {
             front_conn = factory.getConnection("frontend");
 
             // excluding the topuri if the driver type is raw
@@ -238,6 +237,7 @@ public class WebResource {
             commonsClose(front_conn, prep, rs, logger);
         }
     }
+
     /**
      * Removes a user's access to specified instance.
      * @param uuid
@@ -251,7 +251,7 @@ public class WebResource {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        try {            
+        try {
             front_conn = factory.getConnection("frontend");
 
             // excluding the topuri if the driver type is raw
@@ -266,7 +266,7 @@ public class WebResource {
             commonsClose(front_conn, prep, rs, logger);
         }
     }
-    
+
     // >FreeIPA-based ACL
     @POST
     @Path("/acl/ipa/login")
@@ -676,7 +676,7 @@ public class WebResource {
                         userJSON.put("permitted", true);
                     }
                 }
-                if (!userJSON.get("username").equals(username)) {                                    
+                if (!userJSON.get("username").equals(username)) {
                     retArr.add(userJSON);
                 }
             }
@@ -695,10 +695,10 @@ public class WebResource {
     @Path("/drivers")
     @Produces("application/json")
     @RolesAllowed("F_Drivers-R")
-    public ArrayList<ArrayList<String>> getDrivers() throws SQLException, IOException, ParseException {
+    public String getDrivers() throws SQLException, IOException, ParseException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
-        ArrayList<ArrayList<String>> retList = new ArrayList<>();
+        JSONArray retArr = new JSONArray();
 
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -719,37 +719,48 @@ public class WebResource {
             }
 
             JSONArray resJSON = (JSONArray) parser.parse(resStr);
-            ArrayList<String> mapped = new ArrayList<String>();
+            ArrayList<String> mapped = new ArrayList<>();
+            // Iterate through saved/known drivers.
             while (ret.next()) {
-                ArrayList<String> list = new ArrayList<>();
+                JSONObject driver = new JSONObject();
                 String status = "Unplugged";
                 String urn = ret.getString("urn");
-                list.add(urn);
-                list.add(ret.getString("type"));
-                list.add(ret.getString("xml"));
+                driver.put("urn", urn);
+                driver.put("type", ret.getString("type"));
+                driver.put("xml", ret.getString("xml"));
 
-                for (int i = 0; i < resJSON.size(); i += 3) {
-                    if (((String) resJSON.get(i + 2)).equals(urn)) {
+                // Iterate through backend results looking for match.
+                for (int i = 0; i < resJSON.size(); i++) {
+                    JSONObject resDriver = (JSONObject) resJSON.get(i);
+                    if (resDriver != null && resDriver.get("topologyUri").equals(urn)) {
                         status = "Plugged";
                         mapped.add(urn);
+
+                        driver.put("errors", resDriver.get("contErrors"));
+                        driver.put("disabled", resDriver.get("disabled"));
+
+                        break;
                     }
                 }
-                list.add(status);
-                retList.add(list);
+                driver.put("status", status);
+                retArr.add(driver);
             }
-            for (int i = 0; i < resJSON.size(); i += 3) {
-                if (!mapped.contains((String) resJSON.get(i + 2))) {
-                    ArrayList<String> list = new ArrayList<>();
-                    list.add((String) resJSON.get(i + 2));
-                    list.add((String) resJSON.get(i + 1));
-                    list.add("<driverInstance><properties></properties></driverInstance>");
-                    list.add("Plugged");
 
-                    retList.add(list);
+            // Give all backend-only drivers dummy data.
+            for (int i = 0; i < resJSON.size(); i++) {
+                JSONObject resDriver = (JSONObject) resJSON.get(i);
+                if (!mapped.contains(resDriver.get("topologyUri"))) {
+                    JSONObject driver = new JSONObject();
+                    driver.put("urn", resDriver.get("topologyUri"));
+                    driver.put("type", resDriver.get("driverEjbPath"));
+                    driver.put("xml", "<driverInstance><properties></properties></driverInstance>");
+                    driver.put("status", "plugged");
+
+                    retArr.add(driver);
                 }
             }
 
-            return retList;
+            return retArr.toJSONString();
         } catch (SQLException ex) {
             logger.catching("getDrivers", ex);
             throw ex;
