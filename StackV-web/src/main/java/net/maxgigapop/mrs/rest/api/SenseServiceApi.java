@@ -21,6 +21,7 @@ import javax.ws.rs.core.Context;
 import net.maxgigapop.mrs.common.TokenHandler;
 import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestConnections;
+import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestIpRanges;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestQueries;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentResponseQueries;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceTerminationPoint;
@@ -73,7 +74,7 @@ public class SenseServiceApi {
         @ApiResponse(code = 409, message = "Resource conflict", response = Void.class),
         @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDPost(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID,@Valid ServiceIntentRequest body) {
-    if (!body.getServiceType().equalsIgnoreCase("Multi-Path P2P VLAN")) { //@TBD
+        if (!body.getServiceType().equalsIgnoreCase("Multi-Path P2P VLAN") && !body.getServiceType().equalsIgnoreCase("Multi-Point VLAN Bridge")) {
             return Response.status(Response.Status.BAD_REQUEST).encoding("Unknown service type: " + body.getServiceType()).build();
         }
         JSONObject jsonReq = new JSONObject();
@@ -83,7 +84,7 @@ public class SenseServiceApi {
         jsonReq.put("data", jsonData);
         jsonReq.put("synchronous", "true");
         jsonReq.put("proceed", "false");
-        jsonData.put("type", "Multi-Path P2P VLAN");
+        jsonData.put("type", body.getServiceType());
         JSONArray jsonConns = new JSONArray();
         jsonData.put("connections", jsonConns);
         for (ServiceIntentRequestConnections conn: body.getConnections()) {
@@ -97,6 +98,19 @@ public class SenseServiceApi {
                 jsonBw.put("capacity", conn.getBandwidth().getCapacity());
                 jsonBw.put("unit", conn.getBandwidth().getUnit());
             }
+            if (conn.getSchedule()!= null) {
+                JSONObject jsonSchedule = new JSONObject();
+                jsonConn.put("schedule", jsonSchedule);
+                if (conn.getSchedule().getStart() != null) {
+                    jsonSchedule.put("start", conn.getSchedule().getStart());
+                }
+                if (conn.getSchedule().getEnd() != null) {
+                    jsonSchedule.put("end", conn.getSchedule().getEnd());
+                }
+                if (conn.getSchedule().getDuration() != null) {
+                    jsonSchedule.put("duration", conn.getSchedule().getDuration());
+                }
+            }
             JSONArray jsonTerminals = new JSONArray();
             jsonConn.put("terminals", jsonTerminals);
             for (ServiceTerminationPoint stp: conn.getTerminals()) {
@@ -106,6 +120,16 @@ public class SenseServiceApi {
                 if (stp.getType() == null || stp.getType().isEmpty() || stp.getType().equals("ethernet/vlan")) {
                     jsonTerminal.put("vlan_tag", stp.getLabel());
                 }
+            }
+        }
+        if (body.getIpRanges() != null && !body.getIpRanges().isEmpty()) {
+            JSONArray jsonIpRanges = new JSONArray();
+            jsonData.put("ip_ranges", jsonIpRanges);
+            for (ServiceIntentRequestIpRanges ipRange: body.getIpRanges()) {
+                JSONObject jsonIpRange = new JSONObject();
+                jsonIpRange.put("start", ipRange.getStart());
+                jsonIpRange.put("end", ipRange.getEnd());
+                jsonIpRanges.add(jsonIpRange);
             }
         }
         SenseServiceQuery.preQueries(jsonData, body.getQueries());

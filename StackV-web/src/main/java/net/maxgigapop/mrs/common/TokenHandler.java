@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016 University of Maryland
+ * Copyright (c) 2013-2018 University of Maryland
  * Created by: Alberto Jimenez
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 

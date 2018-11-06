@@ -1,23 +1,23 @@
 /*
  * Copyright (c) 2013-2017 University of Maryland
  * Created by: Alberto Jimenez
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and/or hardware specification (the “Work”) to deal in the 
- * Work without restriction, including without limitation the rights to use, 
- * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
- * the Work, and to permit persons to whom the Work is furnished to do so, 
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and/or hardware specification (the “Work”) to deal in the
+ * Work without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Work, and to permit persons to whom the Work is furnished to do so,
  * subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
+ *
+ * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Work.
- * 
- * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
- * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
+ *
+ * THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS
  * IN THE WORK.
  */
 package net.maxgigapop.mrs.service;
@@ -88,7 +88,7 @@ public class ServiceHandler {
             intent = (String) inputJSON.get("intent");
 
             Object obj = parser.parse(intent);
-            JSONObject intentJSON = (JSONObject) obj;            
+            JSONObject intentJSON = (JSONObject) obj;
             intentJSON.remove("proceed");
             intentJSON.remove("profileID");
             intentJSON.remove("host");
@@ -199,35 +199,49 @@ public class ServiceHandler {
 
         logger.refuuid(refUUID);
         logger.start(method);
-        updateLastState("INIT", refUUID);  
+        //@TODO: evaluate the below comment-out
+        //updateLastState("INIT", refUUID);
+        int errorCode = 0;
         VerificationHandler verify = null;
         try {
             switch (action) {
                 case "cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
-                    cancelInstance(refUUID, token);
+                    errorCode = cancelInstance(refUUID, token);
+                    if (errorCode == 2) { // failed to revert
+                        setSuperState(refUUID, SuperState.CREATE);
+                    }
                     break;
                 case "force_cancel":
                     setSuperState(refUUID, SuperState.CANCEL);
-                    forceCancelInstance(refUUID, token);
+                    //@TODO: this should return special errorCode upon revert error
+                    forceRevertInstance(refUUID, token);
                     break;
 
                 case "release":
                     setSuperState(refUUID, SuperState.CANCEL);
-                    releaseInstance(refUUID, token);
+                    errorCode = releaseInstance(refUUID, token);
+                    if (errorCode == 2) { // failed to revert
+                        setSuperState(refUUID, SuperState.CREATE);
+                    }
                     break;
                 case "force_release":
                     setSuperState(refUUID, SuperState.CANCEL);
+                    //@TODO: this should return special errorCode upon revert error
                     forceReleaseInstance(refUUID, token);
                     break;
 
                 case "reinstate":
                     setSuperState(refUUID, SuperState.REINSTATE);
-                    cancelInstance(refUUID, token);
+                    errorCode = cancelInstance(refUUID, token);
+                    if (errorCode == 2) { // failed to revert
+                        setSuperState(refUUID, SuperState.CANCEL);
+                    }
                     break;
                 case "force_reinstate":
                     setSuperState(refUUID, SuperState.REINSTATE);
-                    forceCancelInstance(refUUID, token);
+                     //@TODO: this should return special errorCode upon revert error
+                    forceRevertInstance(refUUID, token);
                     break;
 
                 case "force_retry":
@@ -237,6 +251,10 @@ public class ServiceHandler {
                 case "delete":
                 case "force_delete":
                     deleteInstance(refUUID, token);
+                    break;
+
+                case "reset":
+                    resetInstance(refUUID, token);
                     break;
 
                 case "verify":
@@ -254,7 +272,7 @@ public class ServiceHandler {
                     break;
                 case "commit":
                     ServiceEngine.commitInstance(refUUID, token.auth());
-                    break;               
+                    break;
                 case "revert":
                     ServiceEngine.revertInstance(refUUID, token.auth());
                     break;
@@ -336,24 +354,25 @@ public class ServiceHandler {
         if (!instanceState.equalsIgnoreCase("READY")) {
             return 1;
         }
+        lastState = "INIT";
 
         result = revert(refUuid, token.auth());
-        lastState = "INIT";
         if (!result) {
             return 2;
         }
+        lastState = "COMPILED";
 
         result = propagate(refUuid, token.auth());
-        lastState = "PROPAGATED";
         if (!result) {
             return 3;
         }
+        lastState = "PROPAGATED";
 
         result = commit(refUuid, token.auth());
-        lastState = "COMMITTING";
         if (!result) {
             return 4;
         }
+        lastState = "COMMITTING";
 
         while (true) {
             instanceState = status();
@@ -370,9 +389,10 @@ public class ServiceHandler {
         }
     }
 
-    private int forceCancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+    private int forceRevertInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         lastState = "INIT";
         forceRevert(refUuid, token.auth());
+        lastState = "COMPILED";
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
@@ -409,34 +429,36 @@ public class ServiceHandler {
         if (!instanceState.equalsIgnoreCase("READY")) {
             return 1;
         }
+        lastState = "INIT";
 
         result = revert(refUuid, token.auth());
-        lastState = "INIT";
         if (!result) {
             return 2;
         }
+        lastState = "COMPILED";
 
         result = propagate(refUuid, token.auth());
-        lastState = "PROPAGATED";
         if (!result) {
             return 3;
         }
+        lastState = "PROPAGATED";
 
         return 0;
     }
-    
+
 
     private int forceReleaseInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
-        lastState = "INIT";
         forceRevert(refUuid, token.auth());
+        lastState = "INIT";
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
         return 0;
     }
 
 
-    
+
     private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
+        lastState = "INIT";
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
@@ -458,6 +480,17 @@ public class ServiceHandler {
             Thread.sleep(5000);
         }
     }
+
+
+    private boolean resetInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+        URL url = new URL(String.format("%s/service/%s/reset_committed", HOST, refUuid));
+        HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
+        String result = executeHttpMethod(url, propagate, "PUT", null, token.auth());
+        setSuperState(refUUID, SuperState.CREATE);
+        //lastState = "FAILED";
+        return result.equalsIgnoreCase("COMMITTED");
+    }
+
 
     // Utility Methods ---------------------------------------------------------
     private void setSuperState(String refUuid, SuperState superState) throws SQLException {

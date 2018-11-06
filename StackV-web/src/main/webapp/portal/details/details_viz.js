@@ -131,7 +131,7 @@ function details_viz(token) {
                 disableButtons("sysr");
             }
         });
-        $(".displayPanelCloser").on("click", function () {
+        $(document).on("click", ".displayPanelCloser", function () {
             $(".displayPanel").removeClass("displayPanel-active");
 
         });

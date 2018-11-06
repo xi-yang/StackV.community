@@ -99,17 +99,28 @@ public class HandleSystemCall {
         vg.setRefUuid(refUuid);
         for (String topoUri : ditMap.keySet()) {
             DriverInstance di = ditMap.get(topoUri);
-                VersionItem vi = di.getHeadVersionItem();
-                if (vi == null) {
-                    throw logger.error_throwing(method, "encounters null head versionItem in " + di);
-                }
-                //$$ TODO: remove duplicate references
-                if (vi.getVersionGroups() == null || !vi.getVersionGroups().contains(vg)) {
-                    vi.addVersionGroup(vg);
-                }
-                if (vg.getVersionItems() == null || !vg.getVersionItems().contains(vi)) {
-                    vg.addVersionItem(vi);
-                }
+            if (di == null) {
+                throw logger.error_throwing(method, "canont find driverInstance with topologyURI="+topoUri);
+            }
+            String strDisabled = di.getProperty("disabled");
+            boolean diDiasbled = false;
+            if (strDisabled != null) {
+                diDiasbled = Boolean.parseBoolean(strDisabled);
+            }
+            if (diDiasbled) {
+                continue;
+            }
+            VersionItem vi = di.getHeadVersionItem();
+            if (vi == null) {
+                throw logger.error_throwing(method, "encounters null head versionItem in " + di);
+            }
+            //$$ TODO: remove duplicate references
+            if (vi.getVersionGroups() == null || !vi.getVersionGroups().contains(vg)) {
+                vi.addVersionGroup(vg);
+            }
+            if (vg.getVersionItems() == null || !vg.getVersionItems().contains(vi)) {
+                vg.addVersionItem(vi);
+            }
         }
         VersionGroupPersistenceManager.save(vg);
         logger.end(method);
@@ -133,7 +144,15 @@ public class HandleSystemCall {
         for (String topoUri : topoURIs) {
             DriverInstance di = ditMap.get(topoUri);
             if (di == null) {
-                throw logger.error_throwing(method, "canont find driverInstance with topologyURI="+topoUri);
+                throw logger.error_throwing(method, "canont find driverInstance with topologyURI=" + topoUri);
+            }
+            String strDisabled = di.getProperty("disabled");
+            boolean diDiasbled = false;
+            if (strDisabled != null) {
+                diDiasbled = Boolean.parseBoolean(strDisabled);
+            }
+            if (diDiasbled) {
+                continue;
             }
             VersionItem vi = di.getHeadVersionItem();
             if (vi == null) {
@@ -213,6 +232,17 @@ public class HandleSystemCall {
         Map<String, ModelBase> retMap = new HashMap();
         for (String topoUri: DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().keySet()) {
             DriverInstance driverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(topoUri);
+            if (driverInstance == null) {
+                throw logger.error_throwing(method, "canont find driverInstance with topologyURI="+topoUri);
+            }
+            String strDisabled = driverInstance.getProperty("disabled");
+            boolean diDiasbled = false;
+            if (strDisabled != null) {
+                diDiasbled = Boolean.parseBoolean(strDisabled);
+            }
+            if (diDiasbled) {
+                continue;
+            }
             VersionItem headVI = VersionItemPersistenceManager.getHeadByDriverInstance(driverInstance);
             if (headVI == null) {
                 continue;
@@ -684,5 +714,22 @@ public class HandleSystemCall {
 
     public Map<String, DriverInstance> retrieveAllDriverInstanceMap() {
         return DriverInstancePersistenceManager.getDriverInstanceByTopologyMap();
+    }
+
+    public void setDriverInstanceProperty(String diId, String property, String value) {
+        logger.cleanup();
+        String method = "setDriverInstanceProperty";
+        logger.start(method);
+        DriverInstance di;
+        if (diId.startsWith("urn")) {
+            di = DriverInstancePersistenceManager.findByTopologyUri(diId);
+        } else {
+            di = DriverInstancePersistenceManager.findById(Long.parseLong(diId));
+        }
+        if (di == null) {
+            throw logger.error_throwing(method, String.format("canot find DriverInstance with ID='%d'.", diId));
+        }
+        di.getProperties().put(property, value);
+        DriverInstancePersistenceManager.merge(di);
     }
 }

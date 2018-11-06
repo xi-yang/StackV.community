@@ -177,8 +177,8 @@
                     <connection-url>jdbc:mysql://localhost:3306/frontend</connection-url>
                     <driver>mysql</driver>
                     <pool>
-                        <min-pool-size>10</min-pool-size>
-                        <max-pool-size>20</max-pool-size>
+                        <min-pool-size>30</min-pool-size>
+                        <max-pool-size>150</max-pool-size>
                         <prefill>true</prefill>
                         <use-strict-min>false</use-strict-min>
                         <flush-strategy>FailingConnectionOnly</flush-strategy>
@@ -192,6 +192,8 @@
                     <connection-url>jdbc:mysql://localhost:3306/frontend</connection-url>
                     <driver>mysql</driver>
                     <pool>
+                        <min-pool-size>30</min-pool-size>
+                        <max-pool-size>150</max-pool-size>
                         <prefill>true</prefill>
                         <use-strict-min>false</use-strict-min>
                         <flush-strategy>FailingConnectionOnly</flush-strategy>

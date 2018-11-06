@@ -2869,6 +2869,7 @@ public class WebResource {
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
+            logger.message(method, inputString);
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
             String serviceType = (String) inputJSON.get("service");
