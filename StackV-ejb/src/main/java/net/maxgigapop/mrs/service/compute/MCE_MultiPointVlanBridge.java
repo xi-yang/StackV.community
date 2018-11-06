@@ -300,7 +300,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     throw logger.error_throwing(method, "malformed schedule: " + jsonSchedule.toJSONString());
                 }
                 try {
-                    candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
+                    candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds_Obsolute(startTime));
                 } catch (Exception ex) {
                     throw logger.throwing(method, "malformed schedule startTme", ex);
                 }
@@ -420,7 +420,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                             throw logger.error_throwing(method, "malformed schedule: " + jsonSchedule.toJSONString());
                         }
                         try {
-                            candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
+                            candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds_Obsolute(startTime));
                         } catch (Exception ex) {
                             throw logger.throwing(method, "malformed schedule startTme", ex);
                         }

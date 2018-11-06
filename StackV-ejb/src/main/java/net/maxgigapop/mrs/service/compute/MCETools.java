@@ -356,7 +356,7 @@ public class MCETools {
                     if (endTime == null && duration == null) {
                         throw new Exception("MCETools.computeFeasibleL2KSP - malformed schedule: " + jsonSchedule.toJSONString());
                     }
-                    candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
+                    candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds_Obsolute(startTime));
                     if (endTime != null) {
                         if (endTime.startsWith("+")) {
                             candidatePath.bandwithScedule.setEndTime(candidatePath.bandwithScedule.getStartTime() + DateTimeUtil.getBandwidthScheduleSeconds(endTime));
@@ -1412,6 +1412,18 @@ public class MCETools {
                 vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanBwService, Nml.existsDuring, resVlanLifetime));
             }
         }
+        
+        // add lifetime for advance scheduling
+        if (path.getBandwithScedule() != null && resVlanLifetime == null) {
+            String vlanLifetimeUrn = vlanPortUrn + ":lifetime";
+            resVlanLifetime = RdfOwl.createResource(vlanSubnetModel, vlanLifetimeUrn, Nml.Lifetime);
+            Literal ltStart = model.createTypedLiteral(DateTimeUtil.longToDateString(path.getBandwithScedule().getStartTime() * 1000L));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanLifetime, Nml.start, ltStart));
+            Literal ltEnd = model.createTypedLiteral(DateTimeUtil.longToDateString(path.getBandwithScedule().getEndTime() * 1000L));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanLifetime, Nml.end, ltEnd));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.existsDuring, resVlanLifetime));
+        }
+
         return vlanSubnetModel;
     }
     

@@ -108,4 +108,12 @@ public class DateTimeUtil {
         }
         throw new Exception("malformed bandwidth schedule time:" + time);
     }
+    
+    public static long getBandwidthScheduleSeconds_Obsolute(String time) throws Exception {
+        long secs = getBandwidthScheduleSeconds(time);
+        if (time.startsWith("+")) {
+            secs += (new GregorianCalendar().getTimeInMillis()/1000L);
+        }
+        return secs;
+    }
 }
