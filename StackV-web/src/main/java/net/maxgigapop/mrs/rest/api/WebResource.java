@@ -208,199 +208,65 @@ public class WebResource {
      * @apiDefine AuthHeader
      * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
      */
-    // >ACL
+    // >Access
+    
     /**
-     * @api {post} /app/acl/:refUUID Add ACL Entry
-     * @apiVersion 1.0.0
-     * @apiDescription Add subject pairing to object specified by UUID.
-     * @apiGroup ACL
-     * @apiUse AuthHeader
-     * @apiParam {String} subject subject ID
-     * @apiParam {String} refUUID object reference UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X POST -H "Content-Type: application/json" -d "test1"
-     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * Gives a user access to specified instance.
+     * @param uuid
+     * @param username
+     * @throws SQLException
      */
-    @POST
-    @Path(value = "/acl/{refUUID}")
-    @Consumes(value = {"application/json", "application/xml"})
-    @RolesAllowed("F_ACL-W")
-    public void addACLEntry(@PathParam("refUUID") String refUUID, final String subject) throws SQLException {
+    @PUT
+    @Path("/access/{uuid}/{username}")
+    @Consumes(value = {"application/json"})
+    public void addAccess(@PathParam("uuid") String uuid, @PathParam("username") String username) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        try {
-            String method = "addACLEntry";
-            logger.start(method);
-            // Authorize service.
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                    .getName());
-            final AccessToken accessToken = securityContext.getToken();
-
+        try {            
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
-                    + "VALUES (?, '0', ?)");
-            prep.setString(1, subject);
-            prep.setString(2, refUUID);
+            // excluding the topuri if the driver type is raw
+            prep = front_conn.prepareStatement("INSERT INTO acl (`subject`, `object`) VALUES (?, ?)");
+            prep.setString(1, username);
+            prep.setString(2, uuid);
             prep.executeUpdate();
-
-            logger.end(method);
         } catch (SQLException ex) {
-            logger.catching("addACLEntry", ex);
+            logger.catching("addAccess", ex);
             throw ex;
         } finally {
             commonsClose(front_conn, prep, rs, logger);
         }
     }
-
     /**
-     * @api {delete} /app/acl/:refUUID Delete ACL Entry
-     * @apiDescription Delete subject associated with object specified by UUID.
-     * @apiVersion 1.0.0
-     * @apiGroup ACL
-     * @apiUse AuthHeader
-     * @apiParam {String} subject subject ID
-     * @apiParam {String} refUUID object reference UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X DELETE -H "Content-Type: application/json" -d "test1"
-     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * Removes a user's access to specified instance.
+     * @param uuid
+     * @param username
+     * @throws SQLException
      */
     @DELETE
-    @Path(value = "/acl/{refUUID}")
-    @Consumes(value = {"application/json", "application/xml"})
-    @RolesAllowed("F_ACL-W")
-    public void removeACLEntry(@PathParam("refUUID") String refUUID, final String subject) throws SQLException {
+    @Path("/access/{uuid}/{username}")
+    @Consumes(value = {"application/json"})
+    public void removeAccess(@PathParam("uuid") String uuid, @PathParam("username") String username) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
-        try {
-            String method = "removeACLEntry";
-            logger.start(method);
-            // Authorize service.
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                    .getName());
-            final AccessToken accessToken = securityContext.getToken();
-
+        try {            
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE subject = ? AND object = ?");
-            prep.setString(1, subject);
-            prep.setString(2, refUUID);
+            // excluding the topuri if the driver type is raw
+            prep = front_conn.prepareStatement("DELETE FROM acl WHERE `subject` = ? AND `object` = ?");
+            prep.setString(1, username);
+            prep.setString(2, uuid);
             prep.executeUpdate();
-
-            logger.end(method);
         } catch (SQLException ex) {
-            logger.catching("removeACLEntry", ex);
+            logger.catching("removeAccess", ex);
             throw ex;
         } finally {
             commonsClose(front_conn, prep, rs, logger);
         }
     }
-
-    /**
-     * @api {GET} /app/acl/:refUUID Get ACL Entries
-     * @apiVersion 1.0.0
-     * @apiDescription Get all entries associated with object specified by UUID.
-     * @apiGroup ACL
-     * @apiUse AuthHeader
-     * @apiParam {String} refUUID object reference UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl
-     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} users users JSON
-     * @apiSuccess {JSONArray} users.user user JSON
-     * @apiSuccess {String} users.user.username username
-     * @apiSuccess {String} users.user.name full name
-     * @apiSuccess {String} users.user.email email
-     * @apiSuccessExample {json} Example Response:
-     * [["admin","",null]]
-     */
-    @GET
-    @Path("/acl/{refUuid}")
-    @Produces("application/json")
-    @RolesAllowed("F_ACL-R")
-    public ArrayList<ArrayList<String>> getACLwithInfo(@PathParam("refUuid") String refUUID) throws SQLException, IOException, ParseException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            String method = "getACLwithInfo";
-            logger.trace_start(method);
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            ArrayList<String> sqlList = new ArrayList<>();
-
-            try {
-                front_conn = factory.getConnection("frontend");
-
-                prep = front_conn.prepareStatement("SELECT A.subject FROM acl A WHERE A.object = ?");
-                prep.setString(1, refUUID);
-                rs = prep.executeQuery();
-
-                while (rs.next()) {
-                    sqlList.add(rs.getString("subject"));
-                }
-            } catch (SQLException ex) {
-                logger.catching("getACLwithInfo", ex);
-                throw ex;
-            } finally {
-                commonsClose(front_conn, prep, rs, logger);
-            }
-
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/users");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            logger.trace("getACLwithInfo", conn.getResponseCode() + " - " + conn.getResponseMessage(), "users");
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray userArr = (JSONArray) obj;
-            for (Object user : userArr) {
-                JSONObject userJSON = (JSONObject) user;
-                String username = (String) userJSON.get("username");
-
-                if (sqlList.contains(username)) {
-                    ArrayList<String> userList = new ArrayList<>();
-                    userList.add(username);
-
-                    if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
-                        userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
-                    } else {
-                        userList.add("");
-                    }
-
-                    userList.add((String) userJSON.get("email"));
-                    retList.add(userList);
-                }
-            }
-            logger.trace_end(method);
-            return retList;
-        } catch (IOException | ParseException ex) {
-            logger.catching("getACLwithInfo", ex);
-            throw ex;
-        }
-    }
-
+    
     // >FreeIPA-based ACL
     @POST
     @Path("/acl/ipa/login")
@@ -695,7 +561,7 @@ public class WebResource {
             commonsClose(front_conn, prep, rs, logger);
         }
     }
-    
+
     // >Data
     /**
      * @api {get} /app/keycloak/users Get Users
@@ -725,7 +591,7 @@ public class WebResource {
         try {
             JSONObject retJSON = new JSONObject();
             JSONArray retArr = new JSONArray();
-            
+
             String method = "getUsers";
             logger.trace_start(method);
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
@@ -758,6 +624,69 @@ public class WebResource {
         } catch (IOException | ParseException ex) {
             logger.catching("getUsers", ex);
             throw ex;
+        }
+    }
+
+    @GET
+    @Path("/data/users/{uuid}")
+    @Produces("application/json")
+    public String getUserAccess(@PathParam(value = "uuid") String instance) throws IOException, ParseException {
+        String method = "getUserAccess";
+        JSONObject retJSON = new JSONObject();
+        JSONArray retArr = new JSONArray();
+
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+        AccessToken accessToken = securityContext.getToken();
+        String username = accessToken.getPreferredUsername();
+
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+            prep = front_conn.prepareStatement("SELECT `subject` FROM `acl` WHERE `object` = ?");
+            prep.setString(1, instance);
+            rs = prep.executeQuery();
+
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray userArr = (JSONArray) obj;
+            for (Object user : userArr) {
+                JSONObject userJSON = (JSONObject) user;
+                rs.beforeFirst();
+                while (rs.next()) {
+                    if (rs.getString("subject").equals(userJSON.get("username"))) {
+                        userJSON.put("permitted", true);
+                    }
+                }
+                if (!userJSON.get("username").equals(username)) {                                    
+                    retArr.add(userJSON);
+                }
+            }
+            retJSON.put("data", retArr);
+            return retJSON.toJSONString();
+        } catch (IOException | SQLException | ParseException ex) {
+            logger.catching(method, ex);
+            return retJSON.toJSONString();
+        } finally {
+            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -863,7 +792,7 @@ public class WebResource {
             prep.setString(3, xml);
             prep.setString(4, type);
             prep.setString(5, xml);
-            prep.executeUpdate();          
+            prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("addDriver", ex);
             throw ex;
@@ -871,6 +800,7 @@ public class WebResource {
             commonsClose(front_conn, prep, rs, logger);
         }
     }
+
     /**
      * Deletes a driver
      * @param dataInput
@@ -895,11 +825,11 @@ public class WebResource {
             }
 
             String urn = (String) inputJSON.get("urn");
-            
+
             front_conn = factory.getConnection("frontend");
             prep = front_conn.prepareStatement("DELETE FROM frontend.driver WHERE `urn` = ?");
-            prep.setString(1, urn);            
-            prep.executeUpdate();          
+            prep.setString(1, urn);
+            prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("deleteDriver", ex);
             throw ex;
@@ -3156,10 +3086,10 @@ public class WebResource {
     private void negotiateService(JSONObject inputJSON, TokenHandler token, String refUUID) throws EJBException, SQLException, IOException, InterruptedException {
         TemplateEngine template = new TemplateEngine();
 
-        System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
+        //System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
         String retString = template.apply(inputJSON);
         retString = retString.replace("&lt;", "<").replace("&gt;", ">");
-        System.out.println("\n\n\nResult:\n" + retString);
+        //System.out.println("\n\n\nResult:\n" + retString);
         inputJSON.put("data", retString);
         ServiceEngine.orchestrateInstance(refUUID, inputJSON, (String) inputJSON.get("uuid"), token, false);
     }

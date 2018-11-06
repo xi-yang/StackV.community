@@ -136,8 +136,12 @@ class ButtonPanel extends React.Component {
                 <OpButton operation="Commit" uuid={this.props.uuid} visible={this.state.commit} send={this.sendRequest} />
                 <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} send={this.sendRequest} />
             </div>
-            <button className="btn btn-success pull-right" id="button-instance-access" onClick={() => { $("#access-modal").modal("show"); }}>Manage Access</button>
-            <AccessModal {...this.props} />
+            {this.props.owner === this.props.keycloak.tokenParsed.preferred_username &&
+                <div style={{ display: "inline" }}>
+                    <button className="btn btn-success pull-right" id="button-instance-access" onClick={() => { $("#access-modal").modal("show"); }}>Manage Access</button>
+                    <AccessModal {...this.props} />
+                </div>
+            }
         </div>;
     }
 

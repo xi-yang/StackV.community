@@ -65,7 +65,7 @@ class DetailsPanel extends React.Component {
                     </tr>
                     <tr className="button-row">
                         <td colSpan="2">
-                            <ButtonPanel uuid={this.props.uuid} super={this.props.state.get("super")} sub={this.props.state.get("sub")} last={this.props.state.get("last")}
+                            <ButtonPanel uuid={this.props.uuid} super={this.props.state.get("super")} sub={this.props.state.get("sub")} last={this.props.state.get("last")} owner={this.props.meta.get("owner")}
                                 isVerifying={this.props.verify.get("drone")} load={this.props.load} keycloak={this.props.keycloak} page="details" />
                         </td>
                     </tr>

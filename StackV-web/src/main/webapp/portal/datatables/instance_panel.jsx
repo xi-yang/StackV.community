@@ -116,7 +116,7 @@ class InstancePanel extends React.Component {
 
                 ReactDOM.render(
                     React.createElement(ButtonPanel, {
-                        uuid: row.data().referenceUUID, super: superState, sub: subState, last: row.data().lastState,
+                        uuid: row.data().referenceUUID, super: superState, sub: subState, last: row.data().lastState, owner: row.data().owner,
                         keycloak: panel.props.keycloak, page: "catalog", resume: () => { panel.props.resumeRefresh(); }
                     }, null),
                     document.getElementById("button-panel")

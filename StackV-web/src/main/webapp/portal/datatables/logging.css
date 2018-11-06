@@ -33,3 +33,8 @@
 .dataTables_filter input {
     width: 40vh;
 }
+
+/* User Panel */
+.user-row.permitted {
+    background-color: #c2f5c2 !important;
+}

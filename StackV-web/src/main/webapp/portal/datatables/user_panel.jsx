@@ -10,7 +10,7 @@ class UserPanel extends React.Component {
         super(props);
 
         this.state = {
-            apiUrl: window.location.origin + "/StackV-web/restapi/app/data/users"
+            apiUrl: window.location.origin + "/StackV-web/restapi/app/data/users/" + props.uuid
         };
 
         this.initTable = this.initTable.bind(this);
@@ -23,14 +23,14 @@ class UserPanel extends React.Component {
         //ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
     }
     loadData() {
-        if (this.props.refreshEnabled && $("tr.shown").length === 0) {
+        if (($("#access-modal").data("bs.modal") || {}).isShown) {
             this.state.dataTable.ajax.reload(null, false);
         }
     }
 
     render() {
         return <div>
-            <ReactInterval timeout={this.props.refreshTimer < 2000 ? 2000 : this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={2000} enabled={true} callback={this.loadData} />
             <table id="userData" className="table table-striped table-bordered display" cellSpacing="0" width="100%">
                 <thead>
                     <tr>
@@ -57,6 +57,10 @@ class UserPanel extends React.Component {
             ],
             "createdRow": function (row, data, dataIndex) {
                 $(row).addClass("user-row");
+                $(row).attr("data-username", data.username);
+                if (data.permitted) {
+                    $(row).addClass("permitted");
+                }
             },
             "dom": "Bfrtip",
             "initComplete": function (settings, json) {
@@ -72,6 +76,27 @@ class UserPanel extends React.Component {
             "scrollX": true,
             "scrollY": "calc(60vh - 130px)",
         });
+
+        $("#userData tbody").on("click", "tr.user-row", function () {
+            let user = $(this).attr("data-username");
+            let apiUrl = window.location.origin + "/StackV-web/restapi/app/access/" + panel.props.uuid + "/" + user;
+            let method = "PUT";
+            if ($(this).hasClass("permitted")) {
+                method = "DELETE";
+            }
+            $.ajax({
+                url: apiUrl,
+                type: method,
+                beforeSend: function beforeSend(xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + panel.props.keycloak.token);
+                    xhr.setRequestHeader("Refresh", panel.props.keycloak.refreshToken);
+                },
+                success: function () {
+                    panel.loadData();
+                }
+            });
+        });
+
         panel.setState({ dataTable: dataTable }, () => { panel.setState({ refreshEnabled: true }); });
     }
 }
