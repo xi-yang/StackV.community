@@ -19,7 +19,8 @@
                  "Port Name": "?host_port?",
                  "Vlan Port": "?peer_port?",
                  "IP Address": "?ipv4?",
-                  "sparql": "SELECT ?peer_port ?host_port ?ipv4 WHERE { ?terminal nml:isAlias ?peer_port. ?host_port nml:hasBidirectionalPort ?peer_port. ?peer_port mrs:hasNetworkAddress  ?ipv4na. ?ipv4na mrs:type \"ipv4-address\". ?ipv4na mrs:value ?ipv4. }",
+                 "sparql": "SELECT ?peer_port WHERE { ?terminal nml:isAlias ?peer_port. }",
+                 "sparql-ext": "SELECT DISTINCT ?host_port ?ipv4 WHERE { ?host_port nml:hasBidirectionalPort ?peer_port. ?host_port a nml:BidirectionalPort. ?peer_port mrs:hasNetworkAddress  ?ipv4na. ?ipv4na mrs:type \"ipv4-address\". ?ipv4na mrs:value ?ipv4. }",
                   "required": "false"
                }
               ]

@@ -458,7 +458,7 @@ public class ServiceHandler {
 
 
     private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
-        lastState = "INIT";
+        lastState = "COMPILED";
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
         forceCommit(refUuid, token.auth());
