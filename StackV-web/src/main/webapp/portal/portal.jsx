@@ -12,6 +12,7 @@ import Visualization from "./visual/visualization";
 import Catalog from "./catalog/catalog";
 import Details from "./details/details";
 import Drivers from "./drivers/drivers";
+import Admin from "./admin/admin";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { fas } from "@fortawesome/free-solid-svg-icons";
@@ -205,7 +206,9 @@ class Portal extends React.Component {
             case "details":
                 return <Details {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "drivers":
-                return <Drivers {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
+                return <Drivers {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
+            case "admin":
+                return <Admin {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             default:
                 return <div></div>;
         }

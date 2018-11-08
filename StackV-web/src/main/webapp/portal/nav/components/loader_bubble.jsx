@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { cx, css } from "emotion";
 
-import { faCog } from "@fortawesome/free-solid-svg-icons";
+import { faSync } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const live = css`
@@ -72,9 +72,9 @@ class LoaderBubble extends React.Component {
         this.moderatePopover();
         switch (status) {
             case "live":
-                return <FontAwesomeIcon className={live} id="loader-bubble" icon={faCog} size="lg" onClick={(e) => this.popover(e)} spin />;
+                return <FontAwesomeIcon className={live} id="loader-bubble" icon={faSync} size="lg" onClick={(e) => this.popover(e)} spin />;
             case "paused":
-                return <FontAwesomeIcon className={paused} id="loader-bubble" icon={faCog} size="lg" onClick={(e) => this.popover(e)} />;
+                return <FontAwesomeIcon className={paused} id="loader-bubble" icon={faSync} size="lg" onClick={(e) => this.popover(e)} />;
         }
 
     }

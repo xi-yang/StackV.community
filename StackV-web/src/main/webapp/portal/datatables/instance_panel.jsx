@@ -31,7 +31,7 @@ class InstancePanel extends React.Component {
 
     render() {
         return <div>
-            <ReactInterval timeout={this.props.refreshTimer < 1000 ? 1000 : this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={this.props.refreshTimer < 1500 ? 1500 : this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
             <table id="loggingData" className="table table-striped table-bordered display" cellSpacing="0" width="100%">
                 <thead>
                     <tr>
@@ -78,9 +78,6 @@ class InstancePanel extends React.Component {
                 $(row).attr("data-owner", data.owner);
             },
             "dom": "Bfrtip",
-            "initComplete": function (settings, json) {
-                console.log("DataTables has finished its initialization.");
-            },
             "ordering": false,
             "pageLength": 6,
             "scrollX": true,

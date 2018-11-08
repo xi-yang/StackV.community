@@ -59,7 +59,7 @@ class LoggingPanel extends React.Component {
 
     render() {
         return <div className={this.props.active ? "top" : "bottom"} id="logging-panel">
-            <ReactInterval timeout={this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={this.props.refreshTimer < 1500 ? 1500 : this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
             <div id="logging-header-div">
                 Instance Logs
                 <div style={{ float: "right" }}>
@@ -111,7 +111,12 @@ class LoggingPanel extends React.Component {
         return ret;
     }
     initTable() {
-        let apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?refUUID=" + this.props.uuid;
+        let apiUrl;
+        if (this.props.uuid) {
+            apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?refUUID=" + this.props.uuid;
+        } else {
+            apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside";
+        }
         let panel = this;
         let dataTable = $("#loggingData").DataTable({
             "ajax": {
@@ -146,9 +151,6 @@ class LoggingPanel extends React.Component {
                 } else {
                     return pre;
                 }
-            },
-            "initComplete": function (settings, json) {
-                console.log("DataTables has finished its initialization.");
             },
             "order": [[1, "asc"]],
             "ordering": false,

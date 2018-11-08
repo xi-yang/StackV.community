@@ -63,9 +63,6 @@ class UserPanel extends React.Component {
                 }
             },
             "dom": "Bfrtip",
-            "initComplete": function (settings, json) {
-                console.log("DataTables has finished its initialization.");
-            },
             "ordering": false,
             "processing": true,
             "scroller": {

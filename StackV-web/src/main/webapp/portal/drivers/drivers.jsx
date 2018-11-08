@@ -41,6 +41,15 @@ class Drivers extends React.Component {
     componentDidMount() {
         this.loadData();
         this.props.resumeRefresh();
+
+        $(document).on("click", ".in-use-uuid", (e) => {
+            let uuid = e.target.text;
+            this.props.switchPage("details", { uuid: uuid });
+            iziToast.destroy();
+        });
+    }
+    componentWillUnmount() {
+        $(document).off("click", ".in-use-uuid");
     }
 
     loadData() {
@@ -106,11 +115,18 @@ class Drivers extends React.Component {
         if (status === "Plugged" && !$(e.target).hasClass("btn-danger")) {
             // Confirmation button
             e.persist();
+            let $cacheTarget = $(e.target);
             let cacheText = $(e.target).text();
             let cacheClass = e.target.className;
 
             e.target.className = "btn btn-sm btn-danger";
             $(e.target).text("Confirm Unplug");
+
+            $(document).on("click", "#main-pane", (e) => {
+                $cacheTarget[0].className = cacheClass;
+                $cacheTarget.text(cacheText);
+                $(document).off("click", "#main-pane");
+            });
         } else {
             // Unplug driver
             let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + urn;
@@ -122,24 +138,28 @@ class Drivers extends React.Component {
                     xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
                     xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                 },
+                success: function (result) {
+                    page.props.resumeRefresh();
+                },
                 error: function (err) {
-                    /* The format of result in case of an error looks like this:
-                    * {"readyState":4,
-                    * "responseText":"[507afdf3-11a7-4d9e-b97b-4aa604e2c722, 776f8022-2a84-403f-9255-4d9dbd30753b]",
-                    * "status":409,"statusText":"Conflict"}
-                    * The above is JS object. What we need are the UUIDs in the "responseText". However, the responsetext array is not formatted
-                    * properly for JavaScript - its elements should be quoted as it mixes numbers and characters. So a string replace is needed
-                    * in order to replace [ with [", ] with "], and commas with "," */
+                    let arr = err.responseText.replace(/[\[\]\s]/g, "").split(",");
 
-                    err = {
-                        "readyState": 4,
-                        "responseText": "[507afdf3-11a7-4d9e-b97b-4aa604e2c722, 776f8022-2a84-403f-9255-4d9dbd30753b]",
-                        "status": 409, "statusText": "Conflict"
-                    };
+                    let text = "";
+                    for (let uuid of arr) {
+                        text += "<div><a class=\"in-use-uuid\">" + uuid + "</a></div>";
+                    }
 
-                    console.log("unplug error: " + JSON.stringify(err));
-                    console.log("unplug error status: " + JSON.stringify(err["status"]));
-                    console.log("unplug error statusText: " + JSON.stringify(err["statusText"]));
+                    iziToast.show({
+                        icon: "fas fa-exclamation",
+                        layout: 2,
+                        message: "This driver is in use by the following service instances: " + text,
+                        overlay: true,
+                        overlayClose: true,
+                        position: "center",
+                        theme: "dark",
+                        timeout: false,
+                        title: "Driver in use"
+                    });
                 }
             });
         }
@@ -154,7 +174,10 @@ class Drivers extends React.Component {
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
                 xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
-            }
+            },
+            success: function (result) {
+                page.props.resumeRefresh();
+            },
         });
     }
     disableDriver(urn, disabled, e) {
@@ -162,11 +185,18 @@ class Drivers extends React.Component {
         if (!disabled && !$(e.target).hasClass("btn-danger")) {
             // Confirmation button
             e.persist();
+            let $cacheTarget = $(e.target);
             let cacheText = $(e.target).text();
             let cacheClass = e.target.className;
 
             e.target.className = "btn btn-sm btn-danger";
             $(e.target).text("Confirm Disable");
+
+            $(document).on("click", "#main-pane", (e) => {
+                $cacheTarget[0].className = cacheClass;
+                $cacheTarget.text(cacheText);
+                $(document).off("click", "#main-pane");
+            });
         } else {
             // Disable driver
             let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + urn + "/disabled/true";
@@ -176,7 +206,10 @@ class Drivers extends React.Component {
                 beforeSend: function (xhr) {
                     xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
                     xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
-                }
+                },
+                success: function (result) {
+                    page.props.resumeRefresh();
+                },
             });
         }
     }
@@ -229,7 +262,7 @@ export default Drivers;
 function DriverElements(props) {
 
 
-    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? (d.errors > 5 || d.disabled ? "warning" : "success") : undefined} onClick={(e) => props.open(d.urn, e)}>
+    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? (d.errors > 5 ? "danger" : (d.disabled ? "warning" : "success")) : undefined} onClick={(e) => props.open(d.urn, e)}>
         <td>
             <i className={d.status === "Plugged" ? (d.errors === 0 ? "fas fa-lg driver-health-icon fa-check-circle pass" : (d.errors < 5 ? "fas fa-lg driver-health-icon fa-exclamation-triangle warn" : "fas fa-lg driver-health-icon fa-exclamation-circle fail")) : undefined}></i>
             {d.urn}
@@ -237,13 +270,13 @@ function DriverElements(props) {
         <td>{d.type}</td>
         <td>
             {d.xml !== "<driverInstance><properties></properties></driverInstance>" ? (
-                <div className="btn-group pull-right" role="group">
+                <div className="btn-group pull-right" role="group" style={{ marginLeft: "5px", marginBottom: "5px" }}>
                     <button type="button" className={d.status === "Plugged" ? "btn btn-sm btn-default" : "btn btn-sm btn-primary"} onClick={(e) => props.unplug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Unplug" : "Unplugged"}</button>
                     <button type="button" className={d.status === "Plugged" ? "btn btn-sm btn-primary" : "btn btn-sm btn-default"} onClick={(e) => props.plug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Plugged" : "Plug"}</button>
                 </div>
             ) : (<button type="button" className="btn btn-sm btn-default" onClick={(e) => props.unplug(d.urn, d.status, e)}>Unplug (Manually Installed)</button>)}
             {d.status === "Plugged" &&
-                <div className="btn-group pull-right" role="group" style={{ marginRight: "5px" }}>
+                <div className="btn-group pull-right" role="group">
                     <button type="button" className={d.disabled ? "btn btn-sm btn-danger" : "btn btn-sm btn-default"} onClick={(e) => props.disable(d.urn, d.disabled, e)}>{d.disabled ? "Disabled" : "Disable"}</button>
                     <button type="button" className={d.disabled ? "btn btn-sm btn-default" : "btn btn-sm btn-success"} onClick={(e) => props.enable(d.urn)}>{d.disabled ? "Enable" : "Enabled"}</button>
                 </div>
