@@ -108,21 +108,21 @@
                     <name>Start</name>
                     <type>text</type>
                     <size>small</size>
-                    <hint>(Calendar or '+?d:?h:?m:?s'</hint>
+                    <hint>(Calendar or '+?d:?h:?m:?s')</hint>
                     <valid>calendar</valid>
                 </input>
                 <input required="true">
                     <name>End</name>
                     <type>text</type>
                     <size>small</size>
-                    <hint>(Calendar or '+?d:?h:?m:?s' relative to Start)</hint>
+                    <hint>(Calendar or '+?d:?h:?m:?s' after Start)</hint>
                     <valid>calendar</valid>
                 </input>
                 <input>
                     <name>Duration</name>
                     <type>text</type>
                     <size>small</size>
-                    <hint>(in '+?d:?h:?m:?s' relative to Start)</hint>
+                    <hint>(in '+?d:?h:?m:?s')</hint>
                     <valid>integer</valid>
                 </input>
             </group>
