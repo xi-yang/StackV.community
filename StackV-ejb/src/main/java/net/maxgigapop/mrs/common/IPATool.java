@@ -38,7 +38,10 @@ import javax.net.ssl.HttpsURLConnection;
 
 
 /**
- * IPA tools to interact with FreeIPA
+ * IPA tool to interact with FreeIPA.
+ * Derived from Antonio Heard's IPAResource.java (located in StackV-web
+ * net.maxgigapop.mrs.rest.api). Antonio strips the RPC headers, but I do not
+ * as Alm.java uses those headers to verify the success/failure of the request
  *
  * @author saiarvind
  */
@@ -65,6 +68,7 @@ public class IPATool {
             String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
 
             try {
+                
                 URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
                 HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
                 conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
@@ -73,6 +77,7 @@ public class IPATool {
                 conn.setRequestMethod("POST");
                 conn.setDoInput(true);
                 conn.setDoOutput(true);
+//                conn.setSSLSocketFactory();
                 DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
                 wr.writeBytes(formattedLoginData);
                 wr.flush();

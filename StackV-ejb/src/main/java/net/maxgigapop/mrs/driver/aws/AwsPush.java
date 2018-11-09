@@ -63,9 +63,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.maxgigapop.mrs.common.Dck;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -212,6 +214,8 @@ public class AwsPush {
         //Added 6/8
         //create new vpn connections
         requests += createVPNConnectionRequests(modelRef, modelAdd);
+        
+        globusConnectRequests(modelRef, modelAdd, true);
         
         return requests;
     }
@@ -1127,6 +1131,102 @@ public class AwsPush {
         QueryExecution qexec = QueryExecutionFactory.create(query, unionModel);
         ResultSet r = qexec.execSelect();
         return r;
+    }
+    
+    
+    /**
+     * ****************************************************************
+     * Function to extract Globus virtual function and create EAS tasks for them
+     * ****************************************************************
+     */
+    private void globusConnectRequests(OntModel model, OntModel modelAdd, boolean creation) {
+        String method = "globusConnectRequests";
+        List<JSONObject> requests = new ArrayList();
+        String query = "SELECT ?vm ?ep ?shortname ?username ?password ?directory ?interface ?public WHERE {"
+                + "?vm nml:hasService ?ep. "
+                + "?ep a mrs:EndPoint. "
+                + "?ep mrs:type \"globus:connect\". "
+                + "?ep nml:name ?shortname. "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naUsername. "
+                + "     ?naUsername mrs:type \"globus:username\"."
+                + "     ?naUsername mrs:value ?username. "
+                + "     ?ep mrs:hasNetworkAddress ?naPassword. "
+                + "     ?naPassword mrs:type \"globus:password\"."
+                + "     ?naPassword mrs:value ?password. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naDirecotry. "
+                + "     ?naDirecotry mrs:type \"globus:directory\". "
+                + "     ?naDirecotry mrs:value ?directory. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naInterface. "
+                + "     ?naInterface mrs:type \"globus:interface\". "
+                + "     ?naInterface mrs:value ?interface. } "
+                + "OPTIONAL {?ep mrs:hasNetworkAddress ?naPublic. "
+                + "     ?naPublic mrs:type \"globus:public\". "
+                + "     ?naPublic mrs:value ?public. } "
+                + "}";
+        ResultSet r = executeQuery(query, model, modelAdd);
+        Dck dckOps = new Dck();
+        JSONObject vmContainerAttrs = new JSONObject();
+        vmContainerAttrs.put("fqdn",System.getProperty("ipa_url"));
+        JSONObject vmAttrs = new JSONObject();
+        String cn = "";
+        while (r.hasNext()) {
+            QuerySolution q = r.next();
+            System.out.println("***AWS PUSH - globusConnectRequest - QuerySolution q: " + q.toString());
+            JSONObject o = new JSONObject();
+            requests.add(o);
+            o.put("request", "GlobusConnectRequest");
+            if (creation == true) {
+                o.put("status", "create");
+            } else {
+                o.put("status", "delete");
+            }
+            String vmUri = q.getResource("vm").getURI();
+            System.out.println("***AWS PUSH - globusConnectRequests - vmURI:  " + vmUri);
+            String serverName = ResourceTool.getResourceName(vmUri, awsPrefix.vpc());
+            System.out.println("***AWS PUSH - globusConnectRequests - serverName:  " + serverName);
+            cn = serverName;
+            // String serverName = "";
+            o.put("server name", serverName);
+            String shortName = q.get("shortname").toString();
+            o.put("shortname", shortName);
+            String userName = "";
+            if (q.contains("username")) {
+                userName = q.get("username").toString();
+                vmAttrs.put("username", userName);
+            }
+            o.put("username", userName);
+            String userPass = "";
+            if (q.contains("password")) {
+                userPass = q.get("password").toString();
+                vmAttrs.put("password", userPass);
+            }
+            o.put("password", userPass);
+            String defaultDir = "";
+            if (q.contains("directory")) {
+                defaultDir = q.get("directory").toString();
+                vmAttrs.put("directory", defaultDir);
+            }
+            o.put("directory", defaultDir);
+            String dataInterface = "";
+            if (q.contains("interface")) {
+                dataInterface = q.get("interface").toString();
+                vmAttrs.put("interface", dataInterface);
+            }
+            o.put("interface", dataInterface);
+            String isPublic = "False";
+            if (q.contains("public")) {
+                if (q.get("public").toString().toLowerCase().equals("true")) {
+                    isPublic = "True";
+                }
+            }
+            o.put("public", isPublic);
+            String endpointUri = q.getResource("ep").getURI();
+            o.put("uri", endpointUri);
+        }
+        System.out.println("**AWS PUSH - globusConnectRequests - vmContainerAttrs: " + vmContainerAttrs.toString());
+        System.out.println("**AWS PUSH - globusConnectRequests - vmAttrs: " + vmAttrs.toString());
+        // dckOps.addDCKVMEntry(cn, topologyUri, vmContainerAttrs, vmAttrs);
+        dckOps.addDCKVMEntry(cn, "urn:ogf:network:aws.amazon.com:aws-cloud", vmContainerAttrs, vmAttrs);
     }
 
     /**
