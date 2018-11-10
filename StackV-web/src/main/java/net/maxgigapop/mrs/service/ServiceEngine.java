@@ -315,9 +315,12 @@ public class ServiceEngine {
 
             
             prep = front_conn.prepareStatement("SELECT delta FROM frontend.service_delta "
-                    + "WHERE service_instance_id = ? AND type='System'");
+                    + "WHERE service_instance_id = ? AND type='System' ORDER BY service_delta_id DESC");
             prep.setInt(1, instanceID);
             ResultSet rs2 = prep.executeQuery();
+            while (rs2.next()) {
+                
+            }
             rs2.next();
             return rs2.getString(1);
         } catch (SQLException ex) {
