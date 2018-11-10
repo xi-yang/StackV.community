@@ -482,7 +482,7 @@ public class BandwidthCalendar {
         } else if (options.containsKey("use-tbmb")) { // total-block-maximum-bandwidth
             BandwidthCalendar residual = pathAvailBwCal.residual(start, start+deadline);
             ListIterator<BandwidthSchedule> it = residual.getSchedules().listIterator();
-            long maxBw = 0L;
+            long maxBw = residual.getCapacity();
             while (it.hasNext()) {
                 BandwidthSchedule residualSchedule = it.next();
                 if (residualSchedule.getEndTime() <= start) {
@@ -491,7 +491,7 @@ public class BandwidthCalendar {
                 if (residualSchedule.getStartTime() >= start + deadline) {
                     continue;
                 }
-                if (residualSchedule.getBandwidth() > maxBw) {
+                if (residualSchedule.getBandwidth() < maxBw) {
                     maxBw = residualSchedule.getBandwidth();
                 }
             }
