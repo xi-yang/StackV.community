@@ -115,7 +115,7 @@
                     <name>End</name>
                     <type>text</type>
                     <size>small</size>
-                    <hint>(Calendar or '+?d:?h:?m:?s' after Start)</hint>
+                    <hint>(Calendar or '+?d:?h:?m:?s')</hint>
                     <valid>calendar</valid>
                 </input>
                 <input>

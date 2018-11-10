@@ -324,7 +324,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
                 }
                 conn.setConnectTimeout(5*1000);
-                conn.setReadTimeout(15*1000);
+                conn.setReadTimeout(30*1000);
                 conn.addRequestProperty("Content-Encoding", "gzip");
                 String[] response;
                 if (sslClientCertAlias == null) {

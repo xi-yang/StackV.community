@@ -801,8 +801,9 @@ public class MCETools {
         String sparql = "SELECT $maximum $available $reservable $granularity $qos_class $unit $minimum $individual $priority WHERE {"
                 + String.format("<%s> a nml:BidirectionalPort. ", hop.getURI())
                 + String.format("<%s> nml:hasService $bw_svc. ", hop.getURI())
-                + "$bw_svc mrs:maximumCapacity $maximum. "
-                + "$bw_svc mrs:reservableCapacity $reservable. "
+                + "$bw_svc a mrs:BandwidthService. "
+                + "OPTIONAL {$bw_svc mrs:maximumCapacity $maximum. } "
+                + "OPTIONAL {$bw_svc mrs:reservableCapacity $reservable. } "
                 + "OPTIONAL {$bw_svc mrs:availableCapacity $available } "
                 + "OPTIONAL {$bw_svc mrs:type $qos_class } "
                 + "OPTIONAL {$bw_svc mrs:unit $unit } "
@@ -815,17 +816,48 @@ public class MCETools {
         BandwidthProfile bwProfile = null;
         if (rs.hasNext()) {
             QuerySolution solution = rs.next();
-            Long maximumBw = solution.get("maximum").asLiteral().getLong();
-            Long reservableBw = solution.get("reservable").asLiteral().getLong();
-            bwProfile = new BandwidthProfile(maximumBw, reservableBw);
-            if (solution.contains("available")) {
-                bwProfile.availableCapacity = solution.get("available").asLiteral().getLong();
+            Long maximumBw = null;
+            Long availableBw = null;
+            Long reservableBw = null;
+            if (solution.contains("maximum")) {
+                maximumBw = solution.get("maximum").asLiteral().getLong();
             }
+            if (solution.contains("reservable")) {
+                reservableBw = solution.get("reservable").asLiteral().getLong();
+            }
+            if (solution.contains("available")) {
+                availableBw = solution.get("available").asLiteral().getLong();
+            }
+            if (maximumBw == null) {
+                if (availableBw != null) {
+                    maximumBw = availableBw;
+                } else if (reservableBw != null) {
+                    maximumBw = reservableBw;
+                }
+            }
+            if (maximumBw == null) {
+                return null;
+            }
+            if (availableBw == null) {
+                if (reservableBw != null) {
+                    availableBw = reservableBw;
+                } 
+            }
+            if (reservableBw == null) { // hack for DTN-RM bug
+                reservableBw = availableBw;
+            }
+            bwProfile = new BandwidthProfile(maximumBw, reservableBw);
+            bwProfile.availableCapacity = availableBw;
             if (solution.contains("granularity")) {
                 bwProfile.granularity = solution.get("granularity").asLiteral().getLong();
             }
             if (solution.contains("minimum")) {
                 bwProfile.minimumCapacity = solution.get("minimum").asLiteral().getLong();
+                if (bwProfile.minimumCapacity > bwProfile.maximumCapacity || 
+                    bwProfile.availableCapacity != null &&  bwProfile.minimumCapacity > bwProfile.availableCapacity ||
+                    bwProfile.reservableCapacity != null &&  bwProfile.minimumCapacity > bwProfile.reservableCapacity) {
+                    bwProfile.minimumCapacity = null; 
+                }
             }
             if (solution.contains("individual")) {
                 bwProfile.individualCapacity = solution.get("individual").asLiteral().getLong();
@@ -927,10 +959,12 @@ public class MCETools {
                     && bwpfRequest.individualCapacity > bwpfAvailable.individualCapacity) {
                 return false;
             } 
+            /* ??
             if (bwpfAvailable.minimumCapacity != null 
                     && bwpfRequest.reservableCapacity < bwpfAvailable.minimumCapacity ) {
                 return false;
             } 
+            */
             if (bwpfAvailable.granularity != null && bwpfAvailable.granularity > 0 
                     && bwpfRequest.reservableCapacity != 1
                     && bwpfRequest.reservableCapacity % bwpfAvailable.granularity != 0) {

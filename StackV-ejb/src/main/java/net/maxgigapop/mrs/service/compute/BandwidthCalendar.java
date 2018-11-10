@@ -246,6 +246,7 @@ public class BandwidthCalendar {
             if (overlapSchedule.getStartTime() > gapStart) {
                 this._addSchedule(gapStart, overlapSchedule.getStartTime(), bw);
                 overlapIndex++;
+                lastOverlap++;
             } 
             gapStart = overlapSchedule.getEndTime();
             if (overlapSchedule.getBandwidth() + bw > this.capacity) {
@@ -478,14 +479,34 @@ public class BandwidthCalendar {
             } else {
                 return null;
             }
+        } else if (options.containsKey("use-tbmb")) { // total-block-maximum-bandwidth
+            BandwidthCalendar residual = pathAvailBwCal.residual(start, start+deadline);
+            ListIterator<BandwidthSchedule> it = residual.getSchedules().listIterator();
+            long maxBw = 0L;
+            while (it.hasNext()) {
+                BandwidthSchedule residualSchedule = it.next();
+                if (residualSchedule.getEndTime() <= start) {
+                    continue;
+                }
+                if (residualSchedule.getStartTime() >= start + deadline) {
+                    continue;
+                }
+                if (residualSchedule.getBandwidth() > maxBw) {
+                    maxBw = residualSchedule.getBandwidth();
+                }
+            }
+            if (maxBw == 0) {
+                return null;
+            }
+            schedule = new BandwidthSchedule(start, start+deadline, maxBw);
         } else {
             if (options.containsKey("sliding-duration")) {
-                duration = (long)options.get("sliding-duration");
-            } 
+                duration = (long) options.get("sliding-duration");
+            }
             schedule = pathAvailBwCal.makeSchedule(path.getBandwithScedule().getBandwidth(), start, duration, deadline, false);
         }
         // scenarios: extra options / queries
-        return schedule;    
+        return schedule;
     }
     
     //$$ normalize bandwidth unit internally
