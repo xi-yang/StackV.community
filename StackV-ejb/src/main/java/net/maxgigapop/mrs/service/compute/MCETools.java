@@ -843,9 +843,6 @@ public class MCETools {
                     availableBw = reservableBw;
                 } 
             }
-            if (reservableBw == null) { // hack for DTN-RM bug
-                reservableBw = availableBw;
-            }
             bwProfile = new BandwidthProfile(maximumBw, reservableBw);
             bwProfile.availableCapacity = availableBw;
             if (solution.contains("granularity")) {

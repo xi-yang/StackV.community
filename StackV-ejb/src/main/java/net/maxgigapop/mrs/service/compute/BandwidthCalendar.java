@@ -309,6 +309,15 @@ public class BandwidthCalendar {
         ListIterator<BandwidthSchedule> it = bwCalendar.schedules.listIterator();
         while (it.hasNext()) {
             BandwidthSchedule schedule = it.next();
+            // calibration: when bwSmall < bwCalendar.capacity. Reduce all schedules bw
+            if (bwCalendar.getCapacity() > this.capacity) {
+                long bwAdjusted = bwCalendar.getCapacity() - this.capacity;
+                if (schedule.getBandwidth() <= bwAdjusted){
+                    continue; // a schedule from bwCalendar has smaller bandwidth than diff of base bw, skip 
+                } else {
+                    schedule.setBandwidth(schedule.getBandwidth() - bwAdjusted);
+                }
+            }
             this.combineSchedule(schedule.getStartTime(), schedule.getEndTime(), schedule.getBandwidth());
         }
     }
