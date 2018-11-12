@@ -539,11 +539,12 @@ public class BandwidthCalendar {
             return null;
         }
 
-        sparql = "SELECT ?subport ?start ?end WHERE {"
+        sparql = "SELECT ?subport ?start ?end ?subport_start ?subport_end WHERE {"
                 + String.format("<%s> nml:hasBidirectionalPort ?subport. ", hop.getURI())
                 + "?subport nml:hasService ?subBwSvc. "
                 + "?subBwSvc a mrs:BandwidthService. "
                 + "OPTIONAL { ?subBwSvc nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end. } "
+                + "OPTIONAL { ?subport nml:existsDuring ?lifetime. ?lifetime nml:start ?subport_start. ?lifetime nml:end ?subport_end. } "
                 + "}";
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
@@ -553,13 +554,20 @@ public class BandwidthCalendar {
             if (subBwProfile == null || subBwProfile.reservableCapacity == null) {
                 continue;
             }
-            long start = new Date().getTime()/1000L;
+            long now = new Date().getTime()/1000L;
+            long start = now;
             long end = infinite;
             if (solution.contains("start")) {
                 try {
                     start = DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("start").getString());
                 } catch (Exception ex) {
                     throw new BandwidthCalendarException("cannot parse schedule start time: " + solution.getLiteral("start").getString());
+                } 
+            } else if (solution.contains("subport_start")) {
+                try {
+                    start = DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("subport_start").getString());
+                } catch (Exception ex) {
+                    throw new BandwidthCalendarException("cannot parse schedule start time: " + solution.getLiteral("subport_start").getString());
                 } 
             }
             if (solution.contains("end")) {
@@ -568,6 +576,15 @@ public class BandwidthCalendar {
                 } catch (Exception ex) {
                     throw new BandwidthCalendarException("cannot parse schedule end time: " + solution.getLiteral("end").getString());
                 }
+            } else if (solution.contains("subport_end")) {
+                try {
+                    end = DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("subport_end").getString());
+                } catch (Exception ex) {
+                    throw new BandwidthCalendarException("cannot parse schedule start time: " + solution.getLiteral("subport_end").getString());
+                } 
+            }
+            if (start == now && end == infinite) {
+                continue;
             }
             bwCal.addSchedule(start, end, subBwProfile.reservableCapacity);
         }
