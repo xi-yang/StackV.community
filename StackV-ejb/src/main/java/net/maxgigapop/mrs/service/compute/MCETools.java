@@ -1408,6 +1408,17 @@ public class MCETools {
                 vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.existsDuring, resVlanLifetime));
             }
         }
+        
+        // add lifetime for advance scheduling
+        if (path.getBandwithScedule() != null && resVlanLifetime == null) {
+            String vlanLifetimeUrn = vlanPortUrn + ":lifetime";
+            resVlanLifetime = RdfOwl.createResource(vlanSubnetModel, vlanLifetimeUrn, Nml.Lifetime);
+            Literal ltStart = model.createTypedLiteral(DateTimeUtil.longToDateString(path.getBandwithScedule().getStartTime() * 1000L));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanLifetime, Nml.start, ltStart));
+            Literal ltEnd = model.createTypedLiteral(DateTimeUtil.longToDateString(path.getBandwithScedule().getEndTime() * 1000L));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanLifetime, Nml.end, ltEnd));
+            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.existsDuring, resVlanLifetime));
+        }
 
         // add BandwidthService to vlan port if applicable
         if (bwProfile != null && bwProfile.type != null && !bwProfile.type.equalsIgnoreCase("bestEffort") && !isVlanPortShared) {
@@ -1444,17 +1455,6 @@ public class MCETools {
             }
         }
         
-        // add lifetime for advance scheduling
-        if (path.getBandwithScedule() != null && resVlanLifetime == null) {
-            String vlanLifetimeUrn = vlanPortUrn + ":lifetime";
-            resVlanLifetime = RdfOwl.createResource(vlanSubnetModel, vlanLifetimeUrn, Nml.Lifetime);
-            Literal ltStart = model.createTypedLiteral(DateTimeUtil.longToDateString(path.getBandwithScedule().getStartTime() * 1000L));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanLifetime, Nml.start, ltStart));
-            Literal ltEnd = model.createTypedLiteral(DateTimeUtil.longToDateString(path.getBandwithScedule().getEndTime() * 1000L));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanLifetime, Nml.end, ltEnd));
-            vlanSubnetModel.add(vlanSubnetModel.createStatement(resVlanPort, Nml.existsDuring, resVlanLifetime));
-        }
-
         return vlanSubnetModel;
     }
     
