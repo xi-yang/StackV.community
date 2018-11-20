@@ -139,6 +139,7 @@ class ButtonPanel extends React.Component {
             {this.props.owner === this.props.keycloak.tokenParsed.preferred_username &&
                 <div style={{ display: "inline" }}>
                     <button className="btn btn-success pull-right" id="button-instance-access" onClick={() => { $("#access-modal").modal("show"); }}>Manage Access</button>
+                    {this.props.page === "catalog" && <button className="btn btn-default pull-right" style={{ marginRight: "5px" }} id="button-instance-details" onClick={() => { this.props.switchPage("details", { uuid: this.props.uuid }); }}>Full Details</button>}
                     <AccessModal {...this.props} />
                 </div>
             }

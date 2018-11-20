@@ -110,6 +110,7 @@ class Drivers extends React.Component {
         }
     }
     unplugDriver(urn, status, e) {
+        e.stopPropagation();
         let page = this;
         let $row = $(e.target).parents("tr");
         if (status === "Plugged" && !$(e.target).hasClass("btn-danger")) {
@@ -123,9 +124,11 @@ class Drivers extends React.Component {
             $(e.target).text("Confirm Unplug");
 
             $(document).on("click", "#main-pane", (e) => {
-                $cacheTarget[0].className = cacheClass;
-                $cacheTarget.text(cacheText);
-                $(document).off("click", "#main-pane");
+                setTimeout(() => {
+                    $cacheTarget[0].className = cacheClass;
+                    $cacheTarget.text(cacheText);
+                    $(document).off("click", "#main-pane");
+                }, 100);
             });
         } else {
             // Unplug driver
@@ -181,6 +184,7 @@ class Drivers extends React.Component {
         });
     }
     disableDriver(urn, disabled, e) {
+        e.stopPropagation();
         let page = this;
         if (!disabled && !$(e.target).hasClass("btn-danger")) {
             // Confirmation button
@@ -193,9 +197,11 @@ class Drivers extends React.Component {
             $(e.target).text("Confirm Disable");
 
             $(document).on("click", "#main-pane", (e) => {
-                $cacheTarget[0].className = cacheClass;
-                $cacheTarget.text(cacheText);
-                $(document).off("click", "#main-pane");
+                setTimeout(() => {
+                    $cacheTarget[0].className = cacheClass;
+                    $cacheTarget.text(cacheText);
+                    $(document).off("click", "#main-pane");
+                }, 100);
             });
         } else {
             // Disable driver
@@ -262,7 +268,7 @@ export default Drivers;
 function DriverElements(props) {
 
 
-    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? (d.errors > 5 ? "danger" : (d.disabled ? "warning" : "success")) : undefined} onClick={(e) => props.open(d.urn, e)}>
+    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? (d.errors > 5 ? "danger" : (d.disabled || d.errors > 0 ? "warning" : "success")) : undefined} onClick={(e) => props.open(d.urn, e)}>
         <td>
             <i className={d.status === "Plugged" ? (d.errors === 0 ? "fas fa-lg driver-health-icon fa-check-circle pass" : (d.errors < 5 ? "fas fa-lg driver-health-icon fa-exclamation-triangle warn" : "fas fa-lg driver-health-icon fa-exclamation-circle fail")) : undefined}></i>
             {d.urn}

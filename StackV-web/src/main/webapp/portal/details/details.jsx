@@ -64,19 +64,6 @@ class Details extends React.Component {
         $intentModal.iziModal(intentConfig);
         $intentModal.iziModal("setContent", "<textarea readonly id=\"details-intent-modal-text\"></textarea>");
 
-        let intent = this.state.meta.intent;
-        if (!intent || (intent && intent.length === 0)) {
-            $("#button-view-intent").hide();
-        } else {
-            $("#button-view-intent").show();
-
-            $("#details-intent-modal-text").text(intent);
-            var ugly = document.getElementById("details-intent-modal-text").value;
-            var obj = JSON.parse(ugly);
-            var pretty = JSON.stringify(obj, undefined, 4);
-            document.getElementById("details-intent-modal-text").value = pretty;
-        }
-
         this.props.resumeRefresh();
     }
     componentWillUnmount() {
@@ -155,6 +142,20 @@ class Details extends React.Component {
                 state.super = instance[4];
                 state.last = instance[5];
                 meta.intent = instance[6];
+
+                if (!meta.intent || (meta.intent && meta.intent.length === 0)) {
+                    $("#button-view-intent").hide();
+                } else {
+                    $("#button-view-intent").show();
+
+                    $("#details-intent-modal-text").text(meta.intent);
+                    let ugly = $("#details-intent-modal-text").val();
+                    if (ugly) {
+                        let obj = JSON.parse(ugly);
+                        var pretty = JSON.stringify(obj, undefined, 4);
+                        document.getElementById("details-intent-modal-text").value = pretty;
+                    }
+                }
             }
         });
 

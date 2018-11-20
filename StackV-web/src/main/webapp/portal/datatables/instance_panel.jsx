@@ -114,12 +114,10 @@ class InstancePanel extends React.Component {
                 ReactDOM.render(
                     React.createElement(ButtonPanel, {
                         uuid: row.data().referenceUUID, super: superState, sub: subState, last: row.data().lastState, owner: row.data().owner,
-                        keycloak: panel.props.keycloak, page: "catalog", resume: () => { panel.props.resumeRefresh(); }
+                        keycloak: panel.props.keycloak, page: "catalog", resume: panel.props.resumeRefresh, switchPage: panel.props.switchPage,
                     }, null),
                     document.getElementById("button-panel")
                 );
-
-                $("#button-panel").append("<button style=\"float:right;margin-top:5px;\" type=\"button\" class=\"btn btn-default button-instance-details\" data-uuid=" + row.data().referenceUUID + ">Full Details</button>");
 
                 row.child().css("height", "50px");
             }

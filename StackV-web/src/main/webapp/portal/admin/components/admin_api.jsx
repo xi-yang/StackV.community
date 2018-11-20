@@ -85,10 +85,9 @@ class APIPanel extends React.Component {
                     } else {
                         $("#api_result").val(JSON.stringify(result, null, 2));
                     }
-
                 },
-                error: function () {
-                    $("#api_result").val("Failure");
+                error: function (err) {
+                    $("#api_result").val(JSON.stringify(err));
                 }
             });
         } else if (type === "PUT" || type === "POST") {
