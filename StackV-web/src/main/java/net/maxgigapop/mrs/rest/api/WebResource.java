@@ -204,6 +204,69 @@ public class WebResource {
         }
     }
 
+    @GET
+    @Path("/access/{uuid}")
+    @Produces("application/json")
+    public String getUserAccess(@PathParam(value = "uuid") String instance) throws IOException, ParseException {
+        String method = "getUserAccess";
+        JSONObject retJSON = new JSONObject();
+        JSONArray retArr = new JSONArray();
+
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+        AccessToken accessToken = securityContext.getToken();
+        String username = accessToken.getPreferredUsername();
+
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+            prep = front_conn.prepareStatement("SELECT `subject` FROM `acl` WHERE `object` = ?");
+            prep.setString(1, instance);
+            rs = prep.executeQuery();
+
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
+            }
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray userArr = (JSONArray) obj;
+            for (Object user : userArr) {
+                JSONObject userJSON = (JSONObject) user;
+                rs.beforeFirst();
+                while (rs.next()) {
+                    if (rs.getString("subject").equals(userJSON.get("username"))) {
+                        userJSON.put("permitted", true);
+                    }
+                }
+                if (!userJSON.get("username").equals(username)) {
+                    retArr.add(userJSON);
+                }
+            }
+            retJSON.put("data", retArr);
+            return retJSON.toJSONString();
+        } catch (IOException | SQLException | ParseException ex) {
+            logger.catching(method, ex);
+            return retJSON.toJSONString();
+        } finally {
+            commonsClose(front_conn, prep, rs, logger);
+        }
+    }
+    
     /**
      * @apiDefine AuthHeader
      * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
@@ -265,6 +328,45 @@ public class WebResource {
         } finally {
             commonsClose(front_conn, prep, rs, logger);
         }
+    }
+    
+    @GET
+    @Path("/access/ipa/{uuid}")
+    @Produces("application/json")
+    public String getUserResourceAccess(@PathParam(value = "uuid") String instance) throws IOException, ParseException {
+        String method = "getUserResourceAccess";
+        JSONObject retJSON = new JSONObject();
+        JSONArray retArr = new JSONArray();
+
+        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        URL url = new URL(kc_url + "/admin/realms/StackV/users");
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+        conn.setRequestProperty("Authorization", auth);
+        conn.setReadTimeout(10000);
+        conn.setConnectTimeout(15000);
+        conn.setRequestMethod("GET");
+        conn.setDoInput(true);
+        conn.connect();
+        StringBuilder responseStr;
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            String inputLine;
+            responseStr = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                responseStr.append(inputLine);
+            }
+        }
+
+        Object obj = parser.parse(responseStr.toString());
+        JSONArray userArr = (JSONArray) obj;
+        for (Object user : userArr) {
+            JSONObject userJSON = (JSONObject) user;
+            retJSON = new JSONObject();
+            retJSON.put("username", userJSON.get("username"));
+
+            retArr.add(userJSON);
+        }
+        retJSON.put("data", retArr);
+        return retJSON.toJSONString();
     }
 
     // >FreeIPA-based ACL
@@ -593,7 +695,6 @@ public class WebResource {
             JSONArray retArr = new JSONArray();
 
             String method = "getUsers";
-            logger.trace_start(method);
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL(kc_url + "/admin/realms/StackV/users");
             HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
@@ -618,77 +719,13 @@ public class WebResource {
                 JSONObject userJSON = (JSONObject) user;
                 retArr.add(userJSON);
             }
-            logger.trace_end(method);
             retJSON.put("data", retArr);
             return retJSON.toJSONString();
         } catch (IOException | ParseException ex) {
             logger.catching("getUsers", ex);
             throw ex;
         }
-    }
-
-    @GET
-    @Path("/data/users/{uuid}")
-    @Produces("application/json")
-    public String getUserAccess(@PathParam(value = "uuid") String instance) throws IOException, ParseException {
-        String method = "getUserAccess";
-        JSONObject retJSON = new JSONObject();
-        JSONArray retArr = new JSONArray();
-
-        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
-        AccessToken accessToken = securityContext.getToken();
-        String username = accessToken.getPreferredUsername();
-
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            front_conn = factory.getConnection("frontend");
-            prep = front_conn.prepareStatement("SELECT `subject` FROM `acl` WHERE `object` = ?");
-            prep.setString(1, instance);
-            rs = prep.executeQuery();
-
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/users");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray userArr = (JSONArray) obj;
-            for (Object user : userArr) {
-                JSONObject userJSON = (JSONObject) user;
-                rs.beforeFirst();
-                while (rs.next()) {
-                    if (rs.getString("subject").equals(userJSON.get("username"))) {
-                        userJSON.put("permitted", true);
-                    }
-                }
-                if (!userJSON.get("username").equals(username)) {
-                    retArr.add(userJSON);
-                }
-            }
-            retJSON.put("data", retArr);
-            return retJSON.toJSONString();
-        } catch (IOException | SQLException | ParseException ex) {
-            logger.catching(method, ex);
-            return retJSON.toJSONString();
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
+    }    
 
     // >Drivers
     @GET

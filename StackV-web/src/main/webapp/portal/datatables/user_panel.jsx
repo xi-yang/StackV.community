@@ -10,7 +10,7 @@ class UserPanel extends React.Component {
         super(props);
 
         this.state = {
-            apiUrl: window.location.origin + "/StackV-web/restapi/app/data/users/" + props.uuid
+            apiUrl: window.location.origin + "/StackV-web/restapi/app/access/" + props.uuid
         };
 
         this.initTable = this.initTable.bind(this);

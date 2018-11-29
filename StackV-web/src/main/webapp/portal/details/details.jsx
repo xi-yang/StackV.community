@@ -13,6 +13,7 @@ import DetailsPanel from "./components/details_panel";
 import DetailsDots from "./components/details_dots";
 import LoggingPanel from "../datatables/logging_panel";
 import VisualizationPanel from "./components/visualization_panel";
+import AccessPanel from "../datatables/access_panel";
 
 var $intentModal = $("#details-intent-modal");
 var intentConfig = {
@@ -86,13 +87,16 @@ class Details extends React.Component {
         let modView = [];
         switch (this.state.view) {
             case "logging":
-                modView = [true, false, false];
+                modView = [true, false, false, false];
                 break;
             case "details":
-                modView = [false, true, false];
+                modView = [false, true, false, false];
                 break;
             case "visual":
-                modView = [false, false, true];
+                modView = [false, false, true, false];
+                break;
+            case "access":
+                modView = [false, false, false, true];
                 break;
         }
         let pageClasses = "page page-details";
@@ -115,6 +119,7 @@ class Details extends React.Component {
                 <DetailsPanel active={modView[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
                     verify={Map(this.state.verify)} load={this.load} {...this.props} />
                 <VisualizationPanel active={modView[2]} verify={Map(this.state.verify)}></VisualizationPanel>
+                <AccessPanel active={modView[3]} {...this.props} />
                 <div id="details-viz"></div>
             </div>
         </div>;
@@ -217,34 +222,32 @@ class Details extends React.Component {
         switch (this.state.view) {
             case "logging":
                 if (dir === "right") {
-                    $("#logging-tab").removeClass("active");
-                    $("#sub-details-tab").addClass("active");
-                    $("#visual-tab").removeClass("active");
                     this.setState({ view: "details" });
                 }
                 break;
             case "details":
                 switch (dir) {
                     case "left":
-                        $("#logging-tab").addClass("active");
-                        $("#sub-details-tab").removeClass("active");
-                        $("#visual-tab").removeClass("active");
                         this.setState({ view: "logging" });
                         break;
                     case "right":
-                        $("#logging-tab").removeClass("active");
-                        $("#sub-details-tab").removeClass("active");
-                        $("#visual-tab").addClass("active");
                         this.setState({ view: "visual" });
                         break;
                 }
                 break;
             case "visual":
+                switch (dir) {
+                    case "left":
+                        this.setState({ view: "details" });
+                        break;
+                    case "right":
+                        this.setState({ view: "access" });
+                        break;
+                }
+                break;
+            case "access":
                 if (dir === "left") {
-                    $("#logging-tab").removeClass("active");
-                    $("#sub-details-tab").addClass("active");
-                    $("#visual-tab").removeClass("active");
-                    this.setState({ view: "details" });
+                    this.setState({ view: "visual" });
                 }
                 break;
         }
