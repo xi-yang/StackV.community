@@ -27,13 +27,14 @@ let errorToast = {
     displayMode: "replace",
 };
 
-class UserPanel extends React.Component {
+class AccessPanel extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
             apiUrl: window.location.origin + "/StackV-web/restapi/app/data/users/",
-            ipaUrl: window.location.origin + "/StackV-web/restapi/app/acl/ipa/request"
+            ipaUrl: window.location.origin + "/StackV-web/restapi/app/acl/ipa/request",
+            access: { login: [], sudo: [] }
         };
 
         this.initTable = this.initTable.bind(this);
@@ -51,18 +52,18 @@ class UserPanel extends React.Component {
         this.createLoginAclPolicy = this.createLoginAclPolicy.bind(this);
         this.createUserGroup = this.createUserGroup.bind(this);
         this.createHostGroup = this.createHostGroup.bind(this);
+        this.createHost = this.createHost.bind(this);
         this.addUsersToUserGroup = this.addUsersToUserGroup.bind(this);
         this.addHostsToHostGroup = this.addHostsToHostGroup.bind(this);
         this.addUserGroupToHBACRule = this.addUserGroupToHBACRule.bind(this);
         this.addHostGroupToHBACRule = this.addHostGroupToHBACRule.bind(this);
         this.addServicesToHBACRule = this.addServicesToHBACRule.bind(this);
-        this.createHost = this.createHost.bind(this);
 
         this.removeACLPolicy = this.removeACLPolicy.bind(this);
+        this.removeUserFromACLPolicy = this.removeUserFromACLPolicy.bind(this);
         this.deleteUserGroup = this.deleteUserGroup.bind(this);
         this.deleteHostGroup = this.deleteHostGroup.bind(this);
         this.deleteHBACRule = this.deleteHBACRule.bind(this);
-        this.removeUserFromACLPolicy = this.removeUserFromACLPolicy.bind(this);
     }
     shouldComponentUpdate(nextProps, nextState) {
         if (this.props.active === false && nextProps.active === false) { return false; }
@@ -114,13 +115,13 @@ class UserPanel extends React.Component {
                 {
                     "data": null,
                     "render": function (data, type, full, meta) {
-                        return "<input class=\"access-checkbox\" data-access=\"login\" data-username=" + data.username + " type=\"checkbox\" />";
+                        return "<input class=\"access-checkbox\" data-access=\"login\" data-username=" + data.username + " type=\"checkbox\"" + (panel.state.access.login.includes(data.username) ? " checked />" : "/>");
                     }
                 },
                 {
                     "data": null,
                     "render": function (data, type, full, meta) {
-                        return "<input class=\"access-checkbox\" data-access=\"sudo\" data-username=" + data.username + " type=\"checkbox\" />";
+                        return "<input class=\"access-checkbox\" data-access=\"sudo\" data-username=" + data.username + " type=\"checkbox\"" + (panel.state.access.sudo.includes(data.username) ? " checked />" : "/>");
                     }
                 },
             ],
@@ -132,6 +133,7 @@ class UserPanel extends React.Component {
             "ordering": false,
             "processing": true,
             "scroller": {
+                displayBuffer: 15,
                 loadingIndicator: true
             },
             "scrollX": true,
@@ -139,13 +141,13 @@ class UserPanel extends React.Component {
         });
 
         // Add event listeners for adding/removing access
-        $("#accessData tbody").on("change", "td input[data-access=\"login\"]", function (e) {
-            e.preventDefault();
+        $("#accessData tbody").on("click", "td input[data-access=\"login\"]", function (e) {
             panel.updateLogin($(this).data("username"), $(this).is(":checked"));
-        });
-        $("#accessData tbody").on("change", "td input[data-access=\"sudo\"]", function (e) {
             e.preventDefault();
+        });
+        $("#accessData tbody").on("click", "td input[data-access=\"sudo\"]", function (e) {
             panel.updateSudo($(this).data("username"), $(this).is(":checked"));
+            e.preventDefault();
         });
 
         panel.setState({ dataTable: dataTable }, () => { panel.setState({ refreshEnabled: true }); });
@@ -161,11 +163,14 @@ class UserPanel extends React.Component {
             data.each(function (value, index) {
                 let user = value.username;
                 panel.isUserInAclPolicy(panel.props.keycloak, panel.props.uuid, "login", user).done(function (aclResult) {
-                    console.debug(aclResult.result);
-                    loginArr.push(aclResult.result);
+                    if (aclResult.result.count > 0) {
+                        loginArr.push(user);
+                    }
                 });
                 panel.isUserInAclPolicy(panel.props.keycloak, panel.props.uuid, "sudo", user).done(function (aclResult) {
-                    sudoArr.push(aclResult.result);
+                    if (aclResult.result.count > 0) {
+                        sudoArr.push(user);
+                    }
                 });
             });
             panel.setState({ access: { "login": loginArr, "sudo": sudoArr } });
@@ -605,7 +610,10 @@ class UserPanel extends React.Component {
                         }
                         return aclLoginPolicyResult;
                     }).fail(function (err) {
-                        console.log("IPA ACL Login policy creation failed: " + JSON.stringify(err));
+                        let toast = document.querySelector(".iziToast");
+                        iziToast.hide({}, toast);
+                        errorToast.message = "IPA ACL Login policy creation failed: " + JSON.stringify(err);
+                        iziToast.show(errorToast);
                     });
             } else {
                 aclLoginPolicyResult["GroupAndRuleCreatedAndRightHostsFound"] = false;
@@ -614,7 +622,10 @@ class UserPanel extends React.Component {
                 return aclLoginPolicyResult;
             }
         }).fail(function (err) {
-            console.log("IPA ACL Login policy creation failed: " + JSON.stringify(err));
+            let toast = document.querySelector(".iziToast");
+            iziToast.hide({}, toast);
+            errorToast.message = "IPA ACL Login policy creation failed: " + JSON.stringify(err);
+            iziToast.show(errorToast);
         });
     }
     createSudoAclPolicy(serviceUUID, username) {
@@ -771,7 +782,10 @@ class UserPanel extends React.Component {
                         }
                         return aclSudoPolicyResult;
                     }).fail(function (err) {
-                        console.log("IPA ACL Sudo policy creation failed: " + JSON.stringify(err));
+                        let toast = document.querySelector(".iziToast");
+                        iziToast.hide({}, toast);
+                        errorToast.message = "IPA ACL Sudo policy creation failed: " + JSON.stringify(err);
+                        iziToast.show(errorToast);
                     });
             } else {
                 aclSudoPolicyResult["GroupAndRuleCreatedAndRightHostsFound"] = false;
@@ -780,7 +794,10 @@ class UserPanel extends React.Component {
                 return aclSudoPolicyResult;
             }
         }).fail(function (err) {
-            console.log("IPA ACL Sudo policy creation failed: " + JSON.stringify(err));
+            let toast = document.querySelector(".iziToast");
+            iziToast.hide({}, toast);
+            errorToast.message = "IPA ACL Sudo policy creation failed: " + JSON.stringify(err);
+            iziToast.show(errorToast);
         });
     }
 
@@ -1230,9 +1247,9 @@ class UserPanel extends React.Component {
         return $.ajax(ipaAjaxCall);
     }
 }
-UserPanel.propTypes = {
+AccessPanel.propTypes = {
 };
-export default UserPanel;
+export default AccessPanel;
 
 function parseACLPolicyResult(resultJSON) {
     var prettyResults = "";
