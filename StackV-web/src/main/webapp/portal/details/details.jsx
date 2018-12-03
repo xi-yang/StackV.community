@@ -84,19 +84,19 @@ class Details extends React.Component {
     }
 
     render() {
-        let modView = [];
+        let modActive = [];
         switch (this.state.view) {
             case "logging":
-                modView = [true, false, false, false];
+                modActive = [true, false, false, false];
                 break;
             case "details":
-                modView = [false, true, false, false];
+                modActive = [false, true, false, false];
                 break;
             case "visual":
-                modView = [false, false, true, false];
+                modActive = [false, false, true, false];
                 break;
             case "access":
-                modView = [false, false, false, true];
+                modActive = [false, false, false, true];
                 break;
         }
         let pageClasses = "page page-details";
@@ -115,11 +115,11 @@ class Details extends React.Component {
             <div className={pageClasses}>
                 <DetailsDots view={this.state.view} setView={this.setView}></DetailsDots>
 
-                <LoggingPanel {...this.props} active={modView[0]}></LoggingPanel>
-                <DetailsPanel active={modView[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
+                <LoggingPanel {...this.props} active={modActive[0]}></LoggingPanel>
+                <DetailsPanel active={modActive[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
                     verify={Map(this.state.verify)} load={this.load} {...this.props} />
-                <VisualizationPanel active={modView[2]} verify={Map(this.state.verify)}></VisualizationPanel>
-                <AccessPanel active={modView[3]} {...this.props} />
+                <VisualizationPanel active={modActive[2]} verify={Map(this.state.verify)}></VisualizationPanel>
+                <AccessPanel active={modActive[3]} {...this.props} />
                 <div id="details-viz"></div>
             </div>
         </div>;

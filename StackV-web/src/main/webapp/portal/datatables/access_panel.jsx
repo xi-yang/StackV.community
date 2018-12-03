@@ -71,6 +71,8 @@ class AccessPanel extends React.Component {
     }
     componentDidMount() {
         this.initTable();
+        this.updateIPA();
+        this.state.dataTable.ajax.reload();
     }
     loadData() {
         if (this.props.active && this.state.dataTable.scroller.page().start === 0) {

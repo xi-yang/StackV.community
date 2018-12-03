@@ -48,7 +48,7 @@ class DetailsDots extends React.Component {
             </div>
             <div onClick={() => { this.props.setView("access"); }}>
                 <FontAwesomeIcon className={dots} icon={this.props.view === "access" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
-                <span className={text} style={this.props.view === "access" ? {} : { fontSize: 0 }}>Access</span>
+                <span className={text} style={this.props.view === "access" ? {} : { fontSize: 0 }}>Resources</span>
             </div>
         </div>;
     }
