@@ -80,6 +80,14 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
         for (VersionItem vi : listVI) {
             DriverInstance di = vi.getDriverInstance();
             if (di != null) {
+                String strDisabled = di.getProperty("disabled");
+                boolean diDiasbled = false;
+                if (strDisabled != null) {
+                    diDiasbled = Boolean.parseBoolean(strDisabled);
+                }
+                if (diDiasbled) {
+                    continue;
+                }
                 if (listDI.contains(di)) {
                     continue;
                 }
@@ -95,6 +103,14 @@ public class VersionGroupPersistenceManager extends PersistenceManager {
             }
         }
         for (DriverInstance di : ditMap.values()) {
+            String strDisabled = di.getProperty("disabled");
+            boolean diDiasbled = false;
+            if (strDisabled != null) {
+                diDiasbled = Boolean.parseBoolean(strDisabled);
+            }
+            if (diDiasbled) {
+                continue;
+            }
             if (!listDI.contains(di)) {
                 VersionItem newVi = di.getHeadVersionItem();
                 if (newVi == null) {
