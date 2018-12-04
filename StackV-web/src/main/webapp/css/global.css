@@ -85,8 +85,6 @@ div#main-pane {
     position: absolute;    
     height: calc(100% - 52px);
     width: 100%;
-    padding: 30px;
-    padding-top: 0;
     overflow-x: hidden;
     top: 52px;
 

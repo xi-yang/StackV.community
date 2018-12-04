@@ -1,24 +1,8 @@
-div#admin-panel {
+div#API-panel {
     padding: 30px 7% 30px 7%;
     height: calc(100% - 52px);
     width: 100%;
-    position: absolute;
-    overflow-y: hidden;
-    opacity: 0;
-    display: none;
 }
-
-div#logging-panel {
-    left: -150%;
-    text-align: left;
-    padding: 30px 7% 30px 7%;
-    height: calc(100% - 52px);
-    width: 100%;
-    position: absolute;
-    overflow-y: hidden;
-    opacity: 0;
-}
-
 #API-header-div {
     background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
     box-shadow: inset 0 1px 0 #a2b1c3;
@@ -34,37 +18,73 @@ div#logging-panel {
 .twitter-typeahead {
     width: 50%;
 }
-.admin-panel-logging {
-    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
-    box-shadow: inset 0 1px 0 #a2b1c3;
-    color: #fff;
-    position: relative;
-    text-shadow: 0 1px 0 #000;
-    outline: 1px solid black;
-    top: 20px;
-    width: 20%;
-    margin: auto;
+#api_result {
+    width: 75%;
+    min-height: 300px;
 }
 
-#filter-level-div {
-    float: right;
+.typeahead{
+    width: 100%;
 }
 
-#filter-search-input {
-    display: inline;
-    margin-left: 20px;
-    padding-right: 25px;
+/* */
+
+div#API-panel, div#logging-panel {
+    padding: 30px 7% 30px 7%;
+    margin-top: 20px;
+    height: calc(100% - 40px);
+    width: 100%;
+    position: absolute;
+    transition: .5s;
 }
-#filter-search-clear {
-    position: relative;
-    right: 25px;
+div#API-panel{
+    overflow-y: hidden;
+}
+div#logging-panel {
+    text-align: left;
+}
+
+.page .top {
+    left: 0;
     top: 0;
-    bottom: 0;
-    height: 14px;
-    margin: auto;
-    font-size: 14px;
-    cursor: pointer;
-    color: #ccc;
+    z-index: 10;
+}
+.page .middle {
+    left: 10px;
+    top: 10px;
+    z-index: 5;    
+}
+.page .bottom {
+    left: 20px;
+    top: 20px;
+    z-index: 0;    
+}
+.page .middle, .page .bottom {
+    filter: blur(3px) grayscale(100%) brightness(30%);        
+}
+
+.details-table, .verification-table {
+    margin-bottom: 20px;
+}
+
+#service-delta-table, #system-delta-table {
+    /*top: -100%;*/
+    position: relative;
+}
+
+tr.instruction-row {
+    vertical-align: top;
+    height: 80px;
+    font-size: 1.2em;
+}
+tr.button-row {
+    height: 51px;
+}
+
+#details-intent-modal-text {
+    width: 95%;
+    margin: 10px;
+    height: 80vh;
 }
 
 #logging-header-div {
@@ -100,20 +120,52 @@ div#logging-panel {
     font-weight: bold;
 }
 
-/*
-#log-div::-webkit-scrollbar {
-    display: block;
-}
-#log-div::-webkit-scrollbar-track {
-    box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
-    border-radius: 10px;
-}
-#log-div::-webkit-scrollbar-thumb {
-    border-radius: 10px;
-    background: #95A8BF;
-    box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
-}
+/* 
+    Visualization tab styling 
 */
+a.viz-hdr{
+    color:inherit;
+    text-decoration: none;
+}
+
+#table-tab{
+    transition: all 1000ms;    
+}
+.viz-table {
+    width:100%;
+    height:25%;   
+    transition: all 1000ms;   
+}
+
+.viz-cell {
+    width : 50%;
+    height:100%;
+}
+
+.viz-tab-content {
+    height: 90%;
+    margin-bottom: 10px;    
+}
+
+.expanded-viz-div {
+    height:93%;
+    margin-top: 10px;
+}
+
+pre.expanded{
+    width: inherit;
+    height: inherit;
+    white-space: pre-wrap; 
+}
+
+.details-viz-pre{
+    white-space: pre-wrap; 
+}
+
+.button-confirm {
+    width: 50%;
+    border-radius: 0;
+}
 
 td.details-control {
     background: url('../../img/dataTables/details_open.png') no-repeat center center;
@@ -123,15 +175,112 @@ tr.shown td.details-control {
     background: url('../../img/dataTables/details_close.png') no-repeat center center;
 }
 
-#api_result {
-    width: 75%;
-    min-height: 300px;
-}
-
-.typeahead{
+.management-table {
+    background: #ffffff;
+    border-collapse: collapse;
+    box-shadow: 0 5px 12px 2px rgba(0, 0, 0, 0.4);
+    border-spacing: 0;
+    font-size: 12px;
+    line-height: 24px;
+    margin-bottom: 20px;
+    text-align: left;
     width: 100%;
 }
 
+table.management-table > thead {
+    position:sticky;
+    top:0;
+    z-index:3;
+    outline:1px solid black;
+}
+table.management-table > tfoot {
+    position:sticky;
+    bottom:0;
+    z-index:3;
+    outline:1px solid black;
+}
 
+table.management-table > thead > tr > th {
+    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
 
+    box-shadow: inset 0 1px 0 #a2b1c3;
+    color: #fff;
+    font-weight: bold;
+    padding: 10px 15px;
+    position: relative;
+    text-shadow: 0 1px 0 #000;
+}
+table.management-table > thead > tr > th:first-child {
 
+    box-shadow: inset 1px 1px 0 #a2b1c3;
+}
+table.management-table > thead > tr > th:not(:first-child) {
+    border-right: 1px solid #a2b1c3;
+    box-shadow: inset 1px 1px 0 #a2b1c3;
+}
+table.management-table > thead > tr > th:last-child {
+    border-right: none;
+    box-shadow: inset -1px 1px 0 #a2b1c3;
+}
+table.management-table > tbody > tr > td {
+    border-right: 1px solid #fff;
+    border-left: 1px solid #e8e8e8;
+    border-top: 1px solid #fff;
+    border-bottom: 1px solid #e8e8e8;
+    padding: 10px 15px;
+    position: relative;
+    transition: all 1000ms;
+}
+table.management-table > tbody > tr > td:first-child {
+    box-shadow: inset 1px 0 0 #fff;
+}
+table.management-table > tbody > tr > td:last-child {
+    border-right: 1px solid #e8e8e8;
+    box-shadow: inset -1px 0 0 #fff;
+}
+table.management-table > tbody > tr > td button {
+    margin-right: 5px;
+}
+
+/**/
+table.management-table > tr > th {
+    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
+
+    box-shadow: inset 0 1px 0 #a2b1c3;
+    color: #fff;
+    font-weight: bold;
+    padding: 10px 15px;
+    position: relative;
+    text-shadow: 0 1px 0 #000;
+}
+table.management-table > tr > th:first-child {
+
+    box-shadow: inset 1px 1px 0 #a2b1c3;
+}
+table.management-table > tr > th:not(:first-child) {
+    border-right: 1px solid #a2b1c3;
+    box-shadow: inset 1px 1px 0 #a2b1c3;
+}
+table.management-table > tr > th:last-child {
+    border-right: none;
+    box-shadow: inset -1px 1px 0 #a2b1c3;
+}
+table.management-table > tr > td {
+    border-right: 1px solid #fff;
+    border-left: 1px solid #e8e8e8;
+    border-top: 1px solid #fff;
+    border-bottom: 1px solid #e8e8e8;
+    padding: 10px 15px;
+    position: relative;
+    transition: all 1000ms;
+}
+table.management-table > tr > td:first-child {
+    box-shadow: inset 1px 0 0 #fff;
+}
+table.management-table > tr > td:last-child {
+    border-right: 1px solid #e8e8e8;
+    box-shadow: inset -1px 0 0 #fff;
+}
+table.management-table > tr > td button {
+    margin-right: 5px;
+}
