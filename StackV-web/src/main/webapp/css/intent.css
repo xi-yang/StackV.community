@@ -31,8 +31,6 @@ button:focus {
     background-color: white;
     height: 80%;
     width: 70%;
-    display: none;  
-    opacity: 0;
 
     box-shadow: 0 7px 12px 2px rgba(0, 0, 0, 0.5);
 }
@@ -260,9 +258,6 @@ button:focus {
     left: 50%;
     border-radius: 0;
 }
-#intent-save {
-
-}
 
 #saveModalLabel {
     display: inline-block;
@@ -400,7 +395,7 @@ ol li a {
     content: '';
     height: 16px;
     width: 16px;
-    background: url(../img/cd-custom-separator.svg) no-repeat center center;
+    background: black no-repeat center center;
     vertical-align: middle;
 }
 .cd-breadcrumb.custom-icons li > *::before,
@@ -412,7 +407,7 @@ ol li a {
     width: 20px;
     margin-right: .4em;
     margin-top: -2px;
-    background: url(../img/cd-custom-icons-01.svg) no-repeat 0 0;
+    background: black no-repeat 0 0;
     vertical-align: middle;
 }
 .cd-breadcrumb.custom-icons li:not(.current):nth-of-type(2) > *::before,

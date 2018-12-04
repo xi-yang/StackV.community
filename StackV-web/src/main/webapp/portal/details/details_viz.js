@@ -16,7 +16,7 @@ var modelMap = {}; // stores models in <visualization div, model> format
 var outputApiMap = {};
 var outputApi;
 
-function details_viz() {
+function details_viz(token) {
     $(function () {
         $("#dialog_policyAction").dialog({
             autoOpen: false
@@ -46,8 +46,6 @@ function details_viz() {
         "local/stackv/topology/DropDownTree",
         "local/stackv/topology/ContextMenu"],
     function (m, l, r, d3_, utils_, tree, c) {
-        var token = sessionStorage.getItem("token");
-
         $.ajax({
             crossDomain: true,
             type: "GET",
@@ -75,7 +73,7 @@ function details_viz() {
 
                     ModelConstructor = m;
                     model = new ModelConstructor();
-                    model.init(1, renderModels, null, "default");
+                    model.init(1, renderModels, null, "default", token);
 
                     functionMap["ModelBrowser"] = function (o, m, e) {
                         positionDisplayPanel(m + "_displayPanel", e);
@@ -87,7 +85,6 @@ function details_viz() {
                     };
 
                     contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
-                    contextMenu.init();
                     //
                     console.log("after model.");
                 } else {
@@ -340,7 +337,7 @@ function showDiactivatedViz(viz_id) {
 }
 function showManifest() {
     var uuid = sessionStorage.getItem("instance-uuid");
-    window.open("/StackV-web/visual/manifest/manifestPortal.jsp?uuid=" + uuid, "newwindow", config = "height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no");
+    window.open("/StackV-web/portal/visual/manifest/manifestPortal.jsp?uuid=" + uuid, "newwindow", config = "height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no");
 }
 function createTextToggle(prefix, textModel) {
     var button = $("#" + prefix + "_viz_toggle_model");
@@ -377,9 +374,7 @@ function disableButtons(prefix) {
     $("#" + prefix + "_viz_toggle_model").attr("disabled", "disabled");
 }
 
-function renderModels() {
-    var UUID = sessionStorage.getItem("instance-uuid");
-    var token = sessionStorage.getItem("token");
+function renderModels(UUID, token) {
     $.ajax({
         crossDomain: true,
         type: "GET",

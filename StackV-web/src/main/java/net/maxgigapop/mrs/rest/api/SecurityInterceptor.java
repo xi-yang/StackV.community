@@ -67,7 +67,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             String role;
 
             // Ban lists
-            List<String> quietRoles = Arrays.asList("");
+            List<String> quietRoles = Arrays.asList("F_Drivers-R");
 
             if (rolesAnnotation == null) {
                 logger.trace("Authenticated Freely.");

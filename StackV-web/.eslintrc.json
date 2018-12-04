@@ -10,6 +10,9 @@
         "sourceType": "module"
     },
     "parser": "babel-eslint",
+    "plugins": [
+        "emotion"
+    ],
     "rules": {
         "indent": [
             "warn",
@@ -27,7 +30,12 @@
             "warn",
             "always"
         ],
+        "no-useless-escape": "off",
         "no-unused-vars": "off",
-        "no-console": "off"
+        "no-console": "off",
+        "emotion/syntax-preference": [
+            2,
+            "string"
+        ]
     }
 }

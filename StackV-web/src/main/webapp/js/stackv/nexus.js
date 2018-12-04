@@ -23,7 +23,7 @@
 /* global XDomainRequest, baseUrl, loggedIn, TweenLite, Power2, tweenBlackScreen */
 // Service JavaScript Library
 var baseUrl = window.location.origin;
-var keycloak = Keycloak('/StackV-web/resources/keycloak.json');
+var keycloak = Keycloak("/StackV-web/resources/keycloak.json");
 var refreshTimer;
 var countdownTimer;
 var dataTable;
@@ -66,46 +66,14 @@ $(function () {
             keycloak.login();
         }
     }).error(function () {
-        alert('failed to initialize');
+        alert("failed to initialize");
     });
     keycloak.onAuthSuccess = function () {
-        loadNavbar();
-
-        if (window.location.pathname === "/StackV-web/portal/") {
-            $("li#catalog-tab").addClass("active");
-            loadCatalogNavbar();
-            loadCatalog();
-        } else if (window.location.pathname === "/StackV-web/portal/admin/") {
-            $("li#admin-tab").addClass("active");
-            loadAdminNavbar();
-            loadAdmin();
-        } else if (window.location.pathname === "/StackV-web/portal/acl/") {
-            $("li#acl-tab").addClass("active");
-            loadACLNavbar();
-            loadACLPortal();
-        } else if (window.location.pathname === "/StackV-web/portal/driver/") {
-            $("li#driver-tab").addClass("active");
-            loadDriverNavbar();
-            loadDriverPortal();
-        } else if (window.location.pathname === "/StackV-web/portal/intent/") {
-            loadIntent(getURLParameter("intent"));
-        } else if (window.location.pathname === "/StackV-web/portal/details/") {
-            $("li#details-tab").addClass("active");
-            var uuid = sessionStorage.getItem("instance-uuid");
-            if (!uuid) {
-                alert("No Service Instance Selected!");
-                window.location.replace('/StackV-web/');
-            } else {
-                loadDetailsNavbar();
-                loadDetails();
-            }
-        } else if (window.location.pathname === "/StackV-web/visual/manifest/manifestPortal.jsp") {
-            loadManifest();
-        }
-
         if ($("#tag-panel").length) {
             initTagPanel();
         }
+
+        window.token = keycloak.token;
 
         setInterval(function () {
             keycloak.updateToken(70);
@@ -122,7 +90,7 @@ $(function () {
 
     $(".button-group-select").click(function (evt) {
         $ref = "user_groups.jsp?id=" + this.id;
-        $ref = $ref.replace('select', '') + " #group-specific";
+        $ref = $ref.replace("select", "") + " #group-specific";
         // console.log($ref);
         $("#group-specific").load($ref);
         evt.preventDefault();
@@ -139,55 +107,6 @@ $(function () {
 
     clearCounters();
 });
-
-function loadNavbar() {
-    $("#nav").load("/StackV-web/nav/navbar.html", function () {
-        verifyPageRoles();
-
-        if (window.location.pathname === "/StackV-web/portal/") {
-            $("li#catalog-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/portal/admin/") {
-            $("li#admin-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/portal/acl/") {
-            $("li#acl-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/portal/driver/") {
-            $("li#driver-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/portal/details/") {
-            $("li#details-tab").addClass("active");
-        } else if (window.location.pathname === "/StackV-web/orch/graphTest.jsp") {
-            $("li#visualization-tab").addClass("active");
-        }
-
-        var apiUrl = baseUrl + '/StackV-web/restapi/app/logging/';
-        $.ajax({
-            url: apiUrl,
-            type: 'GET',
-            dataType: "text",
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-            },
-            success: function (result) {
-                $("#select-logging-level").val(result);
-            },
-            error: function (error, status, thrown) {
-                console.log(error);
-                console.log(status);
-                console.log(thrown);
-            }
-        });
-
-        $("#logout-button").click(function (evt) {
-            keycloak.logout();
-
-            evt.preventDefault();
-        });
-        $("#account-button").click(function (evt) {
-            keycloak.accountManagement();
-
-            evt.preventDefault();
-        });
-    });
-}
 
 function verifyPageRoles() {
     if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") <= -1) {
@@ -217,10 +136,10 @@ function verifyPageRoles() {
         case "/StackV-web/portal/details/":
             if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
                 var uuid = sessionStorage.getItem("instance-uuid");
-                var apiUrl = baseUrl + '/StackV-web/restapi/app/access/instances/' + uuid;
+                var apiUrl = baseUrl + "/StackV-web/restapi/app/access/instances/" + uuid;
                 $.ajax({
                     url: apiUrl,
-                    type: 'GET',
+                    type: "GET",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
                     },
@@ -248,10 +167,10 @@ function verifyPageRoles() {
 }
 
 function prettyPrintInfo() {
-    var ugly = document.getElementById('profile-details-modal-text-area').value;
+    var ugly = document.getElementById("profile-details-modal-text-area").value;
     var obj = JSON.parse(ugly);
     var pretty = JSON.stringify(obj, undefined, 4);
-    document.getElementById('profile-details-modal-text-area').value = pretty;
+    document.getElementById("profile-details-modal-text-area").value = pretty;
 }
 
 //Select Function
@@ -284,10 +203,10 @@ function driverSelect(sel) {
 /* API CALLS */
 
 function checkInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/service/' + uuid + '/status';
+    var apiUrl = baseUrl + "/StackV-web/restapi/service/" + uuid + "/status";
     $.ajax({
         url: apiUrl,
-        type: 'GET',
+        type: "GET",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
@@ -300,10 +219,10 @@ function checkInstance(uuid) {
 }
 
 function cancelInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/cancel';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/cancel";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -314,10 +233,10 @@ function cancelInstance(uuid) {
     //window.location.replace('/StackV-web/');
 }
 function forceCancelInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/force_cancel';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/force_cancel";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -329,10 +248,10 @@ function forceCancelInstance(uuid) {
 }
 
 function reinstateInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/reinstate';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/reinstate";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -343,10 +262,10 @@ function reinstateInstance(uuid) {
     //window.location.replace('/StackV-web/');
 }
 function forceReinstateInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/force_reinstate';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/force_reinstate";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -358,10 +277,10 @@ function forceReinstateInstance(uuid) {
 }
 
 function forceRetryInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/force_retry';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/force_retry";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -373,10 +292,10 @@ function forceRetryInstance(uuid) {
 }
 
 function modifyInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/modify';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/modify";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -388,10 +307,10 @@ function modifyInstance(uuid) {
 }
 
 function forceModifyInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/force_modify';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/force_modify";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
@@ -403,10 +322,10 @@ function forceModifyInstance(uuid) {
 }
 
 function verifyInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/verify';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/verify";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             xhr.setRequestHeader("Refresh", keycloak.refreshToken);
@@ -419,28 +338,28 @@ function verifyInstance(uuid) {
 }
 
 function deleteInstance(uuid) {
-    var apiUrl = baseUrl + '/StackV-web/restapi/app/service/' + uuid + '/delete';
+    var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/delete";
     $.ajax({
         url: apiUrl,
-        type: 'PUT',
+        type: "PUT",
         beforeSend: function (xhr) {
             xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         success: function (result) {
             console.log("DELETION SUCCESSFUL");
-            window.location.replace('/StackV-web/');
+            window.location.replace("/StackV-web/");
         }
     });
 }
 
 /* UTILITY */
 function getURLParameter(name) {
-    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search) || [null, ''])[1].replace(/\+/g, '%20')) || null;
+    return decodeURIComponent((new RegExp("[?|&]" + name + "=" + "([^&;]+?)(&|#|;|$)").exec(location.search) || [null, ""])[1].replace(/\+/g, "%20")) || null;
 }
 
 // Helper method to parse the title tag from the response.
 function getTitle(text) {
-    return text.match('<title>(.*)?</title>')[1];
+    return text.match("<title>(.*)?</title>")[1];
 }
 
 function clearCounters() {
@@ -462,7 +381,7 @@ function reloadPage() {
 }
 
 function reloadPanel(panelId) {
-    $('#' + panelId).load(document.URL + ' #' + panelId);
+    $("#" + panelId).load(document.URL + " #" + panelId);
 }
 
 function emptyElement(id) {
@@ -496,7 +415,7 @@ function disableLoading() {
 
 function initTagPanel() {
     $.getScript("/StackV-web/js/stackv/label.js", function (data, textStatus, jqxhr) {
-        if ($.trim($("#tag-panel").html()) !== '') {
+        if ($.trim($("#tag-panel").html()) !== "") {
             loadLabels();
         } else {
             $("#tag-panel").load("/StackV-web/tagPanel.jsp", function () {
@@ -516,28 +435,28 @@ function refreshSync(refreshed, time) {
     if (typeof time === "undefined") {
         time = countdown;
     }
-    if (document.getElementById('refresh-button').innerHTML === 'Manually Refresh Now') {
+    if (document.getElementById("refresh-button").innerHTML === "Manually Refresh Now") {
         manual = true;
     }
     if (manual === false) {
         countdown = time;
-        $("#refresh-button").html('Refresh in ' + countdown + ' seconds');
+        $("#refresh-button").html("Refresh in " + countdown + " seconds");
     } else {
-        $("#refresh-button").html('Manually Refresh Now');
+        $("#refresh-button").html("Manually Refresh Now");
     }
 }
 function pauseRefresh() {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
-    document.getElementById('refresh-button').innerHTML = 'Paused';
-    $("#refresh-timer").attr('disabled', true);
+    document.getElementById("refresh-button").innerHTML = "Paused";
+    $("#refresh-timer").attr("disabled", true);
 }
 function resumeRefresh() {
     var timer = $("#refresh-timer");
-    if (timer.attr('disabled')) {
-        timer.attr('disabled', false);
+    if (timer.attr("disabled")) {
+        timer.attr("disabled", false);
         if (timer.val() === "off") {
-            $("#refresh-button").html('Manually Refresh Now');
+            $("#refresh-button").html("Manually Refresh Now");
         } else {
             setRefresh(timer.val());
         }
@@ -546,10 +465,10 @@ function resumeRefresh() {
 function timerChange(sel) {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
-    if (sel.value !== 'off') {
+    if (sel.value !== "off") {
         setRefresh(sel.value);
     } else {
-        document.getElementById('refresh-button').innerHTML = 'Manually Refresh Now';
+        document.getElementById("refresh-button").innerHTML = "Manually Refresh Now";
         $(".loading-prog").css("width", "0%");
     }
 }
@@ -564,28 +483,28 @@ function setRefresh(time) {
     }, (time * 1000));
 }
 function refreshCountdown() {
-    $('#refresh-button').html('Refresh in ' + (countdown - 1) + ' seconds');
-    countdown--;   
+    $("#refresh-button").html("Refresh in " + (countdown - 1) + " seconds");
+    countdown--;
 
-    var setting = $("#refresh-timer").val();  
-    
+    var setting = $("#refresh-timer").val();
+
     var prog = (setting - countdown + .5) / setting;
     $(".loading-prog").css("width", (prog * 100) + "%");
 }
 function reloadDataManual() {
     var timer = $("#refresh-timer");
-    if (timer.attr('disabled')) {
+    if (timer.attr("disabled")) {
         openLogDetails = 0;
         $("tr.shown").each(function () {
             var row = dataTable.row(this);
             row.child.hide();
-            $(this).removeClass('shown');
+            $(this).removeClass("shown");
         });
 
         resumeRefresh();
     } else {
         var sel = document.getElementById("refresh-timer");
-        if (sel.value !== 'off') {
+        if (sel.value !== "off") {
             timerChange(sel);
         }
         $(".loading-prog").css("width", "0%");
@@ -601,10 +520,10 @@ var justRefreshed = 0;
 var now = new Date();
 function loadLoggingDataTable(apiUrl) {
     dataTableClass = "logging";
-    dataTable = $('#loggingData').DataTable({
+    dataTable = $("#loggingData").DataTable({
         "ajax": {
             url: apiUrl,
-            type: 'GET',
+            type: "GET",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
@@ -615,29 +534,29 @@ function loadLoggingDataTable(apiUrl) {
                 }
             }
         },
-        "buttons": ['csv'],
+        "buttons": ["csv"],
         "columns": [
             {
-                "className": 'details-control',
+                "className": "details-control",
                 "orderable": false,
                 "data": null,
-                "defaultContent": '',
+                "defaultContent": "",
                 "width": "20px"
             },
-            {"data": "timestamp", "width": "150px"},
-            {"data": "level", "width": "60px"},
-            {"data": "event"},
-            {"data": "referenceUUID", "width": "275px"},
-            {"data": "message", "visible": false, "searchable": false}
+            { "data": "timestamp", "width": "150px" },
+            { "data": "level", "width": "60px" },
+            { "data": "event" },
+            { "data": "referenceUUID", "width": "275px" },
+            { "data": "message", "visible": false, "searchable": false }
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("row-" + data.level.toLowerCase());
         },
-        "dom": 'Bfrtip',
+        "dom": "Bfrtip",
         "initComplete": function (settings, json) {
-            console.log('DataTables has finished its initialization.');
+            console.log("DataTables has finished its initialization.");
         },
-        "order": [[1, 'asc']],
+        "order": [[1, "asc"]],
         "ordering": false,
         "processing": true,
         "scroller": {
@@ -648,22 +567,22 @@ function loadLoggingDataTable(apiUrl) {
         "serverSide": true
     });
 
-    $("#loggingData").on('preXhr.dt', function () {
+    $("#loggingData").on("preXhr.dt", function () {
         // Event for opening loading animation        
     });
-    $("#loggingData").on('draw.dt', function () {
+    $("#loggingData").on("draw.dt", function () {
         // Event for closing loading animation
     });
 
     // Add event listener for opening and closing details
-    $('#loggingData tbody').on('click', 'td.details-control', function () {
-        var tr = $(this).closest('tr');
+    $("#loggingData tbody").on("click", "td.details-control", function () {
+        var tr = $(this).closest("tr");
         var row = dataTable.row(tr);
         if (row.child.isShown()) {
             openLogDetails--;
             // This row is already open - close it
             row.child.hide();
-            tr.removeClass('shown');
+            tr.removeClass("shown");
             if (openLogDetails === 0 && dataTable.scroller.page().start === 0) {
                 resumeRefresh();
             }
@@ -672,12 +591,12 @@ function loadLoggingDataTable(apiUrl) {
 
             // Open this row
             row.child(formatChild(row.data())).show();
-            tr.addClass('shown');
+            tr.addClass("shown");
             pauseRefresh();
         }
     });
 
-    $('div.dataTables_scrollBody').scroll(function () {
+    $("div.dataTables_scrollBody").scroll(function () {
         if (dataTable.scroller.page().start === 0 && openLogDetails === 0) {
             resumeRefresh();
         } else {
@@ -685,7 +604,7 @@ function loadLoggingDataTable(apiUrl) {
         }
     });
 
-    dataTable.on('draw', function () {
+    dataTable.on("draw", function () {
         cachedStart = dataTable.ajax.params().start;
     });
 
@@ -703,50 +622,50 @@ function loadLoggingDataTable(apiUrl) {
 }
 function formatChild(d) {
     // `d` is the original data object for the row
-    var retString = '<table cellpadding="5" cellspacing="0" border="0">';
+    var retString = "<table cellpadding=\"5\" cellspacing=\"0\" border=\"0\">";
     if (d.message !== "{}") {
-        retString += '<tr>' +
-                '<td style="width:10%">Message:</td>' +
-                '<td style="white-space: normal">' + d.message + '</td>' +
-                '</tr>';
+        retString += "<tr>" +
+            "<td style=\"width:10%\">Message:</td>" +
+            "<td style=\"white-space: normal\">" + d.message + "</td>" +
+            "</tr>";
     }
     if (d.exception !== "") {
-        retString += '<tr>' +
-                '<td>Exception:</td>' +
-                '<td><textarea class="dataTables-child">' + d.exception + '</textarea></td>' +
-                '</tr>';
+        retString += "<tr>" +
+            "<td>Exception:</td>" +
+            "<td><textarea class=\"dataTables-child\">" + d.exception + "</textarea></td>" +
+            "</tr>";
     }
     if (d.referenceUUID !== "") {
-        retString += '<tr>' +
-                '<td>UUID:</td>' +
-                '<td>' + d.referenceUUID + '</td>' +
-                '</tr>';
+        retString += "<tr>" +
+            "<td>UUID:</td>" +
+            "<td>" + d.referenceUUID + "</td>" +
+            "</tr>";
     }
-    retString += '<tr>' +
-            '<td>Logger:</td>' +
-            '<td>' + d.logger + '</td>' +
-            '</tr>' +
-            '</table>';
+    retString += "<tr>" +
+        "<td>Logger:</td>" +
+        "<td>" + d.logger + "</td>" +
+        "</tr>" +
+        "</table>";
 
     return retString;
 }
 
 function loadInstanceDataTable(apiUrl) {
     dataTableClass = "instance";
-    dataTable = $('#loggingData').DataTable({
+    dataTable = $("#loggingData").DataTable({
         "ajax": {
             url: apiUrl,
-            type: 'GET',
+            type: "GET",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             }
         },
-        "buttons": ['csv'],
+        "buttons": ["csv"],
         "columns": [
-            {"data": "alias"},
-            {"data": "type", width: "110px"},
-            {"data": "referenceUUID", "width": "250px"},
-            {"data": "state", "width": "125px"}
+            { "data": "alias" },
+            { "data": "type", width: "110px" },
+            { "data": "referenceUUID", "width": "250px" },
+            { "data": "state", "width": "125px" }
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("instance-row");
@@ -754,9 +673,9 @@ function loadInstanceDataTable(apiUrl) {
             $(row).attr("data-last_state", data.lastState);
             $(row).attr("data-owner", data.owner);
         },
-        "dom": 'Bfrtip',
+        "dom": "Bfrtip",
         "initComplete": function (settings, json) {
-            console.log('DataTables has finished its initialization.');
+            console.log("DataTables has finished its initialization.");
         },
         "ordering": false,
         "pageLength": 6,
@@ -764,7 +683,7 @@ function loadInstanceDataTable(apiUrl) {
         "scrollY": "375px"
     });
 
-    $('#loggingData tbody').on('click', 'tr.instance-row', function () {
+    $("#loggingData tbody").on("click", "tr.instance-row", function () {
         sessionStorage.setItem("instance-uuid", this.children[2].innerHTML);
         window.document.location = "/StackV-web/portal/details/";
     });
@@ -785,7 +704,7 @@ function reloadLogs() {
 function drawLoggingCurrentTime() {
     now = new Date();
     var $time = $("#log-time");
-    var nowStr = ('0' + now.getHours()).slice(-2) + ":" + ('0' + now.getMinutes()).slice(-2) + ":" + ('0' + now.getSeconds()).slice(-2);
+    var nowStr = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2) + ":" + ("0" + now.getSeconds()).slice(-2);
     $time.text(nowStr);
 }
 function filterLogs() {
