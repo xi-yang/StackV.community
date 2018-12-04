@@ -151,7 +151,7 @@ public class MCE_AddressDynamicAssignment extends MCEBase {
                 }
                 List<String> addresses;
                 //TODO: make using and intersecting static pool explicit options 
-                if (ipStaticAddressPool.isEmpty()) {
+                if (ipStaticAddressPool == null || ipStaticAddressPool.isEmpty()) {
                     if (ipDynamicAddressPool == null || ipDynamicAddressPool.isEmpty()) {
                         throw logger.error_throwing(method, "Address pools have none address available. Consider adding / changing static address assignment." );
                     } else {
@@ -243,7 +243,7 @@ public class MCE_AddressDynamicAssignment extends MCEBase {
             return null;
         }
         int numAssigned = 0;
-        int numPoolSize = listAddresses.size();
+        int numPoolSize = poolAddresses.size();
         for (int i = 0; i < numPoolSize; i++) {
             // random? change get(0)/remove(0) into between 0 and listAddresses.size()-1 ?
             String sparql = String.format("SELECT ?na WHERE { ?na mrs:value \"%s\". } ", poolAddresses.get(0));
