@@ -39,6 +39,8 @@ import javax.ejb.Timeout;
 import javax.ejb.Timer;
 import javax.ejb.TimerConfig;
 import javax.ejb.TimerService;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import net.maxgigapop.mrs.bean.DriverInstance;
@@ -86,6 +88,7 @@ public class DriverModelPuller {
     
     @Lock(LockType.WRITE)
     @Timeout
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void run() {
         String method = "run";
         logger.trace_start(method);
@@ -128,6 +131,8 @@ public class DriverModelPuller {
             String strContErrors = driverInstance.getProperty("contErrors");
             if (strContErrors != null) {
                 contErrors = Integer.parseInt(strContErrors);
+            } else {
+                strContErrors = "0";
             }
             int contDelays = 0;
             String strContDelays = driverInstance.getProperty("contDelays");

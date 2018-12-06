@@ -127,7 +127,7 @@
                 </input>
             </group>
         </group>
-        <group factory="true" name="IP Range" collapsible="true" opened="false">
+        <group factory="true" name="Suggest IP Range" collapsible="true" opened="false">
             <input>
                 <name>Start</name>
                 <type>text</type>
