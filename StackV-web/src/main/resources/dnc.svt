@@ -22,9 +22,9 @@
     a            spa:PolicyAction ;
     spa:type     "{{!DNCType type}}" ;
 
-{{$if ip_ranges}}
+{{$if !isIPAssigned}}
     spa:exportTo  &lt;x-policy-annotation:data:assign-ip-criteria&gt; ;
-{{/if ip_ranges}}
+{{/if !isIPAssigned}}
 
     spa:importFrom <x-policy-annotation:data:conn-criteria&gt; .
 
@@ -33,10 +33,10 @@
     spa:type     "JSON";
     spa:value    """{{!DNCPolicyData}}""".
 
-{{$if ip_ranges}}
+{{$if !isIPAssigned}}
 &lt;x-policy-annotation:action:assign-ip&gt;
      a            spa:PolicyAction ;
-     spa:type     "MCE_AddressStaticAssignment" ;
+     spa:type     "MCE_AddressDynamicAssignment" ;
     spa:dependOn &lt;x-policy-annotation:action:create-path&gt; ;
      spa:importFrom &lt;x-policy-annotation:data:assign-ip-criteria&gt; .
 
@@ -50,7 +50,7 @@
     a            nml:Topology;
     spa:type     spa:Abstraction ;
     spa:dependOn &lt;x-policy-annotation:action:assign-ip&gt; .
-{{/if ip_ranges}}
+{{/if !isIPAssigned}}
 
 </modelAddition>
 </serviceDelta>

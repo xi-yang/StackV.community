@@ -32,6 +32,8 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Resource;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -54,9 +56,9 @@ import org.json.simple.JSONObject;
  * @author xyang
  */
 @Stateless
-public class MCE_AddressStaticAssignment extends MCEBase {
+public class MCE_AddressDynamicAssignment extends MCEBase {
 
-    private static final StackLogger logger = new StackLogger(MCE_AddressStaticAssignment.class.getName(), "MCE_AddressStaticAssignment");
+    private static final StackLogger logger = new StackLogger(MCE_AddressDynamicAssignment.class.getName(), "MCE_AddressDynamicAssignment");
 
     private static final String OSpec_Template
             = "{\n"
@@ -117,31 +119,62 @@ public class MCE_AddressStaticAssignment extends MCEBase {
         OntModel assignModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         Model unionSysModel = spaModel.union(systemModel);
 
-        if (!jsonAssignReq.containsKey("address_pool") || !jsonAssignReq.containsKey("assign_to")) {
+        //@TODO: with additional support from DNCAssignIpAddress.java, jsonAssignments array should only include terminals with "Assign IP" checked
+        if (!jsonAssignReq.containsKey("assign_to")) {
             throw logger.error_throwing(method, "imported incomplete JSON data");
         }
-        JSONArray jsonAddresses = (JSONArray)jsonAssignReq.get("address_pool");
         JSONArray jsonAssignments = (JSONArray) jsonAssignReq.get("assign_to");
         String addressType = jsonAssignReq.containsKey("address_type") ? (String) jsonAssignReq.get("address_type") : "ipv4-address";
-        // for each jsonAssignment in the jsonAssignments array, get one address from jsonAddresses 
-        List<String> ipAddresses = normalizeIpAddressList(jsonAddresses);
+        List<String> ipStaticAddressPool = jsonAssignReq.containsKey("address_pool") ? normalizeIpAddressList((JSONArray)jsonAssignReq.get("address_pool")) : null;
         for (Object obj: jsonAssignments) {
             JSONObject jsonAssignFilter = (JSONObject)obj;
             if (jsonAssignFilter.containsKey("l2path") && jsonAssignFilter.containsKey("terminals")) {
                 JSONArray assignToPath = (JSONArray) jsonAssignFilter.get("l2path");
                 JSONArray assignToTerminals = (JSONArray) jsonAssignFilter.get("terminals");
                 List<Resource> assignToInterfaces = new ArrayList();
+                Map<Resource, String> vifIpv4PoolMap = new HashMap();
                 for (int i = 0; i < assignToTerminals.size(); i++) {
-                    Resource resAssignToInterface = this.lookupL2PathTerminalInterface(unionSysModel, assignToPath, (String)assignToTerminals.get(i));
+                    Resource resAssignToInterface = this.lookupL2PathTerminalInterfaceAndIpPool(unionSysModel, assignToPath, (String)assignToTerminals.get(i), vifIpv4PoolMap);
                     if (resAssignToInterface != null) {
                         assignToInterfaces.add(resAssignToInterface);
                     }
-                    // skip the terminal interfaces that are unfound or shared / static 
                 }
-                List<String> addresses = this.checkoutAddresses(ipAddresses, assignToInterfaces.size()); 
+                // intersect dynamic address pools
+                List<String> ipDynamicAddressPool = null; 
+                for (Resource vif: vifIpv4PoolMap.keySet()) {
+                    String ipv4Pool = vifIpv4PoolMap.get(vif);
+                    if (ipDynamicAddressPool == null) {
+                        ipDynamicAddressPool = this.normalizeIpAddressList(ipv4Pool.split("[,;]"));
+                    } else {
+                        ipDynamicAddressPool = this.intersectIpAddressList(ipDynamicAddressPool, normalizeIpAddressList(ipv4Pool.split("[,;]")));
+                    }
+                }
+                List<String> addresses;
+                //TODO: make using and intersecting static pool explicit options 
+                if (ipStaticAddressPool == null || ipStaticAddressPool.isEmpty()) {
+                    if (ipDynamicAddressPool == null || ipDynamicAddressPool.isEmpty()) {
+                        throw logger.error_throwing(method, "Address pools have none address available. Consider adding / changing static address assignment." );
+                    } else {
+                        addresses = this.checkoutUnassignedAddresses(unionSysModel, ipDynamicAddressPool, assignToInterfaces.size()); 
+                    }
+                } else {
+                    if (ipDynamicAddressPool == null || ipDynamicAddressPool.isEmpty()) {
+                        addresses = this.checkoutUnassignedAddresses(unionSysModel, ipStaticAddressPool, assignToInterfaces.size()); 
+                    } else {
+                        ipStaticAddressPool = this.intersectIpAddressList(ipDynamicAddressPool, ipStaticAddressPool);
+                        if (ipStaticAddressPool.isEmpty()) {
+                            // use dynamic pool if intersection with static pool has not result
+                            //TODO: make this another explict option 
+                            addresses = this.checkoutUnassignedAddresses(unionSysModel, ipDynamicAddressPool, assignToInterfaces.size()); 
+                        } else {
+                            addresses = this.checkoutUnassignedAddresses(unionSysModel, ipStaticAddressPool, assignToInterfaces.size()); 
+                        }
+                    }
+                }
+                
                 // exception if running out of addresses
-                if (addresses == null) {
-                   throw logger.error_throwing(method, String.format("%d addresses are requested but address pool has %d remaining", assignToTerminals.size(), ipAddresses.size()) );
+                if (addresses.size() < assignToTerminals.size()) {
+                   throw logger.error_throwing(method, String.format("%d addresses are requested but address pool has %d remaining", assignToTerminals.size(), addresses.size()) );
                 }
                 for (int i = 0; i < assignToInterfaces.size(); i++) {
                     Resource resAssignToInterface = assignToInterfaces.get(i);
@@ -156,6 +189,7 @@ public class MCE_AddressStaticAssignment extends MCEBase {
         return assignModel;
     }
     
+    //TODO: use range segements instead of individual addresses to save space to lift the mask < 16 restriction
     private List<String> normalizeIpAddressList(List poolAddressRanges) {
         List<String> listAddresses = new ArrayList();
         for (Object obj: poolAddressRanges) {
@@ -184,20 +218,50 @@ public class MCE_AddressStaticAssignment extends MCEBase {
         }
         return listAddresses;
     }
-            
-    private List<String> checkoutAddresses(List poolAddresses, int num) {
+    
+    private List<String> normalizeIpAddressList(String[] poolAddressStringArray) {
+        List poolAddressRanges = Arrays.asList(poolAddressStringArray);
+        return normalizeIpAddressList(poolAddressRanges);
+    }
+    
+    private List<String> intersectIpAddressList(List<String> poolAddressRanges1, List<String> poolAddressRanges2) {
+        List<String> resultList = new ArrayList();
+        if (poolAddressRanges2.isEmpty()) {
+            return resultList;
+        }
+        for (String addr: poolAddressRanges1) {
+            if (poolAddressRanges2.contains(addr)) {
+                resultList.add(addr);
+            }
+        }
+        return resultList;
+    }
+    
+    private List<String> checkoutUnassignedAddresses(Model unionSysModel, List poolAddresses, int num) {
         List<String> listAddresses = new ArrayList();
         if (num > poolAddresses.size()) {
             return null;
         }
-        for (int i = 0; i < num; i++) {
-            listAddresses.add((String)poolAddresses.get(0));
-            poolAddresses.remove(0);
+        int numAssigned = 0;
+        int numPoolSize = poolAddresses.size();
+        for (int i = 0; i < numPoolSize; i++) {
+            // random? change get(0)/remove(0) into between 0 and listAddresses.size()-1 ?
+            String sparql = String.format("SELECT ?na WHERE { ?na mrs:value \"%s\". } ", poolAddresses.get(0));
+            if (ModelUtil.sparqlQuery(unionSysModel, sparql).hasNext()) {
+                poolAddresses.remove(0);
+            } else {
+                listAddresses.add((String)poolAddresses.get(0));
+                poolAddresses.remove(0);
+                numAssigned++;
+                if (numAssigned == num) {
+                    break;
+                }
+            }
         }
         return listAddresses;
     }
 
-    private Resource lookupL2PathTerminalInterface(Model unionSysModel, JSONArray l2pathHops, String terminalUri) {
+    private Resource lookupL2PathTerminalInterfaceAndIpPool(Model unionSysModel, JSONArray l2pathHops, String terminalUri, Map vifIpv4PoolMap) {
         String method = "lookupL2PathTerminalInterface";
         for (Object obj : l2pathHops) {
             JSONObject jsonObj = (JSONObject) obj;
@@ -208,12 +272,14 @@ public class MCE_AddressStaticAssignment extends MCEBase {
             if (hopUri.equals(terminalUri)) {
                 return unionSysModel.getResource(hopUri);
             }
-            String sparql = "SELECT ?vif WHERE { {"
-                    + "?terminal nml:hasBidirectionalPort ?port."
-                    + "?port nml:hasBidirectionalPort ?vif."
+            String sparql = "SELECT ?vif ?ipv4pool WHERE { {"
+                    + "?terminal nml:hasBidirectionalPort ?port. "
+                    + "?port nml:hasBidirectionalPort ?vif. "
+                    + "OPTIONAL{ ?port mrs:hasNetworkAddress ?naPool. ?naPool mrs:type \"ipv4-floatingip-pool\". ?naPool mrs:value ?ipv4pool. } "
                     + String.format("FILTER (?terminal = <%s> && ?vif = <%s>)", terminalUri, hopUri)
                     + "} UNION {"
-                    + "?terminal nml:hasBidirectionalPort ?vif."
+                    + "?terminal nml:hasBidirectionalPort ?vif. "
+                    + "OPTIONAL{ ?terminal mrs:hasNetworkAddress ?naPool. ?naPool mrs:type \"ipv4-floatingip-pool\". ?naPool mrs:value ?ipv4pool. } "
                     + String.format("FILTER (?terminal = <%s> && ?vif = <%s>)", terminalUri, hopUri)
                     + "} "
                     + "FILTER (NOT EXISTS { ?port mrs:type \"shared\". ?vif mrs:hasNetworkAddress ?na. ?na mrs:type \"ipv4-address\"}"
@@ -222,7 +288,12 @@ public class MCE_AddressStaticAssignment extends MCEBase {
             ResultSet r = ModelUtil.sparqlQuery(unionSysModel, sparql);
             if (r.hasNext()) {
                 QuerySolution solution = r.nextSolution();
-                return solution.getResource("vif");
+                Resource vif = solution.getResource("vif");
+                if (solution.contains("ipv4pool")) {
+                    String ipv4Pool = solution.getLiteral("ipv4pool").toString();
+                    vifIpv4PoolMap.put(vif, ipv4Pool);
+                }
+                return vif;
             }
         }
         return null;
