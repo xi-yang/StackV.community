@@ -39,8 +39,6 @@ import javax.ejb.Timeout;
 import javax.ejb.Timer;
 import javax.ejb.TimerConfig;
 import javax.ejb.TimerService;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import net.maxgigapop.mrs.bean.DriverInstance;
@@ -88,7 +86,6 @@ public class DriverModelPuller {
     
     @Lock(LockType.WRITE)
     @Timeout
-    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
     public void run() {
         String method = "run";
         logger.trace_start(method);
@@ -119,6 +116,7 @@ public class DriverModelPuller {
             DriverInstance driverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(topoUri);
             // get driverInstance operational metadata / properties
             boolean driverInstanceDisabled = false;
+            driverInstance = (DriverInstance) DriverInstancePersistenceManager.merge(driverInstance);
             String strDisabled = driverInstance.getProperty("disabled");
             if (strDisabled != null) {
                 driverInstanceDisabled = Boolean.parseBoolean(strDisabled);
@@ -158,7 +156,7 @@ public class DriverModelPuller {
                         strContErrors = Integer.toString(contErrors);
                         driverInstance.putProperty("contErrors", strContErrors);
                     } finally {
-                        DriverInstancePersistenceManager.merge(driverInstance);
+                        driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
                     }
                 } else {
                     pullNormal = false;
@@ -167,7 +165,7 @@ public class DriverModelPuller {
                     contDelays++;
                     strContDelays = Integer.toString(contDelays);
                     driverInstance.putProperty("contDelays", strContDelays);
-                    DriverInstancePersistenceManager.merge(driverInstance);
+                    driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
                     continue;
                 }
             } else {

@@ -127,7 +127,7 @@ public class HandleServiceCall {
                         SystemInstancePersistenceManager.delete(systemInstance);
                     }
                     systemDelta.setServiceDelta(null);
-                    DeltaPersistenceManager.merge(systemDelta);
+                    systemDelta = (SystemDelta)DeltaPersistenceManager.merge(systemDelta);
                 }
                 svcDelta.setSystemDelta(null);
                 svcDelta.setServiceInstance(null);
@@ -199,7 +199,7 @@ public class HandleServiceCall {
             worker.run();
         } catch (EJBException ex) {
             serviceInstance.setStatus("FAILED");
-            ServiceInstancePersistenceManager.merge(serviceInstance);
+            serviceInstance = (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
             logger.status("compileAddDelta", "FAILED");
             throw logger.throwing("compileAddDelta", ex);
         }
@@ -389,12 +389,12 @@ public class HandleServiceCall {
                     }
                     serviceDelta.setNegotiationMarkup(ex.getMessage());
                     serviceDelta.setStatus("NEGOTIATING");
-                    DeltaPersistenceManager.merge(serviceDelta);
+                    serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
                 } catch (EJBException ex) {
                     logger.throwing(method, ex);
                 }
                 serviceDelta.setStatus("PROPAGATED");
-                DeltaPersistenceManager.merge(serviceDelta);
+                serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
                 if (!canMultiPropagate) {
                     break;
                 }
@@ -431,7 +431,7 @@ public class HandleServiceCall {
         } else if (!hasPropagated && isCommitting) {
             serviceInstance.setStatus("COMMITTING");
         }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance = (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
         return serviceInstance.getStatus();
     }
@@ -493,7 +493,7 @@ public class HandleServiceCall {
                 systemInstance.setCommitStatus(asynResult);
                 //systemInstance.setCommitFlag(true);
                 serviceDelta.setStatus("COMMITTING");
-                DeltaPersistenceManager.merge(serviceDelta);
+                serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
                 if (!canMultiCommit) {
                     break;
                 }
@@ -524,7 +524,7 @@ public class HandleServiceCall {
         } else if (!hasPropagated && isCommitting) {
             serviceInstance.setStatus("COMMITTING");
         }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance = (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
         return serviceInstance.getStatus();
     }
@@ -708,7 +708,7 @@ public class HandleServiceCall {
         } else {
             serviceInstance.setStatus("COMMITTING-PARTIAL");
         }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance = (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
         return reverseSvcDelta.getId();
     }
@@ -774,11 +774,11 @@ public class HandleServiceCall {
                         DeltaPersistenceManager.delete(dsd);
                     }
                     systemInstance.getSystemDelta().getDriverSystemDeltas().clear();
-                    DeltaPersistenceManager.merge(systemInstance.getSystemDelta());
+                    systemInstance.setSystemDelta((SystemDelta)DeltaPersistenceManager.merge(systemInstance.getSystemDelta()));
                 }
                 systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
                 serviceDelta.setStatus("PROPAGATED");
-                DeltaPersistenceManager.merge(serviceDelta);
+                serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
                 if (!canMultiPropagate) {
                     break;
                 }
@@ -808,7 +808,7 @@ public class HandleServiceCall {
         } else if (!hasPropagated && isCommitting) {
             serviceInstance.setStatus("COMMITTING");
         }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance= (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
         return serviceInstance.getStatus();
     }
@@ -1130,7 +1130,7 @@ public class HandleServiceCall {
         }
         */
         // always merge
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance= (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         // refresh once again
         serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         if (!serviceInstance.getStatus().equals("COMMITTING")) {
@@ -1186,7 +1186,7 @@ public class HandleServiceCall {
             } else {
                 serviceDelta.setStatus("COMMITTING");
             }
-            DeltaPersistenceManager.merge(serviceDelta);
+            serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
         }
         // collect status from systemDeltas (all_commited == ready)
         boolean failed = false;
@@ -1211,7 +1211,7 @@ public class HandleServiceCall {
         } else {
             serviceInstance.setStatus("COMMITTING");
         }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance= (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.trace_end(method, serviceInstance.getStatus());
         return serviceInstance.getStatus();
     }
