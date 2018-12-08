@@ -146,9 +146,7 @@ public class DriverModelPuller {
                     try {
                         String status = previousResult.get();
                         logger.trace(method, "model pulling - previousResult ready for topologyURI="+topoUri+" with status="+status);
-                        if (contErrors > 0) {
-                            driverInstance.putProperty("contErrors", "0");
-                        }
+                        driverInstance.putProperty("contErrors", "0");
                     } catch (Exception ex) {
                         pullNormal = false;
                         logger.catching(method, ex);
