@@ -123,6 +123,11 @@ public class DriverModelPuller {
             }
             if (driverInstanceDisabled) {
                 logger.trace(method, "model pulling skipped - driver instance ["+topoUri+"] disabled");
+                String strContErrors = driverInstance.getProperty("contErrors");
+                if (strContErrors != null && strContErrors.equals("0")) {
+                    driverInstance.getProperties().remove("contErrors");
+                    driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
+                }
                 continue;
             }
             int contErrors = 0;
