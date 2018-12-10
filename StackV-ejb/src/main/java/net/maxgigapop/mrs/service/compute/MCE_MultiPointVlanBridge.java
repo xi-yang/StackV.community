@@ -402,10 +402,6 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     } catch (Exception ex) {
                         throw logger.throwing(method, "verifyL2Path -exception- ", ex);
                     }
-                    if (verified && jsonConnReq.containsKey("bandwidth")) {
-                        bridgePath.bandwithProfile = reqBandwithProfile;
-                        verified = MCETools.verifyPathBandwidthProfile(transformedModel, bridgePath);
-                    }
                     // check&make schedule
                     //@TODO: combine this block into common method
                     if (verified && jsonConnReq.containsKey("schedule")) {
@@ -447,6 +443,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                         }
                         if (candidatePath.bandwithProfile == null || candidatePath.bandwithProfile.reservableCapacity == null) {
                             throw logger.error_throwing(method, "input schedule without bandwidth.");
+                        } else if (!candidatePath.bandwithProfile.type.equalsIgnoreCase("guaranteedCapped") || !candidatePath.bandwithProfile.type.equalsIgnoreCase("softCapped")) {
+                            throw logger.error_throwing(method, "MCETools.computeFeasibleL2KSP - advance scheduling can only work with guaranteedCapped or softCapped bandwidth service.");
                         }
                         candidatePath.bandwithScedule.setBandwidth(normalizeBandwidthPorfile(candidatePath.bandwithProfile).reservableCapacity);
                         JSONObject jsonScheduleOptions = jsonSchedule.containsKey("options") ? (JSONObject) jsonSchedule.get("options") : new JSONObject();
@@ -483,7 +481,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                             logger.trace(method, candidatePath.getConnectionId() + " -- " + ex.getMessage());
                             verified = false;
                         }
+                    } else  if (verified && jsonConnReq.containsKey("bandwidth")) {
+                        bridgePath.bandwithProfile = reqBandwithProfile;
+                        verified = MCETools.verifyPathBandwidthProfile(transformedModel, bridgePath);
                     }
+
                     if (verified) {
                         // connect bridge path into MPVB bridging subnet
                         OntModel bridgePathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonTerminals);
